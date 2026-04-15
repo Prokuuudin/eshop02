@@ -1,0 +1,211 @@
+[
+  {
+    "id": "post-6",
+    "slug": "spring-skin-reset-checklist",
+    "title": "Весенний reset кожи: чеклист на 10 минут в день",
+    "excerpt": "Простой план ухода на весну: как вернуть сияние, убрать сухость и не перегрузить кожу.",
+    "content": "\n# Весенний reset кожи: чеклист\n\nВесной кожа часто становится чувствительнее из-за перепадов температуры и сухого воздуха в помещениях.\n\n## Что делать каждый день\n\n1. **Мягкое очищение утром и вечером**\n2. **Увлажняющая сыворотка** (например, с гиалуроновой кислотой)\n3. **Крем по типу кожи**\n4. **SPF утром** даже в пасмурную погоду\n\n## Что делать 1-2 раза в неделю\n\n- Энзимный или мягкий кислотный пилинг\n- Успокаивающая маска\n\n## Частые ошибки весной\n\n- Резкая смена всей рутины сразу\n- Игнорирование SPF\n- Слишком агрессивное очищение\n\nГлавное правило: вводите новые средства постепенно и наблюдайте за реакцией Рожи.\n    ",
+    "contentBlocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "text": "Весенний reset кожи: чеклист"
+      },
+      {
+        "type": "paragraph",
+        "text": "Весной кожа часто становится чувствительнее из-за перепадов температуры и сухого воздуха в помещениях."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Что делать каждый день"
+      },
+      {
+        "type": "list",
+        "ordered": true,
+        "items": [
+          "Мягкое очищение утром и вечером",
+          "Увлажняющая сыворотка (например, с гиалуроновой кислотой)",
+          "Крем по типу кожи",
+          "SPF утром даже в пасмурную погоду"
+        ]
+      },
+      {
+        "type": "image",
+        "src": "/blog/skincare-guide.jpg",
+        "alt": "Весенний уход за кожей: базовый набор средств",
+        "caption": "Базовая рутина весной должна быть мягкой и стабильной."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Что делать 1-2 раза в неделю"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Энзимный или мягкий кислотный пилинг",
+          "Успокаивающая маска"
+        ]
+      },
+      {
+        "type": "gallery",
+        "images": [
+          {
+            "src": "/blog/body-care.jpg",
+            "alt": "Домашний уход и восстановление кожи",
+            "caption": "Добавляйте мягкие восстанавливающие этапы."
+          },
+          {
+            "src": "/blog/retinol.jpg",
+            "alt": "Активные компоненты в уходе",
+            "caption": "Новые активы вводите постепенно и по одному."
+          }
+        ]
+      },
+      {
+        "type": "quote",
+        "text": "Главное правило: вводите новые средства постепенно и наблюдайте за реакцией РоЖи.",
+        "author": "Ольга Дермо косметолог"
+      }
+    ],
+    "author": "Ольга Дерма косметолог",
+    "image": "/blog/skincare-guide.jpg",
+    "category": "уход за лицом",
+    "readTime": 4,
+    "createdAt": "2026-03-12T00:00:00.000Z",
+    "featured": false
+  },
+  {
+    "id": "post-1",
+    "slug": "skincare-routine-guide",
+    "title": "Полное руководство по уходу за кожей в 2026 году",
+    "excerpt": "Узнайте о правильном порядке нанесения косметики и лучших практиках для здоровой кожи.",
+    "content": "\n# Полное руководство по уходу за кожей\n\nПравильный уход за кожей — это не просто косметика, это инвестиция в здоровье вашей кожи.\n\n## Основные этапы\n\n1. **Очищение** (утром и вечером)\n   - Используйте мягкий очищающий средство\n   - Массируйте лицо 60 секунд\n   - Смойте теплой водой\n\n2. **Тонер**\n   - Увлажняет и подготавливает кожу\n   - Наносится после очищения\n\n3. **Сыворотка**\n   - Концентрированные активные компоненты\n   - Наносится на влажную кожу\n\n4. **Крем**\n   - Завершающий этап\n   - Запечатывает влагу\n\n## Частые ошибки\n\n- Слишком частое очищение\n- Игнорирование SPF\n- Использование горячей воды\n- Переусложнение рутины\n\nПомните, что каждая кожа уникальна!\n    ",
+    "author": "Мария Косметолог",
+    "image": "/blog/skincare-guide.jpg",
+    "category": "уход за лицом",
+    "readTime": 5,
+    "createdAt": "2026-02-15T00:00:00.000Z",
+    "featured": true,
+    "translations": {
+      "en": {
+        "title": "Complete Skincare Guide for 2026",
+        "excerpt": "Learn the right product layering order and best practices for healthy skin.",
+        "content": "\n  # Complete Skincare Guide\n\n  Proper skincare is not only about cosmetics — it is an investment in skin health.\n\n  ## Core Steps\n\n  1. **Cleansing** (morning and evening)\n    - Use a gentle cleanser\n    - Massage for 60 seconds\n    - Rinse with lukewarm water\n\n  2. **Toner**\n    - Hydrates and preps the skin\n    - Apply right after cleansing\n\n  3. **Serum**\n    - Concentrated active ingredients\n    - Apply to slightly damp skin\n\n  4. **Moisturizer**\n    - Final step\n    - Locks in hydration\n\n  ## Common Mistakes\n\n  - Over-cleansing\n  - Skipping SPF\n  - Using very hot water\n  - Overcomplicating your routine\n\n  Remember: every skin type is unique.\n     ",
+        "author": "Maria Cosmetologist"
+      },
+      "lv": {
+        "title": "Pilnīgs ādas kopšanas ceļvedis 2026. gadam",
+        "excerpt": "Uzziniet pareizu līdzekļu lietošanas secību un labākās prakses veselīgai ādai.",
+        "content": "\n  # Pilnīgs ādas kopšanas ceļvedis\n\n  Pareiza ādas kopšana nav tikai kosmētika — tā ir investīcija ādas veselībā.\n\n  ## Galvenie soļi\n\n  1. **Attīrīšana** (no rīta un vakarā)\n    - Lietojiet maigu attīrītāju\n    - Masējiet 60 sekundes\n    - Noskalojiet ar remdenu ūdeni\n\n  2. **Toniks**\n    - Mitrina un sagatavo ādu\n    - Uzklājiet pēc attīrīšanas\n\n  3. **Serums**\n    - Koncentrētas aktīvās sastāvdaļas\n    - Uzklājiet uz viegli mitras ādas\n\n  4. **Krēms**\n    - Noslēdzošais solis\n    - Noslēdz mitrumu ādā\n\n  ## Biežākās kļūdas\n\n  - Pārāk bieža attīrīšana\n  - SPF ignorēšana\n  - Pārāk karsts ūdens\n  - Pārāk sarežģīta rutīna\n\n  Atcerieties: katra āda ir unikāla.\n     ",
+        "author": "Marija, kosmetoloģe"
+      }
+    }
+  },
+  {
+    "id": "post-2",
+    "slug": "hair-care-winter",
+    "title": "Уход за волосами зимой: советы и средства",
+    "excerpt": "Как защитить волосы от холода, сухого воздуха и минусовых температур.",
+    "content": "\n# Уход за волосами в Зимний период\n\nЗима — сложное время для волос. Холод, ветер и сухой воздух повреждают структуру волоса.\n\n## Основные проблемы\n\n- Ломкость\n- Сухость\n- Электризация\n- Потеря блеска\n\n## Решения\n\nИспользуйте увлажняющие маски 2-3 раза в неделю.\nНаносите масло перед сном для интенсивного питания.\nНосите шапку для защиты.\n    ",
+    "author": "Анна Стилист",
+    "image": "/blog/winter-hair.jpg",
+    "category": "уход за волосами",
+    "readTime": 4,
+    "createdAt": "2026-02-10T00:00:00.000Z",
+    "featured": true,
+    "translations": {
+      "en": {
+        "title": "Winter Hair Care: Tips and Products",
+        "excerpt": "How to protect your hair from cold weather, dry air, and sub-zero temperatures.",
+        "content": "\n# Winter Hair Care\n\nWinter is a challenging season for hair. Cold wind and dry indoor air can damage the hair fiber.\n\n## Main Issues\n\n- Breakage\n- Dryness\n- Static electricity\n- Loss of shine\n\n## Solutions\n\nUse hydrating masks 2-3 times a week.\nApply hair oil before bed for deeper nourishment.\nWear a hat to protect your hair outside.\n    ",
+        "author": "Anna Stylist"
+      },
+      "lv": {
+        "title": "Matu kopšana ziemā: padomi un līdzekļi",
+        "excerpt": "Kā pasargāt matus no aukstuma, sausa gaisa un mīnusa temperatūrām.",
+        "content": "\n# Matu kopšana ziemā\n\nZiema matiem ir sarežģīts periods. Aukstums, vējš un sausais gaiss bojā matu struktūru.\n\n## Galvenās problēmas\n\n- Lūšana\n- Sausums\n- Elektrizēšanās\n- Spīduma zudums\n\n## Risinājumi\n\nLietojiet mitrinošas maskas 2-3 reizes nedēļā.\nPirms miega uzklājiet matu eļļu intensīvai barošanai.\nNēsājiet cepuri, lai pasargātu matus ārā.\n    ",
+        "author": "Anna, stiliste"
+      }
+    }
+  },
+  {
+    "id": "post-3",
+    "slug": "body-care-tips",
+    "title": "SPA-уход за телом дома: 7 простых шагов",
+    "excerpt": "Превратите ванную комнату в спа-салон с помощью простых процедур.",
+    "content": "\n# SPA-уход за телом дома\n\nВам не нужен салон, чтобы получить качественный уход.\n\n## Процедура\n\n1. Горячая ванна 15 минут\n2. Скраб для тела\n3. Маска или масло\n4. Лосьон для тела\n5. Массаж\n\nРегулярность — ключ к успеху!\n    ",
+    "author": "Елена Специалист",
+    "image": "/blog/body-care.jpg",
+    "category": "уход за телом",
+    "readTime": 3,
+    "createdAt": "2026-02-05T00:00:00.000Z",
+    "translations": {
+      "en": {
+        "title": "At-Home SPA Body Care: 7 Easy Steps",
+        "excerpt": "Turn your bathroom into a mini spa with simple yet effective routines.",
+        "content": "\n# At-Home SPA Body Care\n\nYou do not need a salon to get high-quality body care.\n\n## Routine\n\n1. Hot bath for 15 minutes\n2. Body scrub\n3. Mask or body oil\n4. Body lotion\n5. Massage\n\nConsistency is the key to great results.\n    ",
+        "author": "Elena Specialist"
+      },
+      "lv": {
+        "title": "SPA ķermeņa kopšana mājās: 7 vienkārši soļi",
+        "excerpt": "Pārvērtiet vannasistabu par mini spa ar vienkāršām procedūrām.",
+        "content": "\n# SPA ķermeņa kopšana mājās\n\nLai iegūtu kvalitatīvu kopšanu, salons nav obligāts.\n\n## Procedūra\n\n1. Karsta vanna 15 minūtes\n2. Ķermeņa skrubis\n3. Maska vai eļļa\n4. Ķermeņa losjons\n5. Masāža\n\nRegulāritāte ir panākumu atslēga.\n    ",
+        "author": "Elēna, speciāliste"
+      }
+    }
+  },
+  {
+    "id": "post-4",
+    "slug": "makeup-trends-2026",
+    "title": "Тренды макияжа 2026: что в моде",
+    "excerpt": "Актуальные тренды макияжа этого года — от nude до ярких цветов.",
+    "content": "\n# Тренды макияжа 2026\n\nНовый год — новые тренды в макияже.\n\n## В моде\n\n- Natural skin\n- Graphic eyeliner\n- Bold lips\n- Glass skin effect\n\nЭкспериментируйте и найдите свой стиль!\n    ",
+    "author": "Ирина Визажист",
+    "image": "/blog/makeup-trends.jpg",
+    "category": "макияж",
+    "readTime": 4,
+    "createdAt": "2026-01-28T00:00:00.000Z",
+    "translations": {
+      "en": {
+        "title": "Makeup Trends 2026: What Is In",
+        "excerpt": "This year’s key makeup trends — from clean nude looks to bold accents.",
+        "content": "\n# Makeup Trends 2026\n\nNew year, new beauty trends.\n\n## Trending Now\n\n- Natural skin\n- Graphic eyeliner\n- Bold lips\n- Glass skin effect\n\nExperiment and find the style that fits you best.\n    ",
+        "author": "Irina Makeup Artist"
+      },
+      "lv": {
+        "title": "Grima tendences 2026: kas ir modē",
+        "excerpt": "Aktuālās gada grima tendences — no nude līdz drosmīgiem akcentiem.",
+        "content": "\n# Grima tendences 2026\n\nJauns gads — jaunas tendences grimā.\n\n## Modē\n\n- Dabiska āda\n- Grafisks acu laineris\n- Izteiksmīgas lūpas\n- Glass skin efekts\n\nEksperimentējiet un atrodiet savu stilu.\n    ",
+        "author": "Irina, vizāžiste"
+      }
+    }
+  },
+  {
+    "id": "post-5",
+    "slug": "ingredient-spotlight-retinol",
+    "title": "Ретинол: панацея от морщин или маркетинг?",
+    "excerpt": "Научный взгляд на самый популярный антивозрастной ингредиент.",
+    "content": "\n# Ретинол: полное руководство\n\nРетинол (витамин A) — один из наиболее изученных компонентов в косметике.\n\n## Доказанные эффекты\n\n- Уменьшение морщин\n- Улучшение текстуры\n- Выравнивание тона\n- Стимуляция коллагена\n\n## Как использовать\n\nНачните с низкой концентрации.\nУвеличивайте постепенно.\nИспользуйте SPF днем!\n    ",
+    "author": "Доктор Смирнов",
+    "image": "/blog/retinol.jpg",
+    "category": "ингредиенты",
+    "readTime": 6,
+    "createdAt": "2026-01-20T00:00:00.000Z",
+    "translations": {
+      "en": {
+        "title": "Retinol: Wrinkle Cure or Marketing Hype?",
+        "excerpt": "A science-based look at one of the most popular anti-age ingredients.",
+        "content": "\n# Retinol: Complete Guide\n\nRetinol (vitamin A) is one of the most researched ingredients in skincare.\n\n## Proven Effects\n\n- Reduced fine lines\n- Better skin texture\n- More even tone\n- Collagen stimulation\n\n## How to Use\n\nStart with a low concentration.\nIncrease gradually.\nAlways use SPF during daytime.\n    ",
+        "author": "Dr. Smirnov"
+      },
+      "lv": {
+        "title": "Retinols: glābiņš pret grumbām vai mārketings?",
+        "excerpt": "Zinātnisks skats uz vienu no populārākajām anti-age sastāvdaļām.",
+        "content": "\n# Retinols: pilnīgs ceļvedis\n\nRetinols (A vitamīns) ir viena no visvairāk pētītajām sastāvdaļām kosmētikā.\n\n## Pierādītie efekti\n\n- Grumbu mazināšana\n- Ādas tekstūras uzlabošana\n- Toņa izlīdzināšana\n- Kolagēna stimulēšana\n\n## Kā lietot\n\nSāciet ar zemāku koncentrāciju.\nPakāpeniski palieliniet.\nDienā vienmēr lietojiet SPF.\n    ",
+        "author": "Dr. Smirnovs"
+      }
+    }
+  }
+]

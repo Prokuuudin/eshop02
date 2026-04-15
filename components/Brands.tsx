@@ -3,6 +3,7 @@ import { FadeTransition } from './FadeTransition';
 import React from 'react'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
+import { useSiteContent } from '@/lib/use-site-content'
 import { BRANDS } from '../data/brands'
 import { BRAND_DESCRIPTIONS } from '../data/brandDescriptions'
 import Link from 'next/link';
@@ -13,6 +14,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 
 export default function Brands() {
   const { t, language } = useTranslation();
+  const { resolveImageSrc } = useSiteContent();
   const [showAll, setShowAll] = React.useState(false);
   const [alphabeticalView, setAlphabeticalView] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -93,7 +95,7 @@ export default function Brands() {
                       </DialogHeader>
                       <div className="flex flex-col items-center">
                         <div className="relative mb-4 flex h-12 w-24 items-center justify-center sm:h-14 sm:w-28">
-                          <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
+                          <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
                         </div>
                         <p className="mb-4 text-center text-sm text-gray-600 sm:text-base">{getBrandDescription(brand.id, brand.name)}</p>
                         <div className="mt-2 flex w-full justify-center">
@@ -124,7 +126,7 @@ export default function Brands() {
                       title={brand.name}
                     >
                       <div className="brands__logo relative flex h-10 w-20 items-center justify-center transition-transform duration-300 group-hover:translate-y-1 sm:h-12 sm:w-24 md:h-14 md:w-28">
-                        <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
+                        <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
                       </div>
                     </button>
                   </DialogTrigger>
@@ -149,7 +151,7 @@ export default function Brands() {
                     </DialogHeader>
                     <div className="flex flex-col items-center">
                       <div className="relative mb-4 flex h-12 w-24 items-center justify-center sm:h-14 sm:w-28">
-                        <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
+                        <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
                       </div>
                       <p className="mb-4 text-center text-sm text-gray-600 sm:text-base">{getBrandDescription(brand.id, brand.name)}</p>
                       <div className="mt-2 flex w-full justify-center">
@@ -177,7 +179,7 @@ export default function Brands() {
                     title={brand.name}
                   >
                     <div className="brands__logo relative flex h-10 w-20 items-center justify-center transition-transform duration-300 group-hover:translate-y-1 sm:h-12 sm:w-24 md:h-14 md:w-28">
-                      <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
+                      <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
                     </div>
                   </button>
                 </DialogTrigger>
@@ -202,7 +204,7 @@ export default function Brands() {
                   </DialogHeader>
                   <div className="flex flex-col items-center">
                     <div className="relative mb-4 flex h-12 w-24 items-center justify-center sm:h-14 sm:w-28">
-                      <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
+                      <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
                     </div>
                     <p className="mb-4 text-center text-sm text-gray-600 sm:text-base">{getBrandDescription(brand.id, brand.name)}</p>
                     <div className="mt-2 flex w-full justify-center">

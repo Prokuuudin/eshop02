@@ -2,9 +2,11 @@
 import React from 'react';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
+import { useSiteContent } from '@/lib/use-site-content';
 
 export default function Benefits() {
   const { t } = useTranslation();
+  const { resolveImageSrc } = useSiteContent();
   const ITEMS = [
     { id: 'b1', title: t('benefits.original'), desc: t('benefits.certified'), icon: '/icons/original.svg' },
     { id: 'b2', title: t('benefits.delivery'), desc: t('benefits.fast'), icon: '/icons/delivery.svg' },
@@ -19,7 +21,7 @@ export default function Benefits() {
           {ITEMS.map((it) => (
             <article key={it.id} className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="benefits__icon mb-3 w-12 h-12">
-                <Image src={it.icon} alt="" width={48} height={48} className="object-contain" />
+                <Image src={resolveImageSrc(it.icon)} alt="" width={48} height={48} className="object-contain" />
               </div>
               <h3 className="benefits__item-title font-medium text-gray-900 dark:text-gray-100">{it.title}</h3>
               <p className="benefits__item-desc text-sm text-gray-600 dark:text-gray-300 mt-1">{it.desc}</p>

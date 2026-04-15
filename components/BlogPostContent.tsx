@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { localizeBlogPost, type BlogContentBlock, type BlogPost } from '@/data/blog'
 import { useTranslation } from '@/lib/use-translation'
+import { useSiteContent } from '@/lib/use-site-content'
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils'
 
 type BlogPostContentProps = {
@@ -38,6 +39,7 @@ const TOPIC_TO_PRODUCT_CATEGORY: Record<string, string> = {
 
 export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPostContentProps) {
   const { t, language } = useTranslation()
+  const { resolveImageSrc } = useSiteContent()
   const locale = getLocaleFromLanguage(language)
   const localizedPost = React.useMemo(() => localizeBlogPost(post, language), [post, language])
   const [isSaved, setIsSaved] = React.useState(false)
@@ -171,7 +173,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
       return (
         <figure key={index} className="space-y-2">
           <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <Image src={block.src} alt={block.alt} fill className="object-cover" />
+            <Image src={resolveImageSrc(block.src)} alt={block.alt} fill className="object-cover" />
           </div>
           {block.caption && (
             <figcaption className="text-sm text-gray-600 dark:text-gray-300">{block.caption}</figcaption>
@@ -186,7 +188,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
           {block.images.map((image, imageIndex) => (
             <figure key={`${index}-${imageIndex}`} className="space-y-2">
               <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                <Image src={image.src} alt={image.alt} fill className="object-cover" />
+                <Image src={resolveImageSrc(image.src)} alt={image.alt} fill className="object-cover" />
               </div>
               {image.caption && (
                 <figcaption className="text-sm text-gray-600 dark:text-gray-300">{image.caption}</figcaption>
@@ -252,7 +254,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
 
             <div className="relative aspect-video rounded-lg overflow-hidden mb-4 md:mb-6">
               <Image
-                src={localizedPost.image}
+                src={resolveImageSrc(localizedPost.image)}
                 alt={localizedPost.title}
                 fill
                 className="object-cover"

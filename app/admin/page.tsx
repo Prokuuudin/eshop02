@@ -94,6 +94,13 @@ export default function AdminPage() {
               <Button variant="outline" size="sm">Открыть управление блогом</Button>
             </Link>
           </div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Контент сайта</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Редактирование текстов и изображений без правки кода</p>
+            <Link href="/admin/content">
+              <Button variant="outline" size="sm">Открыть контент-панель</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Statistics */}

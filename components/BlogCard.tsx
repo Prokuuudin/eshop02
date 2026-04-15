@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { BlogPost, localizeBlogPost } from '@/data/blog'
 import { Badge } from '@/components/ui/badge'
 import { useTranslation } from '@/lib/use-translation'
+import { useSiteContent } from '@/lib/use-site-content'
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils'
 
 type BlogCardProps = {
@@ -13,6 +14,7 @@ type BlogCardProps = {
 
 export default function BlogCard({ post }: BlogCardProps) {
   const { t, language } = useTranslation()
+  const { resolveImageSrc } = useSiteContent()
   const locale = getLocaleFromLanguage(language)
   const localizedPost = localizeBlogPost(post, language)
   const categoryKeyMap: Record<string, string> = {
@@ -28,7 +30,7 @@ export default function BlogCard({ post }: BlogCardProps) {
       <Link href={`/blog/${localizedPost.slug}`}>
         <div className="relative aspect-video bg-gray-100 overflow-hidden">
           <Image
-            src={localizedPost.image}
+            src={resolveImageSrc(localizedPost.image)}
             alt={localizedPost.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

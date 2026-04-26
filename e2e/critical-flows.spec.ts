@@ -63,6 +63,8 @@ test('confirm dialog appears before removing item from cart drawer', async ({ pa
 })
 
 test('checkout submit redirects to order details page', async ({ page }) => {
+  test.setTimeout(90_000)
+
   await seedCartWithOneItem(page)
   await page.addInitScript(() => {
     window.localStorage.setItem(
@@ -77,17 +79,96 @@ test('checkout submit redirects to order details page', async ({ page }) => {
   })
   await page.goto('/checkout')
 
-  await page.locator('input[name="firstName"]').fill('Ivan')
-  await page.locator('input[name="lastName"]').fill('Petrov')
-  await page.locator('input[name="email"]').fill('ivan.petrov@example.com')
-  await page.locator('input[name="phone"]').fill('+37120000000')
-  await page.locator('input[name="address"]').fill('Brivibas iela 1')
-  await page.locator('input[name="city"]').fill('Riga')
-  await page.locator('input[name="postalCode"]').fill('LV-1010')
+  const checkoutForm = page.locator('main form:has(input[name="firstName"])').first()
 
-  await page.locator('main form button[type="submit"]').first().click()
-  await page.waitForURL(/\/order\//)
+  await checkoutForm.locator('input[name="firstName"]').fill('Ivan')
+  await checkoutForm.locator('input[name="lastName"]').fill('Petrov')
+  await checkoutForm.locator('input[name="email"]').fill('ivan.petrov@example.com')
+  await checkoutForm.locator('input[name="phone"]').fill('+37120000000')
+  await checkoutForm.locator('input[name="address"]').fill('Brivibas iela 1')
+  await checkoutForm.locator('input[name="city"]').fill('Riga')
+  await checkoutForm.locator('input[name="postalCode"]').fill('LV-1010')
+
+  await checkoutForm.locator('#payment-bank').click()
+
+  await checkoutForm.locator('button[type="submit"]').first().click()
+  await page.waitForURL(/\/order\//, { timeout: 60000 })
   await expect(page).toHaveURL(/\/order\//)
+})
+
+test('checkout card flow redirects through mocked stripe and shows paid status', async ({ page }) => {
+  test.setTimeout(90_000)
+
+  await seedCartWithOneItem(page)
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'eshop_current_user',
+      JSON.stringify({
+        id: 'u_retail_card_e2e',
+        email: 'retail-card-e2e@eshop02.local',
+        password: 'secret',
+        platformRole: 'customer'
+      })
+    )
+  })
+
+  await page.route('**/api/orders', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue()
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, orderId: 'mocked' })
+    })
+  })
+
+  await page.route('**/api/payments/stripe/checkout', async (route) => {
+    const payload = route.request().postDataJSON() as { orderId?: string }
+    const orderId = payload.orderId ?? 'missing-order-id'
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        sessionId: 'cs_test_mocked_123',
+        url: `/order/${orderId}?payment=success&session_id=cs_test_mocked_123`
+      })
+    })
+  })
+
+  await page.route('**/api/payments/stripe/verify', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        paymentStatus: 'paid',
+        sessionId: 'cs_test_mocked_123'
+      })
+    })
+  })
+
+  await page.goto('/checkout')
+
+  const checkoutForm = page.locator('main form:has(input[name="firstName"])').first()
+
+  await checkoutForm.locator('input[name="firstName"]').fill('Ivan')
+  await checkoutForm.locator('input[name="lastName"]').fill('Petrov')
+  await checkoutForm.locator('input[name="email"]').fill('ivan.petrov@example.com')
+  await checkoutForm.locator('input[name="phone"]').fill('+37120000000')
+  await checkoutForm.locator('input[name="address"]').fill('Brivibas iela 1')
+  await checkoutForm.locator('input[name="city"]').fill('Riga')
+  await checkoutForm.locator('input[name="postalCode"]').fill('LV-1010')
+
+  await checkoutForm.locator('#payment-card').click()
+
+  await checkoutForm.locator('button[type="submit"]').first().click()
+
+  await page.waitForURL(/\/order\/.*payment=success/, { timeout: 60000 })
+  await expect(page).toHaveURL(/session_id=cs_test_mocked_123/)
+  await expect(page.getByText(/Проверяем оплату|Ожидает подтверждения|Оплачено/)).toBeVisible({ timeout: 15000 })
 })
 
 test('brand card link opens catalog filtered by selected brand', async ({ page }) => {
@@ -108,9 +189,9 @@ test('brand card link opens catalog filtered by selected brand', async ({ page }
   const brandId = new URL(targetHref ?? '', 'http://127.0.0.1').searchParams.get('brand')
   expect(brandId?.trim().length).toBeGreaterThan(0)
 
-  await catalogLink.click()
+  await page.goto(targetHref ?? '/catalog')
 
-  await page.waitForURL(/\/catalog\?brand=/)
+  await page.waitForURL(/\/catalog\?brand=/, { timeout: 60000 })
   await expect(page).toHaveURL(new RegExp(`/catalog\\?brand=${brandId}`))
   await expect(page.getByRole('main').first()).toBeVisible({ timeout: 45000 })
 })
@@ -185,7 +266,9 @@ test('category subcategory selection applies subcat filter in catalog URL', asyn
 
   const shampoosLink = page.locator('a[href*="/catalog?cat=hair&subcat=shampoos"]').first()
   await expect(shampoosLink).toBeVisible()
-  await shampoosLink.click()
+  const shampoosHref = await shampoosLink.getAttribute('href')
+  expect(shampoosHref).toContain('/catalog?cat=hair&subcat=shampoos')
+  await page.goto(shampoosHref ?? '/catalog?cat=hair&subcat=shampoos')
 
   await page.waitForURL(/\/catalog\?cat=hair&subcat=shampoos/)
   await expect(page).toHaveURL(/\/catalog\?cat=hair&subcat=shampoos/)

@@ -13,7 +13,7 @@ import { validatePromoCode, calculateDiscount } from '@/lib/promo-codes'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { useToast } from '@/lib/toast-context'
-import { getCurrentUser } from '@/lib/auth'
+import { canPlaceOrders, getCurrentUser } from '@/lib/auth'
 import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation'
 import { useInvoicesStore } from '@/lib/invoices-store'
 import { logAuditAction } from '@/lib/audit-log-store'
@@ -39,9 +39,10 @@ export default function CheckoutPage() {
   const { showToast } = useToast()
   const searchParams = useSearchParams()
   const { items, replaceWithItems } = useCart()
-  const { addOrder } = useOrders()
+  const { addOrder, updateOrderPayment } = useOrders()
   const { bonusProgram } = useAdminStore()
   const currentUser = getCurrentUser()
+  const isCheckoutAllowedForRole = canPlaceOrders(currentUser)
   const { getCompany } = useCompanyStore()
   const currentUserEmail = currentUser?.email.trim().toLowerCase() ?? ''
   const locale = getLocaleFromLanguage(language)
@@ -62,6 +63,7 @@ export default function CheckoutPage() {
   const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined)
   const [promoError, setPromoError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const selectedItemIds = React.useMemo(() => {
     const raw = searchParams.get('items')
@@ -168,8 +170,15 @@ export default function CheckoutPage() {
     setAppliedPromo(promoCode)
   }
 
-  const handleSubmit = (e: React.FormEvent): void => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
+    setIsSubmitting(true)
+
+    if (!isCheckoutAllowedForRole) {
+      showToast('Для роли менеджера оформление заказа недоступно', 'error')
+      setIsSubmitting(false)
+      return
+    }
 
     const newErrors: Record<string, string> = {}
 
@@ -186,6 +195,7 @@ export default function CheckoutPage() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      setIsSubmitting(false)
       return
     }
 
@@ -193,6 +203,7 @@ export default function CheckoutPage() {
     if (!wholesaleGuard.isMinimumReached) {
       const message = `${t('checkout.minimumOrder')} ${t('checkout.wholesale.requiredAmount')}: ${formatCurrency(wholesaleGuard.minOrderAmount)}`
       showToast(message, 'error')
+      setIsSubmitting(false)
       return
     }
 
@@ -223,10 +234,90 @@ export default function CheckoutPage() {
       promoCode: appliedPromo,
       discount,
       total: grandTotal,
+      paymentStatus: formData.paymentMethod === 'card' ? 'pending' : 'unpaid',
+      paymentProvider: formData.paymentMethod === 'card' ? 'stripe' : 'manual',
       ...formData
     }
 
     addOrder(order)
+
+    // Keep a server-side copy of the order so payment webhooks can update canonical status.
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          order: {
+            ...order,
+            createdAt: order.createdAt.toISOString()
+          }
+        })
+      })
+    } catch {
+      // Checkout should still proceed even if server order persistence is temporarily unavailable.
+    }
+
+    let stripeCheckoutUrl: string | undefined
+
+    if (formData.paymentMethod === 'card') {
+      try {
+        const response = await fetch('/api/payments/stripe/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId,
+            email: formData.email,
+            grandTotal,
+            items: checkoutItems.map((item) => ({
+              id: item.id,
+              title: t(`products.${item.id}.title`, item.title),
+              quantity: item.quantity,
+              price: calculatePrice(item, item.quantity)
+            }))
+          })
+        })
+
+        if (!response.ok) {
+          updateOrderPayment(orderId, {
+            paymentStatus: 'failed',
+            paymentProvider: 'stripe'
+          })
+          showToast('Не удалось инициализировать онлайн-оплату. Попробуйте снова.', 'error')
+          setIsSubmitting(false)
+          return
+        }
+
+        const payload = (await response.json()) as { url?: string; sessionId?: string }
+        if (!payload.url) {
+          updateOrderPayment(orderId, {
+            paymentStatus: 'failed',
+            paymentProvider: 'stripe'
+          })
+          showToast('Платежная сессия не была создана. Попробуйте снова.', 'error')
+          setIsSubmitting(false)
+          return
+        }
+
+        updateOrderPayment(orderId, {
+          paymentStatus: 'pending',
+          paymentProvider: 'stripe',
+          paymentSessionId: payload.sessionId
+        })
+        stripeCheckoutUrl = payload.url
+      } catch {
+        updateOrderPayment(orderId, {
+          paymentStatus: 'failed',
+          paymentProvider: 'stripe'
+        })
+        showToast('Ошибка при запуске оплаты. Попробуйте снова.', 'error')
+        setIsSubmitting(false)
+        return
+      }
+    }
 
     // B2B: Generate invoice if customer has payment terms
     const paymentTermDays = company?.paymentTermDays ?? 0
@@ -272,6 +363,12 @@ export default function CheckoutPage() {
 
     // Redirect to confirmation page
     setTimeout(() => {
+      if (formData.paymentMethod === 'card' && stripeCheckoutUrl) {
+        window.location.href = stripeCheckoutUrl
+        return
+      }
+
+      setIsSubmitting(false)
       window.location.href = `/order/${orderId}`
     }, 500)
   }
@@ -283,6 +380,28 @@ export default function CheckoutPage() {
           <div className="text-6xl mb-4">✓</div>
           <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">{t('checkout.success.title')}</h1>
           <p className="text-gray-600 dark:text-gray-300 mb-4">{t('checkout.success.redirect')}</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!isCheckoutAllowedForRole) {
+    return (
+      <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
+        <div className="mx-auto max-w-2xl rounded-lg border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-900/30">
+          <h1 className="text-2xl font-bold mb-2">Оформление недоступно для текущей роли</h1>
+          <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">
+            Пользователь с ролью менеджера может работать с заказами и RFQ, но не оформляет покупки.
+            Для покупки используйте аккаунт с ролью buyer/admin или отдельный клиентский профиль.
+          </p>
+          <div className="flex gap-3 flex-wrap">
+            <Link href="/cart">
+              <Button variant="outline">Вернуться в корзину</Button>
+            </Link>
+            <Link href="/account">
+              <Button>Перейти в аккаунт</Button>
+            </Link>
+          </div>
         </div>
       </main>
     )
@@ -469,7 +588,7 @@ export default function CheckoutPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button type="submit" className="flex-1" disabled={!wholesaleGuard.isMinimumReached}>
+            <Button type="submit" className="flex-1" disabled={!wholesaleGuard.isMinimumReached || isSubmitting}>
               {t('checkout.submit')}
             </Button>
             <Link href="/cart">

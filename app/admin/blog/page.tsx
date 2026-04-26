@@ -56,6 +56,8 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
 export default function AdminBlogPage() {
   const router = useRouter()
   const { language, t } = useTranslation()
+  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
+  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
   const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US'
 
   const [blogPosts, setBlogPosts] = useState<AdminBlogPost[]>([])
@@ -78,7 +80,7 @@ export default function AdminBlogPage() {
       const data = (await response.json()) as { posts?: AdminBlogPost[] }
       setBlogPosts(data.posts ?? [])
     } catch {
-      setBlogError('Не удалось загрузить статьи блога')
+      setBlogError(tl('admin.blog.msg.loadFailed', 'Не удалось загрузить статьи блога', 'Failed to load blog posts', 'Neizdevas ieladet bloga rakstus'))
     } finally {
       setBlogLoading(false)
     }
@@ -100,15 +102,15 @@ export default function AdminBlogPage() {
         contentBlocks = JSON.parse(blogForm.contentBlocksJson) as unknown[]
       } catch (parseError) {
         if (parseError instanceof Error) {
-          setBlogError(`Невалидный JSON: ${parseError.message}`)
+          setBlogError(tl('admin.blog.msg.invalidJsonWithReason', 'Невалидный JSON: {reason}', 'Invalid JSON: {reason}', 'Nederigs JSON: {reason}', { reason: parseError.message }))
           return
         }
-        setBlogError('Невалидный JSON в contentBlocks')
+        setBlogError(tl('admin.blog.msg.invalidJson', 'Невалидный JSON в contentBlocks', 'Invalid JSON in contentBlocks', 'Nederigs JSON lauka contentBlocks'))
         return
       }
 
       if (!Array.isArray(contentBlocks)) {
-        setBlogError('contentBlocks JSON должен быть массивом блоков')
+        setBlogError(tl('admin.blog.msg.contentBlocksArray', 'contentBlocks JSON должен быть массивом блоков', 'contentBlocks JSON must be an array of blocks', 'contentBlocks JSON jabut bloku masivam'))
         return
       }
 
@@ -138,13 +140,19 @@ export default function AdminBlogPage() {
         throw new Error(data.error ?? 'save_failed')
       }
 
-      setBlogMessage(editingBlogId ? 'Статья обновлена' : 'Статья сохранена')
+      setBlogMessage(
+        editingBlogId
+          ? tl('admin.blog.msg.updated', 'Статья обновлена', 'Post updated', 'Raksts atjauninats')
+          : tl('admin.blog.msg.saved', 'Статья сохранена', 'Post saved', 'Raksts saglabats')
+      )
       setBlogForm(INITIAL_BLOG_FORM)
       setEditingBlogId(null)
       await loadBlogPosts()
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : 'Ошибка сохранения'
-      setBlogError(`Ошибка сохранения: ${message}`)
+      const reason = saveError instanceof Error
+        ? saveError.message
+        : tl('admin.blog.msg.saveFailed', 'Ошибка сохранения', 'Save failed', 'Saglabasana neizdevas')
+      setBlogError(tl('admin.blog.msg.saveFailedWithReason', 'Ошибка сохранения: {reason}', 'Save error: {reason}', 'Saglabasanas kluda: {reason}', { reason }))
     } finally {
       setBlogSaving(false)
     }
@@ -160,14 +168,14 @@ export default function AdminBlogPage() {
         throw new Error('delete_failed')
       }
 
-      setBlogMessage('Статья удалена')
+      setBlogMessage(tl('admin.blog.msg.deleted', 'Статья удалена', 'Post deleted', 'Raksts dzests'))
       if (editingBlogId === id) {
         setEditingBlogId(null)
         setBlogForm(INITIAL_BLOG_FORM)
       }
       await loadBlogPosts()
     } catch {
-      setBlogError('Не удалось удалить статью')
+      setBlogError(tl('admin.blog.msg.deleteFailed', 'Не удалось удалить статью', 'Failed to delete post', 'Neizdevas dzest rakstu'))
     }
   }
 
@@ -203,19 +211,19 @@ export default function AdminBlogPage() {
       <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
         <div className="max-w-6xl mx-auto">
           <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            <Link href="/admin" className="hover:underline">Админ-панель</Link>
+            <Link href="/admin" className="hover:underline">{tl('admin.blog.breadcrumbAdmin', 'Админ-панель', 'Admin panel', 'Admin panelis')}</Link>
             <span className="px-2">/</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">Блог</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{tl('admin.blog.breadcrumbBlog', 'Блог', 'Blog', 'Blogs')}</span>
           </div>
 
           <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Управление блогом</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Создание, редактирование и удаление статей</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{tl('admin.blog.title', 'Управление блогом', 'Blog management', 'Bloga parvaldiba')}</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{tl('admin.blog.subtitle', 'Создание, редактирование и удаление статей', 'Create, edit, and delete posts', 'Rakstu izveide, redigesana un dzesana')}</p>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/admin">
-                <Button variant="outline">Назад в админ-панель</Button>
+                <Button variant="outline">{tl('admin.blog.backToAdmin', 'Назад в админ-панель', 'Back to admin panel', 'Atpakal uz admin paneli')}</Button>
               </Link>
               <Button
                 variant="outline"
@@ -244,18 +252,18 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Категория</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.category', 'Категория', 'Category', 'Kategorija')}</span>
                   <input
                     value={blogForm.category}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, category: e.target.value }))}
                     className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    placeholder="уход за лицом"
+                    placeholder={tl('admin.blog.placeholder.category', 'уход за лицом', 'face care', 'sejas kopsana')}
                     required
                   />
                 </label>
 
                 <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Заголовок</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.title', 'Заголовок', 'Title', 'Virsraksts')}</span>
                   <input
                     value={blogForm.title}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -265,7 +273,7 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Краткое описание</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.excerpt', 'Краткое описание', 'Short description', 'Iss apraksts')}</span>
                   <textarea
                     value={blogForm.excerpt}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, excerpt: e.target.value }))}
@@ -275,7 +283,7 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Автор</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.author', 'Автор', 'Author', 'Autors')}</span>
                   <input
                     value={blogForm.author}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
@@ -285,7 +293,7 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Время чтения (мин)</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.readTime', 'Время чтения (мин)', 'Read time (min)', 'Lasisanas laiks (min)')}</span>
                   <input
                     type="number"
                     min={1}
@@ -297,7 +305,7 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Обложка (путь)</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.imagePath', 'Обложка (путь)', 'Cover image (path)', 'Vaka attels (cels)')}</span>
                   <input
                     value={blogForm.image}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, image: e.target.value }))}
@@ -308,7 +316,7 @@ export default function AdminBlogPage() {
                 </label>
 
                 <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Legacy content (опционально)</span>
+                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.legacyContent', 'Legacy content (опционально)', 'Legacy content (optional)', 'Legacy saturs (neobligati)')}</span>
                   <textarea
                     value={blogForm.content}
                     onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
@@ -335,13 +343,19 @@ export default function AdminBlogPage() {
                   checked={blogForm.featured}
                   onChange={(e) => setBlogForm((prev) => ({ ...prev, featured: e.target.checked }))}
                 />
-                Показать как featured
+                {tl('admin.blog.featuredToggle', 'Показать как featured', 'Mark as featured', 'Atzimet ka izceltu')}
               </label>
 
               <div className="flex items-center gap-3">
-                <Button type="submit" disabled={blogSaving}>{blogSaving ? 'Сохранение...' : (editingBlogId ? 'Обновить статью' : 'Сохранить статью')}</Button>
+                <Button type="submit" disabled={blogSaving}>
+                  {blogSaving
+                    ? tl('admin.blog.saving', 'Сохранение...', 'Saving...', 'Saglabasana...')
+                    : (editingBlogId
+                      ? tl('admin.blog.updatePost', 'Обновить статью', 'Update post', 'Atjaunot rakstu')
+                      : tl('admin.blog.savePost', 'Сохранить статью', 'Save post', 'Saglabat rakstu'))}
+                </Button>
                 {editingBlogId && (
-                  <Button type="button" variant="outline" onClick={handleCancelBlogEdit}>Отменить редактирование</Button>
+                  <Button type="button" variant="outline" onClick={handleCancelBlogEdit}>{tl('admin.blog.cancelEdit', 'Отменить редактирование', 'Cancel editing', 'Atcelt redigesanu')}</Button>
                 )}
                 {blogMessage && <span className="text-sm text-green-700">{blogMessage}</span>}
                 {blogError && <span className="text-sm text-red-600">{blogError}</span>}
@@ -349,11 +363,11 @@ export default function AdminBlogPage() {
             </form>
 
             <div>
-              <h3 className="text-lg font-semibold mb-3">Список статей</h3>
+              <h3 className="text-lg font-semibold mb-3">{tl('admin.blog.postsList', 'Список статей', 'Posts list', 'Rakstu saraksts')}</h3>
               {blogLoading ? (
-                <p className="text-gray-600 dark:text-gray-300">Загрузка...</p>
+                <p className="text-gray-600 dark:text-gray-300">{tl('admin.blog.loading', 'Загрузка...', 'Loading...', 'Ielade...')}</p>
               ) : blogPosts.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-300">Статей пока нет</p>
+                <p className="text-gray-600 dark:text-gray-300">{tl('admin.blog.empty', 'Статей пока нет', 'No posts yet', 'Rakstu vel nav')}</p>
               ) : (
                 <div className="space-y-2">
                   {blogPosts.map((post) => (
@@ -364,13 +378,13 @@ export default function AdminBlogPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => handleStartEditBlog(post)}>
-                          Редактировать
+                          {tl('admin.blog.edit', 'Редактировать', 'Edit', 'Rediget')}
                         </Button>
                         <a href={`/blog/${post.slug}`} className="text-sm text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                          Открыть
+                          {tl('admin.blog.open', 'Открыть', 'Open', 'Atvert')}
                         </a>
                         <Button type="button" variant="outline" size="sm" onClick={() => handleBlogDelete(post.id)}>
-                          Удалить
+                          {tl('admin.blog.delete', 'Удалить', 'Delete', 'Dzest')}
                         </Button>
                       </div>
                     </div>

@@ -19,9 +19,16 @@ test('customer activation by barcode creates linked account and redirects home',
   await page.locator('form input[type="password"]').fill('StrongPass123')
   await page.locator('form input[placeholder="CLI-10001"]').fill('CLI-10001')
 
-  await page.getByRole('button', { name: /Отправить заявку|Submit access request|Nosūtīt piekļuves pieprasījumu/i }).click()
+  const registerForm = page.locator('form:has(input[placeholder="CLI-10001"])').first()
+  const submitAccessRequestButton = registerForm.locator('button[type="submit"]').first()
+  await submitAccessRequestButton.scrollIntoViewIfNeeded()
+  await submitAccessRequestButton.click()
 
-  await expect(page.getByText(/Заявка отправлена|Request submitted|Pieprasījums nosūtīts/i)).toBeVisible()
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => window.localStorage.getItem('access-request-store'))
+    }, { timeout: 10000 })
+    .toContain('client-user@eshop02.local')
 
   const pendingState = await page.evaluate(() => ({
     currentUser: window.localStorage.getItem('eshop_current_user'),

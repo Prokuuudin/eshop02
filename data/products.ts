@@ -1,3 +1,7 @@
+// Получить товар по id
+export function getProductById(id: string): Product | undefined {
+  return PRODUCTS.find((p) => p.id === id);
+}
 
 // Fix: Define missing types for badges and category
 export type BadgeType = 'sale' | 'bestseller' | 'new';
@@ -7,16 +11,26 @@ export interface Product {
   id: string
   titleKey?: string
   title: string
+  titleEn?: string
+  titleLv?: string
   description?: string
   brand: string
   price: number
   oldPrice?: number
   rating: number // 0-5
+  ratingCount?: number
+  reviewCount?: number
   image: string
+  metaTitle?: string
+  metaDescription?: string
+  ogImage?: string
+  ogAlt?: string
   badges?: BadgeType[]
   category: CategoryType
   stock: number
   purpose?: string
+  purposeEn?: string
+  purposeLv?: string
   relatedProductIds?: string[] // Similar products
   oftenBoughtTogether?: string[] // Frequently bought together
   minOrderQuantities?: Record<string, number>

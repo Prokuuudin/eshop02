@@ -53,28 +53,28 @@ export default function InvoicesPage() {
 
   const invoiceSummaryCards = [
     {
-      label: 'К оплате',
+      label: t('account.invoices.statIssued'),
       value: String(stats.totalIssued),
       helpText: formatPrice(stats.remainingAmount),
       icon: ReceiptText,
       valueClassName: 'text-gray-900 dark:text-gray-100'
     },
     {
-      label: 'Оплачено',
+      label: t('account.invoices.statPaid'),
       value: String(stats.totalPaid),
       helpText: formatPrice(stats.paidAmount),
       icon: Wallet,
       valueClassName: 'text-green-600 dark:text-green-400'
     },
     {
-      label: 'Просрочено',
+      label: t('account.invoices.statOverdue'),
       value: String(stats.totalOverdue),
-      helpText: 'Требует внимания',
+      helpText: t('account.invoices.statOverdueHelp'),
       icon: BadgeAlert,
       valueClassName: 'text-red-600 dark:text-red-400'
     },
     {
-      label: 'Всего счётов',
+      label: t('account.invoices.statTotal'),
       value: String(invoices.length),
       helpText: formatPrice(stats.totalAmount),
       icon: FileSpreadsheet,
@@ -100,8 +100,8 @@ export default function InvoicesPage() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <AccountPageHero
           eyebrow="Billing"
-          title="Счёта"
-          description="Раздел счётов доступен для организаций и клиентов с B2B-условиями."
+          title={t('account.invoices.title')}
+          description={t('account.invoices.description')}
           icon={ReceiptText}
           accentClassName="border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:border-amber-800 dark:from-amber-950/30 dark:via-gray-900 dark:to-orange-950/30"
         />
@@ -114,17 +114,17 @@ export default function InvoicesPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-200">
-                  Счёта доступны только для B2B клиентов
+                  {t('account.invoices.b2bOnly')}
                 </h2>
                 <p className="mt-2 text-sm text-amber-800 dark:text-amber-300">
-                  Эта функция открывается для организаций и профессионалов с условиями отсрочки или корпоративного биллинга.
+                  {t('account.invoices.b2bOnlyDesc')}
                 </p>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <Button onClick={handleSeedDemoB2B} disabled={isSeedingDemo}>
-                    {isSeedingDemo ? 'Загрузка демо...' : 'Загрузить demo B2B-данные'}
+                    {isSeedingDemo ? t('account.invoices.loadingDemo') : t('account.invoices.loadDemo')}
                   </Button>
                   <Link href="/account">
-                    <Button variant="outline">Вернуться в аккаунт</Button>
+                    <Button variant="outline">{t('account.invoices.backToAccount')}</Button>
                   </Link>
                 </div>
               </div>
@@ -133,13 +133,13 @@ export default function InvoicesPage() {
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Как получить доступ</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('account.invoices.howToAccess')}</h3>
               <Building2 className="h-5 w-5 text-gray-400" />
             </div>
             <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-              <p>1. Зарегистрируйте корпоративный аккаунт или активируйте клиента по company barcode.</p>
-              <p>2. Дождитесь назначения условий оплаты для компании.</p>
-              <p>3. После этого здесь появятся счёта, платежи и кредитный лимит.</p>
+              <p>{t('account.invoices.howToAccessStep1')}</p>
+              <p>{t('account.invoices.howToAccessStep2')}</p>
+              <p>{t('account.invoices.howToAccessStep3')}</p>
             </div>
           </div>
         </section>
@@ -178,8 +178,8 @@ export default function InvoicesPage() {
       <section className="mb-8">
         <AccountPageHero
           eyebrow="Billing"
-          title="Счёта"
-          description={`Управление счётами и платежами для компании ${company?.companyName || 'Компания'}`}
+          title={t('account.invoices.title')}
+          description={t('account.invoices.companyDesc', undefined, { name: company?.companyName || t('account.invoices.sectionCompany') })}
           icon={ReceiptText}
           accentClassName="border-gray-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:border-gray-700 dark:from-gray-900 dark:via-gray-900 dark:to-blue-950/40"
         />
@@ -189,14 +189,14 @@ export default function InvoicesPage() {
         <section className="mb-6 rounded-2xl border border-dashed border-blue-300 bg-blue-50 p-4 shadow-sm dark:border-blue-800 dark:bg-blue-950/30">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Demo B2B режим активен</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">{t('account.invoices.demoActive')}</p>
               <p className="mt-1 text-sm text-blue-800 dark:text-blue-300">
-                Вы просматриваете seeded B2B-данные. Можно вернуться к предыдущей сессии без очистки остальных данных.
+                {t('account.invoices.demoDesc')}
               </p>
             </div>
             <Button variant="outline" onClick={handleResetDemoB2B} disabled={isResettingDemo} className="gap-2">
               <RotateCcw className="h-4 w-4" />
-              {isResettingDemo ? 'Возврат...' : 'Выйти из demo B2B'}
+              {isResettingDemo ? t('account.invoices.exitingDemo') : t('account.invoices.exitDemo')}
             </Button>
           </div>
         </section>
@@ -228,8 +228,8 @@ export default function InvoicesPage() {
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Все счёта</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Выберите документ для просмотра деталей и фиксации платежа.</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('account.invoices.allInvoices')}</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('account.invoices.selectHint')}</p>
               </div>
               <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                 <CreditCard className="h-4 w-4" />
@@ -247,25 +247,25 @@ export default function InvoicesPage() {
           {company && (
             <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Компания</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('account.invoices.sectionCompany')}</h3>
                 <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                   <Building2 className="h-4 w-4" />
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400">Название</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{company.companyName}</p>
-                </div>
-                {company.taxId && (
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">ИНН</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{company.taxId}</p>
+                    <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldName')}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{company.companyName}</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-gray-600 dark:text-gray-400">Условия платежа</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{company.paymentTermDays} дней</p>
+                  {company.taxId && (
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldTaxId')}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{company.taxId}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldPaymentTerms')}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{t('account.invoices.fieldPaymentTermsDays', undefined, { days: String(company.paymentTermDays) })}</p>
                 </div>
                 {company.creditLimit && (
                   <div>
@@ -295,15 +295,15 @@ export default function InvoicesPage() {
 
           <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm dark:border-blue-800 dark:bg-blue-900/20">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-200">Помощь</h3>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-200">{t('account.invoices.helpTitle')}</h3>
               <ShieldHalf className="h-4 w-4 text-blue-700 dark:text-blue-300" />
             </div>
             <p className="text-sm text-blue-800 dark:text-blue-300">
-              Выберите счёт из списка для просмотра деталей и записи платежа.
+              {t('account.invoices.helpText')}
             </p>
             <Link href="/contact">
               <Button variant="outline" size="sm" className="mt-4 w-full">
-                Связаться с поддержкой
+                {t('account.invoices.contactSupport')}
               </Button>
             </Link>
           </section>

@@ -17,10 +17,14 @@ type Props = {
 }
 
 export default function ProductCard({ product }: Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const router = useRouter()
   const isOutOfStock = product.stock === 0;
-  const localizedTitle = t(product.titleKey ?? `products.${product.id}.title`, product.title)
+  const localizedTitle = (language === 'en' && product.titleEn)
+    ? product.titleEn
+    : (language === 'lv' && product.titleLv)
+      ? product.titleLv
+      : t(product.titleKey ?? `products.${product.id}.title`, product.title)
   const displayPrice = getDisplayPrice(product.price)
   const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined
   const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0]
@@ -79,7 +83,10 @@ export default function ProductCard({ product }: Props) {
             )}
             {firstTier && firstTierPrice !== null && (
               <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
-                При покупке {firstTier.quantity}+: {formatEuro(firstTierPrice, 'en-US')} за шт
+                {t('product.bulkTierPrice', undefined, {
+                  quantity: firstTier.quantity,
+                  price: formatEuro(firstTierPrice, 'en-US')
+                })}
               </div>
             )}
           </div>

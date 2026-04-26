@@ -30,18 +30,18 @@ const getStatusColor = (status: InvoiceStatus): string => {
   }
 }
 
-const getStatusLabel = (status: InvoiceStatus): string => {
+const getStatusLabel = (status: InvoiceStatus, t: (key: string) => string): string => {
   switch (status) {
     case 'paid':
-      return 'Оплачено'
+      return t('account.invoice.status.paid')
     case 'issued':
-      return 'К оплате'
+      return t('account.invoice.status.issued')
     case 'overdue':
-      return 'Просрочено'
+      return t('account.invoice.status.overdue')
     case 'draft':
-      return 'Черновик'
+      return t('account.invoice.status.draft')
     case 'cancelled':
-      return 'Отменено'
+      return t('account.invoice.status.cancelled')
     default:
       return status
   }
@@ -65,11 +65,11 @@ const getStatusIcon = (status: InvoiceStatus): string => {
 }
 
 export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoiceId }: InvoiceListProps) {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date')
   const [filterStatus, setFilterStatus] = useState<InvoiceStatus | 'all'>('all')
 
-  const locale = getLocaleFromLanguage('ru')
+  const locale = getLocaleFromLanguage(language)
   const formatPrice = (value: number): string => formatEuro(value, locale)
 
   const filtered = invoices.filter(inv => filterStatus === 'all' || inv.status === filterStatus)
@@ -90,7 +90,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
   if (invoices.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <p className="text-gray-600 dark:text-gray-300">Счётов ещё нет</p>
+        <p className="text-gray-600 dark:text-gray-300">{t('account.invoiceList.empty')}</p>
       </div>
     )
   }
@@ -105,12 +105,12 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
             onChange={(e) => setFilterStatus(e.target.value as InvoiceStatus | 'all')}
             className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
           >
-            <option value="all">Все статусы</option>
-            <option value="issued">К оплате</option>
-            <option value="paid">Оплачено</option>
-            <option value="overdue">Просрочено</option>
-            <option value="draft">Черновик</option>
-            <option value="cancelled">Отменено</option>
+            <option value="all">{t('account.invoiceList.filter.allStatuses')}</option>
+            <option value="issued">{t('account.invoice.status.issued')}</option>
+            <option value="paid">{t('account.invoice.status.paid')}</option>
+            <option value="overdue">{t('account.invoice.status.overdue')}</option>
+            <option value="draft">{t('account.invoice.status.draft')}</option>
+            <option value="cancelled">{t('account.invoice.status.cancelled')}</option>
           </select>
 
           <select
@@ -118,14 +118,14 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
             onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'status')}
             className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
           >
-            <option value="date">По дате (новые первыми)</option>
-            <option value="amount">По сумме</option>
-            <option value="status">По статусу</option>
+            <option value="date">{t('account.invoiceList.sort.byDate')}</option>
+            <option value="amount">{t('account.invoiceList.sort.byAmount')}</option>
+            <option value="status">{t('account.invoiceList.sort.byStatus')}</option>
           </select>
         </div>
 
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          {sorted.length} из {invoices.length} счётов
+          {t('account.invoiceList.filteredCount', undefined, { shown: sorted.length, total: invoices.length })}
         </div>
       </div>
 
@@ -148,19 +148,19 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
                     {invoice.invoiceNumber}
                   </h3>
                   <Badge className={`${getStatusColor(invoice.status)} whitespace-nowrap`}>
-                    {getStatusIcon(invoice.status)} {getStatusLabel(invoice.status)}
+                    {getStatusIcon(invoice.status)} {getStatusLabel(invoice.status, t)}
                   </Badge>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Выпущена:</span>{' '}
-                    {invoice.issuedDate.toLocaleDateString('ru-RU')}
+                    <span className="text-gray-500 dark:text-gray-400">{t('account.invoiceList.issuedAtLabel')}</span>{' '}
+                    {invoice.issuedDate.toLocaleDateString(locale)}
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">К оплате:</span>{' '}
+                    <span className="text-gray-500 dark:text-gray-400">{t('account.invoiceList.dueAtLabel')}</span>{' '}
                     <span className={invoice.dueDate < new Date() && invoice.status !== 'paid' ? 'text-red-600' : ''}>
-                      {invoice.dueDate.toLocaleDateString('ru-RU')}
+                      {invoice.dueDate.toLocaleDateString(locale)}
                     </span>
                   </div>
                 </div>
@@ -172,12 +172,12 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
                 </div>
                 {invoice.status === 'issued' && (
                   <div className="text-sm text-red-600 dark:text-red-400">
-                    Осталось: {formatPrice(invoice.remainingAmount)}
+                    {t('account.invoiceList.remainingLabel')} {formatPrice(invoice.remainingAmount)}
                   </div>
                 )}
                 {invoice.status === 'paid' && invoice.paymentRecords.length > 0 && (
                   <div className="text-sm text-green-600 dark:text-green-400">
-                    {invoice.paymentRecords.length} платёж(ей)
+                    {t('account.invoiceList.paymentsCount', undefined, { count: invoice.paymentRecords.length })}
                   </div>
                 )}
               </div>
@@ -188,7 +188,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
 
       {sorted.length === 0 && (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <p className="text-gray-600 dark:text-gray-300">По параметрам фильтра не найдено счётов</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('account.invoiceList.noFilteredResults')}</p>
         </div>
       )}
     </div>

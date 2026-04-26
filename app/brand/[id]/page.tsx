@@ -1,28 +1,33 @@
 import type { Metadata } from 'next';
-import { BRANDS } from '../../../data/brands';
-import { BRAND_DESCRIPTIONS } from '../../../data/brandDescriptions';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSiteUrl } from '@/lib/site-url';
 import { headers } from 'next/headers';
 import { translations, type Language } from '@/data/translations';
+import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 
 type PageProps = { params: Promise<{ id: string }> }
 
+const interpolate = (template: string, params: Record<string, string>): string => {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => params[key] ?? match)
+}
+
 export const revalidate = 3600
 
-export function generateStaticParams(): Array<{ id: string }> {
-  return BRANDS.map((brand) => ({ id: brand.id }))
+export async function generateStaticParams(): Promise<Array<{ id: string }>> {
+  const config = await getBrandsConfigFromStore()
+  return config.brands.map((brand) => ({ id: brand.id }))
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  const config = await getBrandsConfigFromStore()
   const headersList = await headers();
   const normalized = (headersList.get('accept-language') ?? '').toLowerCase();
   const language: Language = normalized.includes('ru') ? 'ru' : normalized.includes('lv') ? 'lv' : 'en';
   const t = translations[language];
-  const brand = BRANDS.find((b) => b.id === id);
+  const brand = config.brands.find((b) => b.id === id);
 
   if (!brand) {
     return {
@@ -36,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const descriptionTemplate = t['brands.descriptionTemplate'] ?? 'Products of brand {brand}.';
-  const description = BRAND_DESCRIPTIONS[brand.id]?.[language] || descriptionTemplate.replace('{brand}', brand.name);
+  const description = brand.description?.[language] || brand.description?.en || brand.description?.ru || interpolate(descriptionTemplate, { brand: brand.name });
   const path = `/brand/${brand.id}`;
 
   return {
@@ -57,15 +62,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BrandPage({ params }: PageProps) {
   const { id } = await params;
+  const config = await getBrandsConfigFromStore()
   const normalized = ((await headers()).get('accept-language') ?? '').toLowerCase();
   const language: Language = normalized.includes('ru') ? 'ru' : normalized.includes('lv') ? 'lv' : 'en';
   const t = translations[language];
-  const brand = BRANDS.find(b => b.id === id);
+  const brand = config.brands.find(b => b.id === id);
   if (!brand) notFound();
   const descriptionTemplate = t['brands.descriptionTemplate'] ?? 'Products of brand {brand}.';
-  const description = language === 'ru'
-    ? (BRAND_DESCRIPTIONS[brand.id] || descriptionTemplate.replace('{brand}', brand.name))
-    : descriptionTemplate.replace('{brand}', brand.name);
+  const description = brand.description?.[language] || brand.description?.en || brand.description?.ru || interpolate(descriptionTemplate, { brand: brand.name });
   const siteUrl = getSiteUrl();
   const brandUrl = `${siteUrl}/brand/${brand.id}`;
 
@@ -90,11 +94,7 @@ export default async function BrandPage({ params }: PageProps) {
           </div>
           <h1 className="text-2xl font-bold mb-2">{brand.name}</h1>
           <p className="text-gray-600 text-center mb-6">
-            {typeof BRAND_DESCRIPTIONS[brand.id]?.[language] === 'string'
-              ? BRAND_DESCRIPTIONS[brand.id][language]
-              : typeof description === 'string'
-                ? description
-                : ''}
+            {description}
           </p>
           <Link
             href={`/catalog?brand=${encodeURIComponent(brand.id)}`}

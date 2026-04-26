@@ -5,9 +5,20 @@ import { useI18n } from '@/lib/i18n-context'
 import { translations } from '@/data/translations'
 import { getSiteContentOverrides, loadSiteContentOverrides, subscribeSiteContentChanges } from '@/lib/site-content-store'
 
+type TranslationParams = Record<string, string | number>
+
 interface TranslationHelper {
-  t: (key: string, defaultValue?: string) => string
+  t: (key: string, defaultValue?: string, params?: TranslationParams) => string
   language: 'ru' | 'en' | 'lv'
+}
+
+const interpolate = (template: string, params?: TranslationParams): string => {
+  if (!params) return template
+
+  return template.replace(/\{(\w+)\}/g, (fullMatch, rawKey: string) => {
+    const value = params[rawKey]
+    return value === undefined || value === null ? fullMatch : String(value)
+  })
 }
 
 export function useTranslation(): TranslationHelper {
@@ -22,14 +33,15 @@ export function useTranslation(): TranslationHelper {
     return unsubscribe
   }, [])
 
-  const t = (key: string, defaultValue?: string): string => {
+  const t = (key: string, defaultValue?: string, params?: TranslationParams): string => {
     const override = overrides.text[language]?.[key]
     if (typeof override === 'string' && override.length > 0) {
-      return override
+      return interpolate(override, params)
     }
 
-    const value = translations[language][key];
-    return typeof value === 'string' ? value : defaultValue || key;
+    const value = translations[language][key]
+    const resolved = typeof value === 'string' ? value : defaultValue || key
+    return interpolate(resolved, params)
   }
 
   return { t, language }

@@ -9,20 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { PRODUCTS, isProductOnSale, type Product } from '../data/products'
+import { isProductOnSale, type Product } from '../data/products'
 import { useTranslation } from '@/lib/use-translation'
 import { getCategoryProductIdsOverrideById } from '@/data/categories'
-import { BRANDS } from '../data/brands'
-import { CATEGORY_CARDS } from '../data/categories';
-
-const GROUPS = [
-  { id: 'hair', labelKey: 'categories.haircare', fallback: 'Hair care' },
-  { id: 'face', labelKey: 'categories.skincare', fallback: 'Skincare' },
-  { id: 'body', labelKey: 'categories.bodycare', fallback: 'Body care' },
-  { id: 'nails', labelKey: 'categories.nails', fallback: 'Nail care' },
-  { id: 'equipment', labelKey: 'categories.equipment', fallback: 'Equipment' },
-  { id: 'new', labelKey: 'categories.newArrivals', fallback: 'New arrivals' }
-]
+import { useCategoriesConfig } from '@/lib/use-categories-config'
+import { useBrandsConfig } from '@/lib/use-brands-config'
 
 const PURPOSE_KEYS: Record<string, { key: string; fallback: string }> = {
   'Для увлажнения': { key: 'product.purpose.moisturizing', fallback: 'For moisturizing' },
@@ -48,8 +39,8 @@ const getPurposeLabel = (purpose: string, t: (key: string, defaultValue?: string
   return t(entry.key)
 }
 
-const getBrandName = (brandId: string): string => {
-  const brand = BRANDS.find(b => b.id === brandId)
+const getBrandName = (brandId: string, brands: Array<{ id: string; name: string }>): string => {
+  const brand = brands.find(b => b.id === brandId)
   return brand ? brand.name : brandId
 }
 
@@ -87,7 +78,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       const handleReset = () => {
         onFilter({ group: '', onSale: false, purposes: [], brands: [], minPrice: '', maxPrice: '', order: '' });
       };
-    const sourceProducts = products ?? PRODUCTS;
+    const sourceProducts = products ?? [];
     const availableBrands = React.useMemo(() => {
       return Array.from(new Set(sourceProducts.map((product) => product.brand)));
     }, [sourceProducts]);
@@ -95,7 +86,9 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       () => Array.from(new Set(sourceProducts.map((product) => product.purpose).filter(Boolean) as string[])),
       [sourceProducts]
     );
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { categories } = useCategoriesConfig()
+  const { brands: configuredBrands } = useBrandsConfig()
   // Controlled filter values from props
   const group = initialFilters.group ?? '';
   const onSale = initialFilters.onSale ?? false;
@@ -108,10 +101,9 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   // Use CATEGORY_CARDS for accurate translation of category name
   const getGroupLabel = (groupId: string): string => {
     if (!groupId) return '';
-    const item = CATEGORY_CARDS.find((entry) => entry.id === groupId);
-    if (item) return t(item.titleKey);
-    const group = GROUPS.find((entry) => entry.id === groupId);
-    return group ? t(group.labelKey) : groupId;
+    const item = categories.find((entry) => entry.id === groupId)
+    if (!item) return groupId
+    return item.titleKey ? t(item.titleKey, item.labels[language]) : item.labels[language]
   }
 
   const matchesFilters = (product: Product, current: ProductFiltersState): boolean => {
@@ -170,7 +162,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   brands.forEach((brandId) => {
     activeFilters.push({
       id: `brand-${brandId}`,
-      label: `${t('product.brand')}: ${getBrandName(brandId)}`,
+      label: `${t('product.brand')}: ${getBrandName(brandId, configuredBrands)}`,
       onRemove: () => onFilter({ group, onSale, purposes, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order })
     });
   });
@@ -212,8 +204,10 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ group: '' })})</SelectItem>
-            {CATEGORY_CARDS.map(g => (
-              <SelectItem key={g.id} value={g.id}>{t(g.titleKey)} ({getCountByFilters({ group: g.id })})</SelectItem>
+            {categories.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {g.titleKey ? t(g.titleKey, g.labels[language]) : g.labels[language]} ({getCountByFilters({ group: g.id })})
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -250,7 +244,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
               <Checkbox
                 key={brandId}
                 className="w-full"
-                label={`${getBrandName(brandId)} (${brandCount})`}
+                label={`${getBrandName(brandId, configuredBrands)} (${brandCount})`}
                 checked={brands.includes(brandId)}
                 onCheckedChange={() => handleBrandChange(brandId)}
               />

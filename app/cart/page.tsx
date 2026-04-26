@@ -11,6 +11,7 @@ import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert'
 import CheckoutGuardButton from '@/components/CheckoutGuardButton'
 import { useToast } from '@/lib/toast-context'
+import { canPlaceOrders, getCurrentUser } from '@/lib/auth'
 import {
   calculatePrice,
   getMinimumOrderQuantity,
@@ -25,6 +26,8 @@ export default function CartPage() {
   const [selectionTouched, setSelectionTouched] = React.useState(false)
   const locale = getLocaleFromLanguage(language)
   const formatCurrency = (value: number): string => formatEuro(value, locale)
+  const currentUser = getCurrentUser()
+  const isCheckoutAllowedForRole = canPlaceOrders(currentUser)
 
   React.useEffect(() => {
     setSelectedItemIds((prev) => {
@@ -242,8 +245,14 @@ export default function CartPage() {
               <p className="mt-3 text-xs text-red-600">{t('cart.selectAtLeastOne')}</p>
             )}
 
+            {!isCheckoutAllowedForRole && (
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-200">
+                Для роли менеджера оформление заказа недоступно. Используйте аккаунт покупателя или администратора компании.
+              </p>
+            )}
+
             <CheckoutGuardButton
-              canCheckout={wholesaleGuard.isMinimumReached && selectedItemIds.length > 0}
+              canCheckout={wholesaleGuard.isMinimumReached && selectedItemIds.length > 0 && isCheckoutAllowedForRole}
               className="w-full mt-6"
               label={t('cart.checkout')}
               href={checkoutHref}

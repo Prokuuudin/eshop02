@@ -1,6 +1,6 @@
 "use client";
 import React from 'react'
-import { PRODUCTS, isProductOnSale } from '../data/products'
+import { PRODUCTS, type Product } from '../data/products'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import ProductCard from './ProductCard'
 import ProductCardSkeleton from './ProductCardSkeleton'
@@ -25,8 +25,15 @@ type ProductsProps = {
   initialSubcategory?: string
 }
 
+const isProductOnSale = (product: Product): boolean => {
+  return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
+}
+
 export default function Products({ initialFilters, initialSearch = '', initialSubcategory }: ProductsProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [productsLoading, setProductsLoading] = React.useState(true)
+  const [productsWarning, setProductsWarning] = React.useState('')
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -69,6 +76,26 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   }, [initialFilters?.group, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
 
   React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products', { cache: 'no-store' })
+        if (!response.ok) throw new Error('failed')
+
+        const payload = (await response.json()) as { data?: { products?: Product[] } }
+        setProducts(payload.data?.products ?? [])
+      } catch {
+        // Fallback keeps catalog usable if API is temporarily unavailable.
+        setProducts(PRODUCTS)
+        setProductsWarning('Не удалось загрузить товары из API, показан резервный список')
+      } finally {
+        setProductsLoading(false)
+      }
+    }
+
+    void loadProducts()
+  }, [])
+
+  React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
     const nextBrands = filters.brands.join(',')
     const currentBrands = params.get('brands') ?? ''
@@ -90,8 +117,14 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   }, [filters.brands, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
-  const searchMatchedProducts = PRODUCTS.filter((product) => {
-    const localizedTitle = t(product.titleKey ?? `products.${product.id}.title`, product.title).toLowerCase();
+  const searchMatchedProducts = products.filter((product) => {
+    const localizedTitle = (
+      (language === 'en' && product.titleEn)
+        ? product.titleEn
+        : (language === 'lv' && product.titleLv)
+          ? product.titleLv
+          : t(product.titleKey ?? `products.${product.id}.title`, product.title)
+    ).toLowerCase();
     return !normalizedSearch
       || localizedTitle.includes(normalizedSearch)
       || product.title.toLowerCase().includes(normalizedSearch)
@@ -107,8 +140,20 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     if (!order || order === '') return arr;
     if (order === 'price-asc') return [...arr].sort((a, b) => a.price - b.price);
     if (order === 'price-desc') return [...arr].sort((a, b) => b.price - a.price);
-    if (order === 'name-asc') return [...arr].sort((a, b) => a.title.localeCompare(b.title));
-    if (order === 'name-desc') return [...arr].sort((a, b) => b.title.localeCompare(a.title));
+    if (order === 'name-asc') {
+      return [...arr].sort((a, b) => {
+        const aTitle = t(a.titleKey ?? `products.${a.id}.title`, a.title)
+        const bTitle = t(b.titleKey ?? `products.${b.id}.title`, b.title)
+        return aTitle.localeCompare(bTitle)
+      })
+    }
+    if (order === 'name-desc') {
+      return [...arr].sort((a, b) => {
+        const aTitle = t(a.titleKey ?? `products.${a.id}.title`, a.title)
+        const bTitle = t(b.titleKey ?? `products.${b.id}.title`, b.title)
+        return bTitle.localeCompare(aTitle)
+      })
+    }
     return arr;
   };
 
@@ -131,7 +176,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
   const hasSearchNoResults = normalizedSearch.length > 0 && filtered.length === 0
   const emptyStateMessage = hasSearchNoResults
-    ? t('catalog.noResultsForQuery').replace('{query}', searchQuery)
+    ? t('catalog.noResultsForQuery', 'Nothing found for your query "{query}"', { query: searchQuery })
     : t('common.noResults')
 
   // Infinite scroll state
@@ -171,20 +216,31 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
             />
           </aside>
           <div className="w-full lg:w-3/4">
-            {filtered.length === 0 ? (
-              <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center">
-                <p className="text-gray-700 dark:text-gray-300">{emptyStateMessage}</p>
+            {productsWarning && (
+              <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                {productsWarning}
+              </div>
+            )}
+            {productsLoading ? (
+              <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
               </div>
             ) : (
-              <>
-                <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filtered.slice(0, visibleCount).map((p) => (
-                    <ProductCard key={p.id} product={p} />
-                  ))}
-                  {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+              filtered.length === 0 ? (
+                <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center">
+                  <p className="text-gray-700 dark:text-gray-300">{emptyStateMessage}</p>
                 </div>
-                <div ref={loaderRef} style={{ height: 1 }} />
-              </>
+              ) : (
+                <>
+                  <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filtered.slice(0, visibleCount).map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                    {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                  </div>
+                  <div ref={loaderRef} style={{ height: 1 }} />
+                </>
+              )
             )}
           </div>
         </div>

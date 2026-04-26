@@ -162,7 +162,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     contentBlocks: Array.isArray(payload.contentBlocks) ? payload.contentBlocks : undefined,
     author: payload.author?.trim() || 'Admin',
     image: payload.image?.trim() || '/blog/skincare-guide.jpg',
-    category: payload.category?.trim() || 'уход за лицом',
+    category: payload.category?.trim() || 'face care',
     readTime: safeReadTime,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
     updatedAt: existingPost ? new Date() : undefined,

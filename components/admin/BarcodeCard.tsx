@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import JsBarcode from 'jsbarcode'
 import type { CompanyProfile } from '@/lib/company-store'
 
 export default function BarcodeCard({ company }: { company: CompanyProfile }) {
@@ -11,15 +10,28 @@ export default function BarcodeCard({ company }: { company: CompanyProfile }) {
   useEffect(() => {
     if (!svgRef.current) return
 
-    JsBarcode(svgRef.current, barcodeValue, {
-      format: 'CODE128',
-      lineColor: '#111827',
-      width: 1.8,
-      height: 64,
-      margin: 0,
-      displayValue: false,
-      background: 'transparent'
-    })
+    let isCancelled = false
+
+    const renderBarcode = async () => {
+      const { default: JsBarcode } = await import('jsbarcode')
+      if (isCancelled || !svgRef.current) return
+
+      JsBarcode(svgRef.current, barcodeValue, {
+        format: 'CODE128',
+        lineColor: '#111827',
+        width: 1.8,
+        height: 64,
+        margin: 0,
+        displayValue: false,
+        background: 'transparent'
+      })
+    }
+
+    void renderBarcode()
+
+    return () => {
+      isCancelled = true
+    }
   }, [barcodeValue])
 
   return (

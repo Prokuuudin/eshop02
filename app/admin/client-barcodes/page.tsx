@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import JsBarcode from 'jsbarcode'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCompanyStore, type CompanyProfile } from '@/lib/company-store'
 import { useAccessRequestStore } from '@/lib/access-request-store'
-import { approveAccessRequest, getCurrentUser, rejectAccessRequest, type TeamRole } from '@/lib/auth'
+import { approveAccessRequest, getCurrentUser, listCompanyUsers, rejectAccessRequest, updateUserTeamRole, type TeamRole } from '@/lib/auth'
 import AdminGate from '@/components/admin/AdminGate'
 import BarcodeCard from '@/components/admin/BarcodeCard'
+import { useTranslation } from '@/lib/use-translation'
 
 type CompanyDraft = {
   companyId: string
@@ -60,6 +60,7 @@ const generateNextBarcode = (companies: CompanyProfile[]): string => {
 }
 
 const createBarcodeImageDataUrl = async (value: string): Promise<string> => {
+  const { default: JsBarcode } = await import('jsbarcode')
   const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svgNode.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
   svgNode.setAttribute('width', '600')
@@ -81,7 +82,7 @@ const createBarcodeImageDataUrl = async (value: string): Promise<string> => {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const nextImage = new Image()
     nextImage.onload = () => resolve(nextImage)
-    nextImage.onerror = () => reject(new Error('Не удалось подготовить изображение баркода'))
+    nextImage.onerror = () => reject(new Error('Failed to prepare barcode image'))
     nextImage.src = svgUrl
   })
 
@@ -91,7 +92,7 @@ const createBarcodeImageDataUrl = async (value: string): Promise<string> => {
 
   const context = canvas.getContext('2d')
   if (!context) {
-    throw new Error('Canvas context недоступен')
+    throw new Error('Canvas context is unavailable')
   }
 
   context.fillStyle = '#ffffff'
@@ -149,6 +150,10 @@ const downloadBarcodeCardPdf = async (company: CompanyProfile): Promise<void> =>
 }
 
 export default function AdminClientBarcodesPage() {
+  const { t, language } = useTranslation()
+  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
+  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
+
   const [draft, setDraft] = useState<CompanyDraft>(EMPTY_DRAFT)
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
@@ -156,6 +161,8 @@ export default function AdminClientBarcodesPage() {
   const [printCompanyId, setPrintCompanyId] = useState<string>('')
   const [pdfBusy, setPdfBusy] = useState(false)
   const [requestRoles, setRequestRoles] = useState<Record<string, TeamRole>>({})
+  const [memberRolesDraft, setMemberRolesDraft] = useState<Record<string, TeamRole>>({})
+  const [roleUpdateInProgress, setRoleUpdateInProgress] = useState<string | null>(null)
 
   const { getCompanies, upsertCompany, deleteCompany } = useCompanyStore()
   const { getPendingRequests } = useAccessRequestStore()
@@ -194,7 +201,7 @@ export default function AdminClientBarcodesPage() {
     const companyName = draft.companyName.trim()
     const customerBarcode = normalizeBarcode(draft.customerBarcode)
     if (!companyId || !companyName || !customerBarcode) {
-      setFormError('Заполните company ID, название компании и баркод')
+      setFormError(tl('admin.clientBarcodes.msg.fillRequired', 'Заполните company ID, название компании и баркод', 'Fill company ID, company name, and barcode', 'Aizpildiet company ID, uznemuma nosaukumu un barkodu'))
       return
     }
 
@@ -202,7 +209,7 @@ export default function AdminClientBarcodesPage() {
       (company) => company.companyId !== editingCompanyId && normalizeBarcode(company.customerBarcode ?? '') === customerBarcode
     )
     if (barcodeInUse) {
-      setFormError(`Баркод уже используется: ${barcodeInUse.companyName}`)
+      setFormError(tl('admin.clientBarcodes.msg.barcodeInUseWithCompany', 'Баркод уже используется: {company}', 'Barcode is already in use: {company}', 'Barkods jau tiek izmantots: {company}', { company: barcodeInUse.companyName }))
       return
     }
 
@@ -218,7 +225,9 @@ export default function AdminClientBarcodesPage() {
       approvalWorkflowEnabled: draft.approvalWorkflowEnabled
     })
 
-    setMessage(editingCompanyId ? 'Компания обновлена' : 'Компания добавлена')
+    setMessage(editingCompanyId
+      ? tl('admin.clientBarcodes.msg.companyUpdated', 'Компания обновлена', 'Company updated', 'Uznemums atjaunots')
+      : tl('admin.clientBarcodes.msg.companyAdded', 'Компания добавлена', 'Company added', 'Uznemums pievienots'))
     resetForm()
   }
 
@@ -227,7 +236,7 @@ export default function AdminClientBarcodesPage() {
     if (editingCompanyId === companyId) {
       resetForm()
     }
-    setMessage('Компания удалена')
+    setMessage(tl('admin.clientBarcodes.msg.companyDeleted', 'Компания удалена', 'Company deleted', 'Uznemums izdzests'))
     setFormError('')
   }
 
@@ -240,9 +249,9 @@ export default function AdminClientBarcodesPage() {
 
     try {
       await downloadBarcodeCardPdf(selectedPrintCompany)
-      setMessage('PDF карточки подготовлен')
+      setMessage(tl('admin.clientBarcodes.msg.pdfReady', 'PDF карточки подготовлен', 'PDF card is ready', 'PDF kartite ir sagatavota'))
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Не удалось сформировать PDF')
+      setFormError(error instanceof Error ? error.message : tl('admin.clientBarcodes.msg.pdfFailed', 'Не удалось сформировать PDF', 'Failed to generate PDF', 'Neizdevas izveidot PDF'))
     } finally {
       setPdfBusy(false)
     }
@@ -254,27 +263,54 @@ export default function AdminClientBarcodesPage() {
     const result = approveAccessRequest(requestId, selectedRole, reviewer)
 
     if (!result.success) {
-      setFormError(result.error || 'Не удалось одобрить заявку')
+      setFormError(result.error || tl('admin.clientBarcodes.msg.approveFailed', 'Не удалось одобрить заявку', 'Failed to approve request', 'Neizdevas apstiprinat pieprasijumu'))
       setMessage('')
       return
     }
 
-    setMessage('Заявка одобрена, аккаунт создан')
+    setMessage(tl('admin.clientBarcodes.msg.requestApproved', 'Заявка одобрена, аккаунт создан', 'Request approved, account created', 'Pieprasijums apstiprinats, konts izveidots'))
     setFormError('')
   }
 
   const handleRejectRequest = (requestId: string) => {
     const reviewer = getCurrentUser()
-    const result = rejectAccessRequest(requestId, reviewer, 'Отклонено администратором')
+    const result = rejectAccessRequest(requestId, reviewer, tl('admin.clientBarcodes.msg.rejectedByAdmin', 'Отклонено администратором', 'Rejected by administrator', 'Administrators noraidija'))
 
     if (!result.success) {
-      setFormError(result.error || 'Не удалось отклонить заявку')
+      setFormError(result.error || tl('admin.clientBarcodes.msg.rejectFailed', 'Не удалось отклонить заявку', 'Failed to reject request', 'Neizdevas noraidit pieprasijumu'))
       setMessage('')
       return
     }
 
-    setMessage('Заявка отклонена')
+    setMessage(tl('admin.clientBarcodes.msg.requestRejected', 'Заявка отклонена', 'Request rejected', 'Pieprasijums noraidits'))
     setFormError('')
+  }
+
+  const resolveMemberRoleDraft = (userId: string, fallbackRole: TeamRole): TeamRole => {
+    return memberRolesDraft[userId] ?? fallbackRole
+  }
+
+  const handleUpdateTeamMemberRole = (userId: string, fallbackRole: TeamRole) => {
+    const reviewer = getCurrentUser()
+    const nextRole = resolveMemberRoleDraft(userId, fallbackRole)
+
+    setRoleUpdateInProgress(userId)
+    setFormError('')
+    setMessage('')
+
+    const result = updateUserTeamRole(userId, nextRole, reviewer)
+    if (!result.success) {
+      setFormError(result.error || tl('admin.clientBarcodes.msg.updateRoleFailed', 'Не удалось изменить роль', 'Failed to change role', 'Neizdevas nomainit lomu'))
+      setRoleUpdateInProgress(null)
+      return
+    }
+
+    setMemberRolesDraft((prev) => ({
+      ...prev,
+      [userId]: nextRole
+    }))
+    setMessage(tl('admin.clientBarcodes.msg.roleUpdated', 'Роль пользователя обновлена', 'User role updated', 'Lietotaja loma atjaunota'))
+    setRoleUpdateInProgress(null)
   }
 
   return (
@@ -302,62 +338,62 @@ export default function AdminClientBarcodesPage() {
       `}</style>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Клиентские баркоды</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Управление компаниями и баркодами для активации аккаунтов.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{tl('admin.clientBarcodes.title', 'Клиентские баркоды', 'Client barcodes', 'Klientu barkodi')}</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{tl('admin.clientBarcodes.subtitle', 'Управление компаниями и баркодами для активации аккаунтов.', 'Manage companies and barcodes for account activation.', 'Uznemumu un barkodu parvaldiba kontu aktivizacijai.')}</p>
         </div>
-        <Link href="/admin"><Button variant="outline">Назад в админку</Button></Link>
+        <Link href="/admin"><Button variant="outline">{tl('admin.clientBarcodes.backToAdmin', 'Назад в админку', 'Back to admin', 'Atpakal uz admin')}</Button></Link>
       </div>
 
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-        <h2 className="text-xl font-semibold mb-4">{editingCompanyId ? 'Редактирование компании' : 'Новая компания'}</h2>
+        <h2 className="text-xl font-semibold mb-4">{editingCompanyId ? tl('admin.clientBarcodes.editCompany', 'Редактирование компании', 'Edit company', 'Rediget uznemumu') : tl('admin.clientBarcodes.newCompany', 'Новая компания', 'New company', 'Jauns uznemums')}</h2>
         {formError && <p className="mb-3 text-sm text-red-600">{formError}</p>}
         {message && <p className="mb-3 text-sm text-emerald-600">{message}</p>}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="text-sm">
-            <span className="block mb-1">Company ID</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.companyId', 'Company ID', 'Company ID', 'Company ID')}</span>
             <Input value={draft.companyId} onChange={(e) => setDraft((prev) => ({ ...prev, companyId: e.target.value }))} placeholder="company_new_client" />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Название компании</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.companyName', 'Название компании', 'Company name', 'Uznemuma nosaukums')}</span>
             <Input value={draft.companyName} onChange={(e) => setDraft((prev) => ({ ...prev, companyName: e.target.value }))} placeholder="SIA Example" />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Баркод клиента</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.clientBarcode', 'Баркод клиента', 'Client barcode', 'Klienta barkods')}</span>
             <Input value={draft.customerBarcode} onChange={(e) => setDraft((prev) => ({ ...prev, customerBarcode: e.target.value }))} placeholder="CLI-40004" />
           </label>
           <div className="flex items-end">
             <Button type="button" variant="outline" onClick={() => setDraft((prev) => ({ ...prev, customerBarcode: generateNextBarcode(companies) }))}>
-              Сгенерировать баркод
+              {tl('admin.clientBarcodes.generateBarcode', 'Сгенерировать баркод', 'Generate barcode', 'Generet barkodu')}
             </Button>
           </div>
           <label className="text-sm">
-            <span className="block mb-1">ИНН / Tax ID</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.taxId', 'ИНН / Tax ID', 'Tax ID', 'Nodoklu ID')}</span>
             <Input value={draft.taxId} onChange={(e) => setDraft((prev) => ({ ...prev, taxId: e.target.value }))} />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Регистрационный номер</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.registrationNumber', 'Регистрационный номер', 'Registration number', 'Registracijas numurs')}</span>
             <Input value={draft.registrationNumber} onChange={(e) => setDraft((prev) => ({ ...prev, registrationNumber: e.target.value }))} />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Город</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.city', 'Город', 'City', 'Pilseta')}</span>
             <Input value={draft.city} onChange={(e) => setDraft((prev) => ({ ...prev, city: e.target.value }))} />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Страна</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.country', 'Страна', 'Country', 'Valsts')}</span>
             <Input value={draft.country} onChange={(e) => setDraft((prev) => ({ ...prev, country: e.target.value }))} />
           </label>
           <label className="text-sm">
-            <span className="block mb-1">Отсрочка платежа</span>
+            <span className="block mb-1">{tl('admin.clientBarcodes.field.paymentTerm', 'Отсрочка платежа', 'Payment term', 'Apmaksas termins')}</span>
             <select
               value={draft.paymentTermDays}
               onChange={(e) => setDraft((prev) => ({ ...prev, paymentTermDays: e.target.value as CompanyDraft['paymentTermDays'] }))}
               className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
             >
-              <option value="0">0 дней</option>
-              <option value="30">30 дней</option>
-              <option value="60">60 дней</option>
-              <option value="90">90 дней</option>
+              <option value="0">{tl('admin.clientBarcodes.paymentTerm.0', '0 дней', '0 days', '0 dienas')}</option>
+              <option value="30">{tl('admin.clientBarcodes.paymentTerm.30', '30 дней', '30 days', '30 dienas')}</option>
+              <option value="60">{tl('admin.clientBarcodes.paymentTerm.60', '60 дней', '60 days', '60 dienas')}</option>
+              <option value="90">{tl('admin.clientBarcodes.paymentTerm.90', '90 дней', '90 days', '90 dienas')}</option>
             </select>
           </label>
           <label className="flex items-center gap-2 text-sm md:col-span-2">
@@ -366,12 +402,12 @@ export default function AdminClientBarcodesPage() {
               checked={draft.approvalWorkflowEnabled}
               onChange={(e) => setDraft((prev) => ({ ...prev, approvalWorkflowEnabled: e.target.checked }))}
             />
-            Включить workflow одобрения заказов
+            {tl('admin.clientBarcodes.enableApprovalWorkflow', 'Включить workflow одобрения заказов', 'Enable order approval workflow', 'Ieslegt pasutijumu apstiprinasanas procesu')}
           </label>
 
           <div className="md:col-span-2 flex flex-wrap gap-2">
-            <Button type="submit">{editingCompanyId ? 'Сохранить изменения' : 'Добавить компанию'}</Button>
-            {editingCompanyId && <Button type="button" variant="outline" onClick={resetForm}>Отменить</Button>}
+            <Button type="submit">{editingCompanyId ? tl('admin.clientBarcodes.saveChanges', 'Сохранить изменения', 'Save changes', 'Saglabat izmainas') : tl('admin.clientBarcodes.addCompany', 'Добавить компанию', 'Add company', 'Pievienot uznemumu')}</Button>
+            {editingCompanyId && <Button type="button" variant="outline" onClick={resetForm}>{tl('admin.clientBarcodes.cancel', 'Отменить', 'Cancel', 'Atcelt')}</Button>}
           </div>
         </form>
       </section>
@@ -379,14 +415,14 @@ export default function AdminClientBarcodesPage() {
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">Заявки на доступ ({pendingRequests.length})</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Пользователи отправляют заявку по выданному баркоду, а администратор вручную назначает роль и одобряет доступ.</p>
+            <h2 className="text-xl font-semibold">{tl('admin.clientBarcodes.accessRequests', 'Заявки на доступ', 'Access requests', 'Piekluves pieprasijumi')} ({pendingRequests.length})</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{tl('admin.clientBarcodes.accessRequestsDescription', 'Пользователи отправляют заявку по выданному баркоду, а администратор вручную назначает роль и одобряет доступ.', 'Users submit requests by issued barcode, and administrator assigns role and approves access manually.', 'Lietotaji iesniedz pieprasijumu ar izsniegto barkodu, bet administrators manuali piekir lomu un apstiprina piekluvi.')}</p>
           </div>
         </div>
 
         {pendingRequests.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-600 dark:text-gray-300">
-            Новых заявок нет.
+            {tl('admin.clientBarcodes.noRequests', 'Новых заявок нет.', 'No new requests.', 'Jaunu pieprasijumu nav.')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -399,14 +435,14 @@ export default function AdminClientBarcodesPage() {
                     <div className="space-y-1">
                       <p className="font-semibold text-gray-900 dark:text-gray-100">{request.name || request.email}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">Email: {request.email}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Компания: {request.companyName}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Баркод: {request.barcode}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Отправлена: {new Date(request.requestedAt).toLocaleString('ru-RU')}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.company', 'Компания', 'Company', 'Uznemums')}: {request.companyName}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.barcode', 'Баркод', 'Barcode', 'Barkods')}: {request.barcode}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.submitted', 'Отправлена', 'Submitted', 'Iesniegts')}: {new Date(request.requestedAt).toLocaleString(language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US')}</p>
                     </div>
 
                     <div className="flex min-w-[240px] flex-col gap-2">
                       <label className="text-sm">
-                        <span className="mb-1 block">Роль после одобрения</span>
+                        <span className="mb-1 block">{tl('admin.clientBarcodes.roleAfterApproval', 'Роль после одобрения', 'Role after approval', 'Loma pec apstiprinasanas')}</span>
                         <select
                           value={selectedRole}
                           onChange={(event) => setRequestRoles((prev) => ({ ...prev, [request.id]: event.target.value as TeamRole }))}
@@ -419,8 +455,8 @@ export default function AdminClientBarcodesPage() {
                         </select>
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={() => handleApproveRequest(request.id, request.companyId)}>Одобрить</Button>
-                        <Button size="sm" variant="outline" onClick={() => handleRejectRequest(request.id)}>Отклонить</Button>
+                        <Button size="sm" onClick={() => handleApproveRequest(request.id, request.companyId)}>{tl('admin.clientBarcodes.approve', 'Одобрить', 'Approve', 'Apstiprinat')}</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleRejectRequest(request.id)}>{tl('admin.clientBarcodes.reject', 'Отклонить', 'Reject', 'Noraidit')}</Button>
                       </div>
                     </div>
                   </div>
@@ -432,25 +468,81 @@ export default function AdminClientBarcodesPage() {
       </section>
 
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-        <h2 className="text-xl font-semibold mb-4">Компании ({companies.length})</h2>
+        <h2 className="text-xl font-semibold mb-4">{tl('admin.clientBarcodes.companies', 'Компании', 'Companies', 'Uznemumi')} ({companies.length})</h2>
         <div className="space-y-3">
-          {companies.map((company) => (
-            <div key={company.companyId} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{company.companyName}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">ID: {company.companyId}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Баркод: {company.customerBarcode || 'не задан'}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Команда: {company.teamMembers.length} пользователей</p>
+          {companies.map((company) => {
+            const companyUsers = listCompanyUsers(company.companyId)
+
+            return (
+              <div key={company.companyId} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{company.companyName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">ID: {company.companyId}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.barcode', 'Баркод', 'Barcode', 'Barkods')}: {company.customerBarcode || tl('admin.clientBarcodes.notSet', 'не задан', 'not set', 'nav iestatits')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.team', 'Команда', 'Team', 'Komanda')}: {company.teamMembers.length} {tl('admin.clientBarcodes.users', 'пользователей', 'users', 'lietotaji')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => startEdit(company)}>{tl('admin.clientBarcodes.edit', 'Редактировать', 'Edit', 'Rediget')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPrintCompanyId(company.companyId)}>{tl('admin.clientBarcodes.card', 'Карточка', 'Card', 'Kartite')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(company.companyId)}>{tl('admin.clientBarcodes.delete', 'Удалить', 'Delete', 'Dzest')}</Button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => startEdit(company)}>Редактировать</Button>
-                  <Button size="sm" variant="outline" onClick={() => setPrintCompanyId(company.companyId)}>Карточка</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(company.companyId)}>Удалить</Button>
+
+                <div className="mt-4 rounded-md border border-gray-200 dark:border-gray-700 p-3">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tl('admin.clientBarcodes.accountsAndRoles', 'Аккаунты компании и роли', 'Company accounts and roles', 'Uznemuma konti un lomas')}</p>
+
+                  {companyUsers.length === 0 ? (
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{tl('admin.clientBarcodes.noAccounts', 'Аккаунтов пока нет.', 'No accounts yet.', 'Kontu vel nav.')}</p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {companyUsers.map((companyUser) => {
+                        const selectedRole = resolveMemberRoleDraft(companyUser.id, companyUser.teamRole ?? 'viewer')
+                        const isBusy = roleUpdateInProgress === companyUser.id
+
+                        return (
+                          <div key={companyUser.id} className="grid grid-cols-1 gap-2 rounded border border-gray-200 dark:border-gray-700 p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{companyUser.name || companyUser.email}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300">{companyUser.email}</p>
+                            </div>
+
+                            <select
+                              value={selectedRole}
+                              onChange={(event) => {
+                                const role = event.target.value as TeamRole
+                                setMemberRolesDraft((prev) => ({
+                                  ...prev,
+                                  [companyUser.id]: role
+                                }))
+                              }}
+                              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            >
+                              <option value="viewer">viewer</option>
+                              <option value="buyer">buyer</option>
+                              <option value="manager">manager</option>
+                              <option value="admin">admin</option>
+                            </select>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isBusy}
+                              onClick={() => handleUpdateTeamMemberRole(companyUser.id, companyUser.teamRole ?? 'viewer')}
+                            >
+                              {isBusy
+                                ? tl('admin.clientBarcodes.saving', 'Сохраняем...', 'Saving...', 'Saglabajam...')
+                                : tl('admin.clientBarcodes.changeRole', 'Сменить роль', 'Change role', 'Mainit lomu')}
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
@@ -458,8 +550,8 @@ export default function AdminClientBarcodesPage() {
         <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold">Печатная карточка клиента</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Подходит для печати и выдачи клиенту.</p>
+              <h2 className="text-xl font-semibold">{tl('admin.clientBarcodes.printableCard', 'Печатная карточка клиента', 'Printable client card', 'Drukas klienta kartite')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{tl('admin.clientBarcodes.printableCardDescription', 'Подходит для печати и выдачи клиенту.', 'Suitable for printing and handing to a client.', 'Paredzeta drukai un izsniegsanai klientam.')}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <select
@@ -472,9 +564,11 @@ export default function AdminClientBarcodesPage() {
                 ))}
               </select>
               <Button type="button" variant="outline" onClick={handleDownloadPdf} disabled={pdfBusy}>
-                {pdfBusy ? 'Готовим PDF...' : 'Скачать PDF'}
+                {pdfBusy
+                  ? tl('admin.clientBarcodes.preparingPdf', 'Готовим PDF...', 'Preparing PDF...', 'Sagatavojam PDF...')
+                  : tl('admin.clientBarcodes.downloadPdf', 'Скачать PDF', 'Download PDF', 'Lejupieladet PDF')}
               </Button>
-              <Button type="button" onClick={() => window.print()}>Печать карточки</Button>
+              <Button type="button" onClick={() => window.print()}>{tl('admin.clientBarcodes.printCard', 'Печать карточки', 'Print card', 'Druket kartiti')}</Button>
             </div>
           </div>
 

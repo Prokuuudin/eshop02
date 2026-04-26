@@ -9,9 +9,20 @@ export default function HeaderSearch() {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const router = useRouter();
-  const suggestions = useMemo(() => getAutocompleteSuggestions(PRODUCTS, query, 5), [query]);
+  const localizedProducts = useMemo(
+    () => PRODUCTS.map((product) => ({
+      ...product,
+      title: (language === 'en' && product.titleEn)
+        ? product.titleEn
+        : (language === 'lv' && product.titleLv)
+          ? product.titleLv
+          : t(product.titleKey ?? `products.${product.id}.title`, product.title)
+    })),
+    [t, language]
+  );
+  const suggestions = useMemo(() => getAutocompleteSuggestions(localizedProducts, query, 5), [localizedProducts, query]);
   const listboxId = 'header-search-suggestions';
   const inputId = 'site-search';
 

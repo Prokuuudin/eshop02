@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { PRODUCTS } from '@/data/products'
+import { PRODUCTS, type Product } from '@/data/products'
 import { getCurrentUser } from '@/lib/auth'
 import { useRFQStore } from '@/lib/rfq-store'
 import { logAuditAction } from '@/lib/audit-log-store'
@@ -19,15 +19,43 @@ export default function RequestQuotePage() {
   const user = getCurrentUser()
   const { showToast } = useToast()
   const { createRequest, getByCompany, setStatus } = useRFQStore()
+  const [products, setProducts] = useState<Product[]>([])
+  const [productsLoading, setProductsLoading] = useState(true)
 
-  const [items, setItems] = useState<DraftItem[]>([{ productId: PRODUCTS[0]?.id || '', quantity: 10 }])
+  const [items, setItems] = useState<DraftItem[]>([{ productId: '', quantity: 10 }])
   const [notes, setNotes] = useState('')
 
   const companyId = user?.companyId
   const rfqList = useMemo(() => (companyId ? getByCompany(companyId) : []), [companyId, getByCompany])
 
+  React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products', { cache: 'no-store' })
+        if (!response.ok) throw new Error('failed')
+        const payload = (await response.json()) as { data?: { products?: Product[] } }
+        const nextProducts = payload.data?.products ?? []
+        setProducts(nextProducts)
+        setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
+          ? { ...item, productId: nextProducts[0]?.id ?? '' }
+          : item
+        )))
+      } catch {
+        setProducts(PRODUCTS)
+        setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
+          ? { ...item, productId: PRODUCTS[0]?.id ?? '' }
+          : item
+        )))
+      } finally {
+        setProductsLoading(false)
+      }
+    }
+
+    void loadProducts()
+  }, [])
+
   const addRow = () => {
-    setItems((prev) => [...prev, { productId: PRODUCTS[0]?.id || '', quantity: 10 }])
+    setItems((prev) => [...prev, { productId: products[0]?.id || '', quantity: 10 }])
   }
 
   const removeRow = (index: number) => {
@@ -66,7 +94,7 @@ export default function RequestQuotePage() {
     }
 
     showToast('Запрос на спецпредложение отправлен', 'success')
-    setItems([{ productId: PRODUCTS[0]?.id || '', quantity: 10 }])
+    setItems([{ productId: products[0]?.id || '', quantity: 10 }])
     setNotes('')
   }
 
@@ -94,6 +122,14 @@ export default function RequestQuotePage() {
     )
   }
 
+  if (productsLoading) {
+    return (
+      <main className="max-w-5xl mx-auto px-4 py-12">
+        <p className="text-sm text-gray-600 dark:text-gray-300">Загрузка товаров...</p>
+      </main>
+    )
+  }
+
   return (
     <main className="max-w-6xl mx-auto px-4 py-10 space-y-8">
       <section>
@@ -113,7 +149,7 @@ export default function RequestQuotePage() {
                   onChange={(e) => updateRow(index, { productId: e.target.value })}
                   className="rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm"
                 >
-                  {PRODUCTS.map((product) => (
+                  {products.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.title}
                     </option>
@@ -166,7 +202,7 @@ export default function RequestQuotePage() {
 
               <ul className="mt-3 text-sm space-y-1">
                 {rfq.items.map((item, idx) => {
-                  const product = PRODUCTS.find((p) => p.id === item.productId)
+                  const product = products.find((p) => p.id === item.productId)
                   return (
                     <li key={idx} className="text-gray-700 dark:text-gray-300">
                       {product?.title || item.productId} - {item.quantity} шт

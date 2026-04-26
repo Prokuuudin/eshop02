@@ -20,8 +20,15 @@ export default function RegisterForm() {
     const res = submitAccessRequest(email.trim(), password, name.trim() || undefined, barcode.trim())
     if (!res.success) return setError(res.error || t('form.error'))
     setError('')
+    const companyName = res.companyName?.trim()
     setSuccessMessage(
-      t('auth.requestSubmittedMessage', `Заявка отправлена. После одобрения вы сможете войти в аккаунт компании ${res.companyName ?? ''}.`)
+      companyName
+        ? t(
+            'auth.requestSubmittedMessageWithCompany',
+            'Заявка отправлена. После одобрения вы сможете войти в аккаунт компании {company}.',
+            { company: companyName }
+          )
+        : t('auth.requestSubmittedMessage')
     )
     setEmail('')
     setPassword('')

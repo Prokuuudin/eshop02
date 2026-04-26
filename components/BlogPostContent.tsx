@@ -11,6 +11,7 @@ import { localizeBlogPost, type BlogContentBlock, type BlogPost } from '@/data/b
 import { useTranslation } from '@/lib/use-translation'
 import { useSiteContent } from '@/lib/use-site-content'
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils'
+import { resolveBlogCategoryKey, resolveCatalogCategoryFromBlogCategory } from '@/lib/blog-category'
 
 type BlogPostContentProps = {
   post: BlogPost
@@ -19,24 +20,6 @@ type BlogPostContentProps = {
 }
 
 const ARTICLE_FAVORITES_KEY = 'blog-favorites'
-const TOPIC_TO_PRODUCT_CATEGORY: Record<string, string> = {
-  'уход за лицом': 'face',
-  'face care': 'face',
-  'sejas kopšana': 'face',
-  'уход за волосами': 'hair',
-  'hair care': 'hair',
-  'matu kopšana': 'hair',
-  'уход за телом': 'body',
-  'body care': 'body',
-  'ķermeņa kopšana': 'body',
-  'макияж': 'face',
-  'makeup': 'face',
-  'grims': 'face',
-  'ингредиенты': 'face',
-  'ingredients': 'face',
-  'sastāvdaļas': 'face'
-}
-
 export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPostContentProps) {
   const { t, language } = useTranslation()
   const { resolveImageSrc } = useSiteContent()
@@ -99,19 +82,17 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
     }
   }
 
-  const categoryKeyMap: Record<string, string> = {
-    'уход за лицом': 'blog.category.faceCare',
-    'уход за волосами': 'blog.category.hairCare',
-    'уход за телом': 'blog.category.bodyCare',
-    'макияж': 'blog.category.makeup',
-    'ингредиенты': 'blog.category.ingredients'
-  }
+  const categoryKey = React.useMemo(
+    () => resolveBlogCategoryKey(localizedPost.category, t) ?? resolveBlogCategoryKey(post.category, t),
+    [localizedPost.category, post.category, t]
+  )
 
   const relatedCatalogCategory = React.useMemo(() => {
-    const topic = localizedPost.category.toLowerCase()
-    const fallbackTopic = post.category.toLowerCase()
-    return TOPIC_TO_PRODUCT_CATEGORY[topic] ?? TOPIC_TO_PRODUCT_CATEGORY[fallbackTopic] ?? ''
-  }, [localizedPost.category, post.category])
+    return (
+      resolveCatalogCategoryFromBlogCategory(localizedPost.category, t)
+      || resolveCatalogCategoryFromBlogCategory(post.category, t)
+    )
+  }, [localizedPost.category, post.category, t])
 
   const markdownToHtml = (md: string): React.ReactNode => {
     const lines = md.split('\n').filter((line) => line.trim())
@@ -221,7 +202,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 md:gap-8 xl:gap-10">
           <article>
             <div className="mb-3 md:mb-4 flex gap-2 flex-wrap">
-              <Badge variant="outline" className="h-8 px-3 text-xs font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">{t('blog.topicLabel')}: {t(categoryKeyMap[localizedPost.category] ?? localizedPost.category, localizedPost.category)}</Badge>
+              <Badge variant="outline" className="h-8 px-3 text-xs font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">{t('blog.topicLabel')}: {categoryKey ? t(categoryKey) : localizedPost.category}</Badge>
               {relatedCatalogCategory && (
                 <Button variant="default" size="sm" asChild className="h-8 px-3 text-xs font-medium transition-transform hover:scale-105">
                   <a href={`/catalog?cat=${relatedCatalogCategory}`}>

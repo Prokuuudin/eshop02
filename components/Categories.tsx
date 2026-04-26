@@ -2,18 +2,18 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
-import { CATEGORY_CARDS, SUBCATEGORIES_BY_ID } from '@/data/categories'
+import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
 // ...existing code...
 
 export default function Categories() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const { categories } = useCategoriesConfig()
   const sectionClassName = 'categories py-8 relative z-30 overflow-visible'
   const gridClassName = 'categories__grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 overflow-visible'
     const itemWithDropdownClassName = 'categories__item group relative z-40 hover:z-50 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col'
-    const itemSimpleClassName = 'categories__item group block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-lg transition-transform transform hover:-translate-y-1 aspect-square flex flex-col'
   const imageWrapClassName = 'categories__image relative aspect-square w-full'
   const imageClassName = 'object-cover group-hover:scale-105 transition-transform'
   const metaClassName = 'categories__meta p-2 sm:p-3 text-center text-sm sm:text-base text-gray-900 dark:text-gray-100 leading-tight'
@@ -35,8 +35,8 @@ export default function Categories() {
         </div>
         <TooltipProvider delayDuration={120}>
           <div className={gridClassName}>
-          {CATEGORY_CARDS.map((c) => {
-            const submenuItems = SUBCATEGORIES_BY_ID[c.id] ?? []
+          {categories.map((c) => {
+            const submenuItems = c.subcategories ?? []
 
             if (submenuItems.length > 0) {
 
@@ -46,12 +46,16 @@ export default function Categories() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                          <button type="button" className="block w-full text-left rounded-lg overflow-hidden min-h-[44px]" aria-label={t(c.titleKey)}>
+                          <button
+                            type="button"
+                            className="block w-full text-left rounded-lg overflow-hidden min-h-[44px]"
+                            aria-label={c.titleKey ? t(c.titleKey, c.labels[language]) : c.labels[language]}
+                          >
                             <div className={imageWrapClassName}>
                               <Image src={c.image} alt={t('categories.imageAlt')} fill className={imageClassName} sizes="(max-width: 640px) 50vw, 20vw" />
                             </div>
                             <div className={metaClassName}>
-                              {t(c.titleKey)}
+                              {c.titleKey ? t(c.titleKey, c.labels[language]) : c.labels[language]}
                             </div>
                           </button>
                         </DropdownMenuTrigger>
@@ -68,9 +72,9 @@ export default function Categories() {
                         </Link>
                       </DropdownMenuItem>
                       {submenuItems.map((item) => (
-                        <DropdownMenuItem key={item.key} asChild className={dropdownItemClassName}>
+                        <DropdownMenuItem key={`${c.id}-${item.slug}`} asChild className={dropdownItemClassName}>
                           <Link href={`/catalog?cat=${c.id}&subcat=${encodeURIComponent(item.slug)}`}>
-                            {t(item.key)}
+                            {item.key ? t(item.key, item.labels[language]) : item.labels[language]}
                           </Link>
                         </DropdownMenuItem>
                       ))}
@@ -81,14 +85,16 @@ export default function Categories() {
             }
 
             return (
-              <Link key={c.id} href={c.href} className={itemSimpleClassName}>
-                <div className={imageWrapClassName}>
-                  <Image src={c.image} alt={t('categories.imageAlt')} fill className={imageClassName} sizes="(max-width: 640px) 50vw, 20vw" />
-                </div>
-                <div className={metaClassName}>
-                  {t(c.titleKey)}
-                </div>
-              </Link>
+              <div key={c.id} className={itemWithDropdownClassName}>
+                <Link href={c.href} className="block w-full text-left rounded-lg overflow-hidden min-h-[44px]" aria-label={c.titleKey ? t(c.titleKey, c.labels[language]) : c.labels[language]}>
+                  <div className={imageWrapClassName}>
+                    <Image src={c.image} alt={t('categories.imageAlt')} fill className={imageClassName} sizes="(max-width: 640px) 50vw, 20vw" />
+                  </div>
+                  <div className={metaClassName}>
+                    {c.titleKey ? t(c.titleKey, c.labels[language]) : c.labels[language]}
+                  </div>
+                </Link>
+              </div>
             )
           })}
           </div>

@@ -13,7 +13,7 @@ export default function WishlistPage() {
   const { showToast } = useToast()
   const items = useWishlist((state) => state.items)
   const clearWishlist = useWishlist((state) => state.clearWishlist)
-  const itemsLabel = t('wishlist.items').replace('{count}', String(items.length))
+  const itemsLabel = t('wishlist.items', '{count} items in wishlist', { count: items.length })
 
   if (items.length === 0) {
     return (

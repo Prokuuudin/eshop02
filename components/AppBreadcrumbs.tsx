@@ -12,8 +12,8 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 import { BLOG_POSTS, localizeBlogPost } from '@/data/blog'
-import { BRANDS } from '@/data/brands'
 import { PRODUCTS } from '@/data/products'
+import { useBrandsConfig } from '@/lib/use-brands-config'
 import { useTranslation } from '@/lib/use-translation'
 
 interface Crumb {
@@ -23,6 +23,7 @@ interface Crumb {
 
 const segmentLabelKeys: Record<string, string> = {
   catalog: 'nav.catalog',
+  categories: 'categories.title',
   blog: 'nav.blog',
   about: 'nav.about',
   contact: 'nav.contact',
@@ -32,6 +33,7 @@ const segmentLabelKeys: Record<string, string> = {
   wishlist: 'nav.wishlist',
   cart: 'nav.cart',
   admin: 'nav.admin',
+  products: 'admin.products',
   checkout: 'checkout.title',
   order: 'order.title',
   product: 'common.product',
@@ -45,13 +47,21 @@ function normalizeSegment(segment: string): string {
   return decodeURIComponent(segment).replace(/-/g, ' ')
 }
 
-function getProductTitle(segment: string): string | null {
+function getProductTitle(segment: string, t: (key: string, defaultValue?: string) => string, language: string): string | null {
   const product = PRODUCTS.find((item) => item.id === decodeURIComponent(segment))
-  return product?.title ?? null
+  if (!product) {
+    return null
+  }
+
+  return (language === 'en' && product.titleEn)
+    ? product.titleEn
+    : (language === 'lv' && product.titleLv)
+      ? product.titleLv
+      : t(product.titleKey ?? `products.${product.id}.title`, product.title)
 }
 
-function getBrandName(segment: string): string | null {
-  const brand = BRANDS.find((item) => item.id === decodeURIComponent(segment))
+function getBrandName(segment: string, brands: Array<{ id: string; name: string }>): string | null {
+  const brand = brands.find((item) => item.id === decodeURIComponent(segment))
   return brand?.name ?? null
 }
 
@@ -68,6 +78,7 @@ function getBlogPostTitle(segment: string, language: 'ru' | 'en' | 'lv'): string
 export default function AppBreadcrumbs() {
   const pathname = usePathname()
   const { t, language } = useTranslation()
+  const { brands } = useBrandsConfig()
 
   const crumbs = useMemo<Crumb[]>(() => {
     if (!pathname || pathname === '/') return []
@@ -80,9 +91,9 @@ export default function AppBreadcrumbs() {
       const isBrandIdSegment = segments[index - 1] === 'brand'
       const isBlogSlugSegment = segments[index - 1] === 'blog'
       const resolvedEntityLabel = isProductIdSegment
-        ? getProductTitle(segment)
+        ? getProductTitle(segment, t, language)
         : isBrandIdSegment
-          ? getBrandName(segment)
+          ? getBrandName(segment, brands)
           : isBlogSlugSegment
             ? getBlogPostTitle(segment, language)
           : null
@@ -90,7 +101,7 @@ export default function AppBreadcrumbs() {
 
       return { href, label }
     })
-  }, [language, pathname, t])
+  }, [brands, language, pathname, t])
 
   return (
     <Breadcrumb aria-label={t('breadcrumbs.aria')} className="mb-4 border-b border-gray-200 pb-2 dark:border-gray-800">

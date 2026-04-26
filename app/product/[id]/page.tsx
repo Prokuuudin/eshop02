@@ -1,10 +1,10 @@
 import React from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { PRODUCTS } from '@/data/products'
 import ProductPageContent from '@/components/ProductPageContent'
 import { getSiteUrl } from '@/lib/site-url'
 import { translations, type Language } from '@/data/translations'
+import { getMergedProducts } from '@/lib/product-overrides-store'
 
 type PageProps = {
   params: Promise<{
@@ -12,19 +12,25 @@ type PageProps = {
   }>
 }
 
+const interpolate = (template: string, params: Record<string, string>): string => {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => params[key] ?? match)
+}
+
 export const revalidate = 3600
 const DEFAULT_METADATA_LANGUAGE: Language = 'en'
 
-export function generateStaticParams(): Array<{ id: string }> {
-  return PRODUCTS.map((p) => ({
+export async function generateStaticParams(): Promise<Array<{ id: string }>> {
+  const products = await getMergedProducts()
+  return products.map((p) => ({
     id: p.id
   }))
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const t = translations[DEFAULT_METADATA_LANGUAGE];
-  const product = PRODUCTS.find((p) => p.id === id);
+  const { id } = await params
+  const t = translations[DEFAULT_METADATA_LANGUAGE]
+  const mergedProducts = await getMergedProducts()
+  const product = mergedProducts.find((p) => p.id === id)
 
   if (!product) {
     return {
@@ -34,31 +40,36 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         index: false,
         follow: false
       }
-    };
+    }
   }
 
   const productPath = `/product/${product.id}`
+  const metaTitle = product.metaTitle?.trim() || `${product.title} | Eshop`
+  const metaDescription = product.metaDescription?.trim() || `${product.brand} - ${product.title}`
+  const openGraphImage = product.ogImage?.trim() || product.image
+  const openGraphAlt = product.ogAlt?.trim() || product.title
 
   return {
-    title: `${product.title} | Eshop`,
-    description: `${product.brand} - ${product.title}`,
+    title: metaTitle,
+    description: metaDescription,
     openGraph: {
-      title: `${product.title} | Eshop`,
-      description: `${product.brand} - ${product.title}`,
-      images: [{ url: product.image, alt: product.title }],
+      title: metaTitle,
+      description: metaDescription,
+      images: [{ url: openGraphImage, alt: openGraphAlt }],
       url: productPath,
       type: 'website'
     },
     alternates: {
       canonical: productPath
     }
-  };
+  }
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const { id } = await params;
-  const t = translations[DEFAULT_METADATA_LANGUAGE];
-  const product = PRODUCTS.find((p) => p.id === id);
+  const { id } = await params
+  const t = translations[DEFAULT_METADATA_LANGUAGE]
+  const mergedProducts = await getMergedProducts()
+  const product = mergedProducts.find((p) => p.id === id)
 
   if (!product) {
     return (
@@ -68,11 +79,12 @@ export default async function ProductPage({ params }: PageProps) {
           {t['product.backToCatalog'] ?? 'Back to catalog'}
         </Link>
       </main>
-    );
+    )
   }
 
   const siteUrl = getSiteUrl()
   const productUrl = `${siteUrl}/product/${product.id}`
+  const schemaReviewCount = product.reviewCount ?? product.ratingCount ?? 127
 
   const productSchema = {
     '@context': 'https://schema.org',
@@ -95,14 +107,14 @@ export default async function ProductPage({ params }: PageProps) {
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: product.rating,
-      reviewCount: 127
+      reviewCount: schemaReviewCount
     },
     review: [
       {
         '@type': 'Review',
         author: { '@type': 'Person', name: 'Eshop Customer' },
         reviewRating: { '@type': 'Rating', ratingValue: product.rating, bestRating: 5 },
-        reviewBody: (t['product.reviewBodyTemplate'] ?? 'Customers rated the product {title} highly.').replace('{title}', product.title)
+        reviewBody: interpolate(t['product.reviewBodyTemplate'] ?? 'Customers rated the product {title} highly.', { title: product.title })
       }
     ]
   }
@@ -121,7 +133,7 @@ export default async function ProductPage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <ProductPageContent product={product} />
+      <ProductPageContent product={product} allProducts={mergedProducts} />
     </>
   )
 }
@@ -129,4 +141,4 @@ export default async function ProductPage({ params }: PageProps) {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-};
+}

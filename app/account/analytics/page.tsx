@@ -12,34 +12,34 @@ import TopCategories from '@/components/TopCategories'
 import OrderHistory from '@/components/OrderHistory'
 
 export default function AnalyticsPage() {
-  const { language } = useTranslation()
+  const { language, t } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const currentUser = getCurrentUser()
   const analytics = getUserPurchaseAnalytics()
 
   const summaryCards = [
     {
-      label: 'Всего заказов',
+      label: t('account.analytics.totalOrders'),
       value: String(analytics.totalOrders),
-      helpText: `Средняя стоимость: ${formatEuro(analytics.averageOrderValue, locale)}`,
+      helpText: t('account.analytics.avgCost', undefined, { value: formatEuro(analytics.averageOrderValue, locale) }),
       icon: ShoppingBag
     },
     {
-      label: 'Общие расходы',
+      label: t('account.analytics.totalSpent'),
       value: formatEuro(analytics.totalSpent, locale),
-      helpText: `${analytics.totalItems} товаров`,
+      helpText: t('account.analytics.totalItemsHelp', undefined, { count: analytics.totalItems }),
       icon: CircleDollarSign
     },
     {
-      label: 'Средняя покупка',
+      label: t('account.analytics.avgOrder'),
       value: formatEuro(analytics.averageOrderValue, locale),
-      helpText: 'За один заказ',
+      helpText: t('account.analytics.avgHelp'),
       icon: TrendingUp
     },
     {
-      label: 'Позиций куплено',
+      label: t('account.analytics.totalItems'),
       value: String(analytics.totalItems),
-      helpText: `${analytics.topCategories.length} категорий`,
+      helpText: t('account.analytics.categoriesHelp', undefined, { count: analytics.topCategories.length }),
       icon: Package
     }
   ]
@@ -49,10 +49,10 @@ export default function AnalyticsPage() {
       <div className="mb-8">
         <AccountPageHero
           eyebrow="Analytics"
-          title="Статистика покупок"
+          title={t('account.analyticsTitle')}
           description={currentUser?.companyName
-            ? `Компания: ${currentUser.companyName}`
-            : currentUser?.name || 'Анонимный пользователь'}
+            ? t('account.analytics.company', undefined, { name: currentUser.companyName })
+            : currentUser?.name || t('account.analytics.anonymous')}
           icon={ChartNoAxesColumn}
           accentClassName="border-gray-200 bg-gradient-to-br from-slate-50 via-white to-sky-50 dark:border-gray-700 dark:from-gray-900 dark:via-gray-900 dark:to-sky-950/40"
         />
@@ -64,10 +64,10 @@ export default function AnalyticsPage() {
             <Activity className="h-6 w-6" />
           </div>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-            Нет данных о покупках
+            {t('account.analytics.noData')}
           </p>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Ваша история покупок появится здесь после первого заказа
+            {t('account.analytics.noDataDesc')}
           </p>
         </div>
       ) : (
@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
               <div className="border-b border-gray-200 p-6 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Детальная статистика по категориям
+                  {t('account.analytics.statsByCategory')}
                 </h3>
               </div>
               <div className="overflow-x-auto">
@@ -123,16 +123,16 @@ export default function AnalyticsPage() {
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        Категория
+                        {t('account.analytics.colCategory')}
                       </th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        Товаров
+                        {t('account.analytics.colItems')}
                       </th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        Сумма
+                        {t('account.analytics.colRevenue')}
                       </th>
                       <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        % от общего
+                        {t('account.analytics.colShare')}
                       </th>
                     </tr>
                   </thead>

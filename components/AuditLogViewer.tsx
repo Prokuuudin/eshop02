@@ -4,22 +4,29 @@ import React, { useMemo, useState } from 'react'
 import { useAuditLogStore } from '@/lib/audit-log-store'
 import { Card } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
+import { useTranslation } from '@/lib/use-translation'
 
 type FilterType = 'all' | 'action' | 'user' | 'date'
 
-const ACTION_LABELS: Record<string, string> = {
-  'order_created': '📦 Заказ создан',
-  'order_cancelled': '❌ Заказ отменён',
-  'payment_recorded': '💰 Платёж записан',
-  'invoice_issued': '📄 Счёт выпущен',
-  'user_invited': '👤 Пользователь приглашён',
-  'user_removed': '🚫 Пользователь удалён',
-  'access_request_submitted': '📝 Заявка на доступ отправлена',
-  'access_request_approved': '✅ Заявка на доступ одобрена',
-  'access_request_rejected': '⛔ Заявка на доступ отклонена',
-  'settings_updated': '⚙ Настройки обновлены',
-  'api_call': '🔗 API вызов',
-  'bulk_import': '📥 Массовый импорт',
+const ACTION_TRANSLATION_KEYS: Record<string, string> = {
+  'order_created': 'account.auditLog.actions.orderCreated',
+  'order_cancelled': 'account.auditLog.actions.orderCancelled',
+  'payment_recorded': 'account.auditLog.actions.paymentRecorded',
+  'invoice_issued': 'account.auditLog.actions.invoiceIssued',
+  'user_invited': 'account.auditLog.actions.userInvited',
+  'user_removed': 'account.auditLog.actions.userRemoved',
+  'access_request_submitted': 'account.auditLog.actions.accessRequestSubmitted',
+  'access_request_approved': 'account.auditLog.actions.accessRequestApproved',
+  'access_request_rejected': 'account.auditLog.actions.accessRequestRejected',
+  'settings_updated': 'account.auditLog.actions.settingsUpdated',
+  'api_call': 'account.auditLog.actions.apiCall',
+  'bulk_import': 'account.auditLog.actions.bulkImport',
+}
+
+const LANGUAGE_LOCALE: Record<string, string> = {
+  ru: 'ru-RU',
+  en: 'en-US',
+  lv: 'lv-LV',
 }
 
 const ACTION_COLORS: Record<string, string> = {
@@ -46,10 +53,12 @@ export default function AuditLogViewer({
   companyId,
   limit = 50
 }: AuditLogViewerProps) {
+  const { t, language } = useTranslation()
   const { getEntriesByCompany } = useAuditLogStore()
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [filterValue, setFilterValue] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const locale = LANGUAGE_LOCALE[language] || 'en-US'
 
   const allEntries = companyId ? getEntriesByCompany(companyId) : []
 
@@ -62,7 +71,7 @@ export default function AuditLogViewer({
       filtered = filtered.filter(e => e.userId.includes(filterValue) || e.userName?.includes(filterValue))
     } else if (filterType === 'date' && filterValue) {
       filtered = filtered.filter(e => {
-        const entryDate = new Date(e.timestamp).toLocaleDateString('ru-RU')
+        const entryDate = new Date(e.timestamp).toLocaleDateString(locale)
         return entryDate === filterValue
       })
     }
@@ -73,14 +82,22 @@ export default function AuditLogViewer({
   const actionTypes = [...new Set(allEntries.map(e => e.action))]
   const userIds = [...new Set(allEntries.map(e => e.userId))]
 
+  const getActionLabel = (action: string): string => {
+    const key = ACTION_TRANSLATION_KEYS[action]
+    if (!key) {
+      return action
+    }
+    return t(key)
+  }
+
   if (allEntries.length === 0) {
     return (
       <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          📋 История действий
+          {t('account.auditLog.title')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-          Нет записей о действиях
+          {t('account.auditLog.empty')}
         </p>
       </Card>
     )
@@ -89,7 +106,7 @@ export default function AuditLogViewer({
   return (
     <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        📋 История действий ({allEntries.length})
+        {t('account.auditLog.titleWithCount', undefined, { count: allEntries.length })}
       </h3>
 
       {/* Filters */}
@@ -103,7 +120,7 @@ export default function AuditLogViewer({
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            Все
+            {t('account.auditLog.filter.all')}
           </button>
         </div>
 
@@ -113,10 +130,10 @@ export default function AuditLogViewer({
             onChange={(e) => setFilterValue(e.target.value)}
             className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
-            <option value="">Все действия</option>
+            <option value="">{t('account.auditLog.filter.allActions')}</option>
             {actionTypes.map(action => (
               <option key={action} value={action}>
-                {ACTION_LABELS[action] || action}
+                {getActionLabel(action)}
               </option>
             ))}
           </select>
@@ -125,14 +142,14 @@ export default function AuditLogViewer({
             onClick={() => { setFilterType('action'); setFilterValue('') }}
             className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
-            По действиям
+            {t('account.auditLog.filter.byActions')}
           </button>
         )}
 
         {filterType === 'user' ? (
           <input
             type="text"
-            placeholder="Поиск по пользователю..."
+            placeholder={t('account.auditLog.filter.userSearchPlaceholder')}
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
             className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
@@ -142,7 +159,7 @@ export default function AuditLogViewer({
             onClick={() => { setFilterType('user'); setFilterValue('') }}
             className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
-            По пользователю
+            {t('account.auditLog.filter.byUser')}
           </button>
         )}
       </div>
@@ -165,7 +182,7 @@ export default function AuditLogViewer({
               <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
                 ACTION_COLORS[entry.action] || 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
               }`}>
-                {ACTION_LABELS[entry.action] || entry.action}
+                {getActionLabel(entry.action)}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -174,7 +191,7 @@ export default function AuditLogViewer({
                     {entry.userName || entry.userId}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatDate(new Date(entry.timestamp), 'ru-RU')}
+                    {formatDate(new Date(entry.timestamp), locale)}
                   </p>
                 </div>
 
@@ -206,12 +223,12 @@ export default function AuditLogViewer({
 
       {filteredEntries.length === 0 && allEntries.length > 0 && (
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
-          Нет записей, соответствующих фильтру
+          {t('account.auditLog.noFilterMatches')}
         </p>
       )}
 
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-        Показано {filteredEntries.length} из {allEntries.length} записей
+        {t('account.auditLog.shownOfTotal', undefined, { shown: filteredEntries.length, total: allEntries.length })}
       </p>
     </Card>
   )

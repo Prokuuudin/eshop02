@@ -62,7 +62,7 @@ export default function AddToCartButton({ product }: Props) {
                   className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"
                   disabled={isOutOfStock}
                   tabIndex={-1}
-                  aria-label="Уменьшить количество"
+                  aria-label={t('product.decreaseQuantityAria')}
                 >
                   −
                 </button>
@@ -81,7 +81,7 @@ export default function AddToCartButton({ product }: Props) {
                   className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"
                   disabled={isOutOfStock || quantity >= maxQuantity}
                   tabIndex={-1}
-                  aria-label="Увеличить количество"
+                  aria-label={t('product.increaseQuantityAria')}
                 >
                   +
                 </button>

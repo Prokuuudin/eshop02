@@ -11,6 +11,7 @@ import CheckoutGuardButton from '@/components/CheckoutGuardButton'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import { useToast } from '@/lib/toast-context'
+import { canPlaceOrders, getCurrentUser } from '@/lib/auth'
 import {
   calculatePrice,
   getMinimumOrderQuantity,
@@ -31,6 +32,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const locale = getLocaleFromLanguage(language);
   const formatCurrency = (value: number): string => formatEuro(value, locale);
   const [mounted, setMounted] = React.useState(false)
+  const currentUser = getCurrentUser()
+  const isCheckoutAllowedForRole = canPlaceOrders(currentUser)
 
   React.useEffect(() => {
     setSelectedItemIds((prev) => {
@@ -258,8 +261,13 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {selectedItemIds.length === 0 && (
               <p className="text-xs text-red-600">{t('cart.selectAtLeastOne')}</p>
             )}
+            {!isCheckoutAllowedForRole && (
+              <p className="text-xs text-amber-700 dark:text-amber-200">
+                Для роли менеджера оформление заказа недоступно.
+              </p>
+            )}
             <CheckoutGuardButton
-              canCheckout={wholesaleGuard.isMinimumReached && selectedItemIds.length > 0}
+              canCheckout={wholesaleGuard.isMinimumReached && selectedItemIds.length > 0 && isCheckoutAllowedForRole}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
               label={t('cart.checkout')}
               href={checkoutHref}

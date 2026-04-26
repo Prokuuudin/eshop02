@@ -1,0 +1,158 @@
+[
+  {
+    "id": "ORD-1776799574796-F958AKY4I",
+    "createdAt": "2026-04-21T19:26:14.796Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "Revitaluxe",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "badges": [
+          "sale",
+          "bestseller"
+        ],
+        "category": "face",
+        "stock": 15,
+        "purpose": "Для увлажнения",
+        "quantity": 1
+      }
+    ],
+    "subtotal": 2500,
+    "tax": 450,
+    "delivery": 500,
+    "deliveryMethod": "courier",
+    "discount": 0,
+    "total": 3450,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Ivan",
+    "lastName": "Petrov",
+    "email": "ivan.petrov@example.com",
+    "phone": "+37120000000",
+    "address": "Brivibas iela 1",
+    "city": "Riga",
+    "postalCode": "LV-1010",
+    "paymentMethod": "bank"
+  },
+  {
+    "id": "ORD-1776798429657-9RNRIQZ63",
+    "createdAt": "2026-04-21T19:07:09.657Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "Revitaluxe",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "badges": [
+          "sale",
+          "bestseller"
+        ],
+        "category": "face",
+        "stock": 15,
+        "purpose": "Для увлажнения",
+        "quantity": 1
+      }
+    ],
+    "subtotal": 2500,
+    "tax": 450,
+    "delivery": 500,
+    "deliveryMethod": "courier",
+    "discount": 0,
+    "total": 3450,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Ivan",
+    "lastName": "Petrov",
+    "email": "ivan.petrov@example.com",
+    "phone": "+37120000000",
+    "address": "Brivibas iela 1",
+    "city": "Riga",
+    "postalCode": "LV-1010",
+    "paymentMethod": "bank"
+  },
+  {
+    "id": "ORD-1776798335842-RDMQESKTB",
+    "createdAt": "2026-04-21T19:05:35.842Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "Revitaluxe",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "badges": [
+          "sale",
+          "bestseller"
+        ],
+        "category": "face",
+        "stock": 15,
+        "purpose": "Для увлажнения",
+        "quantity": 1
+      }
+    ],
+    "subtotal": 2500,
+    "tax": 450,
+    "delivery": 500,
+    "deliveryMethod": "courier",
+    "discount": 0,
+    "total": 3450,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Ivan",
+    "lastName": "Petrov",
+    "email": "ivan.petrov@example.com",
+    "phone": "+37120000000",
+    "address": "Brivibas iela 1",
+    "city": "Riga",
+    "postalCode": "LV-1010",
+    "paymentMethod": "bank"
+  },
+  {
+    "id": "ORD-1776798193668-YK3NSYSMZ",
+    "createdAt": "2026-04-21T19:03:13.668Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "Revitaluxe",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "badges": [
+          "sale",
+          "bestseller"
+        ],
+        "category": "face",
+        "stock": 15,
+        "purpose": "Для увлажнения",
+        "quantity": 1
+      }
+    ],
+    "subtotal": 2500,
+    "tax": 450,
+    "delivery": 500,
+    "deliveryMethod": "courier",
+    "discount": 0,
+    "total": 3450,
+    "paymentStatus": "pending",
+    "paymentProvider": "stripe",
+    "firstName": "Ivan",
+    "lastName": "Petrov",
+    "email": "ivan.petrov@example.com",
+    "phone": "+37120000000",
+    "address": "Brivibas iela 1",
+    "city": "Riga",
+    "postalCode": "LV-1010",
+    "paymentMethod": "card"
+  }
+]

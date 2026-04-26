@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { PRODUCTS, Product } from '@/data/products'
+import { Product } from '@/data/products'
 import { useViewedProducts } from '@/lib/viewed-products-store'
 import AddToCartButton from '@/components/AddToCartButton'
 import WishlistButton from '@/components/WishlistButton'
@@ -23,9 +23,10 @@ import {
 
 type Props = {
   product: Product
+  allProducts: Product[]
 }
 
-export default function ProductPageContent({ product }: Props) {
+export default function ProductPageContent({ product, allProducts }: Props) {
   const { t, language } = useTranslation()
   const { addView, getRecentViews } = useViewedProducts()
   const recentViews = getRecentViews(4)
@@ -34,7 +35,11 @@ export default function ProductPageContent({ product }: Props) {
     const value = t(productKey)
     return value === productKey ? t(fallbackKey) : value
   }
-  const localizedTitle = t(product.titleKey ?? `products.${product.id}.title`, product.title)
+  const localizedTitle = (language === 'en' && product.titleEn)
+    ? product.titleEn
+    : (language === 'lv' && product.titleLv)
+      ? product.titleLv
+      : t(product.titleKey ?? `products.${product.id}.title`, product.title)
   const priceLocale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US'
   const productDescription = resolveProductValue(`${productBaseKey}.description`, 'product.descriptionText')
   const productSpecVolume = resolveProductValue(`${productBaseKey}.spec.volume`, 'product.spec.value.volume')
@@ -43,6 +48,7 @@ export default function ProductPageContent({ product }: Props) {
   const displayPrice = getDisplayPrice(product.price)
   const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined
   const minOrderQuantity = getMinimumOrderQuantity(product)
+  const ratingCount = product.ratingCount ?? product.reviewCount ?? 127
 
   // Track view
   useEffect(() => {
@@ -50,11 +56,11 @@ export default function ProductPageContent({ product }: Props) {
   }, [product, addView])
 
   const relatedProducts = product.relatedProductIds
-    ? PRODUCTS.filter((p) => product.relatedProductIds?.includes(p.id)).slice(0, 4)
-    : PRODUCTS.filter((p) => p.brand === product.brand && p.id !== product.id).slice(0, 4)
+    ? allProducts.filter((p) => product.relatedProductIds?.includes(p.id)).slice(0, 4)
+    : allProducts.filter((p) => p.brand === product.brand && p.id !== product.id).slice(0, 4)
 
   const oftenBoughtTogether = product.oftenBoughtTogether
-    ? PRODUCTS.filter((p) => product.oftenBoughtTogether?.includes(p.id)).slice(0, 4)
+    ? allProducts.filter((p) => product.oftenBoughtTogether?.includes(p.id)).slice(0, 4)
     : []
 
   const productFeatures = [1, 2, 3, 4].map((index) =>
@@ -106,7 +112,7 @@ export default function ProductPageContent({ product }: Props) {
             <h1 className="product-detail__title text-3xl font-bold mt-2">{localizedTitle}</h1>
 
             <div className="product-detail__rating mt-4">
-              <RatingDisplay rating={product.rating} count={127} />
+              <RatingDisplay rating={product.rating} count={ratingCount} />
             </div>
 
             {/* Цена и наличие */}

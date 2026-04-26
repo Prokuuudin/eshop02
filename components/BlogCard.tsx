@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { useTranslation } from '@/lib/use-translation'
 import { useSiteContent } from '@/lib/use-site-content'
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils'
+import { resolveBlogCategoryKey } from '@/lib/blog-category'
 
 type BlogCardProps = {
   post: BlogPost
@@ -17,13 +18,7 @@ export default function BlogCard({ post }: BlogCardProps) {
   const { resolveImageSrc } = useSiteContent()
   const locale = getLocaleFromLanguage(language)
   const localizedPost = localizeBlogPost(post, language)
-  const categoryKeyMap: Record<string, string> = {
-    'уход за лицом': 'blog.category.faceCare',
-    'уход за волосами': 'blog.category.hairCare',
-    'уход за телом': 'blog.category.bodyCare',
-    'макияж': 'blog.category.makeup',
-    'ингредиенты': 'blog.category.ingredients'
-  }
+  const categoryKey = resolveBlogCategoryKey(localizedPost.category, t) ?? resolveBlogCategoryKey(post.category, t)
 
   return (
     <article className="blog-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
@@ -45,7 +40,7 @@ export default function BlogCard({ post }: BlogCardProps) {
 
       <div className="p-3 md:p-4">
         <div className="flex gap-1.5 md:gap-2 mb-2 flex-wrap items-center">
-          <Badge variant="outline" className="h-7 px-2 text-[11px] font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">{t('blog.topicLabel')}: {t(categoryKeyMap[localizedPost.category] ?? localizedPost.category, localizedPost.category)}</Badge>
+          <Badge variant="outline" className="h-7 px-2 text-[11px] font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">{t('blog.topicLabel')}: {categoryKey ? t(categoryKey) : localizedPost.category}</Badge>
           <span className="text-xs text-gray-500 dark:text-gray-300">⏱ {localizedPost.readTime} {t('blog.readTimeShort')}</span>
         </div>
 

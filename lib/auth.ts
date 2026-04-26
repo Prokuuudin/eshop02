@@ -4,6 +4,7 @@ import { logAuditAction } from '@/lib/audit-log-store'
 
 export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 export type PlatformRole = 'customer' | 'admin'
+export type AdminAccessLevel = 'none' | 'manager' | 'admin'
 
 export type User = {
   id: string
@@ -61,6 +62,10 @@ const readUsers = (): User[] => {
 
 const writeUsers = (users: User[]) => {
   localStorage.setItem(USERS_KEY, JSON.stringify(users))
+}
+
+const writeCurrentUser = (user: User): void => {
+  localStorage.setItem(CURRENT_KEY, JSON.stringify(user))
 }
 
 export const hasAdminUsers = (): boolean => {
@@ -289,7 +294,7 @@ export const loginUser = (email: string, password: string): { success: boolean; 
   if (user.companyId) {
     useCompanyStore.getState().setCurrentCompany(user.companyId)
   }
-  localStorage.setItem(CURRENT_KEY, JSON.stringify(user))
+  writeCurrentUser(user)
   notifyAuthChanged()
   return { success: true }
 }
@@ -312,4 +317,101 @@ export const getCurrentUser = (): User | null => {
 
 export const isAdminUser = (user: User | null | undefined): boolean => {
   return user?.platformRole === 'admin'
+}
+
+export const getAdminAccessLevel = (user: User | null | undefined): AdminAccessLevel => {
+  if (!user) return 'none'
+  if (isAdminUser(user)) return 'admin'
+  if (user.teamRole === 'manager' || user.teamRole === 'admin') return 'manager'
+  return 'none'
+}
+
+export const canAccessAdminPanel = (user: User | null | undefined): boolean => {
+  return getAdminAccessLevel(user) !== 'none'
+}
+
+export const hasFullAdminAccess = (user: User | null | undefined): boolean => {
+  return getAdminAccessLevel(user) === 'admin'
+}
+
+export const canViewOrderHistory = (user: User | null | undefined): boolean => {
+  if (!user) return false
+  if (isAdminUser(user)) return true
+  if (user.companyId) return true
+  return true
+}
+
+export const canPlaceOrders = (user: User | null | undefined): boolean => {
+  if (!user) return true
+  if (!user.companyId) return true
+  return user.teamRole === 'buyer' || user.teamRole === 'admin'
+}
+
+export const listCompanyUsers = (companyId: string): User[] => {
+  return readUsers()
+    .filter((user) => user.companyId === companyId)
+    .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email))
+}
+
+export const updateUserTeamRole = (
+  userId: string,
+  nextRole: TeamRole,
+  actor?: Pick<User, 'id' | 'email' | 'platformRole'> | null
+): { success: boolean; error?: string; user?: User } => {
+  if (actor && actor.platformRole !== 'admin') {
+    return { success: false, error: 'Изменение ролей доступно только администратору' }
+  }
+
+  const users = readUsers()
+  const userIndex = users.findIndex((item) => item.id === userId)
+  if (userIndex === -1) {
+    return { success: false, error: 'Пользователь не найден' }
+  }
+
+  const targetUser = users[userIndex]
+  if (!targetUser.companyId) {
+    return { success: false, error: 'Роль можно менять только у B2B аккаунтов' }
+  }
+
+  if (targetUser.platformRole === 'admin') {
+    return { success: false, error: 'Роль платформенного администратора изменить нельзя' }
+  }
+
+  const company = useCompanyStore.getState().getCompany(targetUser.companyId)
+  if (!company) {
+    return { success: false, error: 'Компания пользователя не найдена' }
+  }
+
+  const updatedUser: User = {
+    ...targetUser,
+    teamRole: nextRole,
+    approvalRequired: company.approvalWorkflowEnabled && nextRole !== 'admin'
+  }
+
+  users[userIndex] = updatedUser
+  writeUsers(users)
+
+  useCompanyStore.getState().updateTeamMemberRole(targetUser.companyId, targetUser.id, nextRole)
+
+  const currentUser = getCurrentUser()
+  if (currentUser?.id === updatedUser.id) {
+    writeCurrentUser(updatedUser)
+  }
+
+  logAuditAction(
+    targetUser.companyId,
+    actor?.id ?? updatedUser.id,
+    'team_member_role_updated',
+    {
+      targetUserId: updatedUser.id,
+      targetUserEmail: updatedUser.email,
+      nextRole
+    },
+    {
+      userEmail: actor?.email
+    }
+  )
+
+  notifyAuthChanged()
+  return { success: true, user: updatedUser }
 }

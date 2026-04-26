@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, hasAdminUsers, logout, type User } from '@/lib/auth'
+import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, logout, type User } from '@/lib/auth'
 import { Button } from './ui/button'
 import { useTranslation } from '@/lib/use-translation'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
@@ -23,9 +23,15 @@ export default function UserMenu() {
   const { t } = useTranslation()
 
   useEffect(() => {
-    const currentUser = getCurrentUser()
-    setUser(currentUser)
-    setSetupRequired(!hasAdminUsers())
+    const syncUser = () => {
+      const currentUser = getCurrentUser()
+      setUser(currentUser)
+      setSetupRequired(!hasAdminUsers())
+    }
+
+    syncUser()
+    window.addEventListener('eshop-user-changed', syncUser as EventListener)
+    return () => window.removeEventListener('eshop-user-changed', syncUser as EventListener)
   }, [])
 
   const handleLoginSuccess = () => {
@@ -113,7 +119,7 @@ export default function UserMenu() {
                     {t('account.myOrders')}
                   </Link>
                 )}
-                {user.platformRole === 'admin' && (
+                {canAccessAdminPanel(user) && (
                   <Link href="/admin" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">
                     {t('nav.admin')}
                   </Link>

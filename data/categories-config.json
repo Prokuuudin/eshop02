@@ -1,0 +1,434 @@
+{
+  "categories": [
+    {
+      "id": "hair",
+      "titleKey": "categories.haircare",
+      "href": "/catalog?cat=hair",
+      "image": "/categories/hair.jpg",
+      "labels": {
+        "ru": "Уход за волосами",
+        "en": "Hair Care",
+        "lv": "Matu aprūpe"
+      },
+      "subcategories": [
+        {
+          "slug": "conditioners",
+          "key": "categories.hairSub.conditioners",
+          "labels": {
+            "ru": "Кондиционеры",
+            "en": "Conditioners",
+            "lv": "Kondicionieri"
+          },
+          "search": "КОНДИЦИОНЕРЫ"
+        },
+        {
+          "slug": "masks",
+          "key": "categories.hairSub.masks",
+          "labels": {
+            "ru": "Маски для волос",
+            "en": "Hair Masks",
+            "lv": "Matu maskas"
+          },
+          "search": "МАСКИ ДЛЯ ВОЛОС"
+        },
+        {
+          "slug": "coloring",
+          "key": "categories.hairSub.coloring",
+          "labels": {
+            "ru": "Покраска и отбеливание волос",
+            "en": "Hair Coloring & Bleaching",
+            "lv": "Matu krāsošana un balināšana"
+          },
+          "search": "ПОКРАСКА И ОТБЕЛИВАНИЕ ВОЛОС"
+        },
+        {
+          "slug": "extra-care",
+          "key": "categories.hairSub.extraCare",
+          "labels": {
+            "ru": "Дополнительный уход за волосами",
+            "en": "Additional Hair Care",
+            "lv": "Papildu matu kopšana"
+          },
+          "search": "ДОПОЛНИТЕЛЬНЫЙ УХОД ЗА ВОЛОСАМИ"
+        },
+        {
+          "slug": "shampoos",
+          "key": "categories.hairSub.shampoos",
+          "labels": {
+            "ru": "Шампуни",
+            "en": "Shampoos",
+            "lv": "Šampūni"
+          },
+          "search": "ШАМПУНИ"
+        },
+        {
+          "slug": "styling",
+          "key": "categories.hairSub.styling",
+          "labels": {
+            "ru": "Средства для укладки",
+            "en": "Styling Products",
+            "lv": "Ieveidošanas līdzekļi"
+          },
+          "search": "СРЕДСТВА ДЛЯ УКЛАДКИ"
+        },
+        {
+          "slug": "barbershop-products",
+          "key": "categories.hairSub.barbershop",
+          "labels": {
+            "ru": "Товары для барбершопов",
+            "en": "Barbershop Products",
+            "lv": "Barberu preces"
+          },
+          "search": "ТОВАРЫ ДЛЯ БАРБЕРШОПОВ"
+        }
+      ]
+    },
+    {
+      "id": "face",
+      "titleKey": "categories.skincare",
+      "href": "/catalog?cat=face",
+      "image": "/categories/face.jpg",
+      "labels": {
+        "ru": "Уход за кожей",
+        "en": "Skincare",
+        "lv": "Ādas aprūpe"
+      },
+      "subcategories": [
+        {
+          "slug": "face-care",
+          "key": "categories.skinSub.face",
+          "labels": {
+            "ru": "Уход за лицом",
+            "en": "Face Care",
+            "lv": "Sejas kopšana"
+          },
+          "search": "ДЛЯ ЛИЦА"
+        },
+        {
+          "slug": "leg-care",
+          "key": "categories.skinSub.legs",
+          "labels": {
+            "ru": "Уход за ногами",
+            "en": "Leg Care",
+            "lv": "Kāju kopšana"
+          },
+          "search": "ДЛЯ НОГ"
+        },
+        {
+          "slug": "hand-care",
+          "key": "categories.skinSub.hands",
+          "labels": {
+            "ru": "Уход за руками",
+            "en": "Hand Care",
+            "lv": "Roku kopšana"
+          },
+          "search": "ДЛЯ РУК"
+        },
+        {
+          "slug": "lashes-brows-care",
+          "key": "categories.skinSub.lashesBrows",
+          "labels": {
+            "ru": "Уход за ресницами и бровями",
+            "en": "Eyelash & Eyebrow Care",
+            "lv": "Skropstu un uzacu kopšana"
+          },
+          "search": "УХОД ЗА РЕСНИЦАМИ И БРОВЯМИ"
+        },
+        {
+          "slug": "decorative-cosmetics",
+          "key": "categories.skinSub.decorativeMakeup",
+          "labels": {
+            "ru": "Декоративная косметика",
+            "en": "Decorative Cosmetics",
+            "lv": "Dekoratīvā kosmētika"
+          },
+          "search": "ДЕКОРАТИВНАЯ КОСМЕТИКА"
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "titleKey": "categories.bodycare",
+      "href": "/catalog?cat=body",
+      "image": "/categories/body.jpg",
+      "labels": {
+        "ru": "Уход за телом",
+        "en": "Body Care",
+        "lv": "Ķermeņa aprūpe"
+      },
+      "subcategories": [
+        {
+          "slug": "solarium-cosmetics",
+          "key": "categories.bodySub.solarium",
+          "labels": {
+            "ru": "Косметика для солярия",
+            "en": "Solarium Cosmetics",
+            "lv": "Solārija kosmētika"
+          },
+          "search": "КОСМЕТИКА ДЛЯ СОЛЯРИЯ"
+        },
+        {
+          "slug": "body-cosmetics",
+          "key": "categories.bodySub.bodyCosmetics",
+          "labels": {
+            "ru": "Косметика для тела",
+            "en": "Body Cosmetics",
+            "lv": "Ķermeņa kosmētika"
+          },
+          "search": "КОСМЕТИКА ДЛЯ ТЕЛА"
+        },
+        {
+          "slug": "waxing",
+          "key": "categories.bodySub.waxing",
+          "labels": {
+            "ru": "Ваксация",
+            "en": "Waxing",
+            "lv": "Vaksācija"
+          },
+          "search": "ВАКСАЦИЯ"
+        },
+        {
+          "slug": "oils",
+          "key": "categories.bodySub.oils",
+          "labels": {
+            "ru": "Масла",
+            "en": "Oils",
+            "lv": "Eļļas"
+          },
+          "search": "МАСЛА"
+        },
+        {
+          "slug": "perfumery",
+          "key": "categories.bodySub.perfumery",
+          "labels": {
+            "ru": "Парфюмерия",
+            "en": "Perfumery",
+            "lv": "Parfimērija"
+          },
+          "search": "ПАРФЮМЕРИЯ"
+        }
+      ]
+    },
+    {
+      "id": "nails",
+      "titleKey": "categories.nails",
+      "href": "/catalog?cat=nails",
+      "image": "/categories/pro.jpg",
+      "labels": {
+        "ru": "Уход за ногтями",
+        "en": "Nail Care",
+        "lv": "Nagu aprūpe"
+      },
+      "subcategories": [
+        {
+          "slug": "gel-tech-products",
+          "key": "categories.nailsSub.gelTechHelpers",
+          "labels": {
+            "ru": "Средства для гелевых технологий",
+            "en": "Auxiliary Products for Gel Technologies",
+            "lv": "Palīglīdzekļi gēla tehnoloģijām"
+          },
+          "search": "ВСПОМОГАТЕЛЬНЫЕ СРЕДСТВА ДЛЯ ГЕЛЕВЫХ ТЕХНОЛОГИЙ"
+        },
+        {
+          "slug": "uv-gel",
+          "key": "categories.nailsSub.uvGel",
+          "labels": {
+            "ru": "УФ-гель",
+            "en": "UV Gel",
+            "lv": "UV gēls"
+          },
+          "search": "УФ ГЕЛЬ"
+        },
+        {
+          "slug": "manicure-pedicure-tools",
+          "key": "categories.nailsSub.manicurePedicureTools",
+          "labels": {
+            "ru": "Инструменты для маникюра и педикюра",
+            "en": "Manicure & Pedicure Accessories",
+            "lv": "Manikīra un pedikīra piederumi"
+          },
+          "search": "ПРИНАДЛЕЖНОСТИ ДЛЯ МАНИКЮРА И ПЕДИКЮРА"
+        },
+        {
+          "slug": "treatment-recovery",
+          "key": "categories.nailsSub.treatmentRecovery",
+          "labels": {
+            "ru": "Лечение и восстановление",
+            "en": "Treatment & Recovery Products",
+            "lv": "Līdzekļi ārstēšanai un atjaunošanai"
+          },
+          "search": "СРЕДСТВА ДЛЯ ЛЕЧЕНИЯ И ВОССТАНОВЛЕНИЯ"
+        },
+        {
+          "slug": "nail-polishes",
+          "key": "categories.nailsSub.nailPolishes",
+          "labels": {
+            "ru": "Лаки для ногтей",
+            "en": "Nail Polishes",
+            "lv": "Nagu lakas"
+          },
+          "search": "ЛАКИ ДЛЯ НОГТЕЙ"
+        },
+        {
+          "slug": "gel-polishes",
+          "key": "categories.nailsSub.gelPolishes",
+          "labels": {
+            "ru": "Гель-лаки",
+            "en": "Gel Polishes",
+            "lv": "Gēla lakas"
+          },
+          "search": "ГЕЛЬ ЛАКИ"
+        },
+        {
+          "slug": "nail-care",
+          "key": "categories.nailsSub.nailCare",
+          "labels": {
+            "ru": "Уход за ногтями",
+            "en": "Nail Care",
+            "lv": "Nagu kopšana"
+          },
+          "search": "УХОД ЗА НОГТЯМИ"
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "titleKey": "categories.equipment",
+      "href": "/catalog?cat=equipment",
+      "image": "/categories/equipment.jpg",
+      "labels": {
+        "ru": "Оборудование",
+        "en": "Equipment",
+        "lv": "Apkopšana"
+      },
+      "subcategories": [
+        {
+          "slug": "furniture",
+          "key": "categories.equipmentSub.furniture",
+          "labels": {
+            "ru": "Мебель",
+            "en": "Furniture",
+            "lv": "Mēbeles"
+          },
+          "search": "МЕБЕЛЬ"
+        },
+        {
+          "slug": "tools",
+          "key": "categories.equipmentSub.tools",
+          "labels": {
+            "ru": "Инструменты",
+            "en": "Tools",
+            "lv": "Instrumenti"
+          },
+          "search": "ИНСТРУМЕНТЫ"
+        },
+        {
+          "slug": "electrical-goods",
+          "key": "categories.equipmentSub.electrical",
+          "labels": {
+            "ru": "Электротовары",
+            "en": "Electrical Goods",
+            "lv": "Elektropreces"
+          },
+          "search": "ЭЛЕКТРОТОВАРЫ"
+        }
+      ]
+    },
+    {
+      "id": "new",
+      "titleKey": "categories.newArrivals",
+      "href": "/catalog?cat=new",
+      "image": "/categories/new.jpg",
+      "labels": {
+        "ru": "Разное",
+        "en": "Miscellaneous",
+        "lv": "Dažādi"
+      },
+      "subcategories": [
+        {
+          "slug": "gift-ideas",
+          "key": "categories.miscSub.giftIdeas",
+          "labels": {
+            "ru": "Идеи для подарков",
+            "en": "Gift Ideas",
+            "lv": "Dāvanu idejas"
+          },
+          "search": "ИДЕИ ДЛЯ ПОДАРКОВ"
+        },
+        {
+          "slug": "consumables",
+          "key": "categories.miscSub.consumables",
+          "labels": {
+            "ru": "Расходные материалы",
+            "en": "Consumables",
+            "lv": "Patēriņa materiāli"
+          },
+          "search": "РАСХОДНЫЕ МАТЕРИАЛЫ"
+        },
+        {
+          "slug": "salon-products",
+          "key": "categories.miscSub.salonProducts",
+          "labels": {
+            "ru": "Товары для салонов",
+            "en": "Salon Products",
+            "lv": "Preces saloniem"
+          },
+          "search": "ТОВАРЫ ДЛЯ САЛОНОВ"
+        },
+        {
+          "slug": "aprons-capes",
+          "key": "categories.miscSub.apronsCapes",
+          "labels": {
+            "ru": "Передники и пеньюары",
+            "en": "Aprons & Capes",
+            "lv": "Priekšauti un apmetņi"
+          },
+          "search": "ПЕРЕДНИКИ И ПЕНЬЮАРЫ"
+        },
+        {
+          "slug": "hair-accessories",
+          "key": "categories.miscSub.hairAccessories",
+          "labels": {
+            "ru": "Аксессуары для волос",
+            "en": "Hair Accessories",
+            "lv": "Matu aksesuāri"
+          },
+          "search": "АКСЕССУАРЫ ДЛЯ ВОЛОС"
+        },
+        {
+          "slug": "disinfection",
+          "key": "categories.miscSub.disinfection",
+          "labels": {
+            "ru": "Дезинфекция",
+            "en": "Disinfection",
+            "lv": "Dezinfekcija"
+          },
+          "search": "ДЕЗИНФЕКЦИЯ"
+        }
+      ]
+    },
+    {
+      "id": "123",
+      "href": "/catalog?cat=123",
+      "image": "/categories/new.jpg",
+      "labels": {
+        "ru": "уход за лысино",
+        "en": "уход за лысиной эн",
+        "lv": "уход за лысиной лв"
+      },
+      "subcategories": [
+        {
+          "slug": "345",
+          "labels": {
+            "ru": "укн",
+            "en": "ненук",
+            "lv": "ен"
+          },
+          "search": ""
+        }
+      ]
+    }
+  ],
+  "deletedCategories": []
+}

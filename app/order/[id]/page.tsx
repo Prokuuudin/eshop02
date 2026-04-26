@@ -2,6 +2,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useOrders } from '@/lib/orders-store'
 import { useAdminStore } from '@/lib/admin-store'
@@ -16,11 +17,104 @@ type PageProps = {
 
 export default function OrderPage({ params }: PageProps) {
   const { id } = React.use(params)
+  const searchParams = useSearchParams()
   const { t, language } = useTranslation()
-  const { getOrder } = useOrders()
+  const { getOrder, updateOrderPayment, upsertOrder } = useOrders()
   const { getOrderStatus } = useAdminStore()
-  const order = getOrder(id)
+  const localOrder = getOrder(id)
+  const [serverOrder, setServerOrder] = React.useState<ReturnType<typeof getOrder> | null>(null)
+  const [serverOrderLoading, setServerOrderLoading] = React.useState(false)
+  const [serverOrderResolved, setServerOrderResolved] = React.useState(false)
+  const order = serverOrder ?? localOrder
   const locale = getLocaleFromLanguage(language)
+  const [paymentCheckPending, setPaymentCheckPending] = React.useState(false)
+
+  React.useEffect(() => {
+    if (serverOrderResolved) return
+
+    let isMounted = true
+    setServerOrderLoading(true)
+
+    fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: 'no-store' })
+      .then(async (res) => {
+        if (res.status === 404) return null
+        if (!res.ok) throw new Error('Failed to load server order')
+
+        const payload = (await res.json()) as {
+          order?: {
+            id: string
+            createdAt: string
+            items: Array<{
+              id: string
+              title: string
+              brand: string
+              image: string
+              category: string
+              price: number
+              rating: number
+              stock: number
+              quantity: number
+            }>
+            subtotal: number
+            tax: number
+            delivery: number
+            deliveryMethod: 'courier' | 'pickup' | 'post'
+            paymentMethod: string
+            promoCode?: string
+            discount: number
+            total: number
+            firstName: string
+            lastName: string
+            email: string
+            phone: string
+            address: string
+            city: string
+            postalCode?: string
+            bonusSpent?: number
+            bonusEarned?: number
+            paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed'
+            paymentProvider?: 'stripe' | 'manual'
+            paymentSessionId?: string
+          }
+        }
+
+        if (!payload.order) return null
+
+        return {
+          ...payload.order,
+          createdAt: new Date(payload.order.createdAt)
+        }
+      })
+      .then((loadedOrder) => {
+        if (!isMounted) return
+        setServerOrder(loadedOrder)
+
+        if (loadedOrder) {
+          upsertOrder(loadedOrder)
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setServerOrder(null)
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setServerOrderResolved(true)
+        setServerOrderLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [id, serverOrderResolved, upsertOrder])
+
+  const applyOrderPaymentUpdate = React.useCallback(
+    (orderId: string, updates: Partial<Pick<NonNullable<typeof order>, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>) => {
+      updateOrderPayment(orderId, updates)
+      setServerOrder((prev) => (prev && prev.id === orderId ? { ...prev, ...updates } : prev))
+    },
+    [updateOrderPayment]
+  )
 
   const getDeliveryLabel = (deliveryMethod: string): string => {
     if (deliveryMethod === 'courier') return t('order.delivery.courier')
@@ -50,6 +144,118 @@ export default function OrderPage({ params }: PageProps) {
     if (status === 'delivered') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
     if (status === 'cancelled') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'
     return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200'
+  }
+
+  const getPaymentStatusLabel = (status: string | undefined): string => {
+    if (status === 'paid') return t('order.paymentStatus.paid')
+    if (status === 'pending') return t('order.paymentStatus.pending')
+    if (status === 'failed') return t('order.paymentStatus.failed')
+    return t('order.paymentStatus.unpaid')
+  }
+
+  const getPaymentStatusClasses = (status: string | undefined): string => {
+    if (status === 'paid') return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
+    if (status === 'pending') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200'
+    if (status === 'failed') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'
+    return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'
+  }
+
+  React.useEffect(() => {
+    if (!order) return
+
+    const paymentState = searchParams.get('payment')
+    const sessionId = searchParams.get('session_id')
+
+    if (paymentState === 'cancelled') {
+      applyOrderPaymentUpdate(order.id, {
+        paymentStatus: 'failed',
+        paymentProvider: 'stripe'
+      })
+      return
+    }
+
+    if (paymentState !== 'success' || !sessionId) return
+
+    let isMounted = true
+    setPaymentCheckPending(true)
+
+    fetch('/api/payments/stripe/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sessionId })
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Payment verification failed')
+        return (await res.json()) as { paymentStatus?: 'paid' | 'pending' | 'failed'; sessionId?: string }
+      })
+      .then((result) => {
+        if (!isMounted) return
+        applyOrderPaymentUpdate(order.id, {
+          paymentStatus: result.paymentStatus || 'pending',
+          paymentProvider: 'stripe',
+          paymentSessionId: result.sessionId || sessionId
+        })
+      })
+      .catch(() => {
+        if (!isMounted) return
+        applyOrderPaymentUpdate(order.id, {
+          paymentStatus: 'pending',
+          paymentProvider: 'stripe',
+          paymentSessionId: sessionId
+        })
+      })
+      .finally(() => {
+        if (isMounted) setPaymentCheckPending(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [applyOrderPaymentUpdate, order, searchParams])
+
+  React.useEffect(() => {
+    if (!order || order.paymentProvider !== 'stripe') return
+
+    let isMounted = true
+
+    fetch(`/api/payments/status?orderId=${encodeURIComponent(order.id)}`, {
+      cache: 'no-store'
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Server payment status failed')
+        return (await res.json()) as {
+          paymentStatus?: 'paid' | 'pending' | 'failed'
+          sessionId?: string
+        }
+      })
+      .then((serverPayment) => {
+        if (!isMounted || !serverPayment.paymentStatus) return
+        applyOrderPaymentUpdate(order.id, {
+          paymentStatus: serverPayment.paymentStatus,
+          paymentProvider: 'stripe',
+          paymentSessionId: serverPayment.sessionId || order.paymentSessionId
+        })
+      })
+      .catch(() => {
+        // Keep local status when server status endpoint is unavailable.
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [applyOrderPaymentUpdate, order])
+
+  if (serverOrderLoading && !serverOrder && !localOrder) {
+    return (
+      <main className="w-full px-4 py-12">
+        <div className="max-w-md mx-auto text-center">
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('order.loading')}</h1>
+          <p className="text-gray-600 dark:text-gray-300">{t('order.loadingDescription')}</p>
+        </div>
+      </main>
+    )
   }
 
   if (!order) {
@@ -178,6 +384,11 @@ export default function OrderPage({ params }: PageProps) {
               <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="font-bold mb-2 text-gray-900 dark:text-gray-100">{t('order.paymentMethod')}</h3>
                 <p className="text-gray-700 dark:text-gray-300">{getPaymentLabel(order.paymentMethod)}</p>
+                <div className="mt-3">
+                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getPaymentStatusClasses(order.paymentStatus)}`}>
+                    {paymentCheckPending ? t('order.paymentStatus.checking') : getPaymentStatusLabel(order.paymentStatus)}
+                  </span>
+                </div>
               </div>
             </div>
 

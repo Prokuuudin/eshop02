@@ -2,19 +2,35 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { PRODUCTS } from '@/data/products'
+import { PRODUCTS, type Product } from '@/data/products'
 import { useRFQStore } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import AdminGate from '@/components/admin/AdminGate'
 
 export default function AdminRFQPage() {
+  const [products, setProducts] = useState<Product[]>([])
   const [quotePrice, setQuotePrice] = useState<Record<string, number>>({})
   const [quoteTerms, setQuoteTerms] = useState<Record<string, string>>({})
   const [quoteValidDays, setQuoteValidDays] = useState<Record<string, number>>({})
 
   const { getAll, setQuote, setStatus } = useRFQStore()
   const requests = useMemo(() => getAll(), [getAll])
+
+  React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products', { cache: 'no-store' })
+        if (!response.ok) throw new Error('failed')
+
+        const payload = (await response.json()) as { data?: { products?: Product[] } }
+        setProducts(payload.data?.products ?? [])
+      } catch {
+        setProducts(PRODUCTS)
+      }
+    }
+
+    void loadProducts()
+  }, [])
 
   const sendQuote = (rfqId: string) => {
     const totalPrice = Number(quotePrice[rfqId] || 0)
@@ -36,7 +52,6 @@ export default function AdminRFQPage() {
   }
 
   return (
-    <AdminGate>
     <main className="max-w-6xl mx-auto px-4 py-10 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">RFQ заявки</h1>
@@ -58,7 +73,7 @@ export default function AdminRFQPage() {
 
             <ul className="mt-3 text-sm space-y-1">
               {rfq.items.map((item, idx) => {
-                const product = PRODUCTS.find((p) => p.id === item.productId)
+                const product = products.find((p) => p.id === item.productId)
                 return <li key={idx}>{product?.title || item.productId} - {item.quantity} шт</li>
               })}
             </ul>
@@ -114,6 +129,5 @@ export default function AdminRFQPage() {
         )}
       </div>
     </main>
-    </AdminGate>
   )
 }

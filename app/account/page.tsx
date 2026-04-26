@@ -22,6 +22,8 @@ type OrderFilter = 'all' | 'active' | 'completed'
 export default function AccountPage() {
   const router = useRouter()
   const { t, language } = useTranslation()
+  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
+  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const ordersStore = useOrders()
@@ -61,10 +63,10 @@ export default function AccountPage() {
   const completedOrdersCount = userOrders.length - activeOrdersCount
   const accountTools = [
     {
-      title: 'Статистика покупок',
-      description: 'Просмотр аналитики и динамики заказов',
+      title: tl('account.page.tools.analytics.title', 'Статистика покупок', 'Purchase analytics', 'Pirkumu statistika'),
+      description: tl('account.page.tools.analytics.description', 'Просмотр аналитики и динамики заказов', 'View analytics and order dynamics', 'Analitikas un pasutijumu dinamikas parskats'),
       href: '/account/analytics',
-      linkLabel: 'Просмотр аналитики',
+      linkLabel: tl('account.page.tools.analytics.linkLabel', 'Просмотр аналитики', 'View analytics', 'Skatit analitiku'),
       icon: Activity,
       classes: 'border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-900/30',
       linkClasses: 'text-indigo-700 dark:text-indigo-300'
@@ -72,37 +74,37 @@ export default function AccountPage() {
     ...(user?.companyId
       ? [
           {
-            title: 'Счёта организации',
-            description: 'Документы и платежный статус по компании',
+            title: tl('account.page.tools.invoices.title', 'Счёта организации', 'Company invoices', 'Uznemuma rekini'),
+            description: tl('account.page.tools.invoices.description', 'Документы и платежный статус по компании', 'Company documents and payment status', 'Uznemuma dokumenti un maksajumu statuss'),
             href: '/account/invoices',
-            linkLabel: 'Перейти к счётам',
+            linkLabel: tl('account.page.tools.invoices.linkLabel', 'Перейти к счётам', 'Go to invoices', 'Pariet uz rekiniem'),
             icon: FileText,
             classes: 'border-blue-100 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30',
             linkClasses: 'text-blue-700 dark:text-blue-300'
           },
           {
-            title: 'История действий',
-            description: 'Проверка действий пользователей и изменений',
+            title: tl('account.page.tools.audit.title', 'История действий', 'Activity log', 'Darbibu vesture'),
+            description: tl('account.page.tools.audit.description', 'Проверка действий пользователей и изменений', 'Review user actions and changes', 'Lietotaju darbibu un izmainu parbaude'),
             href: '/account/audit-logs',
-            linkLabel: 'Просмотр логов',
+            linkLabel: tl('account.page.tools.audit.linkLabel', 'Просмотр логов', 'View logs', 'Skatit zurnalus'),
             icon: ShieldCheck,
             classes: 'border-violet-100 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/30',
             linkClasses: 'text-violet-700 dark:text-violet-300'
           },
           {
-            title: 'Webhook-интеграции',
-            description: 'Настройка уведомлений и внешних интеграций',
+            title: tl('account.page.tools.webhooks.title', 'Webhook-интеграции', 'Webhook integrations', 'Webhook integracijas'),
+            description: tl('account.page.tools.webhooks.description', 'Настройка уведомлений и внешних интеграций', 'Configure notifications and external integrations', 'Pazinojumu un arejo integraciju iestatisana'),
             href: '/account/integrations/webhooks',
-            linkLabel: 'Управление webhook',
+            linkLabel: tl('account.page.tools.webhooks.linkLabel', 'Управление webhook', 'Manage webhooks', 'Parvaldit webhook'),
             icon: RadioTower,
             classes: 'border-emerald-100 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/30',
             linkClasses: 'text-emerald-700 dark:text-emerald-300'
           },
           {
-            title: 'Запрос спецпредложения (RFQ)',
-            description: 'Отправка запроса на персональные условия',
+            title: tl('account.page.tools.rfq.title', 'Запрос спецпредложения (RFQ)', 'Special offer request (RFQ)', 'Ipaso piedavajumu pieprasijums (RFQ)'),
+            description: tl('account.page.tools.rfq.description', 'Отправка запроса на персональные условия', 'Submit a request for custom terms', 'Nosutit pieprasijumu personalizetiem noteikumiem'),
             href: '/request-quote',
-            linkLabel: 'Создать RFQ заявку',
+            linkLabel: tl('account.page.tools.rfq.linkLabel', 'Создать RFQ заявку', 'Create RFQ request', 'Izveidot RFQ pieprasijumu'),
             icon: CreditCard,
             classes: 'border-amber-100 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30',
             linkClasses: 'text-amber-700 dark:text-amber-300'
@@ -114,25 +116,25 @@ export default function AccountPage() {
     {
       title: t('account.myOrders'),
       value: String(userOrders.length),
-      caption: 'Всего заказов',
+      caption: tl('account.page.summary.totalOrders', 'Всего заказов', 'Total orders', 'Kopa pasutijumu'),
       icon: ShoppingBag
     },
     {
-      title: 'Активные',
+      title: tl('account.page.summary.activeTitle', 'Активные', 'Active', 'Aktivi'),
       value: String(activeOrdersCount),
-      caption: 'В работе сейчас',
+      caption: tl('account.page.summary.activeCaption', 'В работе сейчас', 'Currently in progress', 'Paslaik apstrade'),
       icon: ClipboardList
     },
     {
-      title: 'Адреса',
+      title: tl('account.page.summary.addressesTitle', 'Адреса', 'Addresses', 'Adreses'),
       value: String(savedAddresses.length),
-      caption: 'Сохранено адресов',
+      caption: tl('account.page.summary.addressesCaption', 'Сохранено адресов', 'Saved addresses', 'Saglabatas adreses'),
       icon: MapPinned
     },
     {
-      title: 'Оборот',
+      title: tl('account.page.summary.turnoverTitle', 'Оборот', 'Turnover', 'Apgrozijums'),
       value: formatEuro(totalSpent, locale),
-      caption: 'Сумма всех заказов',
+      caption: tl('account.page.summary.turnoverCaption', 'Сумма всех заказов', 'Total amount of all orders', 'Visu pasutijumu kopsumma'),
       icon: Package
     }
   ]
@@ -385,9 +387,11 @@ export default function AccountPage() {
                   </div>
 
                   <div className="text-sm">
-                    <p className="text-gray-600 dark:text-gray-300">Профиль</p>
+                    <p className="text-gray-600 dark:text-gray-300">{tl('account.page.profileLabel', 'Профиль', 'Profile', 'Profils')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {user.companyName ? 'Корпоративный аккаунт' : 'Личный аккаунт'}
+                      {user.companyName
+                        ? tl('account.page.corporateAccount', 'Корпоративный аккаунт', 'Corporate account', 'Korporativais konts')
+                        : tl('account.page.personalAccount', 'Личный аккаунт', 'Personal account', 'Personigais konts')}
                     </p>
                     {user.companyName && (
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">{user.companyName}</p>
@@ -396,9 +400,9 @@ export default function AccountPage() {
 
                   {user.companyId && (
                     <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-900/30">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ваш аккаунт-менеджер</p>
-                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">Анна Петрова</p>
-                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">Телефон: +7 (999) 123-45-67</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tl('account.page.managerCard.title', 'Ваш аккаунт-менеджер', 'Your account manager', 'Jusu konta menedzeris')}</p>
+                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">{tl('account.page.managerCard.name', 'Анна Петрова', 'Anna Petrova', 'Anna Petrova')}</p>
+                      <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{tl('account.page.managerCard.phoneLabel', 'Телефон', 'Phone', 'Talrunis')}: +7 (999) 123-45-67</p>
                       <p className="text-xs text-gray-600 dark:text-gray-300">Email: account.manager@eshop02.local</p>
                     </div>
                   )}
@@ -406,7 +410,7 @@ export default function AccountPage() {
                   {user.platformRole === 'admin' && (
                     <Link href="/admin" className="block">
                       <Button className="w-full bg-rose-600 text-white hover:bg-rose-700" size="sm">
-                        Перейти в панель администратора
+                        {tl('account.page.goToAdmin', 'Перейти в панель администратора', 'Go to admin panel', 'Doties uz admin paneli')}
                       </Button>
                     </Link>
                   )}
@@ -444,7 +448,7 @@ export default function AccountPage() {
             <AccountPageHero
               eyebrow="Dashboard"
               title={t('account.title')}
-              description="Управляйте заказами, адресами и рабочими инструментами из одного экрана без длинной прокрутки."
+              description={tl('account.page.heroDescription', 'Управляйте заказами, адресами и рабочими инструментами из одного экрана без длинной прокрутки.', 'Manage orders, addresses, and work tools from one screen without long scrolling.', 'Parvaldiet pasutijumus, adreses un darba rikus viena ekrana bez garas ritinasanas.')}
               icon={ShoppingBag}
             />
 
@@ -468,7 +472,7 @@ export default function AccountPage() {
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('account.savedAddressesTitle')}</h2>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Быстрый выбор адресов для повторного оформления заказа.</p>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{tl('account.page.savedAddressesHint', 'Быстрый выбор адресов для повторного оформления заказа.', 'Quick address selection for repeat checkout.', 'Atra adresu izvele atkartotai pasutisanas noformesanai.')}</p>
                 </div>
                 {!isAddingAddress && (
                   <button className="text-sm text-indigo-600 dark:text-indigo-300" onClick={startAddingAddress}>
@@ -639,21 +643,21 @@ export default function AccountPage() {
                     className={getOrderFilterButtonClasses('all')}
                     onClick={() => setOrderFilter('all')}
                   >
-                    Все ({userOrders.length})
+                    {tl('account.page.ordersFilter.allWithCount', 'Все ({count})', 'All ({count})', 'Visi ({count})', { count: userOrders.length })}
                   </button>
                   <button
                     type="button"
                     className={getOrderFilterButtonClasses('active')}
                     onClick={() => setOrderFilter('active')}
                   >
-                    Активные ({activeOrdersCount})
+                    {tl('account.page.ordersFilter.activeWithCount', 'Активные ({count})', 'Active ({count})', 'Aktivie ({count})', { count: activeOrdersCount })}
                   </button>
                   <button
                     type="button"
                     className={getOrderFilterButtonClasses('completed')}
                     onClick={() => setOrderFilter('completed')}
                   >
-                    Завершённые ({completedOrdersCount})
+                    {tl('account.page.ordersFilter.completedWithCount', 'Завершённые ({count})', 'Completed ({count})', 'Pabeigtie ({count})', { count: completedOrdersCount })}
                   </button>
                 </div>
               </div>
@@ -681,7 +685,7 @@ export default function AccountPage() {
                 </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Для выбранного фильтра заказов пока нет.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{tl('account.page.noOrdersForFilter', 'Для выбранного фильтра заказов пока нет.', 'There are no orders for the selected filter yet.', 'Izveletajam filtram vel nav pasutijumu.')}</p>
                   </div>
                 )
               ) : (

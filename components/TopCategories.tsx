@@ -15,7 +15,7 @@ export default function TopCategories({
   analytics,
   limit = 5
 }: TopCategoriesProps) {
-  const { language } = useTranslation()
+  const { t, language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const topItems = analytics.topCategories.slice(0, limit)
 
@@ -23,10 +23,10 @@ export default function TopCategories({
     return (
       <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Категории
+          {t('account.topCategories.title')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-          Нет данных о покупках
+          {t('account.topCategories.noData')}
         </p>
       </Card>
     )
@@ -38,7 +38,7 @@ export default function TopCategories({
   return (
     <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        📊 Топ категории
+        {t('account.topCategories.titleWithIcon')}
       </h3>
 
       <div className="space-y-4">
@@ -64,7 +64,7 @@ export default function TopCategories({
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {cat.quantity} шт. · {formatEuro(cat.revenue, locale)}
+                {cat.quantity} {t('product.pieces')} · {formatEuro(cat.revenue, locale)}
               </p>
             </div>
           )
@@ -72,7 +72,10 @@ export default function TopCategories({
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
-        {Math.min(limit, topItems.length)} из {categories.length} категорий
+        {t('account.topCategories.shownOfTotal', undefined, {
+          shown: Math.min(limit, topItems.length),
+          total: categories.length
+        })}
       </div>
     </Card>
   )

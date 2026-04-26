@@ -1,7 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/use-translation";
-import { useReviews } from "@/lib/reviews-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,29 +12,72 @@ type ReviewsProps = {
   productId: string;
 };
 
+type ReviewItem = {
+  id: string;
+  productId: string;
+  author: string;
+  rating: number;
+  title: string;
+  text: string;
+  createdAt: string;
+  helpful: number;
+};
+
+type ReviewStats = {
+  averageRating: number;
+  count: number;
+  distribution: Record<number, number>;
+};
+
 export default function Reviews({ productId }: ReviewsProps) {
   const { t, language } = useTranslation();
-  const { addReview, markHelpful, getProductReviews, getProductStats } = useReviews();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ author: "", rating: 5, title: "", text: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [productReviews, setProductReviews] = useState<ReviewItem[]>([]);
+  const [stats, setStats] = useState<ReviewStats>({
+    averageRating: 0,
+    count: 0,
+    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  });
 
-  const productReviews = getProductReviews(productId);
-  const stats = getProductStats(productId);
+  const loadReviews = async (): Promise<void> => {
+    try {
+      const response = await fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('failed-to-load-reviews');
+
+      const payload = (await response.json()) as {
+        data?: {
+          reviews?: ReviewItem[];
+          stats?: ReviewStats;
+        };
+      };
+
+      setProductReviews(payload.data?.reviews ?? []);
+      setStats(payload.data?.stats ?? { averageRating: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
+    } catch {
+      setProductReviews([]);
+      setStats({ averageRating: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
+    }
+  };
+
+  useEffect(() => {
+    void loadReviews();
+  }, [productId]);
 
   const getBasedOnLabel = (count: number): string => {
     if (language === 'ru') {
       const key = count % 10 === 1 && count % 100 !== 11 ? 'reviews.basedOnOne' : 'reviews.basedOnMany'
-      return t(key, `На основе ${count} отзывов`).replace('{count}', String(count))
+      return t(key, 'На основе {count} отзывов', { count })
     }
 
     if (language === 'lv') {
       const key = count === 1 ? 'reviews.basedOnOne' : 'reviews.basedOnMany'
-      return t(key, `Pamatojoties uz ${count} atsauksmēm`).replace('{count}', String(count))
+      return t(key, 'Pamatojoties uz {count} atsauksmēm', { count })
     }
 
     const key = count === 1 ? 'reviews.basedOnOne' : 'reviews.basedOnMany'
-    return t(key, `Based on ${count} reviews`).replace('{count}', String(count))
+    return t(key, 'Based on {count} reviews', { count })
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -48,20 +90,52 @@ export default function Reviews({ productId }: ReviewsProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addReview({
-      productId,
-      author: formData.author.trim() || "Аноним",
-      rating: formData.rating,
-      title: formData.title.trim(),
-      text: formData.text.trim(),
-      helpful: 0,
-    });
-    setSubmitted(true);
-    setFormData({ author: "", rating: 5, title: "", text: "" });
-    setTimeout(() => {
-      setShowForm(false);
-      setSubmitted(false);
-    }, 2000);
+    void (async () => {
+      try {
+        const response = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            productId,
+            author: formData.author.trim() || 'Аноним',
+            rating: formData.rating,
+            title: formData.title.trim(),
+            text: formData.text.trim()
+          })
+        });
+
+        if (!response.ok) throw new Error('failed-to-submit-review');
+
+        setSubmitted(true);
+        setFormData({ author: "", rating: 5, title: "", text: "" });
+        await loadReviews();
+        setTimeout(() => {
+          setShowForm(false);
+          setSubmitted(false);
+        }, 2000);
+      } catch {
+        setSubmitted(false);
+      }
+    })();
+  };
+
+  const handleHelpful = async (reviewId: string): Promise<void> => {
+    try {
+      const response = await fetch('/api/reviews/helpful', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: reviewId })
+      });
+
+      if (!response.ok) throw new Error('failed-to-mark-helpful');
+      await loadReviews();
+    } catch {
+      // Ignore client errors in the helpful interaction.
+    }
   };
 
   return (
@@ -187,7 +261,7 @@ export default function Reviews({ productId }: ReviewsProps) {
               </div>
               <p className="text-gray-700 dark:text-gray-200 mb-3">{review.text}</p>
               <button
-                onClick={() => markHelpful(review.id)}
+                onClick={() => void handleHelpful(review.id)}
                 className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400"
               >
                 👍 {t("reviews.helpful")} ({review.helpful})

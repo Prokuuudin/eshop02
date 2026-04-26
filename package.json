@@ -10,7 +10,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test e2e/critical-flows.spec.ts e2e/admin-flows.spec.ts e2e/customer-activation.spec.ts e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium"
+    "test:e2e:smoke": "playwright test e2e/critical-flows.spec.ts e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts e2e/customer-activation.spec.ts e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -30,6 +30,7 @@
     "nodemailer": "^8.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "stripe": "^18.5.0",
     "swiper": "^12.1.2",
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",

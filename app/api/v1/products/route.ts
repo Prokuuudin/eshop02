@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse, parsePagination, parseFilters } from '@/lib/api-helpers'
-import { getCatalogItems, getCatalogCategories } from '@/lib/catalog-service'
+import { getMergedProducts } from '@/lib/product-overrides-store'
 
 /**
  * GET /api/v1/products
@@ -29,8 +29,12 @@ export async function GET(req: NextRequest) {
     const { page, limit, offset } = parsePagination(req)
     const filters = parseFilters(req)
 
-    // Get all products
-    let products = getCatalogItems(filters.category)
+    // Get all products with applied admin overrides
+    let products = await getMergedProducts()
+
+    if (filters.category) {
+      products = products.filter((product) => product.category === filters.category)
+    }
 
     // Apply search filter if provided
     if (filters.search) {
@@ -103,7 +107,8 @@ export async function getCategories(req: NextRequest) {
       return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
     }
 
-    const categories = getCatalogCategories()
+    const products = await getMergedProducts()
+    const categories = Array.from(new Set(products.map((product) => product.category)))
 
     return successResponse({
       categories,

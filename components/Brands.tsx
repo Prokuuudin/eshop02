@@ -4,8 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
 import { useSiteContent } from '@/lib/use-site-content'
-import { BRANDS } from '../data/brands'
-import { BRAND_DESCRIPTIONS } from '../data/brandDescriptions'
+import { useBrandsConfig } from '@/lib/use-brands-config'
 import Link from 'next/link';
 import BrandCardSkeleton from './BrandCardSkeleton';
 import { IconClose } from './ui/icon-close';
@@ -15,21 +14,22 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 export default function Brands() {
   const { t, language } = useTranslation();
   const { resolveImageSrc } = useSiteContent();
+  const { brands } = useBrandsConfig();
   const [showAll, setShowAll] = React.useState(false);
   const [alphabeticalView, setAlphabeticalView] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const POPULAR = BRANDS ? BRANDS.filter(b => b.popular) : [];
-  const HIDDEN = BRANDS ? BRANDS.filter(b => !b.popular) : [];
+  const POPULAR = brands ? brands.filter(b => b.popular) : [];
+  const HIDDEN = brands ? brands.filter(b => !b.popular) : [];
   const ALPHABETICAL = React.useMemo(
-    () => [...BRANDS].sort((a, b) => a.name.localeCompare(b.name, language)),
-    [language]
+    () => [...brands].sort((a, b) => a.name.localeCompare(b.name, language)),
+    [brands, language]
   );
   const getBrandDescription = (brandId: string, brandName: string): string => {
-    const desc = BRAND_DESCRIPTIONS[brandId];
+    const desc = brands.find((entry) => entry.id === brandId)?.description;
     if (desc && typeof desc === 'object') {
-      return desc[language] || desc['en'] || desc['ru'] || t('brands.descriptionTemplate').replace('{brand}', brandName);
+      return desc[language] || desc.en || desc.ru || t('brands.descriptionTemplate', 'Products of brand {brand}.', { brand: brandName });
     }
-    return t('brands.descriptionTemplate').replace('{brand}', brandName);
+    return t('brands.descriptionTemplate', 'Products of brand {brand}.', { brand: brandName });
   };
 
   React.useEffect(() => {

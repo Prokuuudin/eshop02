@@ -20,7 +20,8 @@ export interface Product {
   rating: number // 0-5
   ratingCount?: number
   reviewCount?: number
-  image: string
+  image?: string // для обратной совместимости
+  images?: string[] // до 5 изображений
   metaTitle?: string
   metaDescription?: string
   ogImage?: string
@@ -34,7 +35,6 @@ export interface Product {
   relatedProductIds?: string[] // Similar products
   oftenBoughtTogether?: string[] // Frequently bought together
   minOrderQuantities?: Record<string, number>
-  
   // B2B fields (optional, don't break existing retail products)
   sku?: string // Product article number
   unitOfMeasure?: string // шт, л, кг, etc
@@ -59,6 +59,13 @@ const baseProducts: Product[] = [
     oldPrice: 3200,
     rating: 4.7,
     image: '/products/p1.jpg',
+    images: [
+      '/products/p1.jpg',
+      '/products/p1-2.jpg',
+      '/products/p1-3.jpg',
+      '/products/p1-4.jpg',
+      '/products/p1-5.jpg',
+    ],
     badges: ['sale', 'bestseller', 'new'],
     category: 'face',
     stock: 3,
@@ -93,6 +100,13 @@ const baseProducts: Product[] = [
     price: 1200,
     rating: 4.4,
     image: '/products/p2.jpg',
+    images: [
+      '/products/p2.jpg',
+      '/products/p2-2.jpg',
+      '/products/p2-3.jpg',
+      '/products/p2-4.jpg',
+      '/products/p2-5.jpg',
+    ],
     badges: ['bestseller'],
     category: 'hair',
     stock: 8,
@@ -113,6 +127,13 @@ const baseProducts: Product[] = [
     oldPrice: 4800,
     rating: 4.9,
     image: '/products/p3.jpg',
+    images: [
+      '/products/p3.jpg',
+      '/products/p3-2.jpg',
+      '/products/p3-3.jpg',
+      '/products/p3-4.jpg',
+      '/products/p3-5.jpg',
+    ],
     badges: ['new'],
     category: 'face',
     stock: 22,
@@ -127,6 +148,13 @@ const baseProducts: Product[] = [
     price: 900,
     rating: 4.2,
     image: '/products/p4.jpg',
+    images: [
+      '/products/p4.jpg',
+      '/products/p4-2.jpg',
+      '/products/p4-3.jpg',
+      '/products/p4-4.jpg',
+      '/products/p4-5.jpg',
+    ],
     category: 'hair',
     stock: 0,
     purpose: 'Для восстановления',
@@ -140,6 +168,13 @@ const baseProducts: Product[] = [
     price: 1500,
     rating: 4.3,
     image: '/products/p5.jpg',
+    images: [
+      '/products/p5.jpg',
+      '/products/p5-2.jpg',
+      '/products/p5-3.jpg',
+      '/products/p5-4.jpg',
+      '/products/p5-5.jpg',
+    ],
     badges: ['sale'],
     category: 'body',
     stock: 12,
@@ -154,6 +189,13 @@ const baseProducts: Product[] = [
     price: 18500,
     rating: 4.8,
     image: '/products/p6.jpg',
+    images: [
+      '/products/p6.jpg',
+      '/products/p6-2.jpg',
+      '/products/p6-3.jpg',
+      '/products/p6-4.jpg',
+      '/products/p6-5.jpg',
+    ],
     category: 'equipment',
     stock: 3,
     purpose: 'Для очищения',
@@ -192,6 +234,13 @@ const baseProducts: Product[] = [
     price: 2100,
     rating: 4.1,
     image: '/products/p7.jpg',
+    images: [
+      '/products/p7.jpg',
+      '/products/p7-2.jpg',
+      '/products/p7-3.jpg',
+      '/products/p7-4.jpg',
+      '/products/p7-5.jpg',
+    ],
     category: 'face',
     stock: 18,
     purpose: 'Для маскировки',
@@ -205,6 +254,13 @@ const baseProducts: Product[] = [
     price: 7200,
     rating: 4.6,
     image: '/products/p8.jpg',
+    images: [
+      '/products/p8.jpg',
+      '/products/p8-2.jpg',
+      '/products/p8-3.jpg',
+      '/products/p8-4.jpg',
+      '/products/p8-5.jpg',
+    ],
     badges: ['bestseller'],
     category: 'equipment',
     stock: 5,
@@ -229,6 +285,13 @@ export const PRODUCTS: Product[] = [
     price: 1100,
     rating: 4.5,
     image: '/products/p9.jpg',
+    images: [
+      '/products/p9.jpg',
+      '/products/p9-2.jpg',
+      '/products/p9-3.jpg',
+      '/products/p9-4.jpg',
+      '/products/p9-5.jpg',
+    ],
     badges: ['new', 'bestseller'],
     category: 'face',
     stock: 20,
@@ -243,6 +306,13 @@ export const PRODUCTS: Product[] = [
     price: 1700,
     rating: 4.3,
     image: '/products/p10.jpg',
+    images: [
+      '/products/p10.jpg',
+      '/products/p10-2.jpg',
+      '/products/p10-3.jpg',
+      '/products/p10-4.jpg',
+      '/products/p10-5.jpg',
+    ],
     badges: ['bestseller'],
     category: 'hair',
     stock: 10,
@@ -257,6 +327,13 @@ export const PRODUCTS: Product[] = [
     price: 1350,
     rating: 4.0,
     image: '/products/p11.jpg',
+    images: [
+      '/products/p11.jpg',
+      '/products/p11-2.jpg',
+      '/products/p11-3.jpg',
+      '/products/p11-4.jpg',
+      '/products/p11-5.jpg',
+    ],
     badges: ['bestseller'],
     category: 'body',
     stock: 14,
@@ -271,6 +348,13 @@ export const PRODUCTS: Product[] = [
     price: 19900,
     rating: 4.9,
     image: '/products/p12.jpg',
+    images: [
+      '/products/p12.jpg',
+      '/products/p12-2.jpg',
+      '/products/p12-3.jpg',
+      '/products/p12-4.jpg',
+      '/products/p12-5.jpg',
+    ],
     badges: ['bestseller'],
     category: 'equipment',
     stock: 2,
@@ -285,6 +369,14 @@ export const PRODUCTS: Product[] = [
     price: 800,
     rating: 4.2,
     image: '/products/p13.jpg',
+    images: [
+      '/products/p13.jpg',
+      '/products/p13-2.jpg',
+      '/products/p13-3.jpg',
+      '/products/p13-4.jpg',
+      '/products/p13-5.jpg',
+      '/products/p13-2.jpg',
+    ],
     badges: ['bestseller'],
     category: 'body',
     stock: 30,
@@ -299,6 +391,13 @@ export const PRODUCTS: Product[] = [
     price: 3200,
     rating: 4.6,
     image: '/products/p14.jpg',
+    images: [
+      '/products/p14.jpg',
+      '/products/p14-2.jpg',
+      '/products/p14-3.jpg',
+      '/products/p14-4.jpg',
+      '/products/p14-5.jpg',
+    ],
     badges: ['sale'],
     category: 'face',
     stock: 9,
@@ -313,6 +412,13 @@ export const PRODUCTS: Product[] = [
     price: 950,
     rating: 4.1,
     image: '/products/p15.jpg',
+    images: [
+      '/products/p15.jpg',
+      '/products/p15-2.jpg',
+      '/products/p15-3.jpg',
+      '/products/p15-4.jpg',
+      '/products/p15-5.jpg',
+    ],
     category: 'hair',
     stock: 16,
     purpose: 'Сильная фиксация',
@@ -326,6 +432,13 @@ export const PRODUCTS: Product[] = [
     price: 1800,
     rating: 4.4,
     image: '/products/p16.jpg',
+    images: [
+      '/products/p16.jpg',
+      '/products/p16-2.jpg',
+      '/products/p16-3.jpg',
+      '/products/p16-4.jpg',
+      '/products/p16-5.jpg',
+    ],
     category: 'face',
     stock: 11,
     purpose: 'Матирование',

@@ -1,0 +1,41 @@
+import type { Product, BadgeType, CategoryType } from '@/data/products';
+
+export type DraftValues = {
+  id: string;
+  title: string;
+  titleEn?: string;
+  titleLv?: string;
+  brand: string;
+  category: CategoryType;
+  price: string;
+  oldPrice?: string;
+  currency?: string;
+  rating?: string;
+  image: string;
+  stock: string;
+  purpose?: string;
+  purposeEn?: string;
+  purposeLv?: string;
+  badges: BadgeType[];
+  sku?: string;
+  description?: string;
+  descriptionEn?: string;
+  descriptionLv?: string;
+  feature1?: string;
+  feature1En?: string;
+  feature1Lv?: string;
+  feature2?: string;
+  feature2En?: string;
+  feature2Lv?: string;
+  feature3?: string;
+  feature3En?: string;
+  feature3Lv?: string;
+  feature4?: string;
+  feature4En?: string;
+  feature4Lv?: string;
+  specVolume?: string;
+  specType?: string;
+  specCountry?: string;
+};
+
+export type NewProductDraft = DraftValues;

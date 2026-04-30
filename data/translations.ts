@@ -2,6 +2,17 @@ export type Language = 'ru' | 'en' | 'lv'
 
 export const translations: Record<Language, Record<string, string>> = {
   ru: {
+    'product.moreFromCategory': 'Другие товары этой категории',
+    'product.moreFromBrand': 'Другие товары этого бренда',
+    'common.product': 'Товар',
+    'admin.productsPage.viewModeTitle': 'Выбор вида',
+    'admin.productsPage.cardsBtn': 'Карточки',
+    'admin.productsPage.listBtn': 'Список',
+    'admin.productsPage.archiveBtn': 'Корзина',
+    'admin.productsPage.archiveBtnTitle': 'Корзина удалённых товаров',
+    'admin.productsPage.archiveTitleShort': 'Удаленные товары',
+    'admin.productsPage.addBtn': 'Добавить товары',
+    'admin.products.searchPlaceholder': 'Название, SKU, бренд, категория, артикул, штрихкод...',
     'admin.productsPage.cardsTitle': 'Карточки товара',
     'admin.productsPage.listTitle': 'Список товаров',
           'about.storesInfo': 'У нас есть не только онлайн-магазин, но и сеть физических магазинов по всей Латвии, где вы можете получить консультацию и приобрести продукцию лично.',
@@ -1428,6 +1439,17 @@ export const translations: Record<Language, Record<string, string>> = {
   },
 
   en: {
+    'product.moreFromCategory': 'More products from this category',
+    'product.moreFromBrand': 'More products from this brand',
+    'common.product': 'Product',
+    'admin.productsPage.archiveTitleShort': 'Deleted products',
+    'admin.productsPage.viewModeTitle': 'View mode',
+    'admin.productsPage.cardsBtn': 'Cards',
+    'admin.productsPage.listBtn': 'List',
+    'admin.productsPage.archiveBtn': 'Trash',
+    'admin.productsPage.archiveBtnTitle': 'Deleted products bin',
+    'admin.productsPage.addBtn': 'Add products',
+    'admin.products.searchPlaceholder': 'Name, SKU, brand, category, article, barcode...',
     'admin.productsPage.cardsTitle': 'Product cards',
     'admin.productsPage.listTitle': 'Product list',
           'about.storesInfo': 'We have not only an online store, but also a network of physical stores across Latvia where you can get advice and shop in person.',
@@ -2840,6 +2862,17 @@ export const translations: Record<Language, Record<string, string>> = {
   },
 
   lv: {
+    'product.moreFromCategory': 'Citi šīs kategorijas produkti',
+    'product.moreFromBrand': 'Citi šī zīmola produkti',
+    'common.product': 'Prece',
+    'admin.productsPage.archiveTitleShort': 'Dzēstās preces',
+    'admin.productsPage.viewModeTitle': 'Skata veids',
+    'admin.productsPage.cardsBtn': 'Kartītes',
+    'admin.productsPage.listBtn': 'Saraksts',
+    'admin.productsPage.archiveBtn': 'Atkritne',
+    'admin.productsPage.archiveBtnTitle': 'Dzēsto preču atkritne',
+    'admin.productsPage.addBtn': 'Pievienot preces',
+    'admin.products.searchPlaceholder': 'Nosaukums, SKU, zīmols, kategorija, artikuls, svītrkods...',
     'admin.productsPage.cardsTitle': 'Produktu kartites',
     'admin.productsPage.listTitle': 'Produktu saraksts',
           'about.storesInfo': 'Mums ir ne tikai interneta veikals, bet arī veikalu tīkls visā Latvijā, kur varat saņemt konsultāciju un iegādāties preces klātienē.',

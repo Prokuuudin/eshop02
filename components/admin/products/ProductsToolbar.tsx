@@ -139,8 +139,8 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                         <div className="py-2 px-1 max-h-[60vh] overflow-y-auto">
                             <ArchivePanel
                                 archiveItems={archiveItems}
-                                onRestore={onRestoreArchive}
-                                onDelete={onDeleteArchive}
+                                onRestore={onRestoreArchive || (() => {})}
+                                onDelete={onDeleteArchive || (() => {})}
                             />
                         </div>
                     </DialogContent>

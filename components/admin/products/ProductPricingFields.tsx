@@ -25,7 +25,6 @@ const ProductPricingFields: React.FC = () => {
                         type="number"
                         step="0.01"
                         {...register('price', { valueAsNumber: true })}
-                        error={errors.price?.message}
                     />
                 </div>
                 <div>
@@ -41,15 +40,9 @@ const ProductPricingFields: React.FC = () => {
                         type="number"
                         step="0.01"
                         {...register('oldPrice', { valueAsNumber: true })}
-                        error={errors.oldPrice?.message}
                     />
                 </div>
-                <Input
-                    label="Валюта"
-                    placeholder="EUR, USD..."
-                    {...register('currency')}
-                    error={errors.currency?.message}
-                />
+                <Input placeholder="EUR, USD..." {...register('currency')} />
                 <div>
                     <label className="flex items-center gap-2">
                         <Controller

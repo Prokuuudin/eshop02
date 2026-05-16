@@ -11,11 +11,10 @@ export interface TeamMember {
   addedAt: Date
   addedBy?: string // User ID who invited this member
 }
-
 export interface CompanyProfile {
   companyId: string
   companyName: string
-  customerBarcode?: string
+  cardNumber?: string // Номер карты клиента
   taxId?: string // ИНН
   registrationNumber?: string // Регистрационный номер
   address?: string
@@ -41,7 +40,7 @@ type CompanyStore = {
   upsertCompany: (profile: Omit<CompanyProfile, 'teamMembers' | 'usedCredit' | 'createdAt'>) => void
   deleteCompany: (companyId: string) => void
   getCompany: (companyId: string) => CompanyProfile | undefined
-  getCompanyByBarcode: (barcode: string) => CompanyProfile | undefined
+  getCompanyByCardNumber: (cardNumber: string) => CompanyProfile | undefined
   updateCompany: (companyId: string, updates: Partial<CompanyProfile>) => void
   setCurrentCompany: (companyId: string) => void
   getCurrentCompany: () => CompanyProfile | undefined
@@ -59,13 +58,13 @@ type CompanyStore = {
   getAvailableCredit: (companyId: string) => number
 }
 
-const normalizeBarcode = (barcode: string | undefined): string => (barcode ?? '').trim().replace(/\s+/g, '').toUpperCase()
+const normalizeCardNumber = (cardNumber: string | undefined): string => (cardNumber ?? '').replace(/\s+/g, '').toUpperCase()
 
 const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_miks_plus',
     companyName: 'SIA MIKS PLUS',
-    customerBarcode: 'CLI-10001',
+    cardNumber: '1234567890123456',
     taxId: 'LV40003123456',
     registrationNumber: '40103123456',
     city: 'Riga',
@@ -79,7 +78,7 @@ const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_beauty_supply',
     companyName: 'Beauty Supply Pro',
-    customerBarcode: 'CLI-20002',
+    cardNumber: '2345678901234567',
     taxId: 'LV50004567891',
     registrationNumber: '50004567891',
     city: 'Daugavpils',
@@ -93,7 +92,7 @@ const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_salon_group',
     companyName: 'Baltic Salon Group',
-    customerBarcode: 'CLI-30003',
+    cardNumber: '3456789012345678',
     taxId: 'LV40107890123',
     registrationNumber: '40107890123',
     city: 'Jurmala',
@@ -113,7 +112,7 @@ const toHydratedTeamMember = (member: TeamMember): TeamMember => ({
 
 const toHydratedCompany = (company: CompanyProfile): CompanyProfile => ({
   ...company,
-  customerBarcode: company.customerBarcode,
+  cardNumber: company.cardNumber,
   createdAt: company.createdAt instanceof Date ? company.createdAt : new Date(company.createdAt),
   teamMembers: (company.teamMembers ?? []).map(toHydratedTeamMember)
 })
@@ -191,12 +190,11 @@ export const useCompanyStore = create<CompanyStore>()(
         return get().companies.get(companyId)
       },
 
-      getCompanyByBarcode: (barcode) => {
-        const normalizedBarcode = normalizeBarcode(barcode)
-        if (!normalizedBarcode) return undefined
-
+      getCompanyByCardNumber: (cardNumber) => {
+        const normalizedCardNumber = normalizeCardNumber(cardNumber)
+        if (!normalizedCardNumber) return undefined
         return Array.from(get().companies.values()).find(
-          (company) => normalizeBarcode(company.customerBarcode) === normalizedBarcode
+          (company) => normalizeCardNumber(company.cardNumber) === normalizedCardNumber
         )
       },
       

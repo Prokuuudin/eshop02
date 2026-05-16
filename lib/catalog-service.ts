@@ -31,7 +31,7 @@ export function getCatalogItems(category?: string): CatalogItem[] {
     title: p.title,
     brand: p.brand,
     sku: p.sku,
-    image: p.image,
+    image: p.image || '',
     category: p.category,
     price: p.price,
     oldPrice: p.oldPrice,

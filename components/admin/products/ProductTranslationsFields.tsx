@@ -18,21 +18,9 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
         <div className="add-product__section add-product__section--translations">
             <h2 className="add-product__section-title">Переводы</h2>
             <div className="add-product__fields-grid">
-                <Input
-                    label={`Название (${language.toUpperCase()})`}
-                    {...register(`titles.${language}`)}
-                    error={errors.titles?.[language]?.message}
-                />
-                <Textarea
-                    label={`Краткое описание (${language.toUpperCase()})`}
-                    {...register(`shortDescriptions.${language}`)}
-                    error={errors.shortDescriptions?.[language]?.message}
-                />
-                <Textarea
-                    label={`Полное описание (${language.toUpperCase()})`}
-                    {...register(`fullDescriptions.${language}`)}
-                    error={errors.fullDescriptions?.[language]?.message}
-                />
+                <Input {...register(`titles.${language}`)} />
+                <Textarea {...register(`shortDescriptions.${language}`)} />
+                <Textarea {...register(`fullDescriptions.${language}`)} />
             </div>
         </div>
     );

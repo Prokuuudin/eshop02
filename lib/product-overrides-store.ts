@@ -217,7 +217,7 @@ export const createProduct = async (
     id: nextId,
     title: product.title.trim(),
     brand: product.brand.trim(),
-    image: product.image.trim()
+    image: (product.image?.trim() || '')
   }
 
   customProducts.push(normalizedProduct)

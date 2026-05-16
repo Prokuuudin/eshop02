@@ -1,5 +1,420 @@
 [
   {
+    "id": "ORD-1778839321340-HKFPNLBT7",
+    "createdAt": "2026-05-15T10:02:01.340Z",
+    "items": [
+      {
+        "id": "p2",
+        "title": "Шампунь Professional Shine 300ml",
+        "brand": "black",
+        "price": 1200,
+        "rating": 4.4,
+        "image": "/products/p2.jpg",
+        "images": [
+          "/products/p2.jpg",
+          "/products/p2-2.jpg",
+          "/products/p2-3.jpg",
+          "/products/p2-4.jpg",
+          "/products/p2-5.jpg"
+        ],
+        "badges": [
+          "bestseller"
+        ],
+        "category": "hair",
+        "stock": 8,
+        "purpose": "Для роста",
+        "minOrderQuantities": {
+          "master": 3,
+          "salon": 6,
+          "distributor": 12
+        },
+        "relatedProductIds": [
+          "p4",
+          "p8"
+        ],
+        "oftenBoughtTogether": [
+          "p4"
+        ],
+        "quantity": 3
+      },
+      {
+        "id": "p8",
+        "title": "Профессиональный фен SalonDry 2200W",
+        "brand": "cera",
+        "price": 7200,
+        "rating": 4.6,
+        "image": "/products/p8.jpg",
+        "images": [
+          "/products/p8.jpg",
+          "/products/p8-2.jpg",
+          "/products/p8-3.jpg",
+          "/products/p8-4.jpg",
+          "/products/p8-5.jpg"
+        ],
+        "badges": [
+          "bestseller"
+        ],
+        "category": "equipment",
+        "stock": 5,
+        "purpose": "Для сушки",
+        "minOrderQuantities": {
+          "master": 2,
+          "salon": 4,
+          "distributor": 8
+        },
+        "relatedProductIds": [
+          "p2",
+          "p6"
+        ],
+        "oftenBoughtTogether": [
+          "p2",
+          "p4"
+        ],
+        "quantity": 2
+      }
+    ],
+    "subtotal": 18000,
+    "tax": 3240,
+    "delivery": 500,
+    "deliveryMethod": "pickup",
+    "discount": 0,
+    "total": 21740,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Aleksandrs",
+    "lastName": "Prokudins",
+    "email": "prokuuudin@gmail.com",
+    "phone": "29711575",
+    "address": "P. Lejina 7 - 52",
+    "city": "Riga",
+    "postalCode": "LV-1029",
+    "paymentMethod": "cash"
+  },
+  {
+    "id": "ORD-1778757870292-YABL7QJO4",
+    "createdAt": "2026-05-14T11:24:30.292Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "sanctuaryspa",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "images": [
+          "/products/p1.jpg",
+          "/products/p1-2.jpg",
+          "/products/p1-3.jpg",
+          "/products/p1-4.jpg",
+          "/products/p1-5.jpg"
+        ],
+        "demoVideo": [
+          {
+            "src": "/products/demo/revitaluxe-demo.mp4",
+            "poster": "/products/p1.jpg"
+          },
+          {
+            "src": "/products/demo/revitaluxe-demo-2.mp4",
+            "poster": "/products/p1-2.jpg"
+          },
+          {
+            "src": "/products/demo/revitaluxe-demo-3.mp4",
+            "poster": "/products/p1-3.jpg"
+          }
+        ],
+        "badges": [
+          "sale",
+          "bestseller",
+          "new"
+        ],
+        "category": "face",
+        "stock": 3,
+        "purpose": "Для увлажнения",
+        "relatedProductIds": [
+          "p3",
+          "p7"
+        ],
+        "oftenBoughtTogether": [
+          "p3",
+          "p5"
+        ],
+        "sku": "REVIT-50-001",
+        "barcode": "4006381333931",
+        "unitOfMeasure": "мл",
+        "technicalSpecs": {
+          "Объём": "50 мл",
+          "Тип": "Крем для лица",
+          "Страна производства": "Швейцария",
+          "Основные ингредиенты": "Гиалуроновая кислота, витамин E",
+          "pH": "5.5-6.5"
+        },
+        "certificates": [
+          "https://example.com/certs/dermatology.pdf",
+          "https://example.com/certs/iso-9001.pdf"
+        ],
+        "bulkPricingTiers": [
+          {
+            "quantity": 10,
+            "pricePerUnit": 2400
+          },
+          {
+            "quantity": 25,
+            "pricePerUnit": 2300
+          },
+          {
+            "quantity": 50,
+            "pricePerUnit": 2200
+          }
+        ],
+        "compatibleEquipment": [
+          "SkinPro-X",
+          "MicroBlast-3000"
+        ],
+        "quantity": 1
+      },
+      {
+        "id": "p3",
+        "title": "Сыворотка омолаживающая 30ml",
+        "brand": "feetcalm",
+        "price": 4100,
+        "oldPrice": 4800,
+        "rating": 4.9,
+        "image": "/products/p3.jpg",
+        "images": [
+          "/products/p3.jpg",
+          "/products/p3-2.jpg",
+          "/products/p3-3.jpg",
+          "/products/p3-4.jpg",
+          "/products/p3-5.jpg"
+        ],
+        "badges": [
+          "new"
+        ],
+        "category": "face",
+        "stock": 22,
+        "purpose": "Для омоложения",
+        "relatedProductIds": [
+          "p1",
+          "p7"
+        ],
+        "oftenBoughtTogether": [
+          "p1",
+          "p5"
+        ],
+        "quantity": 1
+      },
+      {
+        "id": "p5",
+        "title": "Крем для тела SilkTouch 200ml",
+        "brand": "luxina",
+        "price": 1500,
+        "rating": 4.3,
+        "image": "/products/p5.jpg",
+        "images": [
+          "/products/p5.jpg",
+          "/products/p5-2.jpg",
+          "/products/p5-3.jpg",
+          "/products/p5-4.jpg",
+          "/products/p5-5.jpg"
+        ],
+        "badges": [
+          "sale"
+        ],
+        "category": "body",
+        "stock": 12,
+        "purpose": "Для питания",
+        "relatedProductIds": [
+          "p1",
+          "p3"
+        ],
+        "oftenBoughtTogether": [
+          "p1",
+          "p3"
+        ],
+        "quantity": 1
+      }
+    ],
+    "subtotal": 8100,
+    "tax": 1458,
+    "delivery": 300,
+    "deliveryMethod": "post",
+    "discount": 0,
+    "total": 9858,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Aleksandrs",
+    "lastName": "Prokudins",
+    "email": "prokuuudin@gmail.com",
+    "phone": "29711575",
+    "address": "P. Lejina 7 - 52",
+    "city": "Riga",
+    "postalCode": "LV-1029",
+    "paymentMethod": "cash"
+  },
+  {
+    "id": "ORD-1778757858742-6KUKNZCPQ",
+    "createdAt": "2026-05-14T11:24:18.742Z",
+    "items": [
+      {
+        "id": "p1",
+        "title": "Крем для лица Revitaluxe 50ml",
+        "brand": "sanctuaryspa",
+        "price": 2500,
+        "oldPrice": 3200,
+        "rating": 4.7,
+        "image": "/products/p1.jpg",
+        "images": [
+          "/products/p1.jpg",
+          "/products/p1-2.jpg",
+          "/products/p1-3.jpg",
+          "/products/p1-4.jpg",
+          "/products/p1-5.jpg"
+        ],
+        "demoVideo": [
+          {
+            "src": "/products/demo/revitaluxe-demo.mp4",
+            "poster": "/products/p1.jpg"
+          },
+          {
+            "src": "/products/demo/revitaluxe-demo-2.mp4",
+            "poster": "/products/p1-2.jpg"
+          },
+          {
+            "src": "/products/demo/revitaluxe-demo-3.mp4",
+            "poster": "/products/p1-3.jpg"
+          }
+        ],
+        "badges": [
+          "sale",
+          "bestseller",
+          "new"
+        ],
+        "category": "face",
+        "stock": 3,
+        "purpose": "Для увлажнения",
+        "relatedProductIds": [
+          "p3",
+          "p7"
+        ],
+        "oftenBoughtTogether": [
+          "p3",
+          "p5"
+        ],
+        "sku": "REVIT-50-001",
+        "barcode": "4006381333931",
+        "unitOfMeasure": "мл",
+        "technicalSpecs": {
+          "Объём": "50 мл",
+          "Тип": "Крем для лица",
+          "Страна производства": "Швейцария",
+          "Основные ингредиенты": "Гиалуроновая кислота, витамин E",
+          "pH": "5.5-6.5"
+        },
+        "certificates": [
+          "https://example.com/certs/dermatology.pdf",
+          "https://example.com/certs/iso-9001.pdf"
+        ],
+        "bulkPricingTiers": [
+          {
+            "quantity": 10,
+            "pricePerUnit": 2400
+          },
+          {
+            "quantity": 25,
+            "pricePerUnit": 2300
+          },
+          {
+            "quantity": 50,
+            "pricePerUnit": 2200
+          }
+        ],
+        "compatibleEquipment": [
+          "SkinPro-X",
+          "MicroBlast-3000"
+        ],
+        "quantity": 1
+      },
+      {
+        "id": "p3",
+        "title": "Сыворотка омолаживающая 30ml",
+        "brand": "feetcalm",
+        "price": 4100,
+        "oldPrice": 4800,
+        "rating": 4.9,
+        "image": "/products/p3.jpg",
+        "images": [
+          "/products/p3.jpg",
+          "/products/p3-2.jpg",
+          "/products/p3-3.jpg",
+          "/products/p3-4.jpg",
+          "/products/p3-5.jpg"
+        ],
+        "badges": [
+          "new"
+        ],
+        "category": "face",
+        "stock": 22,
+        "purpose": "Для омоложения",
+        "relatedProductIds": [
+          "p1",
+          "p7"
+        ],
+        "oftenBoughtTogether": [
+          "p1",
+          "p5"
+        ],
+        "quantity": 1
+      },
+      {
+        "id": "p5",
+        "title": "Крем для тела SilkTouch 200ml",
+        "brand": "luxina",
+        "price": 1500,
+        "rating": 4.3,
+        "image": "/products/p5.jpg",
+        "images": [
+          "/products/p5.jpg",
+          "/products/p5-2.jpg",
+          "/products/p5-3.jpg",
+          "/products/p5-4.jpg",
+          "/products/p5-5.jpg"
+        ],
+        "badges": [
+          "sale"
+        ],
+        "category": "body",
+        "stock": 12,
+        "purpose": "Для питания",
+        "relatedProductIds": [
+          "p1",
+          "p3"
+        ],
+        "oftenBoughtTogether": [
+          "p1",
+          "p3"
+        ],
+        "quantity": 1
+      }
+    ],
+    "subtotal": 8100,
+    "tax": 1458,
+    "delivery": 300,
+    "deliveryMethod": "post",
+    "discount": 0,
+    "total": 9858,
+    "paymentStatus": "pending",
+    "paymentProvider": "stripe",
+    "firstName": "Aleksandrs",
+    "lastName": "Prokudins",
+    "email": "prokuuudin@gmail.com",
+    "phone": "29711575",
+    "address": "P. Lejina 7 - 52",
+    "city": "Riga",
+    "postalCode": "LV-1029",
+    "paymentMethod": "card"
+  },
+  {
     "id": "ORD-1776799574796-F958AKY4I",
     "createdAt": "2026-04-21T19:26:14.796Z",
     "items": [

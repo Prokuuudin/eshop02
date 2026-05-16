@@ -1,34 +1,59 @@
-"use client";
+'use client';
 import React from 'react';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 import { useSiteContent } from '@/lib/use-site-content';
 
 export default function Benefits() {
-  const { t } = useTranslation();
-  const { resolveImageSrc } = useSiteContent();
-  const ITEMS = [
-    { id: 'b1', title: t('benefits.original'), desc: t('benefits.certified'), icon: '/icons/original.svg' },
-    { id: 'b2', title: t('benefits.delivery'), desc: t('benefits.fast'), icon: '/icons/delivery.svg' },
-    { id: 'b3', title: t('benefits.quality'), desc: t('benefits.return'), icon: '/icons/quality.svg' },
-    { id: 'b4', title: t('benefits.support'), desc: t('benefits.consult'), icon: '/icons/support.svg' }
-  ];
-  return (
-    <section className="benefits py-8">
-      <div className="w-full px-4">
-        <h2 className="benefits__title text-2xl font-semibold mb-6 text-gray-900 dark:text-gray-100">{t('benefits.title')}</h2>
-        <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {ITEMS.map((it) => (
-            <article key={it.id} className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="benefits__icon mb-3 w-12 h-12">
-                <Image src={resolveImageSrc(it.icon)} alt="" width={48} height={48} className="object-contain" />
-              </div>
-              <h3 className="benefits__item-title font-medium text-gray-900 dark:text-gray-100">{it.title}</h3>
-              <p className="benefits__item-desc text-sm text-gray-600 dark:text-gray-300 mt-1">{it.desc}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+    // Секция бенефитов с фиксированным содержанием на русском
+    const { t } = useTranslation();
+    const BENEFITS = [
+        {
+            icon: '/icons/delivery.svg',
+            text: t('benefits.deliveryFree', 'Бесплатная доставка от 100 евро'),
+        },
+        {
+            icon: '/icons/support.svg',
+            text: t('benefits.consultationMain', 'Профессиональная консультация 7 дней в неделю'),
+        },
+        {
+            icon: '/icons/quality.svg',
+            text: t('benefits.processingFast', 'Быстрая обработка заказов — в течение 24 часов'),
+        },
+        {
+            icon: '/icons/quality.svg',
+            text: t('benefits.inStock', 'Более 10 000 товаров на складе'),
+        },
+        {
+            icon: '/icons/original.svg',
+            text: t('benefits.brands100', '100+ оригинальных мировых брендов'),
+        },
+    ];
+    return (
+        <section className="benefits py-8">
+            <div className="w-full px-4">
+                <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+                    {BENEFITS.map((item, idx) => (
+                        <article
+                            key={idx}
+                            className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4"
+                        >
+                            <div className="benefits__icon w-10 h-10 shrink-0">
+                                <Image
+                                    src={item.icon}
+                                    alt=""
+                                    width={40}
+                                    height={40}
+                                    className="object-contain"
+                                />
+                            </div>
+                            <h3 className="benefits__item-title font-medium text-gray-900 dark:text-gray-100 text-base">
+                                {item.text}
+                            </h3>
+                        </article>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
 }

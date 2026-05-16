@@ -28,7 +28,14 @@ const ProductBadgesFields: React.FC = () => {
                                     className="flex items-center gap-2 cursor-pointer"
                                 >
                                     <Checkbox
-                                        checked={field.value?.includes(badge.value)}
+                                        checked={field.value?.includes(
+                                            badge.value as
+                                                | 'sale'
+                                                | 'bestseller'
+                                                | 'new'
+                                                | 'pro'
+                                                | 'limited'
+                                        )}
                                         onCheckedChange={(checked) => {
                                             if (checked) {
                                                 field.onChange([

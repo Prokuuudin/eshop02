@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Hero from '../components/Hero';
+import BestsellersSection from '../components/BestsellersSection';
 import Categories from '../components/Categories';
 import Benefits from '../components/Benefits';
 import Promo from '../components/Promo';
@@ -10,7 +11,7 @@ import { translations, type Language } from '@/data/translations';
 import HomeClient from '../components/HomeClient';
 import Stores from '../components/Stores';
 import HomeRetailBanner from '../components/HomeRetailBanner';
-import ActivityBlock from '../components/ActivityBlock';
+import ActivitySection from '../components/ActivitySection';
 
 const resolveLanguageFromHeader = (acceptLanguage: string | null): Language => {
     const normalized = (acceptLanguage ?? '').toLowerCase();
@@ -53,15 +54,16 @@ export default async function Home() {
     return (
         <>
             <Hero />
+            <Benefits />
+            <BestsellersSection />
+            <Categories />
+            <Brands />
+            <Promo />
+            <ActivitySection />
+            <FAQSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />
-                <Categories />
-                <Brands />
                 <HomeClient />
-                <Benefits />
-                <Promo />
-                <ActivityBlock />
-                <FAQSection />
             </main>
         </>
     );

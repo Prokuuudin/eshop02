@@ -9,8 +9,10 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
+
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
+import { getCurrentUser } from '@/lib/auth';
 
 type Props = {
     product: Product;
@@ -30,6 +32,18 @@ export default function ProductCard({ product }: Props) {
     const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined;
     const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0];
     const firstTierPrice = firstTier ? calculatePrice(product, firstTier.quantity) : null;
+
+    // Проверка авторизации пользователя
+    const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsAuthenticated(!!getCurrentUser());
+            // Подписка на событие смены пользователя
+            const handler = () => setIsAuthenticated(!!getCurrentUser());
+            window.addEventListener('eshop-user-changed', handler);
+            return () => window.removeEventListener('eshop-user-changed', handler);
+        }
+    }, []);
 
     const handleCardClick = (event: React.MouseEvent<HTMLElement>): void => {
         const target = event.target as HTMLElement;
@@ -65,7 +79,7 @@ export default function ProductCard({ product }: Props) {
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400 text-xs">
-                            {t('product.imageNotSet', 'Нет изображения', 'No image', 'Nav attela')}
+                            {t('product.imageNotSet')}
                         </div>
                     )}
                     {isOutOfStock && (
@@ -97,20 +111,28 @@ export default function ProductCard({ product }: Props) {
 
                 <div className="product-card__meta mt-2 flex items-center justify-between gap-3">
                     <div>
-                        <div className="product-card__price text-lg font-semibold">
-                            {formatEuro(displayPrice, 'en-US')}
-                        </div>
-                        {displayOldPrice && (
-                            <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
-                                {formatEuro(displayOldPrice, 'en-US')}
-                            </div>
-                        )}
-                        {firstTier && firstTierPrice !== null && (
-                            <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
-                                {t('product.bulkTierPrice', undefined, {
-                                    quantity: firstTier.quantity,
-                                    price: formatEuro(firstTierPrice, 'en-US'),
-                                })}
+                        {isAuthenticated ? (
+                            <>
+                                <div className="product-card__price text-lg font-semibold">
+                                    {formatEuro(displayPrice, 'en-US')}
+                                </div>
+                                {displayOldPrice && (
+                                    <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
+                                        {formatEuro(displayOldPrice, 'en-US')}
+                                    </div>
+                                )}
+                                {firstTier && firstTierPrice !== null && (
+                                    <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
+                                        {t('product.bulkTierPrice', undefined, {
+                                            quantity: firstTier.quantity,
+                                            price: formatEuro(firstTierPrice, 'en-US'),
+                                        })}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-gray-400 text-sm font-medium">
+                                {t('product.loginToSeePrice', 'Войдите, чтобы увидеть цену')}
                             </div>
                         )}
                     </div>

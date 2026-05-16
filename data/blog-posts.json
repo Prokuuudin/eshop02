@@ -71,10 +71,25 @@
     ],
     "author": "Ольга Дерма косметолог",
     "image": "/blog/skincare-guide.jpg",
-    "category": "уход за лицом",
+    "category": "blog.category.faceCare",
     "readTime": 4,
     "createdAt": "2026-03-12T00:00:00.000Z",
     "featured": false
+  ,
+    "translations": {
+      "en": {
+        "title": "Spring Skin Reset: 10-Minute Daily Checklist",
+        "excerpt": "A simple spring routine to restore glow, reduce dryness, and avoid overloading your skin.",
+        "content": "\n# Spring Skin Reset Checklist\n\nIn spring, skin often becomes more reactive due to temperature changes and dry indoor air.\n\n## Daily routine\n\n1. **Gentle cleansing morning and evening**\n2. **Hydrating serum** (for example, hyaluronic acid)\n3. **Moisturizer for your skin type**\n4. **SPF every morning**, even on cloudy days\n\n## 1-2 times per week\n\n- Enzyme or mild acid exfoliation\n- Soothing mask\n\n## Common spring mistakes\n\n- Replacing the entire routine at once\n- Skipping SPF\n- Over-cleansing\n\nKey rule: introduce new products gradually and monitor your skin response.\n    ",
+        "author": "Olga Dermacosmetologist"
+      },
+      "lv": {
+        "title": "Pavasara ādas reset: 10 minūšu ikdienas kontrolsaraksts",
+        "excerpt": "Vienkārša pavasara rutīna, lai atjaunotu mirdzumu, mazinātu sausumu un nepārslogotu ādu.",
+        "content": "\n# Pavasara ādas reset kontrolsaraksts\n\nPavasarī āda bieži kļūst jutīgāka temperatūras svārstību un sausa iekštelpu gaisa dēļ.\n\n## Ikdienā\n\n1. **Maiga attīrīšana no rīta un vakarā**\n2. **Mitrinošs serums** (piemēram, ar hialuronskābi)\n3. **Krēms atbilstoši ādas tipam**\n4. **SPF katru rītu**, arī mākoņainā laikā\n\n## 1-2 reizes nedēļā\n\n- Enzīmu vai maigs skābju pīlings\n- Nomierinoša maska\n\n## Biežākās pavasara kļūdas\n\n- Visa kopšanas plāna nomaiņa uzreiz\n- SPF ignorēšana\n- Pārāk agresīva attīrīšana\n\nGalvenais noteikums: ieviesiet jaunus līdzekļus pakāpeniski un vērojiet ādas reakciju.\n    ",
+        "author": "Olga, dermakosmetoloģe"
+      }
+    }
   },
   {
     "id": "post-1",
@@ -84,7 +99,7 @@
     "content": "\n# Полное руководство по уходу за кожей\n\nПравильный уход за кожей — это не просто косметика, это инвестиция в здоровье вашей кожи.\n\n## Основные этапы\n\n1. **Очищение** (утром и вечером)\n   - Используйте мягкий очищающий средство\n   - Массируйте лицо 60 секунд\n   - Смойте теплой водой\n\n2. **Тонер**\n   - Увлажняет и подготавливает кожу\n   - Наносится после очищения\n\n3. **Сыворотка**\n   - Концентрированные активные компоненты\n   - Наносится на влажную кожу\n\n4. **Крем**\n   - Завершающий этап\n   - Запечатывает влагу\n\n## Частые ошибки\n\n- Слишком частое очищение\n- Игнорирование SPF\n- Использование горячей воды\n- Переусложнение рутины\n\nПомните, что каждая кожа уникальна!\n    ",
     "author": "Мария Косметолог",
     "image": "/blog/skincare-guide.jpg",
-    "category": "уход за лицом",
+    "category": "blog.category.faceCare",
     "readTime": 5,
     "createdAt": "2026-02-15T00:00:00.000Z",
     "featured": true,
@@ -111,7 +126,7 @@
     "content": "\n# Уход за волосами в Зимний период\n\nЗима — сложное время для волос. Холод, ветер и сухой воздух повреждают структуру волоса.\n\n## Основные проблемы\n\n- Ломкость\n- Сухость\n- Электризация\n- Потеря блеска\n\n## Решения\n\nИспользуйте увлажняющие маски 2-3 раза в неделю.\nНаносите масло перед сном для интенсивного питания.\nНосите шапку для защиты.\n    ",
     "author": "Анна Стилист",
     "image": "/blog/winter-hair.jpg",
-    "category": "уход за волосами",
+    "category": "blog.category.hairCare",
     "readTime": 4,
     "createdAt": "2026-02-10T00:00:00.000Z",
     "featured": true,
@@ -138,7 +153,7 @@
     "content": "\n# SPA-уход за телом дома\n\nВам не нужен салон, чтобы получить качественный уход.\n\n## Процедура\n\n1. Горячая ванна 15 минут\n2. Скраб для тела\n3. Маска или масло\n4. Лосьон для тела\n5. Массаж\n\nРегулярность — ключ к успеху!\n    ",
     "author": "Елена Специалист",
     "image": "/blog/body-care.jpg",
-    "category": "уход за телом",
+    "category": "blog.category.bodyCare",
     "readTime": 3,
     "createdAt": "2026-02-05T00:00:00.000Z",
     "translations": {
@@ -164,7 +179,7 @@
     "content": "\n# Тренды макияжа 2026\n\nНовый год — новые тренды в макияже.\n\n## В моде\n\n- Natural skin\n- Graphic eyeliner\n- Bold lips\n- Glass skin effect\n\nЭкспериментируйте и найдите свой стиль!\n    ",
     "author": "Ирина Визажист",
     "image": "/blog/makeup-trends.jpg",
-    "category": "макияж",
+    "category": "blog.category.makeup",
     "readTime": 4,
     "createdAt": "2026-01-28T00:00:00.000Z",
     "translations": {
@@ -190,7 +205,7 @@
     "content": "\n# Ретинол: полное руководство\n\nРетинол (витамин A) — один из наиболее изученных компонентов в косметике.\n\n## Доказанные эффекты\n\n- Уменьшение морщин\n- Улучшение текстуры\n- Выравнивание тона\n- Стимуляция коллагена\n\n## Как использовать\n\nНачните с низкой концентрации.\nУвеличивайте постепенно.\nИспользуйте SPF днем!\n    ",
     "author": "Доктор Смирнов",
     "image": "/blog/retinol.jpg",
-    "category": "ингредиенты",
+    "category": "blog.category.ingredients",
     "readTime": 6,
     "createdAt": "2026-01-20T00:00:00.000Z",
     "translations": {
@@ -207,5 +222,20 @@
         "author": "Dr. Smirnovs"
       }
     }
+  ,
+  "translations": {
+    "en": {
+      "title": "Spring Skin Reset: 10-Minute Daily Checklist",
+      "excerpt": "A simple spring routine to restore glow, reduce dryness, and avoid overloading your skin.",
+      "content": "\n# Spring Skin Reset Checklist\n\nIn spring, skin often becomes more reactive due to temperature changes and dry indoor air.\n\n## Daily routine\n\n1. **Gentle cleansing morning and evening**\n2. **Hydrating serum** (for example, hyaluronic acid)\n3. **Moisturizer for your skin type**\n4. **SPF every morning**, even on cloudy days\n\n## 1-2 times per week\n\n- Enzyme or mild acid exfoliation\n- Soothing mask\n\n## Common spring mistakes\n\n- Replacing the entire routine at once\n- Skipping SPF\n- Over-cleansing\n\nKey rule: introduce new products gradually and monitor your skin response.\n    ",
+      "author": "Olga Dermacosmetologist"
+    },
+    "lv": {
+      "title": "Pavasara ādas reset: 10 minūšu ikdienas kontrolsaraksts",
+      "excerpt": "Vienkārša pavasara rutīna, lai atjaunotu mirdzumu, mazinātu sausumu un nepārslogotu ādu.",
+      "content": "\n# Pavasara ādas reset kontrolsaraksts\n\nPavasarī āda bieži kļūst jutīgāka temperatūras svārstību un sausa iekštelpu gaisa dēļ.\n\n## Ikdienā\n\n1. **Maiga attīrīšana no rīta un vakarā**\n2. **Mitrinošs serums** (piemēram, ar hialuronskābi)\n3. **Krēms atbilstoši ādas tipam**\n4. **SPF katru rītu**, arī mākoņainā laikā\n\n## 1-2 reizes nedēļā\n\n- Enzīmu vai maigs skābju pīlings\n- Nomierinoša maska\n\n## Biežākās pavasara kļūdas\n\n- Visa kopšanas plāna nomaiņa uzreiz\n- SPF ignorēšana\n- Pārāk agresīva attīrīšana\n\nGalvenais noteikums: ieviesiet jaunus līdzekļus pakāpeniski un vērojiet ādas reakciju.\n    ",
+      "author": "Olga, dermakosmetoloģe"
+    }
   }
+}
 ]

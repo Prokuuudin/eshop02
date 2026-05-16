@@ -19,14 +19,12 @@ const ProductBulkPricingFields: React.FC = () => {
                 {fields.map((field, idx) => (
                     <div key={field.id} className="add-product__bulk-row flex gap-2 items-center">
                         <Input
-                            label="Мин. количество"
                             placeholder="Минимум для опта, например: 10"
                             type="number"
                             {...register(`bulkPricing.${idx}.minQty`, { valueAsNumber: true })}
                             className="add-product__input add-product__input--bulk-min"
                         />
                         <Input
-                            label="Цена за ед."
                             placeholder="Цена для этого объёма"
                             type="number"
                             {...register(`bulkPricing.${idx}.price`, { valueAsNumber: true })}

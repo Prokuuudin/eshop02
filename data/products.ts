@@ -8,6 +8,7 @@ export type BadgeType = 'sale' | 'bestseller' | 'new';
 export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment' | 'new';
 
 export interface Product {
+    barcode?: string // Штрихкод товара
   id: string
   titleKey?: string
   title: string
@@ -43,6 +44,14 @@ export interface Product {
   packagingSize?: number // Units per package
   compatibleEquipment?: string[] // Equipment compatibility
   bulkPricingTiers?: Array<{ quantity: number; pricePerUnit: number }> // Volume discounts
+  /**
+   * URL к демонстрационному видео (mp4, webm и т.д.)
+   * demoVideo: { src: string; poster?: string }[]
+   */
+  demoVideo?: {
+    src: string;
+    poster?: string;
+  }[];
 }
 
 export const isProductOnSale = (product: Product): boolean => {
@@ -66,6 +75,20 @@ const baseProducts: Product[] = [
       '/products/p1-4.jpg',
       '/products/p1-5.jpg',
     ],
+    demoVideo: [
+      {
+        src: '/products/demo/revitaluxe-demo.mp4',
+        poster: '/products/p1.jpg'
+      },
+      {
+        src: '/products/demo/revitaluxe-demo-2.mp4',
+        poster: '/products/p1-2.jpg'
+      },
+      {
+        src: '/products/demo/revitaluxe-demo-3.mp4',
+        poster: '/products/p1-3.jpg'
+      }
+    ],
     badges: ['sale', 'bestseller', 'new'],
     category: 'face',
     stock: 3,
@@ -74,6 +97,7 @@ const baseProducts: Product[] = [
     oftenBoughtTogether: ['p3', 'p5'],
     // B2B fields
     sku: 'REVIT-50-001',
+    barcode: '4006381333931', // Сымитированный штрихкод
     unitOfMeasure: 'мл',
     technicalSpecs: {
       'Объём': '50 мл',
@@ -91,7 +115,7 @@ const baseProducts: Product[] = [
       { quantity: 25, pricePerUnit: 2300 },
       { quantity: 50, pricePerUnit: 2200 }
     ],
-    compatibleEquipment: ['SkinPro-X', 'MicroBlast-3000']
+    compatibleEquipment: ['SkinPro-X', 'MicroBlast-3000'],
   },
   {
     id: 'p2',
@@ -117,7 +141,7 @@ const baseProducts: Product[] = [
       distributor: 12
     },
     relatedProductIds: ['p4', 'p8'],
-    oftenBoughtTogether: ['p4']
+    oftenBoughtTogether: ['p4'],
   },
   {
     id: 'p3',
@@ -139,7 +163,7 @@ const baseProducts: Product[] = [
     stock: 22,
     purpose: 'Для омоложения',
     relatedProductIds: ['p1', 'p7'],
-    oftenBoughtTogether: ['p1', 'p5']
+    oftenBoughtTogether: ['p1', 'p5'],
   },
   {
     id: 'p4',
@@ -159,7 +183,7 @@ const baseProducts: Product[] = [
     stock: 0,
     purpose: 'Для восстановления',
     relatedProductIds: ['p2', 'p8'],
-    oftenBoughtTogether: ['p2']
+    oftenBoughtTogether: ['p2'],
   },
   {
     id: 'p5',
@@ -180,12 +204,12 @@ const baseProducts: Product[] = [
     stock: 12,
     purpose: 'Для питания',
     relatedProductIds: ['p1', 'p3'],
-    oftenBoughtTogether: ['p1', 'p3']
+    oftenBoughtTogether: ['p1', 'p3'],
   },
   {
     id: 'p6',
     title: 'Аппарат для микродермабразии ProSkin',
-    brand: 'ceriotti',
+    brand: 'proskinrus',
     price: 18500,
     rating: 4.8,
     image: '/products/p6.jpg',
@@ -225,7 +249,7 @@ const baseProducts: Product[] = [
     bulkPricingTiers: [
       { quantity: 3, pricePerUnit: 18000 },
       { quantity: 5, pricePerUnit: 17500 }
-    ]
+    ],
   },
   {
     id: 'p7',

@@ -30,7 +30,6 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-title"
                         placeholder="Название товара"
                         {...register('titles.ru')}
-                        error={errors.titles?.ru?.message}
                     />
                 </div>
                 <div>
@@ -41,7 +40,6 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-id"
                         placeholder="Уникальный идентификатор, например: p123"
                         {...register('id')}
-                        error={errors.id?.message}
                     />
                 </div>
                 <div>
@@ -52,19 +50,13 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-brand"
                         placeholder="Бренд товара"
                         {...register('brand')}
-                        error={errors.brand?.message}
                     />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-sku">
                         SKU
                     </label>
-                    <Input
-                        id="add-product-sku"
-                        placeholder="Артикул товара"
-                        {...register('sku')}
-                        error={errors.sku?.message}
-                    />
+                    <Input id="add-product-sku" placeholder="Артикул товара" {...register('sku')} />
                 </div>
                 <div>
                     <label
@@ -103,45 +95,9 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-barcode"
                         placeholder="Штрихкод (EAN, UPC)"
                         {...register('barcode')}
-                        error={errors.barcode?.message}
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="add-product-purpose">
-                        Назначение
-                    </label>
-                    <Controller
-                        name="purpose"
-                        control={control}
-                        render={({ field }) => {
-                            // Получаем уникальные значения назначений из products
-                            const purposes = Array.from(
-                                new Set(
-                                    require('@/data/products')
-                                        .PRODUCTS.map((p: any) => p.purpose)
-                                        .filter((v: string | undefined) => !!v)
-                                )
-                            );
-                            return (
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger id="add-product-purpose">
-                                        <SelectValue placeholder="Выберите назначение" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {purposes.map((purpose: string) => (
-                                            <SelectItem key={purpose} value={purpose}>
-                                                {purpose}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            );
-                        }}
-                    />
-                    {errors.purpose?.message && (
-                        <div className="text-red-500 text-xs mt-1">{errors.purpose.message}</div>
-                    )}
-                </div>
+
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-type">
                         Тип продукта
@@ -150,7 +106,6 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-type"
                         placeholder="Тип, например: крем, шампунь"
                         {...register('type')}
-                        error={errors.type?.message}
                     />
                 </div>
             </div>

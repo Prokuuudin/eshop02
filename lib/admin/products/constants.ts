@@ -1,8 +1,11 @@
 // Пример констант для админки продуктов
 export const CATEGORY_OPTIONS = [
-  'category1',
-  'category2',
-  'category3',
+  'hair',
+  'face',
+  'body',
+  'nails',
+  'equipment',
+  'new',
 ];
 
 export const BADGE_META = {

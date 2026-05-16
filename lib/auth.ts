@@ -19,6 +19,8 @@ export type User = {
   teamRole?: TeamRole // Role within the team (viewer, buyer, manager, admin)
   approvalRequired?: boolean // Does this user's orders need approval?
   auditLoggingEnabled?: boolean // Should this user's actions be logged?
+
+  avatarUrl?: string // User profile photo (base64 or URL)
 }
 
 const USERS_KEY = 'eshop_users'
@@ -41,7 +43,8 @@ const normalizeUser = (user: Partial<User>): User => ({
   companyName: user.companyName,
   teamRole: user.teamRole,
   approvalRequired: user.approvalRequired,
-  auditLoggingEnabled: user.auditLoggingEnabled
+  auditLoggingEnabled: user.auditLoggingEnabled,
+  avatarUrl: user.avatarUrl ?? ''
 })
 
 const notifyAuthChanged = (): void => {
@@ -49,7 +52,7 @@ const notifyAuthChanged = (): void => {
   window.dispatchEvent(new CustomEvent('eshop-user-changed'))
 }
 
-const readUsers = (): User[] => {
+export const readUsers = (): User[] => {
   try {
     const raw = localStorage.getItem(USERS_KEY)
     if (!raw) return []
@@ -60,11 +63,11 @@ const readUsers = (): User[] => {
   }
 }
 
-const writeUsers = (users: User[]) => {
+export const writeUsers = (users: User[]) => {
   localStorage.setItem(USERS_KEY, JSON.stringify(users))
 }
 
-const writeCurrentUser = (user: User): void => {
+export const writeCurrentUser = (user: User): void => {
   localStorage.setItem(CURRENT_KEY, JSON.stringify(user))
 }
 
@@ -104,19 +107,19 @@ export const registerAdminUser = (email: string, password: string, name?: string
   return { success: true }
 }
 
-export const submitAccessRequest = (email: string, password: string, name?: string, barcode?: string): { success: boolean; error?: string; companyName?: string } => {
+export const submitAccessRequest = (email: string, password: string, name?: string, cardNumber?: string): { success: boolean; error?: string; companyName?: string } => {
   const users = readUsers()
   const normalizedEmail = normalizeEmail(email)
 
   if (!normalizedEmail) return { success: false, error: 'Укажите email' }
   if (findUserByEmail(users, normalizedEmail)) return { success: false, error: 'Пользователь с таким email уже существует' }
 
-  const normalizedBarcode = barcode?.trim()
-  if (!normalizedBarcode) return { success: false, error: 'Укажите баркод клиента' }
+  const normalizedCardNumber = cardNumber?.trim()
+  if (!normalizedCardNumber) return { success: false, error: 'Укажите номер карты клиента' }
 
   const companyStore = useCompanyStore.getState()
-  const company = companyStore.getCompanyByBarcode(normalizedBarcode)
-  if (!company) return { success: false, error: 'Клиент с таким баркодом не найден' }
+  const company = companyStore.getCompanyByCardNumber(normalizedCardNumber)
+  if (!company) return { success: false, error: 'Клиент с таким номером карты не найден' }
 
   const accessRequestStore = useAccessRequestStore.getState()
   if (accessRequestStore.getPendingRequestByEmail(normalizedEmail)) {
@@ -129,7 +132,7 @@ export const submitAccessRequest = (email: string, password: string, name?: stri
     name,
     companyId: company.companyId,
     companyName: company.companyName,
-    barcode: normalizedBarcode
+    cardNumber: normalizedCardNumber
   })
 
   logAuditAction(
@@ -139,7 +142,7 @@ export const submitAccessRequest = (email: string, password: string, name?: stri
     {
       email: normalizedEmail,
       companyName: company.companyName,
-      barcode: normalizedBarcode
+      cardNumber: normalizedCardNumber
     },
     {
       userName: name,

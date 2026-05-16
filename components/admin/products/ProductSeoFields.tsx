@@ -18,17 +18,9 @@ const ProductSeoFields: React.FC<ProductSeoFieldsProps> = ({ language }) => {
         <div className="add-product__section add-product__section--seo">
             <h2 className="add-product__section-title">SEO</h2>
             <div className="add-product__fields-grid">
-                <Input
-                    label={`Meta Title (${language.toUpperCase()})`}
-                    {...register(`metaTitles.${language}`)}
-                    error={errors.metaTitles?.[language]?.message}
-                />
-                <Textarea
-                    label={`Meta Description (${language.toUpperCase()})`}
-                    {...register(`metaDescriptions.${language}`)}
-                    error={errors.metaDescriptions?.[language]?.message}
-                />
-                <Input label="Слаг" {...register('slug')} error={errors.slug?.message} />
+                <Input {...register(`metaTitles.${language}`)} />
+                <Textarea {...register(`metaDescriptions.${language}`)} />
+                <Input {...register('slug')} />
             </div>
         </div>
     );

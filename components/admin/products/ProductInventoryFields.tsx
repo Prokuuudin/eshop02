@@ -14,25 +14,16 @@ const ProductInventoryFields: React.FC = () => {
             <h2 className="add-product__section-title">Склад и наличие</h2>
             <div className="add-product__fields-grid">
                 <Input
-                    label="Количество на складе"
                     placeholder="Сколько штук на складе"
                     type="number"
                     {...register('stock', { valueAsNumber: true })}
-                    error={errors.stock?.message}
                 />
                 <Input
-                    label="Мин. заказ"
                     placeholder="Минимальный заказ, например: 1"
                     type="number"
                     {...register('minOrder', { valueAsNumber: true })}
-                    error={errors.minOrder?.message}
                 />
-                <Input
-                    label="Единица измерения"
-                    placeholder="шт, л, кг и т.д."
-                    {...register('unit')}
-                    error={errors.unit?.message}
-                />
+                <Input placeholder="шт, л, кг и т.д." {...register('unit')} />
             </div>
         </div>
     );

@@ -86,7 +86,10 @@ const AddProductForm: React.FC = () => {
             >
                 <div className="add-product__form flex flex-col gap-6">
                     <div className="add-product__section">
-                        <Tabs value={language} onValueChange={setLanguage}>
+                        <Tabs
+                            value={language}
+                            onValueChange={(value) => setLanguage(value as 'ru' | 'en' | 'lv')}
+                        >
                             <TabsList>
                                 {LANGUAGES.map((lang) => (
                                     <TabsTrigger
@@ -121,7 +124,41 @@ const AddProductForm: React.FC = () => {
                     </div>
                 </div>
                 <aside className="add-product__preview sticky top-4 self-start">
-                    <ProductPreviewCard values={formValues} language={language} />
+                    <ProductPreviewCard
+                        values={{
+                            ...formValues,
+                            titles: {
+                                ru: formValues.titles?.ru || '',
+                                en: formValues.titles?.en || '',
+                                lv: formValues.titles?.lv || '',
+                            },
+                            shortDescriptions: {
+                                ru: formValues.shortDescriptions?.ru || '',
+                                en: formValues.shortDescriptions?.en || '',
+                                lv: formValues.shortDescriptions?.lv || '',
+                            },
+                            fullDescriptions: {
+                                ru: formValues.fullDescriptions?.ru || '',
+                                en: formValues.fullDescriptions?.en || '',
+                                lv: formValues.fullDescriptions?.lv || '',
+                            },
+                            bulkPricing: (formValues.bulkPricing ?? []).map((bp) => ({
+                                minQty: bp.minQty ?? 1,
+                                price: bp.price ?? 0,
+                            })),
+                            metaTitles: {
+                                ru: formValues.metaTitles?.ru || '',
+                                en: formValues.metaTitles?.en || '',
+                                lv: formValues.metaTitles?.lv || '',
+                            },
+                            metaDescriptions: {
+                                ru: formValues.metaDescriptions?.ru || '',
+                                en: formValues.metaDescriptions?.en || '',
+                                lv: formValues.metaDescriptions?.lv || '',
+                            },
+                        }}
+                        language={language}
+                    />
                     <div className="mt-4">
                         <ProductBadgesFields />
                     </div>

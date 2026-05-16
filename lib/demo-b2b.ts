@@ -159,7 +159,6 @@ export const seedDemoB2BData = (): User => {
   companyStore.upsertCompany({
     companyId: DEMO_COMPANY_ID,
     companyName: 'Beauty Supply Pro',
-    customerBarcode: 'CLI-20002',
     taxId: 'LV50004567891',
     registrationNumber: '50004567891',
     city: 'Daugavpils',

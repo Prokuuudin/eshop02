@@ -37,8 +37,6 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({ values, languag
         stock,
         sku,
         shortDescriptions,
-        rating,
-        badges,
         bulkPricing,
     } = values;
 
@@ -128,9 +126,6 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({ values, languag
                                 Опт от {firstTier.minQty}: {formatEuro(firstTierPrice)}
                             </div>
                         )}
-                    </div>
-                    <div className="product-card__rating text-sm text-yellow-500">
-                        {typeof values.rating === 'number' ? values.rating.toFixed(1) + ' ★' : ''}
                     </div>
                 </div>
                 <div className="product-card__badges mt-2 flex flex-wrap gap-2 mb-3 max-w-full overflow-hidden">

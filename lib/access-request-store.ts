@@ -11,7 +11,7 @@ export type AccessRequest = {
   name?: string
   companyId: string
   companyName: string
-  barcode: string
+  cardNumber: string
   status: AccessRequestStatus
   requestedAt: Date
   reviewedAt?: Date

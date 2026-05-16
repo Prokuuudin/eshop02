@@ -24,6 +24,19 @@ const activities = [
     },
 ];
 
+const contactBlock = (
+    <div className="activity-section__contact mt-8 p-6 bg-gray-100 rounded-lg text-center">
+        <h3 className="activity-section__subtitle section__subtitle mb-2">Связаться с нами</h3>
+        <p className="activity-section__desc section__desc mb-4">
+            По вопросам сотрудничества, участия в мероприятиях или другим предложениям — свяжитесь с
+            нашей командой.
+        </p>
+        <a href="/contact" className="btn btn-primary">
+            Связаться
+        </a>
+    </div>
+);
+
 export default function ActivitySection() {
     return (
         <section className="activity-section section">
@@ -41,6 +54,7 @@ export default function ActivitySection() {
                     </div>
                 ))}
             </div>
+            {contactBlock}
         </section>
     );
 }

@@ -21,7 +21,7 @@ export function useProductsAdmin() {
     id: '',
     title: '',
     brand: '',
-    category: CATEGORY_OPTIONS[0],
+    category: CATEGORY_OPTIONS[0] as import('@/data/products').CategoryType,
     price: '',
     badges: [],
     stock: '',

@@ -1,59 +1,8 @@
-import React from 'react';
-import { useFormContext, useFieldArray } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { AddProductFormValues } from './productFormSchema';
-
-const ProductTechSpecsFields: React.FC = () => {
-    const {
-        control,
-        register,
-        formState: { errors },
-    } = useFormContext<AddProductFormValues>();
-    const { fields, append, remove } = useFieldArray({ control, name: 'technicalSpecs' });
-
+export default function ProductTechSpecsFields() {
     return (
         <div className="add-product__section add-product__section--techspecs">
-            <h2 className="add-product__section-title">Технические характеристики</h2>
-            <div className="add-product__fields-grid">
-                {fields.map((field, idx) => (
-                    <div
-                        key={field.id}
-                        className="add-product__techspec-row flex gap-2 items-center"
-                    >
-                        <Input
-                            label="Ключ"
-                            placeholder="Например: Объем, Страна, Материал"
-                            {...register(`technicalSpecs.${idx}.key`)}
-                            className="add-product__input add-product__input--techspec-key"
-                        />
-                        <Input
-                            label="Значение"
-                            placeholder="Значение характеристики"
-                            {...register(`technicalSpecs.${idx}.value`)}
-                            className="add-product__input add-product__input--techspec-value"
-                        />
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => remove(idx)}
-                        >
-                            Удалить
-                        </Button>
-                    </div>
-                ))}
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ key: '', value: '' })}
-                >
-                    Добавить характеристику
-                </Button>
-            </div>
+            {/* Заглушка: technicalSpecs не поддерживается схемой */}
+            <p>Поле technicalSpecs временно отключено.</p>
         </div>
     );
-};
-
-export default ProductTechSpecsFields;
+}

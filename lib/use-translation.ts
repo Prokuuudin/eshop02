@@ -34,11 +34,16 @@ export function useTranslation(): TranslationHelper {
   }, [])
 
   const t = (key: string, defaultValue?: string, params?: TranslationParams): string => {
+    // Для кредитного калькулятора всегда используем основной перевод
+    if (key === 'credit.downPaymentEur' || key === 'credit.monthlyPayment' || key === 'credit.calculatorTitle' || key === 'credit.downPaymentPercent' || key === 'credit.termMonths') {
+      const value = translations[language][key]
+      const resolved = typeof value === 'string' ? value : defaultValue || key
+      return interpolate(resolved, params)
+    }
     const override = overrides.text[language]?.[key]
     if (typeof override === 'string' && override.length > 0) {
       return interpolate(override, params)
     }
-
     const value = translations[language][key]
     const resolved = typeof value === 'string' ? value : defaultValue || key
     return interpolate(resolved, params)

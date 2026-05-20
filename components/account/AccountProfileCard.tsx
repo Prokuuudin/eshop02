@@ -15,7 +15,7 @@ interface AccountProfileCardProps {
     onCancel: () => void;
     onSave: () => void;
     onChange: (field: string, value: string) => void;
-    t: (key: string) => string;
+    t: (key: string, defaultValue?: string, params?: Record<string, string | number>) => string;
     tl: (...args: any[]) => string;
 }
 

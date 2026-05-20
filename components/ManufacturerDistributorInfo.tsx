@@ -92,23 +92,17 @@ export const ManufacturerDistributorInfo: React.FC<{
     } else if (brand && typeof brand.description === 'string') {
         brandDescription = brand.description;
     }
-    const fullName = brandDescription || '—';
-    const address = '—';
-    const email = '—';
-    // Мультиязычный адрес дистрибьютора
-    let distributorAddress = 'ул. Ренцену, 10A, Рига';
-    if (language === 'en') {
-        distributorAddress = '10A, Rencenu St., Riga';
-    } else if (language === 'lv') {
-        distributorAddress = 'Rencēnu iela 10A, Rīga';
-    }
-    // Имя дистрибьютора с учётом языка
-    let distributorName = 'MIKS PLUS SIA';
-    if (language === 'ru') {
-        distributorName = 'ООО "MIKS PLUS"';
-    } else if (language === 'en') {
-        distributorName = 'MIKS PLUS LLC';
-    }
+    const fullName = product.manufacturerName || brandDescription || '—';
+    const address = product.manufacturerAddress || '—';
+    const email = product.manufacturerEmail || '—';
+    const lang = language as 'ru' | 'en' | 'lv';
+    const distributorName = product.distributorName
+        ? (product.distributorName[lang] || product.distributorName.ru)
+        : '—';
+    const distributorAddress = product.distributorAddress
+        ? (product.distributorAddress[lang] || product.distributorAddress.ru)
+        : '—';
+    const distributorEmailValue = product.distributorEmail || '—';
     return (
         <div className="product-detail__manufacturer-distributor mt-2 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700 text-sm">
             <div className="mb-2 font-semibold text-blue-900 dark:text-blue-100">
@@ -144,9 +138,11 @@ export const ManufacturerDistributorInfo: React.FC<{
                 </li>
                 <li>
                     {t('distributor.email')}{' '}
-                    <a href="mailto:office@miksplus.eu" className="text-blue-700 underline">
-                        office@miksplus.eu
-                    </a>
+                    {distributorEmailValue !== '—' ? (
+                        <a href={`mailto:${distributorEmailValue}`} className="text-blue-700 underline">
+                            {distributorEmailValue}
+                        </a>
+                    ) : '—'}
                 </li>
             </ul>
         </div>

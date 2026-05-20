@@ -28,11 +28,15 @@ export default function Benefits() {
             icon: '/icons/original.svg',
             text: t('benefits.brands100', '100+ оригинальных мировых брендов'),
         },
+        {
+            icon: '/icons/quality.svg',
+            text: t('benefits.bonusPoints', 'Начисление бонусных баллов за каждую покупку'),
+        },
     ];
     return (
         <section className="benefits py-8">
             <div className="w-full px-4">
-                <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+                <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-stretch">
                     {BENEFITS.map((item, idx) => (
                         <article
                             key={idx}

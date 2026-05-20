@@ -13,9 +13,10 @@ interface Tool {
 
 interface AccountToolsSectionProps {
     accountTools: Tool[];
+    children?: React.ReactNode;
 }
 
-const AccountToolsSection: React.FC<AccountToolsSectionProps> = ({ accountTools }) => (
+const AccountToolsSection: React.FC<AccountToolsSectionProps> = ({ accountTools, children }) => (
     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {accountTools.map((tool) => (
             <div key={tool.href} className={`rounded-2xl border p-5 shadow-sm ${tool.classes}`}>
@@ -34,6 +35,7 @@ const AccountToolsSection: React.FC<AccountToolsSectionProps> = ({ accountTools 
                 </Link>
             </div>
         ))}
+        {children}
     </section>
 );
 

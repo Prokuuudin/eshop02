@@ -22,7 +22,7 @@ import {
 export default function CartPage() {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
-    const { items, removeItem, updateQuantity, total, clearCart } = useCart();
+    const { items, addItem, removeItem, updateQuantity, total, clearCart } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
     const [selectionTouched, setSelectionTouched] = React.useState(false);
     const locale = getLocaleFromLanguage(language);
@@ -79,6 +79,7 @@ export default function CartPage() {
                         <Button>{t('cart.goToCatalog')}</Button>
                     </Link>
                 </div>
+
             </main>
         );
     }
@@ -253,6 +254,7 @@ export default function CartPage() {
                             </Button>
                         }
                     />
+
                 </div>
 
                 {/* Сумма */}

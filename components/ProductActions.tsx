@@ -1,15 +1,17 @@
 import React from 'react';
 import AddToCartButton from '@/components/AddToCartButton';
 import WishlistButton from '@/components/WishlistButton';
+import { SubscriptionWidget } from '@/components/SubscriptionWidget';
 import { useTranslation } from '@/lib/use-translation';
 import { Product } from '@/data/products';
 
 interface ProductActionsProps {
     product: Product;
     minOrderQuantity: number;
+    displayPrice: number;
 }
 
-export const ProductActions: React.FC<ProductActionsProps> = ({ product, minOrderQuantity }) => {
+export const ProductActions: React.FC<ProductActionsProps> = ({ product, minOrderQuantity, displayPrice }) => {
     const { t } = useTranslation();
     return (
         <div className="product-detail__actions mt-8">
@@ -24,6 +26,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product, minOrde
                     {t('product.minimumOrder')}: {minOrderQuantity} {t('product.pcs')}
                 </p>
             )}
+            <SubscriptionWidget product={product} displayPrice={displayPrice} />
         </div>
     );
 };

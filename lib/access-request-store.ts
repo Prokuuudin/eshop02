@@ -9,6 +9,7 @@ export type AccessRequest = {
   email: string
   password: string
   name?: string
+  phone?: string
   companyId: string
   companyName: string
   cardNumber: string

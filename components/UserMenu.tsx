@@ -17,6 +17,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import Image from 'next/image';
 import RegisterForm from './auth/RegisterForm';
+import RegisterSwitcher from './auth/RegisterSwitcher';
+import { IconClose } from './ui/icon-close';
 import LoginForm from './auth/LoginForm';
 import ForgotPasswordForm from './auth/ForgotPasswordForm';
 
@@ -221,15 +223,8 @@ export default function UserMenu() {
                                         </Button>
                                     </DialogTrigger>
                                     <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>{t('auth.register')}</DialogTitle>
-                                        </DialogHeader>
-                                        <RegisterForm />
-                                        <DialogClose asChild>
-                                            <Button variant="outline" className="mt-4 w-full">
-                                                {t('common.close')}
-                                            </Button>
-                                        </DialogClose>
+                                        <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
+<RegisterSwitcher onClose={() => setRegisterOpen(false)} />
                                     </DialogContent>
                                 </Dialog>
                                 {setupRequired && (

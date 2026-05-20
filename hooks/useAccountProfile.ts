@@ -10,6 +10,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setProfileDraft({
             name: user?.name || '',
             email: user?.email || '',
+            phone: user?.phone || '',
             password: '',
             companyName: user?.companyName || '',
             avatarUrl: user?.avatarUrl || '',
@@ -38,6 +39,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
             ...users[idx],
             name: profileDraft.name,
             email: profileDraft.email,
+            phone: profileDraft.phone,
             companyName: profileDraft.companyName,
             password: profileDraft.password ? profileDraft.password : users[idx].password,
             avatarUrl: profileDraft.avatarUrl || users[idx].avatarUrl || '',

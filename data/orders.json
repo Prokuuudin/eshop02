@@ -1,5 +1,77 @@
 [
   {
+    "id": "ORD-1778951045449-KH6Q8U4GA",
+    "createdAt": "2026-05-16T17:04:05.449Z",
+    "items": [
+      {
+        "id": "p8",
+        "title": "Профессиональный фен SalonDry 2200W",
+        "brand": "cera",
+        "price": 7200,
+        "rating": 4.6,
+        "image": "/products/p8.jpg",
+        "images": [
+          "/products/p8.jpg",
+          "/products/p8-2.jpg",
+          "/products/p8-3.jpg",
+          "/products/p8-4.jpg",
+          "/products/p8-5.jpg"
+        ],
+        "badges": [
+          "bestseller"
+        ],
+        "category": "equipment",
+        "stock": 5,
+        "purpose": "Для сушки",
+        "minOrderQuantities": {
+          "master": 2,
+          "salon": 4,
+          "distributor": 8
+        },
+        "relatedProductIds": [
+          "p2",
+          "p6"
+        ],
+        "oftenBoughtTogether": [
+          "p2",
+          "p4"
+        ],
+        "bonusRate": 72,
+        "manufacturerName": "Cera Professional AB (Sweden)",
+        "manufacturerAddress": "Storgatan 22, 111 23 Stockholm, Sweden",
+        "manufacturerEmail": "info@ceraprofessional.se",
+        "distributorName": {
+          "ru": "ООО \"MIKS PLUS\"",
+          "en": "MIKS PLUS LLC",
+          "lv": "SIA \"MIKS PLUS\""
+        },
+        "distributorAddress": {
+          "ru": "ул. Ренцену, 10A, Рига",
+          "en": "10A Rencenu St., Riga",
+          "lv": "Rencēnu iela 10A, Rīga"
+        },
+        "distributorEmail": "office@miksplus.eu",
+        "quantity": 3
+      }
+    ],
+    "subtotal": 21600,
+    "tax": 3888,
+    "delivery": 500,
+    "deliveryMethod": "pickup",
+    "discount": 0,
+    "total": 25988,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Aleksandrs",
+    "lastName": "Prokudins",
+    "email": "prokuuudin@gmail.com",
+    "phone": "29711575",
+    "address": "P. Lejina 7 - 52",
+    "city": "Riga",
+    "postalCode": "LV-1029",
+    "paymentMethod": "cash"
+  },
+  {
     "id": "ORD-1778839321340-HKFPNLBT7",
     "createdAt": "2026-05-15T10:02:01.340Z",
     "items": [

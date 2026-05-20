@@ -49,10 +49,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 priceLocale={priceLocale}
                 stock={product.stock}
                 creditPrice={product.price}
+                productId={product.id}
+                productTitle={localizedTitle}
             />
             <ProductDescription description={productDescription} productId={product.id} />
             <ProductFeatures features={productFeatures} />
-            <ProductActions product={product} minOrderQuantity={minOrderQuantity} />
+            <ProductActions product={product} minOrderQuantity={minOrderQuantity} displayPrice={displayPrice} />
         </div>
     );
 };

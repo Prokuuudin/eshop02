@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\components\" -Recurse -Name)",
+      "Bash(dir \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\lib\" -Name)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")"
+    ]
+  }
+}

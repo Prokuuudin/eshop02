@@ -10,6 +10,8 @@ interface ProductPricesProps {
     priceLocale: string;
     stock: number;
     creditPrice: number;
+    productId: string;
+    productTitle: string;
 }
 
 export const ProductPrices: React.FC<ProductPricesProps> = ({
@@ -19,6 +21,8 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
     priceLocale,
     stock,
     creditPrice,
+    productId,
+    productTitle,
 }) => {
     return (
         <div className="product-detail__prices mt-6">
@@ -28,7 +32,7 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
                 isAuthenticated={isAuthenticated}
                 priceLocale={priceLocale}
             />
-            <ProductStock stock={stock} />
+            <ProductStock stock={stock} productId={productId} productTitle={productTitle} />
         </div>
     );
 };

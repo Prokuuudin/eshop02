@@ -7,11 +7,12 @@ type Props = {
     title?: string;
     description?: string;
     icon?: LucideIcon;
+    accentClassName?: string;
 };
 
-const AccountPageHero: React.FC<Props> = ({ eyebrow, title, description, icon: Icon }) => {
+const AccountPageHero: React.FC<Props> = ({ eyebrow, title, description, icon: Icon, accentClassName }) => {
     return (
-        <div className="account-page-hero p-4 mb-6 bg-white dark:bg-gray-900 rounded-lg shadow flex items-center gap-4">
+        <div className={`account-page-hero p-4 mb-6 rounded-lg shadow flex items-center gap-4 ${accentClassName ?? 'bg-white dark:bg-gray-900'}`}>
             {Icon && <Icon className="w-8 h-8 text-indigo-600" />}
             <div>
                 <div className="text-xs uppercase tracking-wider text-indigo-600 font-semibold">

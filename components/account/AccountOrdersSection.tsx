@@ -104,6 +104,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
                             bonusSpentLabel={t('account.bonus.spent')}
                             bonusEarnedLabel={t('account.bonus.earned')}
                             repeatOrderLabel={t('account.repeatOrder')}
+                            saveAsTemplateLabel={t('templates.saveAsTemplate')}
                             detailsLabel={t('account.details')}
                             onRepeatOrder={() => handleRepeatOrder(order.id)}
                         />

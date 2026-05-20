@@ -1,15 +1,19 @@
 'use client';
 
 import AccountProfileCard from '@/components/account/AccountProfileCard';
+import AccountBonusCard from '@/components/account/AccountBonusCard';
 import { useCompanyStore } from '@/lib/company-store';
 import AccountSummaryCards from '@/components/account/AccountSummaryCards';
 import AccountToolsSection from '@/components/account/AccountToolsSection';
-import AccountAddressesSection from '@/components/account/AccountAddressesSection';
+import AccountNotificationsSection from '@/components/account/AccountNotificationsSection';
+import { AccountAddressesWidget } from '@/components/account/AccountAddressesWidget';
+import { AccountTemplatesWidget } from '@/components/account/AccountTemplatesWidget';
 import AccountOrdersSection from '@/components/account/AccountOrdersSection';
+import { AccountSubscriptionsSection } from '@/components/account/AccountSubscriptionsSection';
+import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import B2BChat from '@/components/B2BChat';
 
 import { useAccountProfile } from '@/hooks/useAccountProfile';
-import { useAccountAddresses } from '@/hooks/useAccountAddresses';
 import { useAccountOrders } from '@/hooks/useAccountOrders';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { getAccountTools } from '@/hooks/useAccountTools';
@@ -34,7 +38,7 @@ export default function AccountPage(): React.ReactElement {
     const [loading, setLoading] = useState(true);
     const ordersStore = useOrders();
     const { getOrderStatus } = useAdminStore();
-    const { getByEmail, replaceForEmail, upsertForEmail, deleteForEmail } = useSavedAddresses();
+    const { getByEmail, replaceForEmail } = useSavedAddresses();
     const allOrders = ordersStore.orders;
     const locale = getLocaleFromLanguage(language);
     useEffect(() => {
@@ -48,10 +52,13 @@ export default function AccountPage(): React.ReactElement {
     }, []);
     const userOrders = allOrders.filter((o) => o.email === user?.email);
     const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);
+    const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);
+    const totalBonusSpent = userOrders.reduce((sum, o) => sum + (o.bonusSpent ?? 0), 0);
     const isAdmin = user?.platformRole === 'admin';
+    const savedAddresses = user?.email ? getByEmail(user.email) : [];
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
+    useSubscriptionReminders(user?.id ?? null);
     const profile = useAccountProfile(user, t, readUsers, writeUsers, writeCurrentUser);
-    const addresses = useAccountAddresses(user, t, getByEmail, upsertForEmail, deleteForEmail);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');
     const orders = useAccountOrders(userOrders, getOrderStatus, orderFilter);
     const accountTools = getAccountTools(user, tl);
@@ -59,7 +66,7 @@ export default function AccountPage(): React.ReactElement {
         t,
         tl,
         userOrders,
-        addresses.savedAddresses,
+        savedAddresses,
         totalSpent,
         locale
     );
@@ -101,66 +108,25 @@ export default function AccountPage(): React.ReactElement {
                             t={t}
                             tl={tl}
                         />
-                        <div className="mt-6">
-                            <AccountSummaryCards summaryCards={summaryCards} />
-                        </div>
-                        {/* Уведомления удалены по запросу */}
-                    </aside>
-                    <div className="space-y-6 xl:col-span-8">
-                        <AccountToolsSection accountTools={accountTools} />
-                        {!isAdmin && (
-                            <AccountAddressesSection
-                                savedAddresses={addresses.savedAddresses}
-                                isAddingAddress={addresses.isAddingAddress}
-                                newAddressDraft={addresses.newAddressDraft}
-                                newAddressErrors={addresses.newAddressErrors}
-                                editingAddressId={addresses.editingAddressId}
-                                addressDraft={addresses.addressDraft}
-                                editAddressErrors={addresses.editAddressErrors}
-                                onStartAdd={addresses.startAddingAddress}
-                                onCancelAdd={addresses.cancelAddingAddress}
-                                onSaveAdd={addresses.saveNewAddress}
-                                onNewDraftChange={(field: string, value: string) => {
-                                    if (!addresses.newAddressDraft?.id) return;
-                                    addresses.setNewAddressDraft({
-                                        ...addresses.newAddressDraft,
-                                        [field]: value,
-                                    });
-                                }}
-                                onStartEdit={addresses.startEditingAddress}
-                                onCancelEdit={addresses.cancelEditingAddress}
-                                onSaveEdit={addresses.saveEditingAddress}
-                                onEditDraftChange={(field: string, value: string) => {
-                                    if (!addresses.addressDraft?.id) return;
-                                    addresses.setAddressDraft({
-                                        ...addresses.addressDraft,
-                                        [field]: value,
-                                    });
-                                }}
-                                onDelete={(addressId) =>
-                                    user?.email && deleteForEmail(user.email, addressId)
-                                }
-                                buildCheckoutAddressLink={() => '#'}
-                                labels={{
-                                    firstName: t('checkout.firstName'),
-                                    lastName: t('checkout.lastName'),
-                                    phone: t('checkout.phone'),
-                                    address: t('checkout.address'),
-                                    city: t('checkout.city'),
-                                    postalCode: t('checkout.postalCode'),
-                                    postalCodeLabel: t('order.postalCode'),
-                                    useAddress: t('account.useAddress'),
-                                    editAddress: t('account.editAddress'),
-                                    deleteAddress: t('account.deleteAddress'),
-                                    cancel: t('common.cancel'),
-                                    save: t('common.save'),
-                                    confirmTitle: t('confirm.title'),
-                                    confirmDeleteAddress: t('account.confirmDeleteAddress'),
-                                    delete: t('common.delete'),
-                                }}
+                        <div className="mt-4">
+                            <AccountBonusCard
+                                bonusPoints={user.bonusPoints ?? 0}
+                                totalEarned={totalBonusEarned}
+                                totalSpent={totalBonusSpent}
                                 t={t}
                             />
-                        )}
+                        </div>
+                        <div className="mt-4">
+                            <AccountSummaryCards summaryCards={summaryCards} />
+                        </div>
+                    </aside>
+                    <div className="space-y-6 xl:col-span-8">
+                        <AccountNotificationsSection />
+                        <AccountToolsSection accountTools={accountTools}>
+                            {!isAdmin && <AccountAddressesWidget />}
+                            {!isAdmin && <AccountTemplatesWidget />}
+                        </AccountToolsSection>
+                        {!isAdmin && <AccountSubscriptionsSection />}
                         {!isAdmin && (
                             <AccountOrdersSection
                                 userOrders={userOrders}

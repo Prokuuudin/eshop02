@@ -20,7 +20,9 @@ export type User = {
   approvalRequired?: boolean // Does this user's orders need approval?
   auditLoggingEnabled?: boolean // Should this user's actions be logged?
 
+  phone?: string
   avatarUrl?: string // User profile photo (base64 or URL)
+  bonusPoints?: number // Accumulated bonus balance
 }
 
 const USERS_KEY = 'eshop_users'
@@ -44,7 +46,9 @@ const normalizeUser = (user: Partial<User>): User => ({
   teamRole: user.teamRole,
   approvalRequired: user.approvalRequired,
   auditLoggingEnabled: user.auditLoggingEnabled,
-  avatarUrl: user.avatarUrl ?? ''
+  phone: user.phone,
+  avatarUrl: user.avatarUrl ?? '',
+  bonusPoints: user.bonusPoints ?? 350,
 })
 
 const notifyAuthChanged = (): void => {
@@ -107,7 +111,7 @@ export const registerAdminUser = (email: string, password: string, name?: string
   return { success: true }
 }
 
-export const submitAccessRequest = (email: string, password: string, name?: string, cardNumber?: string): { success: boolean; error?: string; companyName?: string } => {
+export const submitAccessRequest = (email: string, password: string, name?: string, cardNumber?: string, phone?: string): { success: boolean; error?: string; companyName?: string } => {
   const users = readUsers()
   const normalizedEmail = normalizeEmail(email)
 
@@ -130,6 +134,7 @@ export const submitAccessRequest = (email: string, password: string, name?: stri
     email: normalizedEmail,
     password,
     name,
+    phone,
     companyId: company.companyId,
     companyName: company.companyName,
     cardNumber: normalizedCardNumber
@@ -142,7 +147,8 @@ export const submitAccessRequest = (email: string, password: string, name?: stri
     {
       email: normalizedEmail,
       companyName: company.companyName,
-      cardNumber: normalizedCardNumber
+      cardNumber: normalizedCardNumber,
+      phone
     },
     {
       userName: name,
@@ -157,29 +163,28 @@ const createApprovedUser = (params: {
   email: string
   password: string
   name?: string
+  phone?: string
   companyId: string
   companyName: string
   teamRole: TeamRole
   approvalRequired: boolean
   addedBy?: string
 }): User => {
-  const users = readUsers()
+  const users = readUsers();
   const user: User = {
     id: `u_${Date.now()}`,
     email: params.email,
     password: params.password,
     name: params.name,
+    phone: params.phone,
     platformRole: 'customer',
     companyId: params.companyId,
     companyName: params.companyName,
     teamRole: params.teamRole,
     approvalRequired: params.approvalRequired,
     auditLoggingEnabled: true
-  }
-
-  users.push(user)
-  writeUsers(users)
-
+  };
+  users.push(user);
   useCompanyStore.getState().addTeamMember(params.companyId, {
     userId: user.id,
     email: user.email,
@@ -187,10 +192,9 @@ const createApprovedUser = (params: {
     name: user.name || user.email,
     addedAt: new Date(),
     addedBy: params.addedBy
-  })
-
-  return user
-}
+  });
+  return user;
+};
 
 export const approveAccessRequest = (
   requestId: string,
@@ -198,46 +202,42 @@ export const approveAccessRequest = (
   reviewer?: Pick<User, 'id' | 'email'> | null,
   reviewNote?: string
 ): { success: boolean; error?: string; user?: User } => {
-  const accessRequestStore = useAccessRequestStore.getState()
-  const request = accessRequestStore.getRequest(requestId)
+  const accessRequestStore = useAccessRequestStore.getState();
+  const request = accessRequestStore.getRequest(requestId);
   if (!request || request.status !== 'pending') {
-    return { success: false, error: 'Заявка не найдена или уже обработана' }
+    return { success: false, error: 'Заявка не найдена или уже обработана' };
   }
-
-  const users = readUsers()
+  const users = readUsers();
   if (findUserByEmail(users, request.email)) {
     accessRequestStore.rejectRequest(requestId, {
       reviewedByUserId: reviewer?.id,
       reviewedByEmail: reviewer?.email,
       reviewNote: 'Аккаунт с таким email уже существует'
-    })
-    return { success: false, error: 'Пользователь с таким email уже существует' }
+    });
+    return { success: false, error: 'Пользователь с таким email уже существует' };
   }
-
-  const companyStore = useCompanyStore.getState()
-  const company = companyStore.getCompany(request.companyId)
+  const companyStore = useCompanyStore.getState();
+  const company = companyStore.getCompany(request.companyId);
   if (!company) {
-    return { success: false, error: 'Компания для заявки не найдена' }
+    return { success: false, error: 'Компания для заявки не найдена' };
   }
-
   const user = createApprovedUser({
     email: request.email,
     password: request.password,
     name: request.name,
+    phone: request.phone,
     companyId: company.companyId,
     companyName: company.companyName,
     teamRole,
     approvalRequired: company.approvalWorkflowEnabled && teamRole !== 'admin',
     addedBy: reviewer?.id
-  })
-
+  });
   accessRequestStore.approveRequest(requestId, {
     reviewedByUserId: reviewer?.id,
     reviewedByEmail: reviewer?.email,
     reviewNote,
     approvedTeamRole: teamRole
-  })
-
+  });
   logAuditAction(
     company.companyId,
     reviewer?.id ?? user.id,
@@ -250,10 +250,9 @@ export const approveAccessRequest = (
     {
       userEmail: reviewer?.email
     }
-  )
-
-  return { success: true, user }
-}
+  );
+  return { success: true, user };
+};
 
 export const rejectAccessRequest = (
   requestId: string,

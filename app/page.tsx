@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import BestsellersSection from '../components/BestsellersSection';
 import Categories from '../components/Categories';
 import Benefits from '../components/Benefits';
+import BonusSection from '../components/BonusSection';
 import Promo from '../components/Promo';
 import Brands from '../components/Brands';
 import FAQSection from '../components/FAQSection';
@@ -55,6 +56,7 @@ export default async function Home() {
         <>
             <Hero />
             <Benefits />
+            <BonusSection />
             <BestsellersSection />
             <Categories />
             <Brands />

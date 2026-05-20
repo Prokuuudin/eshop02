@@ -10,6 +10,7 @@ const ITEMS = [
     { id: 'b3', key: 'benefits.processingFast', icon: '/icons/quality.svg' },
     { id: 'b4', key: 'benefits.inStock', icon: '/icons/quality.svg' },
     { id: 'b5', key: 'benefits.brands100', icon: '/icons/original.svg' },
+    { id: 'b6', key: 'benefits.bonusPoints', icon: '/icons/quality.svg' },
 ];
 
 export default function BenefitsList({

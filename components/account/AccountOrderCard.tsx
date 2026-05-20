@@ -1,9 +1,12 @@
 'use client'
 
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { BookmarkPlus } from 'lucide-react'
 import { formatDate, formatEuro } from '@/lib/utils'
 import type { Order } from '@/lib/orders-store'
+import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog'
 
 type Props = {
   order: Order
@@ -16,6 +19,7 @@ type Props = {
   bonusSpentLabel: string
   bonusEarnedLabel: string
   repeatOrderLabel: string
+  saveAsTemplateLabel: string
   detailsLabel: string
   onRepeatOrder: () => void
 }
@@ -31,9 +35,13 @@ export default function AccountOrderCard({
   bonusSpentLabel,
   bonusEarnedLabel,
   repeatOrderLabel,
+  saveAsTemplateLabel,
   detailsLabel,
-  onRepeatOrder
+  onRepeatOrder,
 }: Props) {
+  const [templateOpen, setTemplateOpen] = useState(false)
+  const defaultName = formatDate(order.createdAt, locale)
+
   return (
     <div className="rounded-2xl border border-gray-200 p-4 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -71,6 +79,15 @@ export default function AccountOrderCard({
           <Button variant="outline" size="sm" onClick={onRepeatOrder}>
             {repeatOrderLabel}
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+            onClick={() => setTemplateOpen(true)}
+          >
+            <BookmarkPlus className="w-3.5 h-3.5" />
+            {saveAsTemplateLabel}
+          </Button>
           <Link href={`/order/${order.id}`}>
             <Button variant="outline" size="sm">
               {detailsLabel}
@@ -78,6 +95,13 @@ export default function AccountOrderCard({
           </Link>
         </div>
       </div>
+
+      <SaveAsTemplateDialog
+        open={templateOpen}
+        onOpenChange={setTemplateOpen}
+        items={order.items}
+        defaultName={defaultName}
+      />
 
       <div className="mt-3 space-y-1 border-t border-gray-200 pt-3 dark:border-gray-700">
         {order.items.map((item) => (

@@ -9,6 +9,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
+import { StockNotifyButton } from './StockNotifyButton';
 
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
@@ -166,7 +167,11 @@ export default function ProductCard({ product }: Props) {
                 </div>
 
                 <div className="product-card__actions mt-auto w-full space-y-2">
-                    <AddToCartButton product={product} />
+                    {isOutOfStock ? (
+                        <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
+                    ) : (
+                        <AddToCartButton product={product} />
+                    )}
                 </div>
             </div>
         </Card>

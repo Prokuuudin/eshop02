@@ -52,12 +52,43 @@ export interface Product {
     src: string;
     poster?: string;
   }[];
+  manufacturerName?: string
+  manufacturerAddress?: string
+  manufacturerEmail?: string
+  bonusRate?: number // Bonus points earned per unit purchased
+  distributorName?: { ru: string; en: string; lv: string }
+  distributorAddress?: { ru: string; en: string; lv: string }
+  distributorEmail?: string
 }
 
 export const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
+
+const DISTRIBUTOR_MIKS_PLUS = {
+  distributorName: { ru: 'ООО "MIKS PLUS"', en: 'MIKS PLUS LLC', lv: 'SIA "MIKS PLUS"' },
+  distributorAddress: { ru: 'ул. Ренцену, 10A, Рига', en: '10A Rencenu St., Riga', lv: 'Rencēnu iela 10A, Rīga' },
+  distributorEmail: 'office@miksplus.eu',
+};
+
+const DISTRIBUTOR_BEAUTYLINE = {
+  distributorName: { ru: 'BeautyLine Europe B.V.', en: 'BeautyLine Europe B.V.', lv: 'BeautyLine Europe B.V.' },
+  distributorAddress: { ru: 'Herengracht 182, 1016 BR Амстердам, Нидерланды', en: 'Herengracht 182, 1016 BR Amsterdam, Netherlands', lv: 'Herengracht 182, 1016 BR Amsterdam, Nīderlande' },
+  distributorEmail: 'info@beautyline-eu.com',
+};
+
+const DISTRIBUTOR_PROBEAUTY = {
+  distributorName: { ru: 'ProBeauty Distribution GmbH', en: 'ProBeauty Distribution GmbH', lv: 'ProBeauty Distribution GmbH' },
+  distributorAddress: { ru: 'Kurfürstendamm 55, 10707 Берлин, Германия', en: 'Kurfürstendamm 55, 10707 Berlin, Germany', lv: 'Kurfürstendamm 55, 10707 Berlīne, Vācija' },
+  distributorEmail: 'contact@probeauty.de',
+};
+
+const DISTRIBUTOR_COSMOTRADE = {
+  distributorName: { ru: 'CosmoTrade S.r.l.', en: 'CosmoTrade S.r.l.', lv: 'CosmoTrade S.r.l.' },
+  distributorAddress: { ru: 'Via Montenapoleone 8, 20121 Милан, Италия', en: 'Via Montenapoleone 8, 20121 Milan, Italy', lv: 'Via Montenapoleone 8, 20121 Milāna, Itālija' },
+  distributorEmail: 'sales@cosmotrade.it',
+};
 
 const baseProducts: Product[] = [
   {
@@ -116,6 +147,11 @@ const baseProducts: Product[] = [
       { quantity: 50, pricePerUnit: 2200 }
     ],
     compatibleEquipment: ['SkinPro-X', 'MicroBlast-3000'],
+    bonusRate: 25,
+    manufacturerName: 'Sanctuary Spa Ltd. (United Kingdom)',
+    manufacturerAddress: '12 Bath Road, London, EC1A 1BB, United Kingdom',
+    manufacturerEmail: 'info@sanctuaryspa.com',
+    ...DISTRIBUTOR_BEAUTYLINE,
   },
   {
     id: 'p2',
@@ -142,6 +178,11 @@ const baseProducts: Product[] = [
     },
     relatedProductIds: ['p4', 'p8'],
     oftenBoughtTogether: ['p4'],
+    bonusRate: 12,
+    manufacturerName: 'Black Professional S.r.l. (Italy)',
+    manufacturerAddress: 'Via Torino 45, 20123 Milan, Italy',
+    manufacturerEmail: 'info@blackprofessional.it',
+    ...DISTRIBUTOR_COSMOTRADE,
   },
   {
     id: 'p3',
@@ -164,6 +205,11 @@ const baseProducts: Product[] = [
     purpose: 'Для омоложения',
     relatedProductIds: ['p1', 'p7'],
     oftenBoughtTogether: ['p1', 'p5'],
+    bonusRate: 41,
+    manufacturerName: 'Feetcalm S.A. (Spain)',
+    manufacturerAddress: 'Carrer de Balmes 78, 08007 Barcelona, Spain',
+    manufacturerEmail: 'contact@feetcalm.es',
+    ...DISTRIBUTOR_PROBEAUTY,
   },
   {
     id: 'p4',
@@ -184,6 +230,11 @@ const baseProducts: Product[] = [
     purpose: 'Для восстановления',
     relatedProductIds: ['p2', 'p8'],
     oftenBoughtTogether: ['p2'],
+    bonusRate: 9,
+    manufacturerName: 'Frutti Professional Sp. z o.o. (Poland)',
+    manufacturerAddress: 'ul. Krakowska 12, 00-001 Warsaw, Poland',
+    manufacturerEmail: 'info@fruttiprofessional.pl',
+    ...DISTRIBUTOR_MIKS_PLUS,
   },
   {
     id: 'p5',
@@ -205,6 +256,11 @@ const baseProducts: Product[] = [
     purpose: 'Для питания',
     relatedProductIds: ['p1', 'p3'],
     oftenBoughtTogether: ['p1', 'p3'],
+    bonusRate: 15,
+    manufacturerName: 'Luxina Cosmetici S.r.l. (Italy)',
+    manufacturerAddress: 'Via Roma 100, 50123 Florence, Italy',
+    manufacturerEmail: 'info@luxina.it',
+    ...DISTRIBUTOR_COSMOTRADE,
   },
   {
     id: 'p6',
@@ -250,6 +306,11 @@ const baseProducts: Product[] = [
       { quantity: 3, pricePerUnit: 18000 },
       { quantity: 5, pricePerUnit: 17500 }
     ],
+    bonusRate: 185,
+    manufacturerName: 'ProSkin Technologies OOO (Russia)',
+    manufacturerAddress: 'ул. Ленина, 15, 123456 Moscow, Russia',
+    manufacturerEmail: 'info@proskin.ru',
+    ...DISTRIBUTOR_MIKS_PLUS,
   },
   {
     id: 'p7',
@@ -269,7 +330,12 @@ const baseProducts: Product[] = [
     stock: 18,
     purpose: 'Для маскировки',
     relatedProductIds: ['p1', 'p3'],
-    oftenBoughtTogether: ['p1']
+    oftenBoughtTogether: ['p1'],
+    bonusRate: 21,
+    manufacturerName: 'ILU Beauty Co., Ltd. (South Korea)',
+    manufacturerAddress: '45 Gangnam-daero, Gangnam-gu, Seoul, South Korea',
+    manufacturerEmail: 'contact@ilubeauty.kr',
+    ...DISTRIBUTOR_BEAUTYLINE,
   },
   {
     id: 'p8',
@@ -295,7 +361,12 @@ const baseProducts: Product[] = [
       distributor: 8
     },
     relatedProductIds: ['p2', 'p6'],
-    oftenBoughtTogether: ['p2', 'p4']
+    oftenBoughtTogether: ['p2', 'p4'],
+    bonusRate: 72,
+    manufacturerName: 'Cera Professional AB (Sweden)',
+    manufacturerAddress: 'Storgatan 22, 111 23 Stockholm, Sweden',
+    manufacturerEmail: 'info@ceraprofessional.se',
+    ...DISTRIBUTOR_MIKS_PLUS,
   }
 ];
 
@@ -321,7 +392,12 @@ export const PRODUCTS: Product[] = [
     stock: 20,
     purpose: 'Для очищения',
     relatedProductIds: ['p1', 'p3'],
-    oftenBoughtTogether: ['p5']
+    oftenBoughtTogether: ['p5'],
+    bonusRate: 11,
+    manufacturerName: 'FreshLine Cosmetics Ltd. (Greece)',
+    manufacturerAddress: '15 Kifissias Ave., 115 23 Athens, Greece',
+    manufacturerEmail: 'info@freshline.gr',
+    ...DISTRIBUTOR_PROBEAUTY,
   },
   {
     id: 'p10',
@@ -342,7 +418,12 @@ export const PRODUCTS: Product[] = [
     stock: 10,
     purpose: 'Для блеска',
     relatedProductIds: ['p2', 'p4'],
-    oftenBoughtTogether: ['p2']
+    oftenBoughtTogether: ['p2'],
+    bonusRate: 17,
+    manufacturerName: 'HairLab International GmbH (Germany)',
+    manufacturerAddress: 'Hamburger Str. 34, 20095 Hamburg, Germany',
+    manufacturerEmail: 'contact@hairlab.de',
+    ...DISTRIBUTOR_PROBEAUTY,
   },
   {
     id: 'p11',
@@ -363,7 +444,12 @@ export const PRODUCTS: Product[] = [
     stock: 14,
     purpose: 'Для обновления кожи',
     relatedProductIds: ['p5'],
-    oftenBoughtTogether: ['p5', 'p1']
+    oftenBoughtTogether: ['p5', 'p1'],
+    bonusRate: 14,
+    manufacturerName: 'SilkTouch Beauty S.r.l. (Italy)',
+    manufacturerAddress: 'Via Venezia 7, 35121 Padova, Italy',
+    manufacturerEmail: 'info@silktouch.it',
+    ...DISTRIBUTOR_COSMOTRADE,
   },
   {
     id: 'p12',
@@ -384,7 +470,12 @@ export const PRODUCTS: Product[] = [
     stock: 2,
     purpose: 'Для глубокой чистки',
     relatedProductIds: ['p6', 'p8'],
-    oftenBoughtTogether: ['p6']
+    oftenBoughtTogether: ['p6'],
+    bonusRate: 199,
+    manufacturerName: 'ProEquip Technologies GmbH (Germany)',
+    manufacturerAddress: 'Münchner Str. 88, 80331 Munich, Germany',
+    manufacturerEmail: 'info@proequip.de',
+    ...DISTRIBUTOR_PROBEAUTY,
   },
   {
     id: 'p13',
@@ -406,7 +497,12 @@ export const PRODUCTS: Product[] = [
     stock: 30,
     purpose: 'Для смягчения',
     relatedProductIds: ['p1', 'p11'],
-    oftenBoughtTogether: ['p11']
+    oftenBoughtTogether: ['p11'],
+    bonusRate: 8,
+    manufacturerName: 'Revitaluxe International S.A. (Switzerland)',
+    manufacturerAddress: 'Bahnhofstrasse 12, 8001 Zurich, Switzerland',
+    manufacturerEmail: 'contact@revitaluxe.ch',
+    ...DISTRIBUTOR_BEAUTYLINE,
   },
   {
     id: 'p14',
@@ -427,7 +523,12 @@ export const PRODUCTS: Product[] = [
     stock: 9,
     purpose: 'Восстановление ночью',
     relatedProductIds: ['p3', 'p9'],
-    oftenBoughtTogether: ['p3']
+    oftenBoughtTogether: ['p3'],
+    bonusRate: 32,
+    manufacturerName: 'DermaCure Laboratories GmbH (Germany)',
+    manufacturerAddress: 'Berliner Allee 55, 40212 Düsseldorf, Germany',
+    manufacturerEmail: 'info@dermacure.de',
+    ...DISTRIBUTOR_PROBEAUTY,
   },
   {
     id: 'p15',
@@ -447,7 +548,12 @@ export const PRODUCTS: Product[] = [
     stock: 16,
     purpose: 'Сильная фиксация',
     relatedProductIds: ['p2', 'p10'],
-    oftenBoughtTogether: ['p2']
+    oftenBoughtTogether: ['p2'],
+    bonusRate: 10,
+    manufacturerName: 'Stylo Professional S.r.l. (Italy)',
+    manufacturerAddress: 'Via Emilia 33, 40121 Bologna, Italy',
+    manufacturerEmail: 'info@styloprofessional.it',
+    ...DISTRIBUTOR_COSMOTRADE,
   },
   {
     id: 'p16',
@@ -467,6 +573,11 @@ export const PRODUCTS: Product[] = [
     stock: 11,
     purpose: 'Матирование',
     relatedProductIds: ['p7', 'p14'],
-    oftenBoughtTogether: ['p7']
+    oftenBoughtTogether: ['p7'],
+    bonusRate: 18,
+    manufacturerName: 'MakeupPro Cosmetics S.A. (Spain)',
+    manufacturerAddress: 'Calle Gran Vía 22, 28013 Madrid, Spain',
+    manufacturerEmail: 'contact@makeuppro.es',
+    ...DISTRIBUTOR_MIKS_PLUS,
   }
 ];

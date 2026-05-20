@@ -4,6 +4,7 @@ import { UserCircle2, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PhoneInput from '@/components/ui/phone-input';
 
 interface AccountProfileCardProps {
     user: any;
@@ -104,6 +105,9 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                     <p className="account-profile__email mt-1 break-all text-sm text-gray-600 dark:text-gray-300">
                         {user.email}
                     </p>
+                    <p className="account-profile__phone mt-1 break-all text-sm text-gray-600 dark:text-gray-300">
+                        {user.phone ? user.phone : t('account.phoneNotSet', 'Телефон не указан')}
+                    </p>
                 </div>
             </div>
             {!isEditing ? (
@@ -174,6 +178,21 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                         {profileErrors.email && (
                             <p className="account-profile__error text-red-600 text-xs">
                                 {profileErrors.email}
+                            </p>
+                        )}
+                    </div>
+                    <div className="account-profile__field">
+                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                            {t('account.phone', 'Телефон')}
+                        </label>
+                        <PhoneInput
+                            className={profileErrors.phone ? 'account-profile__input--error' : ''}
+                            value={profileDraft.phone || ''}
+                            onChange={(val) => onChange('phone', val)}
+                        />
+                        {profileErrors.phone && (
+                            <p className="account-profile__error text-red-600 text-xs">
+                                {profileErrors.phone}
                             </p>
                         )}
                     </div>

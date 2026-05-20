@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-store';
@@ -9,10 +10,12 @@ import BenefitsList from '@/components/BenefitsList';
 import { Checkbox } from '@/components/ui/checkbox';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import CheckoutGuardButton from '@/components/CheckoutGuardButton';
+import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
+import { BookmarkPlus } from 'lucide-react';
 import {
     calculatePrice,
     getMinimumOrderQuantity,
@@ -27,12 +30,14 @@ type CartDrawerProps = {
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
+    const router = useRouter();
     const { items, removeItem, updateQuantity, total } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
     const [selectionTouched, setSelectionTouched] = React.useState(false);
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const [mounted, setMounted] = React.useState(false);
+    const [templateOpen, setTemplateOpen] = React.useState(false);
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
@@ -60,6 +65,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     }, [items.length]);
 
     const selectedItems = items.filter((item) => selectedItemIds.includes(item.id));
+    const bonusToEarn = selectedItems.reduce(
+        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
+        0
+    );
+    const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const subtotal = selectedItems.reduce(
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
@@ -311,6 +321,23 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <span>{t('cart.total')}</span>
                             <span>{formatCurrency(finalTotal)}</span>
                         </div>
+                        {/* Бонусный блок */}
+                        {currentUser && (
+                            <div className="cart-drawer__bonus rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
+                                <div className="flex justify-between text-amber-800 dark:text-amber-300">
+                                    <span>{t('account.bonus.balance')}</span>
+                                    <span className="font-semibold">
+                                        {userBonusBalance} {t('cart.bonus.unit')}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                                    <span>{t('checkout.bonus.willEarn')}</span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                        +{bonusToEarn} {t('cart.bonus.unit')}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                         {/* Бенефиты */}
                         <div className="cart-drawer__benefits mt-4">
                             <BenefitsList compact />
@@ -333,6 +360,29 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             label={t('cart.checkout')}
                             href={checkoutHref}
                             onNavigate={onClose}
+                        />
+                        {items.length > 0 && currentUser && (
+                            <button
+                                onClick={() => setTemplateOpen(true)}
+                                className="w-full flex items-center justify-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 py-1 transition-colors"
+                            >
+                                <BookmarkPlus className="w-3.5 h-3.5" />
+                                {t('templates.saveAsTemplate')}
+                            </button>
+                        )}
+                        {currentUser && (
+                            <button
+                                onClick={() => { onClose(); router.push('/account/templates'); }}
+                                className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 py-1 transition-colors"
+                            >
+                                {t('templates.useSavedTemplates')}
+                            </button>
+                        )}
+                        <SaveAsTemplateDialog
+                            open={templateOpen}
+                            onOpenChange={setTemplateOpen}
+                            items={items}
+                            defaultName=""
                         />
                     </div>
                 )}

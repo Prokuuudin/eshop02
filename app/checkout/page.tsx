@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
+import PhoneInput from '@/components/ui/phone-input';
 import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
@@ -31,7 +32,7 @@ const generateOrderId = (): string => {
 const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string; price: number }> = [
     { id: 'courier', labelKey: 'checkout.delivery.courier', price: 500 },
     { id: 'pickup', labelKey: 'checkout.delivery.pickup', price: 0 },
-    { id: 'post', labelKey: 'checkout.delivery.post', price: 300 },
+    { id: 'post', labelKey: 'checkout.delivery.omniva', price: 300 },
 ];
 
 export default function CheckoutPage() {
@@ -61,6 +62,7 @@ export default function CheckoutPage() {
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('courier');
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
+    const [bonusApplied, setBonusApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -227,6 +229,10 @@ export default function CheckoutPage() {
 
         const taxAmount = Math.round(subtotalAfterDiscount * 0.18);
         const grandTotal = subtotalAfterDiscount + taxAmount + deliveryFee;
+        const bonusDiscount = bonusApplied
+            ? Math.min(currentUser?.bonusPoints ?? 0, Math.round(grandTotal * bonusProgram.maxSpendPercent / 100))
+            : 0;
+        const finalGrandTotal = grandTotal - bonusDiscount;
 
         // Create order
         const orderId = generateOrderId();
@@ -243,7 +249,8 @@ export default function CheckoutPage() {
             deliveryMethod,
             promoCode: appliedPromo,
             discount,
-            total: grandTotal,
+            total: finalGrandTotal,
+            bonusSpent: bonusDiscount > 0 ? bonusDiscount : undefined,
             paymentStatus: (formData.paymentMethod === 'card'
                 ? 'pending'
                 : 'unpaid') as import('@/lib/orders-store').PaymentStatus,
@@ -285,7 +292,7 @@ export default function CheckoutPage() {
                     body: JSON.stringify({
                         orderId,
                         email: formData.email,
-                        grandTotal,
+                        grandTotal: finalGrandTotal,
                         items: checkoutItems.map((item) => ({
                             id: item.id,
                             title: t(`products.${item.id}.title`, item.title),
@@ -439,6 +446,20 @@ export default function CheckoutPage() {
     const taxAmount = Math.round(subtotalAfterDiscount * 0.18);
     const grandTotal = subtotalAfterDiscount + taxAmount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
+    const userBonusBalance = currentUser?.bonusPoints ?? 0;
+    const bonusToEarn = checkoutItems.reduce(
+        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
+        0
+    );
+    const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
+    const maxBonusDiscount = bonusApplicable
+        ? Math.min(userBonusBalance, Math.round(grandTotal * bonusProgram.maxSpendPercent / 100))
+        : 0;
+    const bonusDiscount = bonusApplied ? maxBonusDiscount : 0;
+    const finalGrandTotal = grandTotal - bonusDiscount;
+    const adjustedBonusToEarn = grandTotal > 0 && bonusApplied
+        ? Math.round(bonusToEarn * finalGrandTotal / grandTotal)
+        : bonusToEarn;
 
     return (
         <main className="w-full px-4 py-8 text-gray-900 dark:text-gray-100">
@@ -525,15 +546,11 @@ export default function CheckoutPage() {
                             <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
                                 {t('checkout.phone')} <span className="text-red-600">*</span>
                             </label>
-                            <Input
-                                type="tel"
-                                name="phone"
-                                placeholder={t('checkout.phone')}
+                            <PhoneInput
                                 value={formData.phone}
-                                onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
-                                    errors.phone ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''
-                                }`}
+                                onChange={(val) =>
+                                    setFormData((prev) => ({ ...prev, phone: val }))
+                                }
                                 aria-required="true"
                                 aria-invalid={!!errors.phone}
                             />
@@ -757,6 +774,60 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
+                        {/* Бонусные баллы */}
+                        {currentUser && (
+                            <div className="checkout__bonus mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
+                                <div className="flex justify-between text-amber-800 dark:text-amber-300">
+                                    <span>{t('account.bonus.balance')}</span>
+                                    <span className="font-semibold">
+                                        {userBonusBalance} {t('cart.bonus.unit')}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                                    <span>{t('checkout.bonus.willEarn')}</span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                        {bonusApplied && adjustedBonusToEarn !== bonusToEarn && (
+                                            <span className="line-through text-gray-400 mr-1 font-normal">
+                                                {bonusToEarn}
+                                            </span>
+                                        )}
+                                        +{adjustedBonusToEarn} {t('cart.bonus.unit')}
+                                    </span>
+                                </div>
+                                {bonusApplicable && (
+                                    <div className="pt-1 mt-1 border-t border-amber-200 dark:border-amber-700">
+                                        {!bonusApplied ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setBonusApplied(true)}
+                                                className="checkout__bonus-apply w-full rounded border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 dark:border-amber-600"
+                                            >
+                                                {t('checkout.bonus.apply')} (−{formatCurrency(maxBonusDiscount)})
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <div className="checkout__bonus-applied flex items-center justify-between text-xs">
+                                                    <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                                                        ✓ {t('checkout.bonus.applied')} −{formatCurrency(maxBonusDiscount)}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setBonusApplied(false)}
+                                                        className="ml-2 underline text-amber-700 dark:text-amber-400"
+                                                    >
+                                                        {t('common.cancel', 'Отменить')}
+                                                    </button>
+                                                </div>
+                                                <p className="checkout__bonus-earn-warning mt-1.5 text-xs text-amber-600/80 dark:text-amber-500/80">
+                                                    {t('checkout.bonus.earnWarning')}
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="space-y-2 text-sm mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.items')}</span>
@@ -767,7 +838,13 @@ export default function CheckoutPage() {
                             {discount > 0 && (
                                 <div className="flex justify-between text-green-600">
                                     <span>{t('checkout.summary.discount')}</span>
-                                    <span className="font-medium">-{formatCurrency(discount)}</span>
+                                    <span className="font-medium">−{formatCurrency(discount)}</span>
+                                </div>
+                            )}
+                            {bonusDiscount > 0 && (
+                                <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                                    <span>{t('checkout.summary.bonus')}</span>
+                                    <span className="font-medium">−{formatCurrency(bonusDiscount)}</span>
                                 </div>
                             )}
 
@@ -789,7 +866,7 @@ export default function CheckoutPage() {
 
                         <div className="text-lg font-bold flex justify-between">
                             <span>{t('checkout.summary.total')}</span>
-                            <span className="text-indigo-600">{formatCurrency(grandTotal)}</span>
+                            <span className="text-indigo-600">{formatCurrency(finalGrandTotal)}</span>
                         </div>
 
                         {!wholesaleGuard.isMinimumReached && (

@@ -205,7 +205,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
   return (
     <section className="products py-8">
-      <div className="mx-auto w-full max-w-7xl px-4">
+      <div className="w-full px-4">
         <h2 className="products__title text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('nav.catalog', 'Catalog')}</h2>
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-1/4">

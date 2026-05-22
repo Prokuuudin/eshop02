@@ -55,24 +55,24 @@ export default function AccountAddressCard({
 }: Props) {
   return (
     <>
-      <div className="account-address-card flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+      <div className="account-address-card flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
         {/* Основная информация */}
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
-            <MapPin className="h-4 w-4" />
+        <div className="flex items-start gap-2">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <MapPin className="h-3.5 w-3.5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {addressItem.firstName} {addressItem.lastName}
             </p>
-            <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300 truncate">
+            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
               {addressItem.address}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-300">
               {addressItem.city}{addressItem.postalCode ? `, ${addressItem.postalCode}` : ''}
             </p>
             {addressItem.phone && (
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {addressItem.phone}
               </p>
             )}
@@ -80,7 +80,7 @@ export default function AccountAddressCard({
         </div>
 
         {/* Действия */}
-        <div className="flex items-center gap-1 border-t border-gray-100 pt-3 dark:border-gray-800">
+        <div className="flex flex-wrap items-center gap-1 border-t border-gray-100 pt-2 dark:border-gray-800">
           <Link
             href={checkoutHref}
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40 transition-colors"
@@ -104,7 +104,7 @@ export default function AccountAddressCard({
             cancelLabel={labels.cancel}
             onConfirm={onDelete}
             trigger={
-              <button className="ml-auto flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+              <button className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                 <Trash2 className="h-3.5 w-3.5" />
                 {labels.deleteAddress}
               </button>

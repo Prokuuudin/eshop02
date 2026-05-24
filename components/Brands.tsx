@@ -112,7 +112,7 @@ export default function Brands() {
                       <Link
                         key={brand.id}
                         href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                        className="rounded border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-colors hover:border-indigo-300 hover:text-indigo-700 sm:text-base"
+                        className="inline-block rounded border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-indigo-300 hover:text-indigo-700 hover:scale-110 sm:text-base"
                         title={brand.name}
                       >
                         {brand.name}

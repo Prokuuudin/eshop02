@@ -7,6 +7,7 @@ import { useSiteContent } from '@/lib/use-site-content';
 export default function Benefits() {
     // Секция бенефитов с фиксированным содержанием на русском
     const { t } = useTranslation();
+    const { resolveImageSrc } = useSiteContent();
     const BENEFITS = [
         {
             icon: '/icons/delivery.svg',
@@ -44,7 +45,7 @@ export default function Benefits() {
                         >
                             <div className="benefits__icon w-10 h-10 shrink-0">
                                 <Image
-                                    src={item.icon}
+                                    src={resolveImageSrc(item.icon)}
                                     alt=""
                                     width={40}
                                     height={40}

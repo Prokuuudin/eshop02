@@ -2,9 +2,11 @@
 
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
+import { useSiteContent } from '@/lib/use-site-content'
 
 export default function Hero() {
   const { t } = useTranslation()
+  const { resolveImageSrc } = useSiteContent()
 
   return (
     <section id="home" className="hero relative rounded-xl py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900 overflow-hidden">
@@ -24,7 +26,7 @@ export default function Hero() {
 
         <div className="hero__image w-full lg:w-1/2 flex justify-center lg:justify-end">
           <div className="w-56 h-56 sm:w-80 sm:h-80 md:w-96 md:h-72 relative rounded-lg overflow-hidden shadow-lg">
-            <Image src="/hero-placeholder.svg" alt={t('hero.alt')} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
+            <Image src={resolveImageSrc('/hero-placeholder.svg')} alt={t('hero.alt')} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
           </div>
         </div>
       </div>

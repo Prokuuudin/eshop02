@@ -131,6 +131,13 @@ export default function AdminPage() {
                 </Link>
               </div>
               <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Design System</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Визуальный справочник токенов, компонентов и паттернов проекта</p>
+                <Link href="/admin/design-system">
+                  <Button variant="outline" size="sm">Открыть</Button>
+                </Link>
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.reviews.title', 'Отзывы', 'Reviews', 'Atsauksmes')}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.reviews.description', 'Просмотр, скрытие и модерация пользовательских отзывов', 'View, hide and moderate user reviews', 'Lietotaju atsauksmju skatisana, slegsana un moderacija')}</p>
                 <Link href="/admin/reviews">

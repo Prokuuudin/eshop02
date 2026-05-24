@@ -3,7 +3,9 @@
     "allow": [
       "Bash(del \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\")",
       "Bash(Remove-Item \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\" -Force)",
-      "Bash(rm \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\" && ls \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\")"
+      "Bash(rm \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\" && ls \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\")",
+      "Bash(curl -s -X PUT http://localhost:3000/api/admin/content -H \"Content-Type: application/json\" -d '{\"text\":{\"ru\":{},\"en\":{},\"lv\":{}},\"images\":{}}')",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\styles\" -Force)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"

@@ -49,22 +49,27 @@ export async function POST(req: NextRequest) {
       return errorResponse('Product payload is required', 400)
     }
 
-    const requiredStringFields = [product.id, product.title, product.brand, product.image]
+    const requiredStringFields = [product.id, product.title, product.brand]
     if (requiredStringFields.some((value) => typeof value !== 'string' || !value.trim())) {
-      return errorResponse('Product id, title, brand and image are required', 400)
+      return errorResponse('Product id, title and brand are required', 400)
     }
 
     if (typeof product.price !== 'number' || !Number.isFinite(product.price)) {
       return errorResponse('Product price must be a finite number', 400)
-    }
-    if (typeof product.rating !== 'number' || !Number.isFinite(product.rating)) {
-      return errorResponse('Product rating must be a finite number', 400)
     }
     if (typeof product.stock !== 'number' || !Number.isFinite(product.stock)) {
       return errorResponse('Product stock must be a finite number', 400)
     }
     if (!product.category || typeof product.category !== 'string') {
       return errorResponse('Product category is required', 400)
+    }
+
+    // rating и image необязательны — задаём дефолты если не переданы
+    if (product.rating === undefined || product.rating === null) {
+      product.rating = 0
+    }
+    if (!product.image) {
+      product.image = ''
     }
 
     const result = await createProduct(product)

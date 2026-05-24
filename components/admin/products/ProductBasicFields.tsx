@@ -10,6 +10,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { AddProductFormValues } from './productFormSchema';
+import { CATEGORY_CARDS } from '@/data/categories';
+import { useTranslation } from '@/lib/i18n-context';
+import { useProductFormMode } from './AddProductForm';
 
 const ProductBasicFields: React.FC = () => {
     const {
@@ -17,28 +20,21 @@ const ProductBasicFields: React.FC = () => {
         formState: { errors },
         control,
     } = useFormContext<AddProductFormValues>();
+    const { t } = useTranslation();
+    const { isEdit } = useProductFormMode();
 
     return (
         <div className="add-product__section add-product__section--basic">
             <h2 className="add-product__section-title">Основная информация</h2>
             <div className="add-product__fields-grid">
                 <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="add-product-title">
-                        Название
-                    </label>
-                    <Input
-                        id="add-product-title"
-                        placeholder="Название товара"
-                        {...register('titles.ru')}
-                    />
-                </div>
-                <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-id">
-                        ID / Слаг
+                        ID {isEdit && <span className="text-gray-400 text-xs">(нельзя изменить)</span>}
                     </label>
                     <Input
                         id="add-product-id"
                         placeholder="Уникальный идентификатор, например: p123"
+                        disabled={isEdit}
                         {...register('id')}
                     />
                 </div>
@@ -74,9 +70,9 @@ const ProductBasicFields: React.FC = () => {
                                     <SelectValue placeholder="Выберите категорию" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {require('@/data/categories').CATEGORY_CARDS.map((cat: any) => (
+                                    {CATEGORY_CARDS.map((cat) => (
                                         <SelectItem key={cat.id} value={cat.id}>
-                                            {cat.id}
+                                            {t(cat.titleKey) || cat.id}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -95,17 +91,6 @@ const ProductBasicFields: React.FC = () => {
                         id="add-product-barcode"
                         placeholder="Штрихкод (EAN, UPC)"
                         {...register('barcode')}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="add-product-type">
-                        Тип продукта
-                    </label>
-                    <Input
-                        id="add-product-type"
-                        placeholder="Тип, например: крем, шампунь"
-                        {...register('type')}
                     />
                 </div>
             </div>

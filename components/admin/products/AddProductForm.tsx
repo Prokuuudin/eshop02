@@ -1,170 +1,272 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useForm, FormProvider, SubmitHandler, useWatch } from 'react-hook-form';
+import React, { createContext, useContext, useState } from 'react';
+import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { addProductSchema, AddProductFormValues, LANGUAGES, Language } from './productFormSchema';
+import { useTranslation } from '@/lib/use-translation';
+import { mapFormValuesToNewProduct, mapFormValuesToProductPatch } from '@/lib/product-form-mapping';
+
 import ProductBasicFields from './ProductBasicFields';
 import ProductBadgesFields from './ProductBadgesFields';
 import ProductPricingFields from './ProductPricingFields';
 import ProductInventoryFields from './ProductInventoryFields';
 import ProductSeoFields from './ProductSeoFields';
 import ProductTranslationsFields from './ProductTranslationsFields';
-
 import ProductGalleryFields from './ProductGalleryFields';
 import ProductTechSpecsFields from './ProductTechSpecsFields';
 import ProductCertificatesFields from './ProductCertificatesFields';
 import ProductBulkPricingFields from './ProductBulkPricingFields';
 import ProductRelatedFields from './ProductRelatedFields';
 import ProductBoughtTogetherFields from './ProductBoughtTogetherFields';
+import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 
 import './AddProductForm.css';
 
-const defaultValues: AddProductFormValues = {
+// Контекст режима формы — используется в дочерних компонентах (напр., ProductBasicFields)
+interface ProductFormModeContextValue {
+    isEdit: boolean;
+}
+const ProductFormModeContext = createContext<ProductFormModeContextValue>({ isEdit: false });
+export const useProductFormMode = () => useContext(ProductFormModeContext);
+
+const emptyDefaults: AddProductFormValues = {
     id: '',
     sku: '',
     barcode: '',
     brand: '',
     category: '',
-    type: '',
     status: 'active',
-    titles: { ru: '', en: '', lv: '' },
-    shortDescriptions: { ru: '', en: '', lv: '' },
-    fullDescriptions: { ru: '', en: '', lv: '' },
+
+    title: '',
+    titleEn: '',
+    titleLv: '',
+
+    description: '',
+    purpose: '',
+    purposeEn: '',
+    purposeLv: '',
+
     price: 0,
     oldPrice: 0,
-    currency: 'EUR',
-    vatIncluded: true,
-    bulkPricing: [],
+    bulkPricingTiers: [],
+
     stock: 0,
     minOrder: 1,
-    unit: 'pcs',
-    mainImage: '',
-    gallery: [],
-    previewImage: '',
-    labels: [],
-    volume: '',
-    size: '',
-    country: '',
-    material: '',
-    compatibility: '',
+    unitOfMeasure: '',
+    packagingSize: undefined,
+
+    image: '',
+    images: [],
+
+    badges: [],
+    technicalSpecs: [],
+    compatibleEquipment: [],
     certificates: [],
-    metaTitles: { ru: '', en: '', lv: '' },
-    metaDescriptions: { ru: '', en: '', lv: '' },
-    slug: '',
-    relatedProducts: [],
-    boughtTogether: [],
+    relatedProductIds: [],
+    oftenBoughtTogether: [],
+    demoVideo: [],
+
+    metaTitle: '',
+    metaDescription: '',
+    ogImage: '',
+    ogAlt: '',
+
+    manufacturerName: '',
+    manufacturerAddress: '',
+    manufacturerEmail: '',
+    distributorName: { ru: '', en: '', lv: '' },
+    distributorAddress: { ru: '', en: '', lv: '' },
+    distributorEmail: '',
+
+    bonusRate: undefined,
+    rating: undefined,
+
+    feature1: '',
+    feature1En: '',
+    feature1Lv: '',
+    feature2: '',
+    feature2En: '',
+    feature2Lv: '',
+    feature3: '',
+    feature3En: '',
+    feature3Lv: '',
+    feature4: '',
+    feature4En: '',
+    feature4Lv: '',
+
+    specVolume: '',
+    specType: '',
+    specCountry: '',
 };
 
-const AddProductForm: React.FC = () => {
+interface AddProductFormProps {
+    mode?: 'add' | 'edit';
+    productId?: string;
+    initialValues?: AddProductFormValues;
+}
+
+const AddProductForm: React.FC<AddProductFormProps> = ({
+    mode = 'add',
+    productId,
+    initialValues,
+}) => {
+    const router = useRouter();
     const [language, setLanguage] = useState<Language>('ru');
+    const [submitError, setSubmitError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { t } = useTranslation();
+    const isEdit = mode === 'edit';
+
     const methods = useForm<AddProductFormValues>({
         resolver: zodResolver(addProductSchema),
-        defaultValues,
+        defaultValues: initialValues ?? emptyDefaults,
         mode: 'onChange',
     });
 
-    const { handleSubmit, formState, control } = methods;
-    const formValues = useWatch({ control });
+    const { handleSubmit, formState, watch } = methods;
+    const image = watch('image');
+    const title = watch('title');
+    const titleEn = watch('titleEn');
+    const titleLv = watch('titleLv');
+    const brand = watch('brand');
+    const price = watch('price');
+    const oldPrice = watch('oldPrice');
+    const badges = watch('badges');
+    const stock = watch('stock');
+    const sku = watch('sku');
 
-    const onSubmit: SubmitHandler<AddProductFormValues> = (data) => {
-        // TODO: Submit to backend
-        alert('Product submitted: ' + JSON.stringify(data, null, 2));
+    const localizedTitle = language === 'en' ? titleEn : language === 'lv' ? titleLv : title;
+
+    const onSubmit: SubmitHandler<AddProductFormValues> = async (data) => {
+        setSubmitError('');
+        setIsSubmitting(true);
+        try {
+            if (isEdit && productId) {
+                const res = await fetch('/api/admin/products', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: productId, changes: mapFormValuesToProductPatch(data) }),
+                });
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error(json?.error ?? 'Ошибка сохранения');
+                }
+            } else {
+                const res = await fetch('/api/admin/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product: mapFormValuesToNewProduct(data) }),
+                });
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error(json?.error ?? 'Ошибка создания товара');
+                }
+            }
+            router.push('/admin/products');
+        } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <FormProvider {...methods}>
-            <form
-                className="add-product add-product__layout grid grid-cols-1 md:grid-cols-2 gap-8"
-                onSubmit={handleSubmit(onSubmit)}
-                autoComplete="off"
-            >
-                <div className="add-product__form flex flex-col gap-6">
-                    <div className="add-product__section">
-                        <Tabs
-                            value={language}
-                            onValueChange={(value) => setLanguage(value as 'ru' | 'en' | 'lv')}
-                        >
-                            <TabsList>
-                                {LANGUAGES.map((lang) => (
-                                    <TabsTrigger
-                                        key={lang}
-                                        value={lang}
-                                        className="add-product__lang-tab"
+        <ProductFormModeContext.Provider value={{ isEdit }}>
+            <FormProvider {...methods}>
+                <form
+                    className="add-product add-product__layout grid grid-cols-1 md:grid-cols-2 gap-8"
+                    onSubmit={handleSubmit(onSubmit)}
+                    autoComplete="off"
+                >
+                    <div className="add-product__form flex flex-col gap-6">
+                        <div className="add-product__section">
+                            <Tabs
+                                value={language}
+                                onValueChange={(value) => setLanguage(value as Language)}
+                            >
+                                <TabsList>
+                                    {LANGUAGES.map((lang) => (
+                                        <TabsTrigger
+                                            key={lang}
+                                            value={lang}
+                                            className="add-product__lang-tab"
+                                        >
+                                            {lang.toUpperCase()}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                            <Separator />
+                            <ProductTranslationsFields language={language} />
+                            <ProductBasicFields />
+                            <ProductPricingFields />
+                            <ProductInventoryFields />
+                            <ProductGalleryFields />
+                            <ProductTechSpecsFields />
+                            <ProductCertificatesFields />
+                            <ProductBulkPricingFields />
+                            <ProductRelatedFields />
+                            <ProductBoughtTogetherFields />
+                            <ProductManufacturerFields language={language} />
+                            <ProductSeoFields />
+                        </div>
+                        <div className="add-product__actions flex flex-col gap-2 mt-4">
+                            <div className="flex gap-4">
+                                <Button type="submit" disabled={!formState.isValid || isSubmitting}>
+                                    {isSubmitting
+                                        ? 'Сохраняю...'
+                                        : isEdit
+                                        ? t('admin.editProduct.save', 'Сохранить изменения')
+                                        : t('admin.addProduct.save', 'Сохранить товар')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => router.push('/admin/products')}
+                                >
+                                    {t('admin.addProduct.cancel', 'Отмена')}
+                                </Button>
+                                {isEdit && productId && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            window.open(`/product/${productId}`, '_blank')
+                                        }
                                     >
-                                        {lang.toUpperCase()}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
-                        <Separator />
-                        <ProductBasicFields />
-                        <ProductPricingFields />
-                        <ProductInventoryFields />
-                        <ProductGalleryFields />
-                        <ProductTechSpecsFields />
-                        <ProductCertificatesFields />
-                        <ProductBulkPricingFields />
-                        <ProductRelatedFields />
-                        <ProductBoughtTogetherFields />
-                        <ProductSeoFields language={language} />
+                                        Открыть на сайте ↗
+                                    </Button>
+                                )}
+                            </div>
+                            {submitError && (
+                                <p className="text-red-600 text-sm">{submitError}</p>
+                            )}
+                        </div>
                     </div>
-                    <div className="add-product__actions flex gap-4 mt-4">
-                        <Button type="submit" disabled={!formState.isValid}>
-                            Сохранить товар
-                        </Button>
-                        <Button type="button" variant="secondary">
-                            Отмена
-                        </Button>
-                    </div>
-                </div>
-                <aside className="add-product__preview sticky top-4 self-start">
-                    <ProductPreviewCard
-                        values={{
-                            ...formValues,
-                            titles: {
-                                ru: formValues.titles?.ru || '',
-                                en: formValues.titles?.en || '',
-                                lv: formValues.titles?.lv || '',
-                            },
-                            shortDescriptions: {
-                                ru: formValues.shortDescriptions?.ru || '',
-                                en: formValues.shortDescriptions?.en || '',
-                                lv: formValues.shortDescriptions?.lv || '',
-                            },
-                            fullDescriptions: {
-                                ru: formValues.fullDescriptions?.ru || '',
-                                en: formValues.fullDescriptions?.en || '',
-                                lv: formValues.fullDescriptions?.lv || '',
-                            },
-                            bulkPricing: (formValues.bulkPricing ?? []).map((bp) => ({
-                                minQty: bp.minQty ?? 1,
-                                price: bp.price ?? 0,
-                            })),
-                            metaTitles: {
-                                ru: formValues.metaTitles?.ru || '',
-                                en: formValues.metaTitles?.en || '',
-                                lv: formValues.metaTitles?.lv || '',
-                            },
-                            metaDescriptions: {
-                                ru: formValues.metaDescriptions?.ru || '',
-                                en: formValues.metaDescriptions?.en || '',
-                                lv: formValues.metaDescriptions?.lv || '',
-                            },
-                        }}
-                        language={language}
-                    />
-                    <div className="mt-4">
-                        <ProductBadgesFields />
-                    </div>
-                </aside>
-            </form>
-        </FormProvider>
+                    <aside className="add-product__preview sticky top-4 self-start">
+                        <ProductPreviewCard
+                            image={image}
+                            title={localizedTitle || ''}
+                            brand={brand}
+                            price={price}
+                            oldPrice={oldPrice}
+                            badges={badges}
+                            stock={stock}
+                            sku={sku}
+                        />
+                        <div className="mt-4">
+                            <ProductBadgesFields />
+                        </div>
+                    </aside>
+                </form>
+            </FormProvider>
+        </ProductFormModeContext.Provider>
     );
 };
 

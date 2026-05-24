@@ -11,15 +11,15 @@ export default function Benefits() {
     const BENEFITS = [
         {
             icon: '/icons/delivery.svg',
-            text: t('benefits.deliveryFree', 'Бесплатная доставка от 100 евро'),
+            text: t('benefits.deliveryFree', 'Бесплатная доставка от 100 €'),
         },
         {
             icon: '/icons/support.svg',
-            text: t('benefits.consultationMain', 'Профессиональная консультация 7 дней в неделю'),
+            text: t('benefits.consultationMain', 'Профессиональные консультации'),
         },
         {
             icon: '/icons/quality.svg',
-            text: t('benefits.processingFast', 'Быстрая обработка заказов — в течение 24 часов'),
+            text: t('benefits.processingFast', 'Обработка заказов в течение суток'),
         },
         {
             icon: '/icons/quality.svg',
@@ -27,11 +27,11 @@ export default function Benefits() {
         },
         {
             icon: '/icons/original.svg',
-            text: t('benefits.brands100', '100+ оригинальных мировых брендов'),
+            text: t('benefits.brands100', '100+ оригинальных брендов'),
         },
         {
             icon: '/icons/quality.svg',
-            text: t('benefits.bonusPoints', 'Начисление бонусных баллов за каждую покупку'),
+            text: t('benefits.bonusPoints', 'Бонусные баллы за каждую покупку'),
         },
     ];
     return (

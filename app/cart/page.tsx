@@ -2,6 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-store';
 import { Button } from '@/components/ui/button';
 import BenefitsList from '@/components/BenefitsList';
@@ -11,8 +12,10 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import CheckoutGuardButton from '@/components/CheckoutGuardButton';
+import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
+import { BookmarkPlus } from 'lucide-react';
 import {
     calculatePrice,
     getMinimumOrderQuantity,
@@ -22,9 +25,11 @@ import {
 export default function CartPage() {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
+    const router = useRouter();
     const { items, addItem, removeItem, updateQuantity, total, clearCart } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
     const [selectionTouched, setSelectionTouched] = React.useState(false);
+    const [templateOpen, setTemplateOpen] = React.useState(false);
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const currentUser = getCurrentUser();
@@ -93,6 +98,11 @@ export default function CartPage() {
     const deliveryFee = subtotal > 0 ? 500 : 0;
     const grandTotal = subtotal + taxAmount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
+    const bonusToEarn = selectedItems.reduce(
+        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
+        0
+    );
+    const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const selectedIdsParam = selectedItemIds.join(',');
     const checkoutHref =
         selectedItemIds.length > 0
@@ -131,6 +141,21 @@ export default function CartPage() {
                 >
                     {t('cart.unselectAll')}
                 </button>
+                <ConfirmActionDialog
+                    title={t('confirm.title')}
+                    description={t('confirm.clearCart')}
+                    confirmLabel={t('cart.clear')}
+                    cancelLabel={t('common.cancel')}
+                    onConfirm={() => {
+                        clearCart();
+                        showToast(t('toast.cartCleared'), 'info');
+                    }}
+                    trigger={
+                        <button type="button" className="cart__clear-btn text-red-500 hover:underline">
+                            {t('cart.clear')}
+                        </button>
+                    }
+                />
             </div>
 
             <div className="cart__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -239,22 +264,6 @@ export default function CartPage() {
                             );
                         })}
                     </div>
-                    <ConfirmActionDialog
-                        title={t('confirm.title')}
-                        description={t('confirm.clearCart')}
-                        confirmLabel={t('cart.clear')}
-                        cancelLabel={t('common.cancel')}
-                        onConfirm={() => {
-                            clearCart();
-                            showToast(t('toast.cartCleared'), 'info');
-                        }}
-                        trigger={
-                            <Button variant="outline" className="cart__clear-btn mt-6">
-                                {t('cart.clear')}
-                            </Button>
-                        }
-                    />
-
                 </div>
 
                 {/* Сумма */}
@@ -301,9 +310,23 @@ export default function CartPage() {
                             </span>
                         </div>
 
+                        {/* Бонусы */}
+                        {currentUser && (
+                            <div className="cart__bonus mt-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
+                                <div className="flex justify-between text-amber-800 dark:text-amber-300">
+                                    <span>{t('account.bonus.balance')}</span>
+                                    <span className="font-semibold">{userBonusBalance} {t('cart.bonus.unit')}</span>
+                                </div>
+                                <div className="flex justify-between text-amber-700 dark:text-amber-400">
+                                    <span>{t('checkout.bonus.willEarn')}</span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{bonusToEarn} {t('cart.bonus.unit')}</span>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Бенефиты */}
                         <div className="cart__benefits mt-6">
-                            <BenefitsList compact />
+                            <BenefitsList compact only={['b1', 'b3', 'b6']} />
                         </div>
 
                         {selectedItemIds.length === 0 && (
@@ -335,6 +358,31 @@ export default function CartPage() {
                                 {t('cart.continue')}
                             </Button>
                         </Link>
+
+                        {currentUser && (
+                            <div className="cart__templates mt-4 flex items-center justify-between text-xs border-t border-gray-100 dark:border-gray-800 pt-3">
+                                <button
+                                    onClick={() => setTemplateOpen(true)}
+                                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 transition-colors"
+                                >
+                                    <BookmarkPlus className="w-3.5 h-3.5" />
+                                    {t('templates.saveAsTemplate')}
+                                </button>
+                                <button
+                                    onClick={() => router.push('/account/templates')}
+                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                >
+                                    {t('templates.useSavedTemplates')}
+                                </button>
+                            </div>
+                        )}
+
+                        <SaveAsTemplateDialog
+                            open={templateOpen}
+                            onOpenChange={setTemplateOpen}
+                            items={items}
+                            defaultName=""
+                        />
                     </div>
                 </aside>
             </div>

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\")",
+      "Bash(Remove-Item \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\" -Force)",
+      "Bash(rm \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\\\\page.server.tsx\" && ls \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\app\\\\admin\\\\products\\\\[id]\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"
+    ]
+  }
+}

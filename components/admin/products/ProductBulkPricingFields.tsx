@@ -5,12 +5,8 @@ import { Button } from '@/components/ui/button';
 import { AddProductFormValues } from './productFormSchema';
 
 const ProductBulkPricingFields: React.FC = () => {
-    const {
-        control,
-        register,
-        formState: { errors },
-    } = useFormContext<AddProductFormValues>();
-    const { fields, append, remove } = useFieldArray({ control, name: 'bulkPricing' });
+    const { control, register } = useFormContext<AddProductFormValues>();
+    const { fields, append, remove } = useFieldArray({ control, name: 'bulkPricingTiers' });
 
     return (
         <div className="add-product__section add-product__section--bulkpricing">
@@ -19,23 +15,18 @@ const ProductBulkPricingFields: React.FC = () => {
                 {fields.map((field, idx) => (
                     <div key={field.id} className="add-product__bulk-row flex gap-2 items-center">
                         <Input
-                            placeholder="Минимум для опта, например: 10"
+                            placeholder="Мин. кол-во (quantity)"
                             type="number"
-                            {...register(`bulkPricing.${idx}.minQty`, { valueAsNumber: true })}
+                            {...register(`bulkPricingTiers.${idx}.quantity`, { valueAsNumber: true })}
                             className="add-product__input add-product__input--bulk-min"
                         />
                         <Input
-                            placeholder="Цена для этого объёма"
+                            placeholder="Цена за ед. (pricePerUnit)"
                             type="number"
-                            {...register(`bulkPricing.${idx}.price`, { valueAsNumber: true })}
+                            {...register(`bulkPricingTiers.${idx}.pricePerUnit`, { valueAsNumber: true })}
                             className="add-product__input add-product__input--bulk-price"
                         />
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => remove(idx)}
-                        >
+                        <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
                             Удалить
                         </Button>
                     </div>
@@ -44,7 +35,7 @@ const ProductBulkPricingFields: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ minQty: 1, price: 0 })}
+                    onClick={() => append({ quantity: 1, pricePerUnit: 0 })}
                 >
                     Добавить оптовую цену
                 </Button>

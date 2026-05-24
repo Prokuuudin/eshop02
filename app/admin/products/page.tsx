@@ -1,17 +1,17 @@
 'use client';
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import AdminGate from '@/components/admin/AdminGate';
 import { useProductsAdmin } from '@/hooks/admin/products/useProductsAdmin';
 import ProductList from '@/components/admin/products/ProductList';
 import ProductTable from '@/components/admin/products/ProductTable';
 import ProductsToolbar from '@/components/admin/products/ProductsToolbar';
-import { DialogContent } from '@/components/ui/dialog';
 import { useI18n } from '@/lib/i18n-context';
 import { useTranslation } from '@/lib/i18n-context';
-import ArchivePanel from '@/components/admin/products/ArchivePanel';
 import NewProductForm from '@/components/admin/products/NewProductForm';
 
 export default function AdminProductsPage() {
+    const router = useRouter();
     const admin = useProductsAdmin();
     const { language } = useI18n();
     const { t } = useTranslation();
@@ -49,13 +49,13 @@ export default function AdminProductsPage() {
                             {admin.viewMode === 'cards' ? (
                                 <ProductList
                                     products={admin.products}
-                                    onEditProduct={() => {}}
+                                    onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={admin.handleDeleteProduct}
                                 />
                             ) : (
                                 <ProductTable
                                     products={admin.products}
-                                    onEditProduct={() => {}}
+                                    onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={admin.handleDeleteProduct}
                                 />
                             )}

@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { Product, BadgeType } from '@/data/products';
+import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Bell } from 'lucide-react';
+import { Bell, Pencil, Trash2 } from 'lucide-react';
 import { useStockNotifyStore } from '@/lib/stock-notify-store';
 
 interface ProductCardProps {
@@ -13,6 +12,12 @@ interface ProductCardProps {
     onEdit?: () => void;
     onDelete?: () => void;
 }
+
+const BADGE_LABELS: Record<string, string> = {
+    new: 'Новинка',
+    sale: 'Скидка',
+    bestseller: 'Хит',
+};
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
     const { getByProduct, notifyProduct } = useStockNotifyStore();
@@ -23,85 +28,137 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
     const [saveMsg, setSaveMsg] = useState('');
 
     const handleSaveStock = async () => {
-        setSaving(true)
-        setSaveMsg('')
+        setSaving(true);
+        setSaveMsg('');
         try {
             const res = await fetch('/api/admin/products', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: product.id, changes: { stock } }),
-            })
-            if (!res.ok) throw new Error('save failed')
+            });
+            if (!res.ok) throw new Error('save failed');
 
             if (product.stock === 0 && stock > 0 && subscribers.length > 0) {
-                notifyProduct(product.id, product.title)
-                setSaveMsg(`Сохранено. Уведомлено ${subscribers.length} подписчиков.`)
+                notifyProduct(product.id, product.title);
+                setSaveMsg(`Уведомлено ${subscribers.length}`);
             } else {
-                setSaveMsg('Сохранено.')
+                setSaveMsg('Сохранено');
             }
         } catch {
-            setSaveMsg('Ошибка при сохранении.')
+            setSaveMsg('Ошибка');
         } finally {
-            setSaving(false)
-            setTimeout(() => setSaveMsg(''), 3000)
+            setSaving(false);
+            setTimeout(() => setSaveMsg(''), 2500);
         }
-    }
+    };
+
+    const imageUrl = product.image || product.images?.[0];
 
     return (
-        <article className="rounded-lg bg-white p-4 dark:bg-gray-900">
-            <div className="admin-products__list flex flex-col md:flex-row gap-4">
-                <div className="admin-products__item flex-1">
-                    <div className="admin-products__item-header flex flex-wrap gap-2 items-center mb-2">
-                        <span className="admin-products__item-id text-xs font-semibold text-gray-700 dark:text-gray-200">
-                            ID: {product.id}
-                        </span>
-                        <span className="admin-products__item-title text-xs text-gray-500 dark:text-gray-400">
-                            {product.title}
-                        </span>
-                        {product.badges?.map((badge) => (
-                            <Badge key={badge} className="ml-1">
-                                {badge}
+        <article className="admin-product-card flex flex-col rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {/* Изображение */}
+            <div className="admin-product-card__image relative h-40 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={product.title}
+                        className="object-cover w-full h-full"
+                    />
+                ) : (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Нет фото</span>
+                )}
+                {/* Бейджи поверх изображения */}
+                {product.badges && product.badges.length > 0 && (
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                        {product.badges.map((badge) => (
+                            <Badge key={badge} className="text-[10px] px-1.5 py-0.5 leading-none">
+                                {BADGE_LABELS[badge] ?? badge}
                             </Badge>
                         ))}
-                        {product.stock === 0 && (
-                            <Badge variant="destructive" className="ml-1">Нет в наличии</Badge>
-                        )}
                     </div>
-
-                    <div className="admin-products__stock flex items-center gap-2 mt-2">
-                        <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            Остаток:
-                        </label>
-                        <Input
-                            type="number"
-                            min={0}
-                            value={stock}
-                            onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-24 h-7 text-sm"
-                        />
-                        <Button size="sm" className="h-7 text-xs" onClick={handleSaveStock} disabled={saving}>
-                            {saving ? '...' : 'Сохранить'}
-                        </Button>
-                        {subscribers.length > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
-                                <Bell className="w-3 h-3" />
-                                {subscribers.length} подписчик{subscribers.length > 1 ? 'а' : ''}
-                            </span>
-                        )}
-                        {saveMsg && (
-                            <span className="text-xs text-green-600 dark:text-green-400">{saveMsg}</span>
-                        )}
+                )}
+                {product.stock === 0 && (
+                    <div className="absolute top-2 right-2">
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 leading-none">
+                            Нет в наличии
+                        </Badge>
                     </div>
-                </div>
+                )}
+            </div>
 
-                <div className="flex flex-col gap-2">
-                    <Button size="sm" onClick={onEdit}>
-                        Редактировать
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={onDelete}>
-                        Удалить
-                    </Button>
+            {/* Информация */}
+            <div className="admin-product-card__body flex flex-col flex-1 p-3 gap-1">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-mono leading-none">
+                    {product.id}
+                    {product.sku && <span className="ml-1 text-gray-300 dark:text-gray-600">· {product.sku}</span>}
+                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mt-0.5">
+                    {product.title}
+                </p>
+                {product.brand && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand}</p>
+                )}
+
+                <div className="admin-product-card__price flex items-baseline gap-2 mt-1">
+                    <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+                        {product.price.toFixed(2)} €
+                    </span>
+                    {product.oldPrice && product.oldPrice > product.price && (
+                        <span className="text-xs line-through text-gray-400">
+                            {product.oldPrice.toFixed(2)} €
+                        </span>
+                    )}
                 </div>
+            </div>
+
+            {/* Управление остатком */}
+            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Остаток:</span>
+                <input
+                    type="number"
+                    min={0}
+                    value={stock}
+                    onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                    type="button"
+                    onClick={handleSaveStock}
+                    disabled={saving}
+                    className="text-xs px-2 py-0.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                    {saving ? '...' : 'Сохр.'}
+                </button>
+                {subscribers.length > 0 && (
+                    <span className="flex items-center gap-0.5 text-[11px] text-indigo-500 dark:text-indigo-400 ml-auto">
+                        <Bell className="w-3 h-3" />
+                        {subscribers.length}
+                    </span>
+                )}
+                {saveMsg && (
+                    <span className="text-[11px] text-green-600 dark:text-green-400 ml-auto">{saveMsg}</span>
+                )}
+            </div>
+
+            {/* Кнопки действий */}
+            <div className="admin-product-card__actions flex border-t border-gray-100 dark:border-gray-700">
+                <button
+                    type="button"
+                    onClick={onEdit}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Редактировать
+                </button>
+                <div className="w-px bg-gray-100 dark:bg-gray-700" />
+                <button
+                    type="button"
+                    onClick={onDelete}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Удалить
+                </button>
             </div>
         </article>
     );

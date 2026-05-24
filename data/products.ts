@@ -59,6 +59,23 @@ export interface Product {
   distributorName?: { ru: string; en: string; lv: string }
   distributorAddress?: { ru: string; en: string; lv: string }
   distributorEmail?: string
+  // Характеристики-карточки (отображаются на странице товара в блоке features)
+  feature1?: string
+  feature1En?: string
+  feature1Lv?: string
+  feature2?: string
+  feature2En?: string
+  feature2Lv?: string
+  feature3?: string
+  feature3En?: string
+  feature3Lv?: string
+  feature4?: string
+  feature4En?: string
+  feature4Lv?: string
+  // Краткие характеристики (объём, тип, страна) для блока spec на странице товара
+  specVolume?: string
+  specType?: string
+  specCountry?: string
 }
 
 export const isProductOnSale = (product: Product): boolean => {

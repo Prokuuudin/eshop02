@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { formatDate } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 import AdminGate from '@/components/admin/AdminGate'
@@ -21,6 +22,32 @@ type AdminBlogPost = {
   contentBlocks?: unknown[]
   createdAt: string
   featured?: boolean
+  translations?: Partial<Record<'en' | 'lv', {
+    title?: string
+    excerpt?: string
+    author?: string
+    category?: string
+    content?: string
+    contentBlocks?: unknown[]
+  }>>
+}
+
+type TranslationForm = {
+  title: string
+  excerpt: string
+  author: string
+  category: string
+  content: string
+  contentBlocksJson: string
+}
+
+const EMPTY_TRANSLATION: TranslationForm = {
+  title: '',
+  excerpt: '',
+  author: '',
+  category: '',
+  content: '',
+  contentBlocksJson: ''
 }
 
 type AdminBlogForm = {
@@ -36,6 +63,7 @@ type AdminBlogForm = {
   featured: boolean
   createdAt?: string
   contentBlocksJson: string
+  translations: { en: TranslationForm; lv: TranslationForm }
 }
 
 const INITIAL_BLOG_FORM: AdminBlogForm = {
@@ -50,7 +78,8 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
   content: '',
   featured: false,
   createdAt: undefined,
-  contentBlocksJson: '[]'
+  contentBlocksJson: '[]',
+  translations: { en: { ...EMPTY_TRANSLATION }, lv: { ...EMPTY_TRANSLATION } }
 }
 
 export default function AdminBlogPage() {
@@ -114,6 +143,39 @@ export default function AdminBlogPage() {
         return
       }
 
+      const translationsPayload: Partial<Record<'en' | 'lv', Record<string, unknown>>> = {}
+      for (const lang of ['en', 'lv'] as const) {
+        const tr = blogForm.translations[lang]
+        const hasAnyText = tr.title || tr.excerpt || tr.author || tr.category || tr.content
+        let trContentBlocks: unknown[] | undefined
+
+        if (tr.contentBlocksJson.trim()) {
+          let parsedTr: unknown
+          try {
+            parsedTr = JSON.parse(tr.contentBlocksJson)
+          } catch (parseError) {
+            setBlogError(`Невалидный JSON (${lang} contentBlocks): ${parseError instanceof Error ? parseError.message : ''}`)
+            return
+          }
+          if (!Array.isArray(parsedTr)) {
+            setBlogError(`${lang} contentBlocks JSON должен быть массивом блоков`)
+            return
+          }
+          if (parsedTr.length > 0) trContentBlocks = parsedTr
+        }
+
+        if (hasAnyText || trContentBlocks) {
+          translationsPayload[lang] = {
+            ...(tr.title ? { title: tr.title } : {}),
+            ...(tr.excerpt ? { excerpt: tr.excerpt } : {}),
+            ...(tr.author ? { author: tr.author } : {}),
+            ...(tr.category ? { category: tr.category } : {}),
+            ...(tr.content ? { content: tr.content } : {}),
+            ...(trContentBlocks ? { contentBlocks: trContentBlocks } : {})
+          }
+        }
+      }
+
       const payload = {
         id: blogForm.id,
         slug: blogForm.slug,
@@ -126,7 +188,8 @@ export default function AdminBlogPage() {
         content: blogForm.content,
         featured: blogForm.featured,
         createdAt: blogForm.createdAt,
-        contentBlocks
+        contentBlocks,
+        translations: Object.keys(translationsPayload).length > 0 ? translationsPayload : undefined
       }
 
       const response = await fetch('/api/admin/blog', {
@@ -183,6 +246,22 @@ export default function AdminBlogPage() {
     setEditingBlogId(post.id)
     setBlogMessage('')
     setBlogError('')
+
+    const getTranslationForm = (lang: 'en' | 'lv'): TranslationForm => {
+      const tr = post.translations?.[lang]
+      if (!tr) return { ...EMPTY_TRANSLATION }
+      return {
+        title: tr.title ?? '',
+        excerpt: tr.excerpt ?? '',
+        author: tr.author ?? '',
+        category: tr.category ?? '',
+        content: tr.content ?? '',
+        contentBlocksJson: Array.isArray(tr.contentBlocks) && tr.contentBlocks.length > 0
+          ? JSON.stringify(tr.contentBlocks, null, 2)
+          : ''
+      }
+    }
+
     setBlogForm({
       id: post.id,
       slug: post.slug,
@@ -195,7 +274,8 @@ export default function AdminBlogPage() {
       content: post.content,
       featured: Boolean(post.featured),
       createdAt: post.createdAt,
-      contentBlocksJson: JSON.stringify(post.contentBlocks ?? [], null, 2)
+      contentBlocksJson: JSON.stringify(post.contentBlocks ?? [], null, 2),
+      translations: { en: getTranslationForm('en'), lv: getTranslationForm('lv') }
     })
   }
 
@@ -239,103 +319,188 @@ export default function AdminBlogPage() {
 
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mt-8">
             <form onSubmit={handleBlogCreate} className="space-y-4 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Slug</span>
-                  <input
-                    value={blogForm.slug}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    placeholder="spring-skin-reset-checklist"
-                    required
-                  />
-                </label>
+              <Tabs defaultValue="base">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="base">Основное (RU)</TabsTrigger>
+                  <TabsTrigger value="en">English</TabsTrigger>
+                  <TabsTrigger value="lv">Latviešu</TabsTrigger>
+                </TabsList>
 
-                <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.category', 'Категория', 'Category', 'Kategorija')}</span>
-                  <input
-                    value={blogForm.category}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, category: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    placeholder={tl('admin.blog.placeholder.category', 'уход за лицом', 'face care', 'sejas kopsana')}
-                    required
-                  />
-                </label>
+                <TabsContent value="base">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="text-sm">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Slug</span>
+                      <input
+                        value={blogForm.slug}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        placeholder="spring-skin-reset-checklist"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.title', 'Заголовок', 'Title', 'Virsraksts')}</span>
-                  <input
-                    value={blogForm.title}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    required
-                  />
-                </label>
+                    <label className="text-sm">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Категория</span>
+                      <input
+                        value={blogForm.category}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, category: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        placeholder="уход за лицом"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.excerpt', 'Краткое описание', 'Short description', 'Iss apraksts')}</span>
-                  <textarea
-                    value={blogForm.excerpt}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, excerpt: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[72px]"
-                    required
-                  />
-                </label>
+                    <label className="text-sm md:col-span-2">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Заголовок</span>
+                      <input
+                        value={blogForm.title}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.author', 'Автор', 'Author', 'Autors')}</span>
-                  <input
-                    value={blogForm.author}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    required
-                  />
-                </label>
+                    <label className="text-sm md:col-span-2">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Краткое описание</span>
+                      <textarea
+                        value={blogForm.excerpt}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, excerpt: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[72px]"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.readTime', 'Время чтения (мин)', 'Read time (min)', 'Lasisanas laiks (min)')}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={blogForm.readTime}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, readTime: Number(e.target.value) }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    required
-                  />
-                </label>
+                    <label className="text-sm">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Автор</span>
+                      <input
+                        value={blogForm.author}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.imagePath', 'Обложка (путь)', 'Cover image (path)', 'Vaka attels (cels)')}</span>
-                  <input
-                    value={blogForm.image}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, image: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
-                    placeholder="/blog/skincare-guide.jpg"
-                    required
-                  />
-                </label>
+                    <label className="text-sm">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Время чтения (мин)</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={blogForm.readTime}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, readTime: Number(e.target.value) }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{tl('admin.blog.field.legacyContent', 'Legacy content (опционально)', 'Legacy content (optional)', 'Legacy saturs (neobligati)')}</span>
-                  <textarea
-                    value={blogForm.content}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[120px]"
-                    placeholder="# Заголовок\n\nТекст..."
-                  />
-                </label>
+                    <label className="text-sm md:col-span-2">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Обложка (путь)</span>
+                      <input
+                        value={blogForm.image}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, image: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                        placeholder="/blog/skincare-guide.jpg"
+                        required
+                      />
+                    </label>
 
-                <label className="text-sm md:col-span-2">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">contentBlocks JSON</span>
-                  <textarea
-                    value={blogForm.contentBlocksJson}
-                    onChange={(e) => setBlogForm((prev) => ({ ...prev, contentBlocksJson: e.target.value }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[220px] font-mono text-xs"
-                    placeholder='[{"type":"paragraph","text":"..."}]'
-                    required
-                  />
-                </label>
-              </div>
+                    <label className="text-sm md:col-span-2">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">Legacy content (опционально)</span>
+                      <textarea
+                        value={blogForm.content}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[120px]"
+                        placeholder="# Заголовок&#10;&#10;Текст..."
+                      />
+                    </label>
+
+                    <label className="text-sm md:col-span-2">
+                      <span className="block text-gray-600 dark:text-gray-300 mb-1">
+                        contentBlocks JSON
+                        <span className="ml-2 text-xs text-gray-400">heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery</span>
+                      </span>
+                      <textarea
+                        value={blogForm.contentBlocksJson}
+                        onChange={(e) => setBlogForm((prev) => ({ ...prev, contentBlocksJson: e.target.value }))}
+                        className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[220px] font-mono text-xs"
+                        placeholder='[{"type":"paragraph","text":"..."}]'
+                        required
+                      />
+                    </label>
+                  </div>
+                </TabsContent>
+
+                {(['en', 'lv'] as const).map((lang) => (
+                  <TabsContent key={lang} value={lang}>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                      Пустые поля наследуют значение из основной (RU) вкладки. Заполните только те поля, которые отличаются.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="text-sm md:col-span-2">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">Заголовок ({lang})</span>
+                        <input
+                          value={blogForm.translations[lang].title}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], title: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                          placeholder={blogForm.title || `Заголовок на ${lang}`}
+                        />
+                      </label>
+
+                      <label className="text-sm md:col-span-2">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">Краткое описание ({lang})</span>
+                        <textarea
+                          value={blogForm.translations[lang].excerpt}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], excerpt: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[72px]"
+                          placeholder={blogForm.excerpt || `Описание на ${lang}`}
+                        />
+                      </label>
+
+                      <label className="text-sm">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">Автор ({lang})</span>
+                        <input
+                          value={blogForm.translations[lang].author}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], author: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                          placeholder={blogForm.author || `Author (${lang})`}
+                        />
+                      </label>
+
+                      <label className="text-sm">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">Категория ({lang})</span>
+                        <input
+                          value={blogForm.translations[lang].category}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], category: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                          placeholder={blogForm.category || `Category (${lang})`}
+                        />
+                      </label>
+
+                      <label className="text-sm md:col-span-2">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">Legacy content ({lang}, опционально)</span>
+                        <textarea
+                          value={blogForm.translations[lang].content}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], content: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[120px]"
+                          placeholder="# Heading&#10;&#10;Text..."
+                        />
+                      </label>
+
+                      <label className="text-sm md:col-span-2">
+                        <span className="block text-gray-600 dark:text-gray-300 mb-1">
+                          contentBlocks JSON ({lang}, опционально)
+                          <span className="ml-2 text-xs text-gray-400">heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery</span>
+                        </span>
+                        <textarea
+                          value={blogForm.translations[lang].contentBlocksJson}
+                          onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], contentBlocksJson: e.target.value } } }))}
+                          className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 min-h-[220px] font-mono text-xs"
+                          placeholder='[{"type":"paragraph","text":"..."}]'
+                        />
+                      </label>
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
 
               <label className="inline-flex items-center gap-2 text-sm">
                 <input

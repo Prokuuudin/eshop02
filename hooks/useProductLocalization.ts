@@ -5,11 +5,6 @@ export function useProductLocalization(product: Product) {
   const { t, language } = useTranslation();
   const productBaseKey = `products.${product.id}`;
 
-  const resolveProductValue = (productKey: string, fallbackKey: string): string => {
-    const value = t(productKey);
-    return value === productKey ? t(fallbackKey) : value;
-  };
-
   const localizedTitle =
     language === 'en' && product.titleEn
       ? product.titleEn
@@ -17,24 +12,44 @@ export function useProductLocalization(product: Product) {
       ? product.titleLv
       : t(product.titleKey ?? `products.${product.id}.title`, product.title);
 
-  const productDescription = resolveProductValue(
-    `${productBaseKey}.description`,
-    'product.descriptionText'
-  );
-  const productSpecVolume = resolveProductValue(
-    `${productBaseKey}.spec.volume`,
-    'product.spec.value.volume'
-  );
-  const productSpecType = resolveProductValue(
-    `${productBaseKey}.spec.type`,
-    'product.spec.value.type'
-  );
-  const productSpecCountry = resolveProductValue(
-    `${productBaseKey}.spec.country`,
-    'product.spec.value.country'
-  );
-  const productFeatures = [1, 2, 3, 4].map((index) =>
-    t(
+  const productDescription = (() => {
+    const fromI18n = t(`${productBaseKey}.description`);
+    return fromI18n !== `${productBaseKey}.description` ? fromI18n : t('product.descriptionText');
+  })();
+
+  const productSpecVolume = (() => {
+    if (product.specVolume) return product.specVolume;
+    const fromI18n = t(`${productBaseKey}.spec.volume`);
+    return fromI18n !== `${productBaseKey}.spec.volume` ? fromI18n : t('product.spec.value.volume');
+  })();
+
+  const productSpecType = (() => {
+    if (product.specType) return product.specType;
+    const fromI18n = t(`${productBaseKey}.spec.type`);
+    return fromI18n !== `${productBaseKey}.spec.type` ? fromI18n : t('product.spec.value.type');
+  })();
+
+  const productSpecCountry = (() => {
+    if (product.specCountry) return product.specCountry;
+    const fromI18n = t(`${productBaseKey}.spec.country`);
+    return fromI18n !== `${productBaseKey}.spec.country` ? fromI18n : t('product.spec.value.country');
+  })();
+
+  const productFeatures = [1, 2, 3, 4].map((index) => {
+    const featureKey = `feature${index}` as keyof Product;
+    const featureEnKey = `feature${index}En` as keyof Product;
+    const featureLvKey = `feature${index}Lv` as keyof Product;
+
+    const productValue =
+      language === 'en'
+        ? (product[featureEnKey] as string | undefined) || (product[featureKey] as string | undefined)
+        : language === 'lv'
+        ? (product[featureLvKey] as string | undefined) || (product[featureKey] as string | undefined)
+        : (product[featureKey] as string | undefined);
+
+    if (productValue) return productValue;
+
+    return t(
       `${productBaseKey}.feature${index}`,
       t(
         `product.feature${index}`,
@@ -46,8 +61,8 @@ export function useProductLocalization(product: Product) {
           ? 'Dermatologically tested'
           : 'Suitable for all skin types'
       )
-    )
-  );
+    );
+  });
 
   return {
     t,

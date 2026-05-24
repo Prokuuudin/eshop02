@@ -4,26 +4,40 @@ import { Input } from '@/components/ui/input';
 import { AddProductFormValues } from './productFormSchema';
 
 const ProductInventoryFields: React.FC = () => {
-    const {
-        register,
-        formState: { errors },
-    } = useFormContext<AddProductFormValues>();
+    const { register } = useFormContext<AddProductFormValues>();
 
     return (
         <div className="add-product__section add-product__section--inventory">
             <h2 className="add-product__section-title">Склад и наличие</h2>
             <div className="add-product__fields-grid">
-                <Input
-                    placeholder="Сколько штук на складе"
-                    type="number"
-                    {...register('stock', { valueAsNumber: true })}
-                />
-                <Input
-                    placeholder="Минимальный заказ, например: 1"
-                    type="number"
-                    {...register('minOrder', { valueAsNumber: true })}
-                />
-                <Input placeholder="шт, л, кг и т.д." {...register('unit')} />
+                <div>
+                    <label className="block text-sm font-medium mb-1">Остаток на складе</label>
+                    <Input
+                        placeholder="Количество штук"
+                        type="number"
+                        {...register('stock', { valueAsNumber: true })}
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Минимальный заказ</label>
+                    <Input
+                        placeholder="Например: 1"
+                        type="number"
+                        {...register('minOrder', { valueAsNumber: true })}
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Единица измерения</label>
+                    <Input placeholder="шт, л, кг и т.д." {...register('unitOfMeasure')} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Размер упаковки (шт в упаковке)</label>
+                    <Input
+                        placeholder="Например: 12"
+                        type="number"
+                        {...register('packagingSize', { valueAsNumber: true })}
+                    />
+                </div>
             </div>
         </div>
     );

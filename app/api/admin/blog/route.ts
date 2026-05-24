@@ -5,6 +5,15 @@ import type { BlogContentBlock, BlogPost } from '@/data/blog'
 
 export const runtime = 'nodejs'
 
+type TranslationPayload = {
+  title?: string
+  excerpt?: string
+  author?: string
+  category?: string
+  content?: string
+  contentBlocks?: BlogContentBlock[]
+}
+
 type CreateBlogPostPayload = {
   id?: string
   slug: string
@@ -18,6 +27,7 @@ type CreateBlogPostPayload = {
   readTime: number
   createdAt?: string
   featured?: boolean
+  translations?: Partial<Record<'en' | 'lv', TranslationPayload>>
 }
 
 type ValidationResult = {
@@ -148,10 +158,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: blocksValidation.error ?? 'invalid_content_blocks' }, { status: 422 })
   }
 
+  for (const lang of ['en', 'lv'] as const) {
+    const trBlocks = payload.translations?.[lang]?.contentBlocks
+    const trValidation = validateContentBlocks(trBlocks)
+    if (!trValidation.ok) {
+      return NextResponse.json({ ok: false, error: `${lang} translations: ${trValidation.error ?? 'invalid_content_blocks'}` }, { status: 422 })
+    }
+  }
+
   const createdAt = payload.createdAt ? new Date(payload.createdAt) : new Date()
   const safeReadTime = Number.isFinite(payload.readTime) && payload.readTime > 0 ? payload.readTime : 3
   const existingPosts = await getBlogPosts()
   const existingPost = existingPosts.find((item) => item.id === payload.id)
+
+  const buildTranslation = (lang: 'en' | 'lv'): TranslationPayload | undefined => {
+    const tr = payload.translations?.[lang]
+    if (!tr) return undefined
+    const hasContent = tr.title || tr.excerpt || tr.author || tr.category || tr.content || (Array.isArray(tr.contentBlocks) && tr.contentBlocks.length > 0)
+    if (!hasContent) return undefined
+    return {
+      ...(tr.title?.trim() ? { title: tr.title.trim() } : {}),
+      ...(tr.excerpt?.trim() ? { excerpt: tr.excerpt.trim() } : {}),
+      ...(tr.author?.trim() ? { author: tr.author.trim() } : {}),
+      ...(tr.category?.trim() ? { category: tr.category.trim() } : {}),
+      ...(tr.content ? { content: tr.content } : {}),
+      ...(Array.isArray(tr.contentBlocks) && tr.contentBlocks.length > 0 ? { contentBlocks: tr.contentBlocks } : {})
+    }
+  }
+
+  const enTranslation = buildTranslation('en')
+  const lvTranslation = buildTranslation('lv')
+  const translations = (enTranslation || lvTranslation)
+    ? { ...(enTranslation ? { en: enTranslation } : {}), ...(lvTranslation ? { lv: lvTranslation } : {}) }
+    : undefined
 
   const post: BlogPost = {
     id: payload.id?.trim() || `post-${Date.now()}`,
@@ -166,7 +205,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     readTime: safeReadTime,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
     updatedAt: existingPost ? new Date() : undefined,
-    featured: Boolean(payload.featured)
+    featured: Boolean(payload.featured),
+    translations: translations as BlogPost['translations']
   }
 
   await createBlogPost(post)

@@ -15,7 +15,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
-import { BookmarkPlus } from 'lucide-react';
+import { BookmarkPlus, Expand } from 'lucide-react';
 import {
     calculatePrice,
     getMinimumOrderQuantity,
@@ -140,9 +140,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             >
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between bg-white dark:bg-gray-900">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {t('cart.title')}
-                    </h2>
+                    <div className="flex items-baseline gap-3">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {t('cart.title')}
+                        </h2>
+                        <button
+                            onClick={() => { onClose(); router.push('/cart'); }}
+                            className="hidden md:inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline dark:text-indigo-400 leading-none"
+                        >
+                            {t('cart.openFullCart')}
+                            <Expand className="w-3 h-3" />
+                        </button>
+                    </div>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1"
@@ -167,9 +176,9 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 </div>
 
                 {/* Items scroll area */}
-                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-gray-900">
+                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-gray-200 dark:bg-gray-950">
                     {items.length > 0 && (
-                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-gray-200 dark:border-gray-700 p-2 text-xs">
+                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 text-xs">
                             <span className="text-gray-700 dark:text-gray-300">
                                 {t('cart.selectedForCheckout')}:{' '}
                                 <span className="font-semibold">{selectedItemIds.length}</span>
@@ -209,7 +218,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             return (
                                 <div
                                     key={item.id}
-                                    className="cart-drawer__item flex gap-3 border-b border-gray-200 dark:border-gray-700 pb-4"
+                                    className="cart-drawer__item flex gap-3 border-b border-gray-200 dark:border-gray-700 pb-3"
                                 >
                                     <div className="pt-1">
                                         <Checkbox
@@ -231,7 +240,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                         <h3 className="text-sm font-medium line-clamp-2 text-gray-900 dark:text-gray-100">
                                             {localizedTitle}
                                         </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                                             {item.brand}
                                         </p>
                                         <div className="flex items-center justify-between">
@@ -281,7 +290,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                 {t('common.min')} {minQuantity} {t('product.pcs')}
                                             </p>
                                         )}
-                                        <p className="text-sm font-semibold mt-2 text-gray-900 dark:text-gray-100">
+                                        <p className="text-sm font-semibold mt-1 text-gray-900 dark:text-gray-100">
                                             {formatCurrency(
                                                 calculatePrice(item, item.quantity) * item.quantity
                                             )}
@@ -295,7 +304,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                 {/* Footer with summary */}
                 {items.length > 0 && (
-                    <div className="cart-drawer__footer border-t border-gray-200 dark:border-gray-700 p-4 space-y-3 bg-white dark:bg-gray-900">
+                    <div className="cart-drawer__footer border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2 bg-white dark:bg-gray-900">
                         {!wholesaleGuard.isMinimumReached && selectedItemIds.length > 0 && (
                             <WholesaleMinimumAlert
                                 minOrderAmount={wholesaleGuard.minOrderAmount}
@@ -303,45 +312,42 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 formatCurrency={formatCurrency}
                             />
                         )}
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between text-gray-600 dark:text-gray-300">
+
+                        {/* Разбивка */}
+                        <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                            <div className="flex justify-between">
                                 <span>{t('cart.subtotal')}</span>
                                 <span>{formatCurrency(subtotal)}</span>
                             </div>
-                            <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                            <div className="flex justify-between">
                                 <span>{t('cart.tax')}</span>
                                 <span>{formatCurrency(tax)}</span>
                             </div>
-                            <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                            <div className="flex justify-between">
                                 <span>{t('cart.shipping')}</span>
                                 <span>{formatCurrency(delivery)}</span>
                             </div>
                         </div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between font-semibold text-base text-gray-900 dark:text-gray-100">
+
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold text-sm text-gray-900 dark:text-gray-100">
                             <span>{t('cart.total')}</span>
                             <span>{formatCurrency(finalTotal)}</span>
                         </div>
+
                         {/* Бонусный блок */}
                         {currentUser && (
-                            <div className="cart-drawer__bonus rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
+                            <div className="cart-drawer__bonus rounded border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-2 py-1.5 text-xs space-y-0.5">
                                 <div className="flex justify-between text-amber-800 dark:text-amber-300">
                                     <span>{t('account.bonus.balance')}</span>
-                                    <span className="font-semibold">
-                                        {userBonusBalance} {t('cart.bonus.unit')}
-                                    </span>
+                                    <span className="font-semibold">{userBonusBalance} {t('cart.bonus.unit')}</span>
                                 </div>
                                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
                                     <span>{t('checkout.bonus.willEarn')}</span>
-                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                                        +{bonusToEarn} {t('cart.bonus.unit')}
-                                    </span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{bonusToEarn} {t('cart.bonus.unit')}</span>
                                 </div>
                             </div>
                         )}
-                        {/* Бенефиты */}
-                        <div className="cart-drawer__benefits mt-4">
-                            <BenefitsList compact />
-                        </div>
+
                         {selectedItemIds.length === 0 && (
                             <p className="text-xs text-red-600">{t('cart.selectAtLeastOne')}</p>
                         )}
@@ -350,6 +356,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 Для роли менеджера оформление заказа недоступно.
                             </p>
                         )}
+
                         <CheckoutGuardButton
                             canCheckout={
                                 wholesaleGuard.isMinimumReached &&
@@ -361,23 +368,25 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             href={checkoutHref}
                             onNavigate={onClose}
                         />
-                        {items.length > 0 && currentUser && (
-                            <button
-                                onClick={() => setTemplateOpen(true)}
-                                className="w-full flex items-center justify-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 py-1 transition-colors"
-                            >
-                                <BookmarkPlus className="w-3.5 h-3.5" />
-                                {t('templates.saveAsTemplate')}
-                            </button>
-                        )}
+                        {/* Шаблоны в одну строку */}
                         {currentUser && (
-                            <button
-                                onClick={() => { onClose(); router.push('/account/templates'); }}
-                                className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 py-1 transition-colors"
-                            >
-                                {t('templates.useSavedTemplates')}
-                            </button>
+                            <div className="flex items-center justify-between text-xs pt-1">
+                                <button
+                                    onClick={() => setTemplateOpen(true)}
+                                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 transition-colors"
+                                >
+                                    <BookmarkPlus className="w-3.5 h-3.5" />
+                                    {t('templates.saveAsTemplate')}
+                                </button>
+                                <button
+                                    onClick={() => { onClose(); router.push('/account/templates'); }}
+                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                >
+                                    {t('templates.useSavedTemplates')}
+                                </button>
+                            </div>
                         )}
+
                         <SaveAsTemplateDialog
                             open={templateOpen}
                             onOpenChange={setTemplateOpen}

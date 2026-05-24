@@ -85,63 +85,65 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">B2B RFQ</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.rfq.description', 'Управление заявками на спецпредложения', 'Manage special offer requests', 'Specialo piedavajumu pieprasijumu parvaldiba')}</p>
-            <Link href="/admin/rfq">
-              <Button variant="outline" size="sm">{tl('admin.dashboard.cards.rfq.open', 'Открыть RFQ панель', 'Open RFQ panel', 'Atvert RFQ paneli')}</Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">B2B RFQ</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.rfq.description', 'Управление заявками на спецпредложения', 'Manage special offer requests', 'Specialo piedavajumu pieprasijumu parvaldiba')}</p>
+            <Link href="/admin/rfq" className="mt-auto">
+              <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                {tl('admin.dashboard.cards.rfq.open', 'Открыть RFQ панель', 'Open RFQ panel', 'Atvert RFQ paneli')} →
+              </span>
             </Link>
           </div>
           {hasFullAccess && (
             <>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.clientBarcodes.title', 'Клиентские баркоды', 'Client barcodes', 'Klientu barkodi')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.clientBarcodes.description', 'Выдача, редактирование и привязка баркодов компаний', 'Issue, edit and bind company barcodes', 'Uznemumu barkodu izsniegsana, redigesana un piesaiste')}</p>
-                <Link href="/admin/client-barcodes">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.clientBarcodes.open', 'Открыть баркоды', 'Open barcodes', 'Atvert barkodus')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.clientBarcodes.title', 'Клиентские баркоды', 'Client barcodes', 'Klientu barkodi')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.clientBarcodes.description', 'Выдача, редактирование и привязка баркодов компаний', 'Issue, edit and bind company barcodes', 'Uznemumu barkodu izsniegsana, redigesana un piesaiste')}</p>
+                <Link href="/admin/client-barcodes" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.clientBarcodes.open', 'Открыть баркоды', 'Open barcodes', 'Atvert barkodus')} →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">B2B Webhooks</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.webhooks.description', 'Проверка endpoint и истории доставок', 'Check endpoints and delivery history', 'Endpointu un piegazu vestures parbaude')}</p>
-                <Link href="/account/integrations/webhooks">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.webhooks.open', 'Открыть Webhooks', 'Open Webhooks', 'Atvert Webhooks')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">B2B Webhooks</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.webhooks.description', 'Проверка endpoint и истории доставок', 'Check endpoints and delivery history', 'Endpointu un piegazu vestures parbaude')}</p>
+                <Link href="/account/integrations/webhooks" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.webhooks.open', 'Открыть Webhooks', 'Open Webhooks', 'Atvert Webhooks')} →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.products.title', 'Товары', 'Products', 'Produkti')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.products.description', 'Редактирование цен и описаний, поиск по характеристикам', 'Edit prices/descriptions and search by attributes', 'Cenu/aprakstu redigesana un meklesana pec atributiem')}</p>
-                <Link href="/admin/products">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.products.open', 'Открыть товары', 'Open products', 'Atvert produktus')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.products.title', 'Товары', 'Products', 'Produkti')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.products.description', 'Редактирование цен и описаний, поиск по характеристикам', 'Edit prices/descriptions and search by attributes', 'Cenu/aprakstu redigesana un meklesana pec atributiem')}</p>
+                <Link href="/admin/products" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.products.open', 'Открыть товары', 'Open products', 'Atvert produktus')} →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.blog.title', 'Блог', 'Blog', 'Blogs')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.blog.description', 'Создание, редактирование и удаление статей', 'Create, edit, and delete articles', 'Rakstu izveide, redigesana un dzesana')}</p>
-                <Link href="/admin/blog">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.blog.open', 'Открыть управление блогом', 'Open blog management', 'Atvert bloga parvaldibu')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.blog.title', 'Блог', 'Blog', 'Blogs')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.blog.description', 'Создание, редактирование и удаление статей', 'Create, edit, and delete articles', 'Rakstu izveide, redigesana un dzesana')}</p>
+                <Link href="/admin/blog" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.blog.open', 'Открыть управление блогом', 'Open blog management', 'Atvert bloga parvaldibu')} →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.content.title', 'Контент сайта', 'Site content', 'Vietnes saturs')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.content.description', 'Редактирование текстов и изображений без правки кода', 'Edit text and images without code changes', 'Tekstu un attelu redigesana bez koda izmainam')}</p>
-                <Link href="/admin/content">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.content.open', 'Открыть контент-панель', 'Open content panel', 'Atvert satura paneli')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.content.title', 'Контент сайта', 'Site content', 'Vietnes saturs')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.content.description', 'Редактирование текстов и изображений без правки кода', 'Edit text and images without code changes', 'Tekstu un attelu redigesana bez koda izmainam')}</p>
+                <Link href="/admin/content" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.content.open', 'Открыть контент-панель', 'Open content panel', 'Atvert satura paneli')} →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Design System</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Визуальный справочник токенов, компонентов и паттернов проекта</p>
-                <Link href="/admin/design-system">
-                  <Button variant="outline" size="sm">Открыть</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Design System</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Визуальный справочник токенов, компонентов и паттернов проекта</p>
+                <Link href="/admin/design-system" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
                 </Link>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{tl('admin.dashboard.cards.reviews.title', 'Отзывы', 'Reviews', 'Atsauksmes')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl('admin.dashboard.cards.reviews.description', 'Просмотр, скрытие и модерация пользовательских отзывов', 'View, hide and moderate user reviews', 'Lietotaju atsauksmju skatisana, slegsana un moderacija')}</p>
-                <Link href="/admin/reviews">
-                  <Button variant="outline" size="sm">{tl('admin.dashboard.cards.reviews.open', 'Открыть модерацию отзывов', 'Open reviews moderation', 'Atvert atsauksmju moderaciju')}</Button>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.reviews.title', 'Отзывы', 'Reviews', 'Atsauksmes')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.reviews.description', 'Просмотр, скрытие и модерация пользовательских отзывов', 'View, hide and moderate user reviews', 'Lietotaju atsauksmju skatisana, slegsana un moderacija')}</p>
+                <Link href="/admin/reviews" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.reviews.open', 'Открыть модерацию отзывов', 'Open reviews moderation', 'Atvert atsauksmju moderaciju')} →</span>
                 </Link>
               </div>
             </>
@@ -161,19 +163,19 @@ export default function AdminPage() {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-gray-600 dark:text-gray-300 text-sm">📦 {t('admin.stats.totalOrders')}</p>
             <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{orders.length}</p>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-gray-600 dark:text-gray-300 text-sm">💰 {t('admin.stats.totalRevenue')}</p>
             <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{formatEuro(totalRevenue, locale)}</p>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-gray-600 dark:text-gray-300 text-sm">💵 {t('admin.stats.averageOrder')}</p>
             <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{formatEuro(avgOrderValue, locale)}</p>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-gray-600 dark:text-gray-300 text-sm">📋 {t('admin.stats.itemsSold')}</p>
             <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{totalItems}</p>
           </div>
@@ -235,7 +237,7 @@ export default function AdminPage() {
                         </div>
 
                         <div className="mb-4">
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{t('admin.products')}</p>
+                          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('admin.products')}</p>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded p-2 text-sm space-y-1">
                             {order.items.map((item) => (
                               <p key={item.id}>

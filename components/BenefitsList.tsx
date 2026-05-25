@@ -34,11 +34,7 @@ export default function BenefitsList({
         >
             {items.map((it) => (
                 <li key={it.id} className="list-disc list-inside">
-                    {it.isHtml ? (
-                        <span dangerouslySetInnerHTML={{ __html: t(it.key) }} />
-                    ) : (
-                        t(it.key)
-                    )}
+                    {t(it.key)}
                 </li>
             ))}
         </ul>

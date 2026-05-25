@@ -4,6 +4,8 @@ import React, { useEffect } from 'react'
 import { I18nProvider } from '@/lib/i18n-context'
 import { ToastProvider } from '@/lib/toast-context'
 import { useWishlist } from '@/lib/wishlist-store'
+import { useCart } from '@/lib/cart-store'
+import { getCurrentUser } from '@/lib/auth'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -20,6 +22,27 @@ function WishlistScopeSync(): null {
       window.removeEventListener('eshop-user-changed', syncWishlistScope as EventListener)
     }
   }, [])
+
+  return null
+}
+
+function CartUserSync(): null {
+  const clearCart = useCart((state) => state.clearCart)
+
+  useEffect(() => {
+    let prevUserId: string | null = getCurrentUser()?.id ?? null
+
+    const onUserChanged = (): void => {
+      const nextUserId = getCurrentUser()?.id ?? null
+      if (nextUserId !== prevUserId) {
+        clearCart()
+        prevUserId = nextUserId
+      }
+    }
+
+    window.addEventListener('eshop-user-changed', onUserChanged as EventListener)
+    return () => window.removeEventListener('eshop-user-changed', onUserChanged as EventListener)
+  }, [clearCart])
 
   return null
 }
@@ -65,6 +88,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
     <I18nProvider>
       <ToastProvider>
         <WishlistScopeSync />
+        <CartUserSync />
         <ChunkErrorRecovery />
         {children}
       </ToastProvider>

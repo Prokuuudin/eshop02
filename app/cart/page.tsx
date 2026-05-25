@@ -32,7 +32,13 @@ export default function CartPage() {
     const [templateOpen, setTemplateOpen] = React.useState(false);
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
-    const currentUser = getCurrentUser();
+    const [currentUser, setCurrentUser] = React.useState(() => {
+        if (typeof window === 'undefined') return null;
+        return getCurrentUser();
+    });
+    React.useEffect(() => {
+        setCurrentUser(getCurrentUser());
+    }, []);
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
     React.useEffect(() => {

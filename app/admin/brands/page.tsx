@@ -2,7 +2,9 @@
 
 import React from 'react'
 import Link from 'next/link'
+import { ChevronDown, Plus, Search } from 'lucide-react'
 import AdminGate from '@/components/admin/AdminGate'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { BrandConfigItem, BrandsConfigPayload, LocalizedBrandDescription } from '@/lib/brands-config'
@@ -55,6 +57,10 @@ export default function AdminBrandsPage() {
   const [message, setMessage] = React.useState('')
   const [error, setError] = React.useState('')
   const [newBrand, setNewBrand] = React.useState<NewBrandDraft>(EMPTY_NEW_BRAND)
+  const [search, setSearch] = React.useState('')
+
+  const q = search.trim().toLowerCase()
+  const filteredBrands = q ? brands.filter((b) => b.name.toLowerCase().includes(q) || b.id.toLowerCase().includes(q)) : brands
 
   React.useEffect(() => {
     const loadBrands = async () => {
@@ -205,6 +211,18 @@ export default function AdminBrandsPage() {
               <Button variant="outline">{tl('admin.brands.backToAdmin', 'Назад в админку', 'Back to admin', 'Atpakal uz admin')}</Button>
             </Link>
           </div>
+          <div className="mt-3 flex items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={tl('admin.brands.searchPlaceholder', 'Поиск по названию или ID...', 'Search by name or ID...', 'Meklet pec nosaukuma vai ID...')}
+              className="h-9 flex-1"
+            />
+            <Search className="h-5 w-5 text-gray-400" />
+            <span className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+              {tl('admin.brands.search', 'Поиск', 'Search', 'Meklet')}
+            </span>
+          </div>
         </div>
 
         {message && (
@@ -218,11 +236,20 @@ export default function AdminBrandsPage() {
           </p>
         )}
 
-        <section className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {tl('admin.brands.newBrand', 'Новый бренд', 'New brand', 'Jauns zimols')}
-          </h2>
-
+        <Accordion type="single" collapsible>
+          <AccordionItem value="new-brand" className="border-0">
+            <AccordionTrigger className="group !border-0 !bg-transparent !p-0 !no-underline focus:!no-underline">
+              <div className="flex cursor-pointer select-none items-center gap-3 rounded-lg bg-primary/5 px-4 py-3 transition hover:bg-primary/10">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Plus className="h-6 w-6" />
+                </span>
+                <span className="text-base font-semibold">
+                  {tl('admin.brands.addBrand', 'Добавить бренд', 'Add brand', 'Pievienot zimolu')}
+                </span>
+                <ChevronDown className="ml-auto h-5 w-5 text-primary transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
           <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
             <div className="grid gap-2 md:grid-cols-3">
               <label className="text-xs">
@@ -314,7 +341,9 @@ export default function AdminBrandsPage() {
                 : tl('admin.brands.addBrand', 'Добавить бренд', 'Add brand', 'Pievienot zimolu')}
             </Button>
           </div>
-        </section>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -325,8 +354,12 @@ export default function AdminBrandsPage() {
             <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
               {tl('admin.brands.loading', 'Загрузка брендов...', 'Loading brands...', 'Ieladejam zimolus...')}
             </div>
+          ) : filteredBrands.length === 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+              {tl('admin.brands.noResults', 'Бренды не найдены', 'No brands found', 'Zimoli nav atrasti')}
+            </div>
           ) : (
-            brands.map((brand) => (
+            filteredBrands.map((brand) => (
               <article key={brand.id} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>

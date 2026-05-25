@@ -6,6 +6,8 @@ import { useOrders } from '@/lib/orders-store'
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Search } from 'lucide-react'
 import { useTranslation } from '@/lib/use-translation'
 
 type SortField = 'date' | 'total'
@@ -151,13 +153,16 @@ export default function AdminOrdersPage() {
       {/* Filters */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div className="flex flex-wrap gap-3">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по ID, имени, email, телефону..."
-            className="flex-1 min-w-[220px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+          <div className="flex flex-1 min-w-[220px] items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по ID, имени, email, телефону..."
+              className="h-9 flex-1"
+            />
+            <Search className="h-5 w-5 text-gray-400" />
+            <span className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">Поиск</span>
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}

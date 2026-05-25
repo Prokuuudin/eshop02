@@ -50,7 +50,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         items: [
             { title: 'sales.orders', href: '/admin/orders' },
             { title: 'sales.rfq', href: '/admin/rfq' },
-            { title: 'sales.returns', href: '/admin#sales-returns' },
+            { title: 'sales.returns', href: '/admin/returns' },
         ],
     },
     {

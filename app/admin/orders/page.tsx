@@ -233,7 +233,7 @@ export default function AdminOrdersPage() {
           return (
             <div
               key={order.id}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden"
+              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden"
             >
               <button
                 type="button"
@@ -260,41 +260,82 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {order.email} · {order.phone}
                   </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.createdAt, locale)}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-gray-900 dark:text-gray-100">{formatEuro(order.total, locale)}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {order.items.length} {order.items.length === 1 ? 'товар' : order.items.length < 5 ? 'товара' : 'товаров'}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(order.createdAt, locale)}</p>
                 </div>
               </button>
 
               {isExpanded && (
                 <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-5 space-y-5">
-                  {/* Customer & delivery info */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Адрес доставки</p>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {order.address}
-                        {order.postalCode ? `, ${order.postalCode}` : ''}, {order.city}
-                      </p>
+
+                  {/* Quick actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void navigator.clipboard.writeText(order.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Скопировать ID
+                    </button>
+                    <a
+                      href={`mailto:${order.email}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Написать клиенту
+                    </a>
+                    <a
+                      href={`tel:${order.phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Позвонить
+                    </a>
+                  </div>
+
+                  {/* Info blocks */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    {/* Customer */}
+                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Клиент</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{order.firstName} {order.lastName}</p>
+                      <a href={`mailto:${order.email}`} className="block text-sm text-indigo-600 dark:text-indigo-400 hover:underline truncate">{order.email}</a>
+                      <a href={`tel:${order.phone}`} className="block text-sm text-gray-700 dark:text-gray-300 hover:underline">{order.phone}</a>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Способ доставки</p>
-                      <p className="text-gray-900 dark:text-gray-100">{DELIVERY_LABELS[order.deliveryMethod] ?? order.deliveryMethod}</p>
+
+                    {/* Delivery */}
+                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Доставка</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{DELIVERY_LABELS[order.deliveryMethod] ?? order.deliveryMethod}</p>
+                      <div className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">
+                        <p>{order.address}</p>
+                        {order.postalCode && <p>Индекс: {order.postalCode}</p>}
+                        <p>{order.city}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Оплата</p>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {order.paymentMethod}
-                        {order.paymentProvider ? ` (${order.paymentProvider})` : ''}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Дата заказа</p>
-                      <p className="text-gray-900 dark:text-gray-100">{formatDate(order.createdAt, locale)}</p>
+
+                    {/* Payment */}
+                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Оплата</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${PAYMENT_COLORS[payStatus]}`}>
+                          {PAYMENT_LABELS[payStatus]}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{order.paymentMethod}</p>
+                      {order.paymentProvider && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Провайдер: <span className="text-gray-900 dark:text-gray-100 font-medium">{order.paymentProvider}</span></p>
+                      )}
+                      {order.paymentSessionId && (
+                        <div className="pt-1 border-t border-gray-100 dark:border-gray-800">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Session ID</p>
+                          <p className="font-mono text-xs text-gray-600 dark:text-gray-400 break-all">{order.paymentSessionId}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -327,9 +368,9 @@ export default function AdminOrdersPage() {
 
                   {/* Amounts */}
                   <div className="flex justify-end">
-                    <div className="text-sm space-y-1.5 min-w-[240px]">
+                    <div className="text-sm space-y-1.5 min-w-[260px]">
                       <div className="flex justify-between gap-6">
-                        <span className="text-gray-500 dark:text-gray-400">Подытог</span>
+                        <span className="text-gray-500 dark:text-gray-400">Сумма за товары</span>
                         <span className="text-gray-900 dark:text-gray-100">{formatEuro(order.subtotal, locale)}</span>
                       </div>
                       {order.discount > 0 && (
@@ -344,6 +385,12 @@ export default function AdminOrdersPage() {
                           {order.delivery === 0 ? 'Бесплатно' : formatEuro(order.delivery, locale)}
                         </span>
                       </div>
+                      {order.tax > 0 && (
+                        <div className="flex justify-between gap-6">
+                          <span className="text-gray-500 dark:text-gray-400">Налог (НДС)</span>
+                          <span className="text-gray-900 dark:text-gray-100">{formatEuro(order.tax, locale)}</span>
+                        </div>
+                      )}
                       {(order.bonusSpent ?? 0) > 0 && (
                         <div className="flex justify-between gap-6 text-amber-700 dark:text-amber-400">
                           <span>Бонусы использованы</span>
@@ -353,6 +400,10 @@ export default function AdminOrdersPage() {
                       <div className="flex justify-between gap-6 font-bold text-base pt-2 border-t border-gray-200 dark:border-gray-700">
                         <span className="text-gray-900 dark:text-gray-100">Итого</span>
                         <span className="text-gray-900 dark:text-gray-100">{formatEuro(order.total, locale)}</span>
+                      </div>
+                      <div className="flex justify-between gap-6 text-emerald-700 dark:text-emerald-400 font-medium">
+                        <span>Прибыль</span>
+                        <span>{formatEuro(order.total - order.tax - order.delivery, locale)}</span>
                       </div>
                       {(order.bonusEarned ?? 0) > 0 && (
                         <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">

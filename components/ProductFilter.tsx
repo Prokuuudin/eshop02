@@ -86,6 +86,11 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       () => Array.from(new Set(sourceProducts.map((product) => product.purpose).filter(Boolean) as string[])),
       [sourceProducts]
     );
+    const priceRange = React.useMemo(() => {
+      const prices = sourceProducts.map(p => p.price).filter(p => p > 0);
+      if (!prices.length) return { min: 0, max: 0 };
+      return { min: Math.min(...prices), max: Math.max(...prices) };
+    }, [sourceProducts]);
   const { t, language } = useTranslation();
   const { categories } = useCategoriesConfig()
   const { brands: configuredBrands } = useBrandsConfig()
@@ -238,7 +243,10 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('product.brand')}</label>
         <div className="flex flex-col gap-2">
           {availableBrands.map((brandId) => {
-            const brandCount = getCountByFilters({ brands: [brandId] })
+            const nextBrands = brands.includes(brandId)
+              ? [brandId]
+              : [...brands, brandId]
+            const brandCount = getCountByFilters({ brands: nextBrands })
 
             return (
               <Checkbox
@@ -255,8 +263,8 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('product.price')}</label>
         <div className="flex gap-2">
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
+          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
+          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
         </div>
       </div>
       {activeFilters.length > 0 && (

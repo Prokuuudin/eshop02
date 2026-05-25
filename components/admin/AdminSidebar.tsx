@@ -57,7 +57,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
         title: 'sales',
         icon: ShoppingCart,
         items: [
-            { title: 'sales.orders', href: '/admin#sales-orders' },
+            { title: 'sales.orders', href: '/admin/orders' },
             { title: 'sales.rfq', href: '/admin/rfq' },
             { title: 'sales.returns', href: '/admin#sales-returns' },
         ],

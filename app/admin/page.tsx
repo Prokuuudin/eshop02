@@ -87,6 +87,15 @@ export default function AdminPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{tl('admin.dashboard.cards.orders.title', 'Заказы', 'Orders', 'Pasutijumi')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.orders.description', 'Управление заказами, статусами и оплатой', 'Manage orders, statuses and payments', 'Pasutijumu, statusu un maksajumu parvaldiba')}</p>
+            <Link href="/admin/orders" className="mt-auto">
+              <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                {tl('admin.dashboard.cards.orders.open', 'Открыть заказы', 'Open orders', 'Atvert pasutijumus')} →
+              </span>
+            </Link>
+          </div>
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">B2B RFQ</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.rfq.description', 'Управление заявками на спецпредложения', 'Manage special offer requests', 'Specialo piedavajumu pieprasijumu parvaldiba')}</p>
             <Link href="/admin/rfq" className="mt-auto">

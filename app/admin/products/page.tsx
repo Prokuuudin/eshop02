@@ -20,10 +20,11 @@ export default function AdminProductsPage() {
         <AdminGate>
             <main className="admin-products w-full space-y-3 text-gray-900 dark:text-gray-100">
                 <div className="admin-products__panel rounded-lg bg-white p-4 dark:bg-gray-900">
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-2xl font-bold mb-6">
                         {t('admin.productsPage.title') || 'Товары: управление'}
                     </h1>
                     <div className="space-y-6">
+                        <NewProductForm title={t('admin.productsPage.addBtn')} />
                         <ProductsToolbar
                             searchQuery={admin.searchQuery}
                             onSearchChange={admin.setSearchQuery}
@@ -37,8 +38,6 @@ export default function AdminProductsPage() {
                             onRestoreArchive={admin.handleRestoreProduct}
                             onDeleteArchive={admin.handlePurgeArchivedProduct}
                         />
-                        {/* ArchivePanel теперь рендерится только внутри Dialog через ProductsToolbar */}
-                        <NewProductForm title={t('admin.productsPage.addBtn')} />
                         <hr className="my-8 border-t border-gray-200 dark:border-gray-700" />
                         <div>
                             <h2 className="text-xl font-semibold mb-4">

@@ -417,3 +417,44 @@ export const updateUserTeamRole = (
   notifyAuthChanged()
   return { success: true, user: updatedUser }
 }
+
+const TEST_ADMIN_ID = 'seed_admin_001'
+const TEST_USER_ID = 'seed_user_001'
+
+export const seedTestAccounts = (): void => {
+  if (typeof window === 'undefined') return
+
+  const users = readUsers()
+
+  const hasAdmin = users.some((u) => u.id === TEST_ADMIN_ID || u.platformRole === 'admin')
+  const hasTestUser = users.some((u) => u.id === TEST_USER_ID)
+
+  if (hasAdmin && hasTestUser) return
+
+  const next = [...users]
+
+  if (!hasAdmin) {
+    next.push(normalizeUser({
+      id: TEST_ADMIN_ID,
+      email: 'admin@test.com',
+      password: 'admin123',
+      name: 'Test Admin',
+      platformRole: 'admin',
+      auditLoggingEnabled: true,
+      bonusPoints: 0,
+    }))
+  }
+
+  if (!hasTestUser) {
+    next.push(normalizeUser({
+      id: TEST_USER_ID,
+      email: 'user@test.com',
+      password: 'user123',
+      name: 'Test User',
+      platformRole: 'customer',
+      bonusPoints: 350,
+    }))
+  }
+
+  writeUsers(next)
+}

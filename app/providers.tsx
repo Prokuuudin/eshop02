@@ -5,9 +5,14 @@ import { I18nProvider } from '@/lib/i18n-context'
 import { ToastProvider } from '@/lib/toast-context'
 import { useWishlist } from '@/lib/wishlist-store'
 import { useCart } from '@/lib/cart-store'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser, seedTestAccounts } from '@/lib/auth'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
+
+function SeedAccounts(): null {
+  useEffect(() => { seedTestAccounts() }, [])
+  return null
+}
 
 function WishlistScopeSync(): null {
   useEffect(() => {
@@ -87,6 +92,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
   return (
     <I18nProvider>
       <ToastProvider>
+        <SeedAccounts />
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />

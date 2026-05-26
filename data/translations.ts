@@ -345,7 +345,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // 'benefits.support': 'Поддержка специалистов',
     'benefits.consult': 'Консультации профессионалов по подбору средств',
     'brands.title': 'Наши бренды',
-    'brands.popular': 'Наиболее популярные бренды',
+    'brands.popular': 'Бренды в дистрибуции',
     'brands.showAll': 'Показать все бренды',
     'brands.hideAll': 'Скрыть все, кроме наиболее популярных',
     'brands.viewAlphabetical': 'Показать все бренды по алфавиту',
@@ -3278,7 +3278,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Brands
     'brands.title': 'Popular Brands',
-    'brands.popular': 'Most popular brands',
+    'brands.popular': 'Brands in distribution',
     'brands.showAll': 'Show all brands',
     'brands.hideAll': 'Hide all except the most popular',
     'brands.viewAlphabetical': 'Show brands alphabetically',
@@ -4916,7 +4916,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Brands
     'brands.title': 'Populāras zīmoles',
-    'brands.popular': 'Vispopulārākie zīmoli',
+    'brands.popular': 'Zīmoli distribūcijā',
     'brands.showAll': 'Rādīt visus zīmolus',
     'brands.hideAll': 'Paslēpt visus, izņemot vispopulārākos',
     'brands.viewAlphabetical': 'Rādīt zīmolus alfabētiski',

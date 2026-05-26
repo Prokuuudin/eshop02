@@ -1,8 +1,13 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/use-translation'
 import Link from 'next/link'
 import { Button } from './ui/button'
+import { getCurrentUser, type User } from '@/lib/auth'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog'
+import LoginForm from './auth/LoginForm'
+import RegisterSwitcher from './auth/RegisterSwitcher'
+import ForgotPasswordForm from './auth/ForgotPasswordForm'
 
 type Props = {
   isOpen: boolean
@@ -21,6 +26,24 @@ const CATEGORIES = [
 export default function MobileMenu({ isOpen, onClose }: Props) {
   const { t } = useTranslation();
   const [expandCategories, setExpandCategories] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setUser(getCurrentUser());
+    sync();
+    window.addEventListener('eshop-user-changed', sync);
+    return () => window.removeEventListener('eshop-user-changed', sync);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    setUser(getCurrentUser());
+    setLoginOpen(false);
+    setForgotOpen(false);
+    onClose();
+  };
   const menuLinkClass =
     'inline-flex w-full items-center rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60';
 
@@ -113,10 +136,53 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
           <Link href="/cart" onClick={onClose} className="w-full">
             <Button className="w-full">{t('nav.cart')}</Button>
           </Link>
-          <Link href="/account" onClick={onClose} className="w-full">
-            <Button className="w-full">{t('nav.account')}</Button>
-          </Link>
+          {user ? (
+            <Link href="/account" onClick={onClose} className="w-full">
+              <Button variant="outline" className="w-full">{t('nav.account')}</Button>
+            </Link>
+          ) : (
+            <>
+              <Button variant="outline" className="w-full" onClick={() => setLoginOpen(true)}>
+                {t('auth.login')}
+              </Button>
+              <Button className="w-full" onClick={() => setRegisterOpen(true)}>
+                {t('auth.registerButton', t('auth.register'))}
+              </Button>
+            </>
+          )}
         </div>
+
+        <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('auth.login')}</DialogTitle>
+            </DialogHeader>
+            <LoginForm
+              onSuccess={handleLoginSuccess}
+              onForgotPassword={() => { setLoginOpen(false); setForgotOpen(true); }}
+            />
+            <DialogClose asChild>
+              <Button variant="outline" className="mt-4 w-full">{t('common.close')}</Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
+            </DialogHeader>
+            <ForgotPasswordForm />
+            <DialogClose asChild>
+              <Button variant="outline" className="mt-4 w-full">{t('common.close')}</Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+          <DialogContent>
+            <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
+            <RegisterSwitcher onClose={() => { setRegisterOpen(false); onClose(); }} />
+          </DialogContent>
+        </Dialog>
 
         {/* Social media links */}
         <div className="header__menu-social mt-6 flex justify-center gap-4">

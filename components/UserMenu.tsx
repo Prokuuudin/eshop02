@@ -79,8 +79,79 @@ export default function UserMenu() {
         return () => document.removeEventListener('mousedown', handleClick);
     }, [isOpen, loginOpen, registerOpen, forgotOpen]);
 
+    // Диалоги логина/регистрации монтируются всегда, чтобы открываться из любой точки
+    const dialogs = (
+        <>
+            <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('auth.login')}</DialogTitle>
+                    </DialogHeader>
+                    <LoginForm
+                        onSuccess={handleLoginSuccess}
+                        onForgotPassword={handleOpenForgotPassword}
+                    />
+                    <DialogClose asChild>
+                        <Button variant="outline" className="mt-4 w-full">
+                            {t('common.close')}
+                        </Button>
+                    </DialogClose>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
+                    </DialogHeader>
+                    <ForgotPasswordForm />
+                    <DialogClose asChild>
+                        <Button variant="outline" className="mt-4 w-full">
+                            {t('common.close')}
+                        </Button>
+                    </DialogClose>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+                <DialogContent>
+                    <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
+                    <RegisterSwitcher onClose={() => setRegisterOpen(false)} />
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+
+    if (!user) {
+        return (
+            <div className="user-menu flex items-center gap-2">
+                {dialogs}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLoginOpen(true)}
+                >
+                    {t('auth.login')}
+                </Button>
+                <Button
+                    size="sm"
+                    onClick={() => setRegisterOpen(true)}
+                >
+                    {t('auth.registerButton', t('auth.register'))}
+                </Button>
+                {setupRequired && (
+                    <Link
+                        href="/auth/admin-setup"
+                        className="text-xs text-amber-700 dark:text-amber-400 hover:underline"
+                    >
+                        Настройка admin
+                    </Link>
+                )}
+            </div>
+        );
+    }
+
     return (
-        <div className="relative" ref={menuRef}>
+        <div className="user-menu relative" ref={menuRef}>
+            {dialogs}
             <TooltipProvider delayDuration={150}>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -89,7 +160,7 @@ export default function UserMenu() {
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                             aria-label={t('userMenu.aria')}
                         >
-                            {user?.avatarUrl ? (
+                            {user.avatarUrl ? (
                                 <Image
                                     src={user.avatarUrl}
                                     alt={user.name || 'avatar'}
@@ -121,11 +192,9 @@ export default function UserMenu() {
                                     />
                                 </svg>
                             )}
-                            {user && (
-                                <span className="text-sm font-medium hidden sm:inline text-gray-900 dark:text-gray-100">
-                                    {user.name || user.email.split('@')[0]}
-                                </span>
-                            )}
+                            <span className="text-sm font-medium hidden sm:inline text-gray-900 dark:text-gray-100">
+                                {user.name || user.email.split('@')[0]}
+                            </span>
                         </button>
                     </TooltipTrigger>
                     <TooltipContent>{t('nav.account')}</TooltipContent>
@@ -134,110 +203,40 @@ export default function UserMenu() {
 
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                    {user ? (
-                        <>
-                            {/* Имя и почта удалены по требованию */}
-                            <nav className="py-2">
-                                <Link
-                                    href="/account"
-                                    className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
-                                >
-                                    {t('account.title')}
-                                </Link>
-                                {user.platformRole !== 'admin' && (
-                                    <Link
-                                        href="/account#orders-history"
-                                        className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
-                                    >
-                                        {t('account.myOrders')}
-                                    </Link>
-                                )}
-                                {canAccessAdminPanel(user) && (
-                                    <Link
-                                        href="/admin"
-                                        className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
-                                    >
-                                        {t('nav.admin')}
-                                    </Link>
-                                )}
-                            </nav>
-                            <div className="border-t px-4 py-2 border-gray-200 dark:border-gray-700">
-                                <Button
-                                    onClick={handleLogout}
-                                    variant="outline"
-                                    className="w-full text-sm"
-                                    size="sm"
-                                >
-                                    {t('auth.logout')}
-                                </Button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="p-2 space-y-2">
-                                <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => setLoginOpen(true)}
-                                        >
-                                            {t('auth.login')}
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>{t('auth.login')}</DialogTitle>
-                                        </DialogHeader>
-                                        <LoginForm
-                                            onSuccess={handleLoginSuccess}
-                                            onForgotPassword={handleOpenForgotPassword}
-                                        />
-                                        <DialogClose asChild>
-                                            <Button variant="outline" className="mt-4 w-full">
-                                                {t('common.close')}
-                                            </Button>
-                                        </DialogClose>
-                                    </DialogContent>
-                                </Dialog>
-                                <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
-                                        </DialogHeader>
-                                        <ForgotPasswordForm />
-                                        <DialogClose asChild>
-                                            <Button variant="outline" className="mt-4 w-full">
-                                                {t('common.close')}
-                                            </Button>
-                                        </DialogClose>
-                                    </DialogContent>
-                                </Dialog>
-                                <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => setRegisterOpen(true)}
-                                        >
-                                            {t('auth.registerButton', t('auth.register'))}
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
-<RegisterSwitcher onClose={() => setRegisterOpen(false)} />
-                                    </DialogContent>
-                                </Dialog>
-                                {setupRequired && (
-                                    <Link
-                                        href="/auth/admin-setup"
-                                        className="block text-center text-xs text-amber-700 dark:text-amber-400 hover:underline"
-                                    >
-                                        Первичная настройка admin
-                                    </Link>
-                                )}
-                            </div>
-                        </>
-                    )}
+                    <nav className="py-2">
+                        <Link
+                            href="/account"
+                            className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                        >
+                            {t('account.title')}
+                        </Link>
+                        {user.platformRole !== 'admin' && (
+                            <Link
+                                href="/account#orders-history"
+                                className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                            >
+                                {t('account.myOrders')}
+                            </Link>
+                        )}
+                        {canAccessAdminPanel(user) && (
+                            <Link
+                                href="/admin"
+                                className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                            >
+                                {t('nav.admin')}
+                            </Link>
+                        )}
+                    </nav>
+                    <div className="border-t px-4 py-2 border-gray-200 dark:border-gray-700">
+                        <Button
+                            onClick={handleLogout}
+                            variant="outline"
+                            className="w-full text-sm"
+                            size="sm"
+                        >
+                            {t('auth.logout')}
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>

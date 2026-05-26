@@ -12,7 +12,6 @@ import { translations, type Language } from '@/data/translations';
 import HomeClient from '../components/HomeClient';
 import Stores from '../components/Stores';
 import HomeRetailBanner from '../components/HomeRetailBanner';
-import ActivitySection from '../components/ActivitySection';
 
 const resolveLanguageFromHeader = (acceptLanguage: string | null): Language => {
     const normalized = (acceptLanguage ?? '').toLowerCase();
@@ -56,12 +55,11 @@ export default async function Home() {
         <>
             <Hero />
             <Benefits />
-            <BonusSection />
             <BestsellersSection />
             <Categories />
             <Brands />
             <Promo />
-            <ActivitySection />
+            <BonusSection />
             <FAQSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />

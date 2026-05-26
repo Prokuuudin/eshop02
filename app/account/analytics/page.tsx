@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
   const { language, t } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const currentUser = getCurrentUser()
-  const analytics = getUserPurchaseAnalytics()
+  const analytics = getUserPurchaseAnalytics(currentUser?.email)
 
   const summaryCards = [
     {

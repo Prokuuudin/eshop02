@@ -36,11 +36,15 @@ export interface CompanyAnalytics extends PurchaseAnalytics {
 }
 
 /**
- * Get purchase analytics for current user
+ * Get purchase analytics for a specific user (filtered by email).
+ * Pass undefined to get store-wide analytics (admin use only).
  */
-export function getUserPurchaseAnalytics(): PurchaseAnalytics {
-  const orders = useOrders.getState().orders
-  
+export function getUserPurchaseAnalytics(userEmail?: string): PurchaseAnalytics {
+  const allOrders = useOrders.getState().orders
+  const orders = userEmail
+    ? allOrders.filter((o) => o.email.toLowerCase() === userEmail.toLowerCase())
+    : allOrders
+
   if (orders.length === 0) {
     return {
       totalOrders: 0,

@@ -70,12 +70,12 @@ export const AccountWishlistWidget: React.FC = () => {
                 </p>
             )}
 
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-pink-600 dark:text-pink-400">
-                {total > 0
-                    ? t('wishlist.openList', 'Открыть список')
-                    : t('wishlist.browse', 'Перейти в каталог')}
-                <ChevronRight className="h-3.5 w-3.5" />
-            </span>
+            {total > 0 && (
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-pink-600 dark:text-pink-400">
+                    {t('wishlist.openList', 'Открыть список')}
+                    <ChevronRight className="h-3.5 w-3.5" />
+                </span>
+            )}
         </Link>
     );
 };

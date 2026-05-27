@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { getCurrentUser, readUsers, writeUsers, writeCurrentUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 
-export const AccountPasswordSection: React.FC = () => {
+export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ defaultOpen = false }) => {
     const { t } = useTranslation();
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(defaultOpen);
     const [current, setCurrent] = useState('');
     const [next, setNext] = useState('');
     const [confirm, setConfirm] = useState('');

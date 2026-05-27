@@ -206,13 +206,22 @@ export default function UserMenu() {
                     <nav className="py-2">
                         <Link
                             href="/account"
+                            onClick={() => setIsOpen(false)}
                             className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
                         >
                             {t('account.title')}
                         </Link>
+                        <Link
+                            href="/account/profile"
+                            onClick={() => setIsOpen(false)}
+                            className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                        >
+                            {t('account.myProfile', 'Мой профиль')}
+                        </Link>
                         {canAccessAdminPanel(user) && (
                             <Link
                                 href="/admin"
+                                onClick={() => setIsOpen(false)}
                                 className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
                             >
                                 {t('nav.admin')}

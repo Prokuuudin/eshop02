@@ -28,6 +28,7 @@ const segmentLabelKeys: Record<string, string> = {
     about: 'nav.about',
     contact: 'nav.contact',
     account: 'nav.account',
+    profile: 'account.profile',
     analytics: 'account.analyticsTitle',
     invoices: 'account.invoicesTitle',
     wishlist: 'nav.wishlist',

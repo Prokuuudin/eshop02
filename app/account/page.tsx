@@ -1,6 +1,6 @@
 'use client';
 
-import AccountProfileCard from '@/components/account/AccountProfileCard';
+import AccountProfileSummary from '@/components/account/AccountProfileSummary';
 import AccountBonusCard from '@/components/account/AccountBonusCard';
 import { useCompanyStore } from '@/lib/company-store';
 import AccountSummaryCards from '@/components/account/AccountSummaryCards';
@@ -15,11 +15,9 @@ import { AccountViewedProductsWidget } from '@/components/account/AccountViewedP
 import { AccountReturnsSection } from '@/components/account/AccountReturnsSection';
 import { AccountStockNotificationsSection } from '@/components/account/AccountStockNotificationsSection';
 import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
-import { AccountPasswordSection } from '@/components/account/AccountPasswordSection';
 import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import B2BChat from '@/components/B2BChat';
 
-import { useAccountProfile } from '@/hooks/useAccountProfile';
 import { useAccountOrders } from '@/hooks/useAccountOrders';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { getAccountTools } from '@/hooks/useAccountTools';
@@ -29,13 +27,12 @@ import { useOrders } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 
 import { useSavedAddresses } from '@/lib/saved-addresses-store';
-import { getCurrentUser, readUsers, writeUsers, writeCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 import type { User } from '@/lib/auth';
 import React from 'react';
-import { ClipboardList } from 'lucide-react';
 
 export default function AccountPage(): React.ReactElement {
     const { t, language, tl } = useLocaleHelpers();
@@ -64,7 +61,6 @@ export default function AccountPage(): React.ReactElement {
     const savedAddresses = user?.email ? getByEmail(user.email) : [];
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
     useSubscriptionReminders(user?.id ?? null);
-    const profile = useAccountProfile(user, t, readUsers, writeUsers, writeCurrentUser);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');
     const orders = useAccountOrders(userOrders, getOrderStatus, orderFilter);
     const accountTools = getAccountTools(user, tl);
@@ -77,7 +73,6 @@ export default function AccountPage(): React.ReactElement {
         locale
     );
 
-    // Возвраты только после всех хуков и useEffect
     if (loading) {
         return (
             <main className="w-full px-4 py-12">
@@ -100,17 +95,8 @@ export default function AccountPage(): React.ReactElement {
             <div className="mx-auto max-w-7xl">
                 <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
                     <aside className="xl:col-span-4">
-                        <AccountProfileCard
+                        <AccountProfileSummary
                             user={{ ...user, cardNumber: company?.cardNumber }}
-                            isEditing={profile.isEditingProfile}
-                            profileDraft={profile.profileDraft}
-                            profileErrors={profile.profileErrors}
-                            onEdit={profile.startEditingProfile}
-                            onCancel={profile.cancelEditingProfile}
-                            onSave={profile.saveProfile}
-                            onChange={(field, value) =>
-                                profile.setProfileDraft({ ...profile.profileDraft, [field]: value })
-                            }
                             t={t}
                             tl={tl}
                         />
@@ -125,11 +111,6 @@ export default function AccountPage(): React.ReactElement {
                         <div className="mt-4">
                             <AccountSummaryCards summaryCards={summaryCards} />
                         </div>
-                        {!isAdmin && (
-                            <div className="mt-4">
-                                <AccountPasswordSection />
-                            </div>
-                        )}
                     </aside>
                     <div className="space-y-6 xl:col-span-8">
                         <AccountNotificationsSection />

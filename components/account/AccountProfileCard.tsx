@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import React from 'react';
 import { UserCircle2, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -31,9 +30,6 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     t,
     tl,
 }) => {
-    // Состояния для показа/скрытия пароля
-    const [showPassword, setShowPassword] = useState(false);
-    const [showRepeatPassword, setShowRepeatPassword] = useState(false);
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
@@ -137,156 +133,78 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                 </>
             ) : (
                 <form
-                    className="account-profile__form space-y-3 mt-2"
+                    className="account-profile__form mt-2"
                     onSubmit={(e) => {
                         e.preventDefault();
                         onSave();
                     }}
                 >
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            {t('account.name')}
-                        </label>
-                        <Input
-                            className={`account-profile__input ${
-                                profileErrors.name
-                                    ? 'account-profile__input--error border-red-500'
-                                    : ''
-                            }`}
-                            value={profileDraft.name}
-                            onChange={(e) => onChange('name', e.target.value)}
-                        />
-                        {profileErrors.name && (
-                            <p className="account-profile__error text-red-600 text-xs">
-                                {profileErrors.name}
-                            </p>
-                        )}
-                    </div>
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            Email
-                        </label>
-                        <Input
-                            className={`account-profile__input ${
-                                profileErrors.email
-                                    ? 'account-profile__input--error border-red-500'
-                                    : ''
-                            }`}
-                            value={profileDraft.email}
-                            onChange={(e) => onChange('email', e.target.value)}
-                        />
-                        {profileErrors.email && (
-                            <p className="account-profile__error text-red-600 text-xs">
-                                {profileErrors.email}
-                            </p>
-                        )}
-                    </div>
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            {t('account.phone', 'Телефон')}
-                        </label>
-                        <PhoneInput
-                            className={profileErrors.phone ? 'account-profile__input--error' : ''}
-                            value={profileDraft.phone || ''}
-                            onChange={(val) => onChange('phone', val)}
-                        />
-                        {profileErrors.phone && (
-                            <p className="account-profile__error text-red-600 text-xs">
-                                {profileErrors.phone}
-                            </p>
-                        )}
-                    </div>
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            {t('account.company')}
-                        </label>
-                        <Input
-                            className="account-profile__input"
-                            value={profileDraft.companyName}
-                            onChange={(e) => onChange('companyName', e.target.value)}
-                        />
-                    </div>
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            {t('account.passwordNew')}
-                        </label>
-                        <div className="relative flex items-center">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="account-profile__field">
+                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                                {t('account.name')}
+                            </label>
                             <Input
-                                type={showPassword ? 'text' : 'password'}
-                                className={`account-profile__input pr-10 ${
-                                    profileErrors.password
+                                className={`account-profile__input ${
+                                    profileErrors.name
                                         ? 'account-profile__input--error border-red-500'
                                         : ''
                                 }`}
-                                value={profileDraft.password}
-                                onChange={(e) => onChange('password', e.target.value)}
-                                placeholder={t('account.passwordNewPlaceholder')}
+                                value={profileDraft.name}
+                                onChange={(e) => onChange('name', e.target.value)}
                             />
-                            <button
-                                type="button"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
-                                tabIndex={-1}
-                                onClick={() => setShowPassword((v) => !v)}
-                                aria-label={
-                                    showPassword
-                                        ? t('account.hidePassword')
-                                        : t('account.showPassword')
-                                }
-                            >
-                                {showPassword ? (
-                                    <EyeOff className="w-5 h-5" />
-                                ) : (
-                                    <Eye className="w-5 h-5" />
-                                )}
-                            </button>
+                            {profileErrors.name && (
+                                <p className="account-profile__error text-red-600 text-xs">
+                                    {profileErrors.name}
+                                </p>
+                            )}
                         </div>
-                        {profileErrors.password && (
-                            <p className="account-profile__error text-red-600 text-xs">
-                                {profileErrors.password}
-                            </p>
-                        )}
-                    </div>
-                    <div className="account-profile__field">
-                        <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                            {t('account.passwordRepeat')}
-                        </label>
-                        <div className="relative flex items-center">
+                        <div className="account-profile__field">
+                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                                Email
+                            </label>
                             <Input
-                                type={showRepeatPassword ? 'text' : 'password'}
-                                className={`account-profile__input pr-10 ${
-                                    profileErrors.passwordRepeat
+                                className={`account-profile__input ${
+                                    profileErrors.email
                                         ? 'account-profile__input--error border-red-500'
                                         : ''
                                 }`}
-                                value={profileDraft.passwordRepeat || ''}
-                                onChange={(e) => onChange('passwordRepeat', e.target.value)}
-                                placeholder={t('account.passwordRepeatPlaceholder')}
+                                value={profileDraft.email}
+                                onChange={(e) => onChange('email', e.target.value)}
                             />
-                            <button
-                                type="button"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
-                                tabIndex={-1}
-                                onClick={() => setShowRepeatPassword((v) => !v)}
-                                aria-label={
-                                    showRepeatPassword
-                                        ? t('account.hidePassword')
-                                        : t('account.showPassword')
-                                }
-                            >
-                                {showRepeatPassword ? (
-                                    <EyeOff className="w-5 h-5" />
-                                ) : (
-                                    <Eye className="w-5 h-5" />
-                                )}
-                            </button>
+                            {profileErrors.email && (
+                                <p className="account-profile__error text-red-600 text-xs">
+                                    {profileErrors.email}
+                                </p>
+                            )}
                         </div>
-                        {profileErrors.passwordRepeat && (
-                            <p className="account-profile__error text-red-600 text-xs">
-                                {profileErrors.passwordRepeat}
-                            </p>
-                        )}
+                        <div className="account-profile__field">
+                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                                {t('account.phone', 'Телефон')}
+                            </label>
+                            <PhoneInput
+                                className={profileErrors.phone ? 'account-profile__input--error' : ''}
+                                value={profileDraft.phone || ''}
+                                onChange={(val) => onChange('phone', val)}
+                            />
+                            {profileErrors.phone && (
+                                <p className="account-profile__error text-red-600 text-xs">
+                                    {profileErrors.phone}
+                                </p>
+                            )}
+                        </div>
+                        <div className="account-profile__field">
+                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                                {t('account.company')}
+                            </label>
+                            <Input
+                                className="account-profile__input"
+                                value={profileDraft.companyName}
+                                onChange={(e) => onChange('companyName', e.target.value)}
+                            />
+                        </div>
                     </div>
-                    <div className="account-profile__actions flex gap-2 mt-2">
+                    <div className="account-profile__actions flex gap-2 mt-4">
                         <Button size="sm" variant="outline" type="button" onClick={onCancel}>
                             {t('common.cancel')}
                         </Button>

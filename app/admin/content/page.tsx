@@ -155,6 +155,9 @@ export default function AdminContentPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/admin/content/banners">
+            <Button variant="outline">Баннеры и блоки</Button>
+          </Link>
           <Link href="/admin">
             <Button variant="outline">Назад в админку</Button>
           </Link>

@@ -1,0 +1,5 @@
+[
+  { "id": "pc-1", "code": "WELCOME10", "discount": 10, "minOrder": 0, "maxUses": null, "usedCount": 0, "expiresAt": null, "active": true, "description": "Приветственная скидка" },
+  { "id": "pc-2", "code": "SPRING20", "discount": 20, "minOrder": 20, "maxUses": 100, "usedCount": 0, "expiresAt": null, "active": true, "description": "Весенняя акция" },
+  { "id": "pc-3", "code": "BEAUTY30", "discount": 30, "minOrder": 50, "maxUses": 50, "usedCount": 0, "expiresAt": null, "active": false, "description": "VIP скидка" }
+]

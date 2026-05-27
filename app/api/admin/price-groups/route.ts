@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getPriceGroups, createPriceGroup, readPriceGroupsData } from '@/lib/price-groups-server-store'
+
+export const runtime = 'nodejs'
+
+export async function GET() {
+  try {
+    const data = await readPriceGroupsData()
+    return NextResponse.json(data)
+  } catch {
+    return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, description, multiplier, color } = body
+    if (!name || multiplier == null) {
+      return NextResponse.json({ error: 'name_and_multiplier_required' }, { status: 400 })
+    }
+    const result = await createPriceGroup({
+      name,
+      description: description ?? '',
+      multiplier: Number(multiplier),
+      color: color ?? '#6b7280',
+    })
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
+    return NextResponse.json(result.group, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'create_failed' }, { status: 500 })
+  }
+}

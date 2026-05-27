@@ -1,0 +1,13 @@
+{
+  "delivery": {
+    "courier": { "enabled": true, "price": 5.99, "freeFrom": 50, "label": "Курьер" },
+    "pickup": { "enabled": true, "price": 0, "freeFrom": 0, "label": "Самовывоз" },
+    "post": { "enabled": true, "price": 3.99, "freeFrom": 30, "label": "Почта" }
+  },
+  "payment": {
+    "card": { "enabled": true, "label": "Банковская карта" },
+    "cash": { "enabled": true, "label": "Наличные" },
+    "online": { "enabled": true, "label": "Онлайн (Stripe)" },
+    "invoice": { "enabled": false, "label": "По счёту (B2B)" }
+  }
+}

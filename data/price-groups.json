@@ -1,0 +1,29 @@
+{
+  "groups": [
+    {
+      "id": "retail",
+      "name": "Розница",
+      "description": "Стандартные розничные цены",
+      "multiplier": 1.0,
+      "color": "#6b7280",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "wholesale",
+      "name": "Оптовый",
+      "description": "Скидка 15% для оптовых покупателей",
+      "multiplier": 0.85,
+      "color": "#059669",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "vip",
+      "name": "VIP",
+      "description": "Специальные цены для VIP клиентов",
+      "multiplier": 0.75,
+      "color": "#7c3aed",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "overrides": []
+}

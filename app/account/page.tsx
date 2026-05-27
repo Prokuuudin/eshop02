@@ -17,6 +17,7 @@ import { AccountStockNotificationsSection } from '@/components/account/AccountSt
 import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
 import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import B2BChat from '@/components/B2BChat';
+import AdminAccountDashboard from '@/components/admin/AdminAccountDashboard';
 
 import { useAccountOrders } from '@/hooks/useAccountOrders';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
@@ -89,6 +90,16 @@ export default function AccountPage(): React.ReactElement {
     }
 
     const company = user?.companyId ? companyStore.getCompany(user.companyId) : null;
+
+    if (isAdmin) {
+        return (
+            <main className="w-full px-4 py-12">
+                <div className="mx-auto max-w-7xl">
+                    <AdminAccountDashboard user={user} />
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="w-full px-4 py-12">

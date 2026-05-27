@@ -210,14 +210,6 @@ export default function UserMenu() {
                         >
                             {t('account.title')}
                         </Link>
-                        {user.platformRole !== 'admin' && (
-                            <Link
-                                href="/account#orders-history"
-                                className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
-                            >
-                                {t('account.myOrders')}
-                            </Link>
-                        )}
                         {canAccessAdminPanel(user) && (
                             <Link
                                 href="/admin"

@@ -10,6 +10,12 @@ import { AccountAddressesWidget } from '@/components/account/AccountAddressesWid
 import { AccountTemplatesWidget } from '@/components/account/AccountTemplatesWidget';
 import AccountOrdersSection from '@/components/account/AccountOrdersSection';
 import { AccountSubscriptionsSection } from '@/components/account/AccountSubscriptionsSection';
+import { AccountWishlistWidget } from '@/components/account/AccountWishlistWidget';
+import { AccountViewedProductsWidget } from '@/components/account/AccountViewedProductsWidget';
+import { AccountReturnsSection } from '@/components/account/AccountReturnsSection';
+import { AccountStockNotificationsSection } from '@/components/account/AccountStockNotificationsSection';
+import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
+import { AccountPasswordSection } from '@/components/account/AccountPasswordSection';
 import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import B2BChat from '@/components/B2BChat';
 
@@ -119,14 +125,24 @@ export default function AccountPage(): React.ReactElement {
                         <div className="mt-4">
                             <AccountSummaryCards summaryCards={summaryCards} />
                         </div>
+                        {!isAdmin && (
+                            <div className="mt-4">
+                                <AccountPasswordSection />
+                            </div>
+                        )}
                     </aside>
                     <div className="space-y-6 xl:col-span-8">
                         <AccountNotificationsSection />
                         <AccountToolsSection accountTools={accountTools}>
                             {!isAdmin && <AccountAddressesWidget />}
                             {!isAdmin && <AccountTemplatesWidget />}
+                            {!isAdmin && <AccountWishlistWidget />}
+                            {!isAdmin && <AccountViewedProductsWidget />}
                         </AccountToolsSection>
                         {!isAdmin && <AccountSubscriptionsSection />}
+                        {!isAdmin && <AccountStockNotificationsSection />}
+                        {!isAdmin && <AccountReturnsSection />}
+                        {!isAdmin && <AccountReviewsSection />}
                         {!isAdmin && (
                             <AccountOrdersSection
                                 userOrders={userOrders}

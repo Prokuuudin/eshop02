@@ -31,7 +31,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     tl,
 }) => {
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
             <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
                 <div className="account-profile__avatar flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm overflow-hidden relative">
                     {(isEditing ? profileDraft?.avatarUrl : user.avatarUrl) ? (

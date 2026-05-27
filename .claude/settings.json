@@ -9,7 +9,14 @@
       "Read(//mnt/c/Users/User/Desktop/**)",
       "Bash(npm run *)",
       "Bash(curl -s http://localhost:3000)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(promo-campaigns)",
+      "Bash(showcases)",
+      "Bash(shipping-settings\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\data\" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"promo-codes|promo-campaigns|showcases|shipping-settings\" } | Select-Object Name)",
+      "Bash(git merge *)",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\data\")",
+      "Bash(Select-Object Name)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"

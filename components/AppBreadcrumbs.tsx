@@ -22,27 +22,80 @@ interface Crumb {
 }
 
 const segmentLabelKeys: Record<string, string> = {
+    // Public navigation
     catalog: 'nav.catalog',
     categories: 'categories.title',
     blog: 'nav.blog',
     about: 'nav.about',
-    contact: 'nav.contact',
-    account: 'nav.account',
-    profile: 'account.profile',
-    analytics: 'account.analyticsTitle',
-    invoices: 'account.invoicesTitle',
+    contact: 'breadcrumb.contact',
     wishlist: 'nav.wishlist',
     cart: 'nav.cart',
-    admin: 'nav.admin',
-    products: 'admin.products',
     checkout: 'checkout.title',
     order: 'order.title',
     product: 'common.product',
     brand: 'nav.brands',
+    'delivery-payment': 'deliveryPayment.title',
+    // Auth
     auth: 'common.auth',
     login: 'auth.login',
     register: 'auth.register',
-    'delivery-payment': 'deliveryPayment.title',
+    // Account
+    account: 'nav.account',
+    profile: 'account.profile',
+    invoices: 'account.invoicesTitle',
+    addresses: 'breadcrumb.addresses',
+    templates: 'breadcrumb.templates',
+    integrations: 'breadcrumb.integrations',
+    webhooks: 'breadcrumb.webhooks',
+    'audit-logs': 'breadcrumb.auditLogs',
+    // Admin — top level
+    admin: 'nav.admin',
+    // Admin — catalog
+    products: 'admin.products',
+    brands: 'nav.brands',
+    import: 'breadcrumb.import',
+    reviews: 'breadcrumb.reviews',
+    'stock-alerts': 'breadcrumb.stockAlerts',
+    'bulk-price': 'breadcrumb.bulkPrice',
+    // Admin — sales
+    sales: 'breadcrumb.sales',
+    orders: 'breadcrumb.orders',
+    rfq: 'breadcrumb.rfq',
+    returns: 'breadcrumb.returns',
+    // Admin — customers
+    customers: 'breadcrumb.customers',
+    accounts: 'breadcrumb.accounts',
+    'client-barcodes': 'breadcrumb.clientBarcodes',
+    segments: 'breadcrumb.segments',
+    history: 'breadcrumb.history',
+    // Admin — marketing
+    marketing: 'breadcrumb.marketing',
+    campaigns: 'breadcrumb.campaigns',
+    discounts: 'breadcrumb.discounts',
+    showcases: 'breadcrumb.showcases',
+    analytics: 'breadcrumb.analytics',
+    'price-groups': 'breadcrumb.priceGroups',
+    // Admin — content
+    content: 'breadcrumb.content',
+    media: 'breadcrumb.media',
+    banners: 'breadcrumb.banners',
+    // Admin — config
+    config: 'breadcrumb.config',
+    shipping: 'breadcrumb.shipping',
+    bonus: 'breadcrumb.bonus',
+    locale: 'breadcrumb.locale',
+    'email-templates': 'breadcrumb.emailTemplates',
+    // Admin — system
+    system: 'breadcrumb.system',
+    users: 'breadcrumb.users',
+    logs: 'breadcrumb.logs',
+    backup: 'breadcrumb.backup',
+    // Admin — help
+    help: 'breadcrumb.help',
+    knowledge: 'breadcrumb.knowledge',
+    onboarding: 'breadcrumb.onboarding',
+    faq: 'breadcrumb.faq',
+    support: 'breadcrumb.support',
 };
 
 function normalizeSegment(segment: string): string {

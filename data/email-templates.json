@@ -1,0 +1,52 @@
+{
+  "templates": [
+    {
+      "id": "order-confirmation",
+      "name": "Подтверждение заказа",
+      "subject": "Ваш заказ №{{order_id}} принят",
+      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Ваш заказ <strong>№{{order_id}}</strong> успешно оформлен.</p>\n<p><strong>Сумма заказа:</strong> {{total}} ₽</p>\n<p>Мы свяжемся с вами в ближайшее время для подтверждения деталей доставки.</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "order-shipped",
+      "name": "Заказ отправлен",
+      "subject": "Ваш заказ №{{order_id}} отправлен",
+      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Ваш заказ <strong>№{{order_id}}</strong> передан в службу доставки.</p>\n<p><strong>Трек-номер:</strong> {{tracking_number}}</p>\n<p>Ожидаемая дата доставки: {{delivery_date}}</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["order_id", "first_name", "tracking_number", "delivery_date"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "order-delivered",
+      "name": "Заказ доставлен",
+      "subject": "Ваш заказ №{{order_id}} доставлен",
+      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Ваш заказ <strong>№{{order_id}}</strong> успешно доставлен.</p>\n<p>Надеемся, что вы довольны покупкой! Будем рады вашему отзыву.</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["order_id", "first_name"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "registration",
+      "name": "Регистрация",
+      "subject": "Добро пожаловать в {{store_name}}!",
+      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Вы успешно зарегистрировались в магазине <strong>{{store_name}}</strong>.</p>\n<p><strong>Ваш логин:</strong> {{email}}</p>\n<p>Теперь вы можете оформлять заказы и отслеживать их статус в личном кабинете.</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["first_name", "email", "store_name"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "password-reset",
+      "name": "Сброс пароля",
+      "subject": "Сброс пароля для {{email}}",
+      "body": "<h2>Здравствуйте!</h2>\n<p>Мы получили запрос на сброс пароля для аккаунта <strong>{{email}}</strong>.</p>\n<p>Для установки нового пароля перейдите по ссылке:</p>\n<p><a href=\"{{reset_link}}\">Сбросить пароль</a></p>\n<p>Ссылка действительна в течение 24 часов. Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["email", "reset_link"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "rfq-response",
+      "name": "Ответ на RFQ",
+      "subject": "Ответ на ваш запрос котировок №{{rfq_id}}",
+      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Мы рассмотрели ваш запрос котировок <strong>№{{rfq_id}}</strong> и подготовили коммерческое предложение.</p>\n<p><strong>Итоговая стоимость:</strong> {{total}} ₽</p>\n<p>Для подтверждения заказа свяжитесь с нашим менеджером или ответьте на это письмо.</p>\n<p>С уважением,<br>Команда магазина</p>",
+      "variables": ["rfq_id", "first_name", "total"],
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}

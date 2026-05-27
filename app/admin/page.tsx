@@ -142,6 +142,13 @@ export default function AdminPage() {
                 </Link>
               </div>
               <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Баннеры и блоки</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Управление промо-баннерами и контентными блоками главной страницы</p>
+                <Link href="/admin/content/banners" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
+                </Link>
+              </div>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                 <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Design System</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Визуальный справочник токенов, компонентов и паттернов проекта</p>
                 <Link href="/admin/design-system" className="mt-auto">
@@ -153,6 +160,34 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{tl('admin.dashboard.cards.reviews.description', 'Просмотр, скрытие и модерация пользовательских отзывов', 'View, hide and moderate user reviews', 'Lietotaju atsauksmju skatisana, slegsana un moderacija')}</p>
                 <Link href="/admin/reviews" className="mt-auto">
                   <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">{tl('admin.dashboard.cards.reviews.open', 'Открыть модерацию отзывов', 'Open reviews moderation', 'Atvert atsauksmju moderaciju')} →</span>
+                </Link>
+              </div>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Скидки и купоны</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Управление промокодами: создание, редактирование, статистика использования</p>
+                <Link href="/admin/marketing/discounts" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
+                </Link>
+              </div>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Промо-кампании</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Создание и управление маркетинговыми кампаниями по категориям товаров</p>
+                <Link href="/admin/marketing/campaigns" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
+                </Link>
+              </div>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Подборки и витрины</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Тематические подборки товаров для витрин и спецстраниц</p>
+                <Link href="/admin/marketing/showcases" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
+                </Link>
+              </div>
+              <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Аналитика промо</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">Статистика использования промокодов, конверсия и эффективность скидок</p>
+                <Link href="/admin/marketing/analytics" className="mt-auto">
+                  <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Открыть →</span>
                 </Link>
               </div>
             </>

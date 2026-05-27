@@ -60,8 +60,8 @@ export default function AccountProfilePage(): React.ReactElement {
                     {t('account.profileHint', 'Здесь вы можете обновить личные данные и сменить пароль. Изменения сохраняются сразу после нажатия кнопки «Сохранить».')}
                 </p>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
+                    <div className="lg:col-span-2 flex flex-col [&>*]:flex-1">
                         <AccountProfileCard
                             user={user}
                             isEditing={profile.isEditingProfile}
@@ -77,7 +77,7 @@ export default function AccountProfilePage(): React.ReactElement {
                             tl={tl}
                         />
                     </div>
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 flex flex-col [&>*]:flex-1">
                         <AccountPasswordSection defaultOpen />
                     </div>
                 </div>

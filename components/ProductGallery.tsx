@@ -19,7 +19,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
     return (
         <div className="product-detail__image">
             {/* Галерея изображений */}
-            <div className="relative mx-auto w-1/2 aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="relative mx-auto w-full sm:w-1/2 aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                 {images.length > 0 && (
                     <Image
                         key={images[activeImage]}
@@ -27,7 +27,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                         alt={title}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 25vw"
+                        sizes="(max-width: 640px) 100vw, 50vw"
                     />
                 )}
             </div>

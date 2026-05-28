@@ -2,6 +2,9 @@ import { useCompanyStore } from '@/lib/company-store'
 import { useAccessRequestStore } from '@/lib/access-request-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 
+export const FIRST_LOGIN_PASSWORD =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD) || 'Welcome1!'
+
 export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 export type PlatformRole = 'customer' | 'admin'
 export type AdminAccessLevel = 'none' | 'manager' | 'admin'
@@ -21,8 +24,11 @@ export type User = {
   auditLoggingEnabled?: boolean // Should this user's actions be logged?
 
   phone?: string
+  cardNumber?: string // Клиентская карта для входа по номеру карты
   avatarUrl?: string // User profile photo (base64 or URL)
   bonusPoints?: number // Accumulated bonus balance
+  mustChangePassword?: boolean // Требует обязательной смены пароля при первом входе
+  isNewUser?: boolean // Новый пользователь — показать приветствие с предложением заполнить профиль
 }
 
 const USERS_KEY = 'eshop_users'
@@ -47,8 +53,11 @@ const normalizeUser = (user: Partial<User>): User => ({
   approvalRequired: user.approvalRequired,
   auditLoggingEnabled: user.auditLoggingEnabled,
   phone: user.phone,
+  cardNumber: user.cardNumber,
   avatarUrl: user.avatarUrl ?? '',
   bonusPoints: user.bonusPoints ?? 350,
+  mustChangePassword: user.mustChangePassword ?? false,
+  isNewUser: user.isNewUser ?? false,
 })
 
 const notifyAuthChanged = (): void => {
@@ -420,6 +429,148 @@ export const updateUserTeamRole = (
 
 const TEST_ADMIN_ID = 'seed_admin_001'
 const TEST_USER_ID = 'seed_user_001'
+
+export const registerCardUser = (data: {
+  cardNumber: string
+  name?: string
+  companyId: string
+  companyName: string
+}): { success: boolean; error?: string } => {
+  const users = readUsers()
+  const normalizedCard = normalizeCard(data.cardNumber)
+
+  if (users.some((u) => u.cardNumber && normalizeCard(u.cardNumber) === normalizedCard)) {
+    return { success: false, error: 'Аккаунт с этой картой уже зарегистрирован' }
+  }
+
+  const companyStore = useCompanyStore.getState()
+  const company = companyStore.getCompany(data.companyId)
+
+  // Генерируем внутренний email — клиенту он не показывается
+  const internalEmail = `card.${normalizedCard.toLowerCase()}@client.local`
+
+  const user: User = normalizeUser({
+    id: `u_${Date.now()}`,
+    email: internalEmail,
+    password: FIRST_LOGIN_PASSWORD,
+    name: data.name,
+    cardNumber: normalizedCard,
+    platformRole: 'customer',
+    companyId: data.companyId,
+    companyName: company?.companyName ?? data.companyName,
+    teamRole: 'buyer',
+    approvalRequired: company?.approvalWorkflowEnabled ?? false,
+    auditLoggingEnabled: true,
+    mustChangePassword: true,
+    isNewUser: true,
+  })
+
+  writeUsers([...users, user])
+
+  companyStore.addTeamMember(data.companyId, {
+    userId: user.id,
+    email: user.email,
+    role: 'buyer',
+    name: data.name || normalizedCard,
+    addedAt: new Date(),
+  })
+
+  writeCurrentUser(user)
+  notifyAuthChanged()
+  return { success: true }
+}
+
+export const clearNewUserFlag = (): void => {
+  const user = getCurrentUser()
+  if (!user) return
+  const users = readUsers()
+  const idx = users.findIndex((u) => u.id === user.id)
+  if (idx === -1) return
+  users[idx] = { ...users[idx], isNewUser: false }
+  writeUsers(users)
+  writeCurrentUser(users[idx])
+  notifyAuthChanged()
+}
+
+export const forceChangePassword = (newPassword: string): { success: boolean; error?: string } => {
+  const user = getCurrentUser()
+  if (!user) return { success: false, error: 'Не авторизован' }
+  if (newPassword.length < 6) {
+    return { success: false, error: 'Пароль должен быть не менее 6 символов' }
+  }
+  const users = readUsers()
+  const idx = users.findIndex((u) => u.id === user.id)
+  if (idx === -1) return { success: false, error: 'Пользователь не найден' }
+  users[idx] = { ...users[idx], password: newPassword, mustChangePassword: false }
+  writeUsers(users)
+  writeCurrentUser(users[idx])
+  notifyAuthChanged()
+  return { success: true }
+}
+
+const normalizeCard = (cardNumber: string): string =>
+  cardNumber.trim().replace(/\s+/g, '').toUpperCase()
+
+export const loginByCard = (cardNumber: string, password: string): { success: boolean; error?: string } => {
+  const users = readUsers()
+  const normalized = normalizeCard(cardNumber)
+  const user = users.find(
+    (u) => u.cardNumber && normalizeCard(u.cardNumber) === normalized && u.password === password
+  )
+  if (!user) return { success: false, error: 'Неверный номер карты или пароль' }
+  if (user.companyId) {
+    useCompanyStore.getState().setCurrentCompany(user.companyId)
+  }
+  writeCurrentUser(user)
+  notifyAuthChanged()
+  return { success: true }
+}
+
+export const loginUserAuto = (identifier: string, password: string): { success: boolean; error?: string } => {
+  if (identifier.includes('@')) {
+    return loginUser(identifier, password)
+  }
+  return loginByCard(identifier, password)
+}
+
+export type ActivatePayload = {
+  email: string
+  name?: string
+  cardNumber: string
+  phone?: string
+  password: string
+  companyId: string
+  companyName: string
+}
+
+export const activateRegistration = (data: ActivatePayload): { success: boolean; error?: string } => {
+  const users = readUsers()
+  if (findUserByEmail(users, data.email)) {
+    return { success: false, error: 'Пользователь с таким email уже существует' }
+  }
+
+  const companyStore = useCompanyStore.getState()
+  const company = companyStore.getCompany(data.companyId)
+
+  const user: User = normalizeUser({
+    id: `u_${Date.now()}`,
+    email: normalizeEmail(data.email),
+    password: data.password,
+    name: data.name,
+    phone: data.phone,
+    cardNumber: data.cardNumber,
+    platformRole: 'customer',
+    companyId: data.companyId,
+    companyName: company?.companyName ?? data.companyName,
+    teamRole: 'buyer',
+    approvalRequired: company?.approvalWorkflowEnabled ?? false,
+    auditLoggingEnabled: true,
+  })
+
+  writeUsers([...users, user])
+  notifyAuthChanged()
+  return { success: true }
+}
 
 export const seedTestAccounts = (): void => {
   if (typeof window === 'undefined') return

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { headers } from 'next/headers'
 import { translations, type Language } from '@/data/translations'
+import AccountGuard from '@/components/account/AccountGuard'
 
 const resolveLanguageFromHeader = (acceptLanguage: string | null): Language => {
   const normalized = (acceptLanguage ?? '').toLowerCase()
@@ -22,5 +23,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function AccountLayout({ children }: { children: ReactNode }): ReactNode {
-  return children
+  return <AccountGuard>{children}</AccountGuard>
 }

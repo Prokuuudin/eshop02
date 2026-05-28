@@ -3,7 +3,7 @@ export function validateProfile(draft: any, t: (key: string) => string, emailOpt
     if (!draft.name.trim()) errors.name = t('account.errors.name');
     if (!emailOptional && !draft.email.trim()) errors.email = t('account.errors.email');
     if (draft.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))
-        errors.email = t('account.errors.emailInvalid', 'Некорректный email');
+        errors.email = t('account.errors.emailInvalid');
     if (draft.password && draft.password.length < 6)
         errors.password = t('account.errors.password');
     return errors;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { UserCircle2, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,31 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     t,
     tl,
 }) => {
+    const nameRef = useRef<HTMLInputElement>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
+    const phoneWrapperRef = useRef<HTMLDivElement>(null);
+    const companyRef = useRef<HTMLInputElement>(null);
+    const didFocusRef = useRef(false);
+
+    useLayoutEffect(() => {
+        if (!isEditing) {
+            didFocusRef.current = false;
+            return;
+        }
+        if (didFocusRef.current || !profileDraft) return;
+        didFocusRef.current = true;
+
+        const candidates: Array<{ empty: boolean; focus: () => void }> = [
+            { empty: !profileDraft.name?.trim(),        focus: () => nameRef.current?.focus() },
+            { empty: !profileDraft.email?.trim(),       focus: () => emailRef.current?.focus() },
+            { empty: !profileDraft.phone?.trim(),       focus: () => phoneWrapperRef.current?.querySelector<HTMLInputElement>('input')?.focus() },
+            { empty: !profileDraft.companyName?.trim(), focus: () => companyRef.current?.focus() },
+        ];
+
+        const first = candidates.find((c) => c.empty);
+        first?.focus();
+    }, [isEditing, profileDraft]);
+
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
             <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
@@ -145,6 +170,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 {t('account.name')}
                             </label>
                             <Input
+                                ref={nameRef}
                                 className={`account-profile__input ${
                                     profileErrors.name
                                         ? 'account-profile__input--error border-red-500'
@@ -164,6 +190,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 Email
                             </label>
                             <Input
+                                ref={emailRef}
                                 className={`account-profile__input ${
                                     profileErrors.email
                                         ? 'account-profile__input--error border-red-500'
@@ -182,11 +209,13 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
                                 {t('account.phone', 'Телефон')}
                             </label>
+                            <div ref={phoneWrapperRef}>
                             <PhoneInput
                                 className={profileErrors.phone ? 'account-profile__input--error' : ''}
                                 value={profileDraft.phone || ''}
                                 onChange={(val) => onChange('phone', val)}
                             />
+                            </div>
                             {profileErrors.phone && (
                                 <p className="account-profile__error text-red-600 text-xs">
                                     {profileErrors.phone}
@@ -198,6 +227,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 {t('account.company')}
                             </label>
                             <Input
+                                ref={companyRef}
                                 className="account-profile__input"
                                 value={profileDraft.companyName}
                                 onChange={(e) => onChange('companyName', e.target.value)}

@@ -5,10 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import { useTranslation } from '@/lib/use-translation';
+import { submitNoCardRequest } from '@/lib/auth';
 
 type Props = {
     onClose?: () => void;
 };
+
+const readFileAsBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+        reader.readAsDataURL(file);
+    });
 
 export default function RegisterNoCardForm({ onClose }: Props) {
     const { t } = useTranslation();
@@ -21,6 +30,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [message, setMessage] = useState('');
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,14 +38,39 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             setError(t('auth.certificateRequired', 'Необходимо приложить сертификат мастера'));
             return;
         }
-        setSuccess(true);
+
+        setSubmitting(true);
         setError('');
-        setName('');
-        setEmail('');
-        setPhone('');
-        setCertificate(null);
-        setFileKey((k) => k + 1);
-        setMessage('');
+
+        try {
+            const certificateData = await readFileAsBase64(certificate);
+
+            const result = submitNoCardRequest({
+                name: name.trim(),
+                email: email.trim(),
+                phone: phone || undefined,
+                certificateData,
+                certificateName: certificate.name,
+                message: message.trim() || undefined,
+            });
+
+            if (!result.success) {
+                setError(result.error || t('common.error', 'Произошла ошибка'));
+                return;
+            }
+
+            setSuccess(true);
+            setName('');
+            setEmail('');
+            setPhone('');
+            setCertificate(null);
+            setFileKey((k) => k + 1);
+            setMessage('');
+        } catch {
+            setError(t('common.error', 'Произошла ошибка при отправке заявки'));
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -55,7 +90,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 </p>
             )}
             <p className="register-form__hint text-sm text-gray-500 dark:text-gray-400">
-                {t('auth.registerNoCardHint', 'Для регистрации необходимо прислать основные данные и сертификат мастера. Администратор подключит ваш аккаунт в ручном режиме.')}
+                {t('auth.registerNoCardHint', 'Для регистрации необходимо прислать основные данные и сертификат мастера. Администратор пришлет вам номер вашей карты и пароль.')}
             </p>
             <div className="register-form__field">
                 <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
@@ -64,7 +99,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 <Input
                     className="register-form__input"
                     type="text"
-                    value={name ?? ''}
+                    value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t('auth.namePlaceholder')}
                     required
@@ -77,7 +112,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 <Input
                     className="register-form__input"
                     type="email"
-                    value={email ?? ''}
+                    value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('auth.emailPlaceholder')}
                     required
@@ -88,7 +123,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                     {t('auth.phone', 'Телефон')}
                 </label>
                 <PhoneInput
-                    value={phone ?? ''}
+                    value={phone}
                     onChange={(val) => setPhone(val)}
                     required
                 />
@@ -152,14 +187,16 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 <Input
                     className="register-form__input"
                     type="text"
-                    value={message ?? ''}
+                    value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={t('auth.messagePlaceholder')}
                 />
             </div>
             <div className="register-form__actions flex gap-2">
-                <Button type="submit" className="register-form__submit flex-1">
-                    {t('auth.sendRequest', 'Отправить заявку')}
+                <Button type="submit" className="register-form__submit flex-1" disabled={submitting}>
+                    {submitting
+                        ? t('common.sending', 'Отправка...')
+                        : t('auth.sendRequest', 'Отправить заявку')}
                 </Button>
                 {onClose && (
                     <Button type="button" variant="outline" className="register-form__close" onClick={onClose}>

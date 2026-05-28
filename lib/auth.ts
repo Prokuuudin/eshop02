@@ -511,6 +511,134 @@ export const forceChangePassword = (newPassword: string): { success: boolean; er
 const normalizeCard = (cardNumber: string): string =>
   cardNumber.trim().replace(/\s+/g, '').toUpperCase()
 
+export const submitNoCardRequest = (data: {
+  name: string
+  email: string
+  phone?: string
+  certificateData: string
+  certificateName: string
+  message?: string
+}): { success: boolean; error?: string } => {
+  const users = readUsers()
+  const normalizedEmail = normalizeEmail(data.email)
+
+  if (!normalizedEmail) return { success: false, error: 'Укажите email' }
+  if (findUserByEmail(users, normalizedEmail)) return { success: false, error: 'Пользователь с таким email уже существует' }
+
+  const accessRequestStore = useAccessRequestStore.getState()
+  if (accessRequestStore.getPendingRequestByEmail(normalizedEmail)) {
+    return { success: false, error: 'Заявка с таким email уже ожидает рассмотрения' }
+  }
+
+  accessRequestStore.createRequest({
+    email: normalizedEmail,
+    password: FIRST_LOGIN_PASSWORD,
+    name: data.name,
+    phone: data.phone,
+    companyId: '',
+    companyName: '',
+    cardNumber: '',
+    requestType: 'no-card',
+    certificateData: data.certificateData,
+    certificateName: data.certificateName,
+    message: data.message,
+  })
+
+  return { success: true }
+}
+
+export const approveNoCardRequest = (
+  requestId: string,
+  companyName: string,
+  cardNumber: string,
+  reviewer?: Pick<User, 'id' | 'email'> | null
+): { success: boolean; error?: string; cardNumber?: string } => {
+  const accessRequestStore = useAccessRequestStore.getState()
+  const request = accessRequestStore.getRequest(requestId)
+
+  if (!request || request.status !== 'pending') {
+    return { success: false, error: 'Заявка не найдена или уже обработана' }
+  }
+
+  const trimmedCompanyName = companyName.trim()
+  if (!trimmedCompanyName) return { success: false, error: 'Укажите название компании' }
+
+  const normalizedCard = normalizeCard(cardNumber)
+  if (!normalizedCard) return { success: false, error: 'Укажите номер карты' }
+
+  const companyStoreInstance = useCompanyStore.getState()
+  if (companyStoreInstance.getCompanyByCardNumber(normalizedCard)) {
+    return { success: false, error: 'Этот номер карты уже используется' }
+  }
+
+  const users = readUsers()
+  if (findUserByEmail(users, request.email)) {
+    accessRequestStore.rejectRequest(requestId, {
+      reviewedByUserId: reviewer?.id,
+      reviewedByEmail: reviewer?.email,
+      reviewNote: 'Аккаунт с таким email уже существует',
+    })
+    return { success: false, error: 'Пользователь с таким email уже существует' }
+  }
+
+  // Create company
+  const companyId = `company_master_${Date.now()}`
+  companyStoreInstance.upsertCompany({
+    companyId,
+    companyName: trimmedCompanyName,
+    cardNumber: normalizedCard,
+    paymentTermDays: 0,
+    approvalWorkflowEnabled: false,
+  })
+
+  // Create user (internal card email, not logged in)
+  const internalEmail = `card.${normalizedCard.toLowerCase()}@client.local`
+  const newUser: User = normalizeUser({
+    id: `u_${Date.now()}`,
+    email: internalEmail,
+    password: FIRST_LOGIN_PASSWORD,
+    name: request.name,
+    phone: request.phone,
+    cardNumber: normalizedCard,
+    platformRole: 'customer',
+    companyId,
+    companyName: trimmedCompanyName,
+    teamRole: 'buyer',
+    approvalRequired: false,
+    auditLoggingEnabled: true,
+    mustChangePassword: true,
+    isNewUser: true,
+  })
+
+  users.push(newUser)
+  writeUsers(users)
+
+  companyStoreInstance.addTeamMember(companyId, {
+    userId: newUser.id,
+    email: newUser.email,
+    role: 'buyer',
+    name: request.name || normalizedCard,
+    addedAt: new Date(),
+    addedBy: reviewer?.id,
+  })
+
+  accessRequestStore.approveRequest(requestId, {
+    reviewedByUserId: reviewer?.id,
+    reviewedByEmail: reviewer?.email,
+    approvedTeamRole: 'buyer',
+  })
+
+  logAuditAction(
+    companyId,
+    reviewer?.id ?? newUser.id,
+    'access_request_approved',
+    { requestId, approvedEmail: request.email, cardNumber: normalizedCard, companyName: trimmedCompanyName },
+    { userEmail: reviewer?.email }
+  )
+
+  return { success: true, cardNumber: normalizedCard }
+}
+
 export const loginByCard = (cardNumber: string, password: string): { success: boolean; error?: string } => {
   const users = readUsers()
   const normalized = normalizeCard(cardNumber)

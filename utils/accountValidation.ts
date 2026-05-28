@@ -1,7 +1,9 @@
-export function validateProfile(draft: any, t: (key: string) => string) {
+export function validateProfile(draft: any, t: (key: string) => string, emailOptional = false) {
     const errors: any = {};
     if (!draft.name.trim()) errors.name = t('account.errors.name');
-    if (!draft.email.trim()) errors.email = t('account.errors.email');
+    if (!emailOptional && !draft.email.trim()) errors.email = t('account.errors.email');
+    if (draft.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))
+        errors.email = t('account.errors.emailInvalid', 'Некорректный email');
     if (draft.password && draft.password.length < 6)
         errors.password = t('account.errors.password');
     return errors;

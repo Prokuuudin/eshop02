@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { hasAdminUsers, loginUser } from '@/lib/auth';
+import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, loginUser } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
@@ -33,7 +33,8 @@ export default function LoginForm({
         if (!res.success) return setError(res.error || t('form.error'));
         setError('');
         if (onSuccess) onSuccess();
-        router.push('/');
+        const loggedInUser = getCurrentUser();
+        router.push(loggedInUser && canAccessAdminPanel(loggedInUser) ? '/account' : '/');
     };
 
     return (

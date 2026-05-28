@@ -90,12 +90,8 @@ export default function UserMenu() {
                     <LoginForm
                         onSuccess={handleLoginSuccess}
                         onForgotPassword={handleOpenForgotPassword}
+                        onClose={() => setLoginOpen(false)}
                     />
-                    <DialogClose asChild>
-                        <Button variant="outline" className="mt-4 w-full">
-                            {t('common.close')}
-                        </Button>
-                    </DialogClose>
                 </DialogContent>
             </Dialog>
             <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>

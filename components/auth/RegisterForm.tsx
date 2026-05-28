@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Phone } from 'lucide-react';
 import { useCompanyStore } from '@/lib/company-store';
 import { registerCardUser, FIRST_LOGIN_PASSWORD } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export default function RegisterForm({ onClose }: Props) {
     return (
         <form
             onSubmit={handleSubmit}
-            className="register-form space-y-4 bg-white dark:bg-gray-900 p-4 rounded-lg"
+            className="register-form space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
         >
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 text-sm">{error}</p>
@@ -105,6 +105,17 @@ export default function RegisterForm({ onClose }: Props) {
                     autoComplete="off"
                 />
             </div>
+
+            <p className="register-form__card-hint -mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                Не помните номер карты?
+                <a
+                    href="tel:+37127067730"
+                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                    <Phone className="w-3 h-3" />
+                    Связаться
+                </a>
+            </p>
 
             {/* Пароль */}
             <div className="register-form__field">

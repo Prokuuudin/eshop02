@@ -76,7 +76,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     return (
         <form
             onSubmit={handleSubmit}
-            className="register-form space-y-3 bg-white dark:bg-gray-900 p-4 rounded-lg"
+            className="register-form space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
         >
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>

@@ -16,7 +16,9 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\data\" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"promo-codes|promo-campaigns|showcases|shipping-settings\" } | Select-Object Name)",
       "Bash(git merge *)",
       "Bash(Get-ChildItem \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\data\")",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" -Recurse -Filter \"layout.tsx\")",
+      "Bash(Select-Object -First 5)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"

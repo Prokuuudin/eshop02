@@ -1,0 +1,14 @@
+{
+  "registrations": [
+    {
+      "token": "7bea96dd438538ee7365416900d79be4402cea2aecdcca88e7d258602b7a64ec",
+      "email": "admin@gmail.com",
+      "name": "цку",
+      "cardNumber": "1234",
+      "password": "123456",
+      "companyId": "company_miks_plus",
+      "companyName": "SIA MIKS PLUS",
+      "expiresAt": "2026-05-29T11:01:39.842Z"
+    }
+  ]
+}

@@ -64,7 +64,7 @@ const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_miks_plus',
     companyName: 'SIA MIKS PLUS',
-    cardNumber: '1234567890123456',
+    cardNumber: '1234',
     taxId: 'LV40003123456',
     registrationNumber: '40103123456',
     city: 'Riga',
@@ -78,7 +78,7 @@ const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_beauty_supply',
     companyName: 'Beauty Supply Pro',
-    cardNumber: '2345678901234567',
+    cardNumber: '2345',
     taxId: 'LV50004567891',
     registrationNumber: '50004567891',
     city: 'Daugavpils',
@@ -92,7 +92,7 @@ const DEFAULT_COMPANIES: CompanyProfile[] = [
   {
     companyId: 'company_salon_group',
     companyName: 'Baltic Salon Group',
-    cardNumber: '3456789012345678',
+    cardNumber: '3456',
     taxId: 'LV40107890123',
     registrationNumber: '40107890123',
     city: 'Jurmala',

@@ -11,9 +11,11 @@ import { useTranslation } from '@/lib/use-translation';
 export default function LoginForm({
     onSuccess,
     onForgotPassword,
+    onClose,
 }: {
     onSuccess?: () => void;
     onForgotPassword?: () => void;
+    onClose?: () => void;
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -43,7 +45,7 @@ export default function LoginForm({
     return (
         <form
             onSubmit={handleSubmit}
-            className="space-y-3 bg-white dark:bg-gray-900 p-4 rounded-lg"
+            className="space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
         >
             {confirmed && (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -112,9 +114,16 @@ export default function LoginForm({
                     )}
                 </div>
             </div>
-            <Button type="submit" className="w-full">
-                {t('auth.login')}
-            </Button>
+            <div className="flex gap-2">
+                <Button type="submit" className="flex-1">
+                    {t('auth.login')}
+                </Button>
+                {onClose && (
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        {t('common.close')}
+                    </Button>
+                )}
+            </div>
             {setupRequired && (
                 <p className="text-sm text-center text-amber-700 dark:text-amber-400">
                     Первый администратор ещё не создан.

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sendEmail } from '@/lib/mailer'
 
 type RateLimitRecord = {
   count: number
@@ -35,6 +36,14 @@ if (!globalStore.__contactRateLimitStore) {
 }
 
 export const runtime = 'nodejs'
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
 
 function getClientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for')
@@ -188,6 +197,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const captchaValid = await verifyTurnstile(token, ip)
     if (!captchaValid) {
       return NextResponse.json({ ok: false, code: 'captcha_failed' }, { status: 400 })
+    }
+  }
+
+  const adminEmail = (process.env.CONTACT_TO ?? process.env.SMTP_USER ?? '').trim()
+  if (adminEmail) {
+    try {
+      await sendEmail(
+        adminEmail,
+        `[Контакт] ${payload.subject.trim()}`,
+        `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+          <h2 style="color:#4f46e5;margin-bottom:16px">Новое сообщение с сайта</h2>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <tr><td style="padding:8px 12px;color:#6b7280;width:100px;vertical-align:top">Имя</td><td style="padding:8px 12px">${escapeHtml(payload.name.trim())}</td></tr>
+            <tr style="background:#f9fafb"><td style="padding:8px 12px;color:#6b7280;vertical-align:top">Email</td><td style="padding:8px 12px"><a href="mailto:${escapeHtml(payload.email.trim())}">${escapeHtml(payload.email.trim())}</a></td></tr>
+            <tr><td style="padding:8px 12px;color:#6b7280;vertical-align:top">Тема</td><td style="padding:8px 12px">${escapeHtml(payload.subject.trim())}</td></tr>
+          </table>
+          <div style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:6px;font-size:14px;white-space:pre-wrap">${escapeHtml(payload.message.trim())}</div>
+        </div>`
+      )
+    } catch (err) {
+      console.error('[contact] sendEmail error:', err)
     }
   }
 

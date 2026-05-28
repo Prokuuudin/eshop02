@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { validateProfile } from '@/utils/accountValidation';
 
+const isInternalEmail = (email: string) => email.endsWith('@client.local');
+
 export function useAccountProfile(user: any, t: (key: string) => string, readUsers: any, writeUsers: any, writeCurrentUser: any) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [profileDraft, setProfileDraft] = useState<any>(null);
@@ -9,10 +11,10 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
     const startEditingProfile = () => {
         setProfileDraft({
             name: user?.name || '',
-            email: user?.email || '',
+            email: isInternalEmail(user?.email || '') ? '' : (user?.email || ''),
             phone: user?.phone || '',
             password: '',
-            companyName: user?.companyName || '',
+            companyName: user?.companyId ? '' : (user?.companyName || ''),
             avatarUrl: user?.avatarUrl || '',
         });
         setProfileErrors({});
@@ -27,7 +29,8 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
 
     const saveProfile = () => {
         if (!profileDraft) return;
-        const errors = validateProfile(profileDraft, t);
+        const emailOptional = isInternalEmail(user?.email || '');
+        const errors = validateProfile(profileDraft, t, emailOptional);
         if (Object.keys(errors).length > 0) {
             setProfileErrors(errors);
             return;
@@ -38,7 +41,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         const updatedUser = {
             ...users[idx],
             name: profileDraft.name,
-            email: profileDraft.email,
+            email: profileDraft.email.trim() || users[idx].email,
             phone: profileDraft.phone,
             companyName: profileDraft.companyName,
             password: profileDraft.password ? profileDraft.password : users[idx].password,

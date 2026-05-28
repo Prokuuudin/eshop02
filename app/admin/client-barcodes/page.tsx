@@ -8,6 +8,7 @@ import { useCompanyStore, type CompanyProfile } from '@/lib/company-store';
 import { useAccessRequestStore } from '@/lib/access-request-store';
 import {
     approveAccessRequest,
+    approveNoCardRequest,
     getCurrentUser,
     listCompanyUsers,
     rejectAccessRequest,
@@ -178,9 +179,40 @@ export default function AdminClientBarcodesPage() {
     const [roleUpdateInProgress, setRoleUpdateInProgress] = useState<string | null>(null);
 
     const { getCompanies, upsertCompany, deleteCompany } = useCompanyStore();
-    const { getPendingRequests } = useAccessRequestStore();
+    const { getPendingRequests, getNoCardPendingRequests } = useAccessRequestStore();
     const companies = getCompanies();
     const pendingRequests = getPendingRequests();
+    const noCardRequests = getNoCardPendingRequests();
+
+    // State for no-card request approvals: { [requestId]: { companyName, cardNumber } }
+    const [noCardDrafts, setNoCardDrafts] = useState<Record<string, { companyName: string; cardNumber: string }>>({});
+
+    const getNoCardDraft = (requestId: string, defaultName: string) => {
+        if (!noCardDrafts[requestId]) {
+            const generated = generateNextCardNumber(companies);
+            setNoCardDrafts((prev) => ({
+                ...prev,
+                [requestId]: { companyName: defaultName, cardNumber: generated },
+            }));
+            return { companyName: defaultName, cardNumber: generated };
+        }
+        return noCardDrafts[requestId];
+    };
+
+    const handleApproveNoCardRequest = (requestId: string) => {
+        const draft = noCardDrafts[requestId];
+        if (!draft) return;
+        const reviewer = getCurrentUser();
+        const result = approveNoCardRequest(requestId, draft.companyName, draft.cardNumber, reviewer);
+        if (!result.success) {
+            setFormError(result.error || 'Не удалось одобрить заявку');
+            setMessage('');
+            return;
+        }
+        setMessage(`Карта выдана: ${result.cardNumber}. Аккаунт создан.`);
+        setFormError('');
+        setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+    };
     const selectedPrintCompany =
         companies.find((company) => company.companyId === printCompanyId) ?? companies[0];
 
@@ -742,6 +774,130 @@ export default function AdminClientBarcodesPage() {
                     </form>
                 </section>
 
+                {/* ── Заявки мастеров без карты ── */}
+                <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900 p-6">
+                    <div className="mb-4">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                            Заявки мастеров (без карты){' '}
+                            <span className="ml-1 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-sm font-medium text-amber-800 dark:text-amber-300">
+                                {noCardRequests.length}
+                            </span>
+                        </h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Мастера, приложившие сертификат через форму регистрации. Укажите название компании и сгенерируйте номер карты для выдачи.
+                        </p>
+                    </div>
+
+                    {noCardRequests.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400">
+                            Новых заявок от мастеров нет.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {noCardRequests.map((req) => {
+                                const draft = getNoCardDraft(req.id, req.name || req.email);
+                                return (
+                                    <div key={req.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div className="space-y-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                                    {req.name || req.email}
+                                                </p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">Email: {req.email}</p>
+                                                {req.phone && (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Телефон: {req.phone}</p>
+                                                )}
+                                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                                    {new Date(req.requestedAt).toLocaleString('ru-RU')}
+                                                </p>
+                                            </div>
+                                            {req.certificateData && (
+                                                <a
+                                                    href={req.certificateData}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                                >
+                                                    📄 {req.certificateName || 'Сертификат'}
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {req.message && (
+                                            <p className="rounded bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 italic">
+                                                «{req.message}»
+                                            </p>
+                                        )}
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                            <label className="text-sm">
+                                                <span className="block mb-1 text-gray-600 dark:text-gray-400">Название компании</span>
+                                                <Input
+                                                    value={draft.companyName}
+                                                    onChange={(e) =>
+                                                        setNoCardDrafts((prev) => ({
+                                                            ...prev,
+                                                            [req.id]: { ...draft, companyName: e.target.value },
+                                                        }))
+                                                    }
+                                                    placeholder="Имя мастера / ИП"
+                                                />
+                                            </label>
+                                            <label className="text-sm">
+                                                <span className="block mb-1 text-gray-600 dark:text-gray-400">Номер карты</span>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        value={draft.cardNumber}
+                                                        onChange={(e) =>
+                                                            setNoCardDrafts((prev) => ({
+                                                                ...prev,
+                                                                [req.id]: { ...draft, cardNumber: e.target.value },
+                                                            }))
+                                                        }
+                                                        placeholder="0000000000000000"
+                                                        className="font-mono"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="shrink-0"
+                                                        onClick={() =>
+                                                            setNoCardDrafts((prev) => ({
+                                                                ...prev,
+                                                                [req.id]: { ...draft, cardNumber: generateNextCardNumber(companies) },
+                                                            }))
+                                                        }
+                                                    >
+                                                        ↺
+                                                    </Button>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div className="flex gap-2 pt-1">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleApproveNoCardRequest(req.id)}
+                                            >
+                                                Выдать карту
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleRejectRequest(req.id)}
+                                            >
+                                                Отклонить
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                {/* ── Заявки по карте ── */}
                 <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <div>

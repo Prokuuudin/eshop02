@@ -20,6 +20,11 @@ export type AccessRequest = {
   reviewedByEmail?: string
   approvedTeamRole?: TeamRole
   reviewNote?: string
+  // No-card request fields
+  requestType?: 'card' | 'no-card'
+  certificateData?: string
+  certificateName?: string
+  message?: string
 }
 
 type AccessRequestReview = {
@@ -36,6 +41,7 @@ type AccessRequestStore = {
   rejectRequest: (requestId: string, review?: AccessRequestReview) => void
   getRequest: (requestId: string) => AccessRequest | undefined
   getPendingRequests: () => AccessRequest[]
+  getNoCardPendingRequests: () => AccessRequest[]
   getRequestsByCompany: (companyId: string) => AccessRequest[]
   getPendingRequestByEmail: (email: string) => AccessRequest | undefined
 }
@@ -111,7 +117,13 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
 
       getPendingRequests: () => {
         return get().requests
-          .filter((request) => request.status === 'pending')
+          .filter((request) => request.status === 'pending' && request.requestType !== 'no-card')
+          .sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())
+      },
+
+      getNoCardPendingRequests: () => {
+        return get().requests
+          .filter((request) => request.status === 'pending' && request.requestType === 'no-card')
           .sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())
       },
 

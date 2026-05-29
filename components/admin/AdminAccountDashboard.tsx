@@ -21,7 +21,8 @@ import {
     ClipboardList,
 } from 'lucide-react';
 import { useOrders } from '@/lib/orders-store';
-import type { User } from '@/lib/auth';
+import { readUsers, type User } from '@/lib/auth';
+import { useAccessRequestStore } from '@/lib/access-request-store';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -95,7 +96,7 @@ const NAV_SECTIONS: NavSection[] = [
         color: 'text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-400',
         items: [
             { label: 'Доставка и оплата', href: '/admin/config/shipping' },
-            { label: 'Бонусная программа', href: '/admin/config/bonus' },
+            { label: 'Бонусная программа', href: '/admin/bonus' },
             { label: 'Локализация', href: '/admin/config/locale' },
             { label: 'Email-шаблоны', href: '/admin/config/email-templates' },
         ],
@@ -123,7 +124,7 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 function formatMoney(v: number) {
-    return v.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
+    return v.toLocaleString('ru-RU', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 }
 
 function KpiCard({
@@ -161,7 +162,10 @@ function KpiCard({
 
 export default function AdminAccountDashboard({ user }: { user: User }) {
     const orders = useOrders((s) => s.orders);
+    const { getPendingRequests } = useAccessRequestStore();
     const [lowStockCount, setLowStockCount] = useState<number | null>(null);
+    const [totalCustomers, setTotalCustomers] = useState<number>(0);
+    const [newCustomers7d, setNewCustomers7d] = useState<number>(0);
 
     useEffect(() => {
         fetch('/api/admin/products')
@@ -172,6 +176,10 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                 }
             })
             .catch(() => {});
+        const customers = readUsers().filter((u) => u.platformRole !== 'admin');
+        setTotalCustomers(customers.length);
+        const sevenDaysAgo = Date.now() - 7 * 86400000;
+        setNewCustomers7d(customers.filter((u) => u.createdAt && new Date(u.createdAt).getTime() >= sevenDaysAgo).length);
     }, []);
 
     const stats = useMemo(() => {
@@ -183,16 +191,31 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
         const recent = orders.filter((o) => new Date(o.createdAt).getTime() >= sevenDaysAgo);
         const today = orders.filter((o) => new Date(o.createdAt).getTime() >= todayStart.getTime());
 
+        const allEmails = new Set(orders.map((o) => o.email.toLowerCase()));
+        const recentEmails = new Set(recent.map((o) => o.email.toLowerCase()));
+        const newBuyers7d = [...recentEmails].filter((e) => {
+            const firstOrder = orders
+                .filter((o) => o.email.toLowerCase() === e)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+            return firstOrder && new Date(firstOrder.createdAt).getTime() >= sevenDaysAgo;
+        }).length;
+
         return {
             ordersToday: today.length,
             revenue7d: recent.reduce((s, o) => s + (o.total ?? 0), 0),
             totalOrders: orders.length,
+            uniqueBuyers: allEmails.size,
+            newBuyers7d,
         };
     }, [orders]);
 
-    const hour = new Date().getHours();
+    const pendingRequests = getPendingRequests();
+
+    const now = new Date();
+    const hour = now.getHours();
     const greeting =
         hour < 6 ? 'Доброй ночи' : hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер';
+    const currentDate = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
         <div className="space-y-8">
@@ -213,7 +236,10 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                         )}
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{greeting},</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {greeting},{' '}
+                            <span className="text-gray-400 dark:text-gray-500">{currentDate}</span>
+                        </p>
                         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                             {user.name || user.email}
                         </h1>
@@ -238,6 +264,29 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                     </Link>
                 </div>
             </div>
+
+            {/* Pending requests banner */}
+            {pendingRequests.length > 0 && (
+                <Link
+                    href="/admin/access-requests"
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-white text-lg font-bold dark:bg-amber-600">
+                            {pendingRequests.length}
+                        </span>
+                        <div>
+                            <p className="font-semibold text-amber-900 dark:text-amber-200">
+                                {pendingRequests.length === 1
+                                    ? 'Заявка на карту клиента ждёт одобрения'
+                                    : `${pendingRequests.length} заявки на карту клиента ждут одобрения`}
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-400">Нажмите, чтобы перейти к заявкам</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                </Link>
+            )}
 
             {/* KPI cards */}
             <div>
@@ -274,6 +323,13 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                         value={String(stats.totalOrders)}
                         href="/admin/orders"
                         color="text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400"
+                    />
+                    <KpiCard
+                        icon={Users}
+                        label="Новые клиенты за 7 дней / Всего"
+                        value={`${newCustomers7d} / ${totalCustomers}`}
+                        href="/admin/accounts"
+                        color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
                     />
                 </div>
             </div>

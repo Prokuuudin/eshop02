@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -156,8 +156,8 @@ export default function AdminCustomerHistoryPage() {
                 </thead>
                 <tbody className="divide-y">
                   {pageItems.map((entry) => (
-                    <>
-                      <tr key={entry.id} className="hover:bg-muted/30">
+                    <React.Fragment key={entry.id}>
+                      <tr className="hover:bg-muted/30">
                         <td className="px-4 py-3 whitespace-nowrap">
                           {new Date(entry.timestamp).toLocaleString('ru-RU')}
                         </td>
@@ -187,7 +187,7 @@ export default function AdminCustomerHistoryPage() {
                         </td>
                       </tr>
                       {expandedId === entry.id && (
-                        <tr key={`${entry.id}-details`} className="bg-muted/20">
+                        <tr className="bg-muted/20">
                           <td colSpan={5} className="px-4 py-3">
                             <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all">
                               {JSON.stringify(entry.details, null, 2)}
@@ -195,7 +195,7 @@ export default function AdminCustomerHistoryPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

@@ -101,7 +101,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
         icon: Settings,
         items: [
             { title: 'config.shipping', href: '/admin/config/shipping' },
-            { title: 'config.bonus', href: '/admin/config/bonus' },
+            { title: 'config.bonus', href: '/admin/bonus' },
             { title: 'config.integrations', href: '/account/integrations/webhooks' },
             { title: 'config.locale', href: '/admin/config/locale' },
             { title: 'config.emailTemplates', href: '/admin/config/email-templates' },

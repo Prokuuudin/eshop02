@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Phone } from 'lucide-react';
+import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
 import { useCompanyStore } from '@/lib/company-store';
 import { registerCardUser, FIRST_LOGIN_PASSWORD } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -100,22 +100,11 @@ export default function RegisterForm({ onClose }: Props) {
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
                     placeholder="0000"
-                    maxLength={4}
+                    maxLength={6}
                     required
                     autoComplete="off"
                 />
             </div>
-
-            <p className="register-form__card-hint -mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Не помните номер карты?
-                <a
-                    href="tel:+37127067730"
-                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 hover:underline"
-                >
-                    <Phone className="w-3 h-3" />
-                    Связаться
-                </a>
-            </p>
 
             {/* Пароль */}
             <div className="register-form__field">
@@ -141,6 +130,29 @@ export default function RegisterForm({ onClose }: Props) {
                     >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
+                </div>
+            </div>
+
+            <div className="register-form__card-hint space-y-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-400 dark:text-gray-500 mr-0.5">*</span>
+                    Есть карта, но нет пароля? Свяжитесь с нами:
+                </p>
+                <div className="flex gap-2">
+                    <a
+                        href="tel:+37127067730"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                        <Phone className="w-3 h-3" />
+                        +371 27067730
+                    </a>
+                    <a
+                        href="mailto:office@miksplus.eu"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                        <Mail className="w-3 h-3" />
+                        office@miksplus.eu
+                    </a>
                 </div>
             </div>
 

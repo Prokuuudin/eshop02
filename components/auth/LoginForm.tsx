@@ -39,7 +39,9 @@ export default function LoginForm({
         setError('');
         if (onSuccess) onSuccess();
         const loggedInUser = getCurrentUser();
-        router.push(loggedInUser && canAccessAdminPanel(loggedInUser) ? '/account' : '/');
+        const redirect = searchParams.get('redirect');
+        if (redirect) return router.push(redirect);
+        router.push(loggedInUser && canAccessAdminPanel(loggedInUser) ? '/admin' : '/account');
     };
 
     return (

@@ -21,6 +21,7 @@ export interface CompanyProfile {
   city?: string
   country?: string
   contactPhone?: string
+  contactEmail?: string
   accountManagerId?: string // ID of assigned account manager
   paymentTermDays: 30 | 60 | 90 | 0 // 0 = prepay
   creditLimit?: number // Maximum credit amount

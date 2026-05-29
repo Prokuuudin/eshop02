@@ -7,6 +7,13 @@ import { useRFQStore } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
+const RFQ_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
+  quoted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+  accepted: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
+  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
+}
+
 export default function AdminRFQPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [quotePrice, setQuotePrice] = useState<Record<string, number>>({})
@@ -68,7 +75,7 @@ export default function AdminRFQPage() {
                   Компания: {rfq.companyId} · Создано: {formatDate(rfq.createdAt, 'ru-RU')}
                 </p>
               </div>
-              <span className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800">{rfq.status}</span>
+              <span className={`text-xs rounded px-2 py-1 font-medium ${RFQ_STATUS_COLORS[rfq.status] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'}`}>{rfq.status}</span>
             </div>
 
             <ul className="mt-3 text-sm space-y-1">

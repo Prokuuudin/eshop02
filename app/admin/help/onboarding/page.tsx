@@ -102,7 +102,7 @@ const steps: OnboardingStep[] = [
     group: 'month1',
     icon: '⭐',
     text: 'Настройте параметры бонусной программы под текущие нужды магазина',
-    href: '/admin/config/bonus',
+    href: '/admin/bonus',
     linkLabel: 'Бонусы',
   },
 ]

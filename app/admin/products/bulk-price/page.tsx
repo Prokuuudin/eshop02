@@ -17,7 +17,7 @@ type Product = {
 type AdjustMode = 'percent' | 'fixed_add' | 'fixed_set';
 
 function formatMoney(v: number) {
-    return v.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v.toLocaleString('ru-RU', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
@@ -303,7 +303,7 @@ export default function BulkPricePage() {
                                                 {p.category}
                                             </td>
                                             <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                                                {formatMoney(p.price)} ₽
+                                                {formatMoney(p.price)}
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 {newPrice !== null ? (
@@ -316,7 +316,7 @@ export default function BulkPricePage() {
                                                                 : 'text-gray-500'
                                                         }`}
                                                     >
-                                                        {formatMoney(newPrice)} ₽
+                                                        {formatMoney(newPrice)}
                                                     </span>
                                                 ) : (
                                                     <span className="text-gray-300 dark:text-gray-600">—</span>

@@ -29,6 +29,7 @@ export type User = {
   bonusPoints?: number // Accumulated bonus balance
   mustChangePassword?: boolean // Требует обязательной смены пароля при первом входе
   isNewUser?: boolean // Новый пользователь — показать приветствие с предложением заполнить профиль
+  createdAt?: string // ISO дата регистрации
 }
 
 const USERS_KEY = 'eshop_users'
@@ -58,6 +59,7 @@ const normalizeUser = (user: Partial<User>): User => ({
   bonusPoints: user.bonusPoints ?? 350,
   mustChangePassword: user.mustChangePassword ?? false,
   isNewUser: user.isNewUser ?? false,
+  createdAt: user.createdAt ?? new Date().toISOString(),
 })
 
 const notifyAuthChanged = (): void => {

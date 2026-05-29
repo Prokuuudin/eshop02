@@ -3,12 +3,11 @@
 import { useMemo, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { useOrders } from '@/lib/orders-store';
+import { formatEuro } from '@/lib/utils';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
-function formatMoney(v: number) {
-    return v.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' ₽';
-}
+const formatMoney = (v: number) => formatEuro(v, 'ru-RU');
 
 function BarChart({
     data,

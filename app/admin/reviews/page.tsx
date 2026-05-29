@@ -30,6 +30,12 @@ export default function AdminReviewsPage() {
     pending: tl('admin.reviews.status.pending', 'На модерации', 'Pending moderation', 'Moderacija')
   }
 
+  const STATUS_COLORS: Record<ReviewStatus, string> = {
+    approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200',
+    hidden: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200',
+    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
+  }
+
   const [reviews, setReviews] = useState<ReviewRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -328,7 +334,7 @@ export default function AdminReviewsPage() {
                   </label>
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{review.id}</span>
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{l('Товар', 'Product', 'Produkts')}: {review.productId}</span>
-                  <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{STATUS_LABELS[review.status]}</span>
+                  <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_COLORS[review.status]}`}>{STATUS_LABELS[review.status]}</span>
                   <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">{new Date(review.createdAt).toLocaleString(language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US')}</span>
                 </div>
 

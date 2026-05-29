@@ -741,3 +741,24 @@ export const seedTestAccounts = (): void => {
 
   writeUsers(next)
 }
+
+export const adjustUserBonusPoints = (
+  userId: string,
+  delta: number
+): { success: boolean; newBalance?: number; error?: string } => {
+  const users = readUsers()
+  const idx = users.findIndex((u) => u.id === userId)
+  if (idx === -1) return { success: false, error: 'Пользователь не найден' }
+
+  const newBalance = Math.max(0, (users[idx].bonusPoints ?? 0) + delta)
+  users[idx] = { ...users[idx], bonusPoints: newBalance }
+  writeUsers(users)
+
+  const current = getCurrentUser()
+  if (current?.id === userId) {
+    writeCurrentUser({ ...current, bonusPoints: newBalance })
+    notifyAuthChanged()
+  }
+
+  return { success: true, newBalance }
+}

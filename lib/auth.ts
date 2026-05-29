@@ -518,6 +518,7 @@ export const submitNoCardRequest = (data: {
   certificateData: string
   certificateName: string
   message?: string
+  language?: 'ru' | 'en' | 'lv'
 }): { success: boolean; error?: string } => {
   const users = readUsers()
   const normalizedEmail = normalizeEmail(data.email)
@@ -542,6 +543,7 @@ export const submitNoCardRequest = (data: {
     certificateData: data.certificateData,
     certificateName: data.certificateName,
     message: data.message,
+    language: data.language,
   })
 
   return { success: true }
@@ -587,6 +589,8 @@ export const approveNoCardRequest = (
     companyId,
     companyName: trimmedCompanyName,
     cardNumber: normalizedCard,
+    contactEmail: request.email,
+    contactPhone: request.phone,
     paymentTermDays: 0,
     approvalWorkflowEnabled: false,
   })

@@ -20,7 +20,7 @@ const readFileAsBase64 = (file: File): Promise<string> =>
     });
 
 export default function RegisterNoCardForm({ onClose }: Props) {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
@@ -35,7 +35,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!certificate) {
-            setError(t('auth.certificateRequired', 'Необходимо приложить сертификат мастера'));
+            setError(t('auth.certificateRequired', 'Необходимо приложить сертификат или лицензию мастера'));
             return;
         }
 
@@ -52,6 +52,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 certificateData,
                 certificateName: certificate.name,
                 message: message.trim() || undefined,
+                language: language as 'ru' | 'en' | 'lv',
             });
 
             if (!result.success) {
@@ -73,6 +74,24 @@ export default function RegisterNoCardForm({ onClose }: Props) {
         }
     };
 
+    if (success) {
+        return (
+            <div className="register-form bg-white dark:bg-gray-900 p-3 rounded-lg space-y-4">
+                <p className="register-form__success rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    {t(
+                        'auth.requestNoCardSent',
+                        'Заявка отправлена. После проверки администратор свяжется с вами и выдаст номер карты.'
+                    )}
+                </p>
+                {onClose && (
+                    <Button type="button" variant="outline" className="register-form__close w-full" onClick={onClose}>
+                        {t('common.close', 'Закрыть')}
+                    </Button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <form
             onSubmit={handleSubmit}
@@ -81,16 +100,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>
             )}
-            {success && (
-                <p className="register-form__success rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    {t(
-                        'auth.requestNoCardSent',
-                        'Заявка отправлена. После проверки администратор свяжется с вами и выдаст номер карты.'
-                    )}
-                </p>
-            )}
             <p className="register-form__hint text-sm text-gray-500 dark:text-gray-400">
-                {t('auth.registerNoCardHint', 'Для регистрации необходимо прислать основные данные и сертификат мастера. Администратор пришлет вам номер вашей карты и пароль.')}
+                {t('auth.registerNoCardHint', 'Пришлите свои данные и сертификат/лицензию мастера — администратор выдаст вам номер карты и пароль.')}
             </p>
             <div className="register-form__field">
                 <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">

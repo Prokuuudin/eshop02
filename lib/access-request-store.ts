@@ -25,6 +25,7 @@ export type AccessRequest = {
   certificateData?: string
   certificateName?: string
   message?: string
+  language?: 'ru' | 'en' | 'lv'
 }
 
 type AccessRequestReview = {
@@ -87,7 +88,8 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
                   reviewedByUserId: review?.reviewedByUserId,
                   reviewedByEmail: review?.reviewedByEmail,
                   reviewNote: review?.reviewNote,
-                  approvedTeamRole: review?.approvedTeamRole
+                  approvedTeamRole: review?.approvedTeamRole,
+                  certificateData: undefined,
                 }
               : request
           )
@@ -104,7 +106,8 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
                   reviewedAt: new Date(),
                   reviewedByUserId: review?.reviewedByUserId,
                   reviewedByEmail: review?.reviewedByEmail,
-                  reviewNote: review?.reviewNote
+                  reviewNote: review?.reviewNote,
+                  certificateData: undefined,
                 }
               : request
           )

@@ -40,29 +40,35 @@ export async function GET() {
   return NextResponse.json({ files })
 }
 
+function safeName(name: string): boolean {
+  return Boolean(name) && !name.includes('/') && !name.includes('..') && !name.includes('\\')
+}
+
 export async function DELETE(request: NextRequest) {
   try {
-    const { name } = (await request.json()) as { name?: string }
+    const body = (await request.json()) as { name?: string; names?: string[] }
+    const targets = body.names?.length ? body.names : body.name ? [body.name] : []
 
-    if (!name || name.includes('/') || name.includes('..')) {
-      return NextResponse.json({ error: 'invalid_filename' }, { status: 400 })
-    }
+    if (!targets.length) return NextResponse.json({ error: 'name_required' }, { status: 400 })
 
-    const filePath = path.join(UPLOADS_DIR, name)
-
-    // Ensure the resolved path is still inside uploads dir
-    const resolved = path.resolve(filePath)
     const uploadsResolved = path.resolve(UPLOADS_DIR)
-    if (!resolved.startsWith(uploadsResolved + path.sep)) {
-      return NextResponse.json({ error: 'invalid_path' }, { status: 400 })
+    let deleted = 0
+    const errors: string[] = []
+
+    for (const name of targets) {
+      if (!safeName(name)) { errors.push(name); continue }
+      const resolved = path.resolve(path.join(UPLOADS_DIR, name))
+      if (!resolved.startsWith(uploadsResolved + path.sep)) { errors.push(name); continue }
+      try {
+        await fs.unlink(resolved)
+        deleted++
+      } catch {
+        errors.push(name)
+      }
     }
 
-    await fs.unlink(filePath)
-    return NextResponse.json({ ok: true })
-  } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
-      return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    }
+    return NextResponse.json({ ok: true, deleted, errors })
+  } catch {
     return NextResponse.json({ error: 'failed_to_delete' }, { status: 500 })
   }
 }

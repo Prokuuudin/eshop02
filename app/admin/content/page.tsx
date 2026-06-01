@@ -146,7 +146,7 @@ export default function AdminContentPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Управление контентом сайта</h1>

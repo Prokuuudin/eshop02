@@ -4,6 +4,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { logAdminAction } from '@/lib/admin-log-store'
 
 type PromoCodeItem = {
   id: string
@@ -81,7 +82,16 @@ export default function AdminDiscountsPage() {
 
   async function handleSave() {
     if (!form.code.trim()) return
+    // Client-side duplicate check
+    if (!editId) {
+      const code = form.code.trim().toUpperCase()
+      if (items.some((item) => item.code === code)) {
+        setError(`Промокод «${code}» уже существует`)
+        return
+      }
+    }
     setSaving(true)
+    setError(null)
     try {
       if (editId) {
         await fetch(`/api/admin/promo-codes/${editId}`, {
@@ -90,13 +100,21 @@ export default function AdminDiscountsPage() {
           body: JSON.stringify(form)
         })
       } else {
-        await fetch('/api/admin/promo-codes', {
+        const res = await fetch('/api/admin/promo-codes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form)
         })
+        if (res.status === 409) {
+          setError(`Промокод «${form.code.trim().toUpperCase()}» уже существует`)
+          setSaving(false)
+          return
+        }
       }
       await load()
+      logAdminAction(editId ? 'promo.updated' : 'promo.created', {
+        type: 'promo', id: editId ?? form.code, title: form.code.trim().toUpperCase(),
+      }, { after: { discount: form.discount, active: form.active } })
       cancelForm()
     } catch {
       setError('Ошибка сохранения')
@@ -106,8 +124,10 @@ export default function AdminDiscountsPage() {
   }
 
   async function handleDelete(id: string) {
+    const target = items.find((i) => i.id === id)
     if (!confirm('Удалить промокод?')) return
     await fetch(`/api/admin/promo-codes/${id}`, { method: 'DELETE' })
+    logAdminAction('promo.deleted', { type: 'promo', id, title: target?.code })
     await load()
   }
 
@@ -117,6 +137,9 @@ export default function AdminDiscountsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: !item.active })
     })
+    logAdminAction('promo.toggled', { type: 'promo', id: item.id, title: item.code }, {
+      before: { active: item.active }, after: { active: !item.active },
+    })
     await load()
   }
 
@@ -124,7 +147,7 @@ export default function AdminDiscountsPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

@@ -71,6 +71,27 @@ export default function AdminSystemLogsPage() {
     URL.revokeObjectURL(url)
   }
 
+  function handleExportCSV() {
+    const header = ['Дата и время', 'Действие', 'userId', 'companyId', 'Details']
+    const rows = filtered.map((e) => [
+      new Date(e.timestamp).toLocaleString('ru-RU'),
+      e.action,
+      e.userId ?? '',
+      e.companyId ?? '',
+      JSON.stringify(e.details),
+    ])
+    const content = [header, ...rows]
+      .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `system-logs-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function handleClear() {
     if (confirm('Удалить все записи логов старше 90 дней?')) {
       clearOldEntries(90)
@@ -79,12 +100,15 @@ export default function AdminSystemLogsPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Логи и события системы</h1>
           <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              Экспорт CSV
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
-              Экспортировать в JSON
+              Экспорт JSON
             </Button>
             <Button variant="destructive" size="sm" onClick={handleClear}>
               Очистить логи старше 90 дней

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { useOrders } from '@/lib/orders-store';
 import { formatEuro } from '@/lib/utils';
@@ -179,6 +180,13 @@ export default function SalesAnalyticsPage() {
                             {filteredOrders.length} заказов за период
                         </p>
                     </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href="/admin/sales/breakdown"
+                        className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300"
+                    >
+                        Товары и категории →
+                    </Link>
                     <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
                         {PERIOD_OPTIONS.map((opt) => (
                             <button
@@ -194,6 +202,7 @@ export default function SalesAnalyticsPage() {
                                 {opt.label}
                             </button>
                         ))}
+                    </div>
                     </div>
                 </div>
 

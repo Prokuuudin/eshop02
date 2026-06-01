@@ -9,6 +9,8 @@ import ProductsToolbar from '@/components/admin/products/ProductsToolbar';
 import { useI18n } from '@/lib/i18n-context';
 import { useTranslation } from '@/lib/i18n-context';
 import NewProductForm from '@/components/admin/products/NewProductForm';
+import { logAdminAction } from '@/lib/admin-log-store';
+import type { Product } from '@/data/products';
 
 export default function AdminProductsPage() {
     const router = useRouter();
@@ -49,13 +51,41 @@ export default function AdminProductsPage() {
                                 <ProductList
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
-                                    onDeleteProduct={admin.handleDeleteProduct}
+                                    onDeleteProduct={(product: Product) => {
+                                        admin.handleDeleteProduct(product)
+                                        logAdminAction('product.deleted', {
+                                            type: 'product', id: product.id, title: product.title,
+                                        }, { before: { price: product.price, stock: product.stock } })
+                                    }}
                                 />
                             ) : (
                                 <ProductTable
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
-                                    onDeleteProduct={admin.handleDeleteProduct}
+                                    onDeleteProduct={(product: Product) => {
+                                        admin.handleDeleteProduct(product)
+                                        logAdminAction('product.deleted', {
+                                            type: 'product', id: product.id, title: product.title,
+                                        }, { before: { price: product.price, stock: product.stock } })
+                                    }}
+                                    onQuickSave={async (id, changes) => {
+                                        const product = admin.products.find((p) => p.id === id)
+                                        await fetch('/api/admin/products', {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ id, changes }),
+                                        })
+                                        if (changes.price !== undefined) {
+                                            logAdminAction('product.price_changed', {
+                                                type: 'product', id, title: product?.title,
+                                            }, { before: { price: product?.price }, after: { price: changes.price } })
+                                        }
+                                        if (changes.stock !== undefined) {
+                                            logAdminAction('product.stock_changed', {
+                                                type: 'product', id, title: product?.title,
+                                            }, { before: { stock: product?.stock }, after: { stock: changes.stock } })
+                                        }
+                                    }}
                                 />
                             )}
                         </div>

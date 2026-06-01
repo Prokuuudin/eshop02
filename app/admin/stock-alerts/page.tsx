@@ -46,6 +46,10 @@ export default function StockAlertsPage() {
     const [thresholdInput, setThresholdInput] = useState(String(DEFAULT_THRESHOLD));
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'low' | 'out'>('low');
+    const [alertEmail, setAlertEmail] = useState('');
+    const [alertSending, setAlertSending] = useState(false);
+    const [alertResult, setAlertResult] = useState<{ ok: boolean; sent?: number } | null>(null);
+    const [lastSent, setLastSent] = useState<string | null>(null);
 
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -56,6 +60,10 @@ export default function StockAlertsPage() {
                 setThresholdInput(String(v));
             }
         }
+        const savedEmail = localStorage.getItem('admin-stock-alert-email');
+        if (savedEmail) setAlertEmail(savedEmail);
+        const savedLastSent = localStorage.getItem('admin-stock-alert-last-sent');
+        if (savedLastSent) setLastSent(savedLastSent);
     }, []);
 
     useEffect(() => {
@@ -65,6 +73,31 @@ export default function StockAlertsPage() {
             .then((data: Product[]) => setProducts(Array.isArray(data) ? data : []))
             .finally(() => setLoading(false));
     }, []);
+
+    const sendAlert = async () => {
+        if (!alertEmail || alertSending) return;
+        localStorage.setItem('admin-stock-alert-email', alertEmail);
+        setAlertSending(true);
+        setAlertResult(null);
+        try {
+            const res = await fetch('/api/admin/stock-alerts/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: alertEmail, threshold, products }),
+            });
+            const data = (await res.json()) as { ok: boolean; sent?: number };
+            setAlertResult(data);
+            if (data.ok) {
+                const ts = new Date().toLocaleString('ru-RU');
+                setLastSent(ts);
+                localStorage.setItem('admin-stock-alert-last-sent', ts);
+            }
+        } catch {
+            setAlertResult({ ok: false });
+        } finally {
+            setAlertSending(false);
+        }
+    };
 
     const applyThreshold = () => {
         const v = parseInt(thresholdInput, 10);
@@ -121,6 +154,46 @@ export default function StockAlertsPage() {
                             Сохранить
                         </button>
                     </div>
+                </div>
+
+                {/* Email alert */}
+                <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-4 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Email-отчёт об остатках</p>
+                            {lastSent && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Последняя отправка: {lastSent}</p>
+                            )}
+                        </div>
+                        {alertResult?.ok && (
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                Отправлено ({alertResult.sent} товаров)
+                            </span>
+                        )}
+                        {alertResult && !alertResult.ok && (
+                            <span className="text-xs text-red-600 dark:text-red-400">Ошибка отправки. Проверьте SMTP.</span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                            type="email"
+                            placeholder="admin@example.com"
+                            value={alertEmail}
+                            onChange={(e) => { setAlertEmail(e.target.value); setAlertResult(null); }}
+                            className="flex-1 min-w-[220px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
+                        />
+                        <button
+                            type="button"
+                            onClick={sendAlert}
+                            disabled={alertSending || !alertEmail || loading}
+                            className="rounded-md bg-amber-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-40 whitespace-nowrap"
+                        >
+                            {alertSending ? 'Отправка...' : `Отправить отчёт (${outCount + lowCount} позиций)`}
+                        </button>
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Письмо содержит все товары с нулевым остатком и остатком ≤ {threshold} шт.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">

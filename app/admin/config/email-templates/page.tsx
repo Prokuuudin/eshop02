@@ -42,6 +42,9 @@ export default function EmailTemplatesPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+    const [testEmail, setTestEmail] = useState('');
+    const [testSending, setTestSending] = useState(false);
+    const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null);
 
     const load = () => {
         setLoading(true);
@@ -83,6 +86,24 @@ export default function EmailTemplatesPage() {
         setSubject(selected.subject);
         setBody(selected.body);
         setSaved(false);
+    };
+
+    const sendTest = async () => {
+        if (!selected || !testEmail) return;
+        setTestSending(true);
+        setTestResult(null);
+        try {
+            const res = await fetch(`/api/admin/email-templates/${selected.id}/send-test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: testEmail }),
+            });
+            setTestResult(res.ok ? 'ok' : 'error');
+        } catch {
+            setTestResult('error');
+        } finally {
+            setTestSending(false);
+        }
     };
 
     const isDirty = selected && (subject !== selected.subject || body !== selected.body);
@@ -248,6 +269,43 @@ export default function EmailTemplatesPage() {
                                                     Сохранено
                                                 </span>
                                             )}
+                                        </div>
+
+                                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2">
+                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                Отправить тестовое письмо
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="email"
+                                                    placeholder="email@example.com"
+                                                    value={testEmail}
+                                                    onChange={(e) => { setTestEmail(e.target.value); setTestResult(null); }}
+                                                    className="flex-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={sendTest}
+                                                    disabled={testSending || !testEmail}
+                                                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40 whitespace-nowrap"
+                                                >
+                                                    {testSending ? 'Отправка...' : 'Отправить'}
+                                                </button>
+                                            </div>
+                                            {testResult === 'ok' && (
+                                                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                    Письмо отправлено на {testEmail}
+                                                </p>
+                                            )}
+                                            {testResult === 'error' && (
+                                                <p className="text-xs text-red-600 dark:text-red-400">
+                                                    Не удалось отправить. Проверьте настройки SMTP.
+                                                </p>
+                                            )}
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                                Используются тестовые данные вместо переменных.
+                                                {!process.env.NEXT_PUBLIC_SMTP_CONFIGURED && ' SMTP настраивается через переменные окружения.'}
+                                            </p>
                                         </div>
                                     </div>
                                 ) : (

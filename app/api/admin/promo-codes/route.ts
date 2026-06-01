@@ -44,9 +44,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Omit<PromoCodeItem, 'id'>
     const data = await readData()
+    const code = (body.code ?? '').toUpperCase().trim()
+    if (data.some((d) => d.code === code)) {
+      return NextResponse.json({ error: 'duplicate_code' }, { status: 409 })
+    }
     const item: PromoCodeItem = {
       id: `pc-${Date.now()}`,
-      code: (body.code ?? '').toUpperCase().trim(),
+      code,
       discount: Number(body.discount) || 0,
       minOrder: Number(body.minOrder) || 0,
       maxUses: body.maxUses !== null && body.maxUses !== undefined ? Number(body.maxUses) : null,

@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/lib/orders-store'
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
@@ -7,6 +7,53 @@ import { Button } from '@/components/ui/button'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 import { getAdminAccessLevel, getCurrentUser } from '@/lib/auth'
+
+function RevenueBarChart({ data }: { data: { label: string; value: number }[] }) {
+  const max = Math.max(...data.map((d) => d.value), 1)
+  const h = 140
+  const barW = Math.max(8, Math.min(36, Math.floor(560 / Math.max(data.length, 1)) - 4))
+  const gap = Math.max(2, Math.floor(560 / Math.max(data.length, 1)) - barW)
+  const chartW = Math.max(560, data.length * (barW + gap) + 40)
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={chartW} height={h + 48} className="block">
+        {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+          const y = 8 + (h - 8) * (1 - frac)
+          return (
+            <g key={frac}>
+              <line x1={32} x2={chartW - 8} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
+              <text x={28} y={y + 4} textAnchor="end" fontSize={9} fill="#9ca3af">
+                {frac === 0 ? '0' : `€${Math.round(max * frac).toLocaleString('ru-RU')}`}
+              </text>
+            </g>
+          )
+        })}
+        {data.map((d, i) => {
+          const barH = Math.max(2, (d.value / max) * (h - 16))
+          const x = 32 + i * (barW + gap)
+          const y = h - barH + 8
+          return (
+            <g key={i}>
+              <title>€{d.value.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</title>
+              <rect x={x} y={y} width={barW} height={barH} rx={3} fill="#6366f1" opacity={0.85} />
+              <text
+                x={x + barW / 2}
+                y={h + 24}
+                textAnchor="middle"
+                fontSize={9}
+                fill="#6b7280"
+                transform={data.length > 10 ? `rotate(-35,${x + barW / 2},${h + 24})` : undefined}
+              >
+                {d.label}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
 
 type CardDef = {
   id: string
@@ -36,6 +83,31 @@ export default function AdminPage() {
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
   const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0
   const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0)
+
+  const [chartPeriod, setChartPeriod] = useState<'7d' | '30d' | '90d'>('30d')
+
+  const chartOrders = useMemo(() => {
+    const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 90
+    const cutoff = Date.now() - days * 86400000
+    return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
+  }, [orders, chartPeriod])
+
+  const revenueByDay = useMemo(() => {
+    const map = new Map<string, number>()
+    chartOrders.forEach((o) => {
+      const d = new Date(o.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+      map.set(d, (map.get(d) ?? 0) + (o.total ?? 0))
+    })
+    return Array.from(map.entries())
+      .sort((a, b) => {
+        const [da, ma] = a[0].split('.').map(Number)
+        const [db, mb] = b[0].split('.').map(Number)
+        return ma !== mb ? ma - mb : da - db
+      })
+      .map(([label, value]) => ({ label, value }))
+  }, [chartOrders])
+
+  const chartPeriodRevenue = chartOrders.reduce((s, o) => s + (o.total ?? 0), 0)
 
   const statusColors: Record<OrderStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -73,14 +145,16 @@ export default function AdminPage() {
     { id: 'products',   href: '/admin/products',              adminOnly: true,  bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-l-emerald-500', title: tl('admin.dashboard.cards.products.title', 'Товары', 'Products', 'Produkti'), description: tl('admin.dashboard.cards.products.description', 'Редактирование цен и описаний, поиск по характеристикам', 'Edit prices/descriptions and search by attributes', 'Cenu/aprakstu redigesana un meklesana pec atributiem'), linkText: tl('admin.dashboard.cards.products.open', 'Открыть товары', 'Open products', 'Atvert produktus') },
     { id: 'blog',       href: '/admin/blog',                  adminOnly: true,  bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-l-orange-500', title: tl('admin.dashboard.cards.blog.title', 'Блог', 'Blog', 'Blogs'), description: tl('admin.dashboard.cards.blog.description', 'Создание, редактирование и удаление статей', 'Create, edit, and delete articles', 'Rakstu izveide, redigesana un dzesana'), linkText: tl('admin.dashboard.cards.blog.open', 'Открыть управление блогом', 'Open blog management', 'Atvert bloga parvaldibu') },
     { id: 'content',    href: '/admin/content',               adminOnly: true,  bg: 'bg-amber-50 dark:bg-amber-950/20',  border: 'border-l-amber-500',  title: tl('admin.dashboard.cards.content.title', 'Контент сайта', 'Site content', 'Vietnes saturs'), description: tl('admin.dashboard.cards.content.description', 'Редактирование текстов и изображений без правки кода', 'Edit text and images without code changes', 'Tekstu un attelu redigesana bez koda izmainam'), linkText: tl('admin.dashboard.cards.content.open', 'Открыть контент-панель', 'Open content panel', 'Atvert satura paneli') },
-    { id: 'banners',    href: '/admin/content/banners',       adminOnly: true,  bg: 'bg-yellow-50 dark:bg-yellow-950/20', border: 'border-l-yellow-500', title: 'Баннеры и блоки',                    description: 'Управление промо-баннерами и контентными блоками главной страницы', linkText: 'Открыть' },
-    { id: 'design',     href: '/admin/design-system',         adminOnly: true,  bg: 'bg-slate-100 dark:bg-slate-800/40', border: 'border-l-slate-400',  title: 'Design System',                      description: 'Визуальный справочник токенов, компонентов и паттернов проекта', linkText: 'Открыть' },
+    { id: 'banners',    href: '/admin/content/banners',       adminOnly: true,  bg: 'bg-yellow-50 dark:bg-yellow-950/20', border: 'border-l-yellow-500', title: l('Баннеры и блоки', 'Banners & blocks', 'Baneri un bloki'), description: l('Управление промо-баннерами и контентными блоками главной страницы', 'Manage promo banners and content blocks on the homepage', 'Promo baneru un satura bloku parvaldiba'), linkText: l('Открыть', 'Open', 'Atvert') },
+    { id: 'design',     href: '/admin/design-system',         adminOnly: true,  bg: 'bg-slate-100 dark:bg-slate-800/40', border: 'border-l-slate-400',  title: 'Design System',                      description: l('Визуальный справочник токенов, компонентов и паттернов проекта', 'Visual reference of tokens, components and patterns', 'Vizuala tokenu, komponentu un paraugu uzzinju gramata'), linkText: l('Открыть', 'Open', 'Atvert') },
     { id: 'reviews',    href: '/admin/reviews',               adminOnly: true,  bg: 'bg-pink-50 dark:bg-pink-950/20',    border: 'border-l-pink-500',   title: tl('admin.dashboard.cards.reviews.title', 'Отзывы', 'Reviews', 'Atsauksmes'), description: tl('admin.dashboard.cards.reviews.description', 'Просмотр, скрытие и модерация пользовательских отзывов', 'View, hide and moderate user reviews', 'Lietotaju atsauksmju skatisana, slegsana un moderacija'), linkText: tl('admin.dashboard.cards.reviews.open', 'Открыть модерацию отзывов', 'Open reviews moderation', 'Atvert atsauksmju moderaciju') },
-    { id: 'discounts',  href: '/admin/marketing/discounts',   adminOnly: true,  bg: 'bg-red-50 dark:bg-red-950/20',      border: 'border-l-red-500',    title: 'Скидки и купоны',                    description: 'Управление промокодами: создание, редактирование, статистика использования', linkText: 'Открыть' },
-    { id: 'campaigns',  href: '/admin/marketing/campaigns',   adminOnly: true,  bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-l-purple-500', title: 'Промо-кампании',                     description: 'Создание и управление маркетинговыми кампаниями по категориям товаров', linkText: 'Открыть' },
-    { id: 'showcases',  href: '/admin/marketing/showcases',   adminOnly: true,  bg: 'bg-teal-50 dark:bg-teal-950/20',    border: 'border-l-teal-500',   title: 'Подборки и витрины',                 description: 'Тематические подборки товаров для витрин и спецстраниц', linkText: 'Открыть' },
-    { id: 'promo-analytics', href: '/admin/marketing/analytics', adminOnly: true, bg: 'bg-rose-50 dark:bg-rose-950/20',  border: 'border-l-rose-500',   title: 'Аналитика промо',                    description: 'Статистика использования промокодов, конверсия и эффективность скидок', linkText: 'Открыть' },
+    { id: 'discounts',  href: '/admin/marketing/discounts',   adminOnly: true,  bg: 'bg-red-50 dark:bg-red-950/20',      border: 'border-l-red-500',    title: l('Скидки и купоны', 'Discounts & coupons', 'Atlaides un kuponi'), description: l('Управление промокодами: создание, редактирование, статистика использования', 'Manage promo codes: create, edit, usage stats', 'Promokodu parvaldiba: izveide, redigesana, statistika'), linkText: l('Открыть', 'Open', 'Atvert') },
+    { id: 'campaigns',  href: '/admin/marketing/campaigns',   adminOnly: true,  bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-l-purple-500', title: l('Промо-кампании', 'Promo campaigns', 'Promo kampanas'), description: l('Создание и управление маркетинговыми кампаниями по категориям товаров', 'Create and manage marketing campaigns by product category', 'Marketinga kampanu izveide un parvaldiba pec produktu kategorijam'), linkText: l('Открыть', 'Open', 'Atvert') },
+    { id: 'showcases',  href: '/admin/marketing/showcases',   adminOnly: true,  bg: 'bg-teal-50 dark:bg-teal-950/20',    border: 'border-l-teal-500',   title: l('Подборки и витрины', 'Showcases', 'Vitrinas'), description: l('Тематические подборки товаров для витрин и спецстраниц', 'Curated product collections for showcases and special pages', 'Tematiskas produktu izlases vitrinam un specialajam lapam'), linkText: l('Открыть', 'Open', 'Atvert') },
+    { id: 'promo-analytics', href: '/admin/marketing/analytics', adminOnly: true, bg: 'bg-rose-50 dark:bg-rose-950/20',  border: 'border-l-rose-500',   title: l('Аналитика промо', 'Promo analytics', 'Promo analitika'), description: l('Статистика использования промокодов, конверсия и эффективность скидок', 'Promo code usage stats, conversion and discount effectiveness', 'Promokodu lietosanas statistika, konversija un atlaizu efektivitate'), linkText: l('Открыть', 'Open', 'Atvert') },
     { id: 'bonus',      href: '/admin/bonus',                 adminOnly: true,  bg: 'bg-green-50 dark:bg-green-950/20',  border: 'border-l-green-500',  title: t('admin.bonus.title'),               description: tl('admin.dashboard.cards.bonus.description', 'Настройка начисления и списания бонусных баллов', 'Bonus points earn and spend settings', 'Bonusu punktu uzkrasanas un tereesanas iestatijumi'), linkText: tl('admin.dashboard.cards.bonus.open', 'Открыть бонусную программу', 'Open bonus program', 'Atvert bonus programmu') },
+    { id: 'breakdown',  href: '/admin/sales/breakdown',       adminOnly: true,  bg: 'bg-sky-50 dark:bg-sky-950/20',      border: 'border-l-sky-500',    title: l('Аналитика: товары', 'Product analytics', 'Produktu analitika'), description: l('Топ-10 товаров, топ бренды, динамика выручки по категориям', 'Top products, top brands, revenue by category', 'Top produkti, top zimi, ienemumi pec kategorijam'), linkText: l('Открыть', 'Open', 'Atvert') },
+    { id: 'analytics',  href: '/admin/analytics',             adminOnly: true,  bg: 'bg-violet-50 dark:bg-violet-950/20', border: 'border-l-violet-500', title: l('ABC / Когорты / SEO', 'ABC / Cohorts / SEO', 'ABC / Kohortas / SEO'), description: l('ABC-анализ товаров, когортный retention клиентов, SEO-пробелы каталога', 'Product ABC analysis, cohort retention, catalog SEO gaps', 'ABC analitika, kohortu retencija, SEO trukumi'), linkText: l('Открыть', 'Open', 'Atvert') },
   ]
 
   const visibleCards = ALL_CARDS.filter((c) => !c.adminOnly || hasFullAccess)
@@ -113,8 +187,7 @@ export default function AdminPage() {
   const handleDragEnd = () => { dragId.current = null; setDragOverId(null) }
 
   return (
-    <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
-      <div className="max-w-6xl mx-auto">
+    <main className="w-full py-4 text-gray-900 dark:text-gray-100">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('admin.dashboard')}</h1>
@@ -128,11 +201,11 @@ export default function AdminPage() {
             <div className="flex items-center gap-2">
               {editMode && (
                 <Button variant="outline" size="sm" onClick={() => { resetCardOrder(); setEditMode(false) }}>
-                  Сбросить порядок
+                  {l('Сбросить порядок', 'Reset order', 'Atiestatit kartibu')}
                 </Button>
               )}
               <Button variant={editMode ? 'default' : 'outline'} size="sm" onClick={() => setEditMode((v) => !v)}>
-                {editMode ? 'Готово' : 'Настроить панель'}
+                {editMode ? l('Готово', 'Done', 'Gatavs') : l('Настроить панель', 'Customize panel', 'Pielaqot paneli')}
               </Button>
             </div>
           )}
@@ -140,7 +213,11 @@ export default function AdminPage() {
 
         {editMode && (
           <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-            Перетащите плашки в нужном порядке. Нажмите «Готово» когда закончите.
+            {l(
+              'Перетащите плашки в нужном порядке. Нажмите «Готово» когда закончите.',
+              'Drag the cards into the desired order. Click "Done" when finished.',
+              'Velciet kartes vajadzigaja kartiba. Nokliksiniet "Gatavs", kad esat pabeidzis.'
+            )}
           </p>
         )}
 
@@ -207,6 +284,84 @@ export default function AdminPage() {
             <p className="text-gray-600 dark:text-gray-300 text-sm">📋 {t('admin.stats.itemsSold')}</p>
             <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{totalItems}</p>
           </div>
+        </div>
+
+        {/* Pending orders alert */}
+        {(() => {
+          const pendingCount = orders.filter((o) => getOrderStatus(o.id) === 'pending').length
+          const confirmedCount = orders.filter((o) => getOrderStatus(o.id) === 'confirmed').length
+          const total = pendingCount + confirmedCount
+          if (total === 0) return null
+          return (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-5 py-3">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{total}</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    {l(
+                      total === 1 ? 'необработанный заказ' : total < 5 ? 'необработанных заказа' : 'необработанных заказов',
+                      total === 1 ? 'unprocessed order' : 'unprocessed orders',
+                      total === 1 ? 'neapstradats pasutijums' : 'neapstradati pasutijumi'
+                    )}
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    {pendingCount > 0 && `${l('Новых', 'New', 'Jauni')}: ${pendingCount}`}
+                    {pendingCount > 0 && confirmedCount > 0 && ' · '}
+                    {confirmedCount > 0 && `${l('Подтверждённых', 'Confirmed', 'Apstiprinati')}: ${confirmedCount}`}
+                  </p>
+                </div>
+              </div>
+              <Link href="/admin/orders?status=pending">
+                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
+                  {l('Обработать →', 'Process →', 'Apstradat →')}
+                </Button>
+              </Link>
+            </div>
+          )
+        })()}
+
+        {/* Revenue Chart */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {l('Выручка', 'Revenue', 'Ienemumi')}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {l('За период', 'Period total', 'Perioda kopā')}:{' '}
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {formatEuro(chartPeriodRevenue, locale)}
+                </span>
+                {' '}·{' '}
+                {chartOrders.length}{' '}
+                {l('заказов', 'orders', 'pasūtījumu')}
+              </p>
+            </div>
+            <div className="flex gap-1">
+              {(['7d', '30d', '90d'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setChartPeriod(p)}
+                  className={[
+                    'px-3 py-1 text-sm rounded-md transition-colors',
+                    chartPeriod === p
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700',
+                  ].join(' ')}
+                >
+                  {p === '7d' ? l('7 дней', '7 days', '7 dienas') : p === '30d' ? l('30 дней', '30 days', '30 dienas') : l('90 дней', '90 days', '90 dienas')}
+                </button>
+              ))}
+            </div>
+          </div>
+          {revenueByDay.length > 0 ? (
+            <RevenueBarChart data={revenueByDay} />
+          ) : (
+            <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+              {l('Нет заказов за выбранный период', 'No orders for selected period', 'Nav pasūtījumu izvēlētajam periodam')}
+            </div>
+          )}
         </div>
 
         {/* Orders Section */}
@@ -284,7 +439,6 @@ export default function AdminPage() {
             <p className="text-gray-600 dark:text-gray-300 text-center py-8">{t('admin.noOrders')}</p>
           )}
         </div>
-      </div>
     </main>
   )
 }

@@ -1,0 +1,459 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import AdminGate from '@/components/admin/AdminGate'
+import { useOrders } from '@/lib/orders-store'
+import { formatEuro } from '@/lib/utils'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+type Period = '7d' | '30d' | '90d' | 'all'
+type Metric = 'revenue' | 'qty'
+
+const CAT_LABELS: Record<string, string> = {
+  hair: 'Волосы',
+  face: 'Лицо',
+  body: 'Тело',
+  nails: 'Ногти',
+  equipment: 'Оборудование',
+  new: 'Новинки',
+}
+
+const CAT_COLORS: Record<string, string> = {
+  hair: '#6366f1',
+  face: '#ec4899',
+  body: '#f59e0b',
+  nails: '#10b981',
+  equipment: '#3b82f6',
+  new: '#8b5cf6',
+}
+
+const fmt = (v: number) => formatEuro(v, 'ru-RU')
+const pct = (v: number, total: number) => total > 0 ? `${Math.round((v / total) * 100)}%` : '0%'
+
+// ─── Chart components ─────────────────────────────────────────────────────────
+
+function HBar({ value, max, color = '#6366f1' }: { value: number; max: number; color?: string }) {
+  const w = max > 0 ? Math.max(2, (value / max) * 100) : 0
+  return (
+    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+      <div className="h-full rounded-full transition-all" style={{ width: `${w}%`, background: color }} />
+    </div>
+  )
+}
+
+type StackedMonth = { month: string; sortKey: number; [cat: string]: string | number }
+
+function StackedBarChart({
+  data,
+  categories,
+  metric,
+}: {
+  data: StackedMonth[]
+  categories: string[]
+  metric: Metric
+}) {
+  const [hovered, setHovered] = useState<{ monthIdx: number; cat: string } | null>(null)
+
+  const totals = useMemo(
+    () => data.map((d) => categories.reduce((s, cat) => s + (((d[cat] as number) | 0)), 0)),
+    [data, categories]
+  )
+  const max = Math.max(...totals, 1)
+  const h = 200
+  const barW = Math.max(18, Math.min(56, Math.floor(600 / Math.max(data.length, 1)) - 6))
+  const gap = Math.max(4, Math.floor(600 / Math.max(data.length, 1)) - barW)
+  const chartW = Math.max(600, data.length * (barW + gap) + 44)
+
+  if (data.length === 0) {
+    return <p className="py-12 text-center text-sm text-gray-400">Нет данных</p>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={chartW} height={h + 56} className="block select-none">
+        {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+          const y = 8 + (h - 8) * (1 - frac)
+          const label = frac === 0 ? '0' : metric === 'revenue'
+            ? `€${Math.round(max * frac).toLocaleString('ru-RU')}`
+            : Math.round(max * frac).toLocaleString('ru-RU')
+          return (
+            <g key={frac}>
+              <line x1={36} x2={chartW - 8} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
+              <text x={32} y={y + 4} textAnchor="end" fontSize={9} fill="#9ca3af">{label}</text>
+            </g>
+          )
+        })}
+
+        {data.map((d, i) => {
+          const x = 36 + i * (barW + gap)
+          let yTop = h + 8
+
+          return (
+            <g key={i}>
+              {categories.map((cat) => {
+                const val = (d[cat] as number) ?? 0
+                if (val === 0) return null
+                const barH = Math.max(1, (val / max) * (h - 16))
+                yTop -= barH
+                const isHov = hovered?.monthIdx === i && hovered.cat === cat
+                return (
+                  <rect
+                    key={cat}
+                    x={x}
+                    y={yTop}
+                    width={barW}
+                    height={barH}
+                    fill={CAT_COLORS[cat] ?? '#94a3b8'}
+                    opacity={hovered && !isHov ? 0.35 : 0.88}
+                    rx={cat === categories[categories.length - 1] ? 3 : 0}
+                    style={{ cursor: 'default' }}
+                    onMouseEnter={() => setHovered({ monthIdx: i, cat })}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    <title>{CAT_LABELS[cat] ?? cat}: {metric === 'revenue' ? fmt(val) : `${val} шт`}</title>
+                  </rect>
+                )
+              })}
+              <text
+                x={x + barW / 2}
+                y={h + 30}
+                textAnchor="middle"
+                fontSize={9}
+                fill="#6b7280"
+                transform={data.length > 8 ? `rotate(-30,${x + barW / 2},${h + 30})` : undefined}
+              >
+                {d.month}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1">
+        {categories.map((cat) => (
+          <div key={cat} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CAT_COLORS[cat] ?? '#94a3b8' }} />
+            {CAT_LABELS[cat] ?? cat}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function SalesBreakdownPage() {
+  const orders = useOrders((s) => s.orders)
+  const [period, setPeriod] = useState<Period>('30d')
+  const [metric, setMetric] = useState<Metric>('revenue')
+
+  const filtered = useMemo(() => {
+    if (period === 'all') return orders
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90
+    const cutoff = Date.now() - days * 86400000
+    return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
+  }, [orders, period])
+
+  // ── KPIs
+  const totalRevenue = useMemo(() => filtered.reduce((s, o) => s + (o.total ?? 0), 0), [filtered])
+  const totalQty = useMemo(() => filtered.reduce((s, o) => s + o.items.reduce((q, i) => q + i.quantity, 0), 0), [filtered])
+  const aov = filtered.length > 0 ? totalRevenue / filtered.length : 0
+  const uniqueProducts = useMemo(() => new Set(filtered.flatMap((o) => o.items.map((i) => i.id))).size, [filtered])
+
+  // ── Top products
+  const topProducts = useMemo(() => {
+    const map = new Map<string, { title: string; brand: string; qty: number; revenue: number }>()
+    filtered.forEach((o) => {
+      o.items.forEach((item) => {
+        const e = map.get(item.id) ?? { title: item.title, brand: (item as { brand?: string }).brand ?? '—', qty: 0, revenue: 0 }
+        map.set(item.id, { ...e, qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
+      })
+    })
+    return Array.from(map.values())
+      .sort((a, b) => (metric === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
+      .slice(0, 10)
+  }, [filtered, metric])
+
+  const topProductMax = topProducts[0]?.[metric === 'revenue' ? 'revenue' : 'qty'] ?? 1
+
+  // ── Top brands
+  const topBrands = useMemo(() => {
+    const map = new Map<string, { qty: number; revenue: number }>()
+    filtered.forEach((o) => {
+      o.items.forEach((item) => {
+        const brand = (item as { brand?: string }).brand ?? '—'
+        const e = map.get(brand) ?? { qty: 0, revenue: 0 }
+        map.set(brand, { qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
+      })
+    })
+    return Array.from(map.entries())
+      .map(([brand, v]) => ({ brand, ...v }))
+      .sort((a, b) => (metric === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
+      .slice(0, 15)
+  }, [filtered, metric])
+
+  const topBrandMax = topBrands[0]?.[metric === 'revenue' ? 'revenue' : 'qty'] ?? 1
+
+  // ── Category trend by month (stacked bar)
+  const { categoryTrend, activeCategories } = useMemo(() => {
+    const monthMap = new Map<number, { month: string; sortKey: number; cats: Record<string, number> }>()
+
+    filtered.forEach((o) => {
+      const d = new Date(o.createdAt)
+      const sortKey = d.getFullYear() * 100 + (d.getMonth() + 1)
+      const label = d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' })
+
+      if (!monthMap.has(sortKey)) monthMap.set(sortKey, { month: label, sortKey, cats: {} })
+      const entry = monthMap.get(sortKey)!
+      o.items.forEach((item) => {
+        const cat = (item as { category?: string }).category ?? 'other'
+        const val = metric === 'revenue' ? item.price * item.quantity : item.quantity
+        entry.cats[cat] = (entry.cats[cat] ?? 0) + val
+      })
+    })
+
+    const trend: StackedMonth[] = Array.from(monthMap.values())
+      .sort((a, b) => a.sortKey - b.sortKey)
+      .map(({ month, sortKey, cats }) => ({ month, sortKey, ...cats }))
+
+    const catSet = new Set<string>()
+    trend.forEach((d) => Object.keys(d).filter((k) => k !== 'month' && k !== 'sortKey').forEach((k) => catSet.add(k)))
+    const active = Array.from(catSet).filter((c) => c !== 'other')
+
+    return { categoryTrend: trend, activeCategories: active }
+  }, [filtered, metric])
+
+  // ── Category summary (donut-like table)
+  const categorySummary = useMemo(() => {
+    const map = new Map<string, { qty: number; revenue: number }>()
+    filtered.forEach((o) => {
+      o.items.forEach((item) => {
+        const cat = (item as { category?: string }).category ?? 'other'
+        const e = map.get(cat) ?? { qty: 0, revenue: 0 }
+        map.set(cat, { qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
+      })
+    })
+    return Array.from(map.entries())
+      .map(([cat, v]) => ({ cat, ...v }))
+      .sort((a, b) => b.revenue - a.revenue)
+  }, [filtered])
+
+  const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+    { value: '7d', label: '7 дней' },
+    { value: '30d', label: '30 дней' },
+    { value: '90d', label: '90 дней' },
+    { value: 'all', label: 'Всё время' },
+  ]
+
+  const sectionCls = 'rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
+  const headerCls = 'border-b border-gray-200 dark:border-gray-700 px-5 py-3'
+  const bodyPad = 'px-5 py-4'
+
+  return (
+    <AdminGate access="full">
+      <div className="space-y-6">
+
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Аналитика: товары и категории</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {filtered.length} заказов · {totalQty} единиц товаров
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Metric toggle */}
+            <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+              {(['revenue', 'qty'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMetric(m)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    metric === m
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {m === 'revenue' ? 'Выручка' : 'Кол-во'}
+                </button>
+              ))}
+            </div>
+            {/* Period toggle */}
+            <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setPeriod(opt.value)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    period === opt.value
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <Link href="/admin/sales/analytics" className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+              ← Продажи
+            </Link>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { label: 'Выручка', value: fmt(totalRevenue) },
+            { label: 'Заказов', value: filtered.length.toLocaleString('ru-RU') },
+            { label: 'Средний чек', value: fmt(aov) },
+            { label: 'Уникальных товаров', value: uniqueProducts.toLocaleString('ru-RU') },
+          ].map((k) => (
+            <div key={k.label} className={sectionCls + ' p-4'}>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{k.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Top products + brands (2-col) */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+          {/* Top-10 products */}
+          <div className={sectionCls}>
+            <div className={headerCls + ' flex items-center justify-between'}>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Топ-10 товаров · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
+              </h2>
+              <span className="text-xs text-gray-400">из {uniqueProducts}</span>
+            </div>
+            {topProducts.length === 0 ? (
+              <p className="py-10 text-center text-sm text-gray-400">Нет данных за период</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {topProducts.map((p, i) => {
+                  const val = metric === 'revenue' ? p.revenue : p.qty
+                  const valStr = metric === 'revenue' ? fmt(p.revenue) : `${p.qty} шт`
+                  return (
+                    <div key={i} className="px-5 py-3">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 shrink-0 text-xs font-mono text-gray-400">{i + 1}</span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{p.title}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{p.brand}</p>
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{valStr}</p>
+                          <p className="text-xs text-gray-400">{pct(metric === 'revenue' ? p.revenue : p.qty, metric === 'revenue' ? totalRevenue : totalQty)}</p>
+                        </div>
+                      </div>
+                      <HBar value={val} max={topProductMax} color="#6366f1" />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Top brands */}
+          <div className={sectionCls}>
+            <div className={headerCls + ' flex items-center justify-between'}>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Топ бренды · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
+              </h2>
+              <span className="text-xs text-gray-400">{topBrands.length} брендов</span>
+            </div>
+            {topBrands.length === 0 ? (
+              <p className="py-10 text-center text-sm text-gray-400">Нет данных за период</p>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {topBrands.map((b, i) => {
+                  const val = metric === 'revenue' ? b.revenue : b.qty
+                  const valStr = metric === 'revenue' ? fmt(b.revenue) : `${b.qty} шт`
+                  return (
+                    <div key={i} className="px-5 py-2.5">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 shrink-0 text-xs font-mono text-gray-400">{i + 1}</span>
+                          <span className="truncate text-sm text-gray-800 dark:text-gray-200">{b.brand}</span>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{valStr}</span>
+                          <span className="ml-1.5 text-xs text-gray-400">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
+                        </div>
+                      </div>
+                      <HBar value={val} max={topBrandMax} color="#10b981" />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Category breakdown + trend */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+          {/* Category summary */}
+          <div className={sectionCls}>
+            <div className={headerCls}>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">По категориям</h2>
+            </div>
+            {categorySummary.length === 0 ? (
+              <p className="py-10 text-center text-sm text-gray-400">Нет данных</p>
+            ) : (
+              <div className={bodyPad + ' space-y-3'}>
+                {categorySummary.map((c, i) => {
+                  const val = metric === 'revenue' ? c.revenue : c.qty
+                  const max = categorySummary[0] ? (metric === 'revenue' ? categorySummary[0].revenue : categorySummary[0].qty) : 1
+                  const color = CAT_COLORS[c.cat] ?? '#94a3b8'
+                  return (
+                    <div key={c.cat}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: color }} />
+                          <span className="text-gray-700 dark:text-gray-300">{CAT_LABELS[c.cat] ?? c.cat}</span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">
+                            {metric === 'revenue' ? fmt(c.revenue) : `${c.qty} шт`}
+                          </span>
+                          <span className="ml-1.5 text-xs text-gray-400">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
+                        </div>
+                      </div>
+                      <HBar value={val} max={max} color={color} />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Stacked bar: category dynamics by month */}
+          <div className={sectionCls + ' lg:col-span-2'}>
+            <div className={headerCls}>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Динамика по категориям · {metric === 'revenue' ? 'выручка по месяцам' : 'продажи по месяцам'}
+              </h2>
+            </div>
+            <div className={bodyPad}>
+              <StackedBarChart
+                data={categoryTrend}
+                categories={activeCategories}
+                metric={metric}
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </AdminGate>
+  )
+}

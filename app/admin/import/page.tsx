@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
+import type { PreviewResult, RowAction } from '@/app/api/admin/import/preview/route'
 
 // ─── CSV parser (no external deps) ───────────────────────────────────────────
 
@@ -56,7 +57,7 @@ type ImportResult = {
   errors: { row: number; id: string; message: string }[]
 }
 
-// ─── Required + optional CSV columns ──────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const REQUIRED_COLS = ['id', 'title', 'brand', 'price', 'stock', 'category']
 const ALL_COLS = [
@@ -78,7 +79,12 @@ const MODE_LABELS: Record<ImportMode, string> = {
   upsert: 'Создание + обновление — новые создаются, существующие обновляются',
 }
 
-const PREVIEW_COLS = ['id', 'title', 'brand', 'price', 'stock', 'category', 'sku']
+const ACTION_STYLES: Record<RowAction, { label: string; chip: string }> = {
+  create: { label: 'Создать',   chip: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  update: { label: 'Обновить',  chip: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+  skip:   { label: 'Пропустить',chip: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+  error:  { label: 'Ошибка',    chip: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -87,7 +93,9 @@ export default function AdminImportPage() {
   const [fileName, setFileName] = React.useState('')
   const [mode, setMode] = React.useState<ImportMode>('upsert')
   const [importing, setImporting] = React.useState(false)
+  const [previewing, setPreviewing] = React.useState(false)
   const [result, setResult] = React.useState<ImportResult | null>(null)
+  const [previewResult, setPreviewResult] = React.useState<PreviewResult | null>(null)
   const [parseError, setParseError] = React.useState('')
   const [missingCols, setMissingCols] = React.useState<string[]>([])
   const fileRef = React.useRef<HTMLInputElement>(null)
@@ -99,6 +107,7 @@ export default function AdminImportPage() {
     if (!file) return
     setFileName(file.name)
     setResult(null)
+    setPreviewResult(null)
     setParseError('')
     setMissingCols([])
 
@@ -125,8 +134,36 @@ export default function AdminImportPage() {
     setRows([])
     setFileName('')
     setResult(null)
+    setPreviewResult(null)
     setParseError('')
     setMissingCols([])
+  }
+
+  const onModeChange = (m: ImportMode) => {
+    setMode(m)
+    setPreviewResult(null)
+  }
+
+  // ── Preview ───────────────────────────────────────────────────────────────
+
+  const onPreview = async () => {
+    if (!rows.length || missingCols.length > 0) return
+    setPreviewing(true)
+    setPreviewResult(null)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/import/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, mode }),
+      })
+      const data = (await res.json()) as PreviewResult
+      setPreviewResult(data)
+    } catch {
+      setParseError('Не удалось получить предпросмотр. Проверьте соединение.')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   // ── Import ────────────────────────────────────────────────────────────────
@@ -150,7 +187,7 @@ export default function AdminImportPage() {
     }
   }
 
-  // ── Validation summary ────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const detectedCols = rows.length > 0 ? Object.keys(rows[0]) : []
   const canImport = rows.length > 0 && missingCols.length === 0
@@ -159,7 +196,7 @@ export default function AdminImportPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
 
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -213,7 +250,7 @@ export default function AdminImportPage() {
           {/* Step 1: Upload */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">1. Выберите файл</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button variant="outline" onClick={() => fileRef.current?.click()}>
                 {fileName ? 'Заменить файл' : 'Выбрать CSV-файл'}
               </Button>
@@ -261,9 +298,7 @@ export default function AdminImportPage() {
                 </div>
               )}
               {missingCols.length === 0 && (
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  Все обязательные колонки присутствуют.
-                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">Все обязательные колонки присутствуют.</p>
               )}
             </div>
           )}
@@ -280,7 +315,7 @@ export default function AdminImportPage() {
                       name="mode"
                       value={m}
                       checked={mode === m}
-                      onChange={() => setMode(m)}
+                      onChange={() => onModeChange(m)}
                       className="mt-0.5"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-200">
@@ -293,46 +328,124 @@ export default function AdminImportPage() {
           )}
 
           {/* Step 3: Preview */}
-          {canImport && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                3. Предпросмотр{rows.length > 10 ? ` (первые 10 из ${rows.length})` : ` (${rows.length} строк)`}
-              </p>
-              <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
-                <table className="min-w-full text-xs">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium">#</th>
-                      {PREVIEW_COLS.filter((c) => detectedCols.includes(c)).map((col) => (
-                        <th key={col} className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {rows.slice(0, 10).map((row, i) => (
-                      <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-3 py-2 text-gray-400 dark:text-gray-500">{i + 2}</td>
-                        {PREVIEW_COLS.filter((c) => detectedCols.includes(c)).map((col) => (
-                          <td key={col} className="px-3 py-2 text-gray-700 dark:text-gray-200 max-w-[180px] truncate">
-                            {row[col] || <span className="text-gray-300 dark:text-gray-600">—</span>}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {canImport && !result && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">3. Предпросмотр</p>
+                <Button variant="outline" size="sm" onClick={onPreview} disabled={previewing}>
+                  {previewing ? 'Анализируется...' : previewResult ? 'Обновить предпросмотр' : 'Проверить файл'}
+                </Button>
               </div>
+
+              {!previewResult && !previewing && (
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Нажмите «Проверить файл» — мы сравним CSV с каталогом и покажем что будет создано, обновлено или пропущено.
+                </p>
+              )}
+
+              {previewResult && (
+                <div className="space-y-3">
+                  {/* Summary chips */}
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {previewResult.summary.create > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 font-medium">
+                        Создать: {previewResult.summary.create}
+                      </span>
+                    )}
+                    {previewResult.summary.update > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
+                        Обновить: {previewResult.summary.update}
+                      </span>
+                    )}
+                    {previewResult.summary.skip > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 font-medium">
+                        Пропустить: {previewResult.summary.skip}
+                      </span>
+                    )}
+                    {previewResult.summary.error > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
+                        Ошибок: {previewResult.summary.error}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Enriched table */}
+                  <div className="overflow-auto max-h-[480px] rounded-md border border-gray-200 dark:border-gray-700">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">#</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Действие</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">ID</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Название</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Бренд</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Цена</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">Остаток</th>
+                          <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">SKU</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {previewResult.rows.map((row) => {
+                          const style = ACTION_STYLES[row.action]
+                          return (
+                            <tr
+                              key={row.rowNum}
+                              className={[
+                                'transition-colors',
+                                row.action === 'error'
+                                  ? 'bg-red-50/60 dark:bg-red-900/10'
+                                  : row.action === 'skip'
+                                  ? 'opacity-50'
+                                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
+                              ].join(' ')}
+                            >
+                              <td className="px-3 py-2 text-gray-400 dark:text-gray-500 tabular-nums">{row.rowNum}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <span className={`rounded-full px-2 py-0.5 font-medium text-[11px] ${style.chip}`}>
+                                  {style.label}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 font-mono text-gray-600 dark:text-gray-300 max-w-[120px] truncate">
+                                {row.id || <span className="text-red-400">—</span>}
+                              </td>
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-200 max-w-[200px]">
+                                {row.action === 'error' ? (
+                                  <span className="text-red-600 dark:text-red-400">{row.error}</span>
+                                ) : (
+                                  <span className="truncate block">{row.title || '—'}</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{row.brand || '—'}</td>
+                              <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap tabular-nums">
+                                {row.price ? `€${row.price}` : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap tabular-nums">{row.stock || '—'}</td>
+                              <td className="px-3 py-2 text-gray-400 dark:text-gray-500 font-mono whitespace-nowrap">{row.sku || '—'}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Step 4: Run */}
-          {canImport && !result && (
-            <div className="flex items-center gap-3">
-              <Button onClick={onImport} disabled={importing}>
-                {importing ? 'Импортируется...' : `Запустить импорт (${rows.length} строк, режим: ${mode})`}
+          {/* Step 4: Run — only after preview */}
+          {canImport && previewResult && !result && (
+            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-3 flex-wrap">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 w-full">4. Запустить импорт</p>
+              <Button onClick={onImport} disabled={importing || previewResult.summary.error === previewResult.rows.length}>
+                {importing
+                  ? 'Импортируется...'
+                  : `Запустить (${previewResult.summary.create + previewResult.summary.update} из ${rows.length} строк)`}
               </Button>
+              {previewResult.summary.error > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {previewResult.summary.error} строк содержат ошибки и будут пропущены.
+                </p>
+              )}
             </div>
           )}
 

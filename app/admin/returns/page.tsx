@@ -7,6 +7,7 @@ import { useOrders } from '@/lib/orders-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
+import { logAdminAction } from '@/lib/admin-log-store'
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed']
 
@@ -43,6 +44,8 @@ export default function AdminReturnsPage() {
   const [reasonFilter, setReasonFilter] = useState<ReturnReason | 'all'>('all')
   const [expandedReturn, setExpandedReturn] = useState<string | null>(null)
   const [resolutionDraft, setResolutionDraft] = useState<Record<string, string>>({})
+  const [notifySending, setNotifySending] = useState<string | null>(null)
+  const [notifyResult, setNotifyResult] = useState<Record<string, 'ok' | 'error'>>({})
 
   // Create form state
   const [showCreate, setShowCreate] = useState(false)
@@ -89,6 +92,31 @@ export default function AdminReturnsPage() {
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [returns, search, statusFilter, reasonFilter])
+
+  const sendNotification = async (ret: typeof returns[number]) => {
+    setNotifySending(ret.id)
+    setNotifyResult((prev) => { const n = { ...prev }; delete n[ret.id]; return n })
+    try {
+      const res = await fetch('/api/admin/returns/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: ret.email,
+          firstName: ret.firstName,
+          returnId: ret.id,
+          orderId: ret.orderId,
+          status: ret.status,
+          refundAmount: ret.refundAmount,
+          resolution: resolutionDraft[ret.id] ?? ret.resolution,
+        }),
+      })
+      setNotifyResult((prev) => ({ ...prev, [ret.id]: res.ok ? 'ok' : 'error' }))
+    } catch {
+      setNotifyResult((prev) => ({ ...prev, [ret.id]: 'error' }))
+    } finally {
+      setNotifySending(null)
+    }
+  }
 
   const lookupOrder = () => {
     const order = orders.find((o) => o.id === formOrderId.trim())
@@ -160,7 +188,7 @@ export default function AdminReturnsPage() {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10 space-y-6">
+    <main className="w-full py-4 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Возвраты и отмены</h1>
         <div className="flex gap-2">
@@ -365,7 +393,7 @@ export default function AdminReturnsPage() {
                 <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-5 space-y-5 bg-white dark:bg-gray-900">
 
                   {/* Quick actions */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => void navigator.clipboard.writeText(ret.id)}
@@ -379,6 +407,20 @@ export default function AdminReturnsPage() {
                     >
                       Написать клиенту
                     </a>
+                    <button
+                      type="button"
+                      disabled={notifySending === ret.id}
+                      onClick={() => void sendNotification(ret)}
+                      className="inline-flex items-center rounded-lg border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors disabled:opacity-50"
+                    >
+                      {notifySending === ret.id ? 'Отправка...' : 'Уведомить клиента'}
+                    </button>
+                    {notifyResult[ret.id] === 'ok' && (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400">Письмо отправлено</span>
+                    )}
+                    {notifyResult[ret.id] === 'error' && (
+                      <span className="text-xs text-red-600 dark:text-red-400">Ошибка отправки</span>
+                    )}
                     <Link
                       href="/admin/orders"
                       className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -481,7 +523,13 @@ export default function AdminReturnsPage() {
                           size="sm"
                           variant={ret.status === s ? 'default' : 'outline'}
                           className={ret.status === s ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
-                          onClick={() => setReturnStatus(ret.id, s, resolutionDraft[ret.id])}
+                          onClick={() => {
+                            setReturnStatus(ret.id, s, resolutionDraft[ret.id])
+                            logAdminAction('return.status_changed', {
+                              type: 'return', id: ret.id,
+                              title: `${ret.firstName} ${ret.lastName}`,
+                            }, { before: { status: ret.status }, after: { status: s } })
+                          }}
                         >
                           {STATUS_LABELS[s]}
                         </Button>

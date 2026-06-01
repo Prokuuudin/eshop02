@@ -88,7 +88,7 @@ export default function AdminMarketingAnalyticsPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
         {/* Header */}
         <div>
           <Link href="/admin" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-1 inline-block">

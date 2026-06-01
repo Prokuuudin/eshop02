@@ -122,7 +122,7 @@ export default function AdminBackupPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-8">
+      <main className="w-full py-4 space-y-8">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Резервное копирование</h1>
           <Button variant="outline" asChild>

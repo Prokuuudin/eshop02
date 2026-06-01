@@ -83,7 +83,7 @@ export default function AdminCustomerHistoryPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">История взаимодействий</h1>
           <div className="flex gap-2 flex-wrap">

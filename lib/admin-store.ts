@@ -25,10 +25,13 @@ export const DEFAULT_BONUS_PROGRAM_CONFIG: BonusProgramConfig = {
 
 type AdminStore = {
   orderStatuses: Record<string, OrderStatus>
+  orderNotes: Record<string, string>
   bonusProgram: BonusProgramConfig
   cardOrder: string[] | null
   setOrderStatus: (orderId: string, status: OrderStatus) => void
   getOrderStatus: (orderId: string) => OrderStatus
+  setOrderNote: (orderId: string, note: string) => void
+  getOrderNote: (orderId: string) => string
   updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => void
   setCardOrder: (order: string[]) => void
   resetCardOrder: () => void
@@ -43,6 +46,7 @@ export const useAdminStore = create<AdminStore>()(
   persist(
     (set, get) => ({
       orderStatuses: {},
+      orderNotes: {},
       bonusProgram: DEFAULT_BONUS_PROGRAM_CONFIG,
       cardOrder: null,
 
@@ -57,6 +61,16 @@ export const useAdminStore = create<AdminStore>()(
 
       getOrderStatus: (orderId: string) => {
         return get().orderStatuses[orderId] || 'pending'
+      },
+
+      setOrderNote: (orderId: string, note: string) => {
+        set((state) => ({
+          orderNotes: { ...state.orderNotes, [orderId]: note }
+        }))
+      },
+
+      getOrderNote: (orderId: string) => {
+        return get().orderNotes[orderId] ?? ''
       },
 
       setCardOrder: (order: string[]) => set({ cardOrder: order }),

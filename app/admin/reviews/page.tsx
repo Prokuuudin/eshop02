@@ -18,6 +18,7 @@ type ReviewRecord = {
   createdAt: string
   helpful: number
   status: ReviewStatus
+  adminReply?: { text: string; repliedAt: string }
 }
 
 export default function AdminReviewsPage() {
@@ -45,6 +46,9 @@ export default function AdminReviewsPage() {
   const [status, setStatus] = useState<'all' | ReviewStatus>('all')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({})
+  const [replyExpanded, setReplyExpanded] = useState<Set<string>>(new Set())
+  const [replySavingId, setReplySavingId] = useState<string | null>(null)
 
   const loadReviews = async () => {
     setLoading(true)
@@ -238,6 +242,58 @@ export default function AdminReviewsPage() {
     }
   }
 
+  const toggleReply = (id: string, existingReply?: string) => {
+    setReplyExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else {
+        next.add(id)
+        if (!replyDrafts[id] && existingReply) {
+          setReplyDrafts((d) => ({ ...d, [id]: existingReply }))
+        }
+      }
+      return next
+    })
+  }
+
+  const saveReply = async (id: string) => {
+    const text = (replyDrafts[id] ?? '').trim()
+    if (!text) return
+    setReplySavingId(id)
+    try {
+      const res = await fetch('/api/admin/reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, reply: text }),
+      })
+      if (!res.ok) throw new Error()
+      setReplyExpanded((prev) => { const n = new Set(prev); n.delete(id); return n })
+      await loadReviews()
+    } catch {
+      setError(l('Не удалось сохранить ответ', 'Failed to save reply', 'Neizdevas saglabat atbildi'))
+    } finally {
+      setReplySavingId(null)
+    }
+  }
+
+  const removeReply = async (id: string) => {
+    setReplySavingId(id)
+    try {
+      const res = await fetch('/api/admin/reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, reply: null }),
+      })
+      if (!res.ok) throw new Error()
+      setReplyDrafts((d) => { const n = { ...d }; delete n[id]; return n })
+      setReplyExpanded((prev) => { const n = new Set(prev); n.delete(id); return n })
+      await loadReviews()
+    } catch {
+      setError(l('Не удалось удалить ответ', 'Failed to delete reply', 'Neizdevas dzest atbildi'))
+    } finally {
+      setReplySavingId(null)
+    }
+  }
+
   return (
     <AdminGate>
       <main className="w-full space-y-3 text-gray-900 dark:text-gray-100">
@@ -357,7 +413,65 @@ export default function AdminReviewsPage() {
                   <Button size="sm" variant="destructive" disabled={isSaving} onClick={() => void removeReview(review.id)}>
                     {l('Удалить', 'Delete', 'Dzest')}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isSaving}
+                    onClick={() => toggleReply(review.id, review.adminReply?.text)}
+                    className="ml-auto border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/20"
+                  >
+                    {review.adminReply
+                      ? (replyExpanded.has(review.id) ? l('Закрыть', 'Close', 'Aizvert') : l('Изменить ответ', 'Edit reply', 'Labot atbildi'))
+                      : (replyExpanded.has(review.id) ? l('Закрыть', 'Close', 'Aizvert') : l('Ответить', 'Reply', 'Atbildet'))}
+                  </Button>
                 </div>
+
+                {/* Existing reply preview */}
+                {review.adminReply && !replyExpanded.has(review.id) && (
+                  <div className="mt-2 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-0.5">
+                      {l('Ответ магазина', 'Store reply', 'Veikala atbilde')}
+                    </p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300">{review.adminReply.text}</p>
+                  </div>
+                )}
+
+                {/* Reply editor */}
+                {replyExpanded.has(review.id) && (
+                  <div className="mt-3 space-y-2 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-3">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                      {l('Ответ от магазина (публичный)', 'Store reply (public)', 'Veikala atbilde (publiska)')}
+                    </p>
+                    <textarea
+                      rows={3}
+                      value={replyDrafts[review.id] ?? review.adminReply?.text ?? ''}
+                      onChange={(e) => setReplyDrafts((d) => ({ ...d, [review.id]: e.target.value }))}
+                      placeholder={l('Напишите ответ покупателю...', 'Write a reply to the customer...', 'Rakstiet atbildi klientam...')}
+                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        disabled={replySavingId === review.id || !(replyDrafts[review.id] ?? '').trim()}
+                        onClick={() => void saveReply(review.id)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        {replySavingId === review.id ? l('Сохранение...', 'Saving...', 'Saglaba...') : l('Сохранить ответ', 'Save reply', 'Saglabat atbildi')}
+                      </Button>
+                      {review.adminReply && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={replySavingId === review.id}
+                          onClick={() => void removeReply(review.id)}
+                          className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700"
+                        >
+                          {l('Удалить ответ', 'Delete reply', 'Dzest atbildi')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </article>
             )
           })}

@@ -21,7 +21,9 @@
       "Bash(Select-Object -First 5)",
       "Bash(git checkout *)",
       "Bash(npx playwright *)",
-      "PowerShell(Start-Process \"http://localhost:3000/admin/client-barcodes\")"
+      "PowerShell(Start-Process \"http://localhost:3000/admin/client-barcodes\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" -Recurse -Filter \"admin\")",
+      "Bash(Select-Object FullName)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"

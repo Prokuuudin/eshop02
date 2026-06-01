@@ -65,7 +65,7 @@ function SpacingRow({ value, label }: { value: string; label: string }) {
 export default function DesignSystemPage() {
   return (
     <AdminGate>
-      <main className="max-w-5xl mx-auto px-4 py-10 space-y-14 text-gray-900 dark:text-gray-100">
+      <main className="w-full py-4 space-y-14 text-gray-900 dark:text-gray-100">
 
         {/* Header */}
         <div className="flex items-start justify-between">

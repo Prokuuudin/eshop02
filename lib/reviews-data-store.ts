@@ -3,6 +3,11 @@ import path from 'node:path'
 
 export type ReviewModerationStatus = 'approved' | 'hidden' | 'pending'
 
+export type AdminReply = {
+  text: string
+  repliedAt: string
+}
+
 export type ReviewRecord = {
   id: string
   productId: string
@@ -13,6 +18,7 @@ export type ReviewRecord = {
   createdAt: string
   helpful: number
   status: ReviewModerationStatus
+  adminReply?: AdminReply
 }
 
 export type CreateReviewInput = {
@@ -135,6 +141,32 @@ export const updateReviewStatus = async (reviewId: string, status: ReviewModerat
     }
   })
 
+  if (!found) return false
+  await writeReviewsFile(next)
+  return true
+}
+
+export const setAdminReply = async (reviewId: string, text: string): Promise<boolean> => {
+  const reviews = await readReviewsFile()
+  let found = false
+  const next = reviews.map((review) => {
+    if (review.id !== reviewId) return review
+    found = true
+    return { ...review, adminReply: { text, repliedAt: new Date().toISOString() } }
+  })
+  if (!found) return false
+  await writeReviewsFile(next)
+  return true
+}
+
+export const deleteAdminReply = async (reviewId: string): Promise<boolean> => {
+  const reviews = await readReviewsFile()
+  let found = false
+  const next = reviews.map((review) => {
+    if (review.id !== reviewId) return review
+    found = true
+    return { ...review, adminReply: undefined }
+  })
   if (!found) return false
   await writeReviewsFile(next)
   return true

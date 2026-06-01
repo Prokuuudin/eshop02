@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { deleteReview, getAllReviews, type ReviewModerationStatus, updateReviewStatus } from '@/lib/reviews-data-store'
+import { deleteAdminReply, deleteReview, getAllReviews, setAdminReply, type ReviewModerationStatus, updateReviewStatus } from '@/lib/reviews-data-store'
 
 export const runtime = 'nodejs'
 
@@ -34,8 +34,19 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = (await req.json()) as { id?: string; ids?: string[]; status?: ReviewModerationStatus }
+    const body = (await req.json()) as { id?: string; ids?: string[]; status?: ReviewModerationStatus; reply?: string | null }
     const id = body.id?.trim()
+
+    // Handle admin reply (set or clear)
+    if ('reply' in body) {
+      if (!id) return errorResponse('Review id is required', 400)
+      const changed = body.reply
+        ? await setAdminReply(id, body.reply.trim())
+        : await deleteAdminReply(id)
+      if (!changed) return errorResponse('Review not found', 404)
+      return successResponse({ id, reply: body.reply ?? null })
+    }
+
     const ids = Array.isArray(body.ids) ? body.ids.map((item) => item.trim()).filter(Boolean) : []
     const status = body.status
 

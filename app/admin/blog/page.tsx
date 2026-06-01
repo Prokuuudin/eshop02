@@ -288,15 +288,8 @@ export default function AdminBlogPage() {
 
   return (
     <AdminGate>
-      <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            <Link href="/admin" className="hover:underline">{tl('admin.blog.breadcrumbAdmin', 'Админ-панель', 'Admin panel', 'Admin panelis')}</Link>
-            <span className="px-2">/</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{tl('admin.blog.breadcrumbBlog', 'Блог', 'Blog', 'Blogs')}</span>
-          </div>
-
-          <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+      <main className="w-full py-4 text-gray-900 dark:text-gray-100">
+<div className="flex flex-wrap justify-between items-center gap-3 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{tl('admin.blog.title', 'Управление блогом', 'Blog management', 'Bloga parvaldiba')}</h1>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{tl('admin.blog.subtitle', 'Создание, редактирование и удаление статей', 'Create, edit, and delete posts', 'Rakstu izveide, redigesana un dzesana')}</p>
@@ -558,7 +551,6 @@ export default function AdminBlogPage() {
               )}
             </div>
           </div>
-        </div>
       </main>
     </AdminGate>
   )

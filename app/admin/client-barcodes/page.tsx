@@ -183,7 +183,7 @@ export default function AdminClientBarcodesPage() {
 
     return (
         <AdminGate>
-            <main className="max-w-6xl mx-auto px-4 py-10 space-y-6">
+            <main className="w-full py-4 space-y-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">

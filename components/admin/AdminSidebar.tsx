@@ -53,6 +53,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
             { title: 'catalog.import', href: '/admin/import' },
             { title: 'catalog.stockAlerts', href: '/admin/stock-alerts' },
             { title: 'catalog.bulkPrice', href: '/admin/products/bulk-price' },
+            { title: 'catalog.duplicates', href: '/admin/products/duplicates' },
         ],
     },
     {
@@ -63,6 +64,8 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
             { title: 'sales.rfq', href: '/admin/rfq' },
             { title: 'sales.returns', href: '/admin/returns' },
             { title: 'sales.analytics', href: '/admin/sales/analytics' },
+            { title: 'sales.breakdown', href: '/admin/sales/breakdown' },
+            { title: 'sales.catalogAnalytics', href: '/admin/analytics' },
         ],
     },
     {
@@ -114,6 +117,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
             { title: 'system.users', href: '/admin/accounts' },
             { title: 'system.audit', href: '/account/audit-logs' },
             { title: 'system.logs', href: '/admin/system/logs' },
+            { title: 'system.adminLog', href: '/admin/system/admin-log' },
             { title: 'system.backup', href: '/admin/system/backup' },
         ],
     },

@@ -26,47 +26,63 @@ const steps: OnboardingStep[] = [
   {
     id: 2,
     group: 'day1',
-    icon: '📦',
-    text: 'Ознакомьтесь с каталогом товаров: как выглядит карточка, где находятся цены и остатки',
-    href: '/admin/products',
-    linkLabel: 'Каталог',
+    icon: '🔍',
+    text: 'Попробуйте глобальный поиск: нажмите Ctrl+K (или ⌘K) и введите название любого товара или заказа',
+    href: '/admin',
+    linkLabel: 'Главная',
   },
   {
     id: 3,
     group: 'day1',
+    icon: '📦',
+    text: 'Ознакомьтесь с каталогом товаров: переключитесь на табличный вид и попробуйте изменить цену кликом по ней',
+    href: '/admin/products',
+    linkLabel: 'Каталог',
+  },
+  {
+    id: 4,
+    group: 'day1',
     icon: '🛒',
-    text: 'Изучите раздел заказов: разберитесь со статусами и как их менять вручную',
+    text: 'Изучите раздел заказов: смените статус тестового заказа, добавьте заметку менеджера',
     href: '/admin/orders',
     linkLabel: 'Заказы',
   },
 
   // Первая неделя
   {
-    id: 4,
+    id: 5,
     group: 'week1',
     icon: '🏷️',
-    text: 'Создайте тестовый промокод с небольшой скидкой, чтобы понять механику',
+    text: 'Создайте тестовый промокод с небольшой скидкой, чтобы понять механику. Попробуйте создать дубль — система должна предупредить',
     href: '/admin/marketing/discounts',
     linkLabel: 'Промокоды',
   },
   {
-    id: 5,
+    id: 6,
     group: 'week1',
     icon: '🎨',
-    text: 'Добавьте первый баннер или отредактируйте существующий на главной странице',
+    text: 'Добавьте или отредактируйте баннер на главной странице',
     href: '/admin/content/banners',
     linkLabel: 'Баннеры',
   },
   {
-    id: 6,
+    id: 7,
     group: 'week1',
     icon: '🖼️',
-    text: 'Загрузите изображение в медиатеку и скопируйте путь для использования в контенте',
+    text: 'Загрузите изображение в медиатеку. Нажмите на файл и изучите правую панель: сколько товаров используют этот файл',
     href: '/admin/content/media',
     linkLabel: 'Медиатека',
   },
   {
-    id: 7,
+    id: 8,
+    group: 'week1',
+    icon: '📊',
+    text: 'Откройте аналитику и изучите три вкладки: ABC-анализ товаров, когортный retention, SEO-отчёт',
+    href: '/admin/analytics',
+    linkLabel: 'Аналитика',
+  },
+  {
+    id: 9,
     group: 'week1',
     icon: '✍️',
     text: 'Напишите черновик статьи в блоге — можно тестовый, с любым содержимым',
@@ -76,13 +92,29 @@ const steps: OnboardingStep[] = [
 
   // Первый месяц
   {
-    id: 8,
+    id: 10,
     group: 'month1',
     icon: '✅',
-    text: 'Самостоятельно обработайте 10 реальных заказов, пройдя все статусы от «Ожидает» до «Доставлен»',
+    text: 'Самостоятельно обработайте 10 реальных заказов, пройдя все статусы. Попробуйте редактирование заказа: смените адрес или добавьте позицию',
   },
   {
-    id: 9,
+    id: 11,
+    group: 'month1',
+    icon: '👤',
+    text: 'Откройте профиль клиента из раздела сегментов: изучите его историю заказов, возвраты и топ товаров',
+    href: '/admin/customers/segments',
+    linkLabel: 'Сегменты',
+  },
+  {
+    id: 12,
+    group: 'month1',
+    icon: '📋',
+    text: 'Сделайте тестовый импорт CSV: скачайте шаблон, добавьте строку, загрузите — посмотрите на предпросмотр до запуска',
+    href: '/admin/import',
+    linkLabel: 'Импорт',
+  },
+  {
+    id: 13,
     group: 'month1',
     icon: '💾',
     text: 'Создайте резервную копию данных магазина и убедитесь, что файл скачивается корректно',
@@ -90,20 +122,20 @@ const steps: OnboardingStep[] = [
     linkLabel: 'Backup',
   },
   {
-    id: 10,
+    id: 14,
     group: 'month1',
     icon: '🤝',
-    text: 'Изучите работу с B2B заявками: откройте существующую RFQ-заявку и отправьте тестовый quote',
+    text: 'Изучите работу с B2B заявками: откройте RFQ-заявку, отправьте тестовый quote и посмотрите таймлайн',
     href: '/admin/rfq',
     linkLabel: 'RFQ',
   },
   {
-    id: 11,
+    id: 15,
     group: 'month1',
-    icon: '⭐',
-    text: 'Настройте параметры бонусной программы под текущие нужды магазина',
-    href: '/admin/bonus',
-    linkLabel: 'Бонусы',
+    icon: '🔐',
+    text: 'Загляните в Лог действий администраторов — убедитесь что ваши действия за эти недели там отражены',
+    href: '/admin/system/admin-log',
+    linkLabel: 'Лог действий',
   },
 ]
 
@@ -124,40 +156,25 @@ export default function AdminOnboardingPage() {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw) as number[]
-        if (Array.isArray(parsed)) {
-          setChecked(new Set(parsed))
-        }
+        if (Array.isArray(parsed)) setChecked(new Set(parsed))
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     setLoaded(true)
   }, [])
 
   const toggle = (id: number) => {
     setChecked((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
-      } catch {
-        // ignore
-      }
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])) } catch { /* ignore */ }
       return next
     })
   }
 
   const reset = () => {
     setChecked(new Set())
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // ignore
-    }
+    try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
   }
 
   const total = steps.length
@@ -168,8 +185,7 @@ export default function AdminOnboardingPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-        {/* Header */}
+      <main className="w-full py-4 space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Онбординг сотрудника</h1>
@@ -182,23 +198,18 @@ export default function AdminOnboardingPage() {
           </Link>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Прогресс: {done} из {total}
             </span>
-            <Button variant="outline" size="sm" onClick={reset}>
-              Сбросить прогресс
-            </Button>
+            <Button variant="outline" size="sm" onClick={reset}>Сбросить прогресс</Button>
           </div>
           <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-3 rounded-full transition-all duration-300"
-              style={{
-                width: `${Math.round((done / total) * 100)}%`,
-                background: allDone ? '#16a34a' : '#6366f1',
-              }}
+              style={{ width: `${Math.round((done / total) * 100)}%`, background: allDone ? '#16a34a' : '#6366f1' }}
             />
           </div>
           {loaded && allDone && (
@@ -208,7 +219,7 @@ export default function AdminOnboardingPage() {
           )}
         </div>
 
-        {/* Steps by group */}
+        {/* Steps */}
         {groups.map((group) => (
           <div key={group} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
@@ -217,61 +228,41 @@ export default function AdminOnboardingPage() {
               </h2>
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-              {steps
-                .filter((s) => s.group === group)
-                .map((step) => {
-                  const isDone = checked.has(step.id)
-                  return (
-                    <li key={step.id} className="flex items-start gap-4 px-5 py-4">
-                      {/* Checkbox */}
-                      <button
-                        type="button"
-                        onClick={() => toggle(step.id)}
-                        aria-label={isDone ? 'Снять отметку' : 'Отметить выполненным'}
-                        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          isDone
-                            ? 'bg-green-500 border-green-500 text-white'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400'
-                        }`}
-                      >
-                        {isDone && (
-                          <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                      </button>
-
-                      {/* Icon + text */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2">
-                          <span className="text-lg leading-none mt-0.5 flex-shrink-0">{step.icon}</span>
-                          <span
-                            className={`text-sm leading-relaxed ${
-                              isDone
-                                ? 'line-through text-gray-400 dark:text-gray-500'
-                                : 'text-gray-800 dark:text-gray-200'
-                            }`}
-                          >
-                            <span className="font-medium text-gray-500 dark:text-gray-400 mr-1">
-                              {step.id}.
-                            </span>
-                            {step.text}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Link */}
-                      {step.href && step.linkLabel && (
-                        <Link
-                          href={step.href}
-                          className="flex-shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap mt-0.5"
-                        >
-                          {step.linkLabel} →
-                        </Link>
+              {steps.filter((s) => s.group === group).map((step) => {
+                const isDone = checked.has(step.id)
+                return (
+                  <li key={step.id} className="flex items-start gap-4 px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => toggle(step.id)}
+                      aria-label={isDone ? 'Снять отметку' : 'Отметить выполненным'}
+                      className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        isDone ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400'
+                      }`}
+                    >
+                      {isDone && (
+                        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       )}
-                    </li>
-                  )
-                })}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2">
+                        <span className="text-lg leading-none mt-0.5 flex-shrink-0">{step.icon}</span>
+                        <span className={`text-sm leading-relaxed ${isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                          <span className="font-medium text-gray-500 dark:text-gray-400 mr-1">{step.id}.</span>
+                          {step.text}
+                        </span>
+                      </div>
+                    </div>
+                    {step.href && step.linkLabel && (
+                      <Link href={step.href} className="flex-shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap mt-0.5">
+                        {step.linkLabel} →
+                      </Link>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}

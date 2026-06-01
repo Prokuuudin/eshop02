@@ -21,6 +21,10 @@ type ReviewItem = {
   text: string;
   createdAt: string;
   helpful: number;
+  adminReply?: {
+    text: string;
+    repliedAt: string;
+  };
 };
 
 type ReviewStats = {
@@ -266,6 +270,19 @@ export default function Reviews({ productId }: ReviewsProps) {
               >
                 👍 {t("reviews.helpful")} ({review.helpful})
               </button>
+              {review.adminReply && (
+                <div className="mt-4 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
+                  <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1.5">
+                    Ответ магазина
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                    {review.adminReply.text}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                    {formatDate(review.adminReply.repliedAt, getLocaleFromLanguage(language))}
+                  </p>
+                </div>
+              )}
             </div>
           ))
         ) : (

@@ -191,7 +191,7 @@ export default function AdminBrandsPage() {
 
   return (
     <AdminGate>
-      <main className="mx-auto w-full max-w-7xl space-y-4 p-4 md:p-6">
+      <main className="w-full py-4 space-y-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

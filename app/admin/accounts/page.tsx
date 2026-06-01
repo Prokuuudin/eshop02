@@ -47,7 +47,7 @@ export default function AdminAccountsPage() {
 
   return (
     <AdminGate>
-      <main className="max-w-6xl mx-auto px-4 py-10 space-y-6 text-gray-900 dark:text-gray-100">
+      <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
         <div>
           <h1 className="text-3xl font-bold">{tl('admin.accounts.title', 'Управление аккаунтами', 'Account management', 'Kontu parvaldiba')}</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">

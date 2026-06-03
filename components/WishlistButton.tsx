@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
@@ -24,13 +24,15 @@ export default function WishlistButton({
     const toggleItem = useWishlist((state) => state.toggleItem);
 
     const [popping, setPopping] = useState(false)
+    const popTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault()
         event.stopPropagation()
 
+        if (popTimerRef.current) clearTimeout(popTimerRef.current)
         setPopping(true)
-        setTimeout(() => setPopping(false), 400)
+        popTimerRef.current = setTimeout(() => setPopping(false), 400)
 
         const added = toggleItem(product)
         showToast(

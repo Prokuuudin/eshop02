@@ -30,9 +30,9 @@ export default function HeaderActions({
   useEffect(() => {
     if (cartCount > prevCartCountRef.current) {
       setCartBumping(true)
-      const t = setTimeout(() => setCartBumping(false), 400)
+      const timer = setTimeout(() => setCartBumping(false), 400)
       prevCartCountRef.current = cartCount
-      return () => clearTimeout(t)
+      return () => clearTimeout(timer)
     }
     prevCartCountRef.current = cartCount
   }, [cartCount])

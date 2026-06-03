@@ -27,9 +27,10 @@ export default function AddToCartButton({ product }: Props) {
   const [tierFlash, setTierFlash] = useState(false)
   const prevTierRef = useRef<number | null>(null)
 
-  const sortedTiers = (product.bulkPricingTiers ?? [])
-    .slice()
-    .sort((a, b) => a.quantity - b.quantity)
+  const sortedTiers = useMemo(
+    () => (product.bulkPricingTiers ?? []).slice().sort((a, b) => a.quantity - b.quantity),
+    [product.bulkPricingTiers]
+  )
 
   const nextTier = sortedTiers.find(tier => tier.quantity > quantity) ?? null
   const activeTier = sortedTiers.filter(tier => tier.quantity <= quantity).pop() ?? null
@@ -39,14 +40,14 @@ export default function AddToCartButton({ product }: Props) {
 
   useEffect(() => {
     const currentTierQty = activeTier?.quantity ?? null
-    if (prevTierRef.current !== null && currentTierQty !== null && currentTierQty !== prevTierRef.current) {
+    if (currentTierQty !== null && currentTierQty !== prevTierRef.current) {
       setTierFlash(true)
       const timer = setTimeout(() => setTierFlash(false), 1000)
       prevTierRef.current = currentTierQty
       return () => clearTimeout(timer)
     }
     prevTierRef.current = currentTierQty
-  }, [activeTier])
+  }, [activeTier?.quantity])
 
   useEffect(() => {
     setQuantity((prev) => Math.max(prev, minOrderQuantity))

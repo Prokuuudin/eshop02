@@ -24,6 +24,8 @@ export default function CheckoutGuardButton({
   const { t } = useTranslation()
   const [shaking, setShaking] = useState(false)
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [magOffset, setMagOffset] = useState({ x: 0, y: 0 })
+  const linkRef = useRef<HTMLAnchorElement>(null)
 
   const handleDisabledClick = () => {
     if (shaking) return
@@ -31,10 +33,34 @@ export default function CheckoutGuardButton({
     shakeTimerRef.current = setTimeout(() => setShaking(false), 350)
   }
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!linkRef.current) return
+    const rect = linkRef.current.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    const ox = Math.max(-6, Math.min(6, ((e.clientX - cx) / (rect.width / 2)) * 6))
+    const oy = Math.max(-6, Math.min(6, ((e.clientY - cy) / (rect.height / 2)) * 6))
+    setMagOffset({ x: ox, y: oy })
+  }
+
+  const handleMouseLeave = () => setMagOffset({ x: 0, y: 0 })
+
   if (canCheckout) {
     return (
-      <Link href={href} onClick={onNavigate} className="block">
-        <Button className={className}>{label}</Button>
+      <Link
+        ref={linkRef as React.Ref<HTMLAnchorElement>}
+        href={href}
+        onClick={onNavigate}
+        className="block"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Button
+          className={className}
+          style={{ transform: `translate(${magOffset.x}px, ${magOffset.y}px)`, transition: 'transform 0.3s ease' }}
+        >
+          {label}
+        </Button>
       </Link>
     )
   }

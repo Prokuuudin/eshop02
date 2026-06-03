@@ -32,7 +32,7 @@ export default function AddToCartButton({ product }: Props) {
     .sort((a, b) => a.quantity - b.quantity)
 
   const nextTier = sortedTiers.find(tier => tier.quantity > quantity) ?? null
-  const activeTier = sortedTiers.filter(t => t.quantity <= quantity).pop() ?? null
+  const activeTier = sortedTiers.filter(tier => tier.quantity <= quantity).pop() ?? null
   const progressPct = nextTier
     ? Math.min(100, Math.round((quantity / nextTier.quantity) * 100))
     : 100

@@ -99,7 +99,7 @@ export default function HeaderActions({
                 </svg>
               </span>
               {cartCount > 0 && (
-                <Badge className={`header__cart-badge pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white${cartBumping ? ' animate-cart-bump' : ''}`}>
+                <Badge className={`header__cart-badge pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white ${cartBumping ? 'animate-cart-bump' : ''}`}>
                   {cartCountLabel}
                 </Badge>
               )}

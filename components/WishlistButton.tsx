@@ -74,7 +74,11 @@ export default function WishlistButton({
             onClick={handleClick}
             aria-label={t(isInWishlist ? 'wishlist.removeAria' : 'wishlist.addAria')}
             title={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}
-            className={`inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-sm transition hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200 dark:hover:border-pink-500 dark:hover:text-pink-400 ${className}`}
+            className={`inline-flex items-center justify-center rounded-full border p-2 shadow-sm transition bg-white/95 dark:bg-gray-900/95 ${
+                isInWishlist
+                    ? 'border-pink-300 text-pink-600 dark:border-pink-500 dark:text-pink-400'
+                    : 'border-gray-200 text-gray-700 hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:text-gray-200 dark:hover:border-pink-500 dark:hover:text-pink-400'
+            } ${className}`}
         >
             <svg
                 className={`h-5 w-5${popping ? ' animate-wishlist-pop' : ''}`}

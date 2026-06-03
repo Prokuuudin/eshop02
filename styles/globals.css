@@ -338,7 +338,7 @@ body[data-scroll-locked][data-scroll-locked] {
 }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #9ca3af 0%, #e5e7eb 45%, #9ca3af 55%, #9ca3af 100%);
+  background: linear-gradient(90deg, #9ca3af 0%, #e5e7eb 40%, #9ca3af 60%, #9ca3af 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -347,8 +347,9 @@ body[data-scroll-locked][data-scroll-locked] {
 }
 
 .dark .shimmer-text {
-  background: linear-gradient(90deg, #6b7280 0%, #d1d5db 45%, #6b7280 55%, #6b7280 100%);
+  background: linear-gradient(90deg, #6b7280 0%, #d1d5db 40%, #6b7280 60%, #6b7280 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   background-clip: text;
 }

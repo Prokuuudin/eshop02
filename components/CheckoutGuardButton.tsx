@@ -35,6 +35,7 @@ export default function CheckoutGuardButton({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!linkRef.current) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const rect = linkRef.current.getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
@@ -48,7 +49,7 @@ export default function CheckoutGuardButton({
   if (canCheckout) {
     return (
       <Link
-        ref={linkRef as React.Ref<HTMLAnchorElement>}
+        ref={linkRef}
         href={href}
         onClick={onNavigate}
         className="block"
@@ -57,7 +58,7 @@ export default function CheckoutGuardButton({
       >
         <Button
           className={className}
-          style={{ transform: `translate(${magOffset.x}px, ${magOffset.y}px)`, transition: 'transform 0.3s ease' }}
+          style={{ transform: `translate(${magOffset.x}px, ${magOffset.y}px)`, transition: 'transform 0.3s ease, background-color 0.15s ease, color 0.15s ease' }}
         >
           {label}
         </Button>

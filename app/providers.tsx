@@ -6,6 +6,7 @@ import { ToastProvider } from '@/lib/toast-context'
 import { useWishlist } from '@/lib/wishlist-store'
 import { useCart } from '@/lib/cart-store'
 import { getCurrentUser, seedTestAccounts } from '@/lib/auth'
+import FlyToCart from '@/components/FlyToCart'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -96,6 +97,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />
+        <FlyToCart />
         {children}
       </ToastProvider>
     </I18nProvider>

@@ -21,6 +21,7 @@ import {
     getMinimumOrderQuantity,
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
+import AnimatedPrice from '@/components/AnimatedPrice';
 
 export default function CartPage() {
     const { t, language } = useTranslation();
@@ -312,7 +313,7 @@ export default function CartPage() {
                         <div className="cart__summary-total mt-4 text-lg font-bold flex justify-between">
                             <span>{t('cart.totalToPay')}:</span>
                             <span className="cart__summary-total-value text-indigo-600">
-                                {formatCurrency(grandTotal)}
+                                <AnimatedPrice value={grandTotal} format={formatCurrency} />
                             </span>
                         </div>
 

@@ -1,12 +1,13 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/use-translation'
 import { Product } from '@/data/products'
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useCart } from '@/lib/cart-store'
 import { useToast } from '@/lib/toast-context'
-import { getMinimumOrderQuantity } from '@/lib/customer-segmentation'
+import { getMinimumOrderQuantity, calculatePrice } from '@/lib/customer-segmentation'
+import { formatEuro } from '@/lib/utils'
 
 type Props = {
   product: Product
@@ -22,6 +23,30 @@ export default function AddToCartButton({ product }: Props) {
 
   const isOutOfStock = product.stock === 0
   const maxQuantity = product.stock
+
+  const [tierFlash, setTierFlash] = useState(false)
+  const prevTierRef = useRef<number | null>(null)
+
+  const sortedTiers = (product.bulkPricingTiers ?? [])
+    .slice()
+    .sort((a, b) => a.quantity - b.quantity)
+
+  const nextTier = sortedTiers.find(tier => tier.quantity > quantity) ?? null
+  const activeTier = sortedTiers.filter(t => t.quantity <= quantity).pop() ?? null
+  const progressPct = nextTier
+    ? Math.min(100, Math.round((quantity / nextTier.quantity) * 100))
+    : 100
+
+  useEffect(() => {
+    const currentTierQty = activeTier?.quantity ?? null
+    if (prevTierRef.current !== null && currentTierQty !== null && currentTierQty !== prevTierRef.current) {
+      setTierFlash(true)
+      const timer = setTimeout(() => setTierFlash(false), 1000)
+      prevTierRef.current = currentTierQty
+      return () => clearTimeout(timer)
+    }
+    prevTierRef.current = currentTierQty
+  }, [activeTier])
 
   useEffect(() => {
     setQuantity((prev) => Math.max(prev, minOrderQuantity))
@@ -91,6 +116,36 @@ export default function AddToCartButton({ product }: Props) {
           <TooltipContent side="top">{t('product.changeQuantity')}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      {sortedTiers.length > 0 && !isOutOfStock && (
+        <div className="add-to-cart__bulk-progress w-full">
+          {nextTier ? (
+            <>
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>
+                  {t('product.bulkProgressLabel', undefined, {
+                    remaining: String(nextTier.quantity - quantity),
+                    price: formatEuro(calculatePrice(product, nextTier.quantity), 'en-US'),
+                  })}
+                </span>
+                <span className="font-mono">{progressPct}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className={`text-xs font-medium text-center py-1 rounded transition-colors duration-500 ${
+              tierFlash ? 'text-white bg-green-500' : 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30'
+            }`}>
+              {t('product.bulkProgressUnlocked')}
+            </p>
+          )}
+        </div>
+      )}
 
       {minOrderQuantity > 1 && !isOutOfStock && (
         <p className="text-xs text-gray-500">{t('product.minimumOrder')}: {minOrderQuantity} {t('product.pieces')}</p>

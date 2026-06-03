@@ -295,3 +295,38 @@ body[data-scroll-locked][data-scroll-locked] {
         --chart-5: 340 75% 55%;
     }
 }
+
+/* ── Micro-interaction keyframes ──────────────────────────────────────── */
+@keyframes cartBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4); }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wishlistPop {
+  0%   { transform: scale(1) rotate(0deg); }
+  30%  { transform: scale(1.4) rotate(-15deg); }
+  60%  { transform: scale(0.9) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%  { transform: translateX(-5px); }
+  40%  { transform: translateX(5px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+}
+
+.animate-cart-bump {
+  animation: cartBump 0.4s ease-out;
+}
+
+.animate-wishlist-pop {
+  animation: wishlistPop 0.4s ease-out;
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out;
+}

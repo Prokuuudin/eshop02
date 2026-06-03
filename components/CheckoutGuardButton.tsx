@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -23,11 +23,12 @@ export default function CheckoutGuardButton({
 }: CheckoutGuardButtonProps) {
   const { t } = useTranslation()
   const [shaking, setShaking] = useState(false)
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleDisabledClick = () => {
     if (shaking) return
     setShaking(true)
-    setTimeout(() => setShaking(false), 350)
+    shakeTimerRef.current = setTimeout(() => setShaking(false), 350)
   }
 
   if (canCheckout) {

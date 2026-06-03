@@ -330,3 +330,25 @@ body[data-scroll-locked][data-scroll-locked] {
 .animate-shake {
   animation: shake 0.35s ease-in-out;
 }
+
+/* ── Shimmer text ─────────────────────────────────────────────────────── */
+@keyframes shimmerText {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #9ca3af 0%, #e5e7eb 45%, #9ca3af 55%, #9ca3af 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerText 2.5s linear infinite;
+}
+
+.dark .shimmer-text {
+  background: linear-gradient(90deg, #6b7280 0%, #d1d5db 45%, #6b7280 55%, #6b7280 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+}

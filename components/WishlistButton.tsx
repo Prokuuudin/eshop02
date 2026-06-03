@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
@@ -23,15 +23,20 @@ export default function WishlistButton({
     const isInWishlist = useWishlist((state) => state.isInWishlist(product.id));
     const toggleItem = useWishlist((state) => state.toggleItem);
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
+    const [popping, setPopping] = useState(false)
 
-        const added = toggleItem(product);
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        setPopping(true)
+        setTimeout(() => setPopping(false), 400)
+
+        const added = toggleItem(product)
         showToast(
             t(added ? 'toast.addedToWishlist' : 'toast.removedFromWishlist'),
             added ? 'success' : 'info'
-        );
+        )
     };
 
     if (asButton) {
@@ -44,7 +49,7 @@ export default function WishlistButton({
                 title={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}
             >
                 <svg
-                    className="h-5 w-5 mr-2"
+                    className={`h-5 w-5 mr-2${popping ? ' animate-wishlist-pop' : ''}`}
                     viewBox="0 0 24 24"
                     fill={isInWishlist ? 'currentColor' : 'none'}
                     xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +75,7 @@ export default function WishlistButton({
             className={`inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-sm transition hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200 dark:hover:border-pink-500 dark:hover:text-pink-400 ${className}`}
         >
             <svg
-                className="h-5 w-5"
+                className={`h-5 w-5${popping ? ' animate-wishlist-pop' : ''}`}
                 viewBox="0 0 24 24"
                 fill={isInWishlist ? 'currentColor' : 'none'}
                 xmlns="http://www.w3.org/2000/svg"

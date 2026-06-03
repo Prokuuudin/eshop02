@@ -23,10 +23,34 @@
       "Bash(npx playwright *)",
       "PowerShell(Start-Process \"http://localhost:3000/admin/client-barcodes\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" -Recurse -Filter \"admin\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Read(//c/Users/User/.claude/**)",
+      "Bash(code --list-extensions)",
+      "Bash(cat \"C:\\\\Users\\\\User\\\\AppData\\\\Roaming\\\\Code\\\\User\\\\settings.json\" 2>/dev/null || echo \"not found\")",
+      "Read(//c/Users/User/AppData/Roaming/Code/User/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(python \"C:\\\\Users\\\\User\\\\.claude\\\\plugins\\\\cache\\\\claude-community\\\\claude-seo\\\\1.9.8\\\\scripts\\\\fetch_page.py\" http://localhost:3000)",
+      "Bash(python \"C:\\\\Users\\\\User\\\\.claude\\\\plugins\\\\cache\\\\claude-community\\\\claude-seo\\\\1.9.8\\\\scripts\\\\google_auth.py\" --check)",
+      "Bash(python \"C:\\\\Users\\\\User\\\\.claude\\\\plugins\\\\cache\\\\claude-community\\\\claude-seo\\\\1.9.8\\\\scripts\\\\backlinks_auth.py\" --check)",
+      "Bash(pip install *)",
+      "Bash(curl -s http://localhost:3000 -A \"Mozilla/5.0\")",
+      "Bash(curl -s http://localhost:3000/robots.txt)",
+      "Bash(curl -s http://localhost:3000/sitemap.xml)",
+      "Bash(curl -s \"http://localhost:3000/brand/sanctuaryspa\")",
+      "Bash(python \"C:\\\\Users\\\\User\\\\.claude\\\\plugins\\\\cache\\\\claude-community\\\\claude-seo\\\\1.9.8\\\\scripts\\\\drift_history.py\" \"http://localhost:3000\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\docs\\\\superpowers\\\\specs\")",
+      "Bash(cat tailwind.config.ts)",
+      "Bash(cat tailwind.config.js)",
+      "Bash(ls tailwind*)",
+      "Bash(ls *.config.*)",
+      "Bash(ls *.config.ts)",
+      "Bash(ls *.config.js)",
+      "Bash(npm test *)",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]"
+      "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",
+      "c:\\Users\\User\\Desktop\\eshop02\\docs\\superpowers"
     ]
   }
 }

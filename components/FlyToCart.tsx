@@ -12,6 +12,8 @@ export default function FlyToCart(): null {
     const handleFly = (e: Event) => {
       const { x: startX, y: startY } = (e as CustomEvent<FlyToCartDetail>).detail
 
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
       const cartEl = document.querySelector('.header__cart')
       if (!cartEl) return
 
@@ -46,6 +48,7 @@ export default function FlyToCart(): null {
       )
 
       anim.onfinish = () => dot.remove()
+      anim.oncancel = () => dot.remove()
     }
 
     document.addEventListener('fly-to-cart', handleFly)

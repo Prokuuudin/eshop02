@@ -20,6 +20,7 @@ export default function AddToCartButton({ product }: Props) {
   const [quantity, setQuantity] = useState(minOrderQuantity)
   const { addItem } = useCart()
   const [added, setAdded] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const isOutOfStock = product.stock === 0
   const maxQuantity = product.stock
@@ -68,6 +69,15 @@ export default function AddToCartButton({ product }: Props) {
     showToast(t('toast.addedToCart'), 'success')
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      document.dispatchEvent(
+        new CustomEvent('fly-to-cart', {
+          detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+        })
+      )
+    }
   }
 
   return (
@@ -153,6 +163,7 @@ export default function AddToCartButton({ product }: Props) {
       )}
 
       <Button
+        ref={buttonRef}
         onClick={handleAdd}
         disabled={isOutOfStock}
         className={`w-full add-to-cart__button ${

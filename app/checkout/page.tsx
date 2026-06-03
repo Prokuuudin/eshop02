@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentat
 import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
+import { burstConfetti } from '@/lib/confetti';
 
 const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,6 +68,7 @@ export default function CheckoutPage() {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const applyBtnRef = useRef<HTMLButtonElement>(null)
     const selectedItemIds = React.useMemo(() => {
         const raw = searchParams.get('items');
         if (!raw) return null;
@@ -178,6 +180,7 @@ export default function CheckoutPage() {
         }
 
         setAppliedPromo(promoCode);
+        if (applyBtnRef.current) burstConfetti(applyBtnRef.current);
     };
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -744,6 +747,7 @@ export default function CheckoutPage() {
                                     className="flex-1 px-3 py-2 border rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
                                 />
                                 <Button
+                                    ref={applyBtnRef}
                                     type="button"
                                     onClick={handleApplyPromo}
                                     disabled={!!appliedPromo}

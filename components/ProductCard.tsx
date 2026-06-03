@@ -132,9 +132,11 @@ export default function ProductCard({ product }: Props) {
                                 )}
                             </>
                         ) : (
-                            <div className="text-gray-400 text-sm font-medium">
-                                {t('product.loginToSeePrice', 'Войдите, чтобы увидеть цену')}
-                            </div>
+                            <Link href="/auth/login" className="block" onClick={(e) => e.stopPropagation()}>
+                                <div className="shimmer-text text-sm font-medium cursor-pointer">
+                                    {t('product.loginToSeePrice', 'Войдите, чтобы увидеть цену')}
+                                </div>
+                            </Link>
                         )}
                     </div>
 

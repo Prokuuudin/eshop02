@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import UserMenu from './UserMenu';
@@ -24,6 +24,19 @@ export default function HeaderActions({
   const wishlistItems = useWishlist((state) => state.items)
   const { t } = useTranslation();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const prevCartCountRef = useRef(cartCount)
+  const [cartBumping, setCartBumping] = useState(false)
+
+  useEffect(() => {
+    if (cartCount > prevCartCountRef.current) {
+      setCartBumping(true)
+      const t = setTimeout(() => setCartBumping(false), 400)
+      prevCartCountRef.current = cartCount
+      return () => clearTimeout(t)
+    }
+    prevCartCountRef.current = cartCount
+  }, [cartCount])
+
   const wishlistCount = wishlistItems.length
   const cartCountLabel = cartCount > 99 ? '99+' : String(cartCount)
   const wishlistCountLabel = wishlistCount > 99 ? '99+' : String(wishlistCount)
@@ -78,13 +91,15 @@ export default function HeaderActions({
               className="header__cart relative text-foreground"
               aria-label={t('header.openCartAria')}
             >
-              <svg className="h-8 w-8 text-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 6h15l-1.5 9h-12L6 6z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="10" cy="20" r="1.2" fill="currentColor" />
-                <circle cx="18" cy="20" r="1.2" fill="currentColor" />
-              </svg>
+              <span className={cartBumping ? 'animate-cart-bump inline-flex' : 'inline-flex'}>
+                <svg className="h-8 w-8 text-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 6h15l-1.5 9h-12L6 6z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="10" cy="20" r="1.2" fill="currentColor" />
+                  <circle cx="18" cy="20" r="1.2" fill="currentColor" />
+                </svg>
+              </span>
               {cartCount > 0 && (
-                <Badge className="header__cart-badge pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
+                <Badge className={`header__cart-badge pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white${cartBumping ? ' animate-cart-bump' : ''}`}>
                   {cartCountLabel}
                 </Badge>
               )}

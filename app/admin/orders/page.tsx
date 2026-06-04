@@ -12,6 +12,7 @@ import { Search, Printer, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/use-translation'
 import { logAdminAction } from '@/lib/admin-log-store'
 import { useOrders as useOrdersStore } from '@/lib/orders-store'
+import OrderInvoiceModal from '@/components/admin/OrderInvoiceModal'
 
 type SortField = 'date' | 'total'
 type SortDir = 'asc' | 'desc'
@@ -92,6 +93,7 @@ export default function AdminOrdersPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [invoiceOrder, setInvoiceOrder] = useState<import('@/lib/orders-store').Order | null>(null)
   const [bulkStatus, setBulkStatus] = useState<OrderStatus | ''>('')
   const [page, setPage] = useState(0)
   const PAGE_SIZE = 25
@@ -637,6 +639,13 @@ export default function AdminOrdersPage() {
                     >
                       Написать клиенту
                     </a>
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceOrder(order)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    >
+                      📄 Счёт
+                    </button>
                     <a
                       href={`tel:${order.phone}`}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -993,6 +1002,13 @@ export default function AdminOrdersPage() {
             <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>»</Button>
           </div>
         </div>
+      )}
+      {invoiceOrder && (
+        <OrderInvoiceModal
+          order={invoiceOrder}
+          open={true}
+          onClose={() => setInvoiceOrder(null)}
+        />
       )}
     </main>
   )

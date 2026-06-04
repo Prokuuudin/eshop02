@@ -8,6 +8,8 @@ import { useTranslation } from '@/lib/use-translation'
 import { getCategoryProductIdsOverrideById, getSubcategoryProductIdsBySlug } from '@/data/categories'
 
 import ProductFilter from './ProductFilter'
+import { LayoutGrid, List } from 'lucide-react'
+import ProductListRow from './ProductListRow'
 
 type ProductsFilters = {
   group: string
@@ -52,6 +54,16 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     maxPrice: initialFilters?.maxPrice ?? '',
     order: initialFilters?.order ?? ''
   });
+
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(() => {
+    if (typeof window === 'undefined') return 'grid'
+    return (localStorage.getItem('catalog-view-mode') as 'grid' | 'list') ?? 'grid'
+  })
+
+  const handleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode)
+    localStorage.setItem('catalog-view-mode', mode)
+  }
 
   // Sync filters with initialFilters only when they actually change from navigation
   React.useEffect(() => {
@@ -206,7 +218,27 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   return (
     <section className="products py-8">
       <div className="w-full px-4">
-        <h2 className="products__title text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('nav.catalog', 'Catalog')}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="products__title text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('nav.catalog', 'Catalog')}</h2>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleViewMode('grid')}
+              aria-label={t('catalog.viewGrid')}
+              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewMode('list')}
+              aria-label={t('catalog.viewList')}
+              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col lg:flex-row gap-6">
           <aside className="w-full lg:w-1/4">
             <ProductFilter
@@ -222,9 +254,17 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
               </div>
             )}
             {productsLoading ? (
-              <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-              </div>
+              viewMode === 'list' ? (
+                <div className="flex flex-col gap-3">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-28 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                </div>
+              )
             ) : (
               filtered.length === 0 ? (
                 <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center">
@@ -232,12 +272,23 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
                 </div>
               ) : (
                 <>
-                  <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filtered.slice(0, visibleCount).map((p) => (
-                      <ProductCard key={p.id} product={p} />
-                    ))}
-                    {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-                  </div>
+                  {viewMode === 'list' ? (
+                    <div className="flex flex-col gap-3">
+                      {filtered.slice(0, visibleCount).map((p) => (
+                        <ProductListRow key={p.id} product={p} />
+                      ))}
+                      {loading && Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-28 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {filtered.slice(0, visibleCount).map((p) => (
+                        <ProductCard key={p.id} product={p} />
+                      ))}
+                      {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                    </div>
+                  )}
                   <div ref={loaderRef} style={{ height: 1 }} />
                 </>
               )

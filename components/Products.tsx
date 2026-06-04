@@ -220,23 +220,26 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
       <div className="w-full px-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="products__title text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('nav.catalog', 'Catalog')}</h2>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => handleViewMode('grid')}
-              aria-label={t('catalog.viewGrid')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewMode('list')}
-              aria-label={t('catalog.viewList')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">{t('catalog.viewLabel')}</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleViewMode('grid')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span>{t('catalog.viewGrid')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewMode('list')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              >
+                <List className="w-4 h-4" />
+                <span>{t('catalog.viewList')}</span>
+              </button>
+            </div>
           </div>
         </div>
         <div className="flex flex-col lg:flex-row gap-6">

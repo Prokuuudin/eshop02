@@ -143,13 +143,15 @@ export function getAutocompleteSuggestions(products: Product[], query: string, l
 
   const ranked = products
     .map((product) => {
-      const normalizedTitle = normalizeSearchValue(product.title)
+      const titleVariants = [product.title, product.titleEn, product.titleLv]
+        .filter(Boolean)
+        .map((t) => normalizeSearchValue(t!))
       const normalizedBrand = normalizeSearchValue(product.brand)
       let score = 0
 
-      if (normalizedTitle.startsWith(normalizedQuery)) score += 6
+      if (titleVariants.some((t) => t.startsWith(normalizedQuery))) score += 6
       if (normalizedBrand.startsWith(normalizedQuery)) score += 5
-      if (normalizedTitle.includes(normalizedQuery)) score += 3
+      if (titleVariants.some((t) => t.includes(normalizedQuery))) score += 3
       if (normalizedBrand.includes(normalizedQuery)) score += 2
 
       if (score === 0) return null

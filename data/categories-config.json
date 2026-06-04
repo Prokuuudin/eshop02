@@ -407,7 +407,9 @@
           "search": "ДЕЗИНФЕКЦИЯ"
         }
       ]
-    },
+    }
+  ],
+  "deletedCategories": [
     {
       "id": "123",
       "href": "/catalog?cat=123",
@@ -417,18 +419,7 @@
         "en": "Уход за лысиной эн",
         "lv": "Уход за лысиной лв"
       },
-      "subcategories": [
-        {
-          "slug": "345",
-          "labels": {
-            "ru": "укн",
-            "en": "ненук",
-            "lv": "ен"
-          },
-          "search": ""
-        }
-      ]
+      "subcategories": []
     }
-  ],
-  "deletedCategories": []
+  ]
 }

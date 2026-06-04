@@ -1,6 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
@@ -26,7 +26,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [phone, setPhone] = useState('');
     const [certificate, setCertificate] = useState<File | null>(null);
     const [fileKey, setFileKey] = useState(0);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const galleryRef = useRef<HTMLInputElement>(null);
+    const cameraRef = useRef<HTMLInputElement>(null);
     const [message, setMessage] = useState('');
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
@@ -144,23 +145,27 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                     {t('auth.certificate')}
                 </label>
                 <input
-                    key={fileKey}
-                    ref={fileInputRef}
+                    key={`gallery-${fileKey}`}
+                    ref={galleryRef}
                     type="file"
                     accept="image/*,application/pdf"
                     className="sr-only"
                     onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
-                    required
                 />
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`register-form__file-upload w-full flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-5 text-sm transition-colors ${
-                        certificate
-                            ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/30'
-                            : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-indigo-500'
-                    }`}
-                >
+                <input
+                    key={`camera-${fileKey}`}
+                    ref={cameraRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="sr-only"
+                    onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
+                />
+                <div className={`register-form__file-upload w-full rounded-lg border-2 border-dashed px-4 py-4 transition-colors ${
+                    certificate
+                        ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/30'
+                        : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800'
+                }`}>
                     {certificate ? (
                         <div className="register-form__file-selected flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
                             <Upload className="w-4 h-4 shrink-0" />
@@ -169,8 +174,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 role="button"
                                 aria-label="Удалить файл"
                                 className="register-form__file-clear ml-1 rounded-full p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-800"
-                                onClick={(e) => {
-                                    e.stopPropagation();
+                                onClick={() => {
                                     setCertificate(null);
                                     setFileKey((k) => k + 1);
                                 }}
@@ -180,16 +184,30 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                         </div>
                     ) : (
                         <>
-                            <Upload className="register-form__file-icon w-6 h-6 text-gray-400 dark:text-gray-500" />
-                            <span className="register-form__file-placeholder text-gray-500 dark:text-gray-400">
-                                {t('auth.certificateDropzone')}
-                            </span>
-                            <span className="register-form__file-formats text-xs text-gray-400 dark:text-gray-500">
+                            <div className="flex gap-2 justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => galleryRef.current?.click()}
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    {t('auth.uploadFromGallery')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => cameraRef.current?.click()}
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                >
+                                    <Camera className="w-4 h-4" />
+                                    {t('auth.takePhoto')}
+                                </button>
+                            </div>
+                            <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
                                 {t('auth.certificateFormats')}
-                            </span>
+                            </p>
                         </>
                     )}
-                </button>
+                </div>
             </div>
             <div className="register-form__field">
                 <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">

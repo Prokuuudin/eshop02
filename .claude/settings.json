@@ -46,7 +46,8 @@
       "Bash(ls *.config.ts)",
       "Bash(ls *.config.js)",
       "Bash(npm test *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(node -e \"const p = require\\('./data/products'\\); const prods = p.PRODUCTS; console.log\\('total:', prods.length, 'withLv:', prods.filter\\(x=>x.titleLv\\).length, 'withEn:', prods.filter\\(x=>x.titleEn\\).length\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

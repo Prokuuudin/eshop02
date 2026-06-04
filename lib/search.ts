@@ -8,6 +8,8 @@ type SearchResult = {
 
 export function normalizeSearchValue(value: string): string {
   return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')

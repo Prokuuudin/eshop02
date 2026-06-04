@@ -64,6 +64,8 @@ export default function UserMenu() {
     };
 
     const menuRef = React.useRef<HTMLDivElement>(null);
+    const triggerRef = React.useRef<HTMLButtonElement>(null);
+    const [dropPos, setDropPos] = React.useState<{ top: number; right: number } | null>(null);
 
     React.useEffect(() => {
         if (!isOpen) return;
@@ -152,7 +154,14 @@ export default function UserMenu() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => setIsOpen(!isOpen)}
+                            ref={triggerRef}
+                            onClick={() => {
+                                if (!isOpen && triggerRef.current) {
+                                    const r = triggerRef.current.getBoundingClientRect();
+                                    setDropPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                }
+                                setIsOpen(!isOpen);
+                            }}
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                             aria-label={t('userMenu.aria')}
                         >
@@ -197,8 +206,11 @@ export default function UserMenu() {
                 </Tooltip>
             </TooltipProvider>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+            {isOpen && dropPos && (
+                <div
+                    style={{ position: 'fixed', top: dropPos.top, right: dropPos.right }}
+                    className="w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[10002]"
+                >
                     <nav className="py-2">
                         <Link
                             href="/account"

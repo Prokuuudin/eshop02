@@ -41,7 +41,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
       const res = await fetch('/api/admin/orders/send-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order, language: lang, email: email.trim() }),
+        body: JSON.stringify({ orderId: order.id, language: lang, email: email.trim() }),
       })
       if (res.ok) {
         setSent(true)

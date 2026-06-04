@@ -53,7 +53,13 @@ export default function Header() {
     <>
       <header
         ref={headerRef}
-        className={`header fixed top-0 left-0 w-full bg-white dark:bg-gray-900 shadow transition-all duration-300 text-gray-900 dark:text-gray-100 z-[9999]`}
+        className={
+          `header fixed top-0 left-0 w-full bg-white dark:bg-gray-900 shadow transition-all duration-300 text-gray-900 dark:text-gray-100 z-[9999]`
+        }
+          style={{
+            transform: scrolled ? 'scaleY(0.92)' : 'scaleY(1)',
+            transformOrigin: 'top center',
+          }}
       >
         {/* Верхняя строка: логотип, навигация, действия */}
           <div className={`w-full px-2 sm:px-4 flex items-center relative transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>

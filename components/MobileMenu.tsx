@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '.
 import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
 import ForgotPasswordForm from './auth/ForgotPasswordForm'
+import LanguageSwitcher from './LanguageSwitcher'
 
 type Props = {
   isOpen: boolean
@@ -60,9 +61,12 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               Eshop
             </Link>
           </div>
-          <Button aria-label={t('mobileMenu.closeAria')} onClick={onClose} className="header__menu-close">
-            ✕
-          </Button>
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <Button aria-label={t('mobileMenu.closeAria')} onClick={onClose} className="header__menu-close">
+              ✕
+            </Button>
+          </div>
         </div>
 
         <ul className="header__menu-list space-y-3">

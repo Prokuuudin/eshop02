@@ -78,11 +78,14 @@ export default function Header() {
               <ThemeToggle />
               {isAdminPage && <UserMenu />}
             </div>
-            {/* Mobile menu button */}
+            {/* Mobile: lang switcher + menu button */}
             {!isAdminPage && (
-              <button className="md:hidden p-2" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
-                <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-              </button>
+              <div className="md:hidden flex items-center gap-1">
+                <HeaderActions onlyLangSwitcher />
+                <button className="p-2" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+                  <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+              </div>
             )}
           </div>
         </div>

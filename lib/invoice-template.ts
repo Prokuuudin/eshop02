@@ -1,4 +1,5 @@
 import { Order } from '@/lib/orders-store'
+import { translations } from '@/data/translations'
 
 type Lang = 'ru' | 'en' | 'lv'
 
@@ -80,12 +81,14 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
 
   const itemRows = order.items
     .map((item) => {
+      const titleKey = `products.${item.id}.title`
+      const localTitle = translations[lang][titleKey] ?? item.title
       const unitPrice = eur(item.price)
       const lineTotal = eur(item.price * item.quantity)
       const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${esc(item.sku)}</small>` : ''
       return `
         <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee">${esc(item.title)}${sku}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee">${esc(localTitle)}${sku}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${unitPrice}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${lineTotal}</td>

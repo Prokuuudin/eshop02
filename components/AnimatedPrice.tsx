@@ -46,5 +46,5 @@ export default function AnimatedPrice({ value, format, duration = 500 }: Animate
     }
   }, [value, duration])
 
-  return <>{format(Math.round(displayed))}</>
+  return <>{format(displayed)}</>
 }

@@ -26,6 +26,6 @@ export function burstConfetti(originEl: HTMLElement): void {
       `--ty:${ty}px`,
     ].join(';')
     document.body.appendChild(span)
-    setTimeout(() => span.remove(), 700)
+    span.addEventListener('animationend', () => span.remove(), { once: true })
   }
 }

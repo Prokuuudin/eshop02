@@ -33,6 +33,8 @@ export interface Order {
 
 type OrdersStore = {
   orders: Order[]
+  nextOrderNumber: number
+  getNextOrderNumber: () => number
   addOrder: (order: Order) => void
   upsertOrder: (order: Order) => void
   getOrder: (id: string) => Order | undefined
@@ -43,6 +45,12 @@ export const useOrders = create<OrdersStore>()(
   persist(
     (set, get) => ({
       orders: [],
+      nextOrderNumber: 1,
+      getNextOrderNumber: () => {
+        const num = get().nextOrderNumber
+        set({ nextOrderNumber: num + 1 })
+        return num
+      },
       addOrder: (order: Order) => {
         set((state) => ({
           orders: [order, ...state.orders]

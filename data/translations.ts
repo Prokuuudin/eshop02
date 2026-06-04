@@ -84,7 +84,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.productsPage.addBtn': 'Добавить товары',
     'admin.products.searchPlaceholder': 'Название, SKU, бренд, категория, артикул, штрихкод...',
     'admin.productsPage.cardsTitle': 'Карточки товара',
-    'home.retailBanner.retailOnly': 'Вы можете приобрести те же товары по розничным ценам — в нашем интернет-магазине',
+    'home.retailBanner.retailOnly': 'Вы можете приобрести те же товары по розничным ценам — в нашем интернет-магазине для обычных покупателей',
     'admin.productsPage.listTitle': 'Список товаров',
           'about.storesInfo': 'У нас есть не только онлайн-магазин, но и сеть физических магазинов по всей Латвии, где вы можете получить консультацию и приобрести продукцию лично.',
           'about.storesButton': 'Смотреть магазины',

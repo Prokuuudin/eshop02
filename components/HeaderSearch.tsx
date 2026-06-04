@@ -28,10 +28,13 @@ export default function HeaderSearch() {
       const key = product.titleKey ?? `products.${product.id}.title`
       const allTitles = [
         product.title,
+        translations.ru[key],
         translations.en[key],
         translations.lv[key],
-      ].filter(Boolean).join(' ')
-      return { ...product, title: allTitles }
+      ].filter((v): v is string => typeof v === 'string' && v.length > 0)
+       .filter((v, i, arr) => arr.indexOf(v) === i)
+       .join(' ')
+      return { ...product, title: allTitles, titleEn: undefined, titleLv: undefined }
     }),
     []
   );

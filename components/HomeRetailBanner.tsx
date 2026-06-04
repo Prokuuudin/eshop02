@@ -1,12 +1,24 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/use-translation';
+import { getCurrentUser } from '@/lib/auth';
 
 const RETAIL_STORE_URL = 'https://hairshop.lv';
 
 export default function HomeRetailBanner() {
     const { t } = useTranslation();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        setIsAuthenticated(!!getCurrentUser());
+        const handler = () => setIsAuthenticated(!!getCurrentUser());
+        window.addEventListener('eshop-user-changed', handler);
+        return () => window.removeEventListener('eshop-user-changed', handler);
+    }, []);
+
+    if (isAuthenticated) return null;
 
     return (
         <section className="retail-banner px-4 py-4 sm:py-6">

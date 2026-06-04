@@ -52,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     lv: `Rēķins pasūtījumam #${order.id}`,
   }
 
-  const html = buildInvoiceHtml(order as Parameters<typeof buildInvoiceHtml>[0], lang)
+  const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], lang)
 
   try {
     await sendEmail(email, subjects[lang], html)

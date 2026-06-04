@@ -2,6 +2,14 @@ import { Order } from '@/lib/orders-store'
 
 type Lang = 'ru' | 'en' | 'lv'
 
+const esc = (s: unknown): string =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
 const LABELS: Record<Lang, Record<string, string>> = {
   ru: {
     invoice: 'СЧЁТ',
@@ -74,10 +82,10 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
     .map((item) => {
       const unitPrice = eur(item.price)
       const lineTotal = eur(item.price * item.quantity)
-      const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${item.sku}</small>` : ''
+      const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${esc(item.sku)}</small>` : ''
       return `
         <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee">${item.title}${sku}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee">${esc(item.title)}${sku}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${unitPrice}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${lineTotal}</td>
@@ -96,7 +104,7 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${L.invoice} INV-${order.id}</title>
+<title>${L.invoice} INV-${esc(order.id)}</title>
 <style>
   body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;margin:0;padding:32px;background:#fff}
   table{border-collapse:collapse;width:100%}
@@ -116,7 +124,7 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
     <td style="width:50%">
       <h1 style="margin:0 0 4px;font-size:22px;letter-spacing:2px">${L.invoice}</h1>
       <div class="meta">
-        ${L.number}: <strong>INV-${order.id}</strong><br/>
+        ${L.number}: <strong>INV-${esc(order.id)}</strong><br/>
         ${L.date}: ${date}
       </div>
     </td>
@@ -129,10 +137,10 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
     <td>
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#888;margin-bottom:4px">${L.buyer}</div>
       <div>
-        <strong>${order.firstName} ${order.lastName}</strong><br/>
-        ${order.email}<br/>
-        ${L.phone}: ${order.phone}<br/>
-        ${order.address ? order.address + ', ' : ''}${order.city}${order.postalCode ? ' ' + order.postalCode : ''}
+        <strong>${esc(order.firstName)} ${esc(order.lastName)}</strong><br/>
+        ${esc(order.email)}<br/>
+        ${L.phone}: ${esc(order.phone)}<br/>
+        ${order.address ? esc(order.address) + ', ' : ''}${esc(order.city)}${order.postalCode ? ' ' + esc(order.postalCode) : ''}
       </div>
     </td>
     <td></td>

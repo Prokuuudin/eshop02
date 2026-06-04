@@ -146,10 +146,10 @@ export default function HeaderSearch() {
       </div>
       <button
         type="submit"
-        className="rounded px-3 py-2 text-sm font-medium bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 flex items-center gap-2 transition-colors"
+        className="rounded px-3 py-2 text-sm font-medium bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 flex items-center gap-2 transition-colors flex-shrink-0"
       >
         <IconSearch className="w-5 h-5 text-white dark:text-black" aria-hidden="true" />
-        {t('catalog.search')}
+        <span className="hidden sm:inline">{t('catalog.search')}</span>
       </button>
     </form>
   );

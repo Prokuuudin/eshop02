@@ -131,7 +131,7 @@ export default function HeaderSearch() {
                     aria-selected={activeIndex === index}
                     onClick={() => handleSuggestionClick(suggestion.title)}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className={`w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                    className={`w-full text-left px-3 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 ${
                       activeIndex === index ? 'bg-gray-50 dark:bg-gray-800' : ''
                     }`}
                   >

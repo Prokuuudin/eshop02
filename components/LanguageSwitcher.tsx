@@ -59,7 +59,7 @@ export default function LanguageSwitcher() {
                   setLanguage(lang.code)
                   setIsOpen(false)
                 }}
-                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 ${
+                className={`w-full text-left px-4 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 ${
                   language === lang.code ? 'bg-gray-50 dark:bg-gray-800 font-semibold' : ''
                 } text-gray-900 dark:text-gray-100`}
               >

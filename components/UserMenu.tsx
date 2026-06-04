@@ -65,7 +65,7 @@ export default function UserMenu() {
 
     const menuRef = React.useRef<HTMLDivElement>(null);
     const triggerRef = React.useRef<HTMLButtonElement>(null);
-    const [dropPos, setDropPos] = React.useState<{ top: number; right: number } | null>(null);
+    const [dropPos, setDropPos] = React.useState<{ top: number; left: number } | null>(null);
 
     React.useEffect(() => {
         if (!isOpen) return;
@@ -158,7 +158,9 @@ export default function UserMenu() {
                             onClick={() => {
                                 if (!isOpen && triggerRef.current) {
                                     const r = triggerRef.current.getBoundingClientRect();
-                                    setDropPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                    const w = 192;
+                                    const left = Math.min(r.left, window.innerWidth - w - 8);
+                                    setDropPos({ top: r.bottom + 4, left: Math.max(8, left) });
                                 }
                                 setIsOpen(!isOpen);
                             }}
@@ -208,7 +210,7 @@ export default function UserMenu() {
 
             {isOpen && dropPos && (
                 <div
-                    style={{ position: 'fixed', top: dropPos.top, right: dropPos.right }}
+                    style={{ position: 'fixed', top: dropPos.top, left: dropPos.left }}
                     className="w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[10002]"
                 >
                     <nav className="py-2">

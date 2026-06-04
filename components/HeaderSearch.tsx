@@ -5,6 +5,7 @@ import { PRODUCTS } from '@/data/products';
 import { getAutocompleteSuggestions } from '@/lib/search';
 import { IconSearch } from './ui/icon-search';
 import type { Product } from '@/data/products';
+import { translations } from '@/data/translations';
 
 export default function HeaderSearch() {
   const [query, setQuery] = useState('');
@@ -21,10 +22,31 @@ export default function HeaderSearch() {
     [t, language]
   );
 
-  // Search against original PRODUCTS (all language variants), then localize for display
-  const rawSuggestions = useMemo(() => getAutocompleteSuggestions(PRODUCTS, query, 5), [query]);
+  // Products with all 3 language titles concatenated for cross-language search
+  const searchableProducts = useMemo(
+    () => PRODUCTS.map((product) => {
+      const key = product.titleKey ?? `products.${product.id}.title`
+      const allTitles = [
+        product.title,
+        translations.en[key],
+        translations.lv[key],
+      ].filter(Boolean).join(' ')
+      return { ...product, title: allTitles }
+    }),
+    []
+  );
+
+  const rawSuggestions = useMemo(
+    () => getAutocompleteSuggestions(searchableProducts, query, 5),
+    [searchableProducts, query]
+  );
+
+  // Map back to localized display title
   const suggestions = useMemo(
-    () => rawSuggestions.map((p) => ({ ...p, title: localizeTitle(p) })),
+    () => rawSuggestions.map((p) => {
+      const orig = PRODUCTS.find((o) => o.id === p.id) ?? p
+      return { ...orig, title: localizeTitle(orig) }
+    }),
     [rawSuggestions, localizeTitle]
   );
   const listboxId = 'header-search-suggestions';

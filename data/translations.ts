@@ -653,9 +653,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'theme.dark': 'Тёмная',
     'theme.toLight': 'Переключить на светлую тему',
     'theme.toDark': 'Переключить на тёмную тему',
-    'home.retailBanner.eyebrow': 'Для покупателей без карты Мастера',
+    'home.retailBanner.eyebrow': 'Для покупателей без карты клиента',
     'home.retailBanner.title': 'Те же товары доступны и в интернет-магазине',
-    'home.retailBanner.description': 'Если у вас нет карты Мастера, вы можете купить те же товары в нашем интернет-магазине по розничным условиям.',
+    'home.retailBanner.description': 'Если у вас нет карты клиента, вы можете купить те же товары в нашем интернет-магазине по розничным условиям.',
     'home.retailBanner.button': 'Перейти в интернет-магазин',
 
     // Auth

@@ -198,7 +198,7 @@ export default function UserMenu() {
             </TooltipProvider>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[10002]">
                     <nav className="py-2">
                         <Link
                             href="/account"

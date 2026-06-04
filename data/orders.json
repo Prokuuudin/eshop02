@@ -1,5 +1,162 @@
 [
   {
+    "id": "ORD-1780572273232-WTHJVFVLC",
+    "createdAt": "2026-06-04T11:24:33.232Z",
+    "items": [
+      {
+        "id": "p2",
+        "title": "Шампунь Professional Shine 300ml",
+        "brand": "black",
+        "price": 1200,
+        "rating": 4.4,
+        "image": "/products/p2.jpg",
+        "images": [
+          "/products/p2.jpg",
+          "/products/p2-2.jpg",
+          "/products/p2-3.jpg",
+          "/products/p2-4.jpg",
+          "/products/p2-5.jpg"
+        ],
+        "badges": [
+          "bestseller"
+        ],
+        "category": "hair",
+        "stock": 8,
+        "purpose": "Для роста",
+        "minOrderQuantities": {
+          "master": 3,
+          "salon": 6,
+          "distributor": 12
+        },
+        "relatedProductIds": [
+          "p4",
+          "p8"
+        ],
+        "oftenBoughtTogether": [
+          "p4"
+        ],
+        "bonusRate": 12,
+        "manufacturerName": "Black Professional S.r.l. (Italy)",
+        "manufacturerAddress": "Via Torino 45, 20123 Milan, Italy",
+        "manufacturerEmail": "info@blackprofessional.it",
+        "distributorName": {
+          "ru": "CosmoTrade S.r.l.",
+          "en": "CosmoTrade S.r.l.",
+          "lv": "CosmoTrade S.r.l."
+        },
+        "distributorAddress": {
+          "ru": "Via Montenapoleone 8, 20121 Милан, Италия",
+          "en": "Via Montenapoleone 8, 20121 Milan, Italy",
+          "lv": "Via Montenapoleone 8, 20121 Milāna, Itālija"
+        },
+        "distributorEmail": "sales@cosmotrade.it",
+        "quantity": 3
+      },
+      {
+        "id": "p10",
+        "title": "Масло для волос ShineOil 100ml",
+        "brand": "hairlab",
+        "price": 1700,
+        "rating": 4.3,
+        "image": "/products/p10.jpg",
+        "images": [
+          "/products/p10.jpg",
+          "/products/p10-2.jpg",
+          "/products/p10-3.jpg",
+          "/products/p10-4.jpg",
+          "/products/p10-5.jpg"
+        ],
+        "badges": [
+          "bestseller"
+        ],
+        "category": "hair",
+        "stock": 10,
+        "purpose": "Для блеска",
+        "relatedProductIds": [
+          "p2",
+          "p4"
+        ],
+        "oftenBoughtTogether": [
+          "p2"
+        ],
+        "bonusRate": 17,
+        "manufacturerName": "HairLab International GmbH (Germany)",
+        "manufacturerAddress": "Hamburger Str. 34, 20095 Hamburg, Germany",
+        "manufacturerEmail": "contact@hairlab.de",
+        "distributorName": {
+          "ru": "ProBeauty Distribution GmbH",
+          "en": "ProBeauty Distribution GmbH",
+          "lv": "ProBeauty Distribution GmbH"
+        },
+        "distributorAddress": {
+          "ru": "Kurfürstendamm 55, 10707 Берлин, Германия",
+          "en": "Kurfürstendamm 55, 10707 Berlin, Germany",
+          "lv": "Kurfürstendamm 55, 10707 Berlīne, Vācija"
+        },
+        "distributorEmail": "contact@probeauty.de",
+        "quantity": 1
+      },
+      {
+        "id": "p15",
+        "title": "Лак для волос StrongFix 250ml",
+        "brand": "stylo",
+        "price": 950,
+        "rating": 4.1,
+        "image": "/products/p15.jpg",
+        "images": [
+          "/products/p15.jpg",
+          "/products/p15-2.jpg",
+          "/products/p15-3.jpg",
+          "/products/p15-4.jpg",
+          "/products/p15-5.jpg"
+        ],
+        "category": "hair",
+        "stock": 16,
+        "purpose": "Сильная фиксация",
+        "relatedProductIds": [
+          "p2",
+          "p10"
+        ],
+        "oftenBoughtTogether": [
+          "p2"
+        ],
+        "bonusRate": 10,
+        "manufacturerName": "Stylo Professional S.r.l. (Italy)",
+        "manufacturerAddress": "Via Emilia 33, 40121 Bologna, Italy",
+        "manufacturerEmail": "info@styloprofessional.it",
+        "distributorName": {
+          "ru": "CosmoTrade S.r.l.",
+          "en": "CosmoTrade S.r.l.",
+          "lv": "CosmoTrade S.r.l."
+        },
+        "distributorAddress": {
+          "ru": "Via Montenapoleone 8, 20121 Милан, Италия",
+          "en": "Via Montenapoleone 8, 20121 Milan, Italy",
+          "lv": "Via Montenapoleone 8, 20121 Milāna, Itālija"
+        },
+        "distributorEmail": "sales@cosmotrade.it",
+        "quantity": 1
+      }
+    ],
+    "subtotal": 6250,
+    "tax": 1125,
+    "delivery": 500,
+    "deliveryMethod": "courier",
+    "discount": 0,
+    "total": 7525,
+    "bonusSpent": 350,
+    "paymentStatus": "unpaid",
+    "paymentProvider": "manual",
+    "firstName": "Aleksandrs",
+    "lastName": "Prokudins",
+    "email": "prokuuudin@gmail.com",
+    "phone": "+37129711575",
+    "address": "P. Lejina 7 - 52",
+    "city": "Riga",
+    "postalCode": "LV-1029",
+    "paymentMethod": "bank"
+  },
+  {
     "id": "ORD-1778951045449-KH6Q8U4GA",
     "createdAt": "2026-05-16T17:04:05.449Z",
     "items": [

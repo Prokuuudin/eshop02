@@ -19,7 +19,7 @@ export default function HomeRetailBanner() {
                         <p className="retail-banner__desc mt-2 text-lg font-medium text-gray-900 dark:text-gray-100 sm:text-xl">
                             {t(
                                 'home.retailBanner.retailOnly',
-                                'Вы можете приобрести те же товары по розничным ценам — в нашем интернет-магазине'
+                                'Вы можете приобрести те же товары по розничным ценам — в нашем интернет-магазине для обычных покупателей'
                             )}
                         </p>
                     </div>

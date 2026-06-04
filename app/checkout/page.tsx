@@ -26,9 +26,6 @@ const validateEmail = (email: string): boolean => {
     return emailRegex.test(email);
 };
 
-const generateOrderId = (): string => {
-    return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-};
 
 const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string; price: number }> = [
     { id: 'courier', labelKey: 'checkout.delivery.courier', price: 500 },
@@ -41,7 +38,7 @@ export default function CheckoutPage() {
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const { items, replaceWithItems } = useCart();
-    const { addOrder, updateOrderPayment } = useOrders();
+    const { addOrder, updateOrderPayment, getNextOrderNumber } = useOrders();
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
@@ -238,7 +235,7 @@ export default function CheckoutPage() {
         const finalGrandTotal = grandTotal - bonusDiscount;
 
         // Create order
-        const orderId = generateOrderId();
+        const orderId = String(getNextOrderNumber());
         const order = {
             id: orderId,
             createdAt: new Date(),

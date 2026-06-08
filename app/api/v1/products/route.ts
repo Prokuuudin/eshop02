@@ -96,26 +96,3 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * GET /api/v1/products/categories
- * Returns list of all product categories
- */
-export async function getCategories(req: NextRequest) {
-  try {
-    const auth = await authenticateRequest(req)
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
-    }
-
-    const products = await getMergedProducts()
-    const categories = Array.from(new Set(products.map((product) => product.category)))
-
-    return successResponse({
-      categories,
-      count: categories.length
-    })
-  } catch (error) {
-    console.error('API Error:', error)
-    return errorResponse('Internal server error', 500)
-  }
-}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -47,14 +48,14 @@ export async function POST(req: NextRequest) {
       nextOrderDate?: string
     }
 
-    if (!body.id || !body.productId || !body.pricePerUnit || !body.quantity || !body.interval || !body.nextOrderDate) {
+    if (!body.productId || !body.pricePerUnit || !body.quantity || !body.interval || !body.nextOrderDate) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
 
-    const sub = await prisma.productSubscription.upsert({
-      where: { id: body.id },
-      create: {
-        id: body.id,
+    // Always generate id server-side — never trust client-supplied id
+    const sub = await prisma.productSubscription.create({
+      data: {
+        id: randomUUID(),
         userId: user.id,
         userEmail: user.email,
         productId: body.productId,
@@ -67,12 +68,9 @@ export async function POST(req: NextRequest) {
         status: 'active',
         nextOrderDate: new Date(body.nextOrderDate),
       },
-      update: {},
     })
 
-    return NextResponse.json({
-      subscription: { ...sub, nextOrderDate: sub.nextOrderDate.toISOString(), createdAt: sub.createdAt.toISOString() },
-    })
+    return NextResponse.json({ subscriptionId: sub.id }, { status: 201 })
   } catch (e) {
     console.error('[subscriptions POST]', e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

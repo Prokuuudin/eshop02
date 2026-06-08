@@ -74,6 +74,27 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
           requests: [createdRequest, ...state.requests]
         }))
 
+        // Sync to DB — password is hashed server-side; certificateData (image) excluded (too large)
+        if (typeof window !== 'undefined') {
+          fetch('/api/access-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: request.email,
+              password: request.password,
+              name: request.name,
+              phone: request.phone,
+              companyId: request.companyId,
+              companyName: request.companyName,
+              cardNumber: request.cardNumber,
+              requestType: request.requestType,
+              certificateName: request.certificateName,
+              message: request.message,
+              language: request.language,
+            }),
+          }).catch(() => {})
+        }
+
         return createdRequest
       },
 
@@ -94,6 +115,13 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
               : request
           )
         }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/admin/access-requests/${encodeURIComponent(requestId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'approved', reviewNote: review?.reviewNote, approvedTeamRole: review?.approvedTeamRole }),
+          }).catch(() => {})
+        }
       },
 
       rejectRequest: (requestId, review) => {
@@ -112,6 +140,13 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
               : request
           )
         }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/admin/access-requests/${encodeURIComponent(requestId)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'rejected', reviewNote: review?.reviewNote }),
+          }).catch(() => {})
+        }
       },
 
       getRequest: (requestId) => {

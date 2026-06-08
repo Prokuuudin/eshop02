@@ -47,6 +47,13 @@ export const useSavedAddresses = create<SavedAddressesStore>()(
             }
           }
         })
+        if (typeof window !== 'undefined') {
+          fetch('/api/user/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(address),
+          }).catch(() => {})
+        }
       },
       deleteForEmail: (email: string, addressId: string) => {
         set((state) => ({
@@ -55,6 +62,9 @@ export const useSavedAddresses = create<SavedAddressesStore>()(
             [email]: (state.addressesByEmail[email] ?? []).filter((item) => item.id !== addressId)
           }
         }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/user/addresses/${encodeURIComponent(addressId)}`, { method: 'DELETE' }).catch(() => {})
+        }
       }
     }),
     {

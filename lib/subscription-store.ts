@@ -68,6 +68,7 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
       subscribe: (params) => {
         const discount = SUBSCRIPTION_DISCOUNTS[params.interval]
+        const nextOrderDate = calcNextOrderDate(params.interval)
         const sub: ProductSubscription = {
           id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           userId: params.userId,
@@ -80,56 +81,97 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           quantity: params.quantity,
           interval: params.interval,
           status: 'active',
-          nextOrderDate: calcNextOrderDate(params.interval),
+          nextOrderDate,
           createdAt: new Date().toISOString(),
         }
         set((state) => ({ subscriptions: [sub, ...state.subscriptions] }))
+        if (typeof window !== 'undefined') {
+          fetch('/api/subscriptions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...sub }),
+          }).catch(() => {})
+        }
         return sub
       },
 
-      pause: (id) =>
+      pause: (id) => {
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id && s.status === 'active' ? { ...s, status: 'paused' } : s
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/subscriptions/${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'paused' }),
+          }).catch(() => {})
+        }
+      },
 
-      resume: (id) =>
+      resume: (id) => {
+        const nextOrderDate = calcNextOrderDate(
+          get().subscriptions.find((s) => s.id === id)?.interval ?? 'monthly'
+        )
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id && s.status === 'paused'
-              ? { ...s, status: 'active', nextOrderDate: calcNextOrderDate(s.interval) }
+              ? { ...s, status: 'active', nextOrderDate }
               : s
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/subscriptions/${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'active', nextOrderDate }),
+          }).catch(() => {})
+        }
+      },
 
-      cancel: (id) =>
+      cancel: (id) => {
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id ? { ...s, status: 'cancelled' } : s
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/subscriptions/${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
+          }).catch(() => {})
+        }
+      },
 
-      changeInterval: (id, interval) =>
+      changeInterval: (id, interval) => {
+        const nextOrderDate = calcNextOrderDate(interval)
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id
-              ? {
-                  ...s,
-                  interval,
-                  discountPercent: SUBSCRIPTION_DISCOUNTS[interval],
-                  nextOrderDate: calcNextOrderDate(interval),
-                }
+              ? { ...s, interval, discountPercent: SUBSCRIPTION_DISCOUNTS[interval], nextOrderDate }
               : s
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/subscriptions/${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interval, nextOrderDate }),
+          }).catch(() => {})
+        }
+      },
 
-      changeQuantity: (id, quantity) =>
+      changeQuantity: (id, quantity) => {
         set((state) => ({
           subscriptions: state.subscriptions.map((s) =>
             s.id === id ? { ...s, quantity } : s
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/subscriptions/${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity }),
+          }).catch(() => {})
+        }
+      },
 
       getUserSubscriptions: (userId) =>
         get().subscriptions.filter((s) => s.userId === userId),

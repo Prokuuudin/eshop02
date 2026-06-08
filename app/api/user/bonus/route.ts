@@ -12,6 +12,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'delta_required' }, { status: 400 })
     }
 
+    // Non-admin can only decrease their own balance (spend bonus points)
+    // Positive delta (earning) is server-only — tied to orders/refunds, not client-controlled
+    if (caller.platformRole !== 'admin' && delta > 0) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    }
+
     // Non-admin can only adjust their own balance
     const targetId = (caller.platformRole === 'admin' && userId) ? String(userId) : caller.id
 

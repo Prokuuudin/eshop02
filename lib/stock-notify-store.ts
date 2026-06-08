@@ -29,27 +29,31 @@ export const useStockNotifyStore = create<StockNotifyStore>()(
 
       subscribe: (productId, productTitle, email, userId) => {
         if (get().isSubscribed(productId, email)) return 'already'
+        const id = `sn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         set((state) => ({
           subscriptions: [
             ...state.subscriptions,
-            {
-              id: `sn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-              productId,
-              productTitle,
-              email,
-              userId,
-              createdAt: new Date().toISOString(),
-              notified: false,
-            },
+            { id, productId, productTitle, email, userId, createdAt: new Date().toISOString(), notified: false },
           ],
         }))
+        if (typeof window !== 'undefined') {
+          fetch('/api/stock-notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, productTitle, email }),
+          }).catch(() => {})
+        }
         return 'subscribed'
       },
 
-      unsubscribe: (id) =>
+      unsubscribe: (id) => {
         set((state) => ({
           subscriptions: state.subscriptions.filter((s) => s.id !== id),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/stock-notify/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {})
+        }
+      },
 
       isSubscribed: (productId, email) =>
         get().subscriptions.some(

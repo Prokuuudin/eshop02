@@ -1,4 +1,4 @@
-import { PRODUCTS } from '@/data/products'
+import { getMergedProducts } from '@/lib/product-overrides-store'
 import { getDisplayPrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
 
@@ -20,13 +20,9 @@ export interface CatalogItem {
   compatibleEquipment?: string[]
 }
 
-/**
- * Get products filtered by category
- * @param category Category name or undefined for all
- * @returns Filtered products
- */
-export function getCatalogItems(category?: string): CatalogItem[] {
-  return PRODUCTS.filter(p => !category || p.category === category).map(p => ({
+export async function getCatalogItems(category?: string): Promise<CatalogItem[]> {
+  const products = await getMergedProducts()
+  return products.filter(p => !category || p.category === category).map(p => ({
     id: p.id,
     title: p.title,
     brand: p.brand,
@@ -45,9 +41,6 @@ export function getCatalogItems(category?: string): CatalogItem[] {
   }))
 }
 
-/**
- * Format catalog data for display
- */
 export function formatCatalogForDisplay(
   items: CatalogItem[],
   locale: string
@@ -61,28 +54,19 @@ export function formatCatalogForDisplay(
   }))
 }
 
-/**
- * Get all unique categories from products
- */
-export function getCatalogCategories(): string[] {
-  return Array.from(new Set(PRODUCTS.map(p => p.category)))
+export async function getCatalogCategories(): Promise<string[]> {
+  const products = await getMergedProducts()
+  return Array.from(new Set(products.map(p => p.category)))
 }
 
-/**
- * Generate CSV catalog data (for export)
- * @param items Products to export
- * @param role Customer role for pricing
- * @returns CSV string
- */
 export function generateCsvCatalog(
   items: CatalogItem[],
   locale: string
 ): string {
   const formatted = formatCatalogForDisplay(items, locale)
-  
-  // CSV headers
+
   const headers = ['ID', 'Название', 'Бренд', 'SKU', 'Цена', 'Старая цена', 'Категория', 'Рейтинг', 'В наличии']
-  
+
   const rows = formatted.map(item => [
     item.id,
     `"${item.title}"`,
@@ -101,12 +85,6 @@ export function generateCsvCatalog(
   ].join('\n')
 }
 
-/**
- * Generate structured catalog data for PDF/JSON export
- * @param items Products to include
- * @param role Customer role
- * @returns Structured catalog object
- */
 export function generateStructuredCatalog(
   items: CatalogItem[],
   locale: string
@@ -130,28 +108,55 @@ export function generateStructuredCatalog(
   }
 }
 
-/**
- * Search products in catalog
- * @param query Search query
- * @param items Items to search in
- * @returns Matching items
- */
-export function searchCatalog(query: string, items: CatalogItem[] = getCatalogItems()): CatalogItem[] {
-  const q = query.toLowerCase()
-  return items.filter(item =>
-    item.title.toLowerCase().includes(q) ||
-    item.brand.toLowerCase().includes(q) ||
-    item.sku?.toLowerCase().includes(q) ||
-    item.category.toLowerCase().includes(q)
+export async function searchCatalog(query: string, items?: CatalogItem[]): Promise<CatalogItem[]> {
+  if (items) {
+    const q = query.toLowerCase()
+    return items.filter(item =>
+      item.title.toLowerCase().includes(q) ||
+      item.brand.toLowerCase().includes(q) ||
+      item.sku?.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q)
+    )
+  }
+
+  if (!query || query.trim().length < 2) return getCatalogItems()
+
+  const { prisma } = await import('@/lib/prisma')
+  type Row = { id: string; title: string; brand: string; price: number; oldPrice: number | null; image: string | null; category: string; stock: number; sku: string | null; description: string | null }
+  const rows = await prisma.$queryRawUnsafe<Row[]>(
+    `SELECT id, title, brand, price, "oldPrice", image, category, stock, sku, description
+     FROM "Product"
+     WHERE "isDeleted" = false
+       AND similarity(
+             COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
+             $1
+           ) > 0.1
+     ORDER BY similarity(
+               COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
+               $1
+             ) DESC
+     LIMIT 50`,
+    query
   )
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    brand: row.brand,
+    sku: row.sku ?? undefined,
+    image: row.image ?? '',
+    category: row.category,
+    price: row.price,
+    oldPrice: row.oldPrice ?? undefined,
+    rating: 0,
+    stock: row.stock,
+    description: row.description ?? undefined,
+  }))
 }
 
-/**
- * Get featured products for catalog cover
- * @returns Top-rated products
- */
-export function getFeaturedProducts(limit = 6): CatalogItem[] {
-  return getCatalogItems()
+export async function getFeaturedProducts(limit = 6): Promise<CatalogItem[]> {
+  const items = await getCatalogItems()
+  return items
     .sort((a, b) => b.rating - a.rating)
     .slice(0, limit)
 }

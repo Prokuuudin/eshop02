@@ -35,6 +35,7 @@ type AdminStore = {
   updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => void
   setCardOrder: (order: string[]) => void
   resetCardOrder: () => void
+  loadOrderMeta: (orderIds: string[]) => Promise<void>
 }
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -52,11 +53,15 @@ export const useAdminStore = create<AdminStore>()(
 
       setOrderStatus: (orderId: string, status: OrderStatus) => {
         set((state) => ({
-          orderStatuses: {
-            ...state.orderStatuses,
-            [orderId]: status
-          }
+          orderStatuses: { ...state.orderStatuses, [orderId]: status }
         }))
+        if (typeof window !== 'undefined') {
+          fetch('/api/admin/order-meta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, status }),
+          }).catch(() => {})
+        }
       },
 
       getOrderStatus: (orderId: string) => {
@@ -67,6 +72,13 @@ export const useAdminStore = create<AdminStore>()(
         set((state) => ({
           orderNotes: { ...state.orderNotes, [orderId]: note }
         }))
+        if (typeof window !== 'undefined') {
+          fetch('/api/admin/order-meta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, note }),
+          }).catch(() => {})
+        }
       },
 
       getOrderNote: (orderId: string) => {
@@ -75,6 +87,20 @@ export const useAdminStore = create<AdminStore>()(
 
       setCardOrder: (order: string[]) => set({ cardOrder: order }),
       resetCardOrder: () => set({ cardOrder: null }),
+
+      loadOrderMeta: async (orderIds: string[]) => {
+        if (!orderIds.length) return
+        try {
+          const ids = orderIds.slice(0, 200).join(',')
+          const res = await fetch(`/api/admin/order-meta?ids=${ids}`)
+          if (!res.ok) return
+          const { statuses, notes } = await res.json()
+          set((state) => ({
+            orderStatuses: { ...statuses, ...state.orderStatuses },
+            orderNotes: { ...notes, ...state.orderNotes },
+          }))
+        } catch { /* ignore */ }
+      },
 
       updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => {
         set((state) => ({

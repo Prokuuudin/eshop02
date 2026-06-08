@@ -107,6 +107,24 @@ export const useAdminLogStore = create<AdminLogStore>()(
         set((state) => ({
           entries: [entry, ...state.entries].slice(0, 5000), // keep last 5000
         }))
+
+        // Sync to DB — fire-and-forget
+        // Only send fields the server accepts; id/adminEmail/adminName/at are server-generated
+        if (typeof window !== 'undefined') {
+          fetch('/api/admin/audit-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: entry.action,
+              entityType: entry.entityType,
+              entityId: entry.entityId,
+              entityTitle: entry.entityTitle,
+              before: entry.before,
+              after: entry.after,
+              details: entry.details,
+            }),
+          }).catch(() => {})
+        }
       },
 
       clear: (olderThanDays) => {

@@ -1,6 +1,6 @@
 import 'server-only'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 import type { Language } from '@/data/translations'
 
 export type SiteContentOverrides = {
@@ -8,7 +8,7 @@ export type SiteContentOverrides = {
   images: Record<string, string>
 }
 
-const SITE_CONTENT_STORE_FILE = path.join(process.cwd(), 'data', 'site-content.json')
+const SITE_CONTENT_KEY = 'site-content'
 
 const EMPTY_OVERRIDES: SiteContentOverrides = {
   text: { ru: {}, en: {}, lv: {} },
@@ -26,29 +26,18 @@ function normalizeOverrides(input: Partial<SiteContentOverrides> | null | undefi
   }
 }
 
-async function ensureStoreFile(): Promise<void> {
-  try {
-    await fs.access(SITE_CONTENT_STORE_FILE)
-  } catch {
-    await fs.writeFile(SITE_CONTENT_STORE_FILE, JSON.stringify(EMPTY_OVERRIDES, null, 2), 'utf-8')
-  }
-}
-
 export async function getSiteContentOverridesFromStore(): Promise<SiteContentOverrides> {
-  await ensureStoreFile()
-  const content = await fs.readFile(SITE_CONTENT_STORE_FILE, 'utf-8')
-
-  try {
-    const parsed = JSON.parse(content) as Partial<SiteContentOverrides>
-    return normalizeOverrides(parsed)
-  } catch {
-    return normalizeOverrides(EMPTY_OVERRIDES)
-  }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: SITE_CONTENT_KEY } })
+  if (!row) return normalizeOverrides(EMPTY_OVERRIDES)
+  return normalizeOverrides(row.value as Partial<SiteContentOverrides>)
 }
 
 export async function saveSiteContentOverridesToStore(overrides: Partial<SiteContentOverrides>): Promise<SiteContentOverrides> {
-  await ensureStoreFile()
   const normalized = normalizeOverrides(overrides)
-  await fs.writeFile(SITE_CONTENT_STORE_FILE, JSON.stringify(normalized, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: SITE_CONTENT_KEY },
+    create: { key: SITE_CONTENT_KEY, value: normalized as unknown as Prisma.InputJsonValue },
+    update: { value: normalized as unknown as Prisma.InputJsonValue },
+  })
   return normalized
 }

@@ -762,5 +762,14 @@ export const adjustUserBonusPoints = (
     notifyAuthChanged()
   }
 
+  // Sync to DB — fire-and-forget
+  if (typeof window !== 'undefined') {
+    fetch('/api/user/bonus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta, userId }),
+    }).catch(() => {})
+  }
+
   return { success: true, newBalance }
 }

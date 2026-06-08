@@ -8,6 +8,7 @@ import Footer from '../components/Footer'
 import AppBreadcrumbs from '../components/AppBreadcrumbs'
 import { Providers } from './providers'
 import RouteUiEffects from '../components/RouteUiEffects'
+import AuthHydrator from '../components/auth/AuthHydrator'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], display: 'swap', variable: '--font-inter' })
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
         <Providers>
           <RouteUiEffects />
+          <AuthHydrator />
           <Header />
           <main className="w-full pt-[calc(var(--header-offset,150px))] pb-6">
             <div className="mx-auto mt-2 w-full max-w-7xl px-4">

@@ -108,10 +108,27 @@ export const useReturnsStore = create<ReturnsStore>()(
     (set, get) => ({
       returns: DEMO_RETURNS,
 
-      addReturn: (r) =>
-        set((state) => ({ returns: [r, ...state.returns] })),
+      addReturn: (r) => {
+        set((state) => ({ returns: [r, ...state.returns] }))
+        if (typeof window !== 'undefined') {
+          fetch('/api/returns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // id is generated server-side — do not send it
+            body: JSON.stringify({
+              orderId: r.orderId,
+              reason: r.reason,
+              comment: r.comment,
+              items: r.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+              firstName: r.firstName,
+              lastName: r.lastName,
+              phone: r.phone,
+            }),
+          }).catch(() => {})
+        }
+      },
 
-      setReturnStatus: (id, status, resolution) =>
+      setReturnStatus: (id, status, resolution) => {
         set((state) => ({
           returns: state.returns.map((r) =>
             r.id === id
@@ -123,7 +140,16 @@ export const useReturnsStore = create<ReturnsStore>()(
                 }
               : r
           ),
-        })),
+        }))
+        if (typeof window !== 'undefined') {
+          const resolvedAt = status !== 'pending' ? new Date().toISOString() : null
+          fetch(`/api/returns/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, ...(resolution !== undefined ? { resolution } : {}), ...(resolvedAt ? { resolvedAt } : {}) }),
+          }).catch(() => {})
+        }
+      },
 
       getReturn: (id) => get().returns.find((r) => r.id === id),
     }),

@@ -94,7 +94,7 @@ export const useInvoicesStore = create<InvoiceStore>()(
       createInvoice: (invoice) => {
         const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const invoiceNumber = get().getGeneratedInvoiceNumber()
-        
+
         const newInvoice: Invoice = {
           ...invoice,
           id: invoiceId,
@@ -103,7 +103,7 @@ export const useInvoicesStore = create<InvoiceStore>()(
           paidAmount: 0,
           remainingAmount: invoice.total
         }
-        
+
         set(state => {
           const newInvoices = new Map(state.invoices)
           newInvoices.set(invoiceId, newInvoice)
@@ -112,7 +112,13 @@ export const useInvoicesStore = create<InvoiceStore>()(
             invoiceNumberCounter: state.invoiceNumberCounter + 1
           }
         })
-        
+
+        fetch('/api/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newInvoice),
+        }).catch(() => {})
+
         return invoiceId
       },
       
@@ -160,18 +166,18 @@ export const useInvoicesStore = create<InvoiceStore>()(
         set(state => {
           const invoice = state.invoices.get(invoiceId)
           if (!invoice) return state
-          
+
           const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           const newPaymentRecord: PaymentRecord = {
             ...payment,
             id: paymentId,
             date: new Date()
           }
-          
+
           const paidAmount = invoice.paidAmount + payment.amount
           const remainingAmount = invoice.total - paidAmount
           const newStatus: InvoiceStatus = remainingAmount <= 0 ? 'paid' : invoice.status
-          
+
           const newInvoices = new Map(state.invoices)
           newInvoices.set(invoiceId, {
             ...invoice,
@@ -183,6 +189,12 @@ export const useInvoicesStore = create<InvoiceStore>()(
           })
           return { invoices: newInvoices }
         })
+
+        fetch(`/api/invoices/${invoiceId}/payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payment),
+        }).catch(() => {})
       },
       
       getPaymentRecords: (invoiceId) => {

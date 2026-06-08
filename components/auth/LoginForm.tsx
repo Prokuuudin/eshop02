@@ -32,12 +32,39 @@ export default function LoginForm({
         if (searchParams.get('confirmed') === '1') setConfirmed(true);
     }, [searchParams]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const res = loginUserAuto(identifier.trim(), password);
         if (!res.success) return setError(res.error || t('form.error'));
         setError('');
         const loggedInUser = getCurrentUser();
+        if (loggedInUser) {
+            try {
+                await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: loggedInUser.id,
+                        email: loggedInUser.email,
+                        password,
+                        name: loggedInUser.name,
+                        platformRole: loggedInUser.platformRole,
+                        companyId: loggedInUser.companyId,
+                        companyName: loggedInUser.companyName,
+                        teamRole: loggedInUser.teamRole,
+                        phone: loggedInUser.phone,
+                        cardNumber: loggedInUser.cardNumber,
+                        avatarUrl: loggedInUser.avatarUrl,
+                        bonusPoints: loggedInUser.bonusPoints,
+                        mustChangePassword: loggedInUser.mustChangePassword,
+                        approvalRequired: loggedInUser.approvalRequired,
+                        auditLoggingEnabled: loggedInUser.auditLoggingEnabled,
+                    }),
+                });
+            } catch {
+                // non-blocking — localStorage auth already succeeded
+            }
+        }
         if (onSuccess) { onSuccess(); return; }
         const redirect = searchParams.get('redirect');
         if (redirect) return router.push(redirect);

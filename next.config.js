@@ -12,6 +12,11 @@ const nextConfig = {
             config.cache = false;
         }
 
+        // Prisma 7 generated client uses .js extensions in ESM imports — resolve to .ts
+        config.resolve.extensionAlias = {
+            '.js': ['.ts', '.tsx', '.js', '.jsx'],
+        };
+
         return config;
     },
     async headers() {

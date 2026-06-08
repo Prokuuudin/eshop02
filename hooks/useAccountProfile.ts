@@ -53,6 +53,19 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setIsEditingProfile(false);
         setProfileDraft(null);
         setProfileErrors({});
+
+        // Sync safe fields to DB — fire-and-forget, localStorage is source of truth
+        fetch('/api/user/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: updatedUser.name,
+                phone: updatedUser.phone,
+                avatarUrl: updatedUser.avatarUrl,
+                cardNumber: updatedUser.cardNumber,
+            }),
+        }).catch(() => {});
+
         window.location.reload();
     };
 

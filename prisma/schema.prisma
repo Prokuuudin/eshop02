@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String    @id
+  email               String    @unique
+  passwordHash        String
+  name                String?
+  platformRole        String    @default("customer")
+  companyId           String?
+  companyName         String?
+  teamRole            String?
+  approvalRequired    Boolean   @default(false)
+  auditLoggingEnabled Boolean   @default(false)
+  phone               String?
+  cardNumber          String?   @unique
+  avatarUrl           String?
+  bonusPoints         Int       @default(350)
+  mustChangePassword  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  sessions            Session[]
+
+  @@index([email])
+  @@index([companyId])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Invoice {
+  id              String    @id
+  invoiceNumber   String    @unique
+  companyId       String
+  orderId         String
+  subtotal        Float
+  taxRate         Float
+  taxAmount       Float
+  total           Float
+  status          String    @default("draft")
+  issuedDate      DateTime
+  dueDate         DateTime
+  paidDate        DateTime?
+  paymentRecords  Json      @default("[]")
+  paidAmount      Float     @default(0)
+  remainingAmount Float
+  notes           String?
+  items           Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([orderId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Banner {
+  id        String @id
+  type      String
+  title     String
+  subtitle  String @default("")
+  image     String @default("")
+  link      String @default("")
+  ctaLabel  String @default("")
+  ctaStyle  String @default("primary")
+  bgColor   String @default("")
+  textColor String @default("dark")
+  active    Boolean @default(true)
+  order     Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([order])
+}
+
+model ContentBlock {
+  id        String @id
+  type      String
+  title     String
+  subtitle  String @default("")
+  content   String @default("")
+  icon      String @default("")
+  link      String @default("")
+  linkLabel String @default("")
+  bgColor   String @default("")
+  active    Boolean @default(true)
+  order     Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([order])
+}
+
+model PromoCode {
+  id          String   @id
+  code        String   @unique
+  discount    Float
+  minOrder    Float    @default(0)
+  maxUses     Int?
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  active      Boolean  @default(true)
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([code])
+  @@index([active])
+}
+
+model KeyValueSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id                      String          @id
+  companyName             String
+  cardNumber              String?         @unique
+  taxId                   String?
+  registrationNumber      String?
+  address                 String?
+  city                    String?
+  country                 String?
+  contactPhone            String?
+  contactEmail            String?
+  accountManagerId        String?
+  paymentTermDays         Int             @default(0)
+  creditLimit             Float?
+  usedCredit              Float           @default(0)
+  approvalWorkflowEnabled Boolean         @default(false)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  members                 CompanyMember[]
+
+  @@index([cardNumber])
+}
+
+model CompanyMember {
+  id        String   @id
+  companyId String
+  userId    String
+  email     String
+  role      String   @default("viewer")
+  name      String
+  addedAt   DateTime @default(now())
+  addedBy   String?
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+model OrderStatusRecord {
+  orderId   String   @id
+  status    String   @default("pending")
+  updatedAt DateTime @updatedAt
+}
+
+model OrderNote {
+  orderId   String   @id
+  note      String
+  updatedAt DateTime @updatedAt
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String   @id
+  at          DateTime @default(now())
+  adminEmail  String
+  adminName   String?
+  action      String
+  entityType  String
+  entityId    String
+  entityTitle String?
+  before      Json?
+  after       Json?
+  details     String?
+
+  @@index([adminEmail])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([at])
+}
+
+model Product {
+  id                  String   @id
+  title               String
+  titleKey            String?
+  titleEn             String?
+  titleLv             String?
+  description         String?
+  brand               String
+  price               Float
+  oldPrice            Float?
+  rating              Float    @default(0)
+  ratingCount         Int      @default(0)
+  reviewCount         Int      @default(0)
+  image               String?
+  images              String[]
+  metaTitle           String?
+  metaDescription     String?
+  ogImage             String?
+  ogAlt               String?
+  badges              String[]
+  category            String
+  stock               Int      @default(0)
+  barcode             String?
+  purpose             String?
+  purposeEn           String?
+  purposeLv           String?
+  relatedProductIds   String[]
+  oftenBoughtTogether String[]
+  minOrderQuantities  Json?
+  technicalSpecs      Json?
+  bulkPricingTiers    Json?
+  demoVideo           Json?
+  distributorName     Json?
+  distributorAddress  Json?
+  sku                 String?
+  unitOfMeasure       String?
+  certificates        String[]
+  packagingSize       Int?
+  compatibleEquipment String[]
+  manufacturerName    String?
+  manufacturerAddress String?
+  manufacturerEmail   String?
+  distributorEmail    String?
+  bonusRate           Float?
+  feature1            String?
+  feature1En          String?
+  feature1Lv          String?
+  feature2            String?
+  feature2En          String?
+  feature2Lv          String?
+  feature3            String?
+  feature3En          String?
+  feature3Lv          String?
+  feature4            String?
+  feature4En          String?
+  feature4Lv          String?
+  specVolume          String?
+  specType            String?
+  specCountry         String?
+  isCustom            Boolean  @default(false)
+  isDeleted           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([isDeleted])
+  @@index([category])
+  @@index([isDeleted, category])
+}
+
+model Order {
+  id               String   @id
+  createdAt        DateTime
+  items            Json
+  subtotal         Float
+  tax              Float
+  delivery         Float
+  deliveryMethod   String
+  paymentMethod    String
+  promoCode        String?
+  discount         Float    @default(0)
+  total            Float
+  firstName        String
+  lastName         String
+  email            String
+  phone            String
+  address          String
+  city             String
+  postalCode       String?
+  bonusSpent       Float?
+  bonusEarned      Float?
+  paymentStatus    String   @default("unpaid")
+  paymentProvider  String?
+  paymentSessionId String?
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([paymentStatus])
+}
+
+model Review {
+  id         String   @id
+  productId  String
+  author     String
+  rating     Int
+  title      String
+  text       String
+  createdAt  DateTime
+  helpful    Int      @default(0)
+  status     String   @default("approved")
+  adminReply Json?
+
+  @@index([productId])
+  @@index([productId, status])
+}
+
+model AccessRequest {
+  id               String    @id
+  email            String
+  passwordHash     String
+  name             String?
+  phone            String?
+  companyId        String
+  companyName      String
+  cardNumber       String
+  status           String    @default("pending")
+  requestedAt      DateTime  @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  reviewedByEmail  String?
+  approvedTeamRole String?
+  reviewNote       String?
+  requestType      String    @default("card")
+  certificateName  String?
+  message          String?
+  language         String?
+
+  @@index([email])
+  @@index([companyId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model SavedAddress {
+  id         String  @id
+  email      String
+  firstName  String
+  lastName   String
+  phone      String
+  address    String
+  city       String
+  postalCode String?
+
+  @@index([email])
+}
+
+model StockNotification {
+  id           String    @id
+  productId    String
+  productTitle String
+  email        String
+  userId       String?
+  createdAt    DateTime  @default(now())
+  notified     Boolean   @default(false)
+  notifiedAt   DateTime?
+
+  @@unique([productId, email])
+  @@index([productId])
+  @@index([email])
+  @@index([notified])
+}
+
+model ProductSubscription {
+  id              String    @id
+  userId          String
+  userEmail       String
+  productId       String
+  productTitle    String
+  productImage    String?
+  pricePerUnit    Float
+  discountPercent Float
+  quantity        Int
+  interval        String
+  status          String    @default("active")
+  nextOrderDate   DateTime
+  lastOrderDate   DateTime?
+  remindedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([userEmail])
+  @@index([status])
+  @@index([nextOrderDate])
+}
+
+model ReturnRequest {
+  id           String    @id
+  orderId      String
+  createdAt    DateTime  @default(now())
+  status       String    @default("pending")
+  reason       String
+  comment      String?
+  items        Json
+  refundAmount Float
+  firstName    String
+  lastName     String
+  email        String
+  phone        String
+  resolution   String?
+  resolvedAt   DateTime?
+
+  @@index([orderId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RFQRequest {
+  id              String   @id
+  companyId       String
+  items           Json
+  notes           String   @default("")
+  status          String   @default("pending")
+  quote           Json?
+  timeline        Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String?
+
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model BlogPost {
+  id            String    @id
+  slug          String    @unique
+  title         String
+  excerpt       String
+  content       String
+  contentBlocks Json?
+  author        String
+  image         String
+  category      String
+  readTime      Int       @default(0)
+  createdAt     DateTime
+  updatedAt     DateTime?
+  featured      Boolean   @default(false)
+  translations  Json?
+}

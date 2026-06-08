@@ -62,8 +62,24 @@ const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, pos
 
 export default function AdminOrdersPage() {
   const { orders } = useOrders()
-  const { getOrderStatus, setOrderStatus, getOrderNote, setOrderNote } = useAdminStore()
+  const { getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, loadOrderMeta } = useAdminStore()
   const { upsertOrder } = useOrdersStore()
+
+  useEffect(() => {
+    fetch('/api/admin/orders?take=200')
+      .then((r) => r.json())
+      .then(({ orders: dbOrders }) => {
+        if (!Array.isArray(dbOrders)) return
+        const ids: string[] = []
+        for (const o of dbOrders) {
+          upsertOrder(o as import('@/lib/orders-store').Order)
+          ids.push(o.id)
+        }
+        if (ids.length) loadOrderMeta(ids)
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
 
   // ── Edit mode ─────────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 import { useOrders } from '@/lib/orders-store'
 import { useInvoicesStore } from '@/lib/invoices-store'
-import { PRODUCTS } from '@/data/products'
 
 export interface PurchaseAnalytics {
   totalOrders: number
@@ -63,11 +62,12 @@ export function getUserPurchaseAnalytics(userEmail?: string): PurchaseAnalytics 
   const averageOrderValue = totalSpent / orders.length
 
   // Group orders by product
-  const productMap = new Map<string, { quantity: number; revenue: number }>()
+  const productMap = new Map<string, { title: string; quantity: number; revenue: number }>()
   orders.forEach(order => {
     order.items.forEach(item => {
-      const existing = productMap.get(item.id) || { quantity: 0, revenue: 0 }
+      const existing = productMap.get(item.id) || { title: item.title, quantity: 0, revenue: 0 }
       productMap.set(item.id, {
+        title: item.title,
         quantity: existing.quantity + item.quantity,
         revenue: existing.revenue + (item.price * item.quantity)
       })
@@ -76,15 +76,12 @@ export function getUserPurchaseAnalytics(userEmail?: string): PurchaseAnalytics 
 
   // Top products
   const topProducts = Array.from(productMap.entries())
-    .map(([productId, data]) => {
-      const product = PRODUCTS.find(p => p.id === productId)
-      return {
-        productId,
-        productTitle: product?.title || 'Unknown',
-        quantity: data.quantity,
-        revenue: data.revenue
-      }
-    })
+    .map(([productId, data]) => ({
+      productId,
+      productTitle: data.title,
+      quantity: data.quantity,
+      revenue: data.revenue
+    }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10)
 
@@ -112,10 +109,9 @@ export function getUserPurchaseAnalytics(userEmail?: string): PurchaseAnalytics 
   const categoryMap = new Map<string, { quantity: number; revenue: number }>()
   orders.forEach(order => {
     order.items.forEach(item => {
-      const product = PRODUCTS.find(p => p.id === item.id)
-      if (product) {
-        const existing = categoryMap.get(product.category) || { quantity: 0, revenue: 0 }
-        categoryMap.set(product.category, {
+      if (item.category) {
+        const existing = categoryMap.get(item.category) || { quantity: 0, revenue: 0 }
+        categoryMap.set(item.category, {
           quantity: existing.quantity + item.quantity,
           revenue: existing.revenue + (item.price * item.quantity)
         })

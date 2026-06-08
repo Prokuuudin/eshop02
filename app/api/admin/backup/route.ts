@@ -11,7 +11,6 @@ const ALLOWED_FILES = [
   'reviews.json',
   'blog-posts.json',
   'site-content.json',
-  'custom-products.json',
   'product-overrides.json',
   'banners.json',
   'promo-codes.json',

@@ -10,7 +10,7 @@ import PhoneInput from '@/components/ui/phone-input';
 import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
-import { validatePromoCode, calculateDiscount } from '@/lib/promo-codes';
+import { calculateDiscount } from '@/lib/promo-codes';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
@@ -60,6 +60,7 @@ export default function CheckoutPage() {
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('courier');
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
+    const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
     const [bonusApplied, setBonusApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [submitted, setSubmitted] = useState(false);
@@ -159,7 +160,7 @@ export default function CheckoutPage() {
         }
     };
 
-    const handleApplyPromo = (): void => {
+    const handleApplyPromo = async (): Promise<void> => {
         setPromoError('');
         if (!promoCode.trim()) {
             const message = t('checkout.promo.enter');
@@ -168,16 +169,27 @@ export default function CheckoutPage() {
             return;
         }
 
-        const promo = validatePromoCode(promoCode, subtotal);
-        if (!promo) {
+        try {
+            const res = await fetch('/api/promo/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: promoCode, orderAmount: subtotal }),
+            });
+            const data = (await res.json()) as { valid: boolean; discount?: number; code?: string };
+            if (!data.valid) {
+                const message = t('checkout.promo.invalid');
+                setPromoError(message);
+                showToast(message, 'error');
+                return;
+            }
+            setAppliedPromo(data.code ?? promoCode);
+            setAppliedPromoDiscountPct(data.discount ?? 0);
+            if (applyBtnRef.current) burstConfetti(applyBtnRef.current);
+        } catch {
             const message = t('checkout.promo.invalid');
             setPromoError(message);
             showToast(message, 'error');
-            return;
         }
-
-        setAppliedPromo(promoCode);
-        if (applyBtnRef.current) burstConfetti(applyBtnRef.current);
     };
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -222,8 +234,9 @@ export default function CheckoutPage() {
         // Calculate totals
         const deliveryOption = DELIVERY_OPTIONS.find((d) => d.id === deliveryMethod);
         const deliveryFee = deliveryOption?.price || 500;
-        const discountPromo = appliedPromo ? validatePromoCode(appliedPromo, subtotal) : null;
-        const discount = discountPromo ? calculateDiscount(subtotal, discountPromo.discount) : 0;
+        const discount = appliedPromo && appliedPromoDiscountPct !== null
+            ? calculateDiscount(subtotal, appliedPromoDiscountPct)
+            : 0;
         const subtotalAfterDiscount = subtotal - discount;
         const normalizedCheckoutEmail = formData.email.trim().toLowerCase();
 
@@ -440,8 +453,9 @@ export default function CheckoutPage() {
 
     const deliveryOption = DELIVERY_OPTIONS.find((d) => d.id === deliveryMethod);
     const deliveryFee = deliveryOption?.price || 500;
-    const discountPromo = appliedPromo ? validatePromoCode(appliedPromo, subtotal) : null;
-    const discount = discountPromo ? calculateDiscount(subtotal, discountPromo.discount) : 0;
+    const discount = appliedPromo && appliedPromoDiscountPct !== null
+        ? calculateDiscount(subtotal, appliedPromoDiscountPct)
+        : 0;
     const subtotalAfterDiscount = subtotal - discount;
     const taxAmount = Math.round(subtotalAfterDiscount * 0.18);
     const grandTotal = subtotalAfterDiscount + taxAmount + deliveryFee;
@@ -760,11 +774,12 @@ export default function CheckoutPage() {
                             {appliedPromo && (
                                 <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded text-sm text-green-700 dark:text-green-200">
                                     {t('checkout.promo.applied')} ({appliedPromo} -
-                                    {discountPromo?.discount}%)
+                                    {appliedPromoDiscountPct}%)
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setAppliedPromo(undefined);
+                                            setAppliedPromoDiscountPct(null);
                                             setPromoCode('');
                                         }}
                                         className="ml-2 underline"

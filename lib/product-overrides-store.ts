@@ -1,6 +1,9 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { PRODUCTS, type Product } from '@/data/products'
+import { cache } from 'react'
+import { type Product, type BadgeType, type CategoryType } from '@/data/products'
+import { prisma } from '@/lib/prisma'
+import type { Product as PrismaProduct } from '@/generated/prisma/client'
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>
 export type ArchivedProductRecord = {
@@ -11,15 +14,181 @@ export type ArchivedProductRecord = {
 }
 
 const OVERRIDES_FILE_PATH = path.join(process.cwd(), 'data', 'product-overrides.json')
-const CUSTOM_PRODUCTS_FILE_PATH = path.join(process.cwd(), 'data', 'custom-products.json')
-const DELETED_PRODUCTS_FILE_PATH = path.join(process.cwd(), 'data', 'deleted-products.json')
 const DELETED_PRODUCTS_ARCHIVE_FILE_PATH = path.join(process.cwd(), 'data', 'deleted-products-archive.json')
+
+export function mapDbToProduct(p: PrismaProduct): Product {
+  return {
+    id: p.id,
+    title: p.title,
+    titleKey: p.titleKey ?? undefined,
+    titleEn: p.titleEn ?? undefined,
+    titleLv: p.titleLv ?? undefined,
+    description: p.description ?? undefined,
+    brand: p.brand,
+    price: p.price,
+    oldPrice: p.oldPrice ?? undefined,
+    rating: p.rating,
+    ratingCount: p.ratingCount,
+    reviewCount: p.reviewCount,
+    image: p.image ?? undefined,
+    images: p.images,
+    metaTitle: p.metaTitle ?? undefined,
+    metaDescription: p.metaDescription ?? undefined,
+    ogImage: p.ogImage ?? undefined,
+    ogAlt: p.ogAlt ?? undefined,
+    badges: p.badges as BadgeType[],
+    category: p.category as CategoryType,
+    stock: p.stock,
+    barcode: p.barcode ?? undefined,
+    purpose: p.purpose ?? undefined,
+    purposeEn: p.purposeEn ?? undefined,
+    purposeLv: p.purposeLv ?? undefined,
+    relatedProductIds: p.relatedProductIds,
+    oftenBoughtTogether: p.oftenBoughtTogether,
+    minOrderQuantities: (p.minOrderQuantities ?? undefined) as Record<string, number> | undefined,
+    technicalSpecs: (p.technicalSpecs ?? undefined) as Record<string, string> | undefined,
+    bulkPricingTiers: (p.bulkPricingTiers ?? undefined) as Array<{ quantity: number; pricePerUnit: number }> | undefined,
+    demoVideo: (p.demoVideo ?? undefined) as Array<{ src: string; poster?: string }> | undefined,
+    distributorName: (p.distributorName ?? undefined) as { ru: string; en: string; lv: string } | undefined,
+    distributorAddress: (p.distributorAddress ?? undefined) as { ru: string; en: string; lv: string } | undefined,
+    sku: p.sku ?? undefined,
+    unitOfMeasure: p.unitOfMeasure ?? undefined,
+    certificates: p.certificates,
+    packagingSize: p.packagingSize ?? undefined,
+    compatibleEquipment: p.compatibleEquipment,
+    manufacturerName: p.manufacturerName ?? undefined,
+    manufacturerAddress: p.manufacturerAddress ?? undefined,
+    manufacturerEmail: p.manufacturerEmail ?? undefined,
+    distributorEmail: p.distributorEmail ?? undefined,
+    bonusRate: p.bonusRate ?? undefined,
+    feature1: p.feature1 ?? undefined,
+    feature1En: p.feature1En ?? undefined,
+    feature1Lv: p.feature1Lv ?? undefined,
+    feature2: p.feature2 ?? undefined,
+    feature2En: p.feature2En ?? undefined,
+    feature2Lv: p.feature2Lv ?? undefined,
+    feature3: p.feature3 ?? undefined,
+    feature3En: p.feature3En ?? undefined,
+    feature3Lv: p.feature3Lv ?? undefined,
+    feature4: p.feature4 ?? undefined,
+    feature4En: p.feature4En ?? undefined,
+    feature4Lv: p.feature4Lv ?? undefined,
+    specVolume: p.specVolume ?? undefined,
+    specType: p.specType ?? undefined,
+    specCountry: p.specCountry ?? undefined,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProductToDbCreate(p: Product, isCustom = false): any {
+  return {
+    id: p.id,
+    title: p.title,
+    titleKey: p.titleKey ?? null,
+    titleEn: p.titleEn ?? null,
+    titleLv: p.titleLv ?? null,
+    description: p.description ?? null,
+    brand: p.brand,
+    price: p.price,
+    oldPrice: p.oldPrice ?? null,
+    rating: p.rating,
+    ratingCount: p.ratingCount ?? 0,
+    reviewCount: p.reviewCount ?? 0,
+    image: p.image ?? null,
+    images: p.images ?? [],
+    metaTitle: p.metaTitle ?? null,
+    metaDescription: p.metaDescription ?? null,
+    ogImage: p.ogImage ?? null,
+    ogAlt: p.ogAlt ?? null,
+    badges: (p.badges ?? []) as string[],
+    category: p.category,
+    stock: p.stock,
+    barcode: p.barcode ?? null,
+    purpose: p.purpose ?? null,
+    purposeEn: p.purposeEn ?? null,
+    purposeLv: p.purposeLv ?? null,
+    relatedProductIds: p.relatedProductIds ?? [],
+    oftenBoughtTogether: p.oftenBoughtTogether ?? [],
+    minOrderQuantities: p.minOrderQuantities ?? null,
+    technicalSpecs: p.technicalSpecs ?? null,
+    bulkPricingTiers: p.bulkPricingTiers ?? null,
+    demoVideo: p.demoVideo ?? null,
+    distributorName: p.distributorName ?? null,
+    distributorAddress: p.distributorAddress ?? null,
+    sku: p.sku ?? null,
+    unitOfMeasure: p.unitOfMeasure ?? null,
+    certificates: p.certificates ?? [],
+    packagingSize: p.packagingSize ?? null,
+    compatibleEquipment: p.compatibleEquipment ?? [],
+    manufacturerName: p.manufacturerName ?? null,
+    manufacturerAddress: p.manufacturerAddress ?? null,
+    manufacturerEmail: p.manufacturerEmail ?? null,
+    distributorEmail: p.distributorEmail ?? null,
+    bonusRate: p.bonusRate ?? null,
+    feature1: p.feature1 ?? null,
+    feature1En: p.feature1En ?? null,
+    feature1Lv: p.feature1Lv ?? null,
+    feature2: p.feature2 ?? null,
+    feature2En: p.feature2En ?? null,
+    feature2Lv: p.feature2Lv ?? null,
+    feature3: p.feature3 ?? null,
+    feature3En: p.feature3En ?? null,
+    feature3Lv: p.feature3Lv ?? null,
+    feature4: p.feature4 ?? null,
+    feature4En: p.feature4En ?? null,
+    feature4Lv: p.feature4Lv ?? null,
+    specVolume: p.specVolume ?? null,
+    specType: p.specType ?? null,
+    specCountry: p.specCountry ?? null,
+    isCustom,
+    isDeleted: false,
+  }
+}
+
+const getDbProducts = cache(async (): Promise<Product[]> => {
+  const rows = await prisma.product.findMany({
+    where: { isDeleted: false },
+    orderBy: { createdAt: 'desc' },
+  })
+  return rows.map(mapDbToProduct)
+})
+
+export async function getDbProductsPaginated(opts: {
+  category?: string
+  skip?: number
+  take?: number
+}): Promise<{ products: Product[]; total: number }> {
+  const where = {
+    isDeleted: false,
+    ...(opts.category ? { category: opts.category } : {}),
+  }
+  const [rows, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: opts.skip,
+      take: opts.take,
+    }),
+    prisma.product.count({ where }),
+  ])
+
+  const overrides = await readOverridesFileCached()
+  const products = rows.map(mapDbToProduct).map((product) => {
+    const override = overrides[product.id]
+    return override ? { ...product, ...override, id: product.id } : product
+  })
+
+  return { products, total }
+}
+
+const readOverridesFileCached = cache(async (): Promise<Record<string, ProductOverride>> => {
+  return readOverridesFile()
+})
 
 const readOverridesFile = async (): Promise<Record<string, ProductOverride>> => {
   try {
     const raw = await fs.readFile(OVERRIDES_FILE_PATH, 'utf-8')
-    const parsed = JSON.parse(raw) as Record<string, ProductOverride>
-    return parsed ?? {}
+    return (JSON.parse(raw) as Record<string, ProductOverride>) ?? {}
   } catch {
     return {}
   }
@@ -27,34 +196,6 @@ const readOverridesFile = async (): Promise<Record<string, ProductOverride>> => 
 
 const writeOverridesFile = async (overrides: Record<string, ProductOverride>): Promise<void> => {
   await fs.writeFile(OVERRIDES_FILE_PATH, JSON.stringify(overrides, null, 2), 'utf-8')
-}
-
-const readCustomProductsFile = async (): Promise<Product[]> => {
-  try {
-    const raw = await fs.readFile(CUSTOM_PRODUCTS_FILE_PATH, 'utf-8')
-    const parsed = JSON.parse(raw) as Product[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-const writeCustomProductsFile = async (products: Product[]): Promise<void> => {
-  await fs.writeFile(CUSTOM_PRODUCTS_FILE_PATH, JSON.stringify(products, null, 2), 'utf-8')
-}
-
-const readDeletedProductIdsFile = async (): Promise<string[]> => {
-  try {
-    const raw = await fs.readFile(DELETED_PRODUCTS_FILE_PATH, 'utf-8')
-    const parsed = JSON.parse(raw) as string[]
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
-  } catch {
-    return []
-  }
-}
-
-const writeDeletedProductIdsFile = async (ids: string[]): Promise<void> => {
-  await fs.writeFile(DELETED_PRODUCTS_FILE_PATH, JSON.stringify(ids, null, 2), 'utf-8')
 }
 
 const readDeletedProductsArchiveFile = async (): Promise<ArchivedProductRecord[]> => {
@@ -75,40 +216,25 @@ export const getProductOverrides = async (): Promise<Record<string, ProductOverr
   return readOverridesFile()
 }
 
-export const getCustomProducts = async (): Promise<Product[]> => {
-  return readCustomProductsFile()
-}
-
-export const getDeletedProductIds = async (): Promise<Set<string>> => {
-  const ids = await readDeletedProductIdsFile()
-  return new Set(ids)
-}
-
 export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord[]> => {
   return readDeletedProductsArchiveFile()
 }
 
-export const getMergedProducts = async (): Promise<Product[]> => {
-  const overrides = await getProductOverrides()
-  const customProducts = await getCustomProducts()
-  const deletedProductIds = await getDeletedProductIds()
-  const baseProducts = [...PRODUCTS, ...customProducts].filter((product) => !deletedProductIds.has(product.id))
+export const getMergedProducts = cache(async (): Promise<Product[]> => {
+  const [overrides, dbProducts] = await Promise.all([
+    readOverridesFileCached(),
+    getDbProducts(),
+  ])
 
-  return baseProducts.map((product) => {
+  return dbProducts.map((product) => {
     const override = overrides[product.id]
     if (!override) return product
-
-    return {
-      ...product,
-      ...override,
-      id: product.id
-    }
+    return { ...product, ...override, id: product.id }
   })
-}
+})
 
 const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omit<Product, 'id'>> => {
   const normalized = { ...patch }
-
   if (typeof normalized.price === 'number' && !Number.isFinite(normalized.price)) delete normalized.price
   if (typeof normalized.oldPrice === 'number' && !Number.isFinite(normalized.oldPrice)) delete normalized.oldPrice
   if (typeof normalized.rating === 'number' && !Number.isFinite(normalized.rating)) delete normalized.rating
@@ -116,35 +242,23 @@ const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omi
   if (typeof normalized.reviewCount === 'number' && !Number.isFinite(normalized.reviewCount)) delete normalized.reviewCount
   if (typeof normalized.stock === 'number' && !Number.isFinite(normalized.stock)) delete normalized.stock
   if (typeof normalized.packagingSize === 'number' && !Number.isFinite(normalized.packagingSize)) delete normalized.packagingSize
-
   return normalized
 }
 
 const isSameOverrideAsBase = (base: Product, patch: Partial<Omit<Product, 'id'>>): boolean => {
-  const next = {
-    ...base,
-    ...patch,
-    id: base.id
-  }
-
-  // Compare only editable fields; id is immutable and ignored.
+  const next = { ...base, ...patch, id: base.id }
   return JSON.stringify({ ...next, id: undefined }) === JSON.stringify({ ...base, id: undefined })
 }
 
 const buildOverrideFromSnapshot = (base: Product, snapshot: Product): ProductOverride => {
   const nextOverride: ProductOverride = {}
-
   const snapshotWithoutId = { ...snapshot, id: undefined } as Record<string, unknown>
   const baseWithoutId = { ...base, id: undefined } as Record<string, unknown>
-
   Object.keys(snapshotWithoutId).forEach((key) => {
-    const snapshotValue = snapshotWithoutId[key]
-    const baseValue = baseWithoutId[key]
-    if (JSON.stringify(snapshotValue) !== JSON.stringify(baseValue)) {
-      ;(nextOverride as Record<string, unknown>)[key] = snapshotValue
+    if (JSON.stringify(snapshotWithoutId[key]) !== JSON.stringify(baseWithoutId[key])) {
+      ;(nextOverride as Record<string, unknown>)[key] = snapshotWithoutId[key]
     }
   })
-
   return nextOverride
 }
 
@@ -152,101 +266,102 @@ export const upsertProductOverride = async (
   productId: string,
   nextValues: Partial<Omit<Product, 'id'>>
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
-  const mergedProducts = await getMergedProducts()
-  const baseProduct = mergedProducts.find((product) => product.id === productId)
-  if (!baseProduct) {
-    return { success: false, error: 'Товар не найден' }
-  }
+  const dbProduct = await prisma.product.findUnique({ where: { id: productId } })
+  if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
 
   const normalizedPatch = normalizeProductPatch(nextValues)
-  const overrides = await getProductOverrides()
-  if (isSameOverrideAsBase(baseProduct, normalizedPatch)) {
-    delete overrides[productId]
-  } else {
-    overrides[productId] = normalizedPatch
+
+  // Build DB update payload — only include fields present in the patch
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbData: Record<string, any> = {}
+  const patchRecord = normalizedPatch as Record<string, unknown>
+  const fieldMap: Record<string, string> = {
+    title: 'title', titleKey: 'titleKey', titleEn: 'titleEn', titleLv: 'titleLv',
+    description: 'description', brand: 'brand', price: 'price', oldPrice: 'oldPrice',
+    rating: 'rating', ratingCount: 'ratingCount', reviewCount: 'reviewCount',
+    image: 'image', images: 'images', metaTitle: 'metaTitle', metaDescription: 'metaDescription',
+    ogImage: 'ogImage', ogAlt: 'ogAlt', badges: 'badges', category: 'category', stock: 'stock',
+    barcode: 'barcode', purpose: 'purpose', purposeEn: 'purposeEn', purposeLv: 'purposeLv',
+    relatedProductIds: 'relatedProductIds', oftenBoughtTogether: 'oftenBoughtTogether',
+    minOrderQuantities: 'minOrderQuantities', technicalSpecs: 'technicalSpecs',
+    bulkPricingTiers: 'bulkPricingTiers', demoVideo: 'demoVideo',
+    distributorName: 'distributorName', distributorAddress: 'distributorAddress',
+    sku: 'sku', unitOfMeasure: 'unitOfMeasure', certificates: 'certificates',
+    packagingSize: 'packagingSize', compatibleEquipment: 'compatibleEquipment',
+    manufacturerName: 'manufacturerName', manufacturerAddress: 'manufacturerAddress',
+    manufacturerEmail: 'manufacturerEmail', distributorEmail: 'distributorEmail',
+    bonusRate: 'bonusRate', feature1: 'feature1', feature1En: 'feature1En', feature1Lv: 'feature1Lv',
+    feature2: 'feature2', feature2En: 'feature2En', feature2Lv: 'feature2Lv',
+    feature3: 'feature3', feature3En: 'feature3En', feature3Lv: 'feature3Lv',
+    feature4: 'feature4', feature4En: 'feature4En', feature4Lv: 'feature4Lv',
+    specVolume: 'specVolume', specType: 'specType', specCountry: 'specCountry',
+  }
+  for (const [key, dbKey] of Object.entries(fieldMap)) {
+    if (key in patchRecord) dbData[dbKey] = patchRecord[key] ?? null
   }
 
-  await writeOverridesFile(overrides)
+  if (Object.keys(dbData).length > 0) {
+    await prisma.product.update({ where: { id: productId }, data: dbData })
+  }
 
-  const products = await getMergedProducts()
-  return { success: true, products }
+  // Clear stale file-based override entry for this product
+  try {
+    const overrides = await readOverridesFile()
+    if (overrides[productId]) {
+      delete overrides[productId]
+      await writeOverridesFile(overrides)
+    }
+  } catch { /* best effort */ }
+
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const resetProductOverride = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const mergedProducts = await getMergedProducts()
-  const productExists = mergedProducts.some((product) => product.id === productId)
-  if (!productExists) {
-    return { success: false, error: 'Товар не найден' }
-  }
+  if (!mergedProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
 
   const overrides = await getProductOverrides()
   if (overrides[productId]) {
     delete overrides[productId]
     await writeOverridesFile(overrides)
   }
-
-  const products = await getMergedProducts()
-  return { success: true, products }
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const createProduct = async (
   product: Product
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const nextId = product.id.trim()
-  if (!nextId) {
-    return { success: false, error: 'ID товара обязателен' }
-  }
+  if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const customProducts = await getCustomProducts()
-  const deletedProductIds = await getDeletedProductIds()
-  const existsInBase = PRODUCTS.some((item) => item.id === nextId)
-  const existsInCustom = customProducts.some((item) => item.id === nextId)
-
-  if (existsInBase || existsInCustom) {
-    return { success: false, error: 'Товар с таким ID уже существует' }
-  }
-
-  if (deletedProductIds.has(nextId)) {
-    return { success: false, error: 'ID товара зарезервирован удаленным товаром' }
-  }
+  const existing = await prisma.product.findUnique({ where: { id: nextId } })
+  if (existing) return { success: false, error: 'Товар с таким ID уже существует' }
 
   const normalizedProduct: Product = {
     ...product,
     id: nextId,
     title: product.title.trim(),
     brand: product.brand.trim(),
-    image: (product.image?.trim() || '')
+    image: product.image?.trim() || '',
   }
 
-  customProducts.push(normalizedProduct)
-  await writeCustomProductsFile(customProducts)
+  await prisma.product.create({ data: mapProductToDbCreate(normalizedProduct, true) })
 
-  const products = await getMergedProducts()
-  return { success: true, products }
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const deleteCustomProduct = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const nextId = productId.trim()
-  if (!nextId) {
-    return { success: false, error: 'ID товара обязателен' }
-  }
+  if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  if (PRODUCTS.some((item) => item.id === nextId)) {
-    return { success: false, error: 'Нельзя удалить базовый товар' }
-  }
+  const dbProduct = await prisma.product.findUnique({ where: { id: nextId } })
+  if (!dbProduct || !dbProduct.isCustom) return { success: false, error: 'Пользовательский товар не найден' }
 
-  const customProducts = await getCustomProducts()
-  const existsInCustom = customProducts.some((item) => item.id === nextId)
-  if (!existsInCustom) {
-    return { success: false, error: 'Пользовательский товар не найден' }
-  }
-
-  const nextCustomProducts = customProducts.filter((item) => item.id !== nextId)
-  await writeCustomProductsFile(nextCustomProducts)
+  await prisma.product.delete({ where: { id: nextId } })
 
   const overrides = await getProductOverrides()
   if (overrides[nextId]) {
@@ -254,43 +369,35 @@ export const deleteCustomProduct = async (
     await writeOverridesFile(overrides)
   }
 
-  const products = await getMergedProducts()
-  return { success: true, products }
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const deleteProductAny = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const nextId = productId.trim()
-  if (!nextId) {
-    return { success: false, error: 'ID товара обязателен' }
-  }
+  if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const mergedProducts = await getMergedProducts()
-  const targetProduct = mergedProducts.find((item) => item.id === nextId)
-  if (!targetProduct) {
-    return { success: false, error: 'Товар не найден' }
-  }
+  const dbProduct = await prisma.product.findUnique({ where: { id: nextId } })
+  if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
 
-  const customProducts = await getCustomProducts()
-  const existsInCustom = customProducts.some((item) => item.id === nextId)
-  const existsInBase = PRODUCTS.some((item) => item.id === nextId)
+  const targetProduct = mapDbToProduct(dbProduct)
 
-  if (!existsInCustom && !existsInBase) {
-    return { success: false, error: 'Товар не найден' }
-  }
+  // Archive before delete
+  const archive = await readDeletedProductsArchiveFile()
+  const nextArchive = archive.filter((e) => e.id !== nextId)
+  nextArchive.unshift({
+    id: nextId,
+    product: targetProduct,
+    source: dbProduct.isCustom ? 'custom' : 'base',
+    deletedAt: new Date().toISOString(),
+  })
+  await writeDeletedProductsArchiveFile(nextArchive)
 
-  if (existsInCustom) {
-    const nextCustomProducts = customProducts.filter((item) => item.id !== nextId)
-    await writeCustomProductsFile(nextCustomProducts)
-  }
-
-  if (existsInBase) {
-    const deletedIds = await readDeletedProductIdsFile()
-    if (!deletedIds.includes(nextId)) {
-      deletedIds.push(nextId)
-      await writeDeletedProductIdsFile(deletedIds)
-    }
+  if (dbProduct.isCustom) {
+    await prisma.product.delete({ where: { id: nextId } })
+  } else {
+    await prisma.product.update({ where: { id: nextId }, data: { isDeleted: true } })
   }
 
   const overrides = await getProductOverrides()
@@ -299,85 +406,52 @@ export const deleteProductAny = async (
     await writeOverridesFile(overrides)
   }
 
-  const archive = await getDeletedProductsArchive()
-  const nextArchive = archive.filter((entry) => entry.id !== nextId)
-  nextArchive.unshift({
-    id: nextId,
-    product: targetProduct,
-    source: existsInCustom ? 'custom' : 'base',
-    deletedAt: new Date().toISOString()
-  })
-  await writeDeletedProductsArchiveFile(nextArchive)
-
-  const products = await getMergedProducts()
-  return { success: true, products }
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const restoreDeletedProduct = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const nextId = productId.trim()
-  if (!nextId) {
-    return { success: false, error: 'ID товара обязателен' }
-  }
+  if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const archive = await getDeletedProductsArchive()
-  const archived = archive.find((entry) => entry.id === nextId)
-  if (!archived) {
-    return { success: false, error: 'Товар не найден в архиве' }
-  }
-
-  const customProducts = await getCustomProducts()
-  const deletedIds = await readDeletedProductIdsFile()
-  const overrides = await getProductOverrides()
+  const archive = await readDeletedProductsArchiveFile()
+  const archived = archive.find((e) => e.id === nextId)
+  if (!archived) return { success: false, error: 'Товар не найден в архиве' }
 
   if (archived.source === 'custom') {
-    const existsInCustom = customProducts.some((item) => item.id === nextId)
-    if (!existsInCustom) {
-      customProducts.push(archived.product)
-      await writeCustomProductsFile(customProducts)
-    }
+    await prisma.product.create({ data: mapProductToDbCreate(archived.product, true) })
   } else {
-    const nextDeletedIds = deletedIds.filter((id) => id !== nextId)
-    if (nextDeletedIds.length !== deletedIds.length) {
-      await writeDeletedProductIdsFile(nextDeletedIds)
-    }
+    await prisma.product.update({ where: { id: nextId }, data: { isDeleted: false } })
 
-    const baseProduct = PRODUCTS.find((item) => item.id === nextId)
-    if (baseProduct) {
+    const dbProduct = await prisma.product.findUnique({ where: { id: nextId } })
+    if (dbProduct) {
+      const baseProduct = mapDbToProduct(dbProduct)
       const overridePatch = buildOverrideFromSnapshot(baseProduct, archived.product)
       if (Object.keys(overridePatch).length > 0) {
+        const overrides = await getProductOverrides()
         overrides[nextId] = overridePatch
-      } else if (overrides[nextId]) {
-        delete overrides[nextId]
+        await writeOverridesFile(overrides)
       }
-      await writeOverridesFile(overrides)
     }
   }
 
-  const nextArchive = archive.filter((entry) => entry.id !== nextId)
+  const nextArchive = archive.filter((e) => e.id !== nextId)
   await writeDeletedProductsArchiveFile(nextArchive)
 
-  const products = await getMergedProducts()
-  return { success: true, products }
+  return { success: true, products: await getMergedProducts() }
 }
 
 export const purgeDeletedProductArchive = async (
   productId: string
 ): Promise<{ success: true; archive: ArchivedProductRecord[] } | { success: false; error: string }> => {
   const nextId = productId.trim()
-  if (!nextId) {
-    return { success: false, error: 'ID товара обязателен' }
-  }
+  if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const archive = await getDeletedProductsArchive()
-  const exists = archive.some((entry) => entry.id === nextId)
-  if (!exists) {
-    return { success: false, error: 'Товар не найден в архиве' }
-  }
+  const archive = await readDeletedProductsArchiveFile()
+  if (!archive.some((e) => e.id === nextId)) return { success: false, error: 'Товар не найден в архиве' }
 
-  const nextArchive = archive.filter((entry) => entry.id !== nextId)
+  const nextArchive = archive.filter((e) => e.id !== nextId)
   await writeDeletedProductsArchiveFile(nextArchive)
-
   return { success: true, archive: nextArchive }
 }

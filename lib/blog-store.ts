@@ -1,77 +1,69 @@
 import 'server-only'
-import { promises as fs } from 'fs'
-import path from 'path'
-import { BLOG_POSTS, type BlogPost } from '@/data/blog'
+import { Prisma } from '@/generated/prisma/client'
+import type { BlogPost as PrismaBlogPost } from '@/generated/prisma/client'
+import { prisma } from '@/lib/prisma'
+import { type BlogPost, type BlogContentBlock } from '@/data/blog'
+import type { Language } from '@/data/translations'
 
-type StoredBlogPost = Omit<BlogPost, 'createdAt' | 'updatedAt'> & {
-  createdAt: string
-  updatedAt?: string
-}
+type BlogTranslations = Partial<Record<Language, Partial<Pick<BlogPost, 'title' | 'excerpt' | 'content' | 'contentBlocks' | 'author' | 'category'>>>>
 
-const BLOG_STORE_FILE = path.join(process.cwd(), 'data', 'blog-posts.json')
-
-function toStoredPost(post: BlogPost): StoredBlogPost {
+function mapDbToBlogPost(row: PrismaBlogPost): BlogPost {
   return {
-    ...post,
-    createdAt: post.createdAt.toISOString(),
-    updatedAt: post.updatedAt ? post.updatedAt.toISOString() : undefined
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    content: row.content,
+    contentBlocks: row.contentBlocks ? (row.contentBlocks as BlogContentBlock[]) : undefined,
+    author: row.author,
+    image: row.image,
+    category: row.category,
+    readTime: row.readTime,
+    createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
+    updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt)) : undefined,
+    featured: row.featured,
+    translations: row.translations ? (row.translations as BlogTranslations) : undefined,
   }
 }
 
-function fromStoredPost(post: StoredBlogPost): BlogPost {
+function mapBlogPostToDb(post: BlogPost) {
   return {
-    ...post,
-    createdAt: new Date(post.createdAt),
-    updatedAt: post.updatedAt ? new Date(post.updatedAt) : undefined
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    content: post.content,
+    contentBlocks: post.contentBlocks ?? Prisma.DbNull,
+    author: post.author,
+    image: post.image,
+    category: post.category,
+    readTime: post.readTime,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt ?? null,
+    featured: post.featured ?? false,
+    translations: post.translations ?? Prisma.DbNull,
   }
-}
-
-async function ensureStoreFile(): Promise<void> {
-  try {
-    await fs.access(BLOG_STORE_FILE)
-  } catch {
-    const initialPosts = BLOG_POSTS.map(toStoredPost)
-    await fs.writeFile(BLOG_STORE_FILE, JSON.stringify(initialPosts, null, 2), 'utf-8')
-  }
-}
-
-async function readStoredPosts(): Promise<StoredBlogPost[]> {
-  await ensureStoreFile()
-  const content = await fs.readFile(BLOG_STORE_FILE, 'utf-8')
-
-  try {
-    const parsed = JSON.parse(content) as StoredBlogPost[]
-    if (!Array.isArray(parsed)) return []
-    return parsed
-  } catch {
-    return []
-  }
-}
-
-async function writeStoredPosts(posts: BlogPost[]): Promise<void> {
-  const stored = posts.map(toStoredPost)
-  await fs.writeFile(BLOG_STORE_FILE, JSON.stringify(stored, null, 2), 'utf-8')
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
-  const stored = await readStoredPosts()
-  const posts = stored.map(fromStoredPost)
-  return posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  const rows = await prisma.blogPost.findMany({ orderBy: { createdAt: 'desc' } })
+  return rows.map(mapDbToBlogPost)
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  const posts = await getBlogPosts()
-  return posts.find((post) => post.slug === slug) ?? null
+  const row = await prisma.blogPost.findUnique({ where: { slug } })
+  return row ? mapDbToBlogPost(row) : null
 }
 
 export async function createBlogPost(post: BlogPost): Promise<void> {
-  const posts = await getBlogPosts()
-  const nextPosts = [post, ...posts.filter((item) => item.id !== post.id)]
-  await writeStoredPosts(nextPosts)
+  await prisma.blogPost.upsert({
+    where: { id: post.id },
+    create: { id: post.id, ...mapBlogPostToDb(post) },
+    update: mapBlogPostToDb(post),
+  })
 }
 
 export async function deleteBlogPostById(id: string): Promise<void> {
-  const posts = await getBlogPosts()
-  const nextPosts = posts.filter((post) => post.id !== id)
-  await writeStoredPosts(nextPosts)
+  const existing = await prisma.blogPost.findUnique({ where: { id } })
+  if (!existing) return
+  await prisma.blogPost.delete({ where: { id } })
 }

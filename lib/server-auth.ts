@@ -1,0 +1,168 @@
+import 'server-only'
+import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
+import { cookies } from 'next/headers'
+import { prisma } from '@/lib/prisma'
+import type { User as PrismaUser } from '@/generated/prisma/client'
+
+export const SESSION_COOKIE = 'eshop_session'
+const SESSION_DURATION_DAYS = 30
+
+export type ServerUser = {
+  id: string
+  email: string
+  name?: string
+  platformRole: string
+  companyId?: string
+  companyName?: string
+  teamRole?: string
+  approvalRequired: boolean
+  auditLoggingEnabled: boolean
+  phone?: string
+  cardNumber?: string
+  avatarUrl?: string
+  bonusPoints: number
+  mustChangePassword: boolean
+  createdAt: string
+}
+
+export function mapDbToServerUser(u: PrismaUser): ServerUser {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name ?? undefined,
+    platformRole: u.platformRole,
+    companyId: u.companyId ?? undefined,
+    companyName: u.companyName ?? undefined,
+    teamRole: u.teamRole ?? undefined,
+    approvalRequired: u.approvalRequired,
+    auditLoggingEnabled: u.auditLoggingEnabled,
+    phone: u.phone ?? undefined,
+    cardNumber: u.cardNumber ?? undefined,
+    avatarUrl: u.avatarUrl ?? undefined,
+    bonusPoints: u.bonusPoints,
+    mustChangePassword: u.mustChangePassword,
+    createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
+  }
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10)
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash)
+}
+
+function generateToken(): string {
+  return randomBytes(32).toString('hex')
+}
+
+export async function createSession(userId: string): Promise<string> {
+  const token = generateToken()
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS)
+
+  await prisma.session.create({
+    data: {
+      id: `sess_${Date.now()}_${randomBytes(4).toString('hex')}`,
+      userId,
+      token,
+      expiresAt,
+    },
+  })
+
+  return token
+}
+
+export async function getServerUser(): Promise<ServerUser | null> {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get(SESSION_COOKIE)?.value
+    if (!token) return null
+
+    // 1% chance: clean all expired sessions (amortised, no cron needed)
+    if (Math.random() < 0.01) {
+      cleanExpiredSessions().catch(() => {})
+    }
+
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true },
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      if (session) await prisma.session.delete({ where: { token } })
+      return null
+    }
+
+    return mapDbToServerUser(session.user)
+  } catch {
+    return null
+  }
+}
+
+export async function deleteSession(token: string): Promise<void> {
+  await prisma.session.deleteMany({ where: { token } })
+}
+
+export async function cleanExpiredSessions(): Promise<void> {
+  await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } })
+}
+
+export async function upsertUserInDb(params: {
+  id: string
+  email: string
+  password: string
+  name?: string
+  platformRole?: string
+  companyId?: string
+  companyName?: string
+  teamRole?: string
+  phone?: string
+  cardNumber?: string
+  avatarUrl?: string
+  bonusPoints?: number
+  mustChangePassword?: boolean
+  approvalRequired?: boolean
+  auditLoggingEnabled?: boolean
+}): Promise<PrismaUser> {
+  const passwordHash = await hashPassword(params.password)
+  const normalizedEmail = params.email.trim().toLowerCase()
+
+  return prisma.user.upsert({
+    where: { email: normalizedEmail },
+    create: {
+      id: params.id,
+      email: normalizedEmail,
+      passwordHash,
+      name: params.name ?? null,
+      platformRole: params.platformRole ?? 'customer',
+      companyId: params.companyId ?? null,
+      companyName: params.companyName ?? null,
+      teamRole: params.teamRole ?? null,
+      phone: params.phone ?? null,
+      cardNumber: params.cardNumber?.trim() ?? null,
+      avatarUrl: params.avatarUrl ?? null,
+      bonusPoints: params.bonusPoints ?? 350,
+      mustChangePassword: params.mustChangePassword ?? false,
+      approvalRequired: params.approvalRequired ?? false,
+      auditLoggingEnabled: params.auditLoggingEnabled ?? false,
+    },
+    update: {
+      passwordHash,
+      name: params.name ?? null,
+      platformRole: params.platformRole ?? undefined,
+      companyId: params.companyId ?? null,
+      companyName: params.companyName ?? null,
+      teamRole: params.teamRole ?? null,
+      phone: params.phone ?? null,
+      cardNumber: params.cardNumber?.trim() ?? null,
+      avatarUrl: params.avatarUrl ?? null,
+      bonusPoints: params.bonusPoints ?? undefined,
+      mustChangePassword: params.mustChangePassword ?? undefined,
+      approvalRequired: params.approvalRequired ?? undefined,
+      auditLoggingEnabled: params.auditLoggingEnabled ?? undefined,
+    },
+  })
+}

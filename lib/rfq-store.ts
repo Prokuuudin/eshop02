@@ -93,6 +93,19 @@ export const useRFQStore = create<RFQStore>()(
           next.set(id, request)
           return { requests: next }
         })
+        if (typeof window !== 'undefined') {
+          fetch('/api/rfq', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id,
+              companyId: input.companyId,
+              items: input.items,
+              notes: input.notes,
+              timeline: [{ at: now.toISOString(), type: 'created' }],
+            }),
+          }).catch(() => {})
+        }
         return id
       },
 
@@ -126,14 +139,26 @@ export const useRFQStore = create<RFQStore>()(
             quoteTerms: quote.terms,
             quoteValidUntil: quote.validUntil,
           }
+          const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
           const next = new Map(state.requests)
           next.set(id, {
             ...existing,
             status: 'quoted',
             quote: { ...quote, createdAt: now },
-            timeline: [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event],
+            timeline: updatedTimeline,
             updatedAt: now,
           })
+          if (typeof window !== 'undefined') {
+            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'quoted',
+                quote: { ...quote, validUntil: quote.validUntil instanceof Date ? quote.validUntil.toISOString() : quote.validUntil, createdAt: now.toISOString() },
+                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+              }),
+            }).catch(() => {})
+          }
           return { requests: next }
         })
       },
@@ -148,13 +173,24 @@ export const useRFQStore = create<RFQStore>()(
             type: status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'note',
             ...(note ? { note } : {}),
           }
+          const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
           const next = new Map(state.requests)
           next.set(id, {
             ...existing,
             status,
-            timeline: [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event],
+            timeline: updatedTimeline,
             updatedAt: now,
           })
+          if (typeof window !== 'undefined') {
+            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status,
+                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+              }),
+            }).catch(() => {})
+          }
           return { requests: next }
         })
       },
@@ -165,12 +201,23 @@ export const useRFQStore = create<RFQStore>()(
           if (!existing || !note.trim()) return state
           const now = new Date()
           const event: RFQTimelineEvent = { at: now, type: 'note', note: note.trim() }
+          const updatedTimeline = [...(existing.timeline ?? []), event]
           const next = new Map(state.requests)
           next.set(id, {
             ...existing,
-            timeline: [...(existing.timeline ?? []), event],
+            timeline: updatedTimeline,
             updatedAt: now,
           })
+          if (typeof window !== 'undefined') {
+            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                notes: note.trim(),
+                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+              }),
+            }).catch(() => {})
+          }
           return { requests: next }
         })
       },

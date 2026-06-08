@@ -25,10 +25,11 @@ import { getAccountTools } from '@/hooks/useAccountTools';
 import { getAccountSummaryCards } from '@/hooks/useAccountSummary';
 import { useAddressMigration } from '@/hooks/useAddressMigration';
 import { useOrders } from '@/lib/orders-store';
+import type { Order } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 
 import { useSavedAddresses } from '@/lib/saved-addresses-store';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, writeCurrentUser } from '@/lib/auth';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -44,6 +45,7 @@ export default function AccountPage(): React.ReactElement {
     const { getOrderStatus } = useAdminStore();
     const { getByEmail, replaceForEmail } = useSavedAddresses();
     const allOrders = ordersStore.orders;
+    const { upsertOrder } = ordersStore;
     const locale = getLocaleFromLanguage(language);
     useEffect(() => {
         const currentUser = getCurrentUser();
@@ -53,6 +55,28 @@ export default function AccountPage(): React.ReactElement {
         }
         setUser(currentUser as User);
         setLoading(false);
+
+        // Load order history from DB and merge into Zustand
+        fetch('/api/orders/my')
+            .then((r) => r.json())
+            .then(({ orders: dbOrders }) => {
+                if (Array.isArray(dbOrders)) {
+                    dbOrders.forEach((o: Order) => upsertOrder(o));
+                }
+            })
+            .catch(() => {});
+
+        // Sync bonus points from DB (server is authoritative)
+        fetch('/api/user/bonus')
+            .then((r) => r.json())
+            .then(({ bonusPoints }) => {
+                if (typeof bonusPoints === 'number' && bonusPoints !== currentUser.bonusPoints) {
+                    const updated = { ...currentUser, bonusPoints };
+                    writeCurrentUser(updated);
+                    setUser(updated as User);
+                }
+            })
+            .catch(() => {});
     }, []);
     const userOrders = allOrders.filter((o) => o.email === user?.email);
     const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);

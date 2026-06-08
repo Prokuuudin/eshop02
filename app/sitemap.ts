@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { PRODUCTS } from '@/data/products'
+import { getMergedProducts } from '@/lib/product-overrides-store'
 import { getSiteUrl } from '@/lib/site-url'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,7 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   ]
 
-  const productRoutes: MetadataRoute.Sitemap = PRODUCTS.map((product) => ({
+  const products = await getMergedProducts()
+  const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
     url: `${siteUrl}/product/${product.id}`,
     lastModified: now
   }))

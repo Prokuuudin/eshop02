@@ -37,11 +37,11 @@ export default function LoginForm({
         const res = loginUserAuto(identifier.trim(), password);
         if (!res.success) return setError(res.error || t('form.error'));
         setError('');
-        if (onSuccess) onSuccess();
         const loggedInUser = getCurrentUser();
+        if (onSuccess) { onSuccess(); return; }
         const redirect = searchParams.get('redirect');
         if (redirect) return router.push(redirect);
-        router.push(loggedInUser && canAccessAdminPanel(loggedInUser) ? '/admin' : '/account');
+        router.push('/account');
     };
 
     return (

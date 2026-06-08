@@ -50,6 +50,9 @@ export default function UserMenu() {
         setLoginOpen(false);
         setForgotOpen(false);
         setIsOpen(false);
+        if (currentUser && canAccessAdminPanel(currentUser)) {
+            router.push('/account');
+        }
     };
 
     const handleOpenForgotPassword = (): void => {

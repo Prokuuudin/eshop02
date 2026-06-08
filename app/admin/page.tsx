@@ -198,7 +198,7 @@ export default function AdminPage() {
             </p>
           </div>
           {hasFullAccess && (
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               {editMode && (
                 <Button variant="outline" size="sm" onClick={() => { resetCardOrder(); setEditMode(false) }}>
                   {l('Сбросить порядок', 'Reset order', 'Atiestatit kartibu')}
@@ -212,7 +212,7 @@ export default function AdminPage() {
         </div>
 
         {editMode && (
-          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p className="hidden sm:block mb-4 text-sm text-gray-500 dark:text-gray-400">
             {l(
               'Перетащите плашки в нужном порядке. Нажмите «Готово» когда закончите.',
               'Drag the cards into the desired order. Click "Done" when finished.',
@@ -321,7 +321,7 @@ export default function AdminPage() {
         })()}
 
         {/* Revenue Chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

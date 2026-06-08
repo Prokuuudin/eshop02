@@ -49,7 +49,9 @@
       "Bash(git stash *)",
       "Bash(node -e \"const p = require\\('./data/products'\\); const prods = p.PRODUCTS; console.log\\('total:', prods.length, 'withLv:', prods.filter\\(x=>x.titleLv\\).length, 'withEn:', prods.filter\\(x=>x.titleEn\\).length\\)\")",
       "Bash(\" \"c:/Users/User/Desktop/eshop02/app/checkout/page.tsx\" | head -20)",
-      "Bash(grep -n \"id.*order\\\\|orderId\\\\|new.*Order\\\\|addOrder\\\\|id:.*Date\\\\|id:.*Math\\\\|id:.*crypto\\\\|id:.*`\" \"c:/Users/User/Desktop/eshop02/app/checkout/page.tsx\" | head -20)"
+      "Bash(grep -n \"id.*order\\\\|orderId\\\\|new.*Order\\\\|addOrder\\\\|id:.*Date\\\\|id:.*Math\\\\|id:.*crypto\\\\|id:.*`\" \"c:/Users/User/Desktop/eshop02/app/checkout/page.tsx\" | head -20)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" diff --cached --stat)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" diff HEAD components/UserMenu.tsx components/auth/LoginForm.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

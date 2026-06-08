@@ -391,15 +391,15 @@ export default function AdminOrdersPage() {
           <Link href="/admin/orders/new">
             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">+ Создать заказ</Button>
           </Link>
-          <Button variant="outline" size="sm" onClick={exportOrdersCSV} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={exportOrdersCSV} className="hidden sm:inline-flex gap-1.5">
             <Download className="h-3.5 w-3.5" />
             Заказы (CSV)
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCustomersCSV} className="gap-1.5">
+          <Button variant="outline" size="sm" onClick={exportCustomersCSV} className="hidden sm:inline-flex gap-1.5">
             <Download className="h-3.5 w-3.5" />
             Клиенты (CSV)
           </Button>
-          <Link href="/admin">
+          <Link href="/admin" className="hidden sm:block">
             <Button variant="outline">Назад в админку</Button>
           </Link>
         </div>
@@ -431,7 +431,7 @@ export default function AdminOrdersPage() {
 
       {/* Filters */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
           <div className="flex flex-1 min-w-[220px] items-center gap-2">
             <Input
               value={search}
@@ -440,41 +440,42 @@ export default function AdminOrdersPage() {
               className="h-9 flex-1"
             />
             <Search className="h-5 w-5 text-gray-400" />
-            <span className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">Поиск</span>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-          >
-            <option value="all">Все статусы</option>
-            {STATUS_LIST.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-          >
-            <option value="all">Все оплаты</option>
-            <option value="unpaid">Не оплачен</option>
-            <option value="pending">Ожидает оплаты</option>
-            <option value="paid">Оплачен</option>
-            <option value="failed">Ошибка оплаты</option>
-          </select>
-          <select
-            value={deliveryFilter}
-            onChange={(e) => setDeliveryFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
-          >
-            <option value="all">Все доставки</option>
-            <option value="courier">Курьер</option>
-            <option value="pickup">Самовывоз</option>
-            <option value="post">Почта</option>
-          </select>
+          <div className="grid grid-cols-3 sm:contents gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
+              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 w-full sm:w-auto"
+            >
+              <option value="all">Все статусы</option>
+              {STATUS_LIST.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 w-full sm:w-auto"
+            >
+              <option value="all">Все оплаты</option>
+              <option value="unpaid">Не оплачен</option>
+              <option value="pending">Ожидает оплаты</option>
+              <option value="paid">Оплачен</option>
+              <option value="failed">Ошибка оплаты</option>
+            </select>
+            <select
+              value={deliveryFilter}
+              onChange={(e) => setDeliveryFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 w-full sm:w-auto"
+            >
+              <option value="all">Все доставки</option>
+              <option value="courier">Курьер</option>
+              <option value="pickup">Самовывоз</option>
+              <option value="post">Почта</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
@@ -978,7 +979,7 @@ export default function AdminOrdersPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-4 pt-2">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Стр. {page + 1} из {totalPages} · {filtered.length} заказов
+            {page + 1} / {totalPages} · {filtered.length} заказов
           </span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0}>«</Button>
@@ -991,7 +992,10 @@ export default function AdminOrdersPage() {
                   key={pg}
                   variant={pg === page ? 'default' : 'outline'}
                   size="sm"
-                  className={pg === page ? 'bg-indigo-600 text-white' : ''}
+                  className={[
+                    'hidden sm:inline-flex',
+                    pg === page ? 'bg-indigo-600 text-white' : '',
+                  ].join(' ')}
                   onClick={() => setPage(pg)}
                 >
                   {pg + 1}

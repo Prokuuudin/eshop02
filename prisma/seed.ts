@@ -6,7 +6,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client'
 import { PRODUCTS } from '../data/products'
 import bcrypt from 'bcryptjs'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, randomBytes } from 'node:crypto'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -100,24 +100,34 @@ async function main() {
   console.log(`Seeded ${promoCodes.length} promo codes`)
 
   // Seed admin user (idempotent — skips if already exists)
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@admin.com'
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin1234!'
-  const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
-  if (!existing) {
-    const passwordHash = await bcrypt.hash(adminPassword, 10)
-    await prisma.user.create({
-      data: {
-        id: randomUUID(),
-        email: adminEmail,
-        passwordHash,
-        name: 'Admin',
-        platformRole: 'admin',
-        bonusPoints: 0,
-      },
-    })
-    console.log(`Created admin user: ${adminEmail} / ${adminPassword}`)
+  const adminEmail = process.env.SEED_ADMIN_EMAIL
+  if (!adminEmail) {
+    console.log('Skipping admin seed: SEED_ADMIN_EMAIL not set')
   } else {
-    console.log(`Admin user already exists: ${adminEmail}`)
+    const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
+    if (!existing) {
+      // Use provided password or generate a random one (never use a hardcoded default)
+      const providedPassword = process.env.SEED_ADMIN_PASSWORD
+      const generatedPassword = providedPassword ? null : randomBytes(16).toString('hex')
+      const adminPassword = providedPassword ?? generatedPassword!
+      const passwordHash = await bcrypt.hash(adminPassword, 10)
+      await prisma.user.create({
+        data: {
+          id: randomUUID(),
+          email: adminEmail,
+          passwordHash,
+          name: 'Admin',
+          platformRole: 'admin',
+          bonusPoints: 0,
+        },
+      })
+      console.log(`Created admin user: ${adminEmail}`)
+      if (generatedPassword) {
+        console.log(`⚠️  Auto-generated password (save it now — will not be shown again): ${generatedPassword}`)
+      }
+    } else {
+      console.log(`Admin user already exists: ${adminEmail}`)
+    }
   }
 }
 

@@ -1,17 +1,17 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-helpers'
-import { useInvoicesStore } from '@/lib/invoices-store'
+import { getInvoiceById } from '@/lib/invoices-data-store'
+
+export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const params = await context.params
+    const { id } = await context.params
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
     if (!auth.user.companyId) return errorResponse('Company context required', 400)
 
-    const invoicesStore = useInvoicesStore.getState()
-    const invoice = invoicesStore.getInvoice(params.id)
-
+    const invoice = await getInvoiceById(id)
     if (!invoice || invoice.companyId !== auth.user.companyId) {
       return errorResponse('Invoice not found', 404)
     }

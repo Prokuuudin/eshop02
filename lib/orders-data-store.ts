@@ -39,6 +39,7 @@ export type ServerOrder = {
   paymentStatus?: ServerPaymentStatus
   paymentProvider?: 'stripe' | 'manual'
   paymentSessionId?: string
+  language?: string
 }
 
 function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
@@ -66,6 +67,7 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
     paymentProvider: (row.paymentProvider as 'stripe' | 'manual') ?? undefined,
     paymentSessionId: row.paymentSessionId ?? undefined,
+    language: (row as Record<string, unknown>).language as string ?? 'ru',
   }
 }
 
@@ -93,6 +95,7 @@ export const createOrUpdateServerOrder = async (order: ServerOrder): Promise<Ser
     paymentStatus: order.paymentStatus ?? 'unpaid',
     paymentProvider: order.paymentProvider ?? null,
     paymentSessionId: order.paymentSessionId ?? null,
+    language: order.language ?? 'ru',
   }
 
   const existing = await prisma.order.findUnique({ where: { id: order.id } })

@@ -29,6 +29,7 @@ export interface Order {
   paymentStatus?: PaymentStatus
   paymentProvider?: 'stripe' | 'manual'
   paymentSessionId?: string
+  language?: string
 }
 
 type OrdersStore = {

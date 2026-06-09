@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { getTemplates } from '@/lib/email-templates-server-store'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,7 @@ export type PendingRegistration = {
   companyId: string
   companyName: string
   expiresAt: string
+  language?: string
 }
 
 type PendingData = { registrations: PendingRegistration[] }
@@ -36,8 +38,47 @@ async function writePending(data: PendingData): Promise<void> {
   })
 }
 
+function interpolate(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (html, [key, value]) => html.replaceAll(`{{${key}}}`, value),
+    template
+  )
+}
+
+type Lang = 'ru' | 'en' | 'lv'
+
+const CONTENT: Record<Lang, { subject: string; title: string; greeting: string; instruction: string; buttonText: string; expiry: string; ignore: string }> = {
+  ru: {
+    subject: 'Подтвердите регистрацию',
+    title: 'Подтверждение регистрации',
+    greeting: 'Здравствуйте',
+    instruction: 'Для завершения регистрации перейдите по ссылке:',
+    buttonText: 'Подтвердить e-mail',
+    expiry: 'Ссылка действительна в течение 24 часов.',
+    ignore: 'Если вы не регистрировались — проигнорируйте это письмо.',
+  },
+  en: {
+    subject: 'Confirm your registration',
+    title: 'Email confirmation',
+    greeting: 'Hello',
+    instruction: 'To complete your registration, please follow the link:',
+    buttonText: 'Confirm email',
+    expiry: 'The link is valid for 24 hours.',
+    ignore: 'If you did not register, please ignore this email.',
+  },
+  lv: {
+    subject: 'Apstipriniet reģistrāciju',
+    title: 'E-pasta apstiprināšana',
+    greeting: 'Labdien',
+    instruction: 'Lai pabeigtu reģistrāciju, lūdzu sekojiet saitei:',
+    buttonText: 'Apstiprināt e-pastu',
+    expiry: 'Saite ir derīga 24 stundas.',
+    ignore: 'Ja jūs nereģistrējāties, ignorējiet šo e-pastu.',
+  },
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let body: Partial<PendingRegistration>
+  let body: Partial<PendingRegistration> & { language?: string }
   try {
     body = await request.json()
   } catch {
@@ -48,6 +89,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!email || !cardNumber || !password || !companyId || !companyName) {
     return NextResponse.json({ ok: false, error: 'missing_fields' }, { status: 400 })
   }
+
+  const language: Lang = (['ru', 'en', 'lv'].includes(body.language ?? '') ? body.language : 'ru') as Lang
 
   const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -67,6 +110,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     companyId,
     companyName,
     expiresAt,
+    language,
   })
   await writePending(data)
 
@@ -75,21 +119,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? `${proto}://${host}`
   const confirmUrl = `${baseUrl}/auth/confirm?token=${token}`
 
-  await sendEmail(
-    email,
-    'Подтвердите регистрацию',
-    `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <h2 style="color:#4f46e5">Подтверждение регистрации</h2>
-      <p>Здравствуйте${name ? `, ${name}` : ''}!</p>
-      <p>Для завершения регистрации перейдите по ссылке:</p>
+  // Try DB template: registration-{lang} then registration
+  const templates = await getTemplates()
+  const tpl =
+    templates.find((t) => t.id === `registration-${language}`) ??
+    templates.find((t) => t.id === 'registration')
+
+  const c = CONTENT[language]
+  const firstName = name ?? ''
+
+  let subject: string
+  let html: string
+
+  if (tpl) {
+    subject = interpolate(tpl.subject, { email: email.toLowerCase() })
+    html = interpolate(tpl.body, {
+      first_name: firstName,
+      email: email.toLowerCase(),
+      reset_link: confirmUrl,
+    })
+  } else {
+    subject = c.subject
+    html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+      <h2 style="color:#4f46e5">${c.title}</h2>
+      <p>${c.greeting}${firstName ? `, ${firstName}` : ''}!</p>
+      <p>${c.instruction}</p>
       <p>
         <a href="${confirmUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
-          Подтвердить e-mail
+          ${c.buttonText}
         </a>
       </p>
-      <p style="color:#6b7280;font-size:13px">Ссылка действительна в течение 24 часов.<br>Если вы не регистрировались — проигнорируйте это письмо.</p>
+      <p style="color:#6b7280;font-size:13px">${c.expiry}<br>${c.ignore}</p>
     </div>`
-  )
+  }
+
+  await sendEmail(email, subject, html)
 
   return NextResponse.json({ ok: true })
 }

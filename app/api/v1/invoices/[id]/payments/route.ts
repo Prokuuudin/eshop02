@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-helpers'
-import { useInvoicesStore } from '@/lib/invoices-store'
+import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 import { triggerCompanyWebhook } from '@/lib/webhook-sender'
 
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const params = await context.params
+    const { id } = await context.params
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
     if (!auth.user.companyId) return errorResponse('Company context required', 400)
@@ -14,47 +16,38 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     const body = await req.json()
     const { amount, method, reference } = body
-
     if (!amount || amount <= 0) return errorResponse('Valid amount is required', 400)
 
-    const invoicesStore = useInvoicesStore.getState()
-    const invoice = invoicesStore.getInvoice(params.id)
+    const invoice = await getInvoiceById(id)
+    if (!invoice || invoice.companyId !== auth.user.companyId) return errorResponse('Invoice not found', 404)
+    if (invoice.status !== 'issued') return errorResponse('Can only record payments on issued invoices', 400)
 
-    if (!invoice || invoice.companyId !== auth.user.companyId) {
-      return errorResponse('Invoice not found', 404)
-    }
-    if (invoice.status !== 'issued') {
-      return errorResponse('Can only record payments on issued invoices', 400)
-    }
-
-    invoicesStore.recordPayment(params.id, {
+    const updated = await recordPaymentInDb(id, {
       amount,
       method: method || 'bank_transfer',
       reference: reference || `API-${Date.now()}`,
     })
 
-    const updatedInvoice = invoicesStore.getInvoice(params.id)
-
     logAuditAction(auth.user.companyId, auth.user.id, 'payment_recorded', {
       source: 'api',
-      invoiceId: params.id,
+      invoiceId: id,
       amount,
       method,
     })
 
     await triggerCompanyWebhook(auth.user.companyId, 'payment.recorded', {
-      invoiceId: params.id,
+      invoiceId: id,
       invoiceNumber: invoice.invoiceNumber,
       amount,
-      remainingAmount: updatedInvoice?.remainingAmount ?? 0,
+      remainingAmount: updated?.remainingAmount ?? 0,
       recordedAt: new Date().toISOString(),
     })
 
     return successResponse(
       {
-        invoiceId: params.id,
+        invoiceId: id,
         paymentRecorded: amount,
-        remaining: updatedInvoice?.remainingAmount ?? 0,
+        remaining: updated?.remainingAmount ?? 0,
         message: 'Payment recorded successfully',
       },
       201,

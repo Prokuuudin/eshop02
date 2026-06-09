@@ -5,6 +5,8 @@ import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client'
 import { PRODUCTS } from '../data/products'
+import bcrypt from 'bcryptjs'
+import { randomUUID } from 'node:crypto'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -96,6 +98,27 @@ async function main() {
     })
   }
   console.log(`Seeded ${promoCodes.length} promo codes`)
+
+  // Seed admin user (idempotent — skips if already exists)
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@admin.com'
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin1234!'
+  const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
+  if (!existing) {
+    const passwordHash = await bcrypt.hash(adminPassword, 10)
+    await prisma.user.create({
+      data: {
+        id: randomUUID(),
+        email: adminEmail,
+        passwordHash,
+        name: 'Admin',
+        platformRole: 'admin',
+        bonusPoints: 0,
+      },
+    })
+    console.log(`Created admin user: ${adminEmail} / ${adminPassword}`)
+  } else {
+    console.log(`Admin user already exists: ${adminEmail}`)
+  }
 }
 
 main()

@@ -23,7 +23,7 @@ function wrapHtml(content: string): string {
       <div style="font-size:15px;line-height:1.7">${escaped}</div>
       <hr style="margin:28px 0;border:none;border-top:1px solid #e5e7eb"/>
       <p style="font-size:12px;color:#9ca3af;margin:0">
-        Чтобы отписаться от рассылки, ответьте на это письмо с пометкой «Отписаться».
+        Чтобы отписаться от рассылки, ответьте на это письмо с пометкой «Отписаться». / To unsubscribe, reply to this email with &quot;Unsubscribe&quot;. / Lai atteiktos no jaunumiem, atbildiet uz šo e-pastu ar norādi &quot;Atteikt&quot;.
       </p>
     </div>`
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "language" TEXT DEFAULT 'ru';

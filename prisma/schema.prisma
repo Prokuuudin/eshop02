@@ -311,6 +311,7 @@ model Order {
   paymentStatus    String   @default("unpaid")
   paymentProvider  String?
   paymentSessionId String?
+  language         String?  @default("ru")
 
   @@index([email])
   @@index([createdAt])

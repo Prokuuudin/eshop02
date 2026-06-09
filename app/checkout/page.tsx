@@ -270,6 +270,7 @@ export default function CheckoutPage() {
             paymentProvider: (formData.paymentMethod === 'card' ? 'stripe' : 'manual') as
                 | 'stripe'
                 | 'manual',
+            language: language as string,
             ...formData,
         };
 

@@ -119,6 +119,102 @@
       "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\">\n    <h1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\">Par jūsu pieteikumu</h1>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Cienījamais(-ā) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Paldies par interesi par mūsu uzņēmumu un laiku, ko veltījāt pieteikuma iesniegšanai.</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Diemžēl šobrīd mēs nevaram izsniegt klienta karti jūsu pieteikumam. Mēs novērtējam jūsu interesi un atvainojamies par sagādātajām neērtībām.</p>\n    {{note_block}}\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Ja vēlaties uzzināt sīkāku informāciju vai jums ir kādi jautājumi — lūdzu, sazinieties ar mūsu biroju:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Ar cieņu,<br><strong>MiksPlus komanda</strong></p>\n  </div>\n</div>",
       "variables": ["name", "note_block"],
       "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "order-confirmation-en",
+      "name": "Order Confirmation (EN)",
+      "subject": "Your order #{{order_id}} has been received",
+      "body": "<h2>Hello, {{first_name}}!</h2><p>Your order <strong>#{{order_id}}</strong> has been successfully placed.</p><p><strong>Order total:</strong> {{total}}</p><p>We will contact you shortly to confirm delivery details.</p><p>Best regards,<br>The store team</p>",
+      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "order-confirmation-lv",
+      "name": "Pasūtījuma apstiprinājums (LV)",
+      "subject": "Jūsu pasūtījums №{{order_id}} ir saņemts",
+      "body": "<h2>Labdien, {{first_name}}!</h2><p>Jūsu pasūtījums <strong>№{{order_id}}</strong> ir veiksmīgi noformēts.</p><p><strong>Pasūtījuma summa:</strong> {{total}}</p><p>Mēs drīzumā sazināsimies ar jums, lai apstiprinātu piegādes detaļas.</p><p>Ar cieņu,<br>Veikala komanda</p>",
+      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "order-shipped-en",
+      "name": "Order Shipped (EN)",
+      "subject": "Your order #{{order_id}} has been shipped",
+      "body": "<h2>Hello, {{first_name}}!</h2><p>Your order <strong>#{{order_id}}</strong> has been handed over to the delivery service.</p><p><strong>Tracking number:</strong> {{tracking_number}}</p><p>Expected delivery date: {{delivery_date}}</p><p>Best regards,<br>The store team</p>",
+      "variables": ["order_id", "first_name", "tracking_number", "delivery_date"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "order-shipped-lv",
+      "name": "Pasūtījums nosūtīts (LV)",
+      "subject": "Jūsu pasūtījums №{{order_id}} ir nosūtīts",
+      "body": "<h2>Labdien, {{first_name}}!</h2><p>Jūsu pasūtījums <strong>№{{order_id}}</strong> ir nodots piegādes dienestam.</p><p><strong>Izsekošanas numurs:</strong> {{tracking_number}}</p><p>Paredzamais piegādes datums: {{delivery_date}}</p><p>Ar cieņu,<br>Veikala komanda</p>",
+      "variables": ["order_id", "first_name", "tracking_number", "delivery_date"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "order-delivered-en",
+      "name": "Order Delivered (EN)",
+      "subject": "Your order #{{order_id}} has been delivered",
+      "body": "<h2>Hello, {{first_name}}!</h2><p>Your order <strong>#{{order_id}}</strong> has been delivered. Thank you for your purchase!</p><p>If you have any questions, please contact us.</p><p>Best regards,<br>The store team</p>",
+      "variables": ["order_id", "first_name"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "order-delivered-lv",
+      "name": "Pasūtījums piegādāts (LV)",
+      "subject": "Jūsu pasūtījums №{{order_id}} ir piegādāts",
+      "body": "<h2>Labdien, {{first_name}}!</h2><p>Jūsu pasūtījums <strong>№{{order_id}}</strong> ir piegādāts. Paldies par pirkumu!</p><p>Ja jums ir jautājumi, lūdzu, sazinieties ar mums.</p><p>Ar cieņu,<br>Veikala komanda</p>",
+      "variables": ["order_id", "first_name"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "password-reset-ru",
+      "name": "Сброс пароля (RU)",
+      "subject": "Сброс пароля для {{email}}",
+      "body": "<h2 style=\"color:#4f46e5\">Сброс пароля</h2><p>Мы получили запрос на сброс пароля для аккаунта <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Сбросить пароль</a></p><p style=\"color:#6b7280;font-size:13px\">Ссылка действительна 1 час. Если вы не запрашивали сброс — проигнорируйте это письмо.</p>",
+      "variables": ["email", "reset_link"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "password-reset-en",
+      "name": "Password Reset (EN)",
+      "subject": "Password reset for {{email}}",
+      "body": "<h2 style=\"color:#4f46e5\">Password reset</h2><p>We received a request to reset the password for account <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Reset password</a></p><p style=\"color:#6b7280;font-size:13px\">The link is valid for 1 hour. If you did not request a reset, please ignore this email.</p>",
+      "variables": ["email", "reset_link"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "password-reset-lv",
+      "name": "Paroles atjaunošana (LV)",
+      "subject": "Paroles atjaunošana kontam {{email}}",
+      "body": "<h2 style=\"color:#4f46e5\">Paroles atjaunošana</h2><p>Mēs saņēmām pieprasījumu atjaunot paroli kontam <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Atjaunot paroli</a></p><p style=\"color:#6b7280;font-size:13px\">Saite ir derīga 1 stundu. Ja jūs to neprasījāt, vienkārši ignorējiet šo e-pastu.</p>",
+      "variables": ["email", "reset_link"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "registration-ru",
+      "name": "Регистрация (RU)",
+      "subject": "Добро пожаловать в {{store_name}}!",
+      "body": "<h2>Добро пожаловать, {{first_name}}!</h2><p>Ваш e-mail <strong>{{email}}</strong> подтверждён. Вы успешно зарегистрированы в магазине {{store_name}}.</p><p>Теперь вы можете войти и начать делать заказы.</p>",
+      "variables": ["first_name", "email", "store_name"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "registration-en",
+      "name": "Registration (EN)",
+      "subject": "Welcome to {{store_name}}!",
+      "body": "<h2>Welcome, {{first_name}}!</h2><p>Your e-mail <strong>{{email}}</strong> has been confirmed. You have successfully registered at {{store_name}}.</p><p>You can now log in and start placing orders.</p>",
+      "variables": ["first_name", "email", "store_name"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "registration-lv",
+      "name": "Reģistrācija (LV)",
+      "subject": "Laipni lūdzam {{store_name}}!",
+      "body": "<h2>Laipni lūdzam, {{first_name}}!</h2><p>Jūsu e-pasts <strong>{{email}}</strong> ir apstiprināts. Jūs esat veiksmīgi reģistrējies veikalā {{store_name}}.</p><p>Tagad varat pieteikties un sākt veikt pasūtījumus.</p>",
+      "variables": ["first_name", "email", "store_name"],
+      "updatedAt": "2026-06-10T00:00:00.000Z"
     }
   ]
 }

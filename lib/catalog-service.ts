@@ -127,6 +127,7 @@ export async function searchCatalog(query: string, items?: CatalogItem[]): Promi
     `SELECT id, title, brand, price, "oldPrice", image, category, stock, sku, description
      FROM "Product"
      WHERE "isDeleted" = false
+       AND "isActive" = true
        AND similarity(
              COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
              $1

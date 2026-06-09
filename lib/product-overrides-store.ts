@@ -145,7 +145,7 @@ function mapProductToDbCreate(p: Product, isCustom = false): any {
 
 const getDbProducts = cache(async (): Promise<Product[]> => {
   const rows = await prisma.product.findMany({
-    where: { isDeleted: false },
+    where: { isDeleted: false, isActive: true },
     orderBy: { createdAt: 'desc' },
   })
   return rows.map(mapDbToProduct)
@@ -158,6 +158,7 @@ export async function getDbProductsPaginated(opts: {
 }): Promise<{ products: Product[]; total: number }> {
   const where = {
     isDeleted: false,
+    isActive: true,
     ...(opts.category ? { category: opts.category } : {}),
   }
   const [rows, total] = await Promise.all([

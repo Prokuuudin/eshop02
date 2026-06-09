@@ -276,9 +276,16 @@ model Product {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  externalId    String?  @unique
+  isActive      Boolean  @default(true)
+  lastSyncRunId String?
+
   @@index([isDeleted])
   @@index([category])
   @@index([isDeleted, category])
+  @@index([externalId])
+  @@index([isActive])
+  @@index([lastSyncRunId])
 }
 
 model Order {
@@ -460,4 +467,21 @@ model BlogPost {
   updatedAt     DateTime?
   featured      Boolean   @default(false)
   translations  Json?
+}
+
+model SyncRun {
+  id             String    @id @default(cuid())
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+  status         String    @default("running")
+  productsTotal  Int       @default(0)
+  productsSynced Int       @default(0)
+  variantsSynced Int       @default(0)
+  deactivated    Int       @default(0)
+  errorCount     Int       @default(0)
+  errorSample    Json?
+  triggeredBy    String    @default("cron")
+
+  @@index([status])
+  @@index([startedAt])
 }

@@ -283,8 +283,7 @@ model Product {
   @@index([isDeleted])
   @@index([category])
   @@index([isDeleted, category])
-  @@index([externalId])
-  @@index([isActive])
+  @@index([isDeleted, isActive])
   @@index([lastSyncRunId])
 }
 

@@ -1,11 +1,11 @@
 import 'server-only'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 import { BRANDS } from '@/data/brands'
 import { BRAND_DESCRIPTIONS } from '@/data/brandDescriptions'
 import type { BrandsConfigPayload, BrandConfigItem, LocalizedBrandDescription } from '@/lib/brands-config'
 
-const BRANDS_CONFIG_FILE = path.join(process.cwd(), 'data', 'brands-config.json')
+const BRANDS_CONFIG_KEY = 'brands-config'
 
 const sanitizeSlug = (value: string): string =>
   value
@@ -42,7 +42,7 @@ const buildDefaultPayload = (): BrandsConfigPayload => {
     name: brand.name,
     logo: brand.logo,
     popular: Boolean(brand.popular),
-    description: resolveDescriptionFromStatic(brand.id, brand.description)
+    description: resolveDescriptionFromStatic(brand.id, brand.description),
   }))
 
   return { brands }
@@ -59,7 +59,7 @@ const normalizeBrand = (brand: BrandConfigItem): BrandConfigItem | null => {
     name,
     logo,
     popular: Boolean(brand.popular),
-    description: normalizeDescription(brand.description)
+    description: normalizeDescription(brand.description),
   }
 }
 
@@ -76,30 +76,22 @@ const normalizePayload = (input?: Partial<BrandsConfigPayload> | null): BrandsCo
   return brands.length > 0 ? { brands } : buildDefaultPayload()
 }
 
-async function ensureStoreFile(): Promise<void> {
-  try {
-    await fs.access(BRANDS_CONFIG_FILE)
-  } catch {
-    const initial = buildDefaultPayload()
-    await fs.writeFile(BRANDS_CONFIG_FILE, JSON.stringify(initial, null, 2), 'utf-8')
-  }
-}
-
 export async function getBrandsConfigFromStore(): Promise<BrandsConfigPayload> {
-  await ensureStoreFile()
-  const content = await fs.readFile(BRANDS_CONFIG_FILE, 'utf-8')
-
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: BRANDS_CONFIG_KEY } })
+  if (!row) return buildDefaultPayload()
   try {
-    const parsed = JSON.parse(content) as Partial<BrandsConfigPayload>
-    return normalizePayload(parsed)
+    return normalizePayload(row.value as Partial<BrandsConfigPayload>)
   } catch {
     return buildDefaultPayload()
   }
 }
 
 export async function saveBrandsConfigToStore(payload: Partial<BrandsConfigPayload>): Promise<BrandsConfigPayload> {
-  await ensureStoreFile()
   const normalized = normalizePayload(payload)
-  await fs.writeFile(BRANDS_CONFIG_FILE, JSON.stringify(normalized, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: BRANDS_CONFIG_KEY },
+    create: { key: BRANDS_CONFIG_KEY, value: normalized as unknown as Prisma.InputJsonValue },
+    update: { value: normalized as unknown as Prisma.InputJsonValue },
+  })
   return normalized
 }

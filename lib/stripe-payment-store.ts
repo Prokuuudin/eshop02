@@ -1,5 +1,5 @@
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export type StripePaymentStatus = 'pending' | 'paid' | 'failed'
 
@@ -18,26 +18,24 @@ type StripePaymentStore = {
   processedEventIds: string[]
 }
 
-const STORE_FILE_PATH = path.join(process.cwd(), 'data', 'stripe-payments.json')
+const KV_KEY = 'stripe-payments'
 
 const readStore = async (): Promise<StripePaymentStore> => {
-  try {
-    const raw = await fs.readFile(STORE_FILE_PATH, 'utf-8')
-    const parsed = JSON.parse(raw) as StripePaymentStore
-    return {
-      orders: parsed?.orders ?? {},
-      processedEventIds: Array.isArray(parsed?.processedEventIds) ? parsed.processedEventIds : []
-    }
-  } catch {
-    return {
-      orders: {},
-      processedEventIds: []
-    }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return { orders: {}, processedEventIds: [] }
+  const parsed = row.value as StripePaymentStore
+  return {
+    orders: parsed?.orders ?? {},
+    processedEventIds: Array.isArray(parsed?.processedEventIds) ? parsed.processedEventIds : [],
   }
 }
 
 const writeStore = async (store: StripePaymentStore): Promise<void> => {
-  await fs.writeFile(STORE_FILE_PATH, JSON.stringify(store, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: store as unknown as Prisma.InputJsonValue },
+    update: { value: store as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export const getOrderPaymentStatus = async (orderId: string): Promise<StripeOrderPayment | null> => {
@@ -62,12 +60,12 @@ export const saveOrderPaymentStatus = async (input: {
     paymentIntentId: input.paymentIntentId,
     customerEmail: input.customerEmail,
     lastEventId: input.eventId,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }
 
   store.orders[input.orderId] = {
     ...store.orders[input.orderId],
-    ...nextRecord
+    ...nextRecord,
   }
 
   if (input.eventId && !store.processedEventIds.includes(input.eventId)) {

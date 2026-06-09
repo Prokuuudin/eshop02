@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export const runtime = 'nodejs'
 
@@ -19,19 +19,20 @@ type PromoCampaign = {
   updatedAt: string
 }
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'promo-campaigns.json')
+const KV_KEY = 'promo-campaigns'
 
 async function readData(): Promise<PromoCampaign[]> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf-8')
-    return JSON.parse(raw) as PromoCampaign[]
-  } catch {
-    return []
-  }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return []
+  return (row.value as PromoCampaign[]) ?? []
 }
 
 async function writeData(data: PromoCampaign[]): Promise<void> {
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export async function GET() {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       targetCategories: Array.isArray(body.targetCategories) ? body.targetCategories : [],
       minOrderAmount: Number(body.minOrderAmount) || 0,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     }
     data.push(item)
     await writeData(data)

@@ -1,8 +1,7 @@
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
 import { cache } from 'react'
 import { type Product, type BadgeType, type CategoryType } from '@/data/products'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 import type { Product as PrismaProduct } from '@/generated/prisma/client'
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>
@@ -13,8 +12,7 @@ export type ArchivedProductRecord = {
   deletedAt: string
 }
 
-const OVERRIDES_FILE_PATH = path.join(process.cwd(), 'data', 'product-overrides.json')
-const DELETED_PRODUCTS_ARCHIVE_FILE_PATH = path.join(process.cwd(), 'data', 'deleted-products-archive.json')
+const DELETED_ARCHIVE_KEY = 'deleted-products-archive'
 
 export function mapDbToProduct(p: PrismaProduct): Product {
   return {
@@ -172,66 +170,31 @@ export async function getDbProductsPaginated(opts: {
     prisma.product.count({ where }),
   ])
 
-  const overrides = await readOverridesFileCached()
-  const products = rows.map(mapDbToProduct).map((product) => {
-    const override = overrides[product.id]
-    return override ? { ...product, ...override, id: product.id } : product
-  })
-
-  return { products, total }
-}
-
-const readOverridesFileCached = cache(async (): Promise<Record<string, ProductOverride>> => {
-  return readOverridesFile()
-})
-
-const readOverridesFile = async (): Promise<Record<string, ProductOverride>> => {
-  try {
-    const raw = await fs.readFile(OVERRIDES_FILE_PATH, 'utf-8')
-    return (JSON.parse(raw) as Record<string, ProductOverride>) ?? {}
-  } catch {
-    return {}
-  }
-}
-
-const writeOverridesFile = async (overrides: Record<string, ProductOverride>): Promise<void> => {
-  await fs.writeFile(OVERRIDES_FILE_PATH, JSON.stringify(overrides, null, 2), 'utf-8')
-}
-
-const readDeletedProductsArchiveFile = async (): Promise<ArchivedProductRecord[]> => {
-  try {
-    const raw = await fs.readFile(DELETED_PRODUCTS_ARCHIVE_FILE_PATH, 'utf-8')
-    const parsed = JSON.parse(raw) as ArchivedProductRecord[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-const writeDeletedProductsArchiveFile = async (records: ArchivedProductRecord[]): Promise<void> => {
-  await fs.writeFile(DELETED_PRODUCTS_ARCHIVE_FILE_PATH, JSON.stringify(records, null, 2), 'utf-8')
-}
-
-export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {
-  return readOverridesFile()
-}
-
-export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord[]> => {
-  return readDeletedProductsArchiveFile()
+  return { products: rows.map(mapDbToProduct), total }
 }
 
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
-  const [overrides, dbProducts] = await Promise.all([
-    readOverridesFileCached(),
-    getDbProducts(),
-  ])
-
-  return dbProducts.map((product) => {
-    const override = overrides[product.id]
-    if (!override) return product
-    return { ...product, ...override, id: product.id }
-  })
+  return getDbProducts()
 })
+
+export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {
+  return {}
+}
+
+export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord[]> => {
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: DELETED_ARCHIVE_KEY } })
+  if (!row) return []
+  const parsed = row.value as unknown as ArchivedProductRecord[]
+  return Array.isArray(parsed) ? parsed : []
+}
+
+const writeDeletedProductsArchive = async (records: ArchivedProductRecord[]): Promise<void> => {
+  await prisma.keyValueSetting.upsert({
+    where: { key: DELETED_ARCHIVE_KEY },
+    create: { key: DELETED_ARCHIVE_KEY, value: records as unknown as Prisma.InputJsonValue },
+    update: { value: records as unknown as Prisma.InputJsonValue },
+  })
+}
 
 const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omit<Product, 'id'>> => {
   const normalized = { ...patch }
@@ -243,11 +206,6 @@ const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omi
   if (typeof normalized.stock === 'number' && !Number.isFinite(normalized.stock)) delete normalized.stock
   if (typeof normalized.packagingSize === 'number' && !Number.isFinite(normalized.packagingSize)) delete normalized.packagingSize
   return normalized
-}
-
-const isSameOverrideAsBase = (base: Product, patch: Partial<Omit<Product, 'id'>>): boolean => {
-  const next = { ...base, ...patch, id: base.id }
-  return JSON.stringify({ ...next, id: undefined }) === JSON.stringify({ ...base, id: undefined })
 }
 
 const buildOverrideFromSnapshot = (base: Product, snapshot: Product): ProductOverride => {
@@ -271,7 +229,6 @@ export const upsertProductOverride = async (
 
   const normalizedPatch = normalizeProductPatch(nextValues)
 
-  // Build DB update payload — only include fields present in the patch
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dbData: Record<string, any> = {}
   const patchRecord = normalizedPatch as Record<string, unknown>
@@ -304,15 +261,6 @@ export const upsertProductOverride = async (
     await prisma.product.update({ where: { id: productId }, data: dbData })
   }
 
-  // Clear stale file-based override entry for this product
-  try {
-    const overrides = await readOverridesFile()
-    if (overrides[productId]) {
-      delete overrides[productId]
-      await writeOverridesFile(overrides)
-    }
-  } catch { /* best effort */ }
-
   return { success: true, products: await getMergedProducts() }
 }
 
@@ -321,13 +269,7 @@ export const resetProductOverride = async (
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
   const mergedProducts = await getMergedProducts()
   if (!mergedProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
-
-  const overrides = await getProductOverrides()
-  if (overrides[productId]) {
-    delete overrides[productId]
-    await writeOverridesFile(overrides)
-  }
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: mergedProducts }
 }
 
 export const createProduct = async (
@@ -363,12 +305,6 @@ export const deleteCustomProduct = async (
 
   await prisma.product.delete({ where: { id: nextId } })
 
-  const overrides = await getProductOverrides()
-  if (overrides[nextId]) {
-    delete overrides[nextId]
-    await writeOverridesFile(overrides)
-  }
-
   return { success: true, products: await getMergedProducts() }
 }
 
@@ -383,8 +319,7 @@ export const deleteProductAny = async (
 
   const targetProduct = mapDbToProduct(dbProduct)
 
-  // Archive before delete
-  const archive = await readDeletedProductsArchiveFile()
+  const archive = await getDeletedProductsArchive()
   const nextArchive = archive.filter((e) => e.id !== nextId)
   nextArchive.unshift({
     id: nextId,
@@ -392,18 +327,12 @@ export const deleteProductAny = async (
     source: dbProduct.isCustom ? 'custom' : 'base',
     deletedAt: new Date().toISOString(),
   })
-  await writeDeletedProductsArchiveFile(nextArchive)
+  await writeDeletedProductsArchive(nextArchive)
 
   if (dbProduct.isCustom) {
     await prisma.product.delete({ where: { id: nextId } })
   } else {
     await prisma.product.update({ where: { id: nextId }, data: { isDeleted: true } })
-  }
-
-  const overrides = await getProductOverrides()
-  if (overrides[nextId]) {
-    delete overrides[nextId]
-    await writeOverridesFile(overrides)
   }
 
   return { success: true, products: await getMergedProducts() }
@@ -415,7 +344,7 @@ export const restoreDeletedProduct = async (
   const nextId = productId.trim()
   if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const archive = await readDeletedProductsArchiveFile()
+  const archive = await getDeletedProductsArchive()
   const archived = archive.find((e) => e.id === nextId)
   if (!archived) return { success: false, error: 'Товар не найден в архиве' }
 
@@ -429,15 +358,13 @@ export const restoreDeletedProduct = async (
       const baseProduct = mapDbToProduct(dbProduct)
       const overridePatch = buildOverrideFromSnapshot(baseProduct, archived.product)
       if (Object.keys(overridePatch).length > 0) {
-        const overrides = await getProductOverrides()
-        overrides[nextId] = overridePatch
-        await writeOverridesFile(overrides)
+        await upsertProductOverride(nextId, overridePatch)
       }
     }
   }
 
   const nextArchive = archive.filter((e) => e.id !== nextId)
-  await writeDeletedProductsArchiveFile(nextArchive)
+  await writeDeletedProductsArchive(nextArchive)
 
   return { success: true, products: await getMergedProducts() }
 }
@@ -448,10 +375,10 @@ export const purgeDeletedProductArchive = async (
   const nextId = productId.trim()
   if (!nextId) return { success: false, error: 'ID товара обязателен' }
 
-  const archive = await readDeletedProductsArchiveFile()
+  const archive = await getDeletedProductsArchive()
   if (!archive.some((e) => e.id === nextId)) return { success: false, error: 'Товар не найден в архиве' }
 
   const nextArchive = archive.filter((e) => e.id !== nextId)
-  await writeDeletedProductsArchiveFile(nextArchive)
+  await writeDeletedProductsArchive(nextArchive)
   return { success: true, archive: nextArchive }
 }

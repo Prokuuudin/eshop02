@@ -1,5 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export type EmailTemplate = {
   id: string
@@ -15,14 +17,29 @@ type TemplatesData = {
 }
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'email-templates.json')
+const KV_KEY = 'email-templates'
+
+async function readFromFile(): Promise<TemplatesData> {
+  try {
+    const raw = await fs.readFile(DATA_PATH, 'utf-8')
+    return JSON.parse(raw) as TemplatesData
+  } catch {
+    return { templates: [] }
+  }
+}
 
 export async function readTemplatesData(): Promise<TemplatesData> {
-  const raw = await fs.readFile(DATA_PATH, 'utf-8')
-  return JSON.parse(raw) as TemplatesData
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return readFromFile()
+  return row.value as TemplatesData
 }
 
 async function writeTemplatesData(data: TemplatesData): Promise<void> {
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export async function getTemplates(): Promise<EmailTemplate[]> {

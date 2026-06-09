@@ -1,5 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export type PriceGroup = {
   id: string
@@ -22,14 +24,29 @@ type PriceGroupsData = {
 }
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'price-groups.json')
+const KV_KEY = 'price-groups'
+
+async function readFromFile(): Promise<PriceGroupsData> {
+  try {
+    const raw = await fs.readFile(DATA_PATH, 'utf-8')
+    return JSON.parse(raw) as PriceGroupsData
+  } catch {
+    return { groups: [], overrides: [] }
+  }
+}
 
 export async function readPriceGroupsData(): Promise<PriceGroupsData> {
-  const raw = await fs.readFile(DATA_PATH, 'utf-8')
-  return JSON.parse(raw) as PriceGroupsData
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return readFromFile()
+  return row.value as PriceGroupsData
 }
 
 async function writePriceGroupsData(data: PriceGroupsData): Promise<void> {
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export async function getPriceGroups(): Promise<PriceGroup[]> {

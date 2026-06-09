@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
               ) AS similarity
        FROM "Product"
        WHERE "isDeleted" = false
+         AND "isActive" = true
          AND similarity(
                COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
                $1

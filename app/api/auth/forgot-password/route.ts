@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export const runtime = 'nodejs'
 
 type ResetRecord = { token: string; email: string; expiresAt: string }
 type ResetData = { resets: ResetRecord[] }
 
-const DATA_PATH = path.join(process.cwd(), 'data', 'password-resets.json')
+const KV_KEY = 'password-resets'
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 async function read(): Promise<ResetData> {
-  try {
-    const raw = await fs.readFile(DATA_PATH, 'utf-8')
-    return JSON.parse(raw) as ResetData
-  } catch {
-    return { resets: [] }
-  }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return { resets: [] }
+  return (row.value as ResetData) ?? { resets: [] }
 }
 
 async function write(data: ResetData): Promise<void> {
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

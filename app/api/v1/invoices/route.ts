@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         paidTotal: invoices.filter((i) => i.status === 'paid').reduce((s, i) => s + i.total, 0),
         pendingTotal: invoices.filter((i) => i.status === 'issued').reduce((s, i) => s + i.remainingAmount, 0),
         overdueTotal: invoices
-          .filter((i) => i.status === 'issued' && new Date(i.dueDate as string) < new Date())
+          .filter((i) => i.status === 'issued' && i.dueDate != null && new Date(i.dueDate) < new Date())
           .reduce((s, i) => s + i.remainingAmount, 0),
       },
     })

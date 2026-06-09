@@ -1,11 +1,11 @@
 import 'server-only'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 import { CATEGORY_CARDS, SUBCATEGORIES_BY_ID } from '@/data/categories'
 import { translations, type Language } from '@/data/translations'
 import type { CategoriesConfigPayload, CategoryConfigItem, CategoryConfigSubcategory, LocalizedLabel } from '@/lib/categories-config'
 
-const CATEGORIES_CONFIG_FILE = path.join(process.cwd(), 'data', 'categories-config.json')
+const CATEGORIES_CONFIG_KEY = 'categories-config'
 const LANGUAGES: Language[] = ['ru', 'en', 'lv']
 
 const sanitizeId = (value: string): string =>
@@ -39,7 +39,7 @@ const buildDefaultPayload = (): CategoriesConfigPayload => {
       slug: subcategory.slug,
       key: subcategory.key,
       labels: defaultLabelsByKey(subcategory.key, subcategory.slug),
-      search: subcategory.search
+      search: subcategory.search,
     }))
 
     return {
@@ -48,7 +48,7 @@ const buildDefaultPayload = (): CategoriesConfigPayload => {
       href: category.href,
       image: category.image,
       labels: defaultLabelsByKey(category.titleKey, category.id),
-      subcategories
+      subcategories,
     }
   })
 
@@ -63,7 +63,7 @@ const normalizeSubcategory = (input: CategoryConfigSubcategory): CategoryConfigS
     slug,
     key: input.key?.trim() || undefined,
     labels: normalizeLabels(input.labels, slug),
-    search: input.search?.trim() ?? ''
+    search: input.search?.trim() ?? '',
   }
 }
 
@@ -84,7 +84,7 @@ const normalizeCategory = (input: CategoryConfigItem): CategoryConfigItem | null
     href: `/catalog?cat=${id}`,
     image: input.image?.trim() || '/categories/new.jpg',
     labels: normalizeLabels(input.labels, id),
-    subcategories: Array.from(uniqueSubcategories.values())
+    subcategories: Array.from(uniqueSubcategories.values()),
   }
 }
 
@@ -113,35 +113,27 @@ const normalizePayload = (input?: Partial<CategoriesConfigPayload> | null): Cate
     ? { categories, deletedCategories }
     : {
         ...buildDefaultPayload(),
-        deletedCategories
+        deletedCategories,
       }
 }
 
-async function ensureStoreFile(): Promise<void> {
-  try {
-    await fs.access(CATEGORIES_CONFIG_FILE)
-  } catch {
-    const initial = buildDefaultPayload()
-    await fs.writeFile(CATEGORIES_CONFIG_FILE, JSON.stringify(initial, null, 2), 'utf-8')
-  }
-}
-
 export async function getCategoriesConfigFromStore(): Promise<CategoriesConfigPayload> {
-  await ensureStoreFile()
-  const content = await fs.readFile(CATEGORIES_CONFIG_FILE, 'utf-8')
-
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: CATEGORIES_CONFIG_KEY } })
+  if (!row) return buildDefaultPayload()
   try {
-    const parsed = JSON.parse(content) as Partial<CategoriesConfigPayload>
-    return normalizePayload(parsed)
+    return normalizePayload(row.value as Partial<CategoriesConfigPayload>)
   } catch {
     return buildDefaultPayload()
   }
 }
 
 export async function saveCategoriesConfigToStore(payload: Partial<CategoriesConfigPayload>): Promise<CategoriesConfigPayload> {
-  await ensureStoreFile()
   const normalized = normalizePayload(payload)
-  await fs.writeFile(CATEGORIES_CONFIG_FILE, JSON.stringify(normalized, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: CATEGORIES_CONFIG_KEY },
+    create: { key: CATEGORIES_CONFIG_KEY, value: normalized as unknown as Prisma.InputJsonValue },
+    update: { value: normalized as unknown as Prisma.InputJsonValue },
+  })
   return normalized
 }
 

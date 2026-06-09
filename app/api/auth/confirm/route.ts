@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 import type { PendingRegistration } from '@/app/api/auth/register/route'
 
 export const runtime = 'nodejs'
 
 type PendingData = { registrations: PendingRegistration[] }
 
-const DATA_PATH = path.join(process.cwd(), 'data', 'pending-registrations.json')
+const KV_KEY = 'pending-registrations'
 
 async function readPending(): Promise<PendingData> {
-  try {
-    const raw = await fs.readFile(DATA_PATH, 'utf-8')
-    return JSON.parse(raw) as PendingData
-  } catch {
-    return { registrations: [] }
-  }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return { registrations: [] }
+  return (row.value as PendingData) ?? { registrations: [] }
 }
 
 async function writePending(data: PendingData): Promise<void> {
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 // GET /api/auth/confirm?token=xxx

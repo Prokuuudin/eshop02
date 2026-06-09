@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export const runtime = 'nodejs'
 
@@ -16,19 +16,20 @@ type Showcase = {
   updatedAt: string
 }
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'showcases.json')
+const KV_KEY = 'showcases'
 
 async function readData(): Promise<Showcase[]> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf-8')
-    return JSON.parse(raw) as Showcase[]
-  } catch {
-    return []
-  }
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+  if (!row) return []
+  return (row.value as Showcase[]) ?? []
 }
 
 async function writeData(data: Showcase[]): Promise<void> {
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8')
+  await prisma.keyValueSetting.upsert({
+    where: { key: KV_KEY },
+    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
+    update: { value: data as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export async function GET() {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       active: body.active ?? true,
       order: maxOrder + 1,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     }
     data.push(item)
     await writeData(data)

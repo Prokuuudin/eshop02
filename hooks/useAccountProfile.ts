@@ -27,7 +27,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setProfileErrors({});
     };
 
-    const saveProfile = () => {
+    const saveProfile = async () => {
         if (!profileDraft) return;
         const emailOptional = isInternalEmail(user?.email || '');
         const errors = validateProfile(profileDraft, t, emailOptional);
@@ -54,23 +54,26 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setProfileDraft(null);
         setProfileErrors({});
 
-        // Sync fields to DB — email included so notification emails use current address
-        fetch('/api/user/profile', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: updatedUser.name,
-                email: updatedUser.email,
-                phone: updatedUser.phone,
-                avatarUrl: updatedUser.avatarUrl,
-                cardNumber: updatedUser.cardNumber,
-            }),
-        }).then(async (res) => {
+        // Await DB sync so email update lands before reload — fire-then-reload pattern
+        // was broken: reload() cancelled the in-flight fetch before it reached the server
+        try {
+            const res = await fetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    phone: updatedUser.phone,
+                    avatarUrl: updatedUser.avatarUrl,
+                    cardNumber: updatedUser.cardNumber,
+                }),
+            });
             if (res.status === 409) {
-                // email already taken in DB — non-critical, localStorage already saved
-                console.warn('[profile] email already in use in DB, skipping DB update')
+                console.warn('[profile] email already in use in DB, skipping DB update');
             }
-        }).catch(() => {});
+        } catch {
+            // localStorage already saved — non-critical if DB sync fails
+        }
 
         window.location.reload();
     };

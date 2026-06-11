@@ -26,6 +26,7 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
+  userNotifications   UserNotification[]
 
   @@index([email])
   @@index([companyId])
@@ -484,4 +485,21 @@ model SyncRun {
 
   @@index([status])
   @@index([startedAt])
+}
+
+model UserNotification {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String   @default("info")
+  title        String
+  message      String
+  link         String?
+  channel      String   @default("app")
+  emailSent    Boolean  @default(false)
+  appDelivered Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, appDelivered])
+  @@index([createdAt])
 }

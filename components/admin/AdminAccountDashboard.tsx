@@ -66,6 +66,7 @@ const NAV_SECTIONS: NavSection[] = [
             { label: 'Баркоды', href: '/admin/client-barcodes' },
             { label: 'Сегменты', href: '/admin/customers/segments' },
             { label: 'История', href: '/admin/customers/history' },
+            { label: 'Рассылка уведомлений', href: '/admin/notifications/send' },
         ],
     },
     {

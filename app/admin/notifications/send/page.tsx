@@ -186,7 +186,7 @@ export default function AdminNotificationsSendPage() {
                 onClick={allFilteredSelected ? deselectAll : selectAll}
                 className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline"
               >
-                {allFilteredSelected ? t('admin.notifications.form.clearSelection') : 'Select all'}
+                {allFilteredSelected ? t('admin.notifications.form.clearSelection') : t('admin.notifications.form.selectAll')}
               </button>
               {selectedIds.size > 0 && (
                 <>

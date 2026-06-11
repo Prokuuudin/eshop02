@@ -136,4 +136,49 @@ describe('POST /api/admin/notifications/send', () => {
       data: expect.arrayContaining([expect.objectContaining({ link: null })]),
     })
   })
+
+  it('creates notifications and sends emails for channel=both', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'a1', platformRole: 'admin' } as any)
+    vi.mocked(prisma.user.findMany as any).mockResolvedValue([
+      { id: 'u1', email: 'alice@example.com' },
+    ])
+    vi.mocked(prisma.userNotification.createMany as any).mockResolvedValue({ count: 1 })
+    vi.mocked(sendEmail as any).mockResolvedValue(undefined)
+    const res = await POST(makeRequest({
+      userIds: ['u1'],
+      title: 'T',
+      message: 'M',
+      type: 'info',
+      channel: 'both',
+    }))
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.created).toBe(1)
+    expect(json.emailsSent).toBe(1)
+    expect(sendEmail).toHaveBeenCalledTimes(1)
+    expect(prisma.userNotification.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([expect.objectContaining({ userId: 'u1', channel: 'both' })]),
+    })
+  })
+
+  it('filters empty strings from userIds', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'a1', platformRole: 'admin' } as any)
+    vi.mocked(prisma.userNotification.createMany as any).mockResolvedValue({ count: 2 })
+    const res = await POST(makeRequest({
+      userIds: ['u1', '', 'u2'],
+      title: 'T',
+      message: 'M',
+      type: 'info',
+      channel: 'app',
+    }))
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.created).toBe(2)
+    expect(prisma.userNotification.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ userId: 'u1' }),
+        expect.objectContaining({ userId: 'u2' }),
+      ]),
+    })
+  })
 })

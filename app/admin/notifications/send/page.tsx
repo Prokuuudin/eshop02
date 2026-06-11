@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -156,8 +155,7 @@ export default function AdminNotificationsSendPage() {
   }
 
   return (
-    <AdminGate>
-      <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
+    <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">{t('admin.notifications.title')}</h1>
@@ -375,7 +373,6 @@ export default function AdminNotificationsSendPage() {
             </Button>
           </section>
         </div>
-      </main>
-    </AdminGate>
+    </main>
   )
 }

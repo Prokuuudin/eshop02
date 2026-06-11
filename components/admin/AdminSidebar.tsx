@@ -76,6 +76,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
             { title: 'customers.barcodes', href: '/admin/client-barcodes' },
             { title: 'customers.segments', href: '/admin/customers/segments' },
             { title: 'customers.history', href: '/admin/customers/history' },
+            { title: 'customers.notifications', href: '/admin/notifications/send' },
         ],
     },
     {

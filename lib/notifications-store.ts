@@ -27,6 +27,7 @@ interface NotificationsStore {
   deleteSelected: (ids: string[]) => void
   deleteAll: () => void
   addNotification: (n: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => void
+  fetchInbox: () => Promise<void>
   unreadCount: () => number
 }
 
@@ -72,7 +73,7 @@ export const useNotificationsStore = create<NotificationsStore>()(
           notifications: [
             { ...n, id, createdAt, isRead: false },
             ...state.notifications,
-          ],
+          ].slice(0, 100),
         }))
 
         const { channel, isSubscribed } = get()
@@ -85,8 +86,49 @@ export const useNotificationsStore = create<NotificationsStore>()(
         }
       },
 
+      fetchInbox: async () => {
+        if (typeof window === 'undefined') return
+        try {
+          const res = await fetch('/api/notifications/inbox')
+          if (!res.ok) return
+          const data = await res.json() as { notifications: Array<Omit<Notification, 'id' | 'createdAt' | 'isRead'>> }
+          if (!Array.isArray(data.notifications)) return
+          for (const n of data.notifications) {
+            get().addNotification(n)
+          }
+        } catch {}
+      },
+
       unreadCount: () => get().notifications.filter((n) => !n.isRead).length,
     }),
-    { name: 'eshop-notifications' }
+    {
+      name: 'eshop-notifications',
+      storage: {
+        getItem: (name) => {
+          try {
+            const v = localStorage.getItem(name)
+            return v ? JSON.parse(v) : null
+          } catch {
+            return null
+          }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, JSON.stringify(value))
+          } catch (e) {
+            if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+              // Exceeded quota — nuke the key and retry with fresh state
+              try {
+                localStorage.removeItem(name)
+                localStorage.setItem(name, JSON.stringify(value))
+              } catch {}
+            }
+          }
+        },
+        removeItem: (name) => {
+          try { localStorage.removeItem(name) } catch {}
+        },
+      },
+    }
   )
 )

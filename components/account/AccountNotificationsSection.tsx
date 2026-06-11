@@ -194,6 +194,7 @@ export default function AccountNotificationsSection() {
         deleteSelected,
         deleteAll,
         addNotification,
+        fetchInbox,
         unreadCount,
     } = useNotificationsStore();
 
@@ -231,6 +232,11 @@ export default function AccountNotificationsSection() {
         const ids = new Set(notifications.map((n) => n.id));
         setSelectedIds((prev) => prev.filter((id) => ids.has(id)));
     }, [notifications]);
+
+    React.useEffect(() => {
+        fetchInbox()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const handleSubscribe = () => {
         subscribe();

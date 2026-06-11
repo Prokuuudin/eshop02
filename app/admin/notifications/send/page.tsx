@@ -48,15 +48,16 @@ export default function AdminNotificationsSendPage() {
   useEffect(() => {
     setUsersLoading(true)
     fetch('/api/admin/users?take=200')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load users')
+        return res.json()
+      })
       .then((data) => {
-        if (data.users) {
+        if (Array.isArray(data.users)) {
           setUsers(data.users)
         }
       })
-      .catch(() => {
-        // ignore
-      })
+      .catch(() => {})
       .finally(() => {
         setUsersLoading(false)
       })
@@ -140,11 +141,12 @@ export default function AdminNotificationsSendPage() {
           channel,
         }),
       })
-      const data = await res.json()
+      let data: Record<string, unknown> = {}
+      try { data = await res.json() } catch {}
       if (!res.ok) {
-        setSendError(data.error ?? 'Error')
+        setSendError(typeof data.error === 'string' ? data.error : 'Error')
       } else {
-        setResult(data)
+        setResult(data as typeof result)
       }
     } catch {
       setSendError('Network error')
@@ -208,7 +210,7 @@ export default function AdminNotificationsSendPage() {
             <div className="max-h-80 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
               {usersLoading ? (
                 <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                  Loading...
+                  {t('common.loading')}
                 </p>
               ) : filteredUsers.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">

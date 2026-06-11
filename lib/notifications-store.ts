@@ -65,18 +65,25 @@ export const useNotificationsStore = create<NotificationsStore>()(
 
       deleteAll: () => set({ notifications: [] }),
 
-      addNotification: (n) =>
+      addNotification: (n) => {
+        const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`
+        const createdAt = new Date().toISOString()
         set((state) => ({
           notifications: [
-            {
-              ...n,
-              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-              createdAt: new Date().toISOString(),
-              isRead: false,
-            },
+            { ...n, id, createdAt, isRead: false },
             ...state.notifications,
           ],
-        })),
+        }))
+
+        const { channel, isSubscribed } = get()
+        if (isSubscribed && (channel === 'email' || channel === 'both') && typeof window !== 'undefined') {
+          fetch('/api/notifications/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: n.title, message: n.message, type: n.type, link: n.link }),
+          }).catch(() => {})
+        }
+      },
 
       unreadCount: () => get().notifications.filter((n) => !n.isRead).length,
     }),

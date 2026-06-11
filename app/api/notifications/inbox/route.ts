@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest) {
         channel: { in: ['app', 'both'] },
       },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, type: true, title: true, message: true, link: true, createdAt: true },
+      select: { id: true, type: true, title: true, message: true, link: true },
     })
 
     if (rows.length > 0) {

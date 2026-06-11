@@ -63,7 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
         color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
         items: [
             { label: 'Аккаунты', href: '/admin/accounts' },
-            { label: 'Баркоды', href: '/admin/client-barcodes' },
+            { label: 'Карты клиентов', href: '/admin/client-barcodes' },
             { label: 'Сегменты', href: '/admin/customers/segments' },
             { label: 'История', href: '/admin/customers/history' },
             { label: 'Рассылка уведомлений', href: '/admin/notifications/send' },

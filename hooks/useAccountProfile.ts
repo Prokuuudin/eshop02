@@ -54,16 +54,22 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setProfileDraft(null);
         setProfileErrors({});
 
-        // Sync safe fields to DB — fire-and-forget, localStorage is source of truth
+        // Sync fields to DB — email included so notification emails use current address
         fetch('/api/user/profile', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: updatedUser.name,
+                email: updatedUser.email,
                 phone: updatedUser.phone,
                 avatarUrl: updatedUser.avatarUrl,
                 cardNumber: updatedUser.cardNumber,
             }),
+        }).then(async (res) => {
+            if (res.status === 409) {
+                // email already taken in DB — non-critical, localStorage already saved
+                console.warn('[profile] email already in use in DB, skipping DB update')
+            }
         }).catch(() => {});
 
         window.location.reload();

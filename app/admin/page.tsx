@@ -188,11 +188,11 @@ export default function AdminPage() {
   const handleDragEnd = () => { dragId.current = null; setDragOverId(null) }
 
   return (
-    <main className="w-full py-4 text-gray-900 dark:text-gray-100">
+    <main className="w-full py-4 text-foreground">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('admin.dashboard')}</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+            <h1 className="text-3xl font-bold text-foreground">{t('admin.dashboard')}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               {hasFullAccess
                 ? tl('admin.dashboard.accessFull', 'Полный доступ администратора', 'Full administrator access', 'Pilna administratora piekluve')
                 : tl('admin.dashboard.accessPartial', 'Частичный доступ менеджера', 'Partial manager access', 'Daleja menedzera piekluve')}
@@ -213,7 +213,7 @@ export default function AdminPage() {
         </div>
 
         {editMode && (
-          <p className="hidden sm:block mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p className="hidden sm:block mb-4 text-sm text-muted-foreground">
             {l(
               'Перетащите плашки в нужном порядке. Нажмите «Готово» когда закончите.',
               'Drag the cards into the desired order. Click "Done" when finished.',
@@ -234,7 +234,7 @@ export default function AdminPage() {
                 onDrop={(e) => editMode && handleDrop(e, card.id)}
                 onDragEnd={handleDragEnd}
                 className={[
-                  'group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 border-l-4 p-5 shadow-sm transition-all',
+                  'group flex flex-col rounded-xl border border-border border-l-4 p-5 shadow-sm transition-all',
                   card.bg, card.border,
                   editMode
                     ? 'cursor-grab active:cursor-grabbing select-none'
@@ -243,15 +243,15 @@ export default function AdminPage() {
                 ].join(' ')}
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{card.title}</p>
+                  <p className="text-base font-semibold text-foreground">{card.title}</p>
                   {editMode && (
                     <span className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0 text-lg leading-none">⠿</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-snug">{card.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 leading-snug">{card.description}</p>
                 {!editMode && (
                   <Link href={card.href} className="mt-auto">
-                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                    <span className="text-sm font-medium text-primary group-hover:underline">
                       {card.linkText} →
                     </span>
                   </Link>
@@ -269,21 +269,21 @@ export default function AdminPage() {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-            <p className="text-gray-600 dark:text-gray-300 text-sm">📦 {t('admin.stats.totalOrders')}</p>
-            <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{orders.length}</p>
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-muted-foreground text-sm">📦 {t('admin.stats.totalOrders')}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{orders.length}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-            <p className="text-gray-600 dark:text-gray-300 text-sm">💰 {t('admin.stats.totalRevenue')}</p>
-            <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{formatEuro(totalRevenue, locale)}</p>
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-muted-foreground text-sm">💰 {t('admin.stats.totalRevenue')}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(totalRevenue, locale)}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-            <p className="text-gray-600 dark:text-gray-300 text-sm">💵 {t('admin.stats.averageOrder')}</p>
-            <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{formatEuro(avgOrderValue, locale)}</p>
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-muted-foreground text-sm">💵 {t('admin.stats.averageOrder')}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(avgOrderValue, locale)}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-            <p className="text-gray-600 dark:text-gray-300 text-sm">📋 {t('admin.stats.itemsSold')}</p>
-            <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-gray-100">{totalItems}</p>
+          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+            <p className="text-muted-foreground text-sm">📋 {t('admin.stats.itemsSold')}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{totalItems}</p>
           </div>
         </div>
 
@@ -322,15 +322,15 @@ export default function AdminPage() {
         })()}
 
         {/* Revenue Chart */}
-        <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-lg border border-border p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h2 className="text-lg font-semibold text-foreground">
                 {l('Выручка', 'Revenue', 'Ienemumi')}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {l('За период', 'Period total', 'Perioda kopā')}:{' '}
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-foreground">
                   {formatEuro(chartPeriodRevenue, locale)}
                 </span>
                 {' '}·{' '}
@@ -347,8 +347,8 @@ export default function AdminPage() {
                   className={[
                     'px-3 py-1 text-sm rounded-md transition-colors',
                     chartPeriod === p
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700',
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700',
                   ].join(' ')}
                 >
                   {p === '7d' ? l('7 дней', '7 days', '7 dienas') : p === '30d' ? l('30 дней', '30 days', '30 dienas') : l('90 дней', '90 days', '90 dienas')}
@@ -366,15 +366,15 @@ export default function AdminPage() {
         </div>
 
         {/* Orders Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t('admin.orders')}</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+          <h2 className="text-2xl font-bold mb-6 text-foreground">{t('admin.orders')}</h2>
           {orders.length > 0 ? (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {orders.map((order) => {
                 const status = getOrderStatus(order.id)
                 const isExpanded = expandedOrder === order.id
                 return (
-                  <div key={order.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div key={order.id} className="border border-border rounded-lg p-4">
                     <button
                       type="button"
                       onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
@@ -382,7 +382,7 @@ export default function AdminPage() {
                       className="w-full text-left cursor-pointer flex justify-between items-start"
                     >
                       <div className="flex-1">
-                        <p className="font-mono text-sm text-gray-600 dark:text-gray-300">{order.id}</p>
+                        <p className="font-mono text-sm text-muted-foreground">{order.id}</p>
                         <div className="flex gap-3 mt-2 text-sm">
                           <span>👤 {order.firstName} {order.lastName}</span>
                           <span>📧 {order.email}</span>
@@ -394,29 +394,29 @@ export default function AdminPage() {
                       </div>
                     </button>
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="mt-4 pt-4 border-t border-border">
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{t('admin.deliveryAddress')}</p>
+                            <p className="text-sm text-muted-foreground">{t('admin.deliveryAddress')}</p>
                             <p className="text-sm mt-1">{order.address}, {order.city}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{t('checkout.delivery.method')}</p>
+                            <p className="text-sm text-muted-foreground">{t('checkout.delivery.method')}</p>
                             <p className="text-sm mt-1">
                               {order.deliveryMethod === 'courier' ? t('checkout.delivery.courier') : order.deliveryMethod === 'pickup' ? t('checkout.delivery.pickup') : t('checkout.delivery.post')}
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{t('checkout.payment.title')}</p>
+                            <p className="text-sm text-muted-foreground">{t('checkout.payment.title')}</p>
                             <p className="text-sm mt-1">{order.paymentMethod}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{t('admin.date')}</p>
+                            <p className="text-sm text-muted-foreground">{t('admin.date')}</p>
                             <p className="text-sm mt-1">{formatDate(order.createdAt, locale)}</p>
                           </div>
                         </div>
                         <div className="mb-4">
-                          <p className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('admin.products')}</p>
+                          <p className="text-base font-semibold text-foreground mb-1">{t('admin.products')}</p>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded p-2 text-sm space-y-1">
                             {order.items.map((item) => (
                               <p key={item.id}>{item.title} × {item.quantity} = {formatEuro(item.price * item.quantity, locale)}</p>
@@ -425,7 +425,7 @@ export default function AdminPage() {
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           {(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const).map((s) => (
-                            <Button key={s} onClick={() => setOrderStatus(order.id, s)} variant={status === s ? 'default' : 'outline'} size="sm" className={status === s ? 'bg-indigo-600' : ''}>
+                            <Button key={s} onClick={() => setOrderStatus(order.id, s)} variant={status === s ? 'default' : 'outline'} size="sm" className={status === s ? 'bg-primary' : ''}>
                               {statusLabels[s]}
                             </Button>
                           ))}
@@ -437,7 +437,7 @@ export default function AdminPage() {
               })}
             </div>
           ) : (
-            <p className="text-gray-600 dark:text-gray-300 text-center py-8">{t('admin.noOrders')}</p>
+            <p className="text-muted-foreground text-center py-8">{t('admin.noOrders')}</p>
           )}
         </div>
     </main>

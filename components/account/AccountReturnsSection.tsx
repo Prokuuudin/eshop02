@@ -40,7 +40,7 @@ export const AccountReturnsSection: React.FC = () => {
                         <RotateCcw className="h-4 w-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        <h3 className="text-sm font-semibold text-foreground">
                             {t('account.returns.title', 'Возвраты')}
                         </h3>
                         {activeCount > 0 && (
@@ -63,7 +63,7 @@ export const AccountReturnsSection: React.FC = () => {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                    <p className="text-xs font-mono text-muted-foreground">
                                         #{ret.id}
                                     </p>
                                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cfg.classes}`}>
@@ -78,7 +78,7 @@ export const AccountReturnsSection: React.FC = () => {
                                     {date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                 </p>
                                 {ret.resolution && (
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic line-clamp-1">
+                                    <p className="mt-1 text-xs text-muted-foreground italic line-clamp-1">
                                         {ret.resolution}
                                     </p>
                                 )}

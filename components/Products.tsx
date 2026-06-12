@@ -219,14 +219,14 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     <section className="products py-8">
       <div className="w-full px-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="products__title text-2xl font-semibold text-gray-900 dark:text-gray-100">{t('nav.catalog', 'Catalog')}</h2>
+          <h2 className="products__title text-2xl font-semibold text-foreground">{t('nav.catalog', 'Catalog')}</h2>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">{t('catalog.viewLabel')}</span>
+            <span className="text-sm text-muted-foreground hidden sm:inline">{t('catalog.viewLabel')}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => handleViewMode('grid')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span>{t('catalog.viewGrid')}</span>
@@ -234,7 +234,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
               <button
                 type="button"
                 onClick={() => handleViewMode('list')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <List className="w-4 h-4" />
                 <span>{t('catalog.viewList')}</span>
@@ -270,7 +270,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
               )
             ) : (
               filtered.length === 0 ? (
-                <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center">
+                <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-8 text-center">
                   <p className="text-gray-700 dark:text-gray-300">{emptyStateMessage}</p>
                 </div>
               ) : (

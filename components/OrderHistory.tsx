@@ -19,11 +19,11 @@ export default function OrderHistory({
 
   if (monthlyData.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 col-span-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <Card className="p-6 bg-white dark:bg-gray-900 border border-border col-span-2">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.orderHistory.title')}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           {t('account.orderHistory.noData')}
         </p>
       </Card>
@@ -33,8 +33,8 @@ export default function OrderHistory({
   const maxRevenue = Math.max(...monthlyData.map(m => m.revenue))
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 col-span-2">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <Card className="p-6 bg-white dark:bg-gray-900 border border-border col-span-2">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.orderHistory.titleWithIcon')}
       </h3>
 
@@ -53,7 +53,7 @@ export default function OrderHistory({
                 })}
               >
                 <div className="w-full bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t hover:opacity-80 transition-opacity cursor-pointer" style={{ height: `${percentage}%` }} />
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center whitespace-nowrap transform -rotate-45 origin-left" style={{ width: '80px', transformOrigin: 'left', marginLeft: '-30px' }}>
+                <p className="text-xs text-muted-foreground mt-2 text-center whitespace-nowrap transform -rotate-45 origin-left" style={{ width: '80px', transformOrigin: 'left', marginLeft: '-30px' }}>
                   {month.month.split(' ')[0]}
                 </p>
               </div>
@@ -62,21 +62,21 @@ export default function OrderHistory({
         </div>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-6 pt-4 border-t border-border">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{t('account.orderHistory.totalMonths')}</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{monthlyData.length}</p>
+            <p className="text-xs text-muted-foreground">{t('account.orderHistory.totalMonths')}</p>
+            <p className="text-lg font-bold text-foreground">{monthlyData.length}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{t('account.orderHistory.averageOrdersPerMonth')}</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-xs text-muted-foreground">{t('account.orderHistory.averageOrdersPerMonth')}</p>
+            <p className="text-lg font-bold text-foreground">
               {(analytics.totalOrders / monthlyData.length).toFixed(1)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{t('account.orderHistory.maxPerMonth')}</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-xs text-muted-foreground">{t('account.orderHistory.maxPerMonth')}</p>
+            <p className="text-lg font-bold text-foreground">
               {formatEuro(maxRevenue, locale)}
             </p>
           </div>

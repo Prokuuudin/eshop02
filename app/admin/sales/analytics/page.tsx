@@ -72,8 +72,8 @@ function BarChart({
 function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
             {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
         </div>
     );
@@ -173,7 +173,7 @@ export default function SalesAnalyticsPage() {
             <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Аналитика продаж
                         </h1>
                         <p className="mt-1 text-sm text-gray-500">
@@ -183,7 +183,7 @@ export default function SalesAnalyticsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                     <Link
                         href="/admin/sales/breakdown"
-                        className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300"
+                        className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-primary"
                     >
                         Товары и категории →
                     </Link>

@@ -57,7 +57,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+            className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-white dark:bg-gray-900 border border-border text-foreground"
             onClick={handleCardClick}
         >
             <div className="absolute right-3 top-3 z-10">
@@ -94,18 +94,18 @@ export default function ProductCard({ product }: Props) {
             </Link>
 
             <div className="product-card__body mt-3 flex-1 flex flex-col min-w-0">
-                <div className="product-card__brand text-xs text-gray-500 dark:text-gray-300">
+                <div className="product-card__brand text-xs text-muted-foreground">
                     {product.brand}
                 </div>
                 <Link
                     href={`/product/${product.id}`}
-                    className="product-card__title text-sm font-medium mt-1 hover:text-indigo-600"
+                    className="product-card__title text-sm font-medium mt-1 hover:text-primary"
                 >
                     {localizedTitle}
                 </Link>
 
                 {product.sku && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">
                         SKU: {product.sku}
                     </p>
                 )}

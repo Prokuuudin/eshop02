@@ -49,10 +49,10 @@ export default function BonusSection() {
                     <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/40 mb-4">
                         <Star className="w-7 h-7 text-amber-500 fill-amber-400" />
                     </div>
-                    <h2 className="bonus-section__title text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                    <h2 className="bonus-section__title text-2xl sm:text-3xl font-bold text-foreground mb-3">
                         {t('bonus.section.title')}
                     </h2>
-                    <p className="bonus-section__subtitle text-gray-500 dark:text-gray-400 max-w-xl mx-auto text-sm sm:text-base">
+                    <p className="bonus-section__subtitle text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
                         {t('bonus.section.subtitle')}
                     </p>
                 </div>
@@ -82,11 +82,11 @@ export default function BonusSection() {
                                     <Icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                 </div>
 
-                                <h3 className="bonus-section__step-title font-semibold text-gray-900 dark:text-gray-100">
+                                <h3 className="bonus-section__step-title font-semibold text-foreground">
                                     {t(step.titleKey)}
                                 </h3>
 
-                                <p className="bonus-section__step-desc text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                <p className="bonus-section__step-desc text-sm text-muted-foreground leading-relaxed">
                                     {t(step.descKey)}
                                 </p>
 

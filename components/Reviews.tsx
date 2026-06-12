@@ -143,16 +143,16 @@ export default function Reviews({ productId }: ReviewsProps) {
   };
 
   return (
-    <section className="mt-12 border-t border-gray-200 dark:border-gray-800 pt-8">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t("reviews.title")} ({stats.count})</h2>
+    <section className="mt-12 border-t border-border pt-8">
+      <h2 className="text-2xl font-bold mb-6 text-foreground">{t("reviews.title")} ({stats.count})</h2>
       {/* Статистика оценок */}
       {stats.count > 0 && (
-        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg border border-border">
           <div className="flex items-center gap-4 mb-4">
             <div>
-              <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{stats.averageRating}</div>
+              <div className="text-4xl font-bold text-foreground">{stats.averageRating}</div>
               <RatingDisplay rating={stats.averageRating} showLabel={false} />
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {getBasedOnLabel(stats.count)}
               </p>
             </div>
@@ -179,30 +179,30 @@ export default function Reviews({ productId }: ReviewsProps) {
           {t("reviews.write")}
         </Button>
       ) : (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6">
-          <h3 className="font-bold mb-4 text-gray-900 dark:text-gray-100">{t("reviews.your")}</h3>
+        <div className="bg-white dark:bg-gray-900 border border-border rounded-lg p-6 mb-6">
+          <h3 className="font-bold mb-4 text-foreground">{t("reviews.your")}</h3>
           {submitted ? (
             <div className="text-center py-4 text-green-600">✓ {t("reviews.thankYou")}</div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t("reviews.name")}</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">{t("reviews.name")}</label>
                 <Input
                   type="text"
                   name="author"
                   value={formData.author}
                   onChange={handleChange}
                   placeholder={t("reviews.namePlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                  className="bg-white dark:bg-gray-800 border-border text-foreground"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t("reviews.rating")}</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">{t("reviews.rating")}</label>
                 <Select
                   value={String(formData.rating)}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, rating: parseInt(value, 10) }))}
                 >
-                  <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                  <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -215,25 +215,25 @@ export default function Reviews({ productId }: ReviewsProps) {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t("reviews.titleLabel")}</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">{t("reviews.titleLabel")}</label>
                 <Input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
                   placeholder={t("reviews.titlePlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                  className="bg-white dark:bg-gray-800 border-border text-foreground"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t("reviews.textLabel")}</label>
+                <label className="block text-sm font-medium mb-1 text-foreground">{t("reviews.textLabel")}</label>
                 <Textarea
                   name="text"
                   value={formData.text}
                   onChange={handleChange}
                   placeholder={t("reviews.textPlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                  className="bg-white dark:bg-gray-800 border-border text-foreground"
                   rows={4}
                   required
                 />
@@ -252,27 +252,27 @@ export default function Reviews({ productId }: ReviewsProps) {
       <div className="space-y-4">
         {productReviews.length > 0 ? (
           productReviews.map((review) => (
-            <div key={review.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-white dark:bg-gray-900">
+            <div key={review.id} className="border border-border rounded-lg p-4 bg-white dark:bg-gray-900">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <RatingDisplay rating={review.rating} showLabel={false} />
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{review.title}</span>
+                    <span className="font-medium text-foreground">{review.title}</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{review.author}</p>
+                  <p className="text-sm text-muted-foreground">{review.author}</p>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(review.createdAt, getLocaleFromLanguage(language))}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(review.createdAt, getLocaleFromLanguage(language))}</p>
               </div>
               <p className="text-gray-700 dark:text-gray-200 mb-3">{review.text}</p>
               <button
                 onClick={() => void handleHelpful(review.id)}
-                className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                className="text-sm text-muted-foreground hover:text-primary dark:hover:text-indigo-400"
               >
                 👍 {t("reviews.helpful")} ({review.helpful})
               </button>
               {review.adminReply && (
-                <div className="mt-4 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
-                  <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1.5">
+                <div className="mt-4 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
+                  <p className="text-xs font-semibold text-indigo-700 dark:text-primary mb-1.5">
                     Ответ магазина
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
@@ -286,7 +286,7 @@ export default function Reviews({ productId }: ReviewsProps) {
             </div>
           ))
         ) : (
-          <p className="text-gray-600 dark:text-gray-300 text-center py-4">{t("reviews.empty")}</p>
+          <p className="text-muted-foreground text-center py-4">{t("reviews.empty")}</p>
         )}
       </div>
     </section>

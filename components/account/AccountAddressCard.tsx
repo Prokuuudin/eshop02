@@ -62,13 +62,13 @@ export default function AccountAddressCard({
             <MapPin className="h-3.5 w-3.5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-semibold text-foreground">
               {addressItem.firstName} {addressItem.lastName}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+            <p className="text-sm text-muted-foreground truncate">
               {addressItem.address}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-muted-foreground">
               {addressItem.city}{addressItem.postalCode ? `, ${addressItem.postalCode}` : ''}
             </p>
             {addressItem.phone && (
@@ -83,7 +83,7 @@ export default function AccountAddressCard({
         <div className="flex flex-wrap items-center gap-1 border-t border-gray-100 pt-2 dark:border-gray-800">
           <Link
             href={checkoutHref}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40 transition-colors"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-indigo-50 dark:text-primary dark:hover:bg-indigo-950/40 transition-colors"
           >
             <ShoppingCart className="h-3.5 w-3.5" />
             {labels.useAddress}

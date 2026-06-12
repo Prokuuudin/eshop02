@@ -130,7 +130,7 @@ export default function BulkPricePage() {
         <AdminGate access="full">
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Массовый редактор цен
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
@@ -244,22 +244,22 @@ export default function BulkPricePage() {
                                             className="h-4 w-4 rounded"
                                         />
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Товар
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Бренд
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Категория
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">
                                         Текущая цена
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">
                                         Новая цена
                                     </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">
                                         Остаток
                                     </th>
                                 </tr>
@@ -296,10 +296,10 @@ export default function BulkPricePage() {
                                                     <div className="text-xs text-gray-400">{p.sku}</div>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                                            <td className="px-4 py-3 text-muted-foreground">
                                                 {p.brand}
                                             </td>
-                                            <td className="px-4 py-3 capitalize text-gray-600 dark:text-gray-400">
+                                            <td className="px-4 py-3 capitalize text-muted-foreground">
                                                 {p.category}
                                             </td>
                                             <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
@@ -322,7 +322,7 @@ export default function BulkPricePage() {
                                                     <span className="text-gray-300 dark:text-gray-600">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
+                                            <td className="px-4 py-3 text-right text-muted-foreground">
                                                 {p.stock}
                                             </td>
                                         </tr>

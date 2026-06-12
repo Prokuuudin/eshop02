@@ -417,10 +417,10 @@ export default function AdminBannersPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Баннеры и блоки
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Управление промо-баннерами и контентными блоками главной страницы.
             </p>
           </div>
@@ -446,7 +446,7 @@ export default function AdminBannersPage() {
         )}
 
         {loading ? (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-8 text-center text-sm text-muted-foreground">
             Загрузка...
           </div>
         ) : (
@@ -467,17 +467,17 @@ export default function AdminBannersPage() {
               {/* Banner form */}
               {showBannerForm && (
                 <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-900 p-5 space-y-4">
-                  <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  <h2 className="text-base font-semibold text-foreground">
                     {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
                   </h2>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Тип</label>
+                      <label className="text-xs text-muted-foreground">Тип</label>
                       <select
                         value={bannerForm.type}
                         onChange={(e) => setBannerForm((f) => ({ ...f, type: e.target.value as BannerType }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(BANNER_TYPE_LABELS) as BannerType[]).map((t) => (
                           <option key={t} value={t}>{BANNER_TYPE_LABELS[t]}</option>
@@ -486,7 +486,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Заголовок *</label>
+                      <label className="text-xs text-muted-foreground">Заголовок *</label>
                       <Input
                         value={bannerForm.title}
                         onChange={(e) => setBannerForm((f) => ({ ...f, title: e.target.value }))}
@@ -495,7 +495,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Подзаголовок</label>
+                      <label className="text-xs text-muted-foreground">Подзаголовок</label>
                       <Input
                         value={bannerForm.subtitle}
                         onChange={(e) => setBannerForm((f) => ({ ...f, subtitle: e.target.value }))}
@@ -504,7 +504,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Изображение (src)</label>
+                      <label className="text-xs text-muted-foreground">Изображение (src)</label>
                       <Input
                         value={bannerForm.image}
                         onChange={(e) => setBannerForm((f) => ({ ...f, image: e.target.value }))}
@@ -513,7 +513,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Загрузить изображение</label>
+                      <label className="text-xs text-muted-foreground">Загрузить изображение</label>
                       <Input
                         type="file"
                         accept="image/*"
@@ -527,13 +527,13 @@ export default function AdminBannersPage() {
                         <img
                           src={bannerForm.image}
                           alt="Превью баннера"
-                          className="h-32 w-full rounded-md border border-gray-200 dark:border-gray-700 object-cover bg-gray-50 dark:bg-gray-800"
+                          className="h-32 w-full rounded-md border border-border object-cover bg-gray-50 dark:bg-gray-800"
                         />
                       </div>
                     )}
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Ссылка (href)</label>
+                      <label className="text-xs text-muted-foreground">Ссылка (href)</label>
                       <Input
                         value={bannerForm.link}
                         onChange={(e) => setBannerForm((f) => ({ ...f, link: e.target.value }))}
@@ -542,7 +542,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Текст кнопки CTA</label>
+                      <label className="text-xs text-muted-foreground">Текст кнопки CTA</label>
                       <Input
                         value={bannerForm.ctaLabel}
                         onChange={(e) => setBannerForm((f) => ({ ...f, ctaLabel: e.target.value }))}
@@ -551,11 +551,11 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Стиль кнопки</label>
+                      <label className="text-xs text-muted-foreground">Стиль кнопки</label>
                       <select
                         value={bannerForm.ctaStyle}
                         onChange={(e) => setBannerForm((f) => ({ ...f, ctaStyle: e.target.value as CtaStyle }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(CTA_STYLE_LABELS) as CtaStyle[]).map((s) => (
                           <option key={s} value={s}>{CTA_STYLE_LABELS[s]}</option>
@@ -564,11 +564,11 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Цвет текста</label>
+                      <label className="text-xs text-muted-foreground">Цвет текста</label>
                       <select
                         value={bannerForm.textColor}
                         onChange={(e) => setBannerForm((f) => ({ ...f, textColor: e.target.value as TextColor }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         <option value="dark">Тёмный</option>
                         <option value="light">Светлый</option>
@@ -576,13 +576,13 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Цвет фона</label>
+                      <label className="text-xs text-muted-foreground">Цвет фона</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={bannerForm.bgColor}
                           onChange={(e) => setBannerForm((f) => ({ ...f, bgColor: e.target.value }))}
-                          className="h-9 w-14 rounded border border-gray-300 dark:border-gray-700 cursor-pointer"
+                          className="h-9 w-14 rounded border border-border cursor-pointer"
                         />
                         <Input
                           value={bannerForm.bgColor}
@@ -594,11 +594,11 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Активен</label>
+                      <label className="text-xs text-muted-foreground">Активен</label>
                       <select
                         value={bannerForm.active ? 'yes' : 'no'}
                         onChange={(e) => setBannerForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         <option value="yes">Да — отображается на сайте</option>
                         <option value="no">Нет — скрыт</option>
@@ -619,7 +619,7 @@ export default function AdminBannersPage() {
 
               {/* Banner list */}
               {banners.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   Баннеров пока нет. Нажмите «+ Добавить баннер», чтобы создать первый.
                 </div>
               ) : (
@@ -629,8 +629,8 @@ export default function AdminBannersPage() {
                       key={banner.id}
                       className={`rounded-lg border bg-white dark:bg-gray-900 p-4 flex gap-3 items-start transition-opacity ${
                         banner.active
-                          ? 'border-gray-200 dark:border-gray-700'
-                          : 'border-gray-200 dark:border-gray-700 opacity-50'
+                          ? 'border-border'
+                          : 'border-border opacity-50'
                       }`}
                     >
                       {/* Preview thumbnail */}
@@ -652,10 +652,10 @@ export default function AdminBannersPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <span className="text-sm font-semibold text-foreground truncate">
                             {banner.title}
                           </span>
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-muted-foreground">
                             {BANNER_TYPE_LABELS[banner.type]}
                           </span>
                           <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
@@ -667,7 +667,7 @@ export default function AdminBannersPage() {
                           </span>
                         </div>
                         {banner.subtitle && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{banner.subtitle}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{banner.subtitle}</p>
                         )}
                         {banner.link && (
                           <p className="text-xs text-indigo-500 mt-0.5 truncate">{banner.link}</p>
@@ -728,17 +728,17 @@ export default function AdminBannersPage() {
               {/* Block form */}
               {showBlockForm && (
                 <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-900 p-5 space-y-4">
-                  <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  <h2 className="text-base font-semibold text-foreground">
                     {editingBlockId ? 'Редактировать блок' : 'Новый контентный блок'}
                   </h2>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Тип блока</label>
+                      <label className="text-xs text-muted-foreground">Тип блока</label>
                       <select
                         value={blockForm.type}
                         onChange={(e) => setBlockForm((f) => ({ ...f, type: e.target.value as BlockType }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(BLOCK_TYPE_LABELS) as BlockType[]).map((t) => (
                           <option key={t} value={t}>{BLOCK_TYPE_LABELS[t]}</option>
@@ -747,7 +747,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Заголовок *</label>
+                      <label className="text-xs text-muted-foreground">Заголовок *</label>
                       <Input
                         value={blockForm.title}
                         onChange={(e) => setBlockForm((f) => ({ ...f, title: e.target.value }))}
@@ -756,7 +756,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Подзаголовок</label>
+                      <label className="text-xs text-muted-foreground">Подзаголовок</label>
                       <Input
                         value={blockForm.subtitle}
                         onChange={(e) => setBlockForm((f) => ({ ...f, subtitle: e.target.value }))}
@@ -765,7 +765,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Текст / HTML-контент</label>
+                      <label className="text-xs text-muted-foreground">Текст / HTML-контент</label>
                       <Textarea
                         value={blockForm.content}
                         onChange={(e) => setBlockForm((f) => ({ ...f, content: e.target.value }))}
@@ -775,7 +775,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Иконка (emoji или путь)</label>
+                      <label className="text-xs text-muted-foreground">Иконка (emoji или путь)</label>
                       <Input
                         value={blockForm.icon}
                         onChange={(e) => setBlockForm((f) => ({ ...f, icon: e.target.value }))}
@@ -784,13 +784,13 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Цвет фона</label>
+                      <label className="text-xs text-muted-foreground">Цвет фона</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
                           value={blockForm.bgColor}
                           onChange={(e) => setBlockForm((f) => ({ ...f, bgColor: e.target.value }))}
-                          className="h-9 w-14 rounded border border-gray-300 dark:border-gray-700 cursor-pointer"
+                          className="h-9 w-14 rounded border border-border cursor-pointer"
                         />
                         <Input
                           value={blockForm.bgColor}
@@ -802,7 +802,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Ссылка (href)</label>
+                      <label className="text-xs text-muted-foreground">Ссылка (href)</label>
                       <Input
                         value={blockForm.link}
                         onChange={(e) => setBlockForm((f) => ({ ...f, link: e.target.value }))}
@@ -811,7 +811,7 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Текст ссылки</label>
+                      <label className="text-xs text-muted-foreground">Текст ссылки</label>
                       <Input
                         value={blockForm.linkLabel}
                         onChange={(e) => setBlockForm((f) => ({ ...f, linkLabel: e.target.value }))}
@@ -820,11 +820,11 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-gray-600 dark:text-gray-400">Активен</label>
+                      <label className="text-xs text-muted-foreground">Активен</label>
                       <select
                         value={blockForm.active ? 'yes' : 'no'}
                         onChange={(e) => setBlockForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
                       >
                         <option value="yes">Да — отображается на сайте</option>
                         <option value="no">Нет — скрыт</option>
@@ -845,7 +845,7 @@ export default function AdminBannersPage() {
 
               {/* Blocks list */}
               {blocks.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   Блоков пока нет. Нажмите «+ Добавить блок», чтобы создать первый.
                 </div>
               ) : (
@@ -855,13 +855,13 @@ export default function AdminBannersPage() {
                       key={block.id}
                       className={`rounded-lg border bg-white dark:bg-gray-900 p-4 flex gap-3 items-start transition-opacity ${
                         block.active
-                          ? 'border-gray-200 dark:border-gray-700'
-                          : 'border-gray-200 dark:border-gray-700 opacity-50'
+                          ? 'border-border'
+                          : 'border-border opacity-50'
                       }`}
                     >
                       {/* Color swatch + icon */}
                       <div
-                        className="h-12 w-12 rounded flex-shrink-0 flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700"
+                        className="h-12 w-12 rounded flex-shrink-0 flex items-center justify-center text-xl border border-border"
                         style={{ backgroundColor: block.bgColor }}
                       >
                         {block.icon || '▪'}
@@ -870,10 +870,10 @@ export default function AdminBannersPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <span className="text-sm font-semibold text-foreground truncate">
                             {block.title}
                           </span>
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-muted-foreground">
                             {BLOCK_TYPE_LABELS[block.type]}
                           </span>
                           <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
@@ -885,7 +885,7 @@ export default function AdminBannersPage() {
                           </span>
                         </div>
                         {block.subtitle && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{block.subtitle}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{block.subtitle}</p>
                         )}
                         {block.content && (
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{block.content}</p>

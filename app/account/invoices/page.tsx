@@ -57,7 +57,7 @@ export default function InvoicesPage() {
       value: String(stats.totalIssued),
       helpText: formatPrice(stats.remainingAmount),
       icon: ReceiptText,
-      valueClassName: 'text-gray-900 dark:text-gray-100'
+      valueClassName: 'text-foreground'
     },
     {
       label: t('account.invoices.statPaid'),
@@ -78,7 +78,7 @@ export default function InvoicesPage() {
       value: String(invoices.length),
       helpText: formatPrice(stats.totalAmount),
       icon: FileSpreadsheet,
-      valueClassName: 'text-gray-900 dark:text-gray-100'
+      valueClassName: 'text-foreground'
     }
   ]
 
@@ -133,10 +133,10 @@ export default function InvoicesPage() {
 
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('account.invoices.howToAccess')}</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t('account.invoices.howToAccess')}</h3>
               <Building2 className="h-5 w-5 text-gray-400" />
             </div>
-            <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+            <div className="mt-4 space-y-3 text-sm text-muted-foreground">
               <p>{t('account.invoices.howToAccessStep1')}</p>
               <p>{t('account.invoices.howToAccessStep2')}</p>
               <p>{t('account.invoices.howToAccessStep3')}</p>
@@ -210,14 +210,14 @@ export default function InvoicesPage() {
             <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{card.label}</p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{card.label}</p>
                   <p className={`mt-3 text-2xl font-bold ${card.valueClassName}`}>{card.value}</p>
                 </div>
                 <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
-              <p className="mt-3 text-xs text-gray-500 dark:text-gray-300">{card.helpText}</p>
+              <p className="mt-3 text-xs text-muted-foreground">{card.helpText}</p>
             </div>
           )
         })}
@@ -228,8 +228,8 @@ export default function InvoicesPage() {
           <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('account.invoices.allInvoices')}</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('account.invoices.selectHint')}</p>
+                <h2 className="text-xl font-bold text-foreground">{t('account.invoices.allInvoices')}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t('account.invoices.selectHint')}</p>
               </div>
               <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                 <CreditCard className="h-4 w-4" />
@@ -247,33 +247,33 @@ export default function InvoicesPage() {
           {company && (
             <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('account.invoices.sectionCompany')}</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t('account.invoices.sectionCompany')}</h3>
                 <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                   <Building2 className="h-4 w-4" />
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div>
-                    <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldName')}</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{company.companyName}</p>
+                    <p className="text-muted-foreground">{t('account.invoices.fieldName')}</p>
+                    <p className="font-medium text-foreground">{company.companyName}</p>
                   </div>
                   {company.taxId && (
                     <div>
-                      <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldTaxId')}</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{company.taxId}</p>
+                      <p className="text-muted-foreground">{t('account.invoices.fieldTaxId')}</p>
+                      <p className="font-medium text-foreground">{company.taxId}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400">{t('account.invoices.fieldPaymentTerms')}</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{t('account.invoices.fieldPaymentTermsDays', undefined, { days: String(company.paymentTermDays) })}</p>
+                    <p className="text-muted-foreground">{t('account.invoices.fieldPaymentTerms')}</p>
+                    <p className="font-medium text-foreground">{t('account.invoices.fieldPaymentTermsDays', undefined, { days: String(company.paymentTermDays) })}</p>
                 </div>
                 {company.creditLimit && (
                   <div>
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-gray-600 dark:text-gray-400">Кредитный лимит</p>
+                      <p className="text-muted-foreground">Кредитный лимит</p>
                       <CircleDollarSign className="h-4 w-4 text-gray-400" />
                     </div>
-                    <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                    <p className="mt-1 font-medium text-foreground">
                       {formatPrice(company.creditLimit)}
                     </p>
                     <div className="mt-3 h-2 rounded bg-gray-100 dark:bg-gray-700">
@@ -284,7 +284,7 @@ export default function InvoicesPage() {
                         }}
                       />
                     </div>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {formatPrice(company.usedCredit)} из {formatPrice(company.creditLimit)} использовано
                     </p>
                   </div>

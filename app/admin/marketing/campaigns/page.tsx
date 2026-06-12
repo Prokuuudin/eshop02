@@ -163,7 +163,7 @@ export default function AdminCampaignsPage() {
     await load()
   }
 
-  const selectCls = 'w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm'
+  const selectCls = 'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
 
   return (
     <AdminGate>
@@ -171,10 +171,10 @@ export default function AdminCampaignsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-1 inline-block">
+            <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
               ← Назад в админку
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Промо-кампании</h1>
+            <h1 className="text-2xl font-bold text-foreground">Промо-кампании</h1>
           </div>
           {!showForm && (
             <Button onClick={openCreate}>+ Новая кампания</Button>
@@ -189,13 +189,13 @@ export default function AdminCampaignsPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать кампанию' : 'Новая кампания'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Название *</span>
+                <span className="text-sm text-muted-foreground">Название *</span>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -203,7 +203,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Описание</span>
+                <span className="text-sm text-muted-foreground">Описание</span>
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -212,7 +212,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Тип</span>
+                <span className="text-sm text-muted-foreground">Тип</span>
                 <select
                   value={form.type}
                   onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as CampaignType }))}
@@ -225,7 +225,7 @@ export default function AdminCampaignsPage() {
                 </select>
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Скидка, %</span>
+                <span className="text-sm text-muted-foreground">Скидка, %</span>
                 <Input
                   type="number"
                   min={0}
@@ -235,7 +235,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Дата начала</span>
+                <span className="text-sm text-muted-foreground">Дата начала</span>
                 <Input
                   type="date"
                   value={form.startDate}
@@ -243,7 +243,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Дата окончания</span>
+                <span className="text-sm text-muted-foreground">Дата окончания</span>
                 <Input
                   type="date"
                   value={form.endDate}
@@ -251,7 +251,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Мин. сумма заказа, €</span>
+                <span className="text-sm text-muted-foreground">Мин. сумма заказа, €</span>
                 <Input
                   type="number"
                   min={0}
@@ -260,7 +260,7 @@ export default function AdminCampaignsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Статус</span>
+                <span className="text-sm text-muted-foreground">Статус</span>
                 <select
                   value={form.active ? 'true' : 'false'}
                   onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}
@@ -271,7 +271,7 @@ export default function AdminCampaignsPage() {
                 </select>
               </label>
               <div className="space-y-2 sm:col-span-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400 block">Категории товаров (пусто = все)</span>
+                <span className="text-sm text-muted-foreground block">Категории товаров (пусто = все)</span>
                 <div className="flex flex-wrap gap-3">
                   {CATEGORIES.map((cat) => (
                     <label key={cat.value} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -298,10 +298,10 @@ export default function AdminCampaignsPage() {
 
         {/* List */}
         {loading ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Загрузка...</p>
+          <p className="text-muted-foreground text-sm">Загрузка...</p>
         ) : items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Кампаний пока нет.</p>
+          <div className="rounded-xl border border-dashed border-border p-12 text-center">
+            <p className="text-muted-foreground text-sm">Кампаний пока нет.</p>
             <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Нажмите «+ Новая кампания», чтобы создать первую.</p>
           </div>
         ) : (
@@ -311,23 +311,23 @@ export default function AdminCampaignsPage() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5"
+                  className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{item.name}</h3>
+                        <h3 className="font-semibold text-foreground">{item.name}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
                           {status.label}
                         </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary font-medium">
                           {TYPE_LABELS[item.type]}
                         </span>
                       </div>
                       {item.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
                       )}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
                         {item.discountPercent > 0 && <span>Скидка: {item.discountPercent}%</span>}
                         <span>С {new Date(item.startDate).toLocaleDateString('ru-RU')}</span>
                         {item.endDate && <span>по {new Date(item.endDate).toLocaleDateString('ru-RU')}</span>}

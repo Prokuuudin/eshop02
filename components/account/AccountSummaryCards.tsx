@@ -22,10 +22,10 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({ summaryCards 
                 >
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                                 {card.title}
                             </p>
-                            <p className="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
+                            <p className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
                                 {card.value}
                             </p>
                         </div>
@@ -33,7 +33,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({ summaryCards 
                             <Icon className="h-4 w-4" />
                         </div>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">{card.caption}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{card.caption}</p>
                 </div>
             );
         })}

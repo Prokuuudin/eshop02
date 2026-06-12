@@ -42,10 +42,10 @@ export default function ForceChangePasswordModal() {
                         <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                        <h2 className="text-base font-semibold text-foreground">
                             Пожалуйста, замените пароль
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                             Придумайте новый пароль для входа в кабинет
                         </p>
                     </div>

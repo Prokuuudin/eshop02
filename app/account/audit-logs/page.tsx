@@ -26,8 +26,8 @@ export default function AuditLogsPage() {
   if (!user?.companyId) {
     return (
       <main className="max-w-6xl mx-auto px-4 py-12">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center bg-gray-50 dark:bg-gray-800">
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
+        <div className="rounded-lg border border-border p-12 text-center bg-gray-50 dark:bg-gray-800">
+          <p className="text-lg text-muted-foreground mb-4">
             {t('account.auditLog.companyOnly')}
           </p>
           <Button onClick={() => router.push('/account')}>
@@ -43,11 +43,11 @@ export default function AuditLogsPage() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-3xl font-bold text-foreground">
           {t('account.auditLog.pageTitle')}
         </h1>
         {company && (
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             {company.companyName} (ID: {company.companyId})
           </p>
         )}

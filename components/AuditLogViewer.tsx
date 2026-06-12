@@ -40,7 +40,7 @@ const ACTION_COLORS: Record<string, string> = {
   'access_request_approved': 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300',
   'access_request_rejected': 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300',
   'settings_updated': 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300',
-  'api_call': 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300',
+  'api_call': 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-primary',
   'bulk_import': 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300',
 }
 
@@ -92,11 +92,11 @@ export default function AuditLogViewer({
 
   if (allEntries.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.auditLog.title')}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           {t('account.auditLog.empty')}
         </p>
       </Card>
@@ -104,8 +104,8 @@ export default function AuditLogViewer({
   }
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.auditLog.titleWithCount', undefined, { count: allEntries.length })}
       </h3>
 
@@ -117,7 +117,7 @@ export default function AuditLogViewer({
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               filterType === 'all'
                 ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                : 'bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             {t('account.auditLog.filter.all')}
@@ -128,7 +128,7 @@ export default function AuditLogViewer({
           <select
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
-            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground"
           >
             <option value="">{t('account.auditLog.filter.allActions')}</option>
             {actionTypes.map(action => (
@@ -140,7 +140,7 @@ export default function AuditLogViewer({
         ) : (
           <button
             onClick={() => { setFilterType('action'); setFilterValue('') }}
-            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {t('account.auditLog.filter.byActions')}
           </button>
@@ -152,12 +152,12 @@ export default function AuditLogViewer({
             placeholder={t('account.auditLog.filter.userSearchPlaceholder')}
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
-            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground"
           />
         ) : (
           <button
             onClick={() => { setFilterType('user'); setFilterValue('') }}
-            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {t('account.auditLog.filter.byUser')}
           </button>
@@ -175,28 +175,28 @@ export default function AuditLogViewer({
             return (
           <div
             key={entry.id}
-            className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-lg border border-border bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
           >
             <div className="flex items-start gap-3">
               <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
-                ACTION_COLORS[entry.action] || 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                ACTION_COLORS[entry.action] || 'bg-gray-200 dark:bg-gray-700 text-foreground'
               }`}>
                 {getActionLabel(entry.action)}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p className="text-sm font-medium text-foreground">
                     {entry.userName || entry.userId}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(new Date(entry.timestamp), locale)}
                   </p>
                 </div>
 
                 {description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {description}
                   </p>
                 )}
@@ -210,7 +210,7 @@ export default function AuditLogViewer({
             {/* Expanded details */}
             {expandedId === entry.id && entry.details && (
               <div className="mt-3 p-3 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600">
-                <p className="text-xs font-mono text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words">
+                <p className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words">
                   {JSON.stringify(entry.details, null, 2)}
                 </p>
               </div>
@@ -222,12 +222,12 @@ export default function AuditLogViewer({
       </div>
 
       {filteredEntries.length === 0 && allEntries.length > 0 && (
-        <p className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
+        <p className="text-center text-muted-foreground text-sm py-4">
           {t('account.auditLog.noFilterMatches')}
         </p>
       )}
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+      <p className="text-xs text-muted-foreground mt-4 text-center">
         {t('account.auditLog.shownOfTotal', undefined, { shown: filteredEntries.length, total: allEntries.length })}
       </p>
     </Card>

@@ -176,7 +176,7 @@ export default function UserMenu() {
                                     alt={user.name || 'avatar'}
                                     width={28}
                                     height={28}
-                                    className="rounded-full object-cover w-7 h-7 border border-gray-300 dark:border-gray-700 bg-white"
+                                    className="rounded-full object-cover w-7 h-7 border border-border bg-white"
                                 />
                             ) : (
                                 <svg
@@ -202,7 +202,7 @@ export default function UserMenu() {
                                     />
                                 </svg>
                             )}
-                            <span className="text-sm font-medium hidden sm:inline text-gray-900 dark:text-gray-100">
+                            <span className="text-sm font-medium hidden sm:inline text-foreground">
                                 {user.name || user.email.split('@')[0]}
                             </span>
                         </button>
@@ -214,20 +214,20 @@ export default function UserMenu() {
             {isOpen && dropPos && (
                 <div
                     style={{ position: 'fixed', top: dropPos.top, left: dropPos.left }}
-                    className="w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[10002]"
+                    className="w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-border z-[10002]"
                 >
                     <nav className="py-2">
                         <Link
                             href="/account"
                             onClick={() => setIsOpen(false)}
-                            className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                            className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-foreground"
                         >
                             {canAccessAdminPanel(user) ? t('nav.dashboard', 'Дашборд') : t('account.title')}
                         </Link>
                         <Link
                             href="/account/profile"
                             onClick={() => setIsOpen(false)}
-                            className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                            className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-foreground"
                         >
                             {canAccessAdminPanel(user) ? t('account.profile', 'Профиль') : t('account.myProfile', 'Мой профиль')}
                         </Link>
@@ -235,13 +235,13 @@ export default function UserMenu() {
                             <Link
                                 href="/admin"
                                 onClick={() => setIsOpen(false)}
-                                className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
+                                className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-foreground"
                             >
                                 {t('nav.admin')}
                             </Link>
                         )}
                     </nav>
-                    <div className="border-t px-4 py-2 border-gray-200 dark:border-gray-700">
+                    <div className="border-t px-4 py-2 border-border">
                         <Button
                             onClick={handleLogout}
                             variant="outline"

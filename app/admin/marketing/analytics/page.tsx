@@ -91,19 +91,19 @@ export default function AdminMarketingAnalyticsPage() {
       <main className="w-full py-4 space-y-6">
         {/* Header */}
         <div>
-          <Link href="/admin" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-1 inline-block">
+          <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
             ← Назад в админку
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Аналитика продвижения</h1>
+          <h1 className="text-2xl font-bold text-foreground">Аналитика продвижения</h1>
         </div>
 
         {promoOrders.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center space-y-2">
-            <p className="text-gray-500 dark:text-gray-400 font-medium">Заказов с промокодами пока нет</p>
+          <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-2">
+            <p className="text-muted-foreground font-medium">Заказов с промокодами пока нет</p>
             <p className="text-gray-400 dark:text-gray-500 text-sm">
               Когда покупатели начнут использовать промокоды при оформлении заказов, здесь появится статистика.
             </p>
-            <Link href="/admin/marketing/discounts" className="inline-block mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+            <Link href="/admin/marketing/discounts" className="inline-block mt-2 text-sm text-primary hover:underline">
               Управление промокодами →
             </Link>
           </div>
@@ -111,35 +111,35 @@ export default function AdminMarketingAnalyticsPage() {
           <>
             {/* Stats cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Заказов с промокодом</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalWithPromo}</p>
+              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+                <p className="text-xs text-muted-foreground mb-1">Заказов с промокодом</p>
+                <p className="text-3xl font-bold text-foreground">{stats.totalWithPromo}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">из {stats.totalOrders} всего</p>
               </div>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Сумма скидок</p>
-                <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{formatEur(stats.totalDiscounts)}</p>
+              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+                <p className="text-xs text-muted-foreground mb-1">Сумма скидок</p>
+                <p className="text-3xl font-bold text-primary">{formatEur(stats.totalDiscounts)}</p>
               </div>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Средняя скидка</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.avgDiscount.toFixed(1)}%</p>
+              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+                <p className="text-xs text-muted-foreground mb-1">Средняя скидка</p>
+                <p className="text-3xl font-bold text-foreground">{stats.avgDiscount.toFixed(1)}%</p>
               </div>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Конверсия промо</p>
+              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+                <p className="text-xs text-muted-foreground mb-1">Конверсия промо</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.conversionRate.toFixed(1)}%</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">заказов используют промокод</p>
               </div>
             </div>
 
             {/* Code usage table */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Использование промокодов</h2>
+            <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="font-semibold text-foreground">Использование промокодов</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50">
+                    <tr className="text-left text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800/50">
                       <th className="px-5 py-3 font-medium">Код</th>
                       <th className="px-5 py-3 font-medium">Использований</th>
                       <th className="px-5 py-3 font-medium">Общая скидка</th>
@@ -149,9 +149,9 @@ export default function AdminMarketingAnalyticsPage() {
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {codeStats.map((row) => (
                       <tr key={row.code} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                        <td className="px-5 py-3 font-mono font-semibold text-gray-900 dark:text-gray-100">{row.code}</td>
+                        <td className="px-5 py-3 font-mono font-semibold text-foreground">{row.code}</td>
                         <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{row.count}</td>
-                        <td className="px-5 py-3 text-indigo-600 dark:text-indigo-400 font-medium">{formatEur(row.totalDiscount)}</td>
+                        <td className="px-5 py-3 text-primary font-medium">{formatEur(row.totalDiscount)}</td>
                         <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{formatEur(row.avgOrder)}</td>
                       </tr>
                     ))}
@@ -162,9 +162,9 @@ export default function AdminMarketingAnalyticsPage() {
 
             {/* Categories */}
             {categoryStats.length > 0 && (
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">Покупки со скидкой по категориям</h2>
+              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="px-5 py-4 border-b border-border">
+                  <h2 className="font-semibold text-foreground">Покупки со скидкой по категориям</h2>
                 </div>
                 <div className="p-5 space-y-3">
                   {categoryStats.map((row) => {
@@ -174,11 +174,11 @@ export default function AdminMarketingAnalyticsPage() {
                       <div key={row.cat} className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-700 dark:text-gray-300 font-medium">{row.label}</span>
-                          <span className="text-gray-500 dark:text-gray-400">{row.count} ед. &middot; {formatEur(row.totalDiscount)}</span>
+                          <span className="text-muted-foreground">{row.count} ед. &middot; {formatEur(row.totalDiscount)}</span>
                         </div>
                         <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-indigo-500 dark:bg-indigo-600 rounded-full transition-all"
+                            className="h-full bg-indigo-500 dark:bg-primary rounded-full transition-all"
                             style={{ width: `${widthPct}%` }}
                           />
                         </div>
@@ -190,21 +190,21 @@ export default function AdminMarketingAnalyticsPage() {
             )}
 
             {/* Recent promo orders */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="font-semibold text-gray-900 dark:text-gray-100">Последние заказы с промокодом</h2>
+            <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="font-semibold text-foreground">Последние заказы с промокодом</h2>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {recentPromoOrders.map((order) => (
                   <div key={order.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/30">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{order.id}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
                       <span className="text-sm text-gray-700 dark:text-gray-300">{order.email}</span>
                     </div>
                     <div className="flex items-center gap-4 flex-wrap text-sm">
-                      <span className="font-mono font-semibold text-indigo-600 dark:text-indigo-400">{order.promoCode}</span>
+                      <span className="font-mono font-semibold text-primary">{order.promoCode}</span>
                       <span className="text-red-600 dark:text-red-400 font-medium">-{formatEur(order.discount || 0)}</span>
-                      <span className="text-gray-500 dark:text-gray-400 text-xs">
+                      <span className="text-muted-foreground text-xs">
                         {new Date(order.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                       </span>
                     </div>

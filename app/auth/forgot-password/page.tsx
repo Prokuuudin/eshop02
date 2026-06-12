@@ -11,17 +11,17 @@ export default function ForgotPasswordPage() {
   return (
     <main className="w-full px-4 py-12">
       <div className="max-w-md mx-auto rounded-lg border bg-white dark:bg-gray-900 p-6">
-        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-bold mb-2 text-foreground">
           {t('auth.resetPassword')}
         </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+        <p className="text-sm text-muted-foreground mb-5">
           {t('auth.resetPasswordHint')}
         </p>
 
         <ForgotPasswordForm />
 
         <div className="mt-5 text-sm text-center">
-          <Link href="/auth/login" className="text-indigo-600 hover:underline">
+          <Link href="/auth/login" className="text-primary hover:underline">
             {t('auth.login')}
           </Link>
         </div>

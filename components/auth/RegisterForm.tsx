@@ -77,11 +77,11 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Имя */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.name', 'Имя')}
                 </label>
                 <Input
-                    className="register-form__input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                    className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -91,11 +91,11 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Номер карты */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.clientCardNumber', 'Номер карты клиента')}
                 </label>
                 <Input
-                    className="register-form__input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                    className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border"
                     type="text"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
@@ -108,12 +108,12 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Пароль */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.password', 'Пароль')}
                 </label>
                 <div className="register-form__password-wrapper relative flex items-center">
                     <Input
-                        className="register-form__input bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10"
+                        className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border pr-10"
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -123,7 +123,7 @@ export default function RegisterForm({ onClose }: Props) {
                     />
                     <button
                         type="button"
-                        className="register-form__password-toggle absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                        className="register-form__password-toggle absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                         tabIndex={-1}
                         onClick={() => setShowPassword((v) => !v)}
                         aria-label={showPassword ? t('account.hidePassword') : t('account.showPassword')}
@@ -134,21 +134,21 @@ export default function RegisterForm({ onClose }: Props) {
             </div>
 
             <div className="register-form__card-hint space-y-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                     <span className="text-gray-400 dark:text-gray-500 mr-0.5">*</span>
                     Есть карта, но нет пароля? Свяжитесь с нами:
                 </p>
                 <div className="flex gap-2">
                     <a
                         href="tel:+37127067730"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-primary dark:hover:text-indigo-400 transition-colors"
                     >
                         <Phone className="w-3 h-3" />
                         +371 27067730
                     </a>
                     <a
                         href="mailto:office@miksplus.eu"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-primary dark:hover:text-indigo-400 transition-colors"
                     >
                         <Mail className="w-3 h-3" />
                         office@miksplus.eu

@@ -156,17 +156,17 @@ function AbcSection() {
             className={[
               'rounded-xl border p-4 text-left transition-colors cursor-pointer',
               filter === g
-                ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300',
+                ? 'border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20'
+                : 'border-border bg-white dark:bg-gray-900 hover:border-gray-300',
             ].join(' ')}
           >
             <div className="flex items-center gap-2 mb-2">
               <span className={`rounded-full px-2.5 py-0.5 text-sm font-bold ${GRADE_STYLES[g].badge}`}>
                 {g}
               </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">{counts[g]} товаров</span>
+              <span className="text-sm text-muted-foreground">{counts[g]} товаров</span>
             </div>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-xl font-bold text-foreground">
               {formatEuro(revenue[g], 'ru-RU')}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -181,18 +181,18 @@ function AbcSection() {
       </div>
 
       {/* Table */}
-      <div className="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="overflow-auto rounded-xl border border-border">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">#</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Товар</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Бренд</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Кол-во</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Выручка</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">% от итога</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Накопл. %</th>
-              <th className="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400">Группа</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">#</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Бренд</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Кол-во</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Выручка</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">% от итога</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Накопл. %</th>
+              <th className="px-4 py-3 text-center font-medium text-muted-foreground">Группа</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
@@ -202,17 +202,17 @@ function AbcSection() {
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/admin/products/${r.id}`}
-                    className="text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                    className="text-foreground hover:text-primary dark:hover:text-indigo-400 hover:underline"
                   >
                     {r.title}
                   </Link>
                 </td>
-                <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{r.brand}</td>
+                <td className="px-4 py-2.5 text-muted-foreground">{r.brand}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-gray-700 dark:text-gray-300">{r.qty}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums font-medium text-gray-900 dark:text-gray-100">
+                <td className="px-4 py-2.5 text-right tabular-nums font-medium text-foreground">
                   {formatEuro(r.revenue, 'ru-RU')}
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-gray-500 dark:text-gray-400">
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                   {(r.revenuePct * 100).toFixed(1)}%
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
@@ -303,14 +303,14 @@ function CohortSection() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Строки — месяц первой покупки когорты. Столбцы — месяцев с момента первой покупки.
           </p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
             М+0 = месяц первой покупки, М+1 = следующий месяц и т.д.
           </p>
         </div>
-        <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
+        <div className="flex rounded-lg border border-border p-0.5">
           {(['pct', 'count'] as const).map((m) => (
             <button
               key={m}
@@ -319,8 +319,8 @@ function CohortSection() {
               className={[
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 (m === 'pct') === showPct
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800',
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800',
               ].join(' ')}
             >
               {m === 'pct' ? '%' : '#'}
@@ -329,18 +329,18 @@ function CohortSection() {
         </div>
       </div>
 
-      <div className="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <div className="overflow-auto rounded-xl border border-border">
         <table className="text-xs border-collapse">
           <thead>
             <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap sticky left-0 bg-gray-50 dark:bg-gray-800 z-10 border-r border-gray-200 dark:border-gray-700">
+              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap sticky left-0 bg-gray-50 dark:bg-gray-800 z-10 border-r border-border">
                 Когорта
               </th>
-              <th className="px-3 py-2.5 text-center font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <th className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap">
                 Клиентов
               </th>
               {offsets.map((o) => (
-                <th key={o} className="px-3 py-2.5 text-center font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap min-w-[64px]">
+                <th key={o} className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap min-w-[64px]">
                   М+{o}
                 </th>
               ))}
@@ -353,10 +353,10 @@ function CohortSection() {
 
               return (
                 <tr key={cohort} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10 border-r border-gray-200 dark:border-gray-700">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10 border-r border-border">
                     {monthLabel(cohort)}
                   </td>
-                  <td className="px-3 py-2 text-center text-gray-600 dark:text-gray-400 font-medium">
+                  <td className="px-3 py-2 text-center text-muted-foreground font-medium">
                     {size}
                   </td>
                   {offsets.map((offset) => {
@@ -394,7 +394,7 @@ function CohortSection() {
           { label: '10–25%', cls: 'bg-emerald-100' },
           { label: '<10%', cls: 'bg-gray-50 border border-gray-200' },
         ].map((l) => (
-          <div key={l.label} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+          <div key={l.label} className="flex items-center gap-1.5 text-muted-foreground">
             <span className={`inline-block h-3 w-3 rounded-sm ${l.cls}`} />
             {l.label}
           </div>
@@ -487,7 +487,7 @@ function SeoSection() {
             ].join(' ')}
           >
             <p className={`text-2xl font-bold ${s.text}`}>{counts[s.key]}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.label}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
           </button>
         ))}
       </div>
@@ -499,26 +499,26 @@ function SeoSection() {
       )}
 
       {filtered.length > 0 && (
-        <div className="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="overflow-auto rounded-xl border border-border">
           <table className="min-w-full text-sm bg-white dark:bg-gray-900">
             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Товар</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Бренд / Категория</th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">metaTitle</th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">metaDescription</th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400">Фото</th>
-                <th className="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-400">Проблем</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400"></th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Бренд / Категория</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">metaTitle</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">metaDescription</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Фото</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Проблем</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {filtered.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-gray-100 max-w-xs">
+                  <td className="px-4 py-2.5 font-medium text-foreground max-w-xs">
                     <span className="truncate block">{p.title}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">
+                  <td className="px-4 py-2.5 text-muted-foreground">
                     <p>{p.brand}</p>
                     <p className="text-xs capitalize">{p.category}</p>
                   </td>
@@ -549,7 +549,7 @@ function SeoSection() {
                   <td className="px-4 py-2.5">
                     <Link
                       href={`/admin/products/${p.id}`}
-                      className="text-xs text-indigo-600 hover:underline dark:text-indigo-400 whitespace-nowrap"
+                      className="text-xs text-primary hover:underline dark:text-primary whitespace-nowrap"
                     >
                       Редактировать →
                     </Link>
@@ -574,7 +574,7 @@ function SeoSection() {
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 rounded-xl border border-gray-200 dark:border-gray-700">
+    <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 rounded-xl border border-border">
       {text}
     </div>
   )
@@ -599,19 +599,19 @@ export default function AdminAnalyticsPage() {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Аналитика каталога</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{active.desc}</p>
+            <h1 className="text-2xl font-bold text-foreground">Аналитика каталога</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{active.desc}</p>
           </div>
           <Link
             href="/admin"
-            className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+            className="text-sm text-primary hover:underline dark:text-primary"
           >
             ← Назад в админку
           </Link>
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-0">
+        <div className="flex flex-wrap gap-2 border-b border-border pb-0">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -620,7 +620,7 @@ export default function AdminAnalyticsPage() {
               className={[
                 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                 tab === t.value
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                  ? 'border-primary text-primary dark:border-indigo-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >

@@ -190,7 +190,7 @@ export default function AdminReturnsPage() {
   return (
     <main className="w-full py-4 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Возвраты и отмены</h1>
+        <h1 className="text-3xl font-bold text-foreground">Возвраты и отмены</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowCreate((v) => !v)}>
             {showCreate ? 'Отмена' : '+ Новый возврат'}
@@ -203,10 +203,10 @@ export default function AdminReturnsPage() {
 
       {/* Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div className="col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Сумма к возврату</p>
-          <p className="text-2xl font-bold mt-1 text-gray-900 dark:text-gray-100">{formatEuro(totalRefund, locale)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{returns.length} заявок всего</p>
+        <div className="col-span-2 rounded-xl border border-border bg-white dark:bg-gray-900 p-4">
+          <p className="text-xs text-muted-foreground">Сумма к возврату</p>
+          <p className="text-2xl font-bold mt-1 text-foreground">{formatEuro(totalRefund, locale)}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{returns.length} заявок всего</p>
         </div>
         {STATUS_LIST.map((s) => (
           <button
@@ -215,12 +215,12 @@ export default function AdminReturnsPage() {
             onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
             className={`rounded-xl border p-4 text-left transition-colors ${
               statusFilter === s
-                ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-900/20'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
+                ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-900/20'
+                : 'border-border bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
-            <p className="text-xs text-gray-500 dark:text-gray-400">{STATUS_LABELS[s]}</p>
-            <p className="text-2xl font-bold mt-1 text-gray-900 dark:text-gray-100">{statsByStatus[s] ?? 0}</p>
+            <p className="text-xs text-muted-foreground">{STATUS_LABELS[s]}</p>
+            <p className="text-2xl font-bold mt-1 text-foreground">{statsByStatus[s] ?? 0}</p>
           </button>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function AdminReturnsPage() {
       {/* Create form */}
       {showCreate && (
         <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-5 space-y-4">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Новая заявка на возврат</h2>
+          <h2 className="text-base font-semibold text-foreground">Новая заявка на возврат</h2>
 
           {/* Order lookup */}
           <div className="flex gap-2">
@@ -237,7 +237,7 @@ export default function AdminReturnsPage() {
               value={formOrderId}
               onChange={(e) => setFormOrderId(e.target.value)}
               placeholder="ID заказа (например ORD-...)"
-              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              className="flex-1 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
             />
             <Button size="sm" variant="outline" onClick={lookupOrder}>Найти заказ</Button>
           </div>
@@ -245,17 +245,17 @@ export default function AdminReturnsPage() {
           {formError && <p className="text-xs text-amber-700 dark:text-amber-400">{formError}</p>}
 
           {foundOrder && (
-            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm text-gray-700 dark:text-gray-300">
+            <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-3 text-sm text-gray-700 dark:text-gray-300">
               Найден заказ · {foundOrder.firstName} {foundOrder.lastName} · {formatEuro(foundOrder.total, locale)}
             </div>
           )}
 
           {/* Customer info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <input value={formFirstName} onChange={(e) => setFormFirstName(e.target.value)} placeholder="Имя *" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
-            <input value={formLastName} onChange={(e) => setFormLastName(e.target.value)} placeholder="Фамилия" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
-            <input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email *" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
-            <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Телефон" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
+            <input value={formFirstName} onChange={(e) => setFormFirstName(e.target.value)} placeholder="Имя *" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
+            <input value={formLastName} onChange={(e) => setFormLastName(e.target.value)} placeholder="Фамилия" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
+            <input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email *" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
+            <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Телефон" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
           </div>
 
           {/* Reason + refund */}
@@ -263,7 +263,7 @@ export default function AdminReturnsPage() {
             <select
               value={formReason}
               onChange={(e) => setFormReason(e.target.value as ReturnReason)}
-              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
             >
               {REASON_LIST.map((r) => (
                 <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
@@ -275,33 +275,33 @@ export default function AdminReturnsPage() {
               value={formRefund}
               onChange={(e) => setFormRefund(e.target.value)}
               placeholder="Сумма возврата (€) *"
-              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
             />
             <input
               value={formComment}
               onChange={(e) => setFormComment(e.target.value)}
               placeholder="Комментарий клиента"
-              className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
             />
           </div>
 
           {/* Items from order */}
           {formItems.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Возвращаемые товары</p>
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Возвращаемые товары</p>
+              <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
                 {formItems.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3 px-3 py-2.5">
                     {item.image && <img src={item.image} alt={item.title} className="w-8 h-8 object-cover rounded shrink-0" />}
-                    <p className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{formatEuro(item.price, locale)}</p>
+                    <p className="flex-1 min-w-0 text-sm text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground shrink-0">{formatEuro(item.price, locale)}</p>
                     <input
                       type="number"
                       min={0}
                       max={99}
                       value={item.quantity}
                       onChange={(e) => updateItemQty(idx, Number(e.target.value))}
-                      className="w-16 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1 text-sm text-center text-gray-900 dark:text-gray-100"
+                      className="w-16 rounded border border-border bg-white dark:bg-gray-950 px-2 py-1 text-sm text-center text-foreground"
                     />
                   </div>
                 ))}
@@ -317,19 +317,19 @@ export default function AdminReturnsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-4 space-y-3">
         <div className="flex flex-wrap gap-3">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по ID, заказу, имени, email..."
-            className="flex-1 min-w-[220px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex-1 min-w-[220px] rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ReturnStatus | 'all')}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+            className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
           >
             <option value="all">Все статусы</option>
             {STATUS_LIST.map((s) => (
@@ -339,14 +339,14 @@ export default function AdminReturnsPage() {
           <select
             value={reasonFilter}
             onChange={(e) => setReasonFilter(e.target.value as ReturnReason | 'all')}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+            className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
           >
             <option value="all">Все причины</option>
             {REASON_LIST.map((r) => (
               <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
             ))}
           </select>
-          <span className="ml-auto self-center text-xs text-gray-500 dark:text-gray-400">
+          <span className="ml-auto self-center text-xs text-muted-foreground">
             {filtered.length} из {returns.length}
           </span>
         </div>
@@ -358,7 +358,7 @@ export default function AdminReturnsPage() {
           const isExpanded = expandedReturn === ret.id
 
           return (
-            <div key={ret.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-hidden">
+            <div key={ret.id} className="rounded-xl border border-border bg-gray-50 dark:bg-gray-800 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setExpandedReturn(isExpanded ? null : ret.id)}
@@ -371,39 +371,39 @@ export default function AdminReturnsPage() {
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[ret.status]}`}>
                       {STATUS_LABELS[ret.status]}
                     </span>
-                    <span className="text-xs rounded-full px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    <span className="text-xs rounded-full px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-muted-foreground">
                       {RETURN_REASON_LABELS[ret.reason]}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-900 dark:text-gray-100">{ret.firstName} {ret.lastName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-foreground">{ret.firstName} {ret.lastName}</p>
+                  <p className="text-xs text-muted-foreground">
                     Заказ: <span className="font-mono">{ret.orderId}</span> · {ret.email}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(ret.createdAt, locale)}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(ret.createdAt, locale)}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-gray-900 dark:text-gray-100">{formatEuro(ret.refundAmount, locale)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="font-bold text-foreground">{formatEuro(ret.refundAmount, locale)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {ret.items.length} {ret.items.length === 1 ? 'товар' : ret.items.length < 5 ? 'товара' : 'товаров'}
                   </p>
                 </div>
               </button>
 
               {isExpanded && (
-                <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-5 space-y-5 bg-white dark:bg-gray-900">
+                <div className="border-t border-border px-5 py-5 space-y-5 bg-white dark:bg-gray-900">
 
                   {/* Quick actions */}
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => void navigator.clipboard.writeText(ret.id)}
-                      className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       Скопировать ID
                     </button>
                     <a
                       href={`mailto:${ret.email}`}
-                      className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       Написать клиенту
                     </a>
@@ -411,7 +411,7 @@ export default function AdminReturnsPage() {
                       type="button"
                       disabled={notifySending === ret.id}
                       onClick={() => void sendNotification(ret)}
-                      className="inline-flex items-center rounded-lg border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center rounded-lg border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors disabled:opacity-50"
                     >
                       {notifySending === ret.id ? 'Отправка...' : 'Уведомить клиента'}
                     </button>
@@ -423,7 +423,7 @@ export default function AdminReturnsPage() {
                     )}
                     <Link
                       href="/admin/orders"
-                      className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       Открыть заказы
                     </Link>
@@ -433,40 +433,40 @@ export default function AdminReturnsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                     {/* Customer */}
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                    <div className="rounded-lg border border-border p-4 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Клиент</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{ret.firstName} {ret.lastName}</p>
-                      <a href={`mailto:${ret.email}`} className="block text-sm text-indigo-600 dark:text-indigo-400 hover:underline truncate">{ret.email}</a>
+                      <p className="text-sm font-medium text-foreground">{ret.firstName} {ret.lastName}</p>
+                      <a href={`mailto:${ret.email}`} className="block text-sm text-primary hover:underline truncate">{ret.email}</a>
                       {ret.phone && <a href={`tel:${ret.phone}`} className="block text-sm text-gray-700 dark:text-gray-300 hover:underline">{ret.phone}</a>}
                     </div>
 
                     {/* Order */}
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                    <div className="rounded-lg border border-border p-4 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Заказ</p>
                       <p className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{ret.orderId}</p>
                       <div className="pt-1 border-t border-gray-100 dark:border-gray-800">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Причина возврата</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{RETURN_REASON_LABELS[ret.reason]}</p>
+                        <p className="text-xs text-muted-foreground">Причина возврата</p>
+                        <p className="text-sm font-medium text-foreground">{RETURN_REASON_LABELS[ret.reason]}</p>
                       </div>
                       {ret.comment && (
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Комментарий клиента</p>
+                          <p className="text-xs text-muted-foreground">Комментарий клиента</p>
                           <p className="text-sm text-gray-700 dark:text-gray-300 italic">«{ret.comment}»</p>
                         </div>
                       )}
                     </div>
 
                     {/* Dates */}
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                    <div className="rounded-lg border border-border p-4 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Даты</p>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Подана заявка</p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">{formatDate(ret.createdAt, locale)}</p>
+                        <p className="text-xs text-muted-foreground">Подана заявка</p>
+                        <p className="text-sm text-foreground">{formatDate(ret.createdAt, locale)}</p>
                       </div>
                       {ret.resolvedAt && (
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Обработана</p>
-                          <p className="text-sm text-gray-900 dark:text-gray-100">{formatDate(ret.resolvedAt, locale)}</p>
+                          <p className="text-xs text-muted-foreground">Обработана</p>
+                          <p className="text-sm text-foreground">{formatDate(ret.resolvedAt, locale)}</p>
                         </div>
                       )}
                     </div>
@@ -475,23 +475,23 @@ export default function AdminReturnsPage() {
                   {/* Items */}
                   {ret.items.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Возвращаемые товары</p>
-                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                      <p className="text-sm font-semibold text-foreground mb-2">Возвращаемые товары</p>
+                      <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700">
                         {ret.items.map((item, idx) => (
                           <div key={idx} className="flex items-center gap-3 px-3 py-2.5">
                             {item.image && (
                               <img src={item.image} alt={item.title} className="w-10 h-10 object-cover rounded-md shrink-0" />
                             )}
-                            <p className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">{item.title}</p>
+                            <p className="flex-1 min-w-0 text-sm text-foreground truncate">{item.title}</p>
                             <div className="text-right shrink-0">
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{item.quantity} шт × {formatEuro(item.price, locale)}</p>
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatEuro(item.price * item.quantity, locale)}</p>
+                              <p className="text-xs text-muted-foreground">{item.quantity} шт × {formatEuro(item.price, locale)}</p>
+                              <p className="text-sm font-medium text-foreground">{formatEuro(item.price * item.quantity, locale)}</p>
                             </div>
                           </div>
                         ))}
                       </div>
                       <div className="mt-2 flex justify-end">
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        <p className="text-sm font-bold text-foreground">
                           К возврату: <span className="text-emerald-700 dark:text-emerald-400">{formatEuro(ret.refundAmount, locale)}</span>
                         </p>
                       </div>
@@ -499,11 +499,11 @@ export default function AdminReturnsPage() {
                   )}
 
                   {/* Resolution + status */}
-                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Решение администратора</p>
+                  <div className="pt-2 border-t border-border space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Решение администратора</p>
 
                     {ret.resolution && (
-                      <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 italic">
+                      <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-border px-3 py-2 text-sm text-gray-700 dark:text-gray-300 italic">
                         {ret.resolution}
                       </div>
                     )}
@@ -513,7 +513,7 @@ export default function AdminReturnsPage() {
                       value={resolutionDraft[ret.id] ?? ''}
                       onChange={(e) => setResolutionDraft((prev) => ({ ...prev, [ret.id]: e.target.value }))}
                       placeholder="Добавьте комментарий к решению..."
-                      className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
 
                     <div className="flex flex-wrap gap-2">
@@ -522,7 +522,7 @@ export default function AdminReturnsPage() {
                           key={s}
                           size="sm"
                           variant={ret.status === s ? 'default' : 'outline'}
-                          className={ret.status === s ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
+                          className={ret.status === s ? 'bg-primary hover:bg-primary/90 text-white' : ''}
                           onClick={() => {
                             setReturnStatus(ret.id, s, resolutionDraft[ret.id])
                             logAdminAction('return.status_changed', {
@@ -543,7 +543,7 @@ export default function AdminReturnsPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="rounded-xl border border-border p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-muted-foreground">
             {returns.length === 0 ? 'Заявок на возврат пока нет' : 'Нет заявок по выбранным фильтрам'}
           </div>
         )}

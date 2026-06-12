@@ -9,10 +9,10 @@ export default function AboutSection() {
   const { t } = useTranslation();
   return (
     <section className="max-w-6xl mx-auto w-full px-4 py-10 mb-10">
-      <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-gray-100">{t('about.title')}</h1>
+      <h1 className="text-4xl font-bold mb-6 text-foreground">{t('about.title')}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{t('about.welcome.title')}</h2>
+          <h2 className="text-2xl font-bold mb-3 text-foreground">{t('about.welcome.title')}</h2>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
             {t('about.welcome.p1')}
           </p>
@@ -29,7 +29,7 @@ export default function AboutSection() {
           </a>
         </div>
         <div>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{t('about.why.title')}</h2>
+          <h2 className="text-2xl font-bold mb-3 text-foreground">{t('about.why.title')}</h2>
           <ul className="space-y-2 text-gray-700 dark:text-gray-300">
             {['about.why.item1','about.why.item2','about.why.item3','about.why.item4','about.why.item5'].map((key) => (
               <li key={key}>✓ {t(key)}</li>

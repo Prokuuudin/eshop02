@@ -121,10 +121,10 @@ export default function CheckoutPage() {
     if (items.length === 0) {
         return (
             <main className="w-full px-4 py-12">
-                <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                <h1 className="text-2xl font-bold mb-4 text-foreground">
                     {t('checkout.title')}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{t('checkout.empty')}</p>
+                <p className="text-muted-foreground mb-4">{t('checkout.empty')}</p>
                 <Link href="/catalog">
                     <Button>{t('checkout.backToCatalog')}</Button>
                 </Link>
@@ -135,10 +135,10 @@ export default function CheckoutPage() {
     if (selectedItemIds && checkoutItems.length === 0) {
         return (
             <main className="w-full px-4 py-12">
-                <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                <h1 className="text-2xl font-bold mb-4 text-foreground">
                     {t('checkout.title')}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{t('checkout.noSelected')}</p>
+                <p className="text-muted-foreground mb-4">{t('checkout.noSelected')}</p>
                 <Link href="/cart">
                     <Button>{t('checkout.backToCart')}</Button>
                 </Link>
@@ -416,10 +416,10 @@ export default function CheckoutPage() {
             <main className="w-full px-4 py-12">
                 <div className="max-w-md mx-auto text-center">
                     <div className="text-6xl mb-4">✓</div>
-                    <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                    <h1 className="text-2xl font-bold mb-2 text-foreground">
                         {t('checkout.success.title')}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    <p className="text-muted-foreground mb-4">
                         {t('checkout.success.redirect')}
                     </p>
                 </div>
@@ -429,7 +429,7 @@ export default function CheckoutPage() {
 
     if (!isCheckoutAllowedForRole) {
         return (
-            <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
+            <main className="w-full px-4 py-12 text-foreground">
                 <div className="mx-auto max-w-2xl rounded-lg border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-900/30">
                     <h1 className="text-2xl font-bold mb-2">
                         Оформление недоступно для текущей роли
@@ -477,20 +477,20 @@ export default function CheckoutPage() {
         : bonusToEarn;
 
     return (
-        <main className="w-full px-4 py-8 text-gray-900 dark:text-gray-100">
+        <main className="w-full px-4 py-8 text-foreground">
             <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
 
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Форма */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.delivery.title')}
                         </h2>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                                <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.firstName')}{' '}
                                     <span className="text-red-600">*</span>
                                 </label>
@@ -500,7 +500,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.firstName')}
                                     value={formData.firstName}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
                                         errors.firstName
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -513,7 +513,7 @@ export default function CheckoutPage() {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                                <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.lastName')} <span className="text-red-600">*</span>
                                 </label>
                                 <Input
@@ -522,7 +522,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.lastName')}
                                     value={formData.lastName}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
                                         errors.lastName
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -537,7 +537,7 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mt-4">
-                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                            <label className="block text-sm font-medium mb-1 text-foreground">
                                 {t('checkout.email')} <span className="text-red-600">*</span>
                             </label>
                             <Input
@@ -546,7 +546,7 @@ export default function CheckoutPage() {
                                 placeholder={t('checkout.email')}
                                 value={formData.email}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
                                     errors.email ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''
                                 }`}
                                 aria-required="true"
@@ -558,7 +558,7 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mt-4">
-                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                            <label className="block text-sm font-medium mb-1 text-foreground">
                                 {t('checkout.phone')} <span className="text-red-600">*</span>
                             </label>
                             <PhoneInput
@@ -575,7 +575,7 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="mt-4">
-                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                            <label className="block text-sm font-medium mb-1 text-foreground">
                                 {t('checkout.address')} <span className="text-red-600">*</span>
                             </label>
                             <Input
@@ -584,7 +584,7 @@ export default function CheckoutPage() {
                                 placeholder={t('checkout.address')}
                                 value={formData.address}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
                                     errors.address ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''
                                 }`}
                                 aria-required="true"
@@ -597,7 +597,7 @@ export default function CheckoutPage() {
 
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                                <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.city')} <span className="text-red-600">*</span>
                                 </label>
                                 <Input
@@ -606,7 +606,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.city')}
                                     value={formData.city}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 ${
+                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
                                         errors.city
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -619,7 +619,7 @@ export default function CheckoutPage() {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                                <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.postalCode')}
                                 </label>
                                 <Input
@@ -628,14 +628,14 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.postalCode')}
                                     value={formData.postalCode}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                                    className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Delivery options */}
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.delivery.method')}
                         </h2>
@@ -647,7 +647,7 @@ export default function CheckoutPage() {
                             {DELIVERY_OPTIONS.map((option) => (
                                 <label
                                     key={option.id}
-                                    className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700"
+                                    className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
                                     htmlFor={`delivery-${option.id}`}
                                 >
                                     <RadioGroupItem
@@ -657,7 +657,7 @@ export default function CheckoutPage() {
                                     />
                                     <div className="flex-1">
                                         <div className="font-medium">{t(option.labelKey)}</div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                                        <div className="text-sm text-muted-foreground">
                                             {option.price === 0
                                                 ? t('checkout.delivery.free')
                                                 : formatCurrency(option.price)}
@@ -668,7 +668,7 @@ export default function CheckoutPage() {
                         </RadioGroup>
                     </div>
 
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.payment.title')}
                         </h2>
@@ -680,21 +680,21 @@ export default function CheckoutPage() {
                             className="space-y-3"
                         >
                             <label
-                                className="flex items-center text-gray-900 dark:text-gray-100"
+                                className="flex items-center text-foreground"
                                 htmlFor="payment-card"
                             >
                                 <RadioGroupItem id="payment-card" value="card" className="mr-3" />
                                 <span>{t('checkout.payment.card')}</span>
                             </label>
                             <label
-                                className="flex items-center text-gray-900 dark:text-gray-100"
+                                className="flex items-center text-foreground"
                                 htmlFor="payment-bank"
                             >
                                 <RadioGroupItem id="payment-bank" value="bank" className="mr-3" />
                                 <span>{t('checkout.payment.bank')}</span>
                             </label>
                             <label
-                                className="flex items-center text-gray-900 dark:text-gray-100"
+                                className="flex items-center text-foreground"
                                 htmlFor="payment-cash"
                             >
                                 <RadioGroupItem id="payment-cash" value="cash" className="mr-3" />
@@ -721,12 +721,12 @@ export default function CheckoutPage() {
 
                 {/* Сумма и промокод */}
                 <aside className="checkout__summary sticky top-20 h-fit">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <h2 className="font-bold text-lg mb-4 text-foreground">
                             {t('checkout.summary.title')}
                         </h2>
 
-                        <div className="space-y-2 border-b border-gray-200 dark:border-gray-700 pb-4 max-h-48 overflow-y-auto mb-4">
+                        <div className="space-y-2 border-b border-border pb-4 max-h-48 overflow-y-auto mb-4">
                             {checkoutItems.map((item) => {
                                 const localizedTitle = t(`products.${item.id}.title`, item.title);
                                 const unitPrice = calculatePrice(item, item.quantity);
@@ -742,8 +742,8 @@ export default function CheckoutPage() {
                         </div>
 
                         {/* Promo code */}
-                        <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                        <div className="mb-4 pb-4 border-b border-border">
+                            <label className="block text-sm font-medium mb-2 text-foreground">
                                 {t('checkout.promo.label')}
                             </label>
                             <div className="flex gap-2">
@@ -756,7 +756,7 @@ export default function CheckoutPage() {
                                         setPromoError('');
                                     }}
                                     disabled={!!appliedPromo}
-                                    className="flex-1 px-3 py-2 border rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                                    className="flex-1 px-3 py-2 border rounded text-sm bg-white dark:bg-gray-800 text-foreground border-border"
                                 />
                                 <Button
                                     ref={applyBtnRef}
@@ -845,10 +845,10 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        <div className="space-y-2 text-sm mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                        <div className="space-y-2 text-sm mb-4 pb-4 border-b border-border text-gray-700 dark:text-gray-300">
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.items')}</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                <span className="font-medium text-foreground">
                                     {formatCurrency(subtotal)}
                                 </span>
                             </div>
@@ -867,13 +867,13 @@ export default function CheckoutPage() {
 
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.tax')}</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                <span className="font-medium text-foreground">
                                     {formatCurrency(taxAmount)}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.delivery')}</span>
-                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                <span className="font-medium text-foreground">
                                     {deliveryFee === 0
                                         ? t('checkout.delivery.free')
                                         : formatCurrency(deliveryFee)}
@@ -883,7 +883,7 @@ export default function CheckoutPage() {
 
                         <div className="text-lg font-bold flex justify-between">
                             <span>{t('checkout.summary.total')}</span>
-                            <span className="text-indigo-600">{formatCurrency(finalGrandTotal)}</span>
+                            <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
                         </div>
 
                         {!wholesaleGuard.isMinimumReached && (

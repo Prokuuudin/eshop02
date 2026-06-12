@@ -29,7 +29,7 @@ export default function BenefitsList({
             className={
                 compact
                     ? 'benefits-list-compact text-sm text-gray-700 dark:text-gray-300 space-y-1 list-disc list-inside'
-                    : 'benefits-list text-lg text-gray-800 dark:text-gray-100 space-y-2 list-disc list-inside'
+                    : 'benefits-list text-lg text-foreground space-y-2 list-disc list-inside'
             }
         >
             {items.map((it) => (

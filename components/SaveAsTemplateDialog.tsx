@@ -58,7 +58,7 @@ export function SaveAsTemplateDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BookmarkPlus className="w-4 h-4 text-indigo-600" />
+            <BookmarkPlus className="w-4 h-4 text-primary" />
             {t('templates.saveDialog.title')}
           </DialogTitle>
           <DialogDescription>{t('templates.saveDialog.desc')}</DialogDescription>
@@ -86,7 +86,7 @@ export function SaveAsTemplateDialog({
               {t('common.cancel')}
             </Button>
             <Button
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
               onClick={handleSave}
               disabled={!name.trim()}
             >

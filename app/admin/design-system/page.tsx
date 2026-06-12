@@ -45,7 +45,7 @@ function TypeRow({ size, tailwind, weight, sample }: { size: string; tailwind: s
       </div>
       <div className="w-16 shrink-0 text-[11px] text-gray-400">{size}</div>
       <div className="w-24 shrink-0 text-[11px] text-gray-400">{weight}</div>
-      <p className={`${tailwind} text-gray-900 dark:text-gray-100 leading-tight`}>{sample}</p>
+      <p className={`${tailwind} text-foreground leading-tight`}>{sample}</p>
     </div>
   )
 }
@@ -65,14 +65,14 @@ function SpacingRow({ value, label }: { value: string; label: string }) {
 export default function DesignSystemPage() {
   return (
     <AdminGate>
-      <main className="w-full py-4 space-y-14 text-gray-900 dark:text-gray-100">
+      <main className="w-full py-4 space-y-14 text-foreground">
 
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Eshop</p>
             <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-xl">
+            <p className="mt-2 text-sm text-muted-foreground max-w-xl">
               Визуальный справочник токенов, компонентов и паттернов проекта.
               Все элементы рендерятся из реального кода.
             </p>
@@ -86,7 +86,7 @@ export default function DesignSystemPage() {
 
         {/* ── 1. Color Tokens ───────────────────────────────────────── */}
         <Section title="1 · Color Tokens">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Семантические токены Shadcn/ui — используются через CSS-переменные и Tailwind-классы.</p>
+          <p className="text-sm text-muted-foreground">Семантические токены Shadcn/ui — используются через CSS-переменные и Tailwind-классы.</p>
 
           <div>
             <p className="text-xs text-gray-400 mb-3 font-medium">Базовые поверхности</p>
@@ -114,7 +114,7 @@ export default function DesignSystemPage() {
           <div>
             <p className="text-xs text-gray-400 mb-3 font-medium">Проектные цвета (hardcoded Tailwind)</p>
             <div className="flex flex-wrap gap-4">
-              <Token name="indigo-600" bg="bg-indigo-600" text="links, focus" />
+              <Token name="indigo-600" bg="bg-primary" text="links, focus" />
               <Token name="indigo-50" bg="bg-indigo-50" text="hero bg" border="border-border" />
               <Token name="amber-500" bg="bg-amber-500" text="bonus" />
               <Token name="amber-50" bg="bg-amber-50" text="bonus bg" border="border-border" />
@@ -139,7 +139,7 @@ export default function DesignSystemPage() {
 
         {/* ── 2. Typography ─────────────────────────────────────────── */}
         <Section title="2 · Typography">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Шрифт: <span className="font-mono">Inter</span> · Система: Tailwind type scale.</p>
+          <p className="text-sm text-muted-foreground">Шрифт: <span className="font-mono">Inter</span> · Система: Tailwind type scale.</p>
 
           <Card>
             <CardContent className="pt-4 px-5 pb-5">
@@ -164,8 +164,8 @@ export default function DesignSystemPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {(['font-thin','font-light','font-normal','font-medium','font-semibold','font-bold','font-extrabold','font-black'] as const).map(w => (
-              <div key={w} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-center">
-                <p className={`text-lg ${w} text-gray-900 dark:text-gray-100`}>Aa</p>
+              <div key={w} className="rounded-lg border border-border bg-white dark:bg-gray-900 p-3 text-center">
+                <p className={`text-lg ${w} text-foreground`}>Aa</p>
                 <p className="text-[10px] font-mono text-gray-400 mt-1">{w}</p>
               </div>
             ))}
@@ -289,7 +289,7 @@ export default function DesignSystemPage() {
             <Badge variant="outline">Outline</Badge>
             {/* Custom project badges */}
             <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Bonus</span>
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Новинка</span>
+            <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-primary">Новинка</span>
             <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">В наличии</span>
             <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">Нет в наличии</span>
           </div>

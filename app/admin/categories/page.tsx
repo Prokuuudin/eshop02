@@ -341,10 +341,10 @@ export default function AdminCategoriesPage() {
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-2xl font-bold text-foreground">
                 {tl('admin.categories.title', 'Категории: управление структурой', 'Categories: structure management', 'Kategorijas: strukturas parvaldiba')}
               </h1>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {tl(
                   'admin.categories.subtitle',
                   'Создавайте новые категории, добавляйте и удаляйте подпункты, редактируйте названия на RU/EN/LV.',
@@ -371,13 +371,13 @@ export default function AdminCategoriesPage() {
         )}
 
         <section className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-lg font-semibold text-foreground">
             {tl('admin.categories.createTitle', 'Создать новую категорию', 'Create new category', 'Izveidot jaunu kategoriju')}
           </h2>
           <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="grid gap-2 md:grid-cols-3">
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">ID (slug)</span>
+                <span className="mb-1 block text-muted-foreground">ID (slug)</span>
                 <Input
                   value={newCategory.id}
                   placeholder={tl('admin.categories.placeholder.id', 'Например: hair-care', 'Example: hair-care', 'Piemers: hair-care')}
@@ -385,7 +385,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs md:col-span-2">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Image</span>
+                <span className="mb-1 block text-muted-foreground">Image</span>
                 <Input
                   value={newCategory.image}
                   placeholder={tl('admin.categories.placeholder.image', '/categories/hair-care.jpg', '/categories/hair-care.jpg', '/categories/hair-care.jpg')}
@@ -393,7 +393,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Name RU</span>
+                <span className="mb-1 block text-muted-foreground">Name RU</span>
                 <Input
                   value={newCategory.ru}
                   placeholder={tl('admin.categories.placeholder.nameRu', 'Уход за волосами', 'Hair care', 'Matu kopsana')}
@@ -401,7 +401,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Name EN</span>
+                <span className="mb-1 block text-muted-foreground">Name EN</span>
                 <Input
                   value={newCategory.en}
                   placeholder={tl('admin.categories.placeholder.nameEn', 'Hair care', 'Hair care', 'Hair care')}
@@ -409,7 +409,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Name LV</span>
+                <span className="mb-1 block text-muted-foreground">Name LV</span>
                 <Input
                   value={newCategory.lv}
                   placeholder={tl('admin.categories.placeholder.nameLv', 'Matu kopsana', 'Hair care', 'Matu kopsana')}
@@ -419,7 +419,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {tl('admin.categories.previewCard', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
               </p>
               <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
@@ -433,7 +433,7 @@ export default function AdminCategoriesPage() {
                     event.currentTarget.src = '/categories/new.jpg'
                   }}
                 />
-                <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">{newCategoryPreviewLabel}</div>
+                <div className="px-3 py-2 text-sm font-medium text-foreground">{newCategoryPreviewLabel}</div>
               </div>
             </div>
           </div>
@@ -444,7 +444,7 @@ export default function AdminCategoriesPage() {
             </p>
             <div className="mt-2 grid gap-2 md:grid-cols-5">
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Slug</span>
+                <span className="mb-1 block text-muted-foreground">Slug</span>
                 <Input
                   value={newCategory.firstSubSlug}
                   placeholder={tl('admin.categories.placeholder.firstSubSlug', 'Например: shampoo', 'Example: shampoo', 'Piemers: shampoo')}
@@ -452,7 +452,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">Search token</span>
+                <span className="mb-1 block text-muted-foreground">Search token</span>
                 <Input
                   value={newCategory.firstSubSearch}
                   placeholder={tl('admin.categories.placeholder.firstSubSearch', 'Например: шампунь', 'Example: shampoo', 'Piemers: sampuns')}
@@ -460,7 +460,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">RU</span>
+                <span className="mb-1 block text-muted-foreground">RU</span>
                 <Input
                   value={newCategory.firstSubRu}
                   placeholder={tl('admin.categories.placeholder.firstSubRu', 'Шампуни', 'Shampoos', 'Sampuni')}
@@ -468,7 +468,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">EN</span>
+                <span className="mb-1 block text-muted-foreground">EN</span>
                 <Input
                   value={newCategory.firstSubEn}
                   placeholder={tl('admin.categories.placeholder.firstSubEn', 'Shampoos', 'Shampoos', 'Shampoos')}
@@ -476,7 +476,7 @@ export default function AdminCategoriesPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">LV</span>
+                <span className="mb-1 block text-muted-foreground">LV</span>
                 <Input
                   value={newCategory.firstSubLv}
                   placeholder={tl('admin.categories.placeholder.firstSubLv', 'Sampuni', 'Shampoos', 'Sampuni')}
@@ -496,7 +496,7 @@ export default function AdminCategoriesPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-lg font-semibold text-foreground">
             {tl('admin.categories.existingCatalog', 'Существующие категории каталога', 'Existing catalog categories', 'Esošās kataloga kategorijas')}
           </h2>
           {loading ? (
@@ -508,8 +508,8 @@ export default function AdminCategoriesPage() {
               <article key={category.id} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{category.labels[language] || category.id}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{category.id}</p>
+                    <h3 className="text-base font-semibold text-foreground">{category.labels[language] || category.id}</h3>
+                    <p className="text-xs text-muted-foreground">{category.id}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" onClick={() => void handleSaveCategory()} disabled={saving}>
@@ -529,28 +529,28 @@ export default function AdminCategoriesPage() {
                 <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="grid gap-2 md:grid-cols-4">
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">RU</span>
+                      <span className="mb-1 block text-muted-foreground">RU</span>
                       <Input
                         value={category.labels.ru}
                         onChange={(event) => updateCategoryLabels(category.id, { ru: event.target.value })}
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">EN</span>
+                      <span className="mb-1 block text-muted-foreground">EN</span>
                       <Input
                         value={category.labels.en}
                         onChange={(event) => updateCategoryLabels(category.id, { en: event.target.value })}
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">LV</span>
+                      <span className="mb-1 block text-muted-foreground">LV</span>
                       <Input
                         value={category.labels.lv}
                         onChange={(event) => updateCategoryLabels(category.id, { lv: event.target.value })}
                       />
                     </label>
                     <label className="text-xs md:col-span-4">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">Image</span>
+                      <span className="mb-1 block text-muted-foreground">Image</span>
                       <Input
                         value={category.image}
                         onChange={(event) =>
@@ -563,7 +563,7 @@ export default function AdminCategoriesPage() {
                   </div>
 
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
-                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                       {tl('admin.categories.previewCard', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
                     </p>
                     <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
@@ -577,7 +577,7 @@ export default function AdminCategoriesPage() {
                           event.currentTarget.src = '/categories/new.jpg'
                         }}
                       />
-                      <div className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">{category.labels[language] || category.id}</div>
+                      <div className="px-3 py-2 text-sm font-medium text-foreground">{category.labels[language] || category.id}</div>
                     </div>
                   </div>
                 </div>
@@ -603,28 +603,28 @@ export default function AdminCategoriesPage() {
                         </div>
                         <div className="grid gap-2 md:grid-cols-4">
                           <label className="text-xs">
-                            <span className="mb-1 block text-gray-600 dark:text-gray-300">RU</span>
+                            <span className="mb-1 block text-muted-foreground">RU</span>
                             <Input
                               value={subcategory.labels.ru}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { ru: event.target.value })}
                             />
                           </label>
                           <label className="text-xs">
-                            <span className="mb-1 block text-gray-600 dark:text-gray-300">EN</span>
+                            <span className="mb-1 block text-muted-foreground">EN</span>
                             <Input
                               value={subcategory.labels.en}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { en: event.target.value })}
                             />
                           </label>
                           <label className="text-xs">
-                            <span className="mb-1 block text-gray-600 dark:text-gray-300">LV</span>
+                            <span className="mb-1 block text-muted-foreground">LV</span>
                             <Input
                               value={subcategory.labels.lv}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { lv: event.target.value })}
                             />
                           </label>
                           <label className="text-xs">
-                            <span className="mb-1 block text-gray-600 dark:text-gray-300">Search token</span>
+                            <span className="mb-1 block text-muted-foreground">Search token</span>
                             <Input
                               value={subcategory.search}
                               onChange={(event) =>
@@ -649,7 +649,7 @@ export default function AdminCategoriesPage() {
 
                   <div className="mt-3 grid gap-2 md:grid-cols-5">
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">New slug</span>
+                      <span className="mb-1 block text-muted-foreground">New slug</span>
                       <Input
                         value={newSubByCategory[category.id]?.slug ?? ''}
                         onChange={(event) =>
@@ -667,7 +667,7 @@ export default function AdminCategoriesPage() {
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">Search token</span>
+                      <span className="mb-1 block text-muted-foreground">Search token</span>
                       <Input
                         value={newSubByCategory[category.id]?.search ?? ''}
                         onChange={(event) =>
@@ -685,7 +685,7 @@ export default function AdminCategoriesPage() {
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">RU</span>
+                      <span className="mb-1 block text-muted-foreground">RU</span>
                       <Input
                         value={newSubByCategory[category.id]?.ru ?? ''}
                         onChange={(event) =>
@@ -703,7 +703,7 @@ export default function AdminCategoriesPage() {
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">EN</span>
+                      <span className="mb-1 block text-muted-foreground">EN</span>
                       <Input
                         value={newSubByCategory[category.id]?.en ?? ''}
                         onChange={(event) =>
@@ -721,7 +721,7 @@ export default function AdminCategoriesPage() {
                       />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">LV</span>
+                      <span className="mb-1 block text-muted-foreground">LV</span>
                       <Input
                         value={newSubByCategory[category.id]?.lv ?? ''}
                         onChange={(event) =>
@@ -754,19 +754,19 @@ export default function AdminCategoriesPage() {
         </section>
 
         <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-lg font-semibold text-foreground">
             {tl('admin.categories.trashTitle', 'Корзина категорий', 'Categories trash', 'Kategoriju grozs')} ({deletedCategories.length})
           </h2>
 
           {deletedCategories.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{tl('admin.categories.trashEmpty', 'Корзина пуста', 'Trash is empty', 'Grozs ir tukss')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{tl('admin.categories.trashEmpty', 'Корзина пуста', 'Trash is empty', 'Grozs ir tukss')}</p>
           ) : (
             <div className="mt-3 space-y-2">
               {deletedCategories.map((category) => (
                 <div key={`trash-${category.id}`} className="flex flex-wrap items-center gap-2 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700">
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{category.id}</span>
-                  <span className="text-sm text-gray-800 dark:text-gray-100">{category.labels[language] || category.id}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{tl('admin.categories.subcategoriesCount', 'Подпунктов', 'Subcategories', 'Apakskategorijas')}: {category.subcategories.length}</span>
+                  <span className="text-sm text-foreground">{category.labels[language] || category.id}</span>
+                  <span className="text-xs text-muted-foreground">{tl('admin.categories.subcategoriesCount', 'Подпунктов', 'Subcategories', 'Apakskategorijas')}: {category.subcategories.length}</span>
                   <div className="ml-auto flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => void handleRestoreCategory(category.id)} disabled={saving}>
                       {tl('admin.categories.restoreButton', 'Восстановить', 'Restore', 'Atjaunot')}

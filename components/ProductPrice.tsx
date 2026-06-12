@@ -30,7 +30,7 @@ export const ProductPrice: React.FC<ProductPriceProps> = ({
                     {formatEuro(oldPrice, priceLocale)}
                 </div>
             )}
-            <div className="text-4xl font-bold text-indigo-600">
+            <div className="text-4xl font-bold text-primary">
                 {formatEuro(price, priceLocale)}
             </div>
             {oldPrice && (

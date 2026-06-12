@@ -20,7 +20,7 @@ export const CreditCalculator: React.FC<CreditCalculatorProps> = ({ price }) => 
                 <div className="flex flex-col gap-1 min-w-[160px]">
                     <label
                         htmlFor="downPaymentPercent"
-                        className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1"
+                        className="text-xs text-muted-foreground font-medium mb-1"
                     >
                         {t('credit.downPaymentPercent')}
                     </label>
@@ -32,13 +32,13 @@ export const CreditCalculator: React.FC<CreditCalculatorProps> = ({ price }) => 
                         step={1}
                         value={downPaymentPercent}
                         onChange={(e) => setDownPaymentPercent(Number(e.target.value))}
-                        className="shadcn-input w-24 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm"
+                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-white dark:bg-gray-900 text-foreground text-sm"
                     />
                 </div>
                 <div className="flex flex-col gap-1 min-w-[160px]">
                     <label
                         htmlFor="creditTerm"
-                        className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1"
+                        className="text-xs text-muted-foreground font-medium mb-1"
                     >
                         {t('credit.termMonths')}
                     </label>
@@ -50,15 +50,15 @@ export const CreditCalculator: React.FC<CreditCalculatorProps> = ({ price }) => 
                         step={1}
                         value={creditTerm}
                         onChange={(e) => setCreditTerm(Number(e.target.value))}
-                        className="shadcn-input w-24 px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm"
+                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-white dark:bg-gray-900 text-foreground text-sm"
                     />
                 </div>
             </div>
             <div className="flex flex-wrap gap-6 mt-4">
-                <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                <div className="text-sm text-foreground font-medium">
                     {t('credit.downPaymentEur').replace('{amount}', downPaymentEur.toFixed(2))}
                 </div>
-                <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                <div className="text-sm text-foreground font-medium">
                     {t('credit.monthlyPayment').replace('{amount}', monthlyPayment.toFixed(2))}
                 </div>
             </div>

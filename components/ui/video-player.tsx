@@ -14,7 +14,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
     return (
         <div
-            className={`video-player aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black ${className}`}
+            className={`video-player aspect-video rounded-lg overflow-hidden border border-border bg-black ${className}`}
         >
             <video
                 src={src}

@@ -92,7 +92,7 @@ export default function AddToCartButton({ product }: Props) {
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-              <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
+              <div className="flex items-center border border-border rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
                 <button
                   onClick={() => setQuantity(Math.max(minOrderQuantity, quantity - 1))}
                   className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"
@@ -132,7 +132,7 @@ export default function AddToCartButton({ product }: Props) {
         <div className="add-to-cart__bulk-progress w-full">
           {nextTier ? (
             <>
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>
                   {t('product.bulkProgressLabel', undefined, {
                     remaining: String(nextTier.quantity - quantity),
@@ -167,7 +167,7 @@ export default function AddToCartButton({ product }: Props) {
         onClick={handleAdd}
         disabled={isOutOfStock}
         className={`w-full add-to-cart__button ${
-          added ? 'bg-green-600 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'
+          added ? 'bg-green-600 hover:bg-green-600' : 'bg-primary hover:bg-primary/90'
         } ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {added ? `✓ ${t('product.addedToCart')}` : t('product.addToCart')}

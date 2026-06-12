@@ -103,10 +103,10 @@ export default function AdminAccountsPage() {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
+      <main className="w-full py-4 space-y-6 text-foreground">
         <div>
           <h1 className="text-3xl font-bold">{tl('admin.accounts.title', 'Управление аккаунтами', 'Account management', 'Kontu parvaldiba')}</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-2 text-sm text-muted-foreground">
             {tl('admin.accounts.subtitle', 'Роли сотрудников компаний (viewer, buyer, manager, admin)', 'Company staff roles (viewer, buyer, manager, admin)', 'Uznemuma darbinieku lomas (viewer, buyer, manager, admin)')}
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function AdminAccountsPage() {
         )}
 
         {/* DB Users section */}
-        <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
           <div className="flex flex-wrap gap-3 items-center mb-4">
             <h2 className="text-xl font-semibold flex-1">
               {tl('admin.accounts.dbUsers', 'Пользователи в БД', 'Users in DB', 'Lietotaji DB')} ({dbTotal})
@@ -138,7 +138,7 @@ export default function AdminAccountsPage() {
               />
             </div>
             <select
-              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              className="rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               value={dbRoleFilter}
               onChange={(e) => setDbRoleFilter(e.target.value)}
             >
@@ -149,14 +149,14 @@ export default function AdminAccountsPage() {
           </div>
 
           {dbLoading ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Загрузка...</p>
+            <p className="text-sm text-muted-foreground">Загрузка...</p>
           ) : dbUsers.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Пользователей не найдено.</p>
+            <p className="text-sm text-muted-foreground">Пользователей не найдено.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left">
+                  <tr className="border-b border-border text-left">
                     <th className="pb-2 pr-4 font-medium">Email</th>
                     <th className="pb-2 pr-4 font-medium">Имя</th>
                     <th className="pb-2 pr-4 font-medium">Карта</th>
@@ -174,7 +174,7 @@ export default function AdminAccountsPage() {
                       <td className="py-2 pr-4">{u.bonusPoints}</td>
                       <td className="py-2 pr-4">
                         <select
-                          className="rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-xs"
+                          className="rounded border border-border bg-white dark:bg-gray-800 px-2 py-1 text-xs"
                           value={u.platformRole}
                           onChange={(e) => handleUpdateDbRole(u.id, e.target.value)}
                         >
@@ -183,7 +183,7 @@ export default function AdminAccountsPage() {
                           <option value="b2b">b2b</option>
                         </select>
                       </td>
-                      <td className="py-2 text-xs text-gray-500 dark:text-gray-400">
+                      <td className="py-2 text-xs text-muted-foreground">
                         {u.companyName ?? u.companyId ?? '—'}
                       </td>
                     </tr>
@@ -195,7 +195,7 @@ export default function AdminAccountsPage() {
         </section>
 
         {/* Company team roles section (localStorage-based) */}
-        <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
           <h2 className="text-xl font-semibold mb-4">{tl('admin.accounts.companies', 'Компании', 'Companies', 'Uznemumi')} ({companies.length})</h2>
 
           <div className="space-y-4">
@@ -203,15 +203,15 @@ export default function AdminAccountsPage() {
               const companyUsers = listCompanyUsers(company.companyId)
 
               return (
-                <div key={company.companyId} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div key={company.companyId} className="rounded-lg border border-border p-4">
                   <p className="font-semibold">{company.companyName}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">ID: {company.companyId}</p>
+                  <p className="text-sm text-muted-foreground">ID: {company.companyId}</p>
 
-                  <div className="mt-3 rounded-md border border-gray-200 dark:border-gray-700 p-3">
+                  <div className="mt-3 rounded-md border border-border p-3">
                     <p className="text-sm font-medium">{tl('admin.accounts.accountsAndRoles', 'Аккаунты компании и роли', 'Company accounts and roles', 'Uznemuma konti un lomas')}</p>
 
                     {companyUsers.length === 0 ? (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{tl('admin.accounts.noAccounts', 'Аккаунтов пока нет.', 'No accounts yet.', 'Kontu vel nav.')}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{tl('admin.accounts.noAccounts', 'Аккаунтов пока нет.', 'No accounts yet.', 'Kontu vel nav.')}</p>
                     ) : (
                       <div className="mt-3 space-y-2">
                         {companyUsers.map((companyUser) => {
@@ -221,11 +221,11 @@ export default function AdminAccountsPage() {
                           return (
                             <div
                               key={companyUser.id}
-                              className="grid grid-cols-1 gap-2 rounded border border-gray-200 dark:border-gray-700 p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
+                              className="grid grid-cols-1 gap-2 rounded border border-border p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
                             >
                               <div>
                                 <p className="text-sm font-medium">{companyUser.name || companyUser.email}</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-300">{companyUser.email}</p>
+                                <p className="text-xs text-muted-foreground">{companyUser.email}</p>
                               </div>
 
                               <select
@@ -234,7 +234,7 @@ export default function AdminAccountsPage() {
                                   const role = event.target.value as TeamRole
                                   setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }))
                                 }}
-                                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                               >
                                 <option value="viewer">viewer</option>
                                 <option value="buyer">buyer</option>

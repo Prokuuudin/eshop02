@@ -115,7 +115,7 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'loading') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 bg-white dark:bg-gray-900 text-center text-sm text-gray-600 dark:text-gray-300">
+        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center text-sm text-muted-foreground">
           {labels.loading}
         </div>
       </main>
@@ -125,9 +125,9 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'unauthenticated') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 bg-white dark:bg-gray-900 text-center">
-          <h1 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{labels.loginRequired}</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+          <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.loginRequired}</h1>
+          <p className="text-sm text-muted-foreground mb-4">
             {labels.loginRedirect}
           </p>
           <Link href="/auth/login">
@@ -141,9 +141,9 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'setup-required') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 bg-white dark:bg-gray-900 text-center">
-          <h1 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{labels.setupRequired}</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+          <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.setupRequired}</h1>
+          <p className="text-sm text-muted-foreground mb-4">
             {labels.setupRedirect}
           </p>
           <Link href="/auth/admin-setup">
@@ -159,9 +159,9 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
 
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 bg-white dark:bg-gray-900 text-center">
-          <h1 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{labels.forbidden}</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+          <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.forbidden}</h1>
+          <p className="text-sm text-muted-foreground mb-4">
             {access === 'full'
               ? (user?.email
                 ? labels.fullAccessWithUser(user.email, roleLabel)

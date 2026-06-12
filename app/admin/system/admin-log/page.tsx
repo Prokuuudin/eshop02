@@ -118,8 +118,8 @@ export default function AdminLogPage() {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Лог действий администраторов</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Лог действий администраторов</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Кто, когда и что изменил в системе
             </p>
           </div>
@@ -145,9 +145,9 @@ export default function AdminLogPage() {
             { label: 'За последние 24 ч', value: stats.today, cls: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
             { label: 'За 7 дней', value: stats.week, cls: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/10 dark:border-indigo-800' },
           ].map((s) => (
-            <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{s.label}</p>
+            <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-border bg-white dark:bg-gray-900'}`}>
+              <p className="text-2xl font-bold text-foreground">{s.value}</p>
+              <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
             </div>
           ))}
         </div>
@@ -163,7 +163,7 @@ export default function AdminLogPage() {
           <select
             value={actionFilter}
             onChange={(e) => { setActionFilter(e.target.value as AdminLogAction | ''); setPage(0) }}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+            className="rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-2 text-sm text-foreground"
           >
             <option value="">Все действия</option>
             {uniqueActions.map((a) => (
@@ -173,37 +173,37 @@ export default function AdminLogPage() {
           <select
             value={adminFilter}
             onChange={(e) => { setAdminFilter(e.target.value); setPage(0) }}
-            className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+            className="rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-2 text-sm text-foreground"
           >
             <option value="">Все администраторы</option>
             {uniqueAdmins.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
-          <span className="self-center text-sm text-gray-500 dark:text-gray-400 ml-auto">
+          <span className="self-center text-sm text-muted-foreground ml-auto">
             {filtered.length} из {entries.length}
           </span>
         </div>
 
         {/* Table */}
         {entries.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 py-16 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div className="rounded-xl border border-border py-16 text-center text-sm text-gray-400 dark:text-gray-500">
             Действия пока не зарегистрированы. Лог наполнится после первых операций в админке.
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div className="rounded-xl border border-border py-10 text-center text-sm text-gray-400 dark:text-gray-500">
             Нет событий по заданным фильтрам
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="overflow-x-auto rounded-xl border border-border">
               <table className="min-w-full text-sm bg-white dark:bg-gray-900">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">Время</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Кто</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Действие</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Объект</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">До → После</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Детали</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">Время</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Кто</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Действие</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Объект</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">До → После</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Детали</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -214,7 +214,7 @@ export default function AdminLogPage() {
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
                         onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                       >
-                        <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
                           {fmtDate(entry.at)}
                         </td>
                         <td className="px-4 py-3">
@@ -230,7 +230,7 @@ export default function AdminLogPage() {
                           <p className="text-sm text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{entry.entityTitle ?? entry.entityId}</p>
                           <p className="text-xs text-gray-400 font-mono">{entry.entityType}:{entry.entityId.slice(0, 12)}</p>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
                           {(entry.before || entry.after) ? (
                             <span className="font-mono">
                               {entry.before ? JSON.stringify(entry.before) : '—'}
@@ -239,7 +239,7 @@ export default function AdminLogPage() {
                             </span>
                           ) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
+                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
                           {entry.details ?? '—'}
                         </td>
                       </tr>
@@ -248,16 +248,16 @@ export default function AdminLogPage() {
                           <td colSpan={6} className="px-4 py-3">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                               <div>
-                                <p className="font-semibold text-gray-500 dark:text-gray-400 mb-1">ID события</p>
+                                <p className="font-semibold text-muted-foreground mb-1">ID события</p>
                                 <code className="font-mono text-gray-700 dark:text-gray-300">{entry.id}</code>
                               </div>
                               <div>
-                                <p className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Тип / ID объекта</p>
+                                <p className="font-semibold text-muted-foreground mb-1">Тип / ID объекта</p>
                                 <code className="font-mono text-gray-700 dark:text-gray-300">{entry.entityType} / {entry.entityId}</code>
                               </div>
                               {entry.before && (
                                 <div>
-                                  <p className="font-semibold text-gray-500 dark:text-gray-400 mb-1">До</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">До</p>
                                   <pre className="bg-red-50 dark:bg-red-900/10 rounded p-2 overflow-x-auto text-red-700 dark:text-red-300">
                                     {JSON.stringify(entry.before, null, 2)}
                                   </pre>
@@ -265,7 +265,7 @@ export default function AdminLogPage() {
                               )}
                               {entry.after && (
                                 <div>
-                                  <p className="font-semibold text-gray-500 dark:text-gray-400 mb-1">После</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">После</p>
                                   <pre className="bg-green-50 dark:bg-green-900/10 rounded p-2 overflow-x-auto text-green-700 dark:text-green-300">
                                     {JSON.stringify(entry.after, null, 2)}
                                   </pre>
@@ -273,7 +273,7 @@ export default function AdminLogPage() {
                               )}
                               {entry.details && (
                                 <div className="md:col-span-2">
-                                  <p className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Детали</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">Детали</p>
                                   <p className="text-gray-700 dark:text-gray-300">{entry.details}</p>
                                 </div>
                               )}
@@ -290,7 +290,7 @@ export default function AdminLogPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-muted-foreground">
                   Стр. {page + 1} из {totalPages}
                 </span>
                 <div className="flex gap-1">

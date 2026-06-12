@@ -20,7 +20,7 @@ export default function AdminProductsPage() {
     const [archiveOpen, setArchiveOpen] = React.useState(false);
     return (
         <AdminGate>
-            <main className="admin-products w-full space-y-3 text-gray-900 dark:text-gray-100">
+            <main className="admin-products w-full space-y-3 text-foreground">
                 <div className="admin-products__panel rounded-lg bg-white p-4 dark:bg-gray-900">
                     <h1 className="text-2xl font-bold mb-6">
                         {t('admin.productsPage.title') || 'Товары: управление'}
@@ -40,7 +40,7 @@ export default function AdminProductsPage() {
                             onRestoreArchive={admin.handleRestoreProduct}
                             onDeleteArchive={admin.handlePurgeArchivedProduct}
                         />
-                        <hr className="my-8 border-t border-gray-200 dark:border-gray-700" />
+                        <hr className="my-8 border-t border-border" />
                         <div>
                             <h2 className="text-xl font-semibold mb-4">
                                 {admin.viewMode === 'cards'

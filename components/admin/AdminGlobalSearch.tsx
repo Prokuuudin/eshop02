@@ -175,7 +175,7 @@ export default function AdminGlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         title="Глобальный поиск (Ctrl+K)"
       >
         <Search className="h-4 w-4" />
@@ -197,7 +197,7 @@ export default function AdminGlobalSearch() {
 
       {/* Modal */}
       <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-2xl">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
+        <div className="rounded-2xl border border-border bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
 
           {/* Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
@@ -208,7 +208,7 @@ export default function AdminGlobalSearch() {
               onChange={(e) => { setQuery(e.target.value); setSelectedIdx(0) }}
               onKeyDown={handleKeyDown}
               placeholder="Заказ, товар, клиент, промокод..."
-              className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-400 outline-none"
+              className="flex-1 bg-transparent text-base text-foreground placeholder:text-gray-400 outline-none"
             />
             {query && (
               <button type="button" onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
@@ -217,7 +217,7 @@ export default function AdminGlobalSearch() {
             )}
             <kbd
               onClick={() => setOpen(false)}
-              className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 cursor-pointer font-mono hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="text-xs text-gray-400 border border-border rounded px-1.5 py-0.5 cursor-pointer font-mono hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Esc
             </kbd>
@@ -265,10 +265,10 @@ export default function AdminGlobalSearch() {
                         ].join(' ')}
                       >
                         <div className="min-w-0">
-                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-indigo-700 dark:text-primary' : 'text-foreground'}`}>
                             {item.label}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{item.sub}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{item.sub}</p>
                         </div>
                         {isSelected && (
                           <span className="shrink-0 self-center text-xs text-gray-400">↵</span>

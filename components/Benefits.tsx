@@ -41,7 +41,7 @@ export default function Benefits() {
                     {BENEFITS.map((item, idx) => (
                         <article
                             key={idx}
-                            className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4"
+                            className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-border shadow-sm flex items-center gap-4"
                         >
                             <div className="benefits__icon w-10 h-10 shrink-0">
                                 <Image
@@ -52,7 +52,7 @@ export default function Benefits() {
                                     className="object-contain"
                                 />
                             </div>
-                            <h3 className="benefits__item-title font-medium text-gray-900 dark:text-gray-100 text-base">
+                            <h3 className="benefits__item-title font-medium text-foreground text-base">
                                 {item.text}
                             </h3>
                         </article>

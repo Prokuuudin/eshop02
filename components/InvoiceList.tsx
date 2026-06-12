@@ -89,8 +89,8 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
 
   if (invoices.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <p className="text-gray-600 dark:text-gray-300">{t('account.invoiceList.empty')}</p>
+      <div className="rounded-lg border border-border p-8 text-center">
+        <p className="text-muted-foreground">{t('account.invoiceList.empty')}</p>
       </div>
     )
   }
@@ -103,7 +103,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as InvoiceStatus | 'all')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
           >
             <option value="all">{t('account.invoiceList.filter.allStatuses')}</option>
             <option value="issued">{t('account.invoice.status.issued')}</option>
@@ -116,7 +116,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'status')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
           >
             <option value="date">{t('account.invoiceList.sort.byDate')}</option>
             <option value="amount">{t('account.invoiceList.sort.byAmount')}</option>
@@ -124,7 +124,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
           </select>
         </div>
 
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-muted-foreground">
           {t('account.invoiceList.filteredCount', undefined, { shown: sorted.length, total: invoices.length })}
         </div>
       </div>
@@ -138,13 +138,13 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
             className={`rounded-lg border-2 p-4 cursor-pointer transition-colors ${
               selectedInvoiceId === invoice.id
                 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                : 'border-border hover:border-gray-300 dark:hover:border-gray-600'
             } `}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {invoice.invoiceNumber}
                   </h3>
                   <Badge className={`${getStatusColor(invoice.status)} whitespace-nowrap`}>
@@ -152,13 +152,13 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">{t('account.invoiceList.issuedAtLabel')}</span>{' '}
+                    <span className="text-muted-foreground">{t('account.invoiceList.issuedAtLabel')}</span>{' '}
                     {invoice.issuedDate.toLocaleDateString(locale)}
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">{t('account.invoiceList.dueAtLabel')}</span>{' '}
+                    <span className="text-muted-foreground">{t('account.invoiceList.dueAtLabel')}</span>{' '}
                     <span className={invoice.dueDate < new Date() && invoice.status !== 'paid' ? 'text-red-600' : ''}>
                       {invoice.dueDate.toLocaleDateString(locale)}
                     </span>
@@ -167,7 +167,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
               </div>
 
               <div className="text-right">
-                <div className="font-bold text-lg text-gray-900 dark:text-gray-100">
+                <div className="font-bold text-lg text-foreground">
                   {formatPrice(invoice.total)}
                 </div>
                 {invoice.status === 'issued' && (
@@ -187,8 +187,8 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
       </div>
 
       {sorted.length === 0 && (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <p className="text-gray-600 dark:text-gray-300">{t('account.invoiceList.noFilteredResults')}</p>
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-muted-foreground">{t('account.invoiceList.noFilteredResults')}</p>
         </div>
       )}
     </div>

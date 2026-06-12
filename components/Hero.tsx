@@ -14,11 +14,11 @@ export default function Hero() {
 
       <div className="w-full flex flex-col-reverse lg:flex-row items-center gap-6 sm:gap-8 px-1 sm:px-4">
         <div className="hero__content flex-1 text-center lg:text-left">
-          <h1 className="hero__title text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-gray-900 dark:text-gray-100">
+          <h1 className="hero__title text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-foreground">
             {t('hero.title')}
           </h1>
 
-          <p className="hero__subtitle mt-4 text-sm sm:text-base text-gray-600 dark:text-gray-300 max-w-xl mx-auto lg:mx-0">
+          <p className="hero__subtitle mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto lg:mx-0">
             {t('hero.subtitle')}
           </p>
 

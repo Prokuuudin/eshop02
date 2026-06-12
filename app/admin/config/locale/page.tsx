@@ -16,7 +16,7 @@ import {
 } from '@/lib/locale-settings-store'
 
 const SELECT_CLASS =
-  'w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm'
+  'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   ru: 'Русский',
@@ -92,10 +92,10 @@ export default function AdminLocalePage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Локализация
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Настройте язык, валюту, форматы даты и цены.
             </p>
           </div>
@@ -113,10 +113,10 @@ export default function AdminLocalePage() {
 
         <div className="space-y-4">
           {/* Language */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Язык интерфейса</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <h2 className="text-lg font-semibold text-foreground">Язык интерфейса</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Язык по умолчанию для новых пользователей и неавторизованных посетителей сайта.
               </p>
             </div>
@@ -140,10 +140,10 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Currency */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Валюта</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <h2 className="text-lg font-semibold text-foreground">Валюта</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Основная валюта магазина. Символ подставляется автоматически.
               </p>
             </div>
@@ -170,7 +170,7 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Символ (определяется автоматически)
                 </label>
-                <div className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                <div className="w-full rounded-md border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                   {currencySymbol}
                 </div>
               </div>
@@ -178,10 +178,10 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Date and time */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Дата и время</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <h2 className="text-lg font-semibold text-foreground">Дата и время</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Форматы отображения дат и часовой пояс магазина.
               </p>
             </div>
@@ -224,10 +224,10 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Price format */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Формат цены</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <h2 className="text-lg font-semibold text-foreground">Формат цены</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Расположение символа валюты относительно суммы.
               </p>
             </div>
@@ -254,7 +254,7 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Превью цены
                 </label>
-                <div className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="w-full rounded-md border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm font-medium text-foreground">
                   {pricePreview}
                 </div>
               </div>

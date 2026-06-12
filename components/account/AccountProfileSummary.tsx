@@ -23,7 +23,7 @@ const AccountProfileSummary: React.FC<AccountProfileSummaryProps> = ({ user, t, 
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-5 flex items-center gap-4">
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm overflow-hidden">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm overflow-hidden">
                     {user.avatarUrl ? (
                         <Image
                             src={user.avatarUrl}
@@ -37,14 +37,14 @@ const AccountProfileSummary: React.FC<AccountProfileSummaryProps> = ({ user, t, 
                     )}
                 </div>
                 <div className="min-w-0">
-                    <h2 className="truncate text-xl font-bold text-gray-900 dark:text-gray-100">
+                    <h2 className="truncate text-xl font-bold text-foreground">
                         {user.name || t('account.userDefault')}
                     </h2>
-                    <p className="mt-0.5 break-all text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-0.5 break-all text-sm text-muted-foreground">
                         {user.email}
                     </p>
                     {user.phone && (
-                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-0.5 text-sm text-muted-foreground">
                             {user.phone}
                         </p>
                     )}
@@ -54,18 +54,18 @@ const AccountProfileSummary: React.FC<AccountProfileSummaryProps> = ({ user, t, 
             <div className="space-y-1.5 text-sm">
                 {user.cardNumber && (
                     <div className="flex gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-muted-foreground">
                             {tl('account.page.cardNumber', 'Номер карты', 'Card number', 'Kartes numurs')}:
                         </span>
-                        <span className="font-mono text-gray-900 dark:text-gray-100">{user.cardNumber}</span>
+                        <span className="font-mono text-foreground">{user.cardNumber}</span>
                     </div>
                 )}
                 {user.companyName && (
                     <div className="flex gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-muted-foreground">
                             {tl('account.page.company', 'Компания', 'Company', 'Uzņēmums')}:
                         </span>
-                        <span className="text-gray-900 dark:text-gray-100">{user.companyName}</span>
+                        <span className="text-foreground">{user.companyName}</span>
                     </div>
                 )}
             </div>

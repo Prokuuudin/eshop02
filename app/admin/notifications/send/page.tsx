@@ -155,18 +155,18 @@ export default function AdminNotificationsSendPage() {
   }
 
   return (
-    <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
+    <main className="w-full py-4 space-y-6 text-foreground">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">{t('admin.notifications.title')}</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-2 text-sm text-muted-foreground">
             {t('admin.notifications.subtitle')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Left: User selection */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -196,7 +196,7 @@ export default function AdminNotificationsSendPage() {
                   <button
                     type="button"
                     onClick={clearSelection}
-                    className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
+                    className="text-xs text-muted-foreground hover:underline"
                   >
                     {t('admin.notifications.form.clearSelection')}
                   </button>
@@ -205,13 +205,13 @@ export default function AdminNotificationsSendPage() {
             </div>
 
             {/* User list */}
-            <div className="max-h-80 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+            <div className="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-gray-100 dark:divide-gray-800">
               {usersLoading ? (
-                <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                <p className="px-4 py-3 text-sm text-muted-foreground">
                   {t('common.loading')}
                 </p>
               ) : filteredUsers.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                <p className="px-4 py-3 text-sm text-muted-foreground">
                   {t('admin.notifications.form.noUsers')}
                 </p>
               ) : (
@@ -229,7 +229,7 @@ export default function AdminNotificationsSendPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-mono truncate">{u.email}</p>
                       {u.name && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.name}</p>
                       )}
                     </div>
                   </label>
@@ -239,7 +239,7 @@ export default function AdminNotificationsSendPage() {
           </section>
 
           {/* Right: Notification form */}
-          <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
             {/* Title */}
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -273,7 +273,7 @@ export default function AdminNotificationsSendPage() {
                 {t('admin.notifications.form.type')}
               </label>
               <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 value={type}
                 onChange={(e) => setType(e.target.value as NotificationType)}
               >

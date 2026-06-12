@@ -19,7 +19,7 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
         <CheckboxPrimitive.Root
           ref={ref}
           id={checkboxId}
-          className="peer h-5 w-5 shrink-0 rounded border-2 border-gray-400 bg-white text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-500 dark:bg-gray-900 data-[state=checked]:border-indigo-600 data-[state=checked]:bg-indigo-600"
+          className="peer h-5 w-5 shrink-0 rounded border-2 border-gray-400 bg-white text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-500 dark:bg-gray-900 data-[state=checked]:border-primary data-[state=checked]:bg-primary"
           onCheckedChange={(checked) => onCheckedChange?.(checked === true)}
           {...props}
         >
@@ -27,7 +27,7 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
             <Check className="h-4 w-4" />
           </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
-        {label && <span className="text-sm text-gray-900 dark:text-gray-100">{label}</span>}
+        {label && <span className="text-sm text-foreground">{label}</span>}
       </label>
     )
   }

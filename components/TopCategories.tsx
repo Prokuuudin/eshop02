@@ -21,11 +21,11 @@ export default function TopCategories({
 
   if (topItems.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.topCategories.title')}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           {t('account.topCategories.noData')}
         </p>
       </Card>
@@ -36,8 +36,8 @@ export default function TopCategories({
   const categories = analytics.topCategories
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.topCategories.titleWithIcon')}
       </h3>
 
@@ -50,10 +50,10 @@ export default function TopCategories({
           return (
             <div key={cat.category}>
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-sm font-medium text-foreground">
                   {cat.category}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {categoryShare.toFixed(1)}%
                 </p>
               </div>
@@ -63,7 +63,7 @@ export default function TopCategories({
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {cat.quantity} {t('product.pieces')} · {formatEuro(cat.revenue, locale)}
               </p>
             </div>
@@ -71,7 +71,7 @@ export default function TopCategories({
         })}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+      <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
         {t('account.topCategories.shownOfTotal', undefined, {
           shown: Math.min(limit, topItems.length),
           total: categories.length

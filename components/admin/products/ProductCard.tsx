@@ -92,15 +92,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     {product.id}
                     {product.sku && <span className="ml-1 text-gray-300 dark:text-gray-600">· {product.sku}</span>}
                 </p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mt-0.5">
+                <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 mt-0.5">
                     {product.title}
                 </p>
                 {product.brand && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand}</p>
+                    <p className="text-xs text-muted-foreground">{product.brand}</p>
                 )}
 
                 <div className="admin-product-card__price flex items-baseline gap-2 mt-1">
-                    <span className="text-base font-bold text-gray-900 dark:text-gray-100">
+                    <span className="text-base font-bold text-foreground">
                         {product.price.toFixed(2)} €
                     </span>
                     {product.oldPrice && product.oldPrice > product.price && (
@@ -113,24 +113,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
 
             {/* Управление остатком */}
             <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Остаток:</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Остаток:</span>
                 <input
                     type="number"
                     min={0}
                     value={stock}
                     onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
                     type="button"
                     onClick={handleSaveStock}
                     disabled={saving}
-                    className="text-xs px-2 py-0.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                    className="text-xs px-2 py-0.5 rounded bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
                 >
                     {saving ? '...' : 'Сохр.'}
                 </button>
                 {subscribers.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-[11px] text-indigo-500 dark:text-indigo-400 ml-auto">
+                    <span className="flex items-center gap-0.5 text-[11px] text-indigo-500 dark:text-primary ml-auto">
                         <Bell className="w-3 h-3" />
                         {subscribers.length}
                     </span>
@@ -145,7 +145,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                 >
                     <Pencil className="w-3.5 h-3.5" />
                     Редактировать

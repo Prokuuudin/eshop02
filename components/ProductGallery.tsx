@@ -39,7 +39,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                             type="button"
                             className={`product-detail__thumb rounded border-2 transition-all ${
                                 activeImage === idx
-                                    ? 'border-indigo-600 ring-2 ring-indigo-300'
+                                    ? 'border-primary ring-2 ring-indigo-300'
                                     : 'border-transparent opacity-70 hover:opacity-100'
                             } bg-white`}
                             style={{ width: 48, height: 48, overflow: 'hidden' }}
@@ -72,7 +72,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                                     type="button"
                                     className={`rounded border-2 transition-all ${
                                         activeVideo === idx
-                                            ? 'border-indigo-600 ring-2 ring-indigo-300'
+                                            ? 'border-primary ring-2 ring-indigo-300'
                                             : 'border-transparent opacity-70 hover:opacity-100'
                                     } bg-white`}
                                     style={{ width: 80, height: 48, overflow: 'hidden' }}

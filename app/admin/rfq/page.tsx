@@ -76,15 +76,15 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
               </div>
 
               {ev.type === 'quote_sent' && ev.quotePrice !== undefined && (
-                <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
-                  <p>Сумма: <span className="font-medium text-gray-900 dark:text-gray-100">{formatEuro(ev.quotePrice, 'ru-RU')}</span></p>
+                <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                  <p>Сумма: <span className="font-medium text-foreground">{formatEuro(ev.quotePrice, 'ru-RU')}</span></p>
                   {ev.quoteTerms && <p>Условия: {ev.quoteTerms}</p>}
                   {ev.quoteValidUntil && <p>Действует до: {formatDate(ev.quoteValidUntil, 'ru-RU')}</p>}
                 </div>
               )}
 
               {ev.note && ev.type !== 'quote_sent' && (
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 italic">{ev.note}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground italic">{ev.note}</p>
               )}
             </div>
           </div>
@@ -171,8 +171,8 @@ export default function AdminRFQPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">RFQ заявки</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">RFQ заявки</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Запросы на котировку от B2B клиентов
           </p>
         </div>
@@ -189,8 +189,8 @@ export default function AdminRFQPage() {
             className={[
               'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
               statusFilter === tab.value
-                ? 'bg-indigo-600 border-indigo-600 text-white'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600',
+                ? 'bg-primary border-primary text-white'
+                : 'border-border bg-white dark:bg-gray-900 text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600',
             ].join(' ')}
           >
             {tab.label}
@@ -227,10 +227,10 @@ export default function AdminRFQPage() {
                       {STATUS_LABELS[rfq.status]}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p className="text-sm font-medium text-foreground">
                     Компания: <span className="font-mono">{rfq.companyId}</span>
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     Создана: {formatDate(rfq.createdAt, 'ru-RU')}
                     {rfq.timeline.length > 1 && lastEvent && (
                       <> · Последнее обновление: {formatDate(lastEvent.at, 'ru-RU')}</>
@@ -239,7 +239,7 @@ export default function AdminRFQPage() {
                 </div>
 
                 <div className="shrink-0 text-right space-y-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {rfq.items.length} {rfq.items.length === 1 ? 'позиция' : rfq.items.length < 5 ? 'позиции' : 'позиций'}
                   </p>
                   {rfq.quote && (
@@ -258,7 +258,7 @@ export default function AdminRFQPage() {
                   {/* Items */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Состав заявки</p>
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+                    <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800">
                       {rfq.items.map((item, idx) => {
                         const product = products.find((p) => p.id === item.productId)
                         return (
@@ -272,7 +272,7 @@ export default function AdminRFQPage() {
                               )}
                             </div>
                             <div className="shrink-0 text-right">
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{item.quantity} шт</p>
+                              <p className="text-sm text-muted-foreground">{item.quantity} шт</p>
                               {product?.price && (
                                 <p className="text-xs text-gray-400">
                                   Прайс: {formatEuro(product.price * item.quantity, 'ru-RU')}
@@ -284,7 +284,7 @@ export default function AdminRFQPage() {
                       })}
                     </div>
                     {rfq.notes && (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
+                      <p className="mt-2 text-sm text-muted-foreground italic">
                         Комментарий клиента: «{rfq.notes}»
                       </p>
                     )}
@@ -303,7 +303,7 @@ export default function AdminRFQPage() {
                           step={0.01}
                           value={quotePrice[rfq.id] ?? (rfq.quote?.totalPrice ?? '')}
                           onChange={(e) => setQuotePrice((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
                           placeholder="Сумма, €"
                         />
                         <input
@@ -311,14 +311,14 @@ export default function AdminRFQPage() {
                           min={1}
                           value={quoteValidDays[rfq.id] ?? '7'}
                           onChange={(e) => setQuoteValidDays((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
                           placeholder="Действует, дней"
                         />
                         <input
                           type="text"
                           value={quoteTerms[rfq.id] ?? (rfq.quote?.terms ?? '')}
                           onChange={(e) => setQuoteTerms((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
                           placeholder="Условия оплаты/поставки"
                         />
                       </div>
@@ -367,7 +367,7 @@ export default function AdminRFQPage() {
                         onChange={(e) => setNoteDraft((p) => ({ ...p, [rfq.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && submitNote(rfq.id)}
                         placeholder="Внутренний комментарий..."
-                        className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
+                        className="flex-1 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-1.5 text-sm text-foreground"
                       />
                       <Button
                         size="sm"
@@ -394,7 +394,7 @@ export default function AdminRFQPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="rounded-xl border border-border p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-muted-foreground">
             {requests.length === 0 ? 'RFQ заявок пока нет' : 'Нет заявок по выбранным фильтрам'}
           </div>
         )}

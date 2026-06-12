@@ -15,7 +15,7 @@ export const DeliveryInfo = () => {
     const { t } = useTranslation();
     return (
         <section className="delivery-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">
-            <h2 className="delivery-info__title text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            <h2 className="delivery-info__title text-2xl font-semibold mb-4 text-foreground">
                 Доставка и получение заказов
             </h2>
             <p className="delivery-info__desc mb-4 text-gray-700 dark:text-gray-300">

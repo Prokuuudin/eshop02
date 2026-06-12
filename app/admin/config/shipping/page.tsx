@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const SELECT_CLASS =
-  'w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm'
+  'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
 
 interface DeliveryMethod {
   enabled: boolean
@@ -125,10 +125,10 @@ export default function AdminShippingPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Доставка и оплата
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Управляйте доступными способами доставки и оплаты.
             </p>
           </div>
@@ -151,12 +151,12 @@ export default function AdminShippingPage() {
         )}
 
         {loading ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Загрузка...</div>
+          <div className="text-sm text-muted-foreground">Загрузка...</div>
         ) : (
           <>
             {/* Delivery */}
-            <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Способы доставки</h2>
+            <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">Способы доставки</h2>
 
               <div className="space-y-4">
                 {DELIVERY_KEYS.map((key) => {
@@ -165,7 +165,7 @@ export default function AdminShippingPage() {
                   return (
                     <div
                       key={key}
-                      className="rounded-md border border-gray-200 dark:border-gray-700 p-3 space-y-3"
+                      className="rounded-md border border-border p-3 space-y-3"
                     >
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                         {DELIVERY_NAMES[key] ?? key}
@@ -173,7 +173,7 @@ export default function AdminShippingPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
                           <select
@@ -187,7 +187,7 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Название
                           </label>
                           <Input
@@ -198,7 +198,7 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Цена (€)
                           </label>
                           <Input
@@ -212,7 +212,7 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Бесплатно от (€)
                           </label>
                           <Input
@@ -232,8 +232,8 @@ export default function AdminShippingPage() {
             </section>
 
             {/* Payment */}
-            <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Способы оплаты</h2>
+            <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">Способы оплаты</h2>
 
               <div className="space-y-3">
                 {PAYMENT_KEYS.map((key) => {
@@ -242,7 +242,7 @@ export default function AdminShippingPage() {
                   return (
                     <div
                       key={key}
-                      className="rounded-md border border-gray-200 dark:border-gray-700 p-3"
+                      className="rounded-md border border-border p-3"
                     >
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
                         {PAYMENT_NAMES[key] ?? key}
@@ -250,7 +250,7 @@ export default function AdminShippingPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
                           <select
@@ -264,7 +264,7 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                          <label className="block text-xs font-medium text-muted-foreground">
                             Название
                           </label>
                           <Input

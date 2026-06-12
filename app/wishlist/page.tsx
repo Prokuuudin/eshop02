@@ -18,14 +18,14 @@ export default function WishlistPage() {
 
     if (items.length === 0) {
         return (
-            <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
+            <main className="w-full px-4 py-12 text-foreground">
                 <div className="mb-8">
                     <BenefitsList />
                 </div>
                 <h1 className="text-3xl font-bold mb-4">{t('wishlist.title')}</h1>
                 <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-900">
                     <p className="text-lg font-medium">{t('wishlist.empty')}</p>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {t('wishlist.notAdded')}
                     </p>
                     <Link href="/catalog">
@@ -37,11 +37,11 @@ export default function WishlistPage() {
     }
 
     return (
-        <main className="w-full px-4 py-8 text-gray-900 dark:text-gray-100">
+        <main className="w-full px-4 py-8 text-foreground">
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">{t('wishlist.title')}</h1>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{itemsLabel}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{itemsLabel}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <ConfirmActionDialog

@@ -74,11 +74,11 @@ export default async function ProductPage({ params }: PageProps) {
 
     if (!product) {
         return (
-            <main className="w-full px-4 py-8 text-gray-900 dark:text-gray-100">
+            <main className="w-full px-4 py-8 text-foreground">
                 <p className="text-center text-gray-700 dark:text-gray-300">
                     {t['product.notFound'] ?? 'Product not found'}
                 </p>
-                <Link href="/catalog" className="text-indigo-600 inline-block mt-4">
+                <Link href="/catalog" className="text-primary inline-block mt-4">
                     {t['product.backToCatalog'] ?? 'Back to catalog'}
                 </Link>
             </main>

@@ -21,11 +21,11 @@ export default function TopProducts({
 
   if (topItems.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.topProducts.title')}
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           {t('account.topProducts.noData')}
         </p>
       </Card>
@@ -33,8 +33,8 @@ export default function TopProducts({
   }
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.topProducts.titleWithIcon')}
       </h3>
 
@@ -49,16 +49,16 @@ export default function TopProducts({
                 #{index + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {product.productTitle}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {product.quantity} {t('product.pieces')}
                 </p>
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              <p className="text-sm font-bold text-foreground">
                 {formatEuro(product.revenue, locale)}
               </p>
             </div>
@@ -66,7 +66,7 @@ export default function TopProducts({
         ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+      <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
         {t('account.topProducts.shownOfTotal', undefined, {
           shown: Math.min(limit, topItems.length),
           total: analytics.topProducts.length

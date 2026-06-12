@@ -52,7 +52,7 @@ function SubscriptionCard({
     });
 
     return (
-        <div className="account-subscriptions__card rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+        <div className="account-subscriptions__card rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
             <div className="flex items-start gap-3">
                 {sub.productImage ? (
                     <img
@@ -68,7 +68,7 @@ function SubscriptionCard({
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                        <p className="text-sm font-medium text-foreground leading-snug">
                             {sub.productTitle}
                         </p>
                         <Badge className={`text-xs shrink-0 border-0 ${statusCfg.className}`}>
@@ -76,7 +76,7 @@ function SubscriptionCard({
                         </Badge>
                     </div>
 
-                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>
                             <span className="font-medium text-gray-700 dark:text-gray-300">
                                 {formatEuro(discountedPrice, 'en-US')}
@@ -91,7 +91,7 @@ function SubscriptionCard({
 
                     {sub.status !== 'cancelled' && (
                         <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                            {t('subscription.nextOn')} <span className="font-medium text-gray-600 dark:text-gray-300">{nextDate}</span>
+                            {t('subscription.nextOn')} <span className="font-medium text-muted-foreground">{nextDate}</span>
                         </p>
                     )}
                 </div>
@@ -123,12 +123,12 @@ function SubscriptionCard({
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                         {intervalOpen && (
-                            <div className="absolute top-full left-0 mt-1 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1 min-w-[160px]">
+                            <div className="absolute top-full left-0 mt-1 z-10 bg-white dark:bg-gray-800 border border-border rounded-lg shadow-lg p-1 min-w-[160px]">
                                 {INTERVALS.map((iv) => (
                                     <button
                                         key={iv}
                                         onClick={() => { onChangeInterval(iv); setIntervalOpen(false); }}
-                                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between ${sub.interval === iv ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}
+                                        className={`w-full text-left px-3 py-1.5 text-xs rounded hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between ${sub.interval === iv ? 'font-semibold text-primary' : 'text-gray-700 dark:text-gray-300'}`}
                                     >
                                         {t(`subscription.${iv}`)}
                                         <span className="text-green-600 dark:text-green-400">-{SUBSCRIPTION_DISCOUNTS[iv]}%</span>
@@ -181,14 +181,14 @@ export const AccountSubscriptionsSection: React.FC = () => {
     const cancelled = subs.filter((s) => s.status === 'cancelled');
 
     return (
-        <section className="account-subscriptions rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
+        <section className="account-subscriptions rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
             <div className="account-subscriptions__header flex items-center gap-2 mb-4">
-                <RefreshCw className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                <RefreshCw className="w-4 h-4 text-primary" />
+                <h2 className="text-base font-semibold text-foreground">
                     {t('subscription.sectionTitle')}
                 </h2>
                 {active.length > 0 && (
-                    <Badge className="ml-1 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border-0">
+                    <Badge className="ml-1 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary border-0">
                         {active.length}
                     </Badge>
                 )}
@@ -208,7 +208,7 @@ export const AccountSubscriptionsSection: React.FC = () => {
                         </p>
                     </div>
                     <Link href="/catalog">
-                        <button className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                        <button className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium">
                             <ShoppingBag className="w-3.5 h-3.5" />
                             {t('subscription.emptyCta')}
                         </button>

@@ -28,16 +28,16 @@ export default function FAQSection() {
   return (
     <section className="py-10" id="faq">
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('faq.site.title')}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{t('faq.site.subtitle')}</p>
+        <h2 className="text-2xl font-semibold text-foreground mb-2">{t('faq.site.title')}</h2>
+        <p className="text-sm text-muted-foreground mb-6">{t('faq.site.subtitle')}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="rounded-lg border bg-white dark:bg-gray-900 px-4 md:px-6">
             <Accordion type="single" collapsible>
               {col1.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>
-                  <AccordionTrigger className="text-gray-900 dark:text-gray-100">{item.question}</AccordionTrigger>
-                  <AccordionContent className="text-gray-600 dark:text-gray-300">{item.answer}</AccordionContent>
+                  <AccordionTrigger className="text-foreground">{item.question}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
@@ -46,8 +46,8 @@ export default function FAQSection() {
             <Accordion type="single" collapsible>
               {col2.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>
-                  <AccordionTrigger className="text-gray-900 dark:text-gray-100">{item.question}</AccordionTrigger>
-                  <AccordionContent className="text-gray-600 dark:text-gray-300">{item.answer}</AccordionContent>
+                  <AccordionTrigger className="text-foreground">{item.question}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>

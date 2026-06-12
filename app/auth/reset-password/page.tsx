@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
   if (phase === 'loading') {
     return (
       <main className="flex min-h-[60vh] items-center justify-center px-4">
-        <p className="text-gray-500 dark:text-gray-400 text-sm animate-pulse">Проверяем ссылку…</p>
+        <p className="text-muted-foreground text-sm animate-pulse">Проверяем ссылку…</p>
       </main>
     )
   }
@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
           <p className="text-red-600 dark:text-red-400">{errorMsg}</p>
           <Link
             href="/auth/forgot-password"
-            className="inline-block text-indigo-600 hover:underline text-sm"
+            className="inline-block text-primary hover:underline text-sm"
           >
             Запросить новую ссылку
           </Link>
@@ -121,8 +121,8 @@ export default function ResetPasswordPage() {
       <main className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="max-w-md w-full text-center space-y-4">
           <div className="text-4xl">✓</div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Пароль обновлён!</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
+          <h1 className="text-xl font-semibold text-foreground">Пароль обновлён!</h1>
+          <p className="text-muted-foreground text-sm">
             Сейчас вы будете перенаправлены на страницу входа.
           </p>
         </div>
@@ -133,11 +133,11 @@ export default function ResetPasswordPage() {
   return (
     <main className="w-full px-4 py-12">
       <div className="max-w-md mx-auto rounded-lg border bg-white dark:bg-gray-900 p-6">
-        <h1 className="text-2xl font-bold mb-5 text-gray-900 dark:text-gray-100">Новый пароль</h1>
+        <h1 className="text-2xl font-bold mb-5 text-foreground">Новый пароль</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
           <div>
-            <label className="block mb-1 text-sm text-gray-900 dark:text-gray-100">
+            <label className="block mb-1 text-sm text-foreground">
               Новый пароль
             </label>
             <Input
@@ -146,11 +146,11 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+              className="w-full bg-white dark:bg-gray-800 text-foreground border-border"
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm text-gray-900 dark:text-gray-100">
+            <label className="block mb-1 text-sm text-foreground">
               Повторите пароль
             </label>
             <Input
@@ -159,7 +159,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword2(e.target.value)}
               required
               minLength={6}
-              className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+              className="w-full bg-white dark:bg-gray-800 text-foreground border-border"
             />
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>
@@ -167,7 +167,7 @@ export default function ResetPasswordPage() {
           </Button>
         </form>
         <div className="mt-5 text-sm text-center">
-          <Link href="/auth/login" className="text-indigo-600 hover:underline">
+          <Link href="/auth/login" className="text-primary hover:underline">
             Войти
           </Link>
         </div>

@@ -1,6 +1,6 @@
 export default function AccountSectionSkeleton() {
   return (
-    <div className="account-section-skeleton animate-pulse rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm sm:p-6">
+    <div className="account-section-skeleton animate-pulse rounded-2xl border border-border bg-white dark:bg-gray-900 p-4 shadow-sm sm:p-6">
       {/* Section header: title + optional subtitle */}
       <div className="mb-6 space-y-2">
         <div className="h-7 w-48 bg-gray-200 dark:bg-gray-700 rounded" />

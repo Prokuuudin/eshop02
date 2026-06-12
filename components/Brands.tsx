@@ -85,7 +85,7 @@ export default function Brands() {
 
         {!showAll && (
           <button
-            className="mb-6 text-sm text-indigo-600 hover:underline sm:text-base"
+            className="mb-6 text-sm text-primary hover:underline sm:text-base"
             onClick={() => setShowAll(true)}
           >
             {t('brands.showAll')}
@@ -97,7 +97,7 @@ export default function Brands() {
             <div className="mb-4 flex items-baseline gap-3 sm:mb-5">
               <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.alphabeticalTitle')}</h2>
               <button
-                className="text-sm text-indigo-600 hover:underline sm:text-base"
+                className="text-sm text-primary hover:underline sm:text-base"
                 onClick={() => setShowAll(false)}
               >
                 {t('brands.hide')}

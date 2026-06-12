@@ -63,10 +63,10 @@ export default function AnalyticsPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gray-500 shadow-sm dark:bg-gray-900 dark:text-gray-300">
             <Activity className="h-6 w-6" />
           </div>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+          <p className="mt-4 text-lg text-muted-foreground">
             {t('account.analytics.noData')}
           </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             {t('account.analytics.noDataDesc')}
           </p>
         </div>
@@ -80,14 +80,14 @@ export default function AnalyticsPage() {
                 <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{card.label}</p>
-                      <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-gray-100">{card.value}</p>
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{card.label}</p>
+                      <p className="mt-3 text-2xl font-bold text-foreground">{card.value}</p>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-2 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                       <Icon className="h-4 w-4" />
                     </div>
                   </div>
-                  <p className="mt-3 text-xs text-gray-500 dark:text-gray-300">{card.helpText}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{card.helpText}</p>
                 </div>
               )
             })}
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
           {analytics.topCategories.length > 0 && (
             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
               <div className="border-b border-gray-200 p-6 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="text-lg font-semibold text-foreground">
                   {t('account.analytics.statsByCategory')}
                 </h3>
               </div>
@@ -122,16 +122,16 @@ export default function AnalyticsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                         {t('account.analytics.colCategory')}
                       </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                         {t('account.analytics.colItems')}
                       </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                         {t('account.analytics.colRevenue')}
                       </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                         {t('account.analytics.colShare')}
                       </th>
                     </tr>
@@ -144,16 +144,16 @@ export default function AnalyticsPage() {
                           key={idx}
                           className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                         >
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <td className="px-6 py-4 text-sm font-medium text-foreground">
                             {cat.category}
                           </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-400">
+                          <td className="px-6 py-4 text-right text-sm text-muted-foreground">
                             {cat.quantity}
                           </td>
-                          <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          <td className="px-6 py-4 text-right text-sm font-semibold text-foreground">
                             {formatEuro(cat.revenue, locale)}
                           </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-400">
+                          <td className="px-6 py-4 text-right text-sm text-muted-foreground">
                             {percentage.toFixed(1)}%
                           </td>
                         </tr>

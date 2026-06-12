@@ -14,7 +14,7 @@ export const ProductBrand: React.FC<ProductBrandProps> = ({ brand }) => {
             b.id.toLowerCase() === brand.toLowerCase()
     );
     return (
-        <div className="product-detail__brand flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-1">
+        <div className="product-detail__brand flex items-center gap-2 text-sm text-muted-foreground mb-1">
             {brandObj && brandObj.logo && brandObj.allowLogo !== false && (
                 <Image
                     src={brandObj.logo}

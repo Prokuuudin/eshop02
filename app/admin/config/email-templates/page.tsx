@@ -112,7 +112,7 @@ export default function EmailTemplatesPage() {
         <AdminGate access="full">
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    <h1 className="text-2xl font-bold text-foreground">
                         Редактор email-шаблонов
                     </h1>
                     <p className="mt-1 text-sm text-gray-500">
@@ -209,7 +209,7 @@ export default function EmailTemplatesPage() {
                                 {tab === 'edit' ? (
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 Тема письма
                                             </label>
                                             <input
@@ -219,7 +219,7 @@ export default function EmailTemplatesPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 HTML-тело письма
                                             </label>
                                             <textarea
@@ -231,7 +231,7 @@ export default function EmailTemplatesPage() {
                                         </div>
                                         {selected.variables.length > 0 && (
                                             <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
-                                                <p className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                <p className="mb-1 text-xs font-medium text-muted-foreground">
                                                     Доступные переменные:
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
@@ -271,8 +271,8 @@ export default function EmailTemplatesPage() {
                                             )}
                                         </div>
 
-                                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2">
-                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                        <div className="rounded-lg border border-border px-4 py-3 space-y-2">
+                                            <p className="text-xs font-medium text-muted-foreground">
                                                 Отправить тестовое письмо
                                             </p>
                                             <div className="flex items-center gap-2">
@@ -287,7 +287,7 @@ export default function EmailTemplatesPage() {
                                                     type="button"
                                                     onClick={sendTest}
                                                     disabled={testSending || !testEmail}
-                                                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40 whitespace-nowrap"
+                                                    className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-40 whitespace-nowrap"
                                                 >
                                                     {testSending ? 'Отправка...' : 'Отправить'}
                                                 </button>

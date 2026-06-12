@@ -167,7 +167,7 @@ export default function AdminShowcasesPage() {
     [allProducts, form.productIds]
   )
 
-  const selectCls = 'w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm'
+  const selectCls = 'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
 
   return (
     <AdminGate>
@@ -175,10 +175,10 @@ export default function AdminShowcasesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-1 inline-block">
+            <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
               ← Назад в админку
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Подборки и витрины</h1>
+            <h1 className="text-2xl font-bold text-foreground">Подборки и витрины</h1>
           </div>
           {!showForm && (
             <Button onClick={openCreate}>+ Создать подборку</Button>
@@ -193,13 +193,13 @@ export default function AdminShowcasesPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-5">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-5">
+            <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать подборку' : 'Новая подборка'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Название *</span>
+                <span className="text-sm text-muted-foreground">Название *</span>
                 <Input
                   value={form.name}
                   onChange={(e) => {
@@ -210,7 +210,7 @@ export default function AdminShowcasesPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Slug (URL)</span>
+                <span className="text-sm text-muted-foreground">Slug (URL)</span>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
@@ -218,7 +218,7 @@ export default function AdminShowcasesPage() {
                 />
               </label>
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Описание</span>
+                <span className="text-sm text-muted-foreground">Описание</span>
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -227,7 +227,7 @@ export default function AdminShowcasesPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Видимость</span>
+                <span className="text-sm text-muted-foreground">Видимость</span>
                 <select
                   value={form.active ? 'true' : 'false'}
                   onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}
@@ -241,7 +241,7 @@ export default function AdminShowcasesPage() {
 
             {/* Products section */}
             <div className="space-y-3">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">Товары в подборке</h3>
+              <h3 className="font-medium text-foreground text-sm">Товары в подборке</h3>
 
               <Input
                 value={productSearch}
@@ -250,14 +250,14 @@ export default function AdminShowcasesPage() {
               />
 
               {productSearch.trim() && (
-                <div className="rounded-md border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
+                <div className="rounded-md border border-border divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
                   {filteredProducts.length === 0 ? (
-                    <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">Ничего не найдено</p>
+                    <p className="px-3 py-2 text-sm text-muted-foreground">Ничего не найдено</p>
                   ) : (
                     filteredProducts.map((p) => (
                       <div key={p.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <div>
-                          <span className="text-sm text-gray-900 dark:text-gray-100">{p.title}</span>
+                          <span className="text-sm text-foreground">{p.title}</span>
                           {p.brand && <span className="text-xs text-gray-400 ml-2">{p.brand}</span>}
                         </div>
                         <Button size="sm" variant="outline" onClick={() => addProduct(p.id)} className="shrink-0 ml-2">
@@ -271,12 +271,12 @@ export default function AdminShowcasesPage() {
 
               {selectedProducts.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Добавлено: {selectedProducts.length}</p>
-                  <div className="rounded-md border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground">Добавлено: {selectedProducts.length}</p>
+                  <div className="rounded-md border border-border divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
                     {selectedProducts.map((p) => (
                       <div key={p.id} className="flex items-center justify-between px-3 py-2">
                         <div>
-                          <span className="text-sm text-gray-900 dark:text-gray-100">{p.title}</span>
+                          <span className="text-sm text-foreground">{p.title}</span>
                           {p.brand && <span className="text-xs text-gray-400 ml-2">{p.brand}</span>}
                         </div>
                         <button
@@ -304,10 +304,10 @@ export default function AdminShowcasesPage() {
 
         {/* List */}
         {loading ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Загрузка...</p>
+          <p className="text-muted-foreground text-sm">Загрузка...</p>
         ) : items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Подборок пока нет.</p>
+          <div className="rounded-xl border border-dashed border-border p-12 text-center">
+            <p className="text-muted-foreground text-sm">Подборок пока нет.</p>
             <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Нажмите «+ Создать подборку», чтобы начать.</p>
           </div>
         ) : (
@@ -315,12 +315,12 @@ export default function AdminShowcasesPage() {
             {items.sort((a, b) => a.order - b.order).map((item) => (
               <div
                 key={item.id}
-                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 ${item.active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800'}`}
+                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800'}`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className={`font-semibold ${item.active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
+                      <h3 className={`font-semibold ${item.active ? 'text-foreground' : 'text-gray-400 dark:text-gray-500'}`}>
                         {item.name}
                       </h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
@@ -328,7 +328,7 @@ export default function AdminShowcasesPage() {
                       </span>
                     </div>
                     {item.description && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
                     )}
                     <div className="flex gap-4 text-xs text-gray-400 dark:text-gray-500 mt-1">
                       <span>/{item.slug}</span>

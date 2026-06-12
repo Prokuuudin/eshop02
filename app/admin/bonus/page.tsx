@@ -94,11 +94,11 @@ export default function AdminBonusPage() {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 space-y-6 text-gray-900 dark:text-gray-100">
+      <main className="w-full py-4 space-y-6 text-foreground">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Настройка, статистика и управление балансами</p>
+            <p className="mt-1 text-sm text-muted-foreground">Настройка, статистика и управление балансами</p>
           </div>
           <Link href="/admin"><Button variant="outline">← Назад</Button></Link>
         </div>
@@ -112,15 +112,15 @@ export default function AdminBonusPage() {
             { label: 'Активных пользователей', value: usersWithBalance, bg: 'bg-purple-50 dark:bg-purple-950/20' },
             { label: 'Суммарный баланс', value: `${totalBalance} баллов`, bg: 'bg-amber-50 dark:bg-amber-950/20' },
           ].map(({ label, value, bg }) => (
-            <div key={label} className={`${bg} rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm`}>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+            <div key={label} className={`${bg} rounded-xl border border-border p-4 shadow-sm`}>
+              <p className="text-xs text-muted-foreground">{label}</p>
               <p className="text-xl font-bold mt-1">{value}</p>
             </div>
           ))}
         </div>
 
         {/* Настройки */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
@@ -131,14 +131,14 @@ export default function AdminBonusPage() {
           </button>
 
           {settingsOpen && (
-            <div className="px-5 pb-5 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{t('admin.bonus.enabled')}</span>
+                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.enabled')}</span>
                   <select
                     value={draft.enabled ? 'yes' : 'no'}
                     onChange={(e) => setDraft((p) => ({ ...p, enabled: e.target.value === 'yes' }))}
-                    className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    className="w-full rounded border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                   >
                     <option value="yes">{t('common.yes')}</option>
                     <option value="no">{t('common.no')}</option>
@@ -146,37 +146,37 @@ export default function AdminBonusPage() {
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{t('admin.bonus.earnRate')} (%)</span>
+                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.earnRate')} (%)</span>
                   <Input type="number" min={0} max={100} value={draft.earnRatePercent}
                     onChange={(e) => setDraft((p) => ({ ...p, earnRatePercent: Number(e.target.value) }))} />
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{t('admin.bonus.maxSpend')} (%)</span>
+                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.maxSpend')} (%)</span>
                   <Input type="number" min={0} max={100} value={draft.maxSpendPercent}
                     onChange={(e) => setDraft((p) => ({ ...p, maxSpendPercent: Number(e.target.value) }))} />
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">{t('admin.bonus.minOrderForEarn')} (€)</span>
+                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.minOrderForEarn')} (€)</span>
                   <Input type="number" min={0} value={draft.minOrderForEarn}
                     onChange={(e) => setDraft((p) => ({ ...p, minOrderForEarn: Number(e.target.value) }))} />
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Минимум баллов для списания</span>
+                  <span className="block text-muted-foreground mb-1">Минимум баллов для списания</span>
                   <Input type="number" min={0} value={draft.minPointsToSpend}
                     onChange={(e) => setDraft((p) => ({ ...p, minPointsToSpend: Number(e.target.value) }))} />
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Макс. баллов за один заказ (0 = без лимита)</span>
+                  <span className="block text-muted-foreground mb-1">Макс. баллов за один заказ (0 = без лимита)</span>
                   <Input type="number" min={0} value={draft.maxEarnPerOrder}
                     onChange={(e) => setDraft((p) => ({ ...p, maxEarnPerOrder: Number(e.target.value) }))} />
                 </label>
 
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Срок жизни баллов (дней, 0 = бессрочно)</span>
+                  <span className="block text-muted-foreground mb-1">Срок жизни баллов (дней, 0 = бессрочно)</span>
                   <Input type="number" min={0} max={3650} value={draft.pointsExpiryDays}
                     onChange={(e) => setDraft((p) => ({ ...p, pointsExpiryDays: Number(e.target.value) }))} />
                 </label>
@@ -191,7 +191,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* Калькулятор */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setCalcOpen((v) => !v)}
@@ -202,13 +202,13 @@ export default function AdminBonusPage() {
           </button>
 
           {calcOpen && (
-            <div className="px-5 pb-5 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">
                 Введите произвольную сумму заказа — калькулятор покажет, сколько баллов получит клиент и сколько сможет потратить на следующую покупку, исходя из текущих настроек выше.
               </p>
               <div className="flex items-end gap-4 flex-wrap">
                 <label className="text-sm">
-                  <span className="block text-gray-600 dark:text-gray-300 mb-1">Сумма заказа (€)</span>
+                  <span className="block text-muted-foreground mb-1">Сумма заказа (€)</span>
                   <Input
                     type="number"
                     min={0}
@@ -251,7 +251,7 @@ export default function AdminBonusPage() {
                         </p>
                       </div>
                       {draft.pointsExpiryDays > 0 && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           Начисленные баллы сгорят через {draft.pointsExpiryDays} дней
                         </p>
                       )}
@@ -264,7 +264,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* Балансы пользователей */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setBalancesOpen((v) => !v)}
@@ -275,7 +275,7 @@ export default function AdminBonusPage() {
           </button>
 
           {balancesOpen && (
-            <div className="border-t border-gray-200 dark:border-gray-700 px-5 pb-5 pt-4 space-y-3">
+            <div className="border-t border-border px-5 pb-5 pt-4 space-y-3">
               <Input
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
@@ -288,7 +288,7 @@ export default function AdminBonusPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
+                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
                         <th className="pb-2 pr-4 font-medium">Пользователь</th>
                         <th className="pb-2 pr-4 font-medium">Баллы</th>
                         <th className="pb-2 font-medium">Корректировка</th>
@@ -342,19 +342,19 @@ export default function AdminBonusPage() {
 
         {/* Сегментация + Топ-5 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-3">Сегментация по балансу</h2>
             <div className="space-y-2">
               {segments.map((s) => (
                 <div key={s.label} className="rounded-lg border border-gray-100 dark:border-gray-800 px-4 py-2 flex items-center justify-between">
                   <span className="text-sm text-gray-700 dark:text-gray-300">{s.label}</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{s.count} польз.</span>
+                  <span className="font-semibold text-foreground">{s.count} польз.</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-3">Топ-5 по балансу</h2>
             {top5.length === 0 ? (
               <p className="text-sm text-gray-400">Ни у кого нет баллов</p>
@@ -376,7 +376,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* История операций */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
           <h2 className="text-lg font-semibold mb-3">История операций</h2>
           {bonusOrders.length === 0 ? (
             <p className="text-sm text-gray-400">Операций с бонусами пока не было</p>
@@ -384,7 +384,7 @@ export default function AdminBonusPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="pb-2 pr-4 font-medium">Дата</th>
                     <th className="pb-2 pr-4 font-medium">Покупатель</th>
                     <th className="pb-2 pr-4 font-medium text-right">Сумма заказа</th>
@@ -395,7 +395,7 @@ export default function AdminBonusPage() {
                 <tbody>
                   {bonusOrders.map((o, idx) => (
                     <tr key={o.id} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'}>
-                      <td className="py-2 pr-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
+                      <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                         {new Date(o.createdAt).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="py-2 pr-4">

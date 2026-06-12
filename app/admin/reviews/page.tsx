@@ -296,10 +296,10 @@ export default function AdminReviewsPage() {
 
   return (
     <AdminGate>
-      <main className="w-full space-y-3 text-gray-900 dark:text-gray-100">
+      <main className="w-full space-y-3 text-foreground">
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <h1 className="text-2xl font-bold">{l('Отзывы: модерация', 'Reviews: moderation', 'Atsauksmes: moderacija')}</h1>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+          <p className="mt-1 text-xs text-muted-foreground">
             {l('Просмотр, скрытие, возврат в публикацию и удаление отзывов.', 'View, hide, restore publication, and delete reviews.', 'Skatisana, slegsana, publicesanas atjaunosana un dzesana.')}
           </p>
 
@@ -320,7 +320,7 @@ export default function AdminReviewsPage() {
               <option value="hidden">{STATUS_LABELS.hidden}</option>
               <option value="pending">{STATUS_LABELS.pending}</option>
             </select>
-            <p className="text-xs text-gray-600 dark:text-gray-300">{l('Всего', 'Total', 'Kopa')}: {filteredClientSide.length}</p>
+            <p className="text-xs text-muted-foreground">{l('Всего', 'Total', 'Kopa')}: {filteredClientSide.length}</p>
           </div>
 
           <div className="mt-3 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700">
@@ -335,7 +335,7 @@ export default function AdminReviewsPage() {
                 {l('Выбрать все видимые', 'Select all visible', 'Atlasit visas redzamas')}
               </label>
 
-              <span className="text-xs text-gray-500 dark:text-gray-400">{l('Выбрано', 'Selected', 'Atlasits')}: {selectedCount}</span>
+              <span className="text-xs text-muted-foreground">{l('Выбрано', 'Selected', 'Atlasits')}: {selectedCount}</span>
 
               <div className="ml-auto flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" disabled={bulkSaving || selectedCount === 0} onClick={() => void applyBulkStatus('approved')}>
@@ -391,12 +391,12 @@ export default function AdminReviewsPage() {
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{review.id}</span>
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{l('Товар', 'Product', 'Produkts')}: {review.productId}</span>
                   <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_COLORS[review.status]}`}>{STATUS_LABELS[review.status]}</span>
-                  <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">{new Date(review.createdAt).toLocaleString(language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US')}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{new Date(review.createdAt).toLocaleString(language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US')}</span>
                 </div>
 
                 <div className="mt-2 space-y-1">
                   <p className="text-sm font-semibold">{review.title}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-300">{l('Автор', 'Author', 'Autors')}: {review.author} · {l('Оценка', 'Rating', 'Vertejums')}: {review.rating} · {l('Полезно', 'Helpful', 'Noderigi')}: {review.helpful}</p>
+                  <p className="text-xs text-muted-foreground">{l('Автор', 'Author', 'Autors')}: {review.author} · {l('Оценка', 'Rating', 'Vertejums')}: {review.rating} · {l('Полезно', 'Helpful', 'Noderigi')}: {review.helpful}</p>
                   <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{review.text}</p>
                 </div>
 
@@ -418,7 +418,7 @@ export default function AdminReviewsPage() {
                     variant="outline"
                     disabled={isSaving}
                     onClick={() => toggleReply(review.id, review.adminReply?.text)}
-                    className="ml-auto border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/20"
+                    className="ml-auto border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-primary dark:hover:bg-indigo-900/20"
                   >
                     {review.adminReply
                       ? (replyExpanded.has(review.id) ? l('Закрыть', 'Close', 'Aizvert') : l('Изменить ответ', 'Edit reply', 'Labot atbildi'))
@@ -428,8 +428,8 @@ export default function AdminReviewsPage() {
 
                 {/* Existing reply preview */}
                 {review.adminReply && !replyExpanded.has(review.id) && (
-                  <div className="mt-2 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
-                    <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-0.5">
+                  <div className="mt-2 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-primary mb-0.5">
                       {l('Ответ магазина', 'Store reply', 'Veikala atbilde')}
                     </p>
                     <p className="text-xs text-gray-700 dark:text-gray-300">{review.adminReply.text}</p>
@@ -439,7 +439,7 @@ export default function AdminReviewsPage() {
                 {/* Reply editor */}
                 {replyExpanded.has(review.id) && (
                   <div className="mt-3 space-y-2 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-3">
-                    <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-primary">
                       {l('Ответ от магазина (публичный)', 'Store reply (public)', 'Veikala atbilde (publiska)')}
                     </p>
                     <textarea
@@ -447,14 +447,14 @@ export default function AdminReviewsPage() {
                       value={replyDrafts[review.id] ?? review.adminReply?.text ?? ''}
                       onChange={(e) => setReplyDrafts((d) => ({ ...d, [review.id]: e.target.value }))}
                       placeholder={l('Напишите ответ покупателю...', 'Write a reply to the customer...', 'Rakstiet atbildi klientam...')}
-                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         disabled={replySavingId === review.id || !(replyDrafts[review.id] ?? '').trim()}
                         onClick={() => void saveReply(review.id)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                        className="bg-primary hover:bg-primary/90 text-white"
                       >
                         {replySavingId === review.id ? l('Сохранение...', 'Saving...', 'Saglaba...') : l('Сохранить ответ', 'Save reply', 'Saglabat atbildi')}
                       </Button>

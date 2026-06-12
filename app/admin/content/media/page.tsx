@@ -245,8 +245,8 @@ export default function AdminMediaPage() {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Медиа-библиотека</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Медиа-библиотека</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">public/uploads/</code>
               {' '}· {files.length} файлов · {imgCount} изображений · {fmtBytes(totalSize)}
             </p>
@@ -282,10 +282,10 @@ export default function AdminMediaPage() {
           />
 
           {/* Type filter */}
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
             {(['all', 'image', 'other'] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 font-medium transition-colors ${filter === f ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                className={`px-3 py-1.5 font-medium transition-colors ${filter === f ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                 {f === 'all' ? 'Все' : f === 'image' ? 'Изображения' : 'Прочие'}
               </button>
             ))}
@@ -295,7 +295,7 @@ export default function AdminMediaPage() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-8 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 text-xs text-gray-700 dark:text-gray-300"
+            className="h-8 rounded-lg border border-border bg-white dark:bg-gray-900 px-2 text-xs text-gray-700 dark:text-gray-300"
           >
             <option value="date">По дате</option>
             <option value="name">По имени</option>
@@ -303,7 +303,7 @@ export default function AdminMediaPage() {
           </select>
 
           {/* View toggle */}
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex rounded-lg border border-border overflow-hidden">
             <button type="button" onClick={() => setView('grid')}
               className={`p-1.5 ${view === 'grid' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               <Grid2X2 className="h-4 w-4" />
@@ -333,8 +333,8 @@ export default function AdminMediaPage() {
         {loading ? (
           <div className="py-16 text-center text-sm text-gray-400">Загрузка...</div>
         ) : files.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Нет загруженных файлов.</p>
+          <div className="rounded-xl border border-dashed border-border p-12 text-center">
+            <p className="text-sm text-muted-foreground mb-3">Нет загруженных файлов.</p>
             <Button onClick={() => fileInputRef.current?.click()}>Загрузить первый файл</Button>
           </div>
         ) : displayed.length === 0 ? (
@@ -347,7 +347,7 @@ export default function AdminMediaPage() {
 
               {/* Select all row */}
               <div className="flex items-center gap-2 mb-2 px-1">
-                <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={isAllChecked}
@@ -371,7 +371,7 @@ export default function AdminMediaPage() {
                         key={file.name}
                         className={[
                           'group relative rounded-lg border bg-white dark:bg-gray-900 overflow-hidden transition-all hover:shadow-md',
-                          isSelected ? 'border-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'border-gray-200 dark:border-gray-700',
+                          isSelected ? 'border-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'border-border',
                           isChecked ? 'ring-2 ring-red-300 dark:ring-red-700 border-red-300' : '',
                         ].join(' ')}
                       >
@@ -391,7 +391,7 @@ export default function AdminMediaPage() {
                         {/* Usage badge */}
                         {usedIn?.length && (
                           <div className="absolute top-1.5 right-1.5 z-10">
-                            <span className="rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">
                               {usedIn.length}
                             </span>
                           </div>
@@ -420,15 +420,15 @@ export default function AdminMediaPage() {
                 </div>
               ) : (
                 /* List view */
-                <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="rounded-xl border border-border overflow-hidden">
                   <table className="min-w-full text-sm bg-white dark:bg-gray-900">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
                         <th className="w-8 px-3 py-2.5"></th>
-                        <th className="px-3 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Файл</th>
-                        <th className="px-3 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Размер</th>
-                        <th className="px-3 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Дата</th>
-                        <th className="px-3 py-2.5 text-left font-medium text-gray-500 dark:text-gray-400">Используется</th>
+                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Файл</th>
+                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Размер</th>
+                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Дата</th>
+                        <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Используется</th>
                         <th className="px-3 py-2.5"></th>
                       </tr>
                     </thead>
@@ -455,11 +455,11 @@ export default function AdminMediaPage() {
                                 <span className="truncate text-gray-800 dark:text-gray-200 max-w-xs">{file.name}</span>
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{fmtBytes(file.size)}</td>
-                            <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">{fmtDate(file.modifiedAt)}</td>
-                            <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+                            <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{fmtBytes(file.size)}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{fmtDate(file.modifiedAt)}</td>
+                            <td className="px-3 py-2.5 text-xs text-muted-foreground">
                               {usedIn?.length ? (
-                                <span className="text-indigo-600 dark:text-indigo-400">{usedIn.length} товаров</span>
+                                <span className="text-primary">{usedIn.length} товаров</span>
                               ) : '—'}
                             </td>
                             <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
@@ -482,14 +482,14 @@ export default function AdminMediaPage() {
 
             {/* Detail panel */}
             {selected && (
-              <div className="w-72 flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-4 sticky top-4">
+              <div className="w-72 flex-shrink-0 rounded-xl border border-border bg-white dark:bg-gray-900 p-4 space-y-4 sticky top-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{selected.name}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{selected.name}</p>
                   <button type="button" onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none ml-2 shrink-0">×</button>
                 </div>
 
                 {/* Preview */}
-                <div className="aspect-square rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square rounded-lg bg-gray-50 dark:bg-gray-800 border border-border flex items-center justify-center overflow-hidden">
                   {selected.isImage
                     ? <img src={selected.path} alt={selected.name} className="w-full h-full object-contain" />
                     : <span className="text-4xl font-bold text-gray-300 dark:text-gray-600 uppercase">{selected.ext}</span>
@@ -497,7 +497,7 @@ export default function AdminMediaPage() {
                 </div>
 
                 {/* Meta */}
-                <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <p>Размер: <strong>{fmtBytes(selected.size)}</strong></p>
                   <p>Тип: <strong>{selected.ext.toUpperCase()}</strong></p>
                   <p>Изменён: {fmtDate(selected.modifiedAt)}</p>
@@ -511,12 +511,12 @@ export default function AdminMediaPage() {
                   )
                   return (
                     <div className="text-xs">
-                      <p className="font-medium text-indigo-700 dark:text-indigo-300 mb-1">
+                      <p className="font-medium text-indigo-700 dark:text-primary mb-1">
                         Используется в {usedIn.length} товарах:
                       </p>
                       <div className="space-y-0.5 max-h-24 overflow-y-auto">
                         {usedIn.map((t, i) => (
-                          <p key={i} className="text-gray-600 dark:text-gray-400 truncate">· {t}</p>
+                          <p key={i} className="text-muted-foreground truncate">· {t}</p>
                         ))}
                       </div>
                     </div>
@@ -525,7 +525,7 @@ export default function AdminMediaPage() {
 
                 {/* Path copy */}
                 <div className="space-y-1.5">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Путь:</p>
+                  <p className="text-xs text-muted-foreground">Путь:</p>
                   <code className="block text-xs bg-gray-100 dark:bg-gray-800 rounded px-2 py-1.5 break-all text-gray-800 dark:text-gray-200">
                     {selected.path}
                   </code>
@@ -538,7 +538,7 @@ export default function AdminMediaPage() {
                 {/* Actions */}
                 <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
                   <a href={selected.path} target="_blank" rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    className="flex items-center justify-center gap-1.5 text-xs rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <Download className="h-3.5 w-3.5" /> Открыть ↗
                   </a>
 
@@ -546,7 +546,7 @@ export default function AdminMediaPage() {
                     <button type="button"
                       disabled={replacing}
                       onClick={() => replaceInputRef.current?.click()}
-                      className="text-xs rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-50">
+                      className="text-xs rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-50">
                       {replacing ? 'Замена...' : 'Заменить файл (путь не изменится)'}
                     </button>
                   )}

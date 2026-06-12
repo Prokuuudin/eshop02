@@ -45,7 +45,7 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn('font-medium text-gray-900 dark:text-gray-100', className)}
+      className={cn('font-medium text-foreground', className)}
       {...props}
     />
   )

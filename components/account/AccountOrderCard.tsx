@@ -46,21 +46,21 @@ export default function AccountOrderCard({
     <div className="rounded-2xl border border-gray-200 p-4 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex-1">
-          <p className="font-mono text-sm text-gray-600 dark:text-gray-300">{order.id}</p>
+          <p className="font-mono text-sm text-muted-foreground">{order.id}</p>
           <div className={`mt-1 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusClasses}`}>
             {statusLabel}
           </div>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-1 text-sm text-muted-foreground">
             📅 {formatDate(order.createdAt, locale)}
           </p>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-1 text-sm text-muted-foreground">
             📦 {order.items.length} {itemsUnit} • {deliveryLabel}
           </p>
         </div>
 
         <div className="text-right">
-          <p className="text-lg font-bold text-indigo-600">{formatEuro(order.total, locale)}</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">
+          <p className="text-lg font-bold text-primary">{formatEuro(order.total, locale)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             {order.promoCode && `${promoCodeLabel}: ${order.promoCode}`}
           </p>
           {(order.bonusSpent ?? 0) > 0 && (
@@ -82,7 +82,7 @@ export default function AccountOrderCard({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+            className="gap-1.5 text-primary hover:text-indigo-700 hover:bg-indigo-50 dark:text-primary dark:hover:bg-indigo-950/40"
             onClick={() => setTemplateOpen(true)}
           >
             <BookmarkPlus className="w-3.5 h-3.5" />
@@ -105,7 +105,7 @@ export default function AccountOrderCard({
 
       <div className="mt-3 space-y-1 border-t border-gray-200 pt-3 dark:border-gray-700">
         {order.items.map((item) => (
-          <p key={item.id} className="text-xs text-gray-600 dark:text-gray-300">
+          <p key={item.id} className="text-xs text-muted-foreground">
             {item.title} × {item.quantity}
           </p>
         ))}

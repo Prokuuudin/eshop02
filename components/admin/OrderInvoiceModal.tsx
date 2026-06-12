@@ -61,9 +61,9 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[10100] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-5">
+      <div className="relative z-10 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-border w-full max-w-md p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-foreground">
             Счёт по заказу #{order.id}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
@@ -71,7 +71,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
 
         {/* Language selector */}
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Язык счёта</p>
+          <p className="text-sm text-muted-foreground mb-2">Язык счёта</p>
           <div className="flex gap-2">
             {(['ru', 'en', 'lv'] as Lang[]).map((l) => (
               <button
@@ -80,7 +80,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
                 onClick={() => setLang(l)}
                 className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   lang === l
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-primary text-white border-primary'
                     : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
@@ -92,7 +92,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
 
         {/* Email field */}
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Email получателя</p>
+          <p className="text-sm text-muted-foreground mb-2">Email получателя</p>
           <Input
             type="email"
             value={email}
@@ -111,7 +111,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
             Предпросмотр
           </Button>
           <Button
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="flex-1 bg-primary hover:bg-primary/90 text-white"
             onClick={handleSend}
             disabled={sending || sent || !email.trim()}
           >

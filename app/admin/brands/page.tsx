@@ -195,10 +195,10 @@ export default function AdminBrandsPage() {
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-2xl font-bold text-foreground">
                 {tl('admin.brands.title', 'Бренды: управление', 'Brands: management', 'Zimoli: parvaldiba')}
               </h1>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {tl(
                   'admin.brands.subtitle',
                   'Создавайте новые бренды и редактируйте существующие карточки брендов.',
@@ -219,7 +219,7 @@ export default function AdminBrandsPage() {
               className="h-9 flex-1"
             />
             <Search className="h-5 w-5 text-gray-400" />
-            <span className="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+            <span className="whitespace-nowrap text-sm text-muted-foreground">
               {tl('admin.brands.search', 'Поиск', 'Search', 'Meklet')}
             </span>
           </div>
@@ -253,7 +253,7 @@ export default function AdminBrandsPage() {
           <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
             <div className="grid gap-2 md:grid-cols-3">
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.idSlug', 'ID (slug)', 'ID (slug)', 'ID (slug)')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.idSlug', 'ID (slug)', 'ID (slug)', 'ID (slug)')}</span>
                 <Input
                   value={newBrand.id}
                   placeholder={tl('admin.brands.placeholder.id', 'Например: matrix', 'Example: matrix', 'Piemers: matrix')}
@@ -261,7 +261,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.name', 'Название', 'Name', 'Nosaukums')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.name', 'Название', 'Name', 'Nosaukums')}</span>
                 <Input
                   value={newBrand.name}
                   placeholder={tl('admin.brands.placeholder.name', 'Например: Matrix', 'Example: Matrix', 'Piemers: Matrix')}
@@ -269,7 +269,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
                 <select
                   value={newBrand.popular ? 'yes' : 'no'}
                   onChange={(event) => setNewBrand((prev) => ({ ...prev, popular: event.target.value === 'yes' }))}
@@ -280,7 +280,7 @@ export default function AdminBrandsPage() {
                 </select>
               </label>
               <label className="text-xs md:col-span-3">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>
                 <Input
                   value={newBrand.logo}
                   placeholder={tl('admin.brands.placeholder.logoPath', '/brands/matrix.svg', '/brands/matrix.svg', '/brands/matrix.svg')}
@@ -288,7 +288,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionRu', 'Описание RU', 'Description RU', 'Apraksts RU')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionRu', 'Описание RU', 'Description RU', 'Apraksts RU')}</span>
                 <Input
                   value={newBrand.descriptionRu}
                   placeholder={tl('admin.brands.placeholder.descriptionRu', 'Краткое описание бренда на русском', 'Short brand description in Russian', 'Iss zimola apraksts krievu valoda')}
@@ -296,7 +296,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionEn', 'Описание EN', 'Description EN', 'Apraksts EN')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionEn', 'Описание EN', 'Description EN', 'Apraksts EN')}</span>
                 <Input
                   value={newBrand.descriptionEn}
                   placeholder={tl('admin.brands.placeholder.descriptionEn', 'Краткое описание бренда на английском', 'Short brand description in English', 'Iss zimola apraksts anglu valoda')}
@@ -304,7 +304,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionLv', 'Описание LV', 'Description LV', 'Apraksts LV')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionLv', 'Описание LV', 'Description LV', 'Apraksts LV')}</span>
                 <Input
                   value={newBrand.descriptionLv}
                   placeholder={tl('admin.brands.placeholder.descriptionLv', 'Краткое описание бренда на латышском', 'Short brand description in Latvian', 'Iss zimola apraksts latviesu valoda')}
@@ -314,7 +314,7 @@ export default function AdminBrandsPage() {
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
-              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {tl('admin.brands.cardPreview', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
               </p>
               <div className="rounded border border-gray-200 p-3 dark:border-gray-700">
@@ -329,7 +329,7 @@ export default function AdminBrandsPage() {
                     }}
                   />
                 </div>
-                <p className="mt-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">{newBrandTitle}</p>
+                <p className="mt-2 text-center text-sm font-medium text-foreground">{newBrandTitle}</p>
               </div>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default function AdminBrandsPage() {
         </Accordion>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-lg font-semibold text-foreground">
             {tl('admin.brands.existingBrands', 'Существующие бренды', 'Existing brands', 'Esosie zimoli')}
           </h2>
 
@@ -363,8 +363,8 @@ export default function AdminBrandsPage() {
               <article key={brand.id} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{brand.name}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{brand.id}</p>
+                    <h3 className="text-base font-semibold text-foreground">{brand.name}</h3>
+                    <p className="text-xs text-muted-foreground">{brand.id}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" onClick={() => void handleSaveBrand()} disabled={saving}>
@@ -384,11 +384,11 @@ export default function AdminBrandsPage() {
                 <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="grid gap-2 md:grid-cols-3">
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.name', 'Название', 'Name', 'Nosaukums')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.name', 'Название', 'Name', 'Nosaukums')}</span>
                       <Input value={brand.name} onChange={(event) => updateBrand(brand.id, { name: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
                       <select
                         value={brand.popular ? 'yes' : 'no'}
                         onChange={(event) => updateBrand(brand.id, { popular: event.target.value === 'yes' })}
@@ -399,25 +399,25 @@ export default function AdminBrandsPage() {
                       </select>
                     </label>
                     <label className="text-xs md:col-span-3">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>
                       <Input value={brand.logo} onChange={(event) => updateBrand(brand.id, { logo: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionRu', 'Описание RU', 'Description RU', 'Apraksts RU')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionRu', 'Описание RU', 'Description RU', 'Apraksts RU')}</span>
                       <Input value={brand.description.ru} onChange={(event) => updateBrandDescription(brand.id, { ru: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionEn', 'Описание EN', 'Description EN', 'Apraksts EN')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionEn', 'Описание EN', 'Description EN', 'Apraksts EN')}</span>
                       <Input value={brand.description.en} onChange={(event) => updateBrandDescription(brand.id, { en: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-gray-600 dark:text-gray-300">{tl('admin.brands.field.descriptionLv', 'Описание LV', 'Description LV', 'Apraksts LV')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.descriptionLv', 'Описание LV', 'Description LV', 'Apraksts LV')}</span>
                       <Input value={brand.description.lv} onChange={(event) => updateBrandDescription(brand.id, { lv: event.target.value })} />
                     </label>
                   </div>
 
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
-                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                       {tl('admin.brands.cardPreview', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
                     </p>
                     <div className="rounded border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
@@ -432,7 +432,7 @@ export default function AdminBrandsPage() {
                           }}
                         />
                       </div>
-                      <p className="mt-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">{brand.name}</p>
+                      <p className="mt-2 text-center text-sm font-medium text-foreground">{brand.name}</p>
                     </div>
                   </div>
                 </div>

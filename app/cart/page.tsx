@@ -81,12 +81,12 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <main className="w-full px-4 py-12 text-gray-900 dark:text-gray-100">
-                <h1 className="cart__title text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">
+            <main className="w-full px-4 py-12 text-foreground">
+                <h1 className="cart__title text-3xl font-bold mb-8 text-foreground">
                     {t('cart.title')}
                 </h1>
                 <div className="text-center py-12">
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">{t('cart.empty')}</p>
+                    <p className="text-muted-foreground mb-4">{t('cart.empty')}</p>
                     <Link href="/catalog">
                         <Button>{t('cart.goToCatalog')}</Button>
                     </Link>
@@ -117,11 +117,11 @@ export default function CartPage() {
             : '/checkout';
 
     return (
-        <main className="cart cart--page w-full px-4 py-8 text-gray-900 dark:text-gray-100">
-            <h1 className="cart__title cart__title--main text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">
+        <main className="cart cart--page w-full px-4 py-8 text-foreground">
+            <h1 className="cart__title cart__title--main text-3xl font-bold mb-8 text-foreground">
                 {t('cart.title')} ({items.length})
             </h1>
-            <div className="cart__select-bar mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm">
+            <div className="cart__select-bar mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-white dark:bg-gray-900 p-3 text-sm">
                 <span className="cart__select-label text-gray-700 dark:text-gray-300">
                     {t('cart.selectedForCheckout')}:{' '}
                     <span className="cart__select-count font-semibold">
@@ -134,7 +134,7 @@ export default function CartPage() {
                         setSelectionTouched(true);
                         setSelectedItemIds(items.map((item) => item.id));
                     }}
-                    className="cart__select-all text-indigo-600 hover:underline"
+                    className="cart__select-all text-primary hover:underline"
                 >
                     {t('cart.selectAll')}
                 </button>
@@ -144,7 +144,7 @@ export default function CartPage() {
                         setSelectionTouched(true);
                         setSelectedItemIds([]);
                     }}
-                    className="cart__unselect-all text-indigo-600 hover:underline"
+                    className="cart__unselect-all text-primary hover:underline"
                 >
                     {t('cart.unselectAll')}
                 </button>
@@ -177,7 +177,7 @@ export default function CartPage() {
                             return (
                                 <div
                                     key={item.id}
-                                    className="cart__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex gap-4"
+                                    className="cart__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-border flex gap-4"
                                 >
                                     <div className="cart__item-checkbox pt-1">
                                         <Checkbox
@@ -202,14 +202,14 @@ export default function CartPage() {
                                     <div className="cart__item-info flex-1">
                                         <Link
                                             href={`/product/${item.id}`}
-                                            className="cart__item-title font-medium hover:text-indigo-600"
+                                            className="cart__item-title font-medium hover:text-primary"
                                         >
                                             {localizedTitle}
                                         </Link>
-                                        <div className="cart__item-brand text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                        <div className="cart__item-brand text-sm text-muted-foreground mt-1">
                                             {item.brand}
                                         </div>
-                                        <div className="cart__item-unitprice text-indigo-600 font-bold mt-2">
+                                        <div className="cart__item-unitprice text-primary font-bold mt-2">
                                             {formatCurrency(unitPrice)}
                                         </div>
                                     </div>
@@ -231,7 +231,7 @@ export default function CartPage() {
                                             }
                                         />
 
-                                        <div className="cart__item-qty flex items-center border border-gray-300 dark:border-gray-700 rounded">
+                                        <div className="cart__item-qty flex items-center border border-border rounded">
                                             <button
                                                 onClick={() =>
                                                     handleDecrease(
@@ -258,7 +258,7 @@ export default function CartPage() {
                                         </div>
 
                                         {minQuantity > 1 && (
-                                            <div className="cart__item-minqty text-xs text-gray-500 dark:text-gray-300 mt-1">
+                                            <div className="cart__item-minqty text-xs text-muted-foreground mt-1">
                                                 {t('common.min')} {minQuantity} {t('product.pcs')}
                                             </div>
                                         )}
@@ -275,8 +275,8 @@ export default function CartPage() {
 
                 {/* Сумма */}
                 <aside className="cart__summary sticky top-20 h-fit">
-                    <div className="cart__summary-inner bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 className="cart__summary-title font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                    <div className="cart__summary-inner bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <h2 className="cart__summary-title font-bold text-lg mb-4 text-foreground">
                             {t('cart.total')}
                         </h2>
 
@@ -289,22 +289,22 @@ export default function CartPage() {
                             />
                         )}
 
-                        <div className="cart__summary-breakdown space-y-3 text-sm border-b border-gray-200 dark:border-gray-700 pb-4 text-gray-700 dark:text-gray-300">
+                        <div className="cart__summary-breakdown space-y-3 text-sm border-b border-border pb-4 text-gray-700 dark:text-gray-300">
                             <div className="cart__summary-row flex justify-between">
                                 <span>{t('checkout.summary.items')}</span>
-                                <span className="cart__summary-value font-medium text-gray-900 dark:text-gray-100">
+                                <span className="cart__summary-value font-medium text-foreground">
                                     {formatCurrency(subtotal)}
                                 </span>
                             </div>
                             <div className="cart__summary-row flex justify-between">
                                 <span>{t('checkout.summary.tax')}</span>
-                                <span className="cart__summary-value font-medium text-gray-900 dark:text-gray-100">
+                                <span className="cart__summary-value font-medium text-foreground">
                                     {formatCurrency(taxAmount)}
                                 </span>
                             </div>
                             <div className="cart__summary-row flex justify-between">
                                 <span>{t('cart.shipping')}</span>
-                                <span className="cart__summary-value font-medium text-gray-900 dark:text-gray-100">
+                                <span className="cart__summary-value font-medium text-foreground">
                                     {formatCurrency(deliveryFee)}
                                 </span>
                             </div>
@@ -312,7 +312,7 @@ export default function CartPage() {
 
                         <div className="cart__summary-total mt-4 text-lg font-bold flex justify-between">
                             <span>{t('cart.totalToPay')}:</span>
-                            <span className="cart__summary-total-value text-indigo-600">
+                            <span className="cart__summary-total-value text-primary">
                                 <AnimatedPrice value={grandTotal} format={formatCurrency} />
                             </span>
                         </div>
@@ -370,14 +370,14 @@ export default function CartPage() {
                             <div className="cart__templates mt-4 flex items-center justify-between text-xs border-t border-gray-100 dark:border-gray-800 pt-3">
                                 <button
                                     onClick={() => setTemplateOpen(true)}
-                                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1 text-primary hover:text-indigo-700 dark:text-primary transition-colors"
                                 >
                                     <BookmarkPlus className="w-3.5 h-3.5" />
                                     {t('templates.saveAsTemplate')}
                                 </button>
                                 <button
                                     onClick={() => router.push('/account/templates')}
-                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                    className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
                                 >
                                     {t('templates.useSavedTemplates')}
                                 </button>

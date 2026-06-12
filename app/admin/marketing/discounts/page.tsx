@@ -143,7 +143,7 @@ export default function AdminDiscountsPage() {
     await load()
   }
 
-  const selectCls = 'w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm'
+  const selectCls = 'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
 
   return (
     <AdminGate>
@@ -151,10 +151,10 @@ export default function AdminDiscountsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-1 inline-block">
+            <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
               ← Назад в админку
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Скидки и купоны</h1>
+            <h1 className="text-2xl font-bold text-foreground">Скидки и купоны</h1>
           </div>
           {!showForm && (
             <Button onClick={openCreate}>+ Добавить промокод</Button>
@@ -169,13 +169,13 @@ export default function AdminDiscountsPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать промокод' : 'Новый промокод'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Код *</span>
+                <span className="text-sm text-muted-foreground">Код *</span>
                 <Input
                   value={form.code}
                   onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
@@ -183,7 +183,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Скидка, %</span>
+                <span className="text-sm text-muted-foreground">Скидка, %</span>
                 <Input
                   type="number"
                   min={1}
@@ -193,7 +193,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Мин. сумма заказа, €</span>
+                <span className="text-sm text-muted-foreground">Мин. сумма заказа, €</span>
                 <Input
                   type="number"
                   min={0}
@@ -202,7 +202,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Макс. использований (пусто = без лимита)</span>
+                <span className="text-sm text-muted-foreground">Макс. использований (пусто = без лимита)</span>
                 <Input
                   type="number"
                   min={1}
@@ -212,7 +212,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Действует до</span>
+                <span className="text-sm text-muted-foreground">Действует до</span>
                 <Input
                   type="date"
                   value={form.expiresAt ?? ''}
@@ -220,7 +220,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Статус</span>
+                <span className="text-sm text-muted-foreground">Статус</span>
                 <select
                   value={form.active ? 'true' : 'false'}
                   onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}
@@ -231,7 +231,7 @@ export default function AdminDiscountsPage() {
                 </select>
               </label>
               <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Описание</span>
+                <span className="text-sm text-muted-foreground">Описание</span>
                 <Input
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -250,10 +250,10 @@ export default function AdminDiscountsPage() {
 
         {/* List */}
         {loading ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Загрузка...</p>
+          <p className="text-muted-foreground text-sm">Загрузка...</p>
         ) : items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Промокодов пока нет.</p>
+          <div className="rounded-xl border border-dashed border-border p-12 text-center">
+            <p className="text-muted-foreground text-sm">Промокодов пока нет.</p>
             <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
           </div>
         ) : (
@@ -261,21 +261,21 @@ export default function AdminDiscountsPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 space-y-3 ${item.active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}
+                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 space-y-3 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-mono text-xl font-bold text-gray-900 dark:text-gray-100 tracking-wider">{item.code}</span>
+                  <span className="font-mono text-xl font-bold text-foreground tracking-wider">{item.code}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'}`}>
                     {item.active ? 'Активен' : 'Скрыт'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{item.discount}%</span>
-                  {item.description && <span className="text-gray-500 dark:text-gray-400">{item.description}</span>}
+                  <span className="text-2xl font-bold text-primary">{item.discount}%</span>
+                  {item.description && <span className="text-muted-foreground">{item.description}</span>}
                 </div>
 
-                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
+                <div className="text-xs text-muted-foreground space-y-0.5">
                   {item.minOrder > 0 && <p>Мин. заказ: €{item.minOrder}</p>}
                   {item.maxUses !== null && (
                     <p>Лимит: {item.usedCount}/{item.maxUses} использований</p>

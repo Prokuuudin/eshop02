@@ -43,7 +43,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
         className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-6"
     >
         <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h2 className="text-2xl font-bold text-foreground">
                 {t('account.myOrders')}
             </h2>
             <div className="inline-flex w-full rounded-2xl bg-gray-100 p-1 dark:bg-gray-800 md:w-auto">
@@ -112,7 +112,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
                 </div>
             ) : (
                 <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                         {tl(
                             'account.page.noOrdersForFilter',
                             'Для выбранного фильтра заказов пока нет.',
@@ -124,7 +124,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
             )
         ) : (
             <div className="text-center py-12">
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{t('account.noOrders')}</p>
+                <p className="text-muted-foreground mb-4">{t('account.noOrders')}</p>
                 <Link href="/catalog">
                     <Button>{t('account.startShopping')}</Button>
                 </Link>

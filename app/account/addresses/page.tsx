@@ -75,11 +75,11 @@ export default function AccountAddressesPage() {
                             <MapPin className="h-5 w-5" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                            <h1 className="text-xl font-bold text-foreground">
                                 {t('account.savedAddressesTitle')}
                             </h1>
                             {addresses.savedAddresses.length > 0 && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                <p className="text-sm text-muted-foreground">
                                     {addresses.savedAddresses.length} {t('account.addressCount')}
                                 </p>
                             )}

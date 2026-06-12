@@ -54,7 +54,7 @@ const AccountAddressesSection: React.FC<AccountAddressesSectionProps> = ({
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
                     <MapPin className="h-4 w-4" />
                 </div>
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="text-sm font-semibold text-foreground">
                     {t('account.savedAddressesTitle')}
                 </h2>
             </div>
@@ -92,7 +92,7 @@ const AccountAddressesSection: React.FC<AccountAddressesSectionProps> = ({
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                     <MapPin className="h-5 w-5 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted-foreground">
                     {t('account.noSavedAddresses')}
                 </p>
             </div>

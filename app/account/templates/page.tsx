@@ -39,7 +39,7 @@ function HowItWorks({ t }: { t: (k: string) => string }) {
                 }
             </button>
             {open && (
-                <ol className="mt-3 space-y-2 text-sm text-indigo-700 dark:text-indigo-300 list-none pl-0">
+                <ol className="mt-3 space-y-2 text-sm text-indigo-700 dark:text-primary list-none pl-0">
                     <li className="flex items-start gap-2">
                         <ShoppingBag className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>{t('templates.howStep1')}</span>
@@ -134,7 +134,7 @@ function TemplateCard({
                             </div>
                         ) : (
                             <p
-                                className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                className="text-sm font-semibold text-foreground truncate cursor-pointer hover:text-primary dark:hover:text-indigo-400 transition-colors"
                                 title={t('templates.clickToRename')}
                                 onClick={startEdit}
                             >
@@ -188,7 +188,7 @@ function TemplateCard({
                     {hasMore && (
                         <button
                             onClick={() => setExpanded((v) => !v)}
-                            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 mt-1 transition-colors"
+                            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 dark:text-primary mt-1 transition-colors"
                         >
                             {expanded
                                 ? <><ChevronUp className="w-3 h-3" />{t('templates.showLess')}</>
@@ -202,7 +202,7 @@ function TemplateCard({
                 <div className="flex items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-800 px-4 py-3 mt-auto">
                     <div>
                         <p className="text-[11px] text-gray-400 uppercase tracking-wide">{t('templates.total')}</p>
-                        <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                        <p className="text-sm font-bold text-primary">
                             {formatEuro(total, 'en-US')}
                         </p>
                     </div>
@@ -210,7 +210,7 @@ function TemplateCard({
                         <TooltipTrigger asChild>
                             <Button
                                 size="sm"
-                                className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+                                className="gap-1.5 bg-primary hover:bg-primary/90"
                                 onClick={() => onApply(tpl)}
                             >
                                 <ShoppingCart className="w-3.5 h-3.5" />
@@ -266,15 +266,15 @@ export default function AccountTemplatesPage() {
                     {t('common.back')}
                 </Link>
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-primary dark:bg-indigo-900/40 dark:text-primary">
                         <BookmarkPlus className="h-5 w-5" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-xl font-bold text-foreground">
                             {t('templates.pageTitle')}
                         </h1>
                         {templates.length > 0 && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-muted-foreground">
                                 {templates.length} {t('templates.count')}
                             </p>
                         )}
@@ -315,11 +315,11 @@ export default function AccountTemplatesPage() {
                         </p>
                     </div>
                     <div className="flex flex-col gap-2 text-sm">
-                        <Link href="/cart" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium">
+                        <Link href="/cart" className="inline-flex items-center gap-2 text-primary hover:text-indigo-700 dark:text-primary font-medium">
                             <ShoppingBag className="w-4 h-4" />
                             {t('templates.emptyCta1')}
                         </Link>
-                        <Link href="/account#orders-history" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium">
+                        <Link href="/account#orders-history" className="inline-flex items-center gap-2 text-primary hover:text-indigo-700 dark:text-primary font-medium">
                             <ClipboardList className="w-4 h-4" />
                             {t('templates.emptyCta2')}
                         </Link>

@@ -102,24 +102,24 @@ export default function B2BChat() {
   return (
     <div className="fixed right-4 bottom-4 z-50">
       {open ? (
-        <div className="w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-emerald-50 dark:bg-emerald-900/30">
+        <div className="w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-emerald-50 dark:bg-emerald-900/30">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">B2B Поддержка</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">{manager.name}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">{manager.phone}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">{manager.email}</p>
+                <p className="font-semibold text-sm text-foreground">B2B Поддержка</p>
+                <p className="text-xs text-muted-foreground">{manager.name}</p>
+                <p className="text-xs text-muted-foreground">{manager.phone}</p>
+                <p className="text-xs text-muted-foreground">{manager.email}</p>
               </div>
-              <button onClick={() => setOpen(false)} className="text-xs text-gray-600 dark:text-gray-300">Закрыть</button>
+              <button onClick={() => setOpen(false)} className="text-xs text-muted-foreground">Закрыть</button>
             </div>
           </div>
 
           <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gray-50 dark:bg-gray-950">
             {loading ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">Загрузка...</p>
+              <p className="text-xs text-muted-foreground">Загрузка...</p>
             ) : messages.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">Начните диалог с аккаунт-менеджером</p>
+              <p className="text-xs text-muted-foreground">Начните диалог с аккаунт-менеджером</p>
             ) : (
               messages.map((message) => (
                 <div
@@ -127,7 +127,7 @@ export default function B2BChat() {
                   className={`max-w-[85%] rounded px-2 py-1.5 text-xs ${
                     message.from === 'client'
                       ? 'ml-auto bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200'
-                      : 'mr-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200'
+                      : 'mr-auto bg-white dark:bg-gray-900 border border-border text-gray-800 dark:text-gray-200'
                   }`}
                 >
                   <p>{message.text}</p>
@@ -137,11 +137,11 @@ export default function B2BChat() {
             )}
           </div>
 
-          <form onSubmit={sendMessage} className="p-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+          <form onSubmit={sendMessage} className="p-3 border-t border-border flex gap-2">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="flex-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-2 py-1.5 text-xs"
+              className="flex-1 rounded border border-border bg-white dark:bg-gray-950 px-2 py-1.5 text-xs"
               placeholder="Сообщение менеджеру"
             />
             <Button size="sm" type="submit" disabled={sending || !text.trim()}>

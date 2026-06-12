@@ -46,9 +46,9 @@ const LOC = 'ru-RU'
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+    <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
       {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
     </div>
   )
@@ -114,7 +114,7 @@ export default function CustomerProfilePage() {
       <AdminGate>
         <main className="w-full py-4 text-center">
           <p className="text-gray-500">Email клиента не указан.</p>
-          <Link href="/admin/customers/segments" className="text-indigo-600 hover:underline text-sm mt-2 inline-block">
+          <Link href="/admin/customers/segments" className="text-primary hover:underline text-sm mt-2 inline-block">
             ← К сегментам
           </Link>
         </main>
@@ -127,7 +127,7 @@ export default function CustomerProfilePage() {
       <main className="w-full py-4 space-y-6">
 
         {/* Back */}
-        <Link href="/admin/customers/segments" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+        <Link href="/admin/customers/segments" className="text-sm text-primary hover:underline">
           ← Клиенты
         </Link>
 
@@ -135,32 +135,32 @@ export default function CustomerProfilePage() {
         <div className="flex flex-wrap items-start gap-5">
           {/* Avatar */}
           <div className="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-            <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{initials}</span>
+            <span className="text-2xl font-bold text-indigo-700 dark:text-primary">{initials}</span>
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-2xl font-bold text-foreground">
                 {[stats.firstName, stats.lastName].filter(Boolean).join(' ') || email}
               </h1>
               <span className={`rounded-full border px-3 py-0.5 text-sm font-medium ${SEGMENT_BADGE[stats.segment]}`}>
                 {stats.segment}
               </span>
             </div>
-            <div className="flex flex-wrap gap-4 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-              <a href={`mailto:${email}`} className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline">{email}</a>
+            <div className="flex flex-wrap gap-4 mt-1.5 text-sm text-muted-foreground">
+              <a href={`mailto:${email}`} className="hover:text-primary dark:hover:text-indigo-400 hover:underline">{email}</a>
               {stats.phone && <span>{stats.phone}</span>}
             </div>
           </div>
 
           <div className="flex gap-2">
             <a href={`mailto:${email}`}>
-              <button type="button" className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <button type="button" className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 Написать письмо
               </button>
             </a>
             <Link href={`/admin/orders?q=${encodeURIComponent(email)}`}>
-              <button type="button" className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
+              <button type="button" className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-sm text-indigo-700 dark:text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
                 Все заказы ↗
               </button>
             </Link>
@@ -179,7 +179,7 @@ export default function CustomerProfilePage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-0 border-b border-border">
           {([
             { key: 'orders' as const, label: `Заказы (${customerOrders.length})` },
             { key: 'returns' as const, label: `Возвраты (${customerReturns.length})` },
@@ -192,7 +192,7 @@ export default function CustomerProfilePage() {
               className={[
                 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                 tab === t.key
-                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+                  ? 'border-primary text-primary dark:border-indigo-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >
@@ -211,7 +211,7 @@ export default function CustomerProfilePage() {
               const status = getOrderStatus(order.id)
               const note = getOrderNote(order.id)
               return (
-                <div key={order.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
+                <div key={order.id} className="rounded-xl border border-border bg-white dark:bg-gray-900 px-5 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -220,7 +220,7 @@ export default function CustomerProfilePage() {
                           {ORDER_STATUS_LABELS[status] ?? status}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-muted-foreground">
                         {formatDate(order.createdAt, LOC)}
                         {' · '}
                         {order.items.length} {order.items.length === 1 ? 'позиция' : 'позиций'}
@@ -228,19 +228,19 @@ export default function CustomerProfilePage() {
                         {order.deliveryMethod === 'courier' ? 'Курьер' : order.deliveryMethod === 'pickup' ? 'Самовывоз' : 'Почта'}
                       </p>
                       {/* Items preview */}
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                      <p className="text-xs text-muted-foreground truncate max-w-xs">
                         {order.items.map((i) => `${i.title} ×${i.quantity}`).join(', ')}
                       </p>
                       {note && (
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 italic">📝 {note}</p>
+                        <p className="text-xs text-primary italic">📝 {note}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatEuro(order.total, LOC)}</p>
+                      <p className="text-lg font-bold text-foreground">{formatEuro(order.total, LOC)}</p>
                       <p className="text-xs text-gray-400">{order.paymentMethod}</p>
                       <Link
                         href={`/admin/orders?q=${encodeURIComponent(order.id)}`}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 inline-block"
+                        className="text-xs text-primary hover:underline mt-1 inline-block"
                       >
                         Открыть →
                       </Link>
@@ -259,7 +259,7 @@ export default function CustomerProfilePage() {
               <div className="py-10 text-center text-sm text-gray-400">Возвратов нет</div>
             )}
             {customerReturns.map((ret) => (
-              <div key={ret.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
+              <div key={ret.id} className="rounded-xl border border-border bg-white dark:bg-gray-900 px-5 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -268,12 +268,12 @@ export default function CustomerProfilePage() {
                         {ret.status}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Заказ: <span className="font-mono">{ret.orderId}</span>
                       {' · '}
                       {formatDate(ret.createdAt, LOC)}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{ret.reason}</p>
+                    <p className="text-xs text-muted-foreground">{ret.reason}</p>
                   </div>
                   <p className="text-base font-bold text-red-600 dark:text-red-400 shrink-0">
                     {formatEuro(ret.refundAmount, LOC)}
@@ -291,17 +291,17 @@ export default function CustomerProfilePage() {
               <div className="py-10 text-center text-sm text-gray-400">Нет данных</div>
             )}
             {topProducts.map((p, i) => (
-              <div key={p.title} className="flex items-center gap-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3">
+              <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-white dark:bg-gray-900 px-4 py-3">
                 {p.image && <img src={p.image} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-sm text-gray-400 w-5 shrink-0 tabular-nums">{i + 1}</span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{p.title}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
                     <p className="text-xs text-gray-400">{p.brand}</p>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatEuro(p.revenue, LOC)}</p>
+                  <p className="text-sm font-semibold text-foreground">{formatEuro(p.revenue, LOC)}</p>
                   <p className="text-xs text-gray-400">{p.qty} шт</p>
                 </div>
               </div>

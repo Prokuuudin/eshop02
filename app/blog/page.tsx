@@ -123,14 +123,14 @@ export default function BlogPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogCollectionSchema) }} />
       <main className="w-full px-4 py-8 md:py-12">
         <section className="mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground">
             {t('blog.pageTitle')}
           </h1>
         </section>
 
         {/* Categories */}
         <section className="mb-8 md:mb-12">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('blog.categories')}</h3>
+          <h3 className="text-lg font-semibold mb-4 text-foreground">{t('blog.categories')}</h3>
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <Button key={cat} variant="outline" size="sm" className="h-8 px-3 text-xs font-medium">
@@ -143,7 +143,7 @@ export default function BlogPage() {
         {/* Featured Posts */}
         {!loading && featuredPosts.length > 0 && (
           <section className="mb-8 md:mb-12">
-            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-gray-100">⭐ {t('blog.featuredArticles')}</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">⭐ {t('blog.featuredArticles')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {featuredPosts.map((post) => (
                 <BlogCard key={post.id} post={post} />
@@ -154,9 +154,9 @@ export default function BlogPage() {
 
         {/* All Posts */}
         <section>
-          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-gray-100">{t('blog.allPosts')} ({localizedPosts.length})</h2>
+          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">{t('blog.allPosts')} ({localizedPosts.length})</h2>
           {loading ? (
-            <p className="text-gray-600 dark:text-gray-300">{t('common.loading')}</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {regularPosts.map((post) => (
@@ -168,11 +168,11 @@ export default function BlogPage() {
 
         {/* Subscribe CTA */}
         <section className="mt-12 md:mt-16 bg-gray-50 dark:bg-gray-800 rounded-lg p-6 md:p-8 text-center">
-          <h2 className="text-xl md:text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">{t('blog.subscribeCtaTitle')}</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">{t('blog.subscribeCtaDesc')}</p>
+          <h2 className="text-xl md:text-2xl font-bold mb-3 text-foreground">{t('blog.subscribeCtaTitle')}</h2>
+          <p className="text-muted-foreground mb-6">{t('blog.subscribeCtaDesc')}</p>
           <form onSubmit={handleSubscribe} className="mx-auto max-w-xl flex flex-col sm:flex-row gap-2">
             <input
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+              className="w-full rounded-md border border-border px-3 py-2 bg-white dark:bg-gray-900 text-foreground"
               placeholder={t('newsletter.placeholder')}
               value={subscribeEmail}
               onChange={(e) => setSubscribeEmail(e.target.value)}

@@ -236,8 +236,8 @@ export default function AdminOnboardingPage() {
       <main className="w-full py-4 space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Онбординг сотрудника</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h1 className="text-3xl font-bold text-foreground">Онбординг сотрудника</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Чеклист для знакомства с системой — отмечайте шаги по мере выполнения
             </p>
           </div>
@@ -247,7 +247,7 @@ export default function AdminOnboardingPage() {
         </div>
 
         {/* Progress */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Прогресс: {done} из {total}
@@ -269,7 +269,7 @@ export default function AdminOnboardingPage() {
 
         {/* Steps */}
         {groups.map((group) => (
-          <div key={group} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div key={group} className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 {groupLabels[group]}
@@ -298,13 +298,13 @@ export default function AdminOnboardingPage() {
                       <div className="flex items-start gap-2">
                         <span className="text-lg leading-none mt-0.5 flex-shrink-0">{step.icon}</span>
                         <span className={`text-sm leading-relaxed ${isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
-                          <span className="font-medium text-gray-500 dark:text-gray-400 mr-1">{step.id}.</span>
+                          <span className="font-medium text-muted-foreground mr-1">{step.id}.</span>
                           {step.text}
                         </span>
                       </div>
                     </div>
                     {step.href && step.linkLabel && (
-                      <Link href={step.href} className="flex-shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap mt-0.5">
+                      <Link href={step.href} className="flex-shrink-0 text-xs font-medium text-primary hover:underline whitespace-nowrap mt-0.5">
                         {step.linkLabel} →
                       </Link>
                     )}

@@ -54,8 +54,8 @@ export default function DeliveryPaymentPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
             />
-            <section className="max-w-6xl mx-auto py-10 px-4 text-gray-900 dark:text-gray-100">
-                <h1 className="text-3xl font-bold mb-10 text-center text-gray-900 dark:text-gray-100">
+            <section className="max-w-6xl mx-auto py-10 px-4 text-foreground">
+                <h1 className="text-3xl font-bold mb-10 text-center text-foreground">
                     {t('deliveryPayment.title')}
                 </h1>
 
@@ -405,7 +405,7 @@ export default function DeliveryPaymentPage() {
                     </section>
                 </div>
                 {/* Советы и примечания */}
-                <div className="mt-10 text-gray-600 dark:text-gray-400 text-sm border-t pt-4">
+                <div className="mt-10 text-muted-foreground text-sm border-t pt-4">
                     <ul className="list-disc pl-6 space-y-1">
                         {[1, 2, 3].map((i) => (
                             <li key={i}>{t(`deliveryPayment.tips.${i}`)}</li>

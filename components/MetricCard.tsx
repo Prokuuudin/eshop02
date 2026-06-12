@@ -23,14 +23,14 @@ export default function MetricCard({
   helpText
 }: MetricCardProps) {
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <p className="text-sm font-medium text-muted-foreground">
             {label}
           </p>
           <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p className="text-2xl font-bold text-foreground">
               {value}
             </p>
             {trend && (
@@ -44,7 +44,7 @@ export default function MetricCard({
             )}
           </div>
           {helpText && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {helpText}
             </p>
           )}

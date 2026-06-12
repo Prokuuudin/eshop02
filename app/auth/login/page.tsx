@@ -16,7 +16,7 @@ export default async function LoginPage() {
         <LoginForm />
         <div className="mt-4 text-center text-sm text-gray-600">
           {t['auth.noAccount'] ?? "Don't have an account?"}
-          <Link href="/auth/register" className="ml-2 text-indigo-600 hover:underline">
+          <Link href="/auth/register" className="ml-2 text-primary hover:underline">
             {t['auth.activateCta'] ?? 'Activate by barcode'}
           </Link>
         </div>

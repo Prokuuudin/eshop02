@@ -275,10 +275,10 @@ export default function OrderPage({ params }: PageProps) {
         return (
             <main className="w-full px-4 py-12">
                 <div className="max-w-md mx-auto text-center">
-                    <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                    <h1 className="text-2xl font-bold mb-4 text-foreground">
                         {t('order.loading')}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-muted-foreground">
                         {t('order.loadingDescription')}
                     </p>
                 </div>
@@ -290,10 +290,10 @@ export default function OrderPage({ params }: PageProps) {
         return (
             <main className="w-full px-4 py-12">
                 <div className="max-w-md mx-auto text-center">
-                    <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+                    <h1 className="text-2xl font-bold mb-4 text-foreground">
                         {t('order.notFoundTitle')}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    <p className="text-muted-foreground mb-6">
                         {t('order.notFoundDescription')}
                     </p>
                     <Link href="/catalog">
@@ -328,10 +328,10 @@ export default function OrderPage({ params }: PageProps) {
                 {/* Success message */}
                 <div className="text-center mb-8">
                     <div className="text-6xl mb-4">✓</div>
-                    <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                    <h1 className="text-3xl font-bold mb-2 text-foreground">
                         {t('order.successTitle')}
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-muted-foreground">
                         {t('order.successDescription')}
                     </p>
                 </div>
@@ -341,19 +341,19 @@ export default function OrderPage({ params }: PageProps) {
                     {/* Main info */}
                     <div className="md:col-span-2 space-y-6">
                         {/* Order ID and date */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                                    <p className="text-sm text-muted-foreground mb-1">
                                         {t('order.orderId')}
                                     </p>
-                                    <p className="text-xl font-bold text-indigo-600">{order.id}</p>
+                                    <p className="text-xl font-bold text-primary">{order.id}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                                    <p className="text-sm text-muted-foreground mb-1">
                                         {t('order.dateLabel')}
                                     </p>
-                                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                    <p className="text-lg font-medium text-foreground">
                                         {formatDate(order.createdAt, locale)}
                                     </p>
                                 </div>
@@ -369,8 +369,8 @@ export default function OrderPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                            <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.timelineTitle')}
                             </h2>
                             {status === 'cancelled' ? (
@@ -387,20 +387,20 @@ export default function OrderPage({ params }: PageProps) {
                                             <div key={step.id} className="flex items-center gap-3">
                                                 <div
                                                     className={`h-3 w-3 rounded-full ${
-                                                        done ? 'bg-indigo-600' : 'bg-gray-300'
+                                                        done ? 'bg-primary' : 'bg-gray-300'
                                                     }`}
                                                 />
                                                 <p
                                                     className={`text-sm ${
                                                         done
-                                                            ? 'text-gray-900 dark:text-gray-100 font-medium'
-                                                            : 'text-gray-500 dark:text-gray-300'
+                                                            ? 'text-foreground font-medium'
+                                                            : 'text-muted-foreground'
                                                     }`}
                                                 >
                                                     {step.label}
                                                 </p>
                                                 {isCurrent && (
-                                                    <span className="text-xs text-indigo-600 dark:text-indigo-300">
+                                                    <span className="text-xs text-primary">
                                                         • {t('order.currentStep')}
                                                     </span>
                                                 )}
@@ -412,8 +412,8 @@ export default function OrderPage({ params }: PageProps) {
                         </div>
 
                         {/* Delivery info */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                            <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.deliveryAddress')}
                             </h2>
                             <div className="space-y-2 text-gray-700 dark:text-gray-300">
@@ -446,16 +446,16 @@ export default function OrderPage({ params }: PageProps) {
 
                         {/* Delivery and payment */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                                <h3 className="font-bold mb-2 text-gray-900 dark:text-gray-100">
+                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                                <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.deliveryMethod')}
                                 </h3>
                                 <p className="text-gray-700 dark:text-gray-300">
                                     {getDeliveryLabel(order.deliveryMethod)}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                                <h3 className="font-bold mb-2 text-gray-900 dark:text-gray-100">
+                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                                <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.paymentMethod')}
                                 </h3>
                                 <p className="text-gray-700 dark:text-gray-300">
@@ -476,15 +476,15 @@ export default function OrderPage({ params }: PageProps) {
                         </div>
 
                         {/* Items */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                            <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                            <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.itemsInOrder')}
                             </h2>
                             <div className="space-y-4">
                                 {order.items.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="flex gap-4 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                                        className="flex gap-4 pb-4 border-b border-border last:border-b-0"
                                     >
                                         <Link
                                             href={`/product/${item.id}`}
@@ -501,20 +501,20 @@ export default function OrderPage({ params }: PageProps) {
                                         <div className="flex-1">
                                             <Link
                                                 href={`/product/${item.id}`}
-                                                className="hover:text-indigo-600 dark:hover:text-indigo-300"
+                                                className="hover:text-primary dark:hover:text-indigo-300"
                                             >
-                                                <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                <h3 className="font-medium text-foreground">
                                                     {item.title}
                                                 </h3>
                                             </Link>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                            <p className="text-sm text-muted-foreground">
                                                 {item.brand}
                                             </p>
                                             <div className="mt-2 flex justify-between items-center">
                                                 <span className="text-sm text-gray-700 dark:text-gray-300">
                                                     {t('order.quantity')}: {item.quantity}
                                                 </span>
-                                                <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                <span className="font-medium text-foreground">
                                                     {formatCurrency(item.price * item.quantity)}
                                                 </span>
                                             </div>
@@ -527,14 +527,14 @@ export default function OrderPage({ params }: PageProps) {
 
                     {/* Summary sidebar */}
                     <div className="md:col-span-1">
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 sticky top-24">
-                            <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6 sticky top-24">
+                            <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.summaryTitle')}
                             </h2>
-                            <div className="space-y-2 text-sm mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                            <div className="space-y-2 text-sm mb-4 pb-4 border-b border-border text-gray-700 dark:text-gray-300">
                                 <div className="flex justify-between">
                                     <span>{t('order.items')}:</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="font-medium text-foreground">
                                         {formatCurrency(order.subtotal)}
                                     </span>
                                 </div>
@@ -556,22 +556,22 @@ export default function OrderPage({ params }: PageProps) {
                                 )}
                                 <div className="flex justify-between">
                                     <span>{t('order.taxVat')}:</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="font-medium text-foreground">
                                         {formatCurrency(order.tax)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>{t('order.shipping')}:</span>
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    <span className="font-medium text-foreground">
                                         {order.delivery === 0
                                             ? t('order.free')
                                             : formatCurrency(order.delivery)}
                                     </span>
                                 </div>
                             </div>
-                            <div className="mb-4 text-lg font-bold flex justify-between border-b border-gray-200 dark:border-gray-700 pb-4 text-gray-900 dark:text-gray-100">
+                            <div className="mb-4 text-lg font-bold flex justify-between border-b border-border pb-4 text-foreground">
                                 <span>{t('order.total')}:</span>
-                                <span className="text-indigo-600">
+                                <span className="text-primary">
                                     {formatCurrency(order.total)}
                                 </span>
                             </div>
@@ -592,7 +592,7 @@ export default function OrderPage({ params }: PageProps) {
                                     <p className="font-medium text-indigo-700 dark:text-indigo-200">
                                         {t('order.bonusEarned')}
                                     </p>
-                                    <p className="text-indigo-600 dark:text-indigo-300">
+                                    <p className="text-primary">
                                         +{order.bonusEarned ?? 0}
                                     </p>
                                 </div>
@@ -612,11 +612,11 @@ export default function OrderPage({ params }: PageProps) {
 
                 {/* Help section */}
                 <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
-                    <h3 className="font-bold mb-2 text-gray-900 dark:text-gray-100">
+                    <h3 className="font-bold mb-2 text-foreground">
                         {t('order.helpTitle')}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-4">{t('order.helpText')}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                         {t('order.workHours')}
                     </p>
                 </div>

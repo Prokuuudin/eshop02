@@ -186,10 +186,10 @@ export default function AdminClientBarcodesPage() {
             <main className="w-full py-4 space-y-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-3xl font-bold text-foreground">
                             {tl('admin.clientBarcodes.title', 'Клиентские баркоды', 'Client barcodes', 'Klientu barkodi')}
                         </h1>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             {tl('admin.clientBarcodes.subtitle', 'Управление компаниями и баркодами для активации аккаунтов.', 'Manage companies and barcodes for account activation.', 'Uznemumu un barkodu parvaldiba kontu aktivizacijai.')}
                         </p>
                         <div className="relative mt-3 w-full max-w-sm">
@@ -219,19 +219,19 @@ export default function AdminClientBarcodesPage() {
                 {/* ── Заявки мастеров без карты ── */}
                 <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900 p-6">
                     <div className="mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                        <h2 className="text-xl font-semibold text-foreground">
                             Заявки мастеров (без карты){' '}
                             <span className="ml-1 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-sm font-medium text-amber-800 dark:text-amber-300">
                                 {noCardRequests.length}
                             </span>
                         </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             Мастера, приложившие сертификат через форму регистрации. Укажите название компании и сгенерируйте номер карты для выдачи.
                         </p>
                     </div>
 
                     {noCardRequests.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 text-sm text-gray-500 dark:text-gray-400">
+                        <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
                             Новых заявок от мастеров нет.
                         </div>
                     ) : (
@@ -239,15 +239,15 @@ export default function AdminClientBarcodesPage() {
                             {noCardRequests.map((req) => {
                                 const draft = getNoCardDraft(req.id, req.name || req.email);
                                 return (
-                                    <div key={req.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                                    <div key={req.id} className="rounded-lg border border-border p-4 space-y-3">
                                         <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div className="space-y-1 min-w-0">
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                                <p className="font-semibold text-foreground">
                                                     {req.name || req.email}
                                                 </p>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">Email: {req.email}</p>
+                                                <p className="text-sm text-muted-foreground">Email: {req.email}</p>
                                                 {req.phone && (
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Телефон: {req.phone}</p>
+                                                    <p className="text-sm text-muted-foreground">Телефон: {req.phone}</p>
                                                 )}
                                                 <p className="text-sm text-gray-400 dark:text-gray-500">
                                                     {new Date(req.requestedAt).toLocaleString('ru-RU')}
@@ -258,7 +258,7 @@ export default function AdminClientBarcodesPage() {
                                                     href={req.certificateData}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                                    className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
                                                 >
                                                     📄 {req.certificateName || 'Сертификат'}
                                                 </a>
@@ -266,14 +266,14 @@ export default function AdminClientBarcodesPage() {
                                         </div>
 
                                         {req.message && (
-                                            <p className="rounded bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 italic">
+                                            <p className="rounded bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-muted-foreground italic">
                                                 «{req.message}»
                                             </p>
                                         )}
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                             <label className="text-sm">
-                                                <span className="block mb-1 text-gray-600 dark:text-gray-400">Название компании</span>
+                                                <span className="block mb-1 text-muted-foreground">Название компании</span>
                                                 <Input
                                                     value={draft.companyName}
                                                     onChange={(e) =>
@@ -286,7 +286,7 @@ export default function AdminClientBarcodesPage() {
                                                 />
                                             </label>
                                             <label className="text-sm">
-                                                <span className="block mb-1 text-gray-600 dark:text-gray-400">Номер карты</span>
+                                                <span className="block mb-1 text-muted-foreground">Номер карты</span>
                                                 <div className="flex gap-2">
                                                     <Input
                                                         value={draft.cardNumber}
@@ -318,7 +318,7 @@ export default function AdminClientBarcodesPage() {
                                         </div>
 
                                         <div className="pt-1">
-                                            <label className="text-sm text-gray-600 dark:text-gray-400 block mb-1">
+                                            <label className="text-sm text-muted-foreground block mb-1">
                                                 Комментарий к отказу{' '}
                                                 <span className="text-gray-400 dark:text-gray-500">(необязательно — будет добавлен в письмо)</span>
                                             </label>
@@ -329,7 +329,7 @@ export default function AdminClientBarcodesPage() {
                                                 }
                                                 rows={2}
                                                 placeholder="Например: предоставленный документ не является действующим сертификатом..."
-                                                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             />
                                         </div>
                                         <div className="flex gap-2">
@@ -357,7 +357,7 @@ export default function AdminClientBarcodesPage() {
                 </section>
 
                 {/* ── Список клиентов ── */}
-                <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+                <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
                     <h2 className="text-xl font-semibold mb-4">
                         {tl('admin.clientBarcodes.companies', 'Компании', 'Companies', 'Uznemumi')}{' '}
                         <span className="text-gray-400 dark:text-gray-500 font-normal text-base">
@@ -366,7 +366,7 @@ export default function AdminClientBarcodesPage() {
                     </h2>
 
                     {filteredCompanies.length === 0 && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
+                        <p className="text-sm text-muted-foreground py-4 text-center">
                             Ничего не найдено по запросу «{search}»
                         </p>
                     )}
@@ -378,30 +378,30 @@ export default function AdminClientBarcodesPage() {
                             return (
                                 <div
                                     key={company.companyId}
-                                    className="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                                    className="rounded-lg border border-border p-4"
                                 >
                                     <div className="space-y-1">
-                                        <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                        <p className="font-semibold text-foreground">
                                             {company.companyName}
                                         </p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        <p className="text-sm text-muted-foreground">
                                             ID: {company.companyId}
                                         </p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        <p className="text-sm text-muted-foreground">
                                             {tl('admin.clientBarcodes.barcode', 'Баркод', 'Barcode', 'Barkods')}:{' '}
                                             {company.cardNumber || tl('admin.clientBarcodes.notSet', 'не задан', 'not set', 'nav iestatits')}
                                         </p>
                                         {company.contactEmail && (
-                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                            <p className="text-sm text-muted-foreground">
                                                 Email: {company.contactEmail}
                                             </p>
                                         )}
                                         {company.contactPhone && (
-                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                            <p className="text-sm text-muted-foreground">
                                                 Телефон: {company.contactPhone}
                                             </p>
                                         )}
-                                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        <p className="text-sm text-muted-foreground">
                                             {tl('admin.clientBarcodes.team', 'Команда', 'Team', 'Komanda')}:{' '}
                                             {company.teamMembers.length}{' '}
                                             {tl('admin.clientBarcodes.users', 'пользователей', 'users', 'lietotaji')}
@@ -409,8 +409,8 @@ export default function AdminClientBarcodesPage() {
                                     </div>
 
                                     {companyUsers.length > 0 && (
-                                        <div className="mt-4 rounded-md border border-gray-200 dark:border-gray-700 p-3">
-                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                                        <div className="mt-4 rounded-md border border-border p-3">
+                                            <p className="text-sm font-medium text-foreground mb-3">
                                                 {tl('admin.clientBarcodes.accountsAndRoles', 'Аккаунты компании и роли', 'Company accounts and roles', 'Uznemuma konti un lomas')}
                                             </p>
                                             <div className="space-y-2">
@@ -424,13 +424,13 @@ export default function AdminClientBarcodesPage() {
                                                     return (
                                                         <div
                                                             key={companyUser.id}
-                                                            className="grid grid-cols-1 gap-2 rounded border border-gray-200 dark:border-gray-700 p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
+                                                            className="grid grid-cols-1 gap-2 rounded border border-border p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
                                                         >
                                                             <div>
-                                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                                <p className="text-sm font-medium text-foreground">
                                                                     {companyUser.name || companyUser.email}
                                                                 </p>
-                                                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                                                <p className="text-xs text-muted-foreground">
                                                                     {companyUser.email}
                                                                 </p>
                                                             </div>
@@ -440,7 +440,7 @@ export default function AdminClientBarcodesPage() {
                                                                     const role = event.target.value as TeamRole;
                                                                     setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }));
                                                                 }}
-                                                                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                                                                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                                                             >
                                                                 <option value="viewer">viewer</option>
                                                                 <option value="buyer">buyer</option>

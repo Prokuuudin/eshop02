@@ -50,7 +50,7 @@ export const AccountReviewsSection: React.FC = () => {
                         <MessageSquare className="h-4 w-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        <h3 className="text-sm font-semibold text-foreground">
                             {t('account.reviews.title', 'Мои отзывы')}
                         </h3>
                         <div className="mt-0.5 flex items-center gap-2">
@@ -76,7 +76,7 @@ export const AccountReviewsSection: React.FC = () => {
                                             {review.title}
                                         </p>
                                     </div>
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                                         {review.text}
                                     </p>
                                 </div>

@@ -25,7 +25,7 @@ export const AccountViewedProductsWidget: React.FC = () => {
                 </div>
             </div>
 
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-semibold text-foreground">
                 {t('account.recentlyViewed', 'Недавно просматривали')}
             </p>
 
@@ -59,7 +59,7 @@ export const AccountViewedProductsWidget: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex-1">
+                <p className="mt-2 text-sm text-muted-foreground flex-1">
                     {t('account.recentlyViewedEmpty', 'Здесь появятся просмотренные товары')}
                 </p>
             )}

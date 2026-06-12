@@ -128,7 +128,7 @@ export default function HeaderSearch() {
       <div className="relative flex-1">
         <input
           id={inputId}
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-sm"
           placeholder={t('catalog.searchPlaceholder')}
           value={query}
           role="combobox"
@@ -149,7 +149,7 @@ export default function HeaderSearch() {
         />
 
         {focused && query.trim() && suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg overflow-hidden">
+          <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white dark:bg-gray-900 border border-border rounded-md shadow-lg overflow-hidden">
             <ul id={listboxId} role="listbox" className="max-h-72 overflow-y-auto">
               {suggestions.map((suggestion, index) => (
                 <li key={suggestion.id}>
@@ -164,8 +164,8 @@ export default function HeaderSearch() {
                       activeIndex === index ? 'bg-gray-50 dark:bg-gray-800' : ''
                     }`}
                   >
-                    <p className="text-sm text-gray-900 dark:text-gray-100">{highlightText(suggestion.title, query)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-300">{highlightText(suggestion.brand, query)}</p>
+                    <p className="text-sm text-foreground">{highlightText(suggestion.title, query)}</p>
+                    <p className="text-xs text-muted-foreground">{highlightText(suggestion.brand, query)}</p>
                   </button>
                 </li>
               ))}

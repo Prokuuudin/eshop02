@@ -31,7 +31,7 @@ export const AccountAddressesWidget: React.FC = () => {
                 <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
             </div>
 
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-semibold text-foreground">
                 {t('account.savedAddressesTitle')}
             </p>
 
@@ -40,7 +40,7 @@ export const AccountAddressesWidget: React.FC = () => {
                     <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">
                         {preview.firstName} {preview.lastName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                         {preview.address}, {preview.city}
                     </p>
                     {addresses.length > 1 && (
@@ -50,7 +50,7 @@ export const AccountAddressesWidget: React.FC = () => {
                     )}
                 </div>
             ) : (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex-1">
+                <p className="mt-2 text-sm text-muted-foreground flex-1">
                     {t('account.page.savedAddressesHint')}
                 </p>
             )}

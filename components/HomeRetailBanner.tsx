@@ -28,7 +28,7 @@ export default function HomeRetailBanner() {
                         <p className="retail-banner__eyebrow text-xs font-semibold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
                             {t('home.retailBanner.eyebrow')}
                         </p>
-                        <p className="retail-banner__desc mt-2 text-lg font-medium text-gray-900 dark:text-gray-100 sm:text-xl">
+                        <p className="retail-banner__desc mt-2 text-lg font-medium text-foreground sm:text-xl">
                             {t(
                                 'home.retailBanner.retailOnly',
                                 'Вы можете приобрести те же товары по розничным ценам — в нашем обычном интернет-магазине'

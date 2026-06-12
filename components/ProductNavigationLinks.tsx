@@ -14,7 +14,7 @@ export const ProductNavigationLinks: React.FC<ProductNavigationLinksProps> = ({
     const { t } = useTranslation();
     return (
         <div className="flex flex-wrap gap-2 mb-4 items-center">
-            <Link href="/catalog" className="text-indigo-600 inline-block">
+            <Link href="/catalog" className="text-primary inline-block">
                 ← {t('product.backToCatalog')}
             </Link>
             <Link

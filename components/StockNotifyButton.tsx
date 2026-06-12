@@ -70,7 +70,7 @@ export const StockNotifyButton: React.FC<StockNotifyButtonProps> = ({ productId,
   if (activeSub) {
     return (
       <div className={`stock-notify stock-notify--active flex items-center justify-between gap-2 rounded-md px-3 py-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 ${compact ? 'mt-1' : 'mt-3'}`}>
-        <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 overflow-hidden">
+        <div className="flex items-center gap-2 text-indigo-700 dark:text-primary overflow-hidden">
           <BellOff className="w-3.5 h-3.5 shrink-0" />
           <span className={`truncate ${compact ? 'text-xs' : 'text-sm'}`}>
             {t('stockNotify.subscribedLabel')}
@@ -93,7 +93,7 @@ export const StockNotifyButton: React.FC<StockNotifyButtonProps> = ({ productId,
         <Button
           variant="outline"
           size={compact ? 'sm' : 'default'}
-          className={`stock-notify__trigger w-full gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950 ${compact ? '' : 'mt-3'}`}
+          className={`stock-notify__trigger w-full gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-primary dark:hover:bg-indigo-950 ${compact ? '' : 'mt-3'}`}
         >
           <Bell className="w-4 h-4" />
           {t('stockNotify.button')}
@@ -122,7 +122,7 @@ export const StockNotifyButton: React.FC<StockNotifyButtonProps> = ({ productId,
             {error && <p className="text-xs text-red-500">{error}</p>}
           </div>
 
-          <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
             <Bell className="w-4 h-4 mr-2" />
             {t('stockNotify.submit')}
           </Button>

@@ -19,12 +19,12 @@ export default function ProductEditPageContent({
 }: ProductEditPageContentProps) {
     return (
         <AdminGate>
-            <main className="admin-products w-full space-y-4 text-gray-900 dark:text-gray-100">
+            <main className="admin-products w-full space-y-4 text-foreground">
                 <div className="rounded-lg bg-white dark:bg-gray-900 p-4">
                     <div className="flex items-center gap-3 mb-4">
                         <Link
                             href="/admin/products"
-                            className="text-sm text-indigo-600 hover:underline"
+                            className="text-sm text-primary hover:underline"
                         >
                             ← Все товары
                         </Link>

@@ -164,7 +164,7 @@ export default function AdminCustomerSegmentsPage() {
     <AdminGate>
       <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Сегменты и статусы клиентов</h1>
+          <h1 className="text-2xl font-bold text-foreground">Сегменты и статусы клиентов</h1>
           <Button variant="outline" asChild>
             <Link href="/admin">← Назад в админку</Link>
           </Button>
@@ -194,9 +194,9 @@ export default function AdminCustomerSegmentsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(['VIP', 'Постоянный', 'Новый', 'Неактивный'] as Segment[]).map((seg) => (
                 <div key={seg} className={`rounded-lg border p-4 ${SEGMENT_CARD_COLORS[seg]}`}>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{counts[seg]}</div>
+                  <div className="text-2xl font-bold text-foreground">{counts[seg]}</div>
                   <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{seg}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{SEGMENT_DESCRIPTIONS[seg]}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{SEGMENT_DESCRIPTIONS[seg]}</div>
                 </div>
               ))}
             </div>
@@ -210,8 +210,8 @@ export default function AdminCustomerSegmentsPage() {
                     onClick={() => { setActiveTab(tab); setBResult(null) }}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
                       activeTab === tab
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-border hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
                     {tab}
@@ -236,10 +236,10 @@ export default function AdminCustomerSegmentsPage() {
                   className="w-full flex items-center justify-between px-5 py-3.5 text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                    <span className="text-sm font-semibold text-indigo-700 dark:text-primary">
                       Рассылка по сегменту
                     </span>
-                    <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                    <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-primary">
                       {broadcastRecipients.length} получателей
                       {activeTab !== 'Все' && ` · ${activeTab}`}
                     </span>
@@ -251,9 +251,9 @@ export default function AdminCustomerSegmentsPage() {
                   <div className="border-t border-indigo-100 dark:border-indigo-800 px-5 py-4 space-y-4">
 
                     {/* Recipients info */}
-                    <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>
-                        Получатели: <strong className="text-gray-900 dark:text-gray-100">{broadcastRecipients.length}</strong>
+                        Получатели: <strong className="text-foreground">{broadcastRecipients.length}</strong>
                         {activeTab !== 'Все' && ` клиентов сегмента «${activeTab}»`}
                         {activeTab === 'Все' && ' (все клиенты)'}
                       </span>
@@ -263,7 +263,7 @@ export default function AdminCustomerSegmentsPage() {
 
                     {/* Subject */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Тема письма</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Тема письма</label>
                       <Input
                         value={bSubject}
                         onChange={(e) => setBSubject(e.target.value)}
@@ -274,14 +274,14 @@ export default function AdminCustomerSegmentsPage() {
                     {/* Body with edit/preview tabs */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Текст письма</label>
-                        <div className="flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+                        <label className="text-xs font-medium text-muted-foreground">Текст письма</label>
+                        <div className="flex rounded-md border border-border overflow-hidden text-xs">
                           {(['edit', 'preview'] as const).map((t) => (
                             <button
                               key={t}
                               type="button"
                               onClick={() => setBTab(t)}
-                              className={`px-3 py-1 transition-colors ${bTab === t ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                              className={`px-3 py-1 transition-colors ${bTab === t ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                             >
                               {t === 'edit' ? 'Редактор' : 'Превью'}
                             </button>
@@ -295,10 +295,10 @@ export default function AdminCustomerSegmentsPage() {
                           value={bBody}
                           onChange={(e) => setBBody(e.target.value)}
                           placeholder={'Здравствуйте, {first_name}!\n\nПишем вам по поводу...'}
-                          className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                          className="w-full rounded-lg border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                       ) : (
-                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 min-h-[176px]">
+                        <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-800 p-4 min-h-[176px]">
                           {bBody ? (
                             <div className="space-y-1">
                               <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
@@ -307,7 +307,7 @@ export default function AdminCustomerSegmentsPage() {
                               <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
                                 {renderPreview(bBody, SAMPLE_VARS)}
                               </div>
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-border">
                                 {UNSUBSCRIBE_TEXT}
                               </p>
                             </div>
@@ -329,7 +329,7 @@ export default function AdminCustomerSegmentsPage() {
                         trigger={
                           <Button
                             disabled={!canSend}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                            className="bg-primary hover:bg-primary/90 text-white"
                           >
                             {sendButtonLabel}
                           </Button>
@@ -343,12 +343,12 @@ export default function AdminCustomerSegmentsPage() {
                     {/* Result */}
                     {bResult && (
                       <div className={`rounded-lg border px-4 py-3 ${bResult.failed === 0 ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20'}`}>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <p className="text-sm font-medium text-foreground">
                           Рассылка завершена: <span className="text-green-700 dark:text-green-400">{bResult.sent} отправлено</span>
                           {bResult.failed > 0 && <span className="text-red-600 dark:text-red-400"> · {bResult.failed} ошибок</span>}
                         </p>
                         {bResult.failedEmails.length > 0 && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             Не доставлено: {bResult.failedEmails.join(', ')}
                           </p>
                         )}
@@ -361,42 +361,42 @@ export default function AdminCustomerSegmentsPage() {
 
             {/* Table */}
             {customers.length === 0 ? (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-16 border rounded-lg">
+              <div className="text-center text-muted-foreground py-16 border rounded-lg">
                 Нет данных о заказах. Клиенты появятся после первых заказов.
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-16 border rounded-lg">
+              <div className="text-center text-muted-foreground py-16 border rounded-lg">
                 Клиенты не найдены по заданным фильтрам.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Email</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Имя</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Заказов</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Потрачено</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Последний заказ</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Сегмент</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Имя</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Заказов</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Потрачено</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Последний заказ</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Сегмент</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {filtered.map((c) => (
                       <tr key={c.email} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                        <td className="px-4 py-3 text-foreground">
                           <Link
                             href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
-                            className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                            className="hover:text-primary dark:hover:text-indigo-400 hover:underline"
                           >
                             {c.email}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{c.firstName} {c.lastName}</td>
+                        <td className="px-4 py-3 text-foreground">{c.firstName} {c.lastName}</td>
                         <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{c.totalOrders}</td>
                         <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">€{c.totalSpent.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {c.lastOrderDate
                             ? new Date(c.lastOrderDate).toLocaleDateString('ru-RU')
                             : '—'}
@@ -409,7 +409,7 @@ export default function AdminCustomerSegmentsPage() {
                         <td className="px-4 py-3 text-right">
                           <Link
                             href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
-                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap"
+                            className="text-xs text-primary hover:underline whitespace-nowrap"
                           >
                             Профиль →
                           </Link>

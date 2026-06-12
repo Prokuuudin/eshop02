@@ -101,11 +101,11 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>
             )}
-            <p className="register-form__hint text-sm text-gray-500 dark:text-gray-400">
+            <p className="register-form__hint text-sm text-muted-foreground">
                 {t('auth.registerNoCardHint', 'Пришлите свои данные и сертификат/лицензию мастера — администратор выдаст вам номер карты и пароль.')}
             </p>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.name')}
                 </label>
                 <Input
@@ -118,7 +118,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
             </div>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.email')}
                 </label>
                 <Input
@@ -131,7 +131,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
             </div>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.phone', 'Телефон')}
                 </label>
                 <PhoneInput
@@ -141,7 +141,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
             </div>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.certificate')}
                 </label>
                 <input
@@ -163,11 +163,11 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
                 <div className={`register-form__file-upload w-full rounded-lg border-2 border-dashed px-4 py-4 transition-colors ${
                     certificate
-                        ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/30'
+                        ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-950/30'
                         : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800'
                 }`}>
                     {certificate ? (
-                        <div className="register-form__file-selected flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                        <div className="register-form__file-selected flex items-center gap-2 text-indigo-700 dark:text-primary">
                             <Upload className="w-4 h-4 shrink-0" />
                             <span className="register-form__file-name truncate max-w-[220px]">{certificate.name}</span>
                             <span
@@ -188,7 +188,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => galleryRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
                                 >
                                     <Upload className="w-4 h-4" />
                                     {t('auth.uploadFromGallery')}
@@ -196,7 +196,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => cameraRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
                                 >
                                     <Camera className="w-4 h-4" />
                                     {t('auth.takePhoto')}
@@ -210,7 +210,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 </div>
             </div>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.message', 'Комментарий для администратора')}
                 </label>
                 <Input

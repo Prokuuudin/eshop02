@@ -185,11 +185,11 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow p-4 mb-6 space-y-4">
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-border shadow p-4 mb-6 space-y-4">
       <div>
-        <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('catalog.filters.orderBy', 'Упорядочить по')}</label>
+        <label className="block text-sm mb-1 text-foreground">{t('catalog.filters.orderBy', 'Упорядочить по')}</label>
         <Select value={order || 'default'} onValueChange={(value) => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice, order: value === 'default' ? '' : value })}>
-          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-foreground border-border">
             <SelectValue placeholder={t('catalog.filters.orderBy.default', 'По умолчанию')} />
           </SelectTrigger>
           <SelectContent>
@@ -202,9 +202,9 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         </Select>
       </div>
       <div>
-        <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('categories.title')}</label>
+        <label className="block text-sm mb-1 text-foreground">{t('categories.title')}</label>
         <Select value={group || 'all'} onValueChange={(value) => onFilter({ group: value === 'all' ? '' : value, onSale, purposes, brands, minPrice, maxPrice, order })}>
-          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-foreground border-border">
             <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ group: '' })})`} />
           </SelectTrigger>
           <SelectContent>
@@ -226,7 +226,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         />
       </div>
       <div>
-        <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('product.purpose')}</label>
+        <label className="block text-sm mb-1 text-foreground">{t('product.purpose')}</label>
         <div className="flex flex-col gap-2">
           {availablePurposes.map(p => (
             <Checkbox
@@ -240,7 +240,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         </div>
       </div>
       <div>
-        <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('product.brand')}</label>
+        <label className="block text-sm mb-1 text-foreground">{t('product.brand')}</label>
         <div className="flex flex-col gap-2">
           {availableBrands.map((brandId) => {
             const nextBrands = brands.includes(brandId)
@@ -261,20 +261,20 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         </div>
       </div>
       <div>
-        <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">{t('product.price')}</label>
+        <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>
         <div className="flex gap-2">
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
+          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
+          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
         </div>
       </div>
       {activeFilters.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <p className="text-sm font-semibold text-foreground">
             {t('catalog.filters.selected', 'Выбранные фильтры')}
           </p>
           <div className="flex flex-wrap gap-2">
             {activeFilters.map((filter) => (
-              <Badge key={filter.id} variant="outline" className="gap-1 pr-1 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+              <Badge key={filter.id} variant="outline" className="gap-1 pr-1 text-foreground border-border">
                 <span>{filter.label}</span>
                 <button
                   type="button"
@@ -292,7 +292,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <button 
         type="button" 
         onClick={handleReset}
-        className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100 rounded px-4 py-2 transition-colors border border-gray-300 dark:border-gray-700"
+        className="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100 rounded px-4 py-2 transition-colors border border-border"
       >
         {t('common.reset')}
       </button>

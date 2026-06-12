@@ -111,8 +111,8 @@ export default function RequestQuotePage() {
   if (!companyId) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Запросить спецпредложение</h1>
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-10 text-center bg-gray-50 dark:bg-gray-800">
+        <h1 className="text-3xl font-bold text-foreground mb-4">Запросить спецпредложение</h1>
+        <div className="rounded-lg border border-border p-10 text-center bg-gray-50 dark:bg-gray-800">
           <p className="text-gray-700 dark:text-gray-300 mb-4">Функция доступна только для B2B-компаний.</p>
           <Link href="/account">
             <Button variant="outline">Перейти в аккаунт</Button>
@@ -125,7 +125,7 @@ export default function RequestQuotePage() {
   if (productsLoading) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-12">
-        <p className="text-sm text-gray-600 dark:text-gray-300">Загрузка товаров...</p>
+        <p className="text-sm text-muted-foreground">Загрузка товаров...</p>
       </main>
     )
   }
@@ -133,13 +133,13 @@ export default function RequestQuotePage() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-10 space-y-8">
       <section>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">RFQ: Запрос спецпредложения</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+        <h1 className="text-3xl font-bold text-foreground">RFQ: Запрос спецпредложения</h1>
+        <p className="text-sm text-muted-foreground mt-2">
           Отправьте список товаров и объёмы, менеджер подготовит персональное предложение.
         </p>
       </section>
 
-      <section className="rounded-lg border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-900">
+      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             {items.map((item, index) => (
@@ -147,7 +147,7 @@ export default function RequestQuotePage() {
                 <select
                   value={item.productId}
                   onChange={(e) => updateRow(index, { productId: e.target.value })}
-                  className="rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm"
+                  className="rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm"
                 >
                   {products.map((product) => (
                     <option key={product.id} value={product.id}>
@@ -161,7 +161,7 @@ export default function RequestQuotePage() {
                   min={1}
                   value={item.quantity}
                   onChange={(e) => updateRow(index, { quantity: Number(e.target.value) })}
-                  className="rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm"
+                  className="rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm"
                   placeholder="Кол-во"
                 />
 
@@ -179,7 +179,7 @@ export default function RequestQuotePage() {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm min-h-[100px]"
+            className="w-full rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm min-h-[100px]"
             placeholder="Комментарий к заявке: желаемые условия, сроки, требования"
           />
 
@@ -187,15 +187,15 @@ export default function RequestQuotePage() {
         </form>
       </section>
 
-      <section className="rounded-lg border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-900">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Мои заявки</h2>
+      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Мои заявки</h2>
         <div className="space-y-3">
           {rfqList.map((rfq) => (
-            <div key={rfq.id} className="rounded border border-gray-200 dark:border-gray-700 p-4">
+            <div key={rfq.id} className="rounded border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium">{rfq.id}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Создано: {formatDate(rfq.createdAt, 'ru-RU')}</p>
+                  <p className="text-xs text-muted-foreground">Создано: {formatDate(rfq.createdAt, 'ru-RU')}</p>
                 </div>
                 <span className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800">{rfq.status}</span>
               </div>
@@ -211,14 +211,14 @@ export default function RequestQuotePage() {
                 })}
               </ul>
 
-              {rfq.notes && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Комментарий: {rfq.notes}</p>}
+              {rfq.notes && <p className="mt-2 text-sm text-muted-foreground">Комментарий: {rfq.notes}</p>}
 
               {rfq.quote && (
                 <div className="mt-3 rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3">
                   <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Предложение получено</p>
                   <p className="text-sm mt-1">Сумма: {formatEuro(rfq.quote.totalPrice, 'ru-RU')}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Действительно до: {formatDate(rfq.quote.validUntil, 'ru-RU')}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Условия: {rfq.quote.terms}</p>
+                  <p className="text-xs text-muted-foreground">Действительно до: {formatDate(rfq.quote.validUntil, 'ru-RU')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Условия: {rfq.quote.terms}</p>
 
                   {rfq.status === 'quoted' && (
                     <div className="mt-3 flex gap-2">
@@ -230,7 +230,7 @@ export default function RequestQuotePage() {
               )}
             </div>
           ))}
-          {rfqList.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-400">Заявок пока нет</p>}
+          {rfqList.length === 0 && <p className="text-sm text-muted-foreground">Заявок пока нет</p>}
         </div>
       </section>
     </main>

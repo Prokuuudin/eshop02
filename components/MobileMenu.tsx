@@ -53,7 +53,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
     <div className="header__menu-overlay fixed inset-0 z-40">
       <div className="header__menu-backdrop absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-md p-4 z-50 border-b border-gray-200 dark:border-gray-700">
+      <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 text-foreground shadow-md p-4 z-50 border-b border-border">
         <div className="header__menu-top flex items-center justify-between mb-4">
           <div className="header__brand flex items-center gap-3">
             <Link href="/" className="header__brand-link text-lg font-semibold" onClick={onClose}>
@@ -88,7 +88,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               <span className={`transform transition-transform ${expandCategories ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {expandCategories && (
-              <ul className="ml-4 mt-2 space-y-2 border-l border-gray-200 dark:border-gray-700 pl-3">
+              <ul className="ml-4 mt-2 space-y-2 border-l border-border pl-3">
                 {CATEGORIES.map((cat) => (
                   <li key={cat.id}>
                     <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className="inline-flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60">
@@ -132,7 +132,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
           </li>
         </ul>
 
-        <div className="header__menu-actions mt-6 flex flex-col gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="header__menu-actions mt-6 flex flex-col gap-3 border-t border-border pt-4">
           <Link href="/cart" onClick={onClose} className="w-full">
             <Button className="w-full">{t('nav.cart')}</Button>
           </Link>

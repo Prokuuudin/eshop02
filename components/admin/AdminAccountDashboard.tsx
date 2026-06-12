@@ -152,8 +152,8 @@ function KpiCard({
                 <Icon className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-                <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="mt-0.5 text-xl font-bold text-foreground">{value}</p>
                 {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
             </div>
             <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500 dark:text-gray-600" />
@@ -237,11 +237,11 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                         )}
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                             {greeting},{' '}
                             <span className="text-gray-400 dark:text-gray-500">{currentDate}</span>
                         </p>
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-xl font-bold text-foreground">
                             {user.name || user.email}
                         </h1>
                         <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">

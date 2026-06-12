@@ -49,11 +49,11 @@ const ProductTable: React.FC<ProductTableProps> = ({
         if (e.key === 'Escape') setEditing(null)
     }
 
-    const cellCls = 'px-2 py-1 w-24 rounded border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400'
+    const cellCls = 'px-2 py-1 w-24 rounded border border-indigo-300 dark:border-primary bg-white dark:bg-gray-800 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
 
     return (
         <div className="overflow-x-auto">
-            <table className="admin-products__table min-w-full border border-gray-200 dark:border-gray-700 rounded-lg">
+            <table className="admin-products__table min-w-full border border-border rounded-lg">
                 <thead>
                     <tr className="bg-gray-100 dark:bg-gray-800">
                         <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Картинка</th>
@@ -89,12 +89,12 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                         }
                                     </div>
                                 </td>
-                                <td className="p-3 align-middle max-w-xs font-medium text-gray-900 dark:text-gray-100">
+                                <td className="p-3 align-middle max-w-xs font-medium text-foreground">
                                     <span className="truncate block">{product.title}</span>
                                     <span className="text-xs text-gray-400 dark:text-gray-500">{product.brand}</span>
                                 </td>
                                 <td className="p-3 align-middle">
-                                    <span className="block text-xs text-gray-500 dark:text-gray-400 font-mono">{product.id}</span>
+                                    <span className="block text-xs text-muted-foreground font-mono">{product.id}</span>
                                     {product.sku && <span className="block text-xs text-gray-400 dark:text-gray-500 font-mono">{product.sku}</span>}
                                 </td>
                                 <td className="p-3 align-middle">
@@ -115,7 +115,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'price')}
                                             title={onQuickSave ? 'Кликните для редактирования' : undefined}
-                                            className={`text-sm font-medium text-gray-900 dark:text-gray-100 tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer' : 'cursor-default'}`}
+                                            className={`text-sm font-medium text-foreground tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-primary/90 cursor-pointer' : 'cursor-default'}`}
                                         >
                                             €{product.price.toFixed(2)}
                                         </button>
@@ -139,7 +139,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'stock')}
                                             title={onQuickSave ? 'Кликните для редактирования' : undefined}
-                                            className={`text-sm tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer' : 'cursor-default'} ${product.stock === 0 ? 'text-red-600 dark:text-red-400 font-semibold' : product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-900 dark:text-gray-100'}`}
+                                            className={`text-sm tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer' : 'cursor-default'} ${product.stock === 0 ? 'text-red-600 dark:text-red-400 font-semibold' : product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-foreground'}`}
                                         >
                                             {product.stock}
                                         </button>

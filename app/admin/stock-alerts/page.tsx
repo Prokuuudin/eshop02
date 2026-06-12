@@ -130,7 +130,7 @@ export default function StockAlertsPage() {
             <div className="space-y-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Алерты низкого остатка
                         </h1>
                         <p className="mt-1 text-sm text-gray-500">
@@ -138,7 +138,7 @@ export default function StockAlertsPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Порог:</span>
+                        <span className="text-sm text-muted-foreground">Порог:</span>
                         <input
                             type="number"
                             min={0}
@@ -160,7 +160,7 @@ export default function StockAlertsPage() {
                 <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-4 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Email-отчёт об остатках</p>
+                            <p className="text-sm font-semibold text-foreground">Email-отчёт об остатках</p>
                             {lastSent && (
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Последняя отправка: {lastSent}</p>
                             )}
@@ -180,7 +180,7 @@ export default function StockAlertsPage() {
                             placeholder="admin@example.com"
                             value={alertEmail}
                             onChange={(e) => { setAlertEmail(e.target.value); setAlertResult(null); }}
-                            className="flex-1 min-w-[220px] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100"
+                            className="flex-1 min-w-[220px] rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-foreground"
                         />
                         <button
                             type="button"
@@ -207,7 +207,7 @@ export default function StockAlertsPage() {
                     </div>
                     <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
                         <p className="text-xs text-gray-500">Всего товаров</p>
-                        <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">{products.length}</p>
+                        <p className="mt-1 text-3xl font-bold text-foreground">{products.length}</p>
                     </div>
                 </div>
 
@@ -258,25 +258,25 @@ export default function StockAlertsPage() {
                         <table className="w-full text-sm">
                             <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Товар
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Бренд
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         SKU
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Категория
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Цена
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Остаток
                                     </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">
+                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Действие
                                     </th>
                                 </tr>
@@ -296,9 +296,9 @@ export default function StockAlertsPage() {
                                         <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
                                             {p.title}
                                         </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{p.brand}</td>
+                                        <td className="px-4 py-3 text-muted-foreground">{p.brand}</td>
                                         <td className="px-4 py-3 text-gray-500">{p.sku ?? '—'}</td>
-                                        <td className="px-4 py-3 capitalize text-gray-600 dark:text-gray-400">
+                                        <td className="px-4 py-3 capitalize text-muted-foreground">
                                             {p.category}
                                         </td>
                                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">

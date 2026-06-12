@@ -102,11 +102,11 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
       <div className="subscription-widget subscription-widget--active mt-4 rounded-lg border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 p-3">
         <div className="subscription-widget__header flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <RefreshCw className="w-4 h-4 text-primary shrink-0" />
             <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
               {t('subscription.activeTitle')}
             </span>
-            <Badge variant="outline" className="text-xs border-indigo-300 text-indigo-700 dark:border-indigo-600 dark:text-indigo-300">
+            <Badge variant="outline" className="text-xs border-indigo-300 text-indigo-700 dark:border-primary dark:text-primary">
               -{existingSub.discountPercent}%
             </Badge>
           </div>
@@ -117,7 +117,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
             {t('subscription.cancel')}
           </button>
         </div>
-        <p className="mt-1.5 text-xs text-indigo-700 dark:text-indigo-300">
+        <p className="mt-1.5 text-xs text-indigo-700 dark:text-primary">
           {t(existingSub.interval === 'monthly' ? 'subscription.monthly' : 'subscription.quarterly')}
           {' · '}
           {existingSub.quantity} {t('product.pcs')}
@@ -131,12 +131,12 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
   return (
     <>
       <div className="subscription-widget mt-4">
-        <div className="subscription-widget__toggle flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-sm">
+        <div className="subscription-widget__toggle flex rounded-lg border border-border overflow-hidden text-sm">
           <button
             className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium ${
               mode === 'once'
-                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-white dark:bg-gray-800 text-foreground'
+                : 'bg-gray-50 dark:bg-gray-900 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
             onClick={() => setMode('once')}
           >
@@ -144,10 +144,10 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
             {t('subscription.modeOnce')}
           </button>
           <button
-            className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium border-l border-gray-200 dark:border-gray-700 ${
+            className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium border-l border-border ${
               mode === 'subscribe'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary text-white'
+                : 'bg-gray-50 dark:bg-gray-900 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
             onClick={() => setMode('subscribe')}
           >
@@ -169,13 +169,13 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
                     className={`subscription-widget__interval-btn flex-1 rounded-lg border p-2.5 text-left transition-all ${
                       interval === iv
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 ring-1 ring-indigo-500'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                        : 'border-border hover:border-indigo-300'
                     }`}
                   >
-                    <div className="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                    <div className="text-xs font-semibold text-foreground">
                       {t(`subscription.${iv}`)}
                     </div>
-                    <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                    <div className="text-sm font-bold text-primary mt-0.5">
                       {formatEuro(price, 'en-US')}
                     </div>
                     <Badge className="mt-1 text-[10px] px-1.5 py-0 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-0">
@@ -186,12 +186,12 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
               })}
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               {t('subscription.savingsHint').replace('{amount}', formatEuro(savings, 'en-US'))}
             </p>
 
             <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full bg-primary hover:bg-primary/90"
               onClick={() => {
                 if (!userId) {
                   showToast(t('subscription.loginRequired'), 'error')
@@ -244,7 +244,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
               </div>
               <div className="flex justify-between border-t border-gray-100 dark:border-gray-800 pt-2 mt-1">
                 <span className="text-gray-700 dark:text-gray-200 font-medium">{t('subscription.totalPerOrder')}</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                <span className="font-bold text-primary">
                   {formatEuro(discountedPrice * quantity, 'en-US')}
                 </span>
               </div>
@@ -258,7 +258,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
               <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleSubscribe}>
+              <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSubscribe}>
                 {t('subscription.confirmBtn')}
               </Button>
             </div>

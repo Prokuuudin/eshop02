@@ -111,7 +111,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 return (
                     <h1
                         key={idx}
-                        className="text-3xl font-bold mt-6 mb-3 text-gray-900 dark:text-gray-100"
+                        className="text-3xl font-bold mt-6 mb-3 text-foreground"
                     >
                         {line.slice(2)}
                     </h1>
@@ -121,7 +121,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 return (
                     <h2
                         key={idx}
-                        className="text-2xl font-bold mt-5 mb-2 text-gray-900 dark:text-gray-100"
+                        className="text-2xl font-bold mt-5 mb-2 text-foreground"
                     >
                         {line.slice(3)}
                     </h2>
@@ -129,7 +129,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
             }
             if (line.startsWith('**') && line.endsWith('**')) {
                 return (
-                    <p key={idx} className="font-bold mt-2 text-gray-900 dark:text-gray-100">
+                    <p key={idx} className="font-bold mt-2 text-foreground">
                         {line.slice(2, -2)}
                     </p>
                 );
@@ -165,7 +165,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 return (
                     <h1
                         key={index}
-                        className="text-3xl font-bold mt-6 mb-3 text-gray-900 dark:text-gray-100"
+                        className="text-3xl font-bold mt-6 mb-3 text-foreground"
                     >
                         {block.text}
                     </h1>
@@ -175,7 +175,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 return (
                     <h2
                         key={index}
-                        className="text-2xl font-bold mt-5 mb-2 text-gray-900 dark:text-gray-100"
+                        className="text-2xl font-bold mt-5 mb-2 text-foreground"
                     >
                         {block.text}
                     </h2>
@@ -184,7 +184,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
             return (
                 <h3
                     key={index}
-                    className="text-xl font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100"
+                    className="text-xl font-semibold mt-4 mb-2 text-foreground"
                 >
                     {block.text}
                 </h3>
@@ -217,7 +217,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
         if (block.type === 'image') {
             return (
                 <figure key={index} className="space-y-2">
-                    <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
                         <Image
                             src={resolveImageSrc(block.src)}
                             alt={block.alt}
@@ -226,7 +226,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                         />
                     </div>
                     {block.caption && (
-                        <figcaption className="text-sm text-gray-600 dark:text-gray-300">
+                        <figcaption className="text-sm text-muted-foreground">
                             {block.caption}
                         </figcaption>
                     )}
@@ -239,7 +239,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {block.images.map((image, imageIndex) => (
                         <figure key={`${index}-${imageIndex}`} className="space-y-2">
-                            <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
                                 <Image
                                     src={resolveImageSrc(image.src)}
                                     alt={image.alt}
@@ -248,7 +248,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                                 />
                             </div>
                             {image.caption && (
-                                <figcaption className="text-sm text-gray-600 dark:text-gray-300">
+                                <figcaption className="text-sm text-muted-foreground">
                                     {image.caption}
                                 </figcaption>
                             )}
@@ -266,7 +266,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                 >
                     <p className="italic">{block.text}</p>
                     {block.author && (
-                        <footer className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                        <footer className="mt-2 text-sm text-muted-foreground">
                             - {block.author}
                         </footer>
                     )}
@@ -278,11 +278,11 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
     };
 
     return (
-        <main className="w-full px-4 py-4 md:py-8 text-gray-900 dark:text-gray-100">
+        <main className="w-full px-4 py-4 md:py-8 text-foreground">
             <div className="max-w-6xl mx-auto">
                 <Link
                     href="/blog"
-                    className="text-indigo-600 hover:underline text-sm mb-3 md:mb-4 inline-block"
+                    className="text-primary hover:underline text-sm mb-3 md:mb-4 inline-block"
                 >
                     ← {t('blog.backToBlog')}
                 </Link>
@@ -292,7 +292,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                         <div className="mb-3 md:mb-4 flex gap-2 flex-wrap">
                             <Badge
                                 variant="outline"
-                                className="h-8 px-3 text-xs font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                                className="h-8 px-3 text-xs font-medium text-foreground border-border"
                             >
                                 {t('blog.topicLabel')}:{' '}
                                 {categoryKey ? t(categoryKey) : localizedPost.category}
@@ -311,24 +311,24 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                             )}
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4 leading-tight text-gray-900 dark:text-gray-100">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4 leading-tight text-foreground">
                             {localizedPost.title}
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-4 md:mb-5">
-                            <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 font-medium text-gray-700 dark:text-gray-300">
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-4 md:mb-5">
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-medium text-gray-700 dark:text-gray-300">
                                 👤 {localizedPost.author}
                             </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-gray-700 dark:text-gray-300">
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-gray-700 dark:text-gray-300">
                                 <CalendarDays className="h-4 w-4" />
                                 {formattedPublishedAt}
                             </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-gray-700 dark:text-gray-300">
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-gray-700 dark:text-gray-300">
                                 <Clock3 className="h-4 w-4" />
                                 {localizedPost.readTime} {t('blog.readTime')}
                             </span>
                             {hasUpdatedAt && (
-                                <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-gray-700 dark:text-gray-300">
+                                <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-gray-700 dark:text-gray-300">
                                     {t('blog.updatedAt')}: {formattedUpdatedAt}
                                 </span>
                             )}
@@ -354,16 +354,16 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                             </div>
                         </div>
 
-                        <div className="border-t border-b border-gray-200 dark:border-gray-700 py-5 md:py-6 my-6 md:my-8">
+                        <div className="border-t border-b border-border py-5 md:py-6 my-6 md:my-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-xl md:text-2xl">
                                     👤
                                 </div>
                                 <div>
-                                    <p className="font-bold text-gray-900 dark:text-gray-100">
+                                    <p className="font-bold text-foreground">
                                         {localizedPost.author}
                                     </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    <p className="text-sm text-muted-foreground">
                                         {t('blog.articleAuthor')}
                                     </p>
                                 </div>
@@ -372,7 +372,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
 
                         {relatedPosts.length > 0 && (
                             <section className="mt-12 md:mt-16 xl:hidden">
-                                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-gray-100">
+                                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">
                                     {t('blog.relatedPosts')}
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,9 +385,9 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                     </article>
 
                     <aside className="xl:sticky xl:top-[var(--header-offset)] self-start space-y-5 md:space-y-6 xl:max-h-[calc(100vh-var(--header-offset)-16px)] xl:overflow-y-auto xl:pr-1">
-                        <section className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 md:p-4 bg-white dark:bg-gray-900">
+                        <section className="rounded-lg border border-border p-3 md:p-4 bg-white dark:bg-gray-900">
                             <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-                                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                <p className="font-semibold text-foreground">
                                     {t('blog.shareArticle')}:
                                 </p>
                                 <Button
@@ -462,7 +462,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
 
                         {relatedPosts.length > 0 && (
                             <section className="hidden xl:block">
-                                <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">
+                                <h2 className="text-lg font-bold mb-4 text-foreground">
                                     {t('blog.relatedPosts')}
                                 </h2>
                                 <div className="space-y-4">

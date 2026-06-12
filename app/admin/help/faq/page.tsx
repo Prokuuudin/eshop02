@@ -111,8 +111,8 @@ export default function AdminFaqPage() {
       <main className="w-full py-4 space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Частые вопросы (FAQ)</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h1 className="text-3xl font-bold text-foreground">Частые вопросы (FAQ)</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Ответы на типовые вопросы по работе с системой
             </p>
           </div>
@@ -128,7 +128,7 @@ export default function AdminFaqPage() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpenId(null) }}
             placeholder="Поиск по вопросам..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-white dark:bg-gray-900 text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}
@@ -138,9 +138,9 @@ export default function AdminFaqPage() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               Ничего не найдено по запросу «{query}»
             </div>
           ) : (
@@ -155,7 +155,7 @@ export default function AdminFaqPage() {
                       aria-expanded={isOpen}
                       className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                      <span className="text-sm font-medium text-foreground leading-snug">
                         {item.question}
                       </span>
                       <span className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} aria-hidden>
@@ -166,7 +166,7 @@ export default function AdminFaqPage() {
                     </button>
                     {isOpen && (
                       <div className="px-5 pb-5">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{item.answer}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
                       </div>
                     )}
                   </li>
@@ -178,8 +178,8 @@ export default function AdminFaqPage() {
 
         <div className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-900/20 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Не нашли ответ?</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Обратитесь в службу поддержки — мы поможем разобраться.</p>
+            <p className="text-sm font-medium text-foreground">Не нашли ответ?</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Обратитесь в службу поддержки — мы поможем разобраться.</p>
           </div>
           <Link href="/contact">
             <Button variant="outline" className="shrink-0">Поддержка →</Button>

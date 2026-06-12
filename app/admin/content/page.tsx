@@ -149,8 +149,8 @@ export default function AdminContentPage() {
       <main className="w-full py-4 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Управление контентом сайта</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Управление контентом сайта</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Меняйте тексты и изображения без правки кода. Изменения применяются сразу на клиенте.
           </p>
         </div>
@@ -188,9 +188,9 @@ export default function AdminContentPage() {
       )}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Тексты</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Тексты</h2>
+          <p className="text-sm text-muted-foreground">
             Редактируйте тексты по ключам переводов (например: hero.title, newsletter.title).
           </p>
 
@@ -211,8 +211,8 @@ export default function AdminContentPage() {
           <Textarea value={textValue} onChange={(e) => setTextValue(e.target.value)} placeholder="Новое значение текста" className="min-h-[120px]" />
 
           {(normalizedTextKey || textValue.trim()) && (
-            <div className="space-y-2 rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Сравнение текста до сохранения:</p>
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="text-xs text-muted-foreground">Сравнение текста до сохранения:</p>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -241,13 +241,13 @@ export default function AdminContentPage() {
           <Button onClick={onSaveText} disabled={saving}>Сохранить текст</Button>
 
           <div className="pt-2">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Популярные ключи:</p>
+            <p className="text-xs text-muted-foreground mb-2">Популярные ключи:</p>
             <div className="flex flex-wrap gap-2">
               {COMMON_TEXT_KEYS.map((key) => (
                 <button
                   key={key}
                   type="button"
-                  className="text-xs rounded border border-gray-300 dark:border-gray-700 px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="text-xs rounded border border-border px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800"
                   onClick={() => setTextKey(key)}
                 >
                   {key}
@@ -257,9 +257,9 @@ export default function AdminContentPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Картинки</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Картинки</h2>
+          <p className="text-sm text-muted-foreground">
             Заменяйте любые изображения, подменяя исходный src на новый путь или URL.
           </p>
 
@@ -267,8 +267,8 @@ export default function AdminContentPage() {
           <Input value={imageTo} onChange={(e) => setImageTo(e.target.value)} placeholder="Новый src, например /uploads/new-icon.svg" />
 
           {(imageFrom.trim() || imageTo.trim()) && (
-            <div className="space-y-2 rounded-md border border-gray-200 dark:border-gray-700 p-3">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Сравнение изображений до сохранения:</p>
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="text-xs text-muted-foreground">Сравнение изображений до сохранения:</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -278,7 +278,7 @@ export default function AdminContentPage() {
                       <img
                         src={imageFrom}
                         alt="Исходное изображение"
-                        className="h-36 w-full rounded-md border border-gray-200 dark:border-gray-700 object-contain bg-gray-50 dark:bg-gray-800"
+                        className="h-36 w-full rounded-md border border-border object-contain bg-gray-50 dark:bg-gray-800"
                         onLoad={() => setSourcePreviewFailed(false)}
                         onError={() => setSourcePreviewFailed(true)}
                       />
@@ -288,7 +288,7 @@ export default function AdminContentPage() {
                       </div>
                     )
                   ) : (
-                    <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-700 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
                       Укажите исходный src для превью.
                     </div>
                   )}
@@ -301,7 +301,7 @@ export default function AdminContentPage() {
                       <img
                         src={imageTo}
                         alt="Новое изображение"
-                        className="h-36 w-full rounded-md border border-gray-200 dark:border-gray-700 object-contain bg-gray-50 dark:bg-gray-800"
+                        className="h-36 w-full rounded-md border border-border object-contain bg-gray-50 dark:bg-gray-800"
                         onLoad={() => setTargetPreviewFailed(false)}
                         onError={() => setTargetPreviewFailed(true)}
                       />
@@ -311,7 +311,7 @@ export default function AdminContentPage() {
                       </div>
                     )
                   ) : (
-                    <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-700 px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
                       Укажите новый src для превью.
                     </div>
                   )}
@@ -320,8 +320,8 @@ export default function AdminContentPage() {
             </div>
           )}
 
-          <div className="space-y-2 rounded-md border border-dashed border-gray-300 dark:border-gray-700 p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="space-y-2 rounded-md border border-dashed border-border p-3">
+            <p className="text-xs text-muted-foreground">
               Или загрузите новый файл изображения (до 10MB):
             </p>
             <Input
@@ -334,13 +334,13 @@ export default function AdminContentPage() {
           <Button onClick={onSaveImage} disabled={saving}>Сохранить картинку</Button>
 
           <div className="pt-2">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Популярные пути:</p>
+            <p className="text-xs text-muted-foreground mb-2">Популярные пути:</p>
             <div className="flex flex-wrap gap-2">
               {COMMON_IMAGE_PATHS.map((path) => (
                 <button
                   key={path}
                   type="button"
-                  className="text-xs rounded border border-gray-300 dark:border-gray-700 px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="text-xs rounded border border-border px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800"
                   onClick={() => setImageFrom(path)}
                 >
                   {path}
@@ -352,13 +352,13 @@ export default function AdminContentPage() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-          <h3 className="font-semibold mb-3 text-gray-900 dark:text-gray-100">Текущие text override ({language.toUpperCase()})</h3>
+        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
+          <h3 className="font-semibold mb-3 text-foreground">Текущие text override ({language.toUpperCase()})</h3>
           <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
             {Object.entries(overrides.text[language] ?? {}).map(([key, value]) => (
-              <div key={key} className="rounded border border-gray-200 dark:border-gray-700 p-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{key}</p>
-                <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{value}</p>
+              <div key={key} className="rounded border border-border p-2">
+                <p className="text-xs text-muted-foreground">{key}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{value}</p>
                 <div className="mt-2">
                   <Button variant="outline" size="sm" disabled={saving} onClick={() => void onRemoveText(key)}>
                     Удалить
@@ -367,18 +367,18 @@ export default function AdminContentPage() {
               </div>
             ))}
             {Object.keys(overrides.text[language] ?? {}).length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Пока нет override для этого языка.</p>
+              <p className="text-sm text-muted-foreground">Пока нет override для этого языка.</p>
             )}
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-          <h3 className="font-semibold mb-3 text-gray-900 dark:text-gray-100">Текущие image override</h3>
+        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
+          <h3 className="font-semibold mb-3 text-foreground">Текущие image override</h3>
           <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
             {Object.entries(overrides.images).map(([from, to]) => (
-              <div key={from} className="rounded border border-gray-200 dark:border-gray-700 p-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{from}</p>
-                <p className="text-sm text-gray-900 dark:text-gray-100 break-all">{to}</p>
+              <div key={from} className="rounded border border-border p-2">
+                <p className="text-xs text-muted-foreground">{from}</p>
+                <p className="text-sm text-foreground break-all">{to}</p>
                 <div className="mt-2">
                   <Button variant="outline" size="sm" disabled={saving} onClick={() => void onRemoveImage(from)}>
                     Удалить
@@ -387,13 +387,13 @@ export default function AdminContentPage() {
               </div>
             ))}
             {Object.keys(overrides.images).length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Пока нет image override.</p>
+              <p className="text-sm text-muted-foreground">Пока нет image override.</p>
             )}
           </div>
         </div>
       </section>
 
-      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 text-sm text-gray-600 dark:text-gray-300">
+      <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 text-sm text-muted-foreground">
         <p>
           Подсказка: сначала загрузите файл в блоке "Картинки", затем сохраните замену src. Можно также указывать уже существующие пути в public и внешние URL.
         </p>

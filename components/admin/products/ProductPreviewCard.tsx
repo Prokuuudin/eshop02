@@ -41,7 +41,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
     const [quantity] = useState(1);
 
     return (
-        <Card className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+        <Card className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-white dark:bg-gray-900 border border-border text-foreground">
             <div className="absolute right-3 top-3 z-10">
                 <button
                     type="button"
@@ -81,10 +81,10 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 </div>
             </div>
             <div className="product-card__body mt-3 flex-1 flex flex-col min-w-0">
-                <div className="product-card__brand text-xs text-gray-500 dark:text-gray-300">{brand}</div>
+                <div className="product-card__brand text-xs text-muted-foreground">{brand}</div>
                 <div className="product-card__title text-sm font-medium mt-1">{title}</div>
                 {sku && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">SKU: {sku}</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">SKU: {sku}</p>
                 )}
                 <div className="product-card__meta mt-2 flex items-center justify-between gap-3">
                     <div>
@@ -111,13 +111,13 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 <div className="product-card__actions mt-auto w-full space-y-2">
                     <div className="add-to-cart space-y-3 w-full">
                         <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-                            <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
+                            <div className="flex items-center border border-border rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
                                 <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Уменьшить количество">−</button>
                                 <input id="qty-preview" type="number" min={1} value={quantity} readOnly className="w-10 h-7 mx-1 text-center bg-transparent text-base font-semibold outline-none border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" disabled />
                                 <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Увеличить количество">+</button>
                             </div>
                         </div>
-                        <button className="w-full add-to-cart__button bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md transition opacity-60 cursor-not-allowed" disabled tabIndex={-1}>
+                        <button className="w-full add-to-cart__button bg-primary hover:bg-primary/90 text-white font-semibold py-2 rounded-md transition opacity-60 cursor-not-allowed" disabled tabIndex={-1}>
                             В корзину
                         </button>
                     </div>

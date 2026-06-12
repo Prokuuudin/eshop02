@@ -87,7 +87,7 @@ export default async function BrandPage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="max-w-xl mx-auto py-8 px-4">
-        <Link href="/" className="text-indigo-600 hover:underline">← {t['meta.backToBrands'] ?? 'Back to brands'}</Link>
+        <Link href="/" className="text-primary hover:underline">← {t['meta.backToBrands'] ?? 'Back to brands'}</Link>
         <div className="flex flex-col items-center mt-6">
           <div className="w-32 h-16 relative mb-4">
             <Image src={brand.logo} alt={brand.name} fill className="object-contain" />

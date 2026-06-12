@@ -121,10 +121,10 @@ export default function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
         )}
       </div>
 
-      {status && <p className="text-xs text-gray-600 dark:text-gray-300">{status}</p>}
+      {status && <p className="text-xs text-muted-foreground">{status}</p>}
 
       {isOpen && (
-        <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-black">
+        <div className="overflow-hidden rounded-lg border border-border bg-black">
           <video ref={videoRef} className="aspect-video w-full object-cover" muted playsInline />
         </div>
       )}

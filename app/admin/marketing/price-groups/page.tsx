@@ -215,7 +215,7 @@ export default function PriceGroupsPage() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        <h1 className="text-2xl font-bold text-foreground">
                             Прайс-листы по группам
                         </h1>
                         <p className="mt-1 text-sm text-gray-500">
@@ -255,7 +255,7 @@ export default function PriceGroupsPage() {
                                     className={`cursor-pointer rounded-xl border p-4 transition-all ${
                                         selectedGroup === g.id
                                             ? 'border-emerald-400 bg-emerald-50/40 shadow-sm dark:border-emerald-600 dark:bg-emerald-900/10'
-                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900'
+                                            : 'border-gray-200 bg-white hover:border-border dark:bg-gray-900'
                                     }`}
                                     onClick={() =>
                                         setSelectedGroup(selectedGroup === g.id ? null : g.id)
@@ -348,19 +348,19 @@ export default function PriceGroupsPage() {
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                                     <tr>
-                                        <th className="px-4 py-2.5 text-left font-medium text-gray-600 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
                                             Товар
                                         </th>
-                                        <th className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                                             Базовая
                                         </th>
-                                        <th className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                                             Групповая
                                         </th>
-                                        <th className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                                             Индив. цена
                                         </th>
-                                        <th className="px-4 py-2.5 text-center font-medium text-gray-600 dark:text-gray-400">
+                                        <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">
                                             Действие
                                         </th>
                                     </tr>
@@ -383,7 +383,7 @@ export default function PriceGroupsPage() {
                                                     </div>
                                                     <div className="text-xs text-gray-400">{p.brand}</div>
                                                 </td>
-                                                <td className="px-4 py-2.5 text-right text-gray-600 dark:text-gray-400">
+                                                <td className="px-4 py-2.5 text-right text-muted-foreground">
                                                     {p.price.toLocaleString('ru-RU')} ₽
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400">

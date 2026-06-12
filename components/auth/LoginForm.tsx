@@ -83,12 +83,12 @@ export default function LoginForm({
             )}
             {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
             <div>
-                <label className="block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="block mb-1 text-sm text-foreground">
                     {t('auth.clientCardNumber', 'Номер карты')}
                 </label>
                 <Input
                     type="text"
-                    className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                    className="bg-white dark:bg-gray-800 text-foreground border-border"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={t('auth.cardNumberPlaceholder', '0000')}
@@ -97,20 +97,20 @@ export default function LoginForm({
                 />
             </div>
             <div>
-                <label className="block mb-1 text-sm text-gray-900 dark:text-gray-100">
+                <label className="block mb-1 text-sm text-foreground">
                     {t('auth.password')}
                 </label>
                 <div className="relative flex items-center">
                     <Input
                         type={showPassword ? 'text' : 'password'}
-                        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 pr-10"
+                        className="bg-white dark:bg-gray-800 text-foreground border-border pr-10"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
                     <button
                         type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                         tabIndex={-1}
                         onClick={() => setShowPassword((v) => !v)}
                         aria-label={
@@ -129,14 +129,14 @@ export default function LoginForm({
                         <button
                             type="button"
                             onClick={onForgotPassword}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
+                            className="text-sm text-primary hover:text-indigo-700 hover:underline"
                         >
                             {t('auth.forgotPassword')}
                         </button>
                     ) : (
                         <Link
                             href="/auth/forgot-password"
-                            className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
+                            className="text-sm text-primary hover:text-indigo-700 hover:underline"
                         >
                             {t('auth.forgotPassword')}
                         </Link>

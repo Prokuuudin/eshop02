@@ -23,10 +23,10 @@ const AccountToolsSection: React.FC<AccountToolsSectionProps> = ({ accountTools,
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-gray-700 shadow-sm dark:bg-gray-950/40 dark:text-gray-200">
                     <tool.icon className="h-5 w-5" />
                 </div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <p className="text-sm font-semibold text-foreground">
                     {tool.title}
                 </p>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{tool.description}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{tool.description}</p>
                 <Link
                     href={tool.href}
                     className={`mt-4 inline-block text-sm font-medium hover:underline ${tool.linkClasses}`}

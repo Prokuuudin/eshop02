@@ -33,7 +33,7 @@ export const AccountWishlistWidget: React.FC = () => {
                 <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors" />
             </div>
 
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-semibold text-foreground">
                 {t('wishlist.title', 'Список желаний')}
             </p>
 
@@ -60,12 +60,12 @@ export const AccountWishlistWidget: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-xs text-muted-foreground">
                         {total} {t('wishlist.itemsCount', 'товаров')}
                     </p>
                 </div>
             ) : (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex-1">
+                <p className="mt-2 text-sm text-muted-foreground flex-1">
                     {t('wishlist.emptyHint', 'Добавляйте понравившиеся товары')}
                 </p>
             )}

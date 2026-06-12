@@ -33,7 +33,7 @@ export const AccountStockNotificationsSection: React.FC = () => {
                     <Bell className="h-4 w-4" />
                 </div>
                 <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 className="text-sm font-semibold text-foreground">
                         {t('account.stockNotify.title', 'Уведомления о наличии')}
                     </h3>
                     <p className="text-xs text-violet-600 dark:text-violet-400">

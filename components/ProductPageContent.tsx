@@ -85,7 +85,7 @@ export default function ProductPageContent({ product, allProducts }: Props): JSX
             : [];
 
     return (
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 text-gray-900 dark:text-gray-100">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 text-foreground">
             <ProductNavigationLinks categoryUrl={categoryUrl} brandUrl={brandUrl} />
 
             <div className="product-detail">

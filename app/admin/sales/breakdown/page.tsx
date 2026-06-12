@@ -134,7 +134,7 @@ function StackedBarChart({
       {/* Legend */}
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1">
         {categories.map((cat) => (
-          <div key={cat} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+          <div key={cat} className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CAT_COLORS[cat] ?? '#94a3b8' }} />
             {CAT_LABELS[cat] ?? cat}
           </div>
@@ -250,7 +250,7 @@ export default function SalesBreakdownPage() {
   ]
 
   const sectionCls = 'rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
-  const headerCls = 'border-b border-gray-200 dark:border-gray-700 px-5 py-3'
+  const headerCls = 'border-b border-border px-5 py-3'
   const bodyPad = 'px-5 py-4'
 
   return (
@@ -260,8 +260,8 @@ export default function SalesBreakdownPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Аналитика: товары и категории</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <h1 className="text-2xl font-bold text-foreground">Аналитика: товары и категории</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               {filtered.length} заказов · {totalQty} единиц товаров
             </p>
           </div>
@@ -275,7 +275,7 @@ export default function SalesBreakdownPage() {
                   onClick={() => setMetric(m)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     metric === m
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -292,7 +292,7 @@ export default function SalesBreakdownPage() {
                   onClick={() => setPeriod(opt.value)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     period === opt.value
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -300,7 +300,7 @@ export default function SalesBreakdownPage() {
                 </button>
               ))}
             </div>
-            <Link href="/admin/sales/analytics" className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+            <Link href="/admin/sales/analytics" className="text-sm text-primary hover:underline dark:text-primary">
               ← Продажи
             </Link>
           </div>
@@ -315,8 +315,8 @@ export default function SalesBreakdownPage() {
             { label: 'Уникальных товаров', value: uniqueProducts.toLocaleString('ru-RU') },
           ].map((k) => (
             <div key={k.label} className={sectionCls + ' p-4'}>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{k.value}</p>
+              <p className="text-xs text-muted-foreground">{k.label}</p>
+              <p className="mt-1 text-2xl font-bold text-foreground">{k.value}</p>
             </div>
           ))}
         </div>
@@ -350,7 +350,7 @@ export default function SalesBreakdownPage() {
                           </div>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{valStr}</p>
+                          <p className="text-sm font-semibold text-primary">{valStr}</p>
                           <p className="text-xs text-gray-400">{pct(metric === 'revenue' ? p.revenue : p.qty, metric === 'revenue' ? totalRevenue : totalQty)}</p>
                         </div>
                       </div>
@@ -422,7 +422,7 @@ export default function SalesBreakdownPage() {
                           <span className="text-gray-700 dark:text-gray-300">{CAT_LABELS[c.cat] ?? c.cat}</span>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-semibold text-gray-900 dark:text-gray-100">
+                          <span className="font-semibold text-foreground">
                             {metric === 'revenue' ? fmt(c.revenue) : `${c.qty} шт`}
                           </span>
                           <span className="ml-1.5 text-xs text-gray-400">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>

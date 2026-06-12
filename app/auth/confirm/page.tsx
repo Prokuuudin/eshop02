@@ -50,7 +50,7 @@ export default function ConfirmPage() {
     if (status === 'loading') {
         return (
             <main className="flex min-h-[60vh] items-center justify-center px-4">
-                <p className="text-gray-500 dark:text-gray-400 text-sm animate-pulse">
+                <p className="text-muted-foreground text-sm animate-pulse">
                     Подтверждаем вашу почту…
                 </p>
             </main>
@@ -64,7 +64,7 @@ export default function ConfirmPage() {
                     <p className="text-red-600 dark:text-red-400">{errorMsg}</p>
                     <Link
                         href="/auth/register"
-                        className="inline-block text-indigo-600 hover:underline text-sm"
+                        className="inline-block text-primary hover:underline text-sm"
                     >
                         Вернуться к регистрации
                     </Link>
@@ -77,10 +77,10 @@ export default function ConfirmPage() {
         <main className="flex min-h-[60vh] items-center justify-center px-4">
             <div className="max-w-md w-full text-center space-y-4">
                 <div className="text-4xl">✓</div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h1 className="text-xl font-semibold text-foreground">
                     E-mail подтверждён!
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                     Аккаунт активирован. Сейчас вы будете перенаправлены на страницу входа.
                 </p>
             </div>

@@ -25,16 +25,16 @@ export default function BulkPricing({ product }: BulkPricingProps) {
   ]
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Скидки за объём</h3>
+    <div className="rounded-lg border border-border p-6">
+      <h3 className="text-lg font-bold text-foreground mb-4">Скидки за объём</h3>
       
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-3 text-gray-600 dark:text-gray-400 font-semibold">Количество</th>
-              <th className="text-right py-3 px-3 text-gray-600 dark:text-gray-400 font-semibold">Цена за единицу</th>
-              <th className="text-right py-3 px-3 text-gray-600 dark:text-gray-400 font-semibold">Экономия</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-3 px-3 text-muted-foreground font-semibold">Количество</th>
+              <th className="text-right py-3 px-3 text-muted-foreground font-semibold">Цена за единицу</th>
+              <th className="text-right py-3 px-3 text-muted-foreground font-semibold">Экономия</th>
             </tr>
           </thead>
           <tbody>
@@ -45,14 +45,14 @@ export default function BulkPricing({ product }: BulkPricingProps) {
               return (
                 <tr 
                   key={idx} 
-                  className={`border-b border-gray-200 dark:border-gray-700 last:border-0 ${
+                  className={`border-b border-border last:border-0 ${
                     idx === 0 ? 'bg-gray-50 dark:bg-gray-800/50' : ''
                   }`}
                 >
-                  <td className="py-3 px-3 text-gray-900 dark:text-gray-100">
+                  <td className="py-3 px-3 text-foreground">
                     {tier.quantity === 1 ? 'От 1 шт' : `От ${tier.quantity} шт`}
                   </td>
-                  <td className="text-right py-3 px-3 text-gray-900 dark:text-gray-100 font-semibold">
+                  <td className="text-right py-3 px-3 text-foreground font-semibold">
                     {formatPrice(tier.pricePerUnit)}
                   </td>
                   <td className="text-right py-3 px-3">
@@ -74,7 +74,7 @@ export default function BulkPricing({ product }: BulkPricingProps) {
         </table>
       </div>
 
-      <p className="text-xs text-gray-600 dark:text-gray-400 mt-4">
+      <p className="text-xs text-muted-foreground mt-4">
         💡 Скидки применяются автоматически при добавлении товара в корзину
       </p>
     </div>

@@ -13,8 +13,8 @@ export default function Certificates({ product }: CertificatesProps) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Сертификаты и документация</h3>
+    <div className="rounded-lg border border-border p-6">
+      <h3 className="text-lg font-bold text-foreground mb-4">Сертификаты и документация</h3>
       
       <div className="space-y-2">
         {product.certificates.map((url, idx) => {

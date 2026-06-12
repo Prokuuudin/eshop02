@@ -117,8 +117,8 @@ export default function DuplicatesPage() {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Дубликаты товаров</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Дубликаты товаров</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Товары с одинаковым названием или SKU — возможные дубликаты после импорта.
             </p>
           </div>
@@ -153,8 +153,8 @@ export default function DuplicatesPage() {
                     className={[
                       'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
                       filter === tab.value
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-gray-300',
+                        ? 'bg-primary border-primary text-white'
+                        : 'border-border bg-white dark:bg-gray-900 text-muted-foreground hover:border-gray-300',
                     ].join(' ')}
                   >
                     {tab.label}
@@ -201,10 +201,10 @@ export default function DuplicatesPage() {
                           {group.products.length} товара
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {group.products[0].title}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{group.reasonLabel}</p>
+                          <p className="text-xs text-muted-foreground">{group.reasonLabel}</p>
                         </div>
                       </div>
                       <span className="text-gray-400 text-xs shrink-0">{isOpen ? '▲' : '▼'}</span>
@@ -216,7 +216,7 @@ export default function DuplicatesPage() {
                         {group.products.map((p, i) => (
                           <div key={p.id} className="flex items-center gap-4 px-5 py-3">
                             {/* Image */}
-                            <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                            <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 border border-border">
                               {p.image
                                 ? <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center text-xs text-gray-300 dark:text-gray-600">нет</div>
@@ -226,14 +226,14 @@ export default function DuplicatesPage() {
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                <p className="text-sm font-medium text-foreground truncate">
                                   {p.title}
                                 </p>
                                 {i === 0 && (
-                                  <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-gray-500 dark:text-gray-400">оригинал?</span>
+                                  <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-muted-foreground">оригинал?</span>
                                 )}
                               </div>
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
                                 <span>ID: <code className="font-mono">{p.id}</code></span>
                                 {p.sku && <span>SKU: <code className="font-mono">{p.sku}</code></span>}
                                 <span>{p.brand}</span>
@@ -243,7 +243,7 @@ export default function DuplicatesPage() {
 
                             {/* Price + stock */}
                             <div className="shrink-0 text-right">
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              <p className="text-sm font-semibold text-foreground">
                                 {formatEuro(p.price, 'ru-RU')}
                               </p>
                               <p className={`text-xs mt-0.5 ${p.stock === 0 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -254,7 +254,7 @@ export default function DuplicatesPage() {
                             {/* Edit link */}
                             <Link
                               href={`/admin/products/${p.id}`}
-                              className="shrink-0 rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors whitespace-nowrap"
+                              className="shrink-0 rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors whitespace-nowrap"
                             >
                               Редактировать
                             </Link>

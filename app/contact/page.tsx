@@ -224,45 +224,45 @@ export default function ContactPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
       <main className="w-full px-4 py-12">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">{t('contact.title')}</h1>
+          <h1 className="text-3xl font-bold mb-8 text-foreground">{t('contact.title')}</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Contact Info */}
             <div>
-              <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">{t('contact.info')}</h2>
+              <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.info')}</h2>
               <div className="space-y-4">
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.legalAddressLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.street')}, {t('contact.city')}, {t('contact.country')}, {t('contact.postalCode')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.legalAddressLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.street')}, {t('contact.city')}, {t('contact.country')}, {t('contact.postalCode')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.vatLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.vatValue')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.vatLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.vatValue')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.bankLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.bankValue')}</p>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.bankAccountLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.bankAccountValue')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.bankLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.bankValue')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.bankAccountLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.bankAccountValue')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.officeAddressLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.country')}, {t('contact.city')}, {t('contact.street')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.officeAddressLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.country')}, {t('contact.city')}, {t('contact.street')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.phoneLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.phoneValue')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.phoneLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.phoneValue')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{t('contact.emailLabel')}:</p>
-                  <p className="text-gray-600 dark:text-gray-300">{t('contact.emailValue')}</p>
+                  <p className="font-semibold text-foreground">{t('contact.emailLabel')}:</p>
+                  <p className="text-muted-foreground">{t('contact.emailValue')}</p>
                 </div>
               </div>
             </div>
 
             {/* Contact Form */}
             <div>
-              <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">{t('contact.formTitle')}</h2>
+              <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.formTitle')}</h2>
               {submitted ? (
                 <div aria-live="polite" className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4 rounded text-green-700 dark:text-green-200">
                   ✓ {t('contact.success')}
@@ -297,38 +297,38 @@ export default function ContactPage() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t('contact.name')}</label>
+                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.name')}</label>
                     <Input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                      className="bg-white dark:bg-gray-800 text-foreground border-border"
                       minLength={2}
                       maxLength={80}
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t('contact.email')}</label>
+                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.email')}</label>
                     <Input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                      className="bg-white dark:bg-gray-800 text-foreground border-border"
                       maxLength={160}
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t('contact.subject')}</label>
+                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.subject')}</label>
                     <Input
                       type="text"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                      className="bg-white dark:bg-gray-800 text-foreground border-border"
                       placeholder={t('contact.subjectPlaceholder')}
                       minLength={3}
                       maxLength={140}
@@ -336,12 +336,12 @@ export default function ContactPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">{t('contact.message')}</label>
+                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.message')}</label>
                     <Textarea
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                      className="bg-white dark:bg-gray-800 text-foreground border-border"
                       rows={5}
                       minLength={10}
                       maxLength={5000}

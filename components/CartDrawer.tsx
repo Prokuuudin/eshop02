@@ -139,14 +139,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 style={{ willChange: 'transform' }}
             >
                 {/* Header */}
-                <div className="cart-drawer__header border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between bg-white dark:bg-gray-900">
+                <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-white dark:bg-gray-900">
                     <div className="flex items-baseline gap-3">
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <h2 className="text-lg font-semibold text-foreground">
                             {t('cart.title')}
                         </h2>
                         <button
                             onClick={() => { onClose(); router.push('/cart'); }}
-                            className="hidden md:inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline dark:text-indigo-400 leading-none"
+                            className="hidden md:inline-flex items-center gap-1 text-xs text-primary hover:underline dark:text-primary leading-none"
                         >
                             {t('cart.openFullCart')}
                             <Expand className="w-3 h-3" />
@@ -178,7 +178,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 {/* Items scroll area */}
                 <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-gray-200 dark:bg-gray-950">
                     {items.length > 0 && (
-                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 text-xs">
+                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-border bg-white dark:bg-gray-900 p-2 text-xs">
                             <span className="text-gray-700 dark:text-gray-300">
                                 {t('cart.selectedForCheckout')}:{' '}
                                 <span className="font-semibold">{selectedItemIds.length}</span>
@@ -189,7 +189,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     setSelectionTouched(true);
                                     setSelectedItemIds(items.map((item) => item.id));
                                 }}
-                                className="text-indigo-600 hover:underline"
+                                className="text-primary hover:underline"
                             >
                                 {t('cart.selectAll')}
                             </button>
@@ -199,7 +199,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     setSelectionTouched(true);
                                     setSelectedItemIds([]);
                                 }}
-                                className="text-indigo-600 hover:underline"
+                                className="text-primary hover:underline"
                             >
                                 {t('cart.unselectAll')}
                             </button>
@@ -207,7 +207,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     )}
 
                     {items.length === 0 ? (
-                        <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                        <p className="text-center text-muted-foreground py-8">
                             {t('cart.empty')}
                         </p>
                     ) : (
@@ -218,7 +218,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             return (
                                 <div
                                     key={item.id}
-                                    className="cart-drawer__item flex gap-3 border-b border-gray-200 dark:border-gray-700 pb-3"
+                                    className="cart-drawer__item flex gap-3 border-b border-border pb-3"
                                 >
                                     <div className="pt-1">
                                         <Checkbox
@@ -237,10 +237,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                         className="w-20 h-20 object-cover rounded"
                                     />
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-medium line-clamp-2 text-gray-900 dark:text-gray-100">
+                                        <h3 className="text-sm font-medium line-clamp-2 text-foreground">
                                             {localizedTitle}
                                         </h3>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                        <p className="text-xs text-muted-foreground mb-1">
                                             {item.brand}
                                         </p>
                                         <div className="flex items-center justify-between">
@@ -257,7 +257,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                 >
                                                     −
                                                 </button>
-                                                <span className="w-6 text-center text-sm text-gray-900 dark:text-gray-100">
+                                                <span className="w-6 text-center text-sm text-foreground">
                                                     {item.quantity}
                                                 </span>
                                                 <button
@@ -286,11 +286,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                             />
                                         </div>
                                         {minQuantity > 1 && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+                                            <p className="text-xs text-muted-foreground mt-1">
                                                 {t('common.min')} {minQuantity} {t('product.pcs')}
                                             </p>
                                         )}
-                                        <p className="text-sm font-semibold mt-1 text-gray-900 dark:text-gray-100">
+                                        <p className="text-sm font-semibold mt-1 text-foreground">
                                             {formatCurrency(
                                                 calculatePrice(item, item.quantity) * item.quantity
                                             )}
@@ -304,7 +304,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                 {/* Footer with summary */}
                 {items.length > 0 && (
-                    <div className="cart-drawer__footer border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2 bg-white dark:bg-gray-900">
+                    <div className="cart-drawer__footer border-t border-border px-4 py-3 space-y-2 bg-white dark:bg-gray-900">
                         {!wholesaleGuard.isMinimumReached && selectedItemIds.length > 0 && (
                             <WholesaleMinimumAlert
                                 minOrderAmount={wholesaleGuard.minOrderAmount}
@@ -314,7 +314,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         )}
 
                         {/* Разбивка */}
-                        <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="space-y-1 text-xs text-muted-foreground">
                             <div className="flex justify-between">
                                 <span>{t('cart.subtotal')}</span>
                                 <span>{formatCurrency(subtotal)}</span>
@@ -329,7 +329,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             </div>
                         </div>
 
-                        <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold text-sm text-gray-900 dark:text-gray-100">
+                        <div className="border-t border-border pt-2 flex justify-between font-semibold text-sm text-foreground">
                             <span>{t('cart.total')}</span>
                             <span>{formatCurrency(finalTotal)}</span>
                         </div>
@@ -363,7 +363,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 selectedItemIds.length > 0 &&
                                 isCheckoutAllowedForRole
                             }
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                            className="w-full bg-primary hover:bg-primary/90 text-white"
                             label={t('cart.checkout')}
                             href={checkoutHref}
                             onNavigate={onClose}
@@ -373,14 +373,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <div className="flex items-center justify-between text-xs pt-1">
                                 <button
                                     onClick={() => setTemplateOpen(true)}
-                                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1 text-primary hover:text-indigo-700 dark:text-primary transition-colors"
                                 >
                                     <BookmarkPlus className="w-3.5 h-3.5" />
                                     {t('templates.saveAsTemplate')}
                                 </button>
                                 <button
                                     onClick={() => { onClose(); router.push('/account/templates'); }}
-                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                    className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
                                 >
                                     {t('templates.useSavedTemplates')}
                                 </button>

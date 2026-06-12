@@ -101,14 +101,14 @@ export default function AccountPage(): React.ReactElement {
     if (loading) {
         return (
             <main className="w-full px-4 py-12">
-                <p className="text-gray-600 dark:text-gray-300">{t('common.loading')}</p>
+                <p className="text-muted-foreground">{t('common.loading')}</p>
             </main>
         );
     }
     if (!user) {
         return (
             <main className="w-full px-4 py-12">
-                <p className="text-gray-600 dark:text-gray-300">{t('account.authRequired')}</p>
+                <p className="text-muted-foreground">{t('account.authRequired')}</p>
             </main>
         );
     }

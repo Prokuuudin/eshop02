@@ -61,14 +61,14 @@ export default function AdminSetupPage() {
 
     return (
         <main className="w-full px-4 py-12">
-            <div className="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-sm">
+            <div className="max-w-md mx-auto rounded-2xl border border-border bg-white dark:bg-gray-900 p-6 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.22em] text-amber-700 dark:text-amber-400">
                     Admin Setup
                 </p>
-                <h1 className="mt-3 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <h1 className="mt-3 text-2xl font-bold text-foreground">
                     {t('adminSetup.pageTitle')}
                 </h1>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                <p className="mt-2 text-sm text-muted-foreground">
                     {t('adminSetup.pageDesc')}
                 </p>
 
@@ -76,7 +76,7 @@ export default function AdminSetupPage() {
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
                     <label className="block text-sm">
-                        <span className="mb-1 block text-gray-900 dark:text-gray-100">
+                        <span className="mb-1 block text-foreground">
                             {t('adminSetup.fieldName')}
                         </span>
                         <Input
@@ -87,7 +87,7 @@ export default function AdminSetupPage() {
                     </label>
 
                     <label className="block text-sm">
-                        <span className="mb-1 block text-gray-900 dark:text-gray-100">
+                        <span className="mb-1 block text-foreground">
                             {t('adminSetup.fieldEmail')}
                         </span>
                         <Input
@@ -99,7 +99,7 @@ export default function AdminSetupPage() {
                     </label>
 
                     <label className="block text-sm">
-                        <span className="mb-1 block text-gray-900 dark:text-gray-100">
+                        <span className="mb-1 block text-foreground">
                             {t('adminSetup.fieldPassword')}
                         </span>
                         <div className="relative flex items-center">
@@ -112,7 +112,7 @@ export default function AdminSetupPage() {
                             />
                             <button
                                 type="button"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                                 tabIndex={-1}
                                 onClick={() => setShowPassword((v) => !v)}
                                 aria-label={
@@ -131,7 +131,7 @@ export default function AdminSetupPage() {
                     </label>
 
                     <label className="block text-sm">
-                        <span className="mb-1 block text-gray-900 dark:text-gray-100">
+                        <span className="mb-1 block text-foreground">
                             {t('adminSetup.fieldConfirmPassword')}
                         </span>
                         <div className="relative flex items-center">
@@ -144,7 +144,7 @@ export default function AdminSetupPage() {
                             />
                             <button
                                 type="button"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
                                 tabIndex={-1}
                                 onClick={() => setShowConfirmPassword((v) => !v)}
                                 aria-label={

@@ -137,8 +137,8 @@ function NotificationItem({
                     <p
                         className={`notifications__item-title text-sm font-semibold leading-snug ${
                             notification.isRead
-                                ? 'text-gray-500 dark:text-gray-400'
-                                : 'text-gray-900 dark:text-gray-100'
+                                ? 'text-muted-foreground'
+                                : 'text-foreground'
                         }`}
                     >
                         {notification.title}
@@ -148,7 +148,7 @@ function NotificationItem({
                     </span>
                 </div>
 
-                <p className="notifications__item-message mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                <p className="notifications__item-message mt-1 text-xs leading-relaxed text-muted-foreground">
                     {notification.message}
                 </p>
 
@@ -157,7 +157,7 @@ function NotificationItem({
                         <button
                             type="button"
                             onClick={onMarkRead}
-                            className="notifications__item-mark-read flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            className="notifications__item-mark-read flex items-center gap-1 text-[11px] text-primary hover:text-indigo-700 dark:text-primary dark:hover:text-indigo-300"
                         >
                             <Check className="h-3 w-3" />
                             {t('notifications.markRead')}
@@ -256,18 +256,18 @@ export default function AccountNotificationsSection() {
                 onClick={() => setIsExpanded((v) => !v)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsExpanded((v) => !v)}
                 aria-expanded={isExpanded}
-                className={`notifications__header flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${isExpanded ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}
+                className={`notifications__header flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors ${isExpanded ? 'border-b border-border' : ''}`}
             >
                 {/* Левая часть: иконка + заголовок + счётчики */}
                 <div className="flex items-center gap-2 min-w-0">
                     <Bell className="h-5 w-5 text-indigo-500 shrink-0" />
-                    <h2 className="notifications__title text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    <h2 className="notifications__title text-base font-semibold text-foreground truncate">
                         {t('notifications.sectionTitle')}
                     </h2>
                     {unread > 0 && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className="notifications__badge-unread inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 cursor-default shrink-0">
+                                <span className="notifications__badge-unread inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-primary cursor-default shrink-0">
                                     {unread}
                                 </span>
                             </TooltipTrigger>
@@ -317,7 +317,7 @@ export default function AccountNotificationsSection() {
                             type="button"
                             onClick={(e) => { e.stopPropagation(); markAllRead(); }}
                             title={t('notifications.markAllRead')}
-                            className="notifications__mark-all rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-gray-800 dark:hover:text-indigo-400"
+                            className="notifications__mark-all rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-indigo-400"
                         >
                             <CheckCheck className="h-4 w-4" />
                         </button>
@@ -348,7 +348,7 @@ export default function AccountNotificationsSection() {
             {/* Channel selector */}
             {isSubscribed && (
                 <div className="notifications__channels border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-                    <p className="notifications__channels-label mb-3 text-xs font-medium text-gray-600 dark:text-gray-300">
+                    <p className="notifications__channels-label mb-3 text-xs font-medium text-muted-foreground">
                         {t('notifications.channelLabel')}
                     </p>
                     <RadioGroup value={channel} onValueChange={(val) => setChannel(val as NotificationChannel)} className="flex flex-wrap gap-2">
@@ -360,7 +360,7 @@ export default function AccountNotificationsSection() {
                                     htmlFor={`channel-${value}`}
                                     className={`notifications__channel-option flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                                         isActive
-                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300'
+                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-primary dark:bg-indigo-950/30 dark:text-primary'
                                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600'
                                     }`}
                                 >
@@ -377,7 +377,7 @@ export default function AccountNotificationsSection() {
             {/* Selection toolbar */}
             {hasNotifications && (
                 <div className="notifications__selection-bar flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-2.5 dark:border-gray-700">
-                    <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-600 dark:text-gray-300 select-none">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground select-none">
                         <Checkbox
                             checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                             onCheckedChange={toggleSelectAll}

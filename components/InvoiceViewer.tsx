@@ -53,10 +53,10 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full my-8 shadow-lg">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between border-b border-border p-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <h2 className="text-2xl font-bold text-foreground">{invoice.invoiceNumber}</h2>
+            <p className="text-sm text-muted-foreground mt-1">
               {t('account.invoiceViewer.orderNumber', undefined, { id: invoice.orderId })}
             </p>
           </div>
@@ -73,20 +73,20 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           {/* Dates and Status */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('account.invoiceViewer.issuedAt')}</p>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
+              <p className="text-sm text-muted-foreground">{t('account.invoiceViewer.issuedAt')}</p>
+              <p className="font-semibold text-foreground">
                 {invoice.issuedDate.toLocaleDateString(locale)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('account.invoiceViewer.payBy')}</p>
-              <p className={`font-semibold ${invoice.dueDate < new Date() && invoice.status !== 'paid' ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>
+              <p className="text-sm text-muted-foreground">{t('account.invoiceViewer.payBy')}</p>
+              <p className={`font-semibold ${invoice.dueDate < new Date() && invoice.status !== 'paid' ? 'text-red-600' : 'text-foreground'}`}>
                 {invoice.dueDate.toLocaleDateString(locale)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('account.invoiceViewer.status')}</p>
-              <p className="font-semibold text-gray-900 dark:text-gray-100 uppercase text-sm">
+              <p className="text-sm text-muted-foreground">{t('account.invoiceViewer.status')}</p>
+              <p className="font-semibold text-foreground uppercase text-sm">
                 {statusLabel}
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
               <span>{t('account.invoiceViewer.vatWithRate', undefined, { rate: invoice.taxRate })}</span>
               <span>{formatPrice(invoice.taxAmount)}</span>
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-bold text-lg text-gray-900 dark:text-gray-100">
+            <div className="border-t border-border pt-2 flex justify-between font-bold text-lg text-foreground">
               <span>{t('account.invoiceViewer.totalToPay')}</span>
               <span>{formatPrice(invoice.total)}</span>
             </div>
@@ -142,13 +142,13 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           {/* Items if available */}
           {invoice.items && invoice.items.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('account.invoiceViewer.itemsTitle')}</h3>
+              <h3 className="font-semibold text-foreground mb-3">{t('account.invoiceViewer.itemsTitle')}</h3>
               <div className="space-y-2">
                 {invoice.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm text-gray-700 dark:text-gray-300 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  <div key={idx} className="flex justify-between text-sm text-gray-700 dark:text-gray-300 pb-2 border-b border-border">
                     <div>
                       <p className="font-medium">{item.productTitle}</p>
-                      <p className="text-gray-600 dark:text-gray-400">
+                      <p className="text-muted-foreground">
                         {item.quantity} × {formatPrice(item.unitPrice)}
                       </p>
                     </div>
@@ -162,15 +162,15 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           {/* Payment Records */}
           {invoice.paymentRecords.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('account.invoiceViewer.paymentHistoryTitle')}</h3>
+              <h3 className="font-semibold text-foreground mb-3">{t('account.invoiceViewer.paymentHistoryTitle')}</h3>
               <div className="space-y-2">
                 {invoice.paymentRecords.map((record) => (
                   <div key={record.id} className="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                      <p className="font-medium text-foreground">
                         {record.date.toLocaleDateString(locale)}
                       </p>
-                      <p className="text-gray-600 dark:text-gray-400 text-xs">
+                      <p className="text-muted-foreground text-xs">
                         {record.method} {record.reference && `(${record.reference})`}
                       </p>
                     </div>
@@ -186,7 +186,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           {/* Notes */}
           {invoice.notes && (
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('account.invoiceViewer.notesTitle')}</h3>
+              <h3 className="font-semibold text-foreground mb-2">{t('account.invoiceViewer.notesTitle')}</h3>
               <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded">
                 {invoice.notes}
               </p>
@@ -195,11 +195,11 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-800">
+        <div className="border-t border-border p-6 bg-gray-50 dark:bg-gray-800">
           {showPaymentForm && invoice.status === 'issued' ? (
             <form onSubmit={handleRecordPayment} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   {t('account.invoiceViewer.paymentAmountLabel', undefined, { max: formatPrice(invoice.remainingAmount) })}
                 </label>
                 <Input
@@ -210,19 +210,19 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   placeholder={t('account.invoiceViewer.paymentAmountPlaceholder')}
-                  className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="bg-white dark:bg-gray-700 text-foreground border-gray-300 dark:border-gray-600"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   {t('account.invoiceViewer.paymentMethodLabel')}
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2"
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-foreground px-3 py-2"
                 >
                   <option value="bank_transfer">{t('account.invoiceViewer.paymentMethod.bankTransfer')}</option>
                   <option value="card">{t('account.invoiceViewer.paymentMethod.card')}</option>
@@ -232,7 +232,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   {t('account.invoiceViewer.operationNumberLabel')}
                 </label>
                 <Input
@@ -240,7 +240,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder={t('account.invoiceViewer.operationNumberPlaceholder')}
-                  className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="bg-white dark:bg-gray-700 text-foreground border-gray-300 dark:border-gray-600"
                 />
               </div>
 

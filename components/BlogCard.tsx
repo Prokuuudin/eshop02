@@ -26,7 +26,7 @@ export default function BlogCard({ post }: BlogCardProps) {
         resolveBlogCategoryKey(post.category, t);
 
     return (
-        <article className="blog-card bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
+        <article className="blog-card bg-white dark:bg-gray-900 rounded-lg border border-border overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
             <Link href={`/blog/${localizedPost.slug}`}>
                 <div className="relative aspect-video bg-gray-100 overflow-hidden">
                     <Image
@@ -47,27 +47,27 @@ export default function BlogCard({ post }: BlogCardProps) {
                 <div className="flex gap-1.5 md:gap-2 mb-2 flex-wrap items-center">
                     <Badge
                         variant="outline"
-                        className="h-7 px-2 text-[11px] font-medium text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                        className="h-7 px-2 text-[11px] font-medium text-foreground border-border"
                     >
                         {t('blog.topicLabel')}:{' '}
                         {categoryKey ? t(categoryKey) : localizedPost.category}
                     </Badge>
-                    <span className="text-xs text-gray-500 dark:text-gray-300">
+                    <span className="text-xs text-muted-foreground">
                         ⏱ {localizedPost.readTime} {t('blog.readTimeShort')}
                     </span>
                 </div>
 
                 <Link href={`/blog/${localizedPost.slug}`}>
-                    <h3 className="font-bold text-base md:text-lg text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 transition line-clamp-2 leading-snug break-words min-h-[2.75rem] md:min-h-[3.25rem]">
+                    <h3 className="font-bold text-base md:text-lg text-foreground group-hover:text-primary transition line-clamp-2 leading-snug break-words min-h-[2.75rem] md:min-h-[3.25rem]">
                         {localizedPost.title}
                     </h3>
                 </Link>
 
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1.5 md:mt-2 line-clamp-2 leading-snug break-words min-h-[2.5rem]">
+                <p className="text-sm text-muted-foreground mt-1.5 md:mt-2 line-clamp-2 leading-snug break-words min-h-[2.5rem]">
                     {localizedPost.excerpt}
                 </p>
 
-                <div className="flex justify-between items-center mt-3 md:mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 min-h-[2rem]">
+                <div className="flex justify-between items-center mt-3 md:mt-4 pt-3 border-t border-border text-xs text-muted-foreground min-h-[2rem]">
                     <span className="truncate pr-2">{localizedPost.author}</span>
                     <span>{formatDate(localizedPost.createdAt, locale)}</span>
                 </div>

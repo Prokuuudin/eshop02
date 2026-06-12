@@ -22,7 +22,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product, minOrde
                 <WishlistButton product={product} asButton />
             </div>
             {minOrderQuantity > 1 && (
-                <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                     {t('product.minimumOrder')}: {minOrderQuantity} {t('product.pcs')}
                 </p>
             )}

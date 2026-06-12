@@ -46,10 +46,10 @@ export default function ForgotPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-gray-900 p-4 rounded-lg">
-      <p className="text-sm text-gray-600 dark:text-gray-300">{t('auth.resetPasswordHint')}</p>
+      <p className="text-sm text-muted-foreground">{t('auth.resetPasswordHint')}</p>
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
       <div>
-        <label className="block mb-1 text-sm text-gray-900 dark:text-gray-100">
+        <label className="block mb-1 text-sm text-foreground">
           {t('auth.email')}
         </label>
         <Input
@@ -57,7 +57,7 @@ export default function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+          className="w-full p-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border"
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>

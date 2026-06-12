@@ -51,7 +51,7 @@ export default function LanguageSwitcher() {
         </Tooltip>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-900 border border-border rounded-lg shadow-lg z-50">
             {LANGUAGES.map(lang => (
               <button
                 key={lang.code}
@@ -61,7 +61,7 @@ export default function LanguageSwitcher() {
                 }}
                 className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 ${
                   language === lang.code ? 'bg-gray-50 dark:bg-gray-800 font-semibold' : ''
-                } text-gray-900 dark:text-gray-100`}
+                } text-foreground`}
               >
                 <span className="uppercase text-base font-bold">{lang.code}</span>
                 <span className="ml-1">{lang.name}</span>

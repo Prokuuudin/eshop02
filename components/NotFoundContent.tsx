@@ -64,14 +64,14 @@ export default function NotFoundContent() {
                                         className="object-cover group-hover:scale-105 transition"
                                     />
                                 </div>
-                                <h3 className="font-semibold text-sm group-hover:text-indigo-600 line-clamp-2">
+                                <h3 className="font-semibold text-sm group-hover:text-primary line-clamp-2">
                                     {t(`products.${product.id}.title`, product.title)}
                                 </h3>
                                 <p className="text-xs text-gray-600 mt-1">
                                     {t(`brands.${product.brand}`, product.brand)}
                                 </p>
                                 <div className="flex justify-between items-center mt-2">
-                                    <span className="text-indigo-600 font-bold">
+                                    <span className="text-primary font-bold">
                                         {formatEuro(product.price, locale)}
                                     </span>
                                     <span className="text-xs text-yellow-500">

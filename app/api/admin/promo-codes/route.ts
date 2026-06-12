@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const data = await prisma.promoCode.findMany({ orderBy: { createdAt: 'asc' } })
     return NextResponse.json(data)
@@ -13,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as {
       code?: string; discount?: number; minOrder?: number;

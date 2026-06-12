@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -13,6 +14,9 @@ async function ensureUploadsDir(): Promise<void> {
 }
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   await ensureUploadsDir()
 
   const entries = await fs.readdir(UPLOADS_DIR, { withFileTypes: true })
@@ -45,6 +49,9 @@ function safeName(name: string): boolean {
 }
 
 export async function DELETE(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as { name?: string; names?: string[] }
     const targets = body.names?.length ? body.names : body.name ? [body.name] : []

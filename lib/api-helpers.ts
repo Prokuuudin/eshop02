@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { timingSafeEqual } from 'node:crypto'
+import { getServerUser } from '@/lib/server-auth'
 
 type AuthUser = {
   id: string
@@ -12,46 +13,75 @@ type AuthResult =
   | { authenticated: true; user: AuthUser }
   | { authenticated: false; error: string; status: number }
 
+// Demo key for the B2B webhooks playground — only honoured outside production.
+const DEMO_API_KEY = 'b2b-demo-api-key-12345'
+
+/** Valid API keys, configured via the V1_API_KEYS env var (comma-separated). */
+function getConfiguredApiKeys(): string[] {
+  const keys = (process.env.V1_API_KEYS ?? '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter((k) => k.length >= 16)
+
+  // In dev/preview the hardcoded demo key keeps the integrations demo working.
+  // In production, only explicitly configured keys are accepted (fail closed).
+  if (process.env.NODE_ENV !== 'production') {
+    keys.push(DEMO_API_KEY)
+  }
+  return keys
+}
+
+/** Constant-time membership check so we don't leak key length/prefix via timing. */
+function isValidApiKey(candidate: string): boolean {
+  const keys = getConfiguredApiKeys()
+  const candidateBuf = Buffer.from(candidate)
+  let matched = false
+  for (const key of keys) {
+    const keyBuf = Buffer.from(key)
+    if (keyBuf.length === candidateBuf.length && timingSafeEqual(keyBuf, candidateBuf)) {
+      matched = true
+    }
+  }
+  return matched
+}
+
 /**
- * API Authentication middleware
- * Supports: API key in header, user session
+ * API Authentication middleware.
+ * Supports: API key in `x-api-key` header (validated against V1_API_KEYS env),
+ * or an authenticated server session cookie.
  */
 export async function authenticateRequest(req: NextRequest) {
-  // Check for API key header
+  // Check for API key header — fail closed if none are configured.
   const apiKey = req.headers.get('x-api-key')
-  
+
   if (apiKey) {
-    // Validate API key (simplified - in production use secure storage)
-    // This would check against a database of valid API keys
-    const isValidKey = apiKey.length > 10 // Placeholder validation
-    if (!isValidKey) {
+    if (!isValidApiKey(apiKey)) {
       return {
         authenticated: false,
         error: 'Invalid API key',
-        status: 401
+        status: 401,
       } as AuthResult
     }
 
     const companyId = req.headers.get('x-company-id') || undefined
-    
-    // For API key auth, return basic user info
+
     return {
       authenticated: true,
       user: {
         id: `api_${apiKey.substring(0, 8)}`,
         companyId,
-        apiAccess: true
-      }
+        apiAccess: true,
+      },
     } as AuthResult
   }
 
-  // Check for session user
-  const user = getCurrentUser()
+  // Fall back to an authenticated server session.
+  const user = await getServerUser()
   if (!user) {
     return {
       authenticated: false,
       error: 'Unauthorized',
-      status: 401
+      status: 401,
     } as AuthResult
   }
 
@@ -61,8 +91,9 @@ export async function authenticateRequest(req: NextRequest) {
       id: user.id,
       email: user.email,
       companyId: user.companyId,
-      apiAccess: true
-    }
+      // Session users get API access only for read endpoints; write endpoints additionally gate on this.
+      apiAccess: false,
+    },
   } as AuthResult
 }
 

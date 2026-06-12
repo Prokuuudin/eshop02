@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { createProduct, deleteProductAny, getMergedProducts, resetProductOverride, upsertProductOverride } from '@/lib/product-overrides-store'
 import type { Product } from '@/data/products'
@@ -6,6 +7,9 @@ import type { Product } from '@/data/products'
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const products = await getMergedProducts()
     return successResponse({ products })
@@ -16,6 +20,9 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { id?: string; changes?: Partial<Omit<Product, 'id'>> }
     const id = body.id?.trim()
@@ -41,6 +48,9 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { product?: Product }
     const product = body.product
@@ -85,6 +95,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { id?: string; permanently?: boolean }
     const id = body.id?.trim()

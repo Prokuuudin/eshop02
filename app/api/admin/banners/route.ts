@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { readBannersData, writeBannersData, type Banner, type ContentBlock } from '@/lib/banners-server-store'
 import { revalidatePath } from 'next/cache'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   const data = await readBannersData()
   return NextResponse.json(data)
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as { kind: 'banner' | 'block'; item: Partial<Banner | ContentBlock> }
     const data = await readBannersData()

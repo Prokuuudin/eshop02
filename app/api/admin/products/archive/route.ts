@@ -1,10 +1,14 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { getDeletedProductsArchive, purgeDeletedProductArchive } from '@/lib/product-overrides-store'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const archive = await getDeletedProductsArchive()
     return successResponse({ archive })
@@ -15,6 +19,9 @@ export async function GET() {
 }
 
 export async function DELETE(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { id?: string }
     const id = body.id?.trim()

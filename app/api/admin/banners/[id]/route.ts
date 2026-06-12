@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { readBannersData, writeBannersData, type Banner, type ContentBlock } from '@/lib/banners-server-store'
 import { revalidatePath } from 'next/cache'
 
@@ -7,6 +8,9 @@ export const runtime = 'nodejs'
 type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const body = (await request.json()) as { kind: 'banner' | 'block'; item: Partial<Banner | ContentBlock> }
@@ -34,6 +38,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const body = await _request.json().catch(() => ({})) as { kind?: 'banner' | 'block' }

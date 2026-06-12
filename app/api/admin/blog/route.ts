@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { revalidatePath } from 'next/cache'
 import { createBlogPost, getBlogPosts } from '@/lib/blog-store'
 import type { BlogContentBlock, BlogPost } from '@/data/blog'
@@ -132,11 +133,17 @@ function validateContentBlocks(blocks: unknown): ValidationResult {
 }
 
 export async function GET(): Promise<NextResponse> {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   const posts = await getBlogPosts()
   return NextResponse.json({ posts })
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   let payload: CreateBlogPostPayload
   try {
     payload = (await request.json()) as CreateBlogPostPayload

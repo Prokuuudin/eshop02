@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -18,6 +19,9 @@ const ALLOWED_FILES = [
 ]
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   const files: Record<string, unknown> = {}
 
   for (const filename of ALLOWED_FILES) {
@@ -37,6 +41,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   let body: { files?: Record<string, unknown> }
 
   try {

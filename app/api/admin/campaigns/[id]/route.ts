@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
@@ -38,6 +39,9 @@ async function writeData(data: PromoCampaign[]): Promise<void> {
 type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const body = (await request.json()) as Partial<PromoCampaign>
@@ -54,6 +58,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const data = await readData()

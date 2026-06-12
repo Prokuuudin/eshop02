@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { sendEmail } from '@/lib/mailer'
 
 export const runtime = 'nodejs'
@@ -20,6 +21,9 @@ const STATUS_DETAILS: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as {
       to?: string

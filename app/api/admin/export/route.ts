@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { getMergedProducts } from '@/lib/product-overrides-store'
 import type { Product } from '@/data/products'
 
@@ -30,6 +31,9 @@ function escapeCell(value: unknown): string {
 }
 
 export async function GET(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   const { searchParams } = new URL(req.url)
   const template = searchParams.get('template') === '1'
 

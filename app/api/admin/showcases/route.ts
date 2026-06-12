@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
@@ -33,6 +34,9 @@ async function writeData(data: Showcase[]): Promise<void> {
 }
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const data = await readData()
     return NextResponse.json(data)
@@ -42,6 +46,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as Omit<Showcase, 'id' | 'createdAt' | 'updatedAt'>
     const data = await readData()

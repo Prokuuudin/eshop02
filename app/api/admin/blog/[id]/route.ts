@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { revalidatePath } from 'next/cache'
 import { deleteBlogPostById, getBlogPosts } from '@/lib/blog-store'
 
@@ -11,6 +12,9 @@ type RouteContext = {
 }
 
 export async function DELETE(_: Request, { params }: RouteContext): Promise<NextResponse> {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   const { id } = await params
   if (!id) {
     return NextResponse.json({ ok: false, error: 'invalid_id' }, { status: 400 })

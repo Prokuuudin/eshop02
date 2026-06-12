@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
@@ -7,6 +8,9 @@ export const runtime = 'nodejs'
 const SHIPPING_KEY = 'shipping-settings'
 
 export async function GET() {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const row = await prisma.keyValueSetting.findUnique({ where: { key: SHIPPING_KEY } })
     if (!row) return NextResponse.json({})
@@ -17,6 +21,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body: unknown = await request.json()
     await prisma.keyValueSetting.upsert({

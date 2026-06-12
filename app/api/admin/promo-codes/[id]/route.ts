@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
@@ -6,6 +7,9 @@ export const runtime = 'nodejs'
 type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const body = (await request.json()) as {
@@ -37,6 +41,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const existing = await prisma.promoCode.findUnique({ where: { id } })

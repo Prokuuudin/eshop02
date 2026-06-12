@@ -1,10 +1,14 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { deleteAdminReply, deleteReview, getAllReviews, setAdminReply, type ReviewModerationStatus, updateReviewStatus } from '@/lib/reviews-data-store'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { searchParams } = new URL(req.url)
     const productId = searchParams.get('productId')?.trim()
@@ -33,6 +37,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { id?: string; ids?: string[]; status?: ReviewModerationStatus; reply?: string | null }
     const id = body.id?.trim()
@@ -78,6 +85,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await req.json()) as { id?: string; ids?: string[] }
     const id = body.id?.trim()

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { createProduct, getMergedProducts, upsertProductOverride } from '@/lib/product-overrides-store'
 import type { Product, CategoryType, BadgeType } from '@/data/products'
 import { revalidatePath } from 'next/cache'
@@ -102,6 +103,9 @@ function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; er
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as { rows?: ImportRow[]; mode?: ImportMode }
     const rows = body.rows

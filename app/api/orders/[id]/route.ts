@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
+import { getServerUser, requireAdmin } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,17 @@ export async function GET(_req: NextRequest, context: Context) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
+    // Order ids are sequential — never expose another customer's order (PII / IDOR).
+    // Only the admin or the order's owner (matching session email) may read it.
+    // Return 404 to others so existence isn't leaked.
+    const caller = await getServerUser()
+    const isAdmin = caller?.platformRole === 'admin'
+    const isOwner =
+      !!caller?.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
     return NextResponse.json({ order })
   } catch (error) {
     console.error('Orders API GET by id error:', error)
@@ -25,6 +37,11 @@ export async function GET(_req: NextRequest, context: Context) {
 
 export async function PATCH(req: NextRequest, context: Context) {
   try {
+    // Payment status is set authoritatively by the Stripe webhook/verify endpoints.
+    // Any manual override here is admin-only — clients must never set paymentStatus directly.
+    const gate = await requireAdmin()
+    if (gate instanceof NextResponse) return gate
+
     const { id } = await context.params
     const body = (await req.json()) as {
       paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed'

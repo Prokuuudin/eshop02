@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 
@@ -71,6 +72,9 @@ type RejectPayload = { action: 'reject'; email: string; name: string; note?: str
 type Payload = ApprovePayload | RejectPayload
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   let payload: Payload
   try {
     payload = (await request.json()) as Payload

@@ -2,6 +2,7 @@ import 'server-only'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'node:crypto'
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { User as PrismaUser } from '@/generated/prisma/client'
 
@@ -100,6 +101,23 @@ export async function getServerUser(): Promise<ServerUser | null> {
   } catch {
     return null
   }
+}
+
+/**
+ * Guard for admin-only API routes.
+ * Returns the authenticated admin ServerUser, or a 403 NextResponse to return directly.
+ *
+ * Usage:
+ *   const gate = await requireAdmin()
+ *   if (gate instanceof NextResponse) return gate
+ *   // gate is the admin ServerUser here
+ */
+export async function requireAdmin(): Promise<ServerUser | NextResponse> {
+  const user = await getServerUser()
+  if (!user || user.platformRole !== 'admin') {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
+  return user
 }
 
 export async function deleteSession(token: string): Promise<void> {

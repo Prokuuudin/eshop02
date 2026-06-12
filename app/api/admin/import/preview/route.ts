@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { getMergedProducts } from '@/lib/product-overrides-store'
 import type { CategoryType } from '@/data/products'
 
@@ -55,6 +56,9 @@ function validateRow(row: ImportRow): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const body = (await request.json()) as { rows?: ImportRow[]; mode?: ImportMode }
     const rows = body.rows

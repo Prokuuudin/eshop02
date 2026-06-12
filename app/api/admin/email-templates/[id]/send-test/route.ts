@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { sendEmail } from '@/lib/mailer'
 
@@ -32,6 +33,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const { id } = await params
     const body = (await request.json()) as { to?: string }

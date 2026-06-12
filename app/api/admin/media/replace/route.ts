@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/server-auth'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -6,11 +7,15 @@ export const runtime = 'nodejs'
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads')
 
+// SVG intentionally excluded: it can carry inline <script>, enabling stored XSS when served same-origin.
 const ALLOWED_MIME = new Set([
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
 ])
 
 export async function POST(request: NextRequest) {
+  const __gate = await requireAdmin()
+  if (__gate instanceof NextResponse) return __gate
+
   try {
     const formData = await request.formData()
     const name = (formData.get('name') as string | null)?.trim()

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createOrUpdateServerOrder, type ServerOrder } from '@/lib/orders-data-store'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { getServerUser } from '@/lib/server-auth'
+import { recomputeOrderPricing } from '@/lib/server-pricing'
 
 export const runtime = 'nodejs'
 
@@ -48,8 +50,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'order payload is required' }, { status: 400 })
     }
 
+    const items = Array.isArray(order.items) ? order.items : []
+
+    // Recompute all money fields from the authoritative DB catalog — never trust client prices/totals.
+    // Bonus can only be spent by an authenticated user and is capped by their real DB balance.
+    const caller = await getServerUser()
+    const pricing = await recomputeOrderPricing({
+      items: items.map((item) => ({ id: item.id, quantity: item.quantity, price: item.price })),
+      promoCode: order.promoCode,
+      deliveryMethod: order.deliveryMethod,
+      bonusSpent: order.bonusSpent,
+      userBonusBalance: caller ? caller.bonusPoints : null,
+    })
+
+    const correctedItems = items.map((item, idx) => ({
+      ...item,
+      price: pricing.items[idx]?.price ?? item.price,
+      quantity: pricing.items[idx]?.quantity ?? item.quantity,
+    }))
+
     const normalizedOrder: ServerOrder = {
       ...order,
+      items: correctedItems,
+      subtotal: pricing.subtotal,
+      discount: pricing.discount,
+      tax: pricing.tax,
+      delivery: pricing.delivery,
+      bonusSpent: pricing.bonusSpent || undefined,
+      total: pricing.total,
+      promoCode: pricing.promoApplied ? order.promoCode : undefined,
       createdAt: order.createdAt || new Date().toISOString()
     }
 

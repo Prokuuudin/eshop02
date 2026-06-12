@@ -6,15 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const THEME_STORAGE_KEY = "eshop_theme";
 
 const applyTheme = (isDark: boolean): void => {
-  if (isDark) {
-    document.documentElement.classList.add("dark");
-    document.body.style.setProperty("--color-bg", "#18181b");
-    document.body.style.setProperty("--color-text", "#f3f4f6");
-  } else {
-    document.documentElement.classList.remove("dark");
-    document.body.style.setProperty("--color-bg", "#ffffff");
-    document.body.style.setProperty("--color-text", "#111827");
-  }
+  document.documentElement.classList.toggle("dark", isDark);
 };
 
 export default function ThemeToggle() {

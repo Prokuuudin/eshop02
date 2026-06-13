@@ -134,8 +134,11 @@ export default function ProductCard({ product }: Props) {
                         )}
                     </div>
 
-                    <div className="product-card__rating text-sm text-yellow-500">
-                        {product.rating.toFixed(1)} ★
+                    <div
+                        className="product-card__rating text-sm text-yellow-500"
+                        aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
+                    >
+                        {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
                     </div>
                 </div>
 

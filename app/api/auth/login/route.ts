@@ -19,10 +19,10 @@ function getClientIp(req: NextRequest): string {
 export async function POST(req: NextRequest) {
   try {
     // Occasional GC
-    if (Math.random() < 0.05) gcRateLimitStore()
+    if (Math.random() < 0.05) void gcRateLimitStore()
 
     const ip = getClientIp(req)
-    const rl = checkRateLimit(`login:${ip}`)
+    const rl = await checkRateLimit(`login:${ip}`)
     if (rl.limited) {
       return NextResponse.json(
         { error: 'too_many_attempts', resetAt: rl.resetAt },
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Successful login — reset attempt counter
-    resetRateLimit(`login:${ip}`)
+    await resetRateLimit(`login:${ip}`)
 
     const token = await createSession(user.id)
 

@@ -16,10 +16,10 @@ function getClientIp(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
-    if (Math.random() < 0.05) gcRateLimitStore()
+    if (Math.random() < 0.05) void gcRateLimitStore()
 
     const ip = getClientIp(req)
-    const rl = checkRateLimit(`sync:${ip}`)
+    const rl = await checkRateLimit(`sync:${ip}`)
     if (rl.limited) {
       return NextResponse.json(
         { error: 'too_many_attempts', resetAt: rl.resetAt },

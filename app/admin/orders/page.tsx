@@ -579,7 +579,7 @@ export default function AdminOrdersPage() {
                 'rounded-xl border overflow-hidden transition-colors',
                 selectedIds.has(order.id)
                   ? 'border-indigo-300 dark:border-primary bg-indigo-50/40 dark:bg-indigo-900/10'
-                  : 'border-border bg-gray-50 dark:bg-gray-800',
+                  : 'border-border bg-muted',
               ].join(' ')}
             >
               <div className="flex items-start px-5 py-4 hover:bg-black/[.02] dark:hover:bg-white/[.02] transition-colors">
@@ -954,7 +954,7 @@ export default function AdminOrdersPage() {
                         setNoteDrafts((prev) => ({ ...prev, [order.id]: e.target.value }))
                       }
                       placeholder="Внутренний комментарий: статус пересылки, договорённости с клиентом..."
-                      className="w-full rounded-lg border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                     <div className="flex items-center gap-3 mt-2">
                       <Button
@@ -985,7 +985,7 @@ export default function AdminOrdersPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-border p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
             {orders.length === 0 ? 'Заказов пока нет' : 'Нет заказов по выбранным фильтрам'}
           </div>
         )}

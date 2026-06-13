@@ -174,7 +174,7 @@ export default function AdminCustomerSegmentsPage() {
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="rounded-lg border p-4 bg-gray-50 dark:bg-gray-800 animate-pulse">
+              <div key={i} className="rounded-lg border p-4 bg-muted animate-pulse">
                 <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
                 <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
               </div>
@@ -295,10 +295,10 @@ export default function AdminCustomerSegmentsPage() {
                           value={bBody}
                           onChange={(e) => setBBody(e.target.value)}
                           placeholder={'Здравствуйте, {first_name}!\n\nПишем вам по поводу...'}
-                          className="w-full rounded-lg border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                       ) : (
-                        <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-800 p-4 min-h-[176px]">
+                        <div className="rounded-lg border border-border bg-muted p-4 min-h-[176px]">
                           {bBody ? (
                             <div className="space-y-1">
                               <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
@@ -371,7 +371,7 @@ export default function AdminCustomerSegmentsPage() {
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+                  <thead className="bg-muted">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Имя</th>

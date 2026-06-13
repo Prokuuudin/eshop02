@@ -10,7 +10,7 @@ interface ProductSpecsProps {
 export const ProductSpecs: React.FC<ProductSpecsProps> = ({ volume, type, country }) => {
     const { t } = useTranslation();
     return (
-        <div className="product-detail__specs mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-border">
+        <div className="product-detail__specs mt-4 p-4 bg-muted rounded-lg border border-border">
             <h3 className="font-semibold mb-3 text-foreground">
                 {t('product.specs')}
             </h3>

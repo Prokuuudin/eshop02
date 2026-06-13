@@ -138,7 +138,7 @@ export default function AdminBonusPage() {
                   <select
                     value={draft.enabled ? 'yes' : 'no'}
                     onChange={(e) => setDraft((p) => ({ ...p, enabled: e.target.value === 'yes' }))}
-                    className="w-full rounded border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    className="w-full rounded border border-border bg-card px-3 py-2 text-sm"
                   >
                     <option value="yes">{t('common.yes')}</option>
                     <option value="no">{t('common.no')}</option>
@@ -394,7 +394,7 @@ export default function AdminBonusPage() {
                 </thead>
                 <tbody>
                   {bonusOrders.map((o, idx) => (
-                    <tr key={o.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                    <tr key={o.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
                       <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                         {new Date(o.createdAt).toLocaleDateString('ru-RU')}
                       </td>

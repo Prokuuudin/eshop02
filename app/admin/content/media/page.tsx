@@ -402,7 +402,7 @@ export default function AdminMediaPage() {
                           onClick={() => setSelected(isSelected ? null : file)}
                           className="w-full"
                         >
-                          <div className="aspect-square bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                          <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
                             {file.isImage ? (
                               <img src={file.path} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
                             ) : (
@@ -422,7 +422,7 @@ export default function AdminMediaPage() {
                 /* List view */
                 <div className="rounded-xl border border-border overflow-hidden">
                   <table className="min-w-full text-sm bg-card">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
+                    <thead className="bg-muted">
                       <tr>
                         <th className="w-8 px-3 py-2.5"></th>
                         <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Файл</th>
@@ -489,7 +489,7 @@ export default function AdminMediaPage() {
                 </div>
 
                 {/* Preview */}
-                <div className="aspect-square rounded-lg bg-gray-50 dark:bg-gray-800 border border-border flex items-center justify-center overflow-hidden">
+                <div className="aspect-square rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden">
                   {selected.isImage
                     ? <img src={selected.path} alt={selected.name} className="w-full h-full object-contain" />
                     : <span className="text-4xl font-bold text-gray-300 dark:text-gray-600 uppercase">{selected.ext}</span>

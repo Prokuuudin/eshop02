@@ -123,7 +123,7 @@ function SubscriptionCard({
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                         {intervalOpen && (
-                            <div className="absolute top-full left-0 mt-1 z-10 bg-white dark:bg-gray-800 border border-border rounded-lg shadow-lg p-1 min-w-[160px]">
+                            <div className="absolute top-full left-0 mt-1 z-10 bg-card border border-border rounded-lg shadow-lg p-1 min-w-[160px]">
                                 {INTERVALS.map((iv) => (
                                     <button
                                         key={iv}

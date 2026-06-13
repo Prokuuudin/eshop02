@@ -266,7 +266,7 @@ export default function AdminClientBarcodesPage() {
                                         </div>
 
                                         {req.message && (
-                                            <p className="rounded bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-muted-foreground italic">
+                                            <p className="rounded bg-muted px-3 py-2 text-sm text-muted-foreground italic">
                                                 «{req.message}»
                                             </p>
                                         )}
@@ -329,7 +329,7 @@ export default function AdminClientBarcodesPage() {
                                                 }
                                                 rows={2}
                                                 placeholder="Например: предоставленный документ не является действующим сертификатом..."
-                                                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             />
                                         </div>
                                         <div className="flex gap-2">
@@ -440,7 +440,7 @@ export default function AdminClientBarcodesPage() {
                                                                     const role = event.target.value as TeamRole;
                                                                     setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }));
                                                                 }}
-                                                                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                                                             >
                                                                 <option value="viewer">viewer</option>
                                                                 <option value="buyer">buyer</option>

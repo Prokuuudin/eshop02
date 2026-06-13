@@ -88,7 +88,7 @@ export default function LoginForm({
                 </label>
                 <Input
                     type="text"
-                    className="bg-white dark:bg-gray-800 text-foreground border-border"
+                    className="bg-card text-foreground border-border"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={t('auth.cardNumberPlaceholder', '0000')}
@@ -103,7 +103,7 @@ export default function LoginForm({
                 <div className="relative flex items-center">
                     <Input
                         type={showPassword ? 'text' : 'password'}
-                        className="bg-white dark:bg-gray-800 text-foreground border-border pr-10"
+                        className="bg-card text-foreground border-border pr-10"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required

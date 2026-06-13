@@ -414,7 +414,7 @@ export default function AdminPage() {
                         </div>
                         <div className="mb-4">
                           <p className="text-base font-semibold text-foreground mb-1">{t('admin.products')}</p>
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded p-2 text-sm space-y-1">
+                          <div className="bg-muted rounded p-2 text-sm space-y-1">
                             {order.items.map((item) => (
                               <p key={item.id}>{item.title} × {item.quantity} = {formatEuro(item.price * item.quantity, locale)}</p>
                             ))}

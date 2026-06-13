@@ -394,7 +394,7 @@ export default function AdminRFQPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-border p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
             {requests.length === 0 ? 'RFQ заявок пока нет' : 'Нет заявок по выбранным фильтрам'}
           </div>
         )}

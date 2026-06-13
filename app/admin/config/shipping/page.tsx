@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const SELECT_CLASS =
-  'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
+  'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
 
 interface DeliveryMethod {
   enabled: boolean

@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full bg-white dark:bg-gray-800 text-foreground border-border"
+              className="w-full bg-card text-foreground border-border"
             />
           </div>
           <div>
@@ -159,7 +159,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setPassword2(e.target.value)}
               required
               minLength={6}
-              className="w-full bg-white dark:bg-gray-800 text-foreground border-border"
+              className="w-full bg-card text-foreground border-border"
             />
           </div>
           <Button type="submit" className="w-full" disabled={submitting}>

@@ -183,7 +183,7 @@ function AbcSection() {
       {/* Table */}
       <div className="overflow-auto rounded-xl border border-border">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+          <thead className="bg-muted sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">#</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>
@@ -332,8 +332,8 @@ function CohortSection() {
       <div className="overflow-auto rounded-xl border border-border">
         <table className="text-xs border-collapse">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800">
-              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap sticky left-0 bg-gray-50 dark:bg-gray-800 z-10 border-r border-border">
+            <tr className="bg-muted">
+              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap sticky left-0 bg-muted z-10 border-r border-border">
                 Когорта
               </th>
               <th className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap">
@@ -501,7 +501,7 @@ function SeoSection() {
       {filtered.length > 0 && (
         <div className="overflow-auto rounded-xl border border-border">
           <table className="min-w-full text-sm bg-card">
-            <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
+            <thead className="bg-muted sticky top-0">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Бренд / Категория</th>

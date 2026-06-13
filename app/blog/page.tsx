@@ -167,7 +167,7 @@ export default function BlogPage() {
         </section>
 
         {/* Subscribe CTA */}
-        <section className="mt-12 md:mt-16 bg-gray-50 dark:bg-gray-800 rounded-lg p-6 md:p-8 text-center">
+        <section className="mt-12 md:mt-16 bg-muted rounded-lg p-6 md:p-8 text-center">
           <h2 className="text-xl md:text-2xl font-bold mb-3 text-foreground">{t('blog.subscribeCtaTitle')}</h2>
           <p className="text-muted-foreground mb-6">{t('blog.subscribeCtaDesc')}</p>
           <form onSubmit={handleSubscribe} className="mx-auto max-w-xl flex flex-col sm:flex-row gap-2">

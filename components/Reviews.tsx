@@ -147,7 +147,7 @@ export default function Reviews({ productId }: ReviewsProps) {
       <h2 className="text-2xl font-bold mb-6 text-foreground">{t("reviews.title")} ({stats.count})</h2>
       {/* Статистика оценок */}
       {stats.count > 0 && (
-        <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg border border-border">
+        <div className="mb-8 p-6 bg-muted rounded-lg border border-border">
           <div className="flex items-center gap-4 mb-4">
             <div>
               <div className="text-4xl font-bold text-foreground">{stats.averageRating}</div>
@@ -193,7 +193,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                   value={formData.author}
                   onChange={handleChange}
                   placeholder={t("reviews.namePlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-border text-foreground"
+                  className="bg-card border-border text-foreground"
                 />
               </div>
               <div>
@@ -202,7 +202,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                   value={String(formData.rating)}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, rating: parseInt(value, 10) }))}
                 >
-                  <SelectTrigger className="w-full bg-white dark:bg-gray-800 border-border text-foreground">
+                  <SelectTrigger className="w-full bg-card border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -222,7 +222,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder={t("reviews.titlePlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-border text-foreground"
+                  className="bg-card border-border text-foreground"
                   required
                 />
               </div>
@@ -233,7 +233,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                   value={formData.text}
                   onChange={handleChange}
                   placeholder={t("reviews.textPlaceholder")}
-                  className="bg-white dark:bg-gray-800 border-border text-foreground"
+                  className="bg-card border-border text-foreground"
                   rows={4}
                   required
                 />

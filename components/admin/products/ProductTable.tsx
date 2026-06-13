@@ -49,7 +49,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
         if (e.key === 'Escape') setEditing(null)
     }
 
-    const cellCls = 'px-2 py-1 w-24 rounded border border-indigo-300 dark:border-primary bg-white dark:bg-gray-800 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
+    const cellCls = 'px-2 py-1 w-24 rounded border border-indigo-300 dark:border-primary bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
 
     return (
         <div className="overflow-x-auto">
@@ -79,10 +79,10 @@ const ProductTable: React.FC<ProductTableProps> = ({
                         return (
                             <tr
                                 key={product.id}
-                                className={`${idx % 2 === 0 ? 'bg-card' : 'bg-gray-50 dark:bg-gray-800'} ${isSaving ? 'opacity-60' : ''}`}
+                                className={`${idx % 2 === 0 ? 'bg-card' : 'bg-muted'} ${isSaving ? 'opacity-60' : ''}`}
                             >
                                 <td className="p-3 align-middle">
-                                    <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                    <div className="w-12 h-12 rounded overflow-hidden bg-secondary flex items-center justify-center shrink-0">
                                         {product.image
                                             ? <img src={product.image} alt={product.title} className="object-cover w-full h-full" />
                                             : <span className="text-xs text-gray-400">—</span>

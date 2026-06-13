@@ -103,7 +103,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as InvoiceStatus | 'all')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+            className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm"
           >
             <option value="all">{t('account.invoiceList.filter.allStatuses')}</option>
             <option value="issued">{t('account.invoice.status.issued')}</option>
@@ -116,7 +116,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'status')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+            className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm"
           >
             <option value="date">{t('account.invoiceList.sort.byDate')}</option>
             <option value="amount">{t('account.invoiceList.sort.byAmount')}</option>

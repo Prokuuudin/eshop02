@@ -42,7 +42,7 @@ export default function TopProducts({
         {topItems.map((product, index) => (
           <div
             key={product.productId}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+            className="flex items-center justify-between p-3 rounded-lg bg-muted"
           >
             <div className="flex items-center gap-3 flex-1">
               <div className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">

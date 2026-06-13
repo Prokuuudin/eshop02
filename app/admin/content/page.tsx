@@ -278,7 +278,7 @@ export default function AdminContentPage() {
                       <img
                         src={imageFrom}
                         alt="Исходное изображение"
-                        className="h-36 w-full rounded-md border border-border object-contain bg-gray-50 dark:bg-gray-800"
+                        className="h-36 w-full rounded-md border border-border object-contain bg-muted"
                         onLoad={() => setSourcePreviewFailed(false)}
                         onError={() => setSourcePreviewFailed(true)}
                       />
@@ -301,7 +301,7 @@ export default function AdminContentPage() {
                       <img
                         src={imageTo}
                         alt="Новое изображение"
-                        className="h-36 w-full rounded-md border border-border object-contain bg-gray-50 dark:bg-gray-800"
+                        className="h-36 w-full rounded-md border border-border object-contain bg-muted"
                         onLoad={() => setTargetPreviewFailed(false)}
                         onError={() => setTargetPreviewFailed(true)}
                       />

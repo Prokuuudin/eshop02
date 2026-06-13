@@ -128,7 +128,7 @@ export default function AuditLogViewer({
           <select
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
-            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground"
+            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-card text-foreground"
           >
             <option value="">{t('account.auditLog.filter.allActions')}</option>
             {actionTypes.map(action => (
@@ -152,7 +152,7 @@ export default function AuditLogViewer({
             placeholder={t('account.auditLog.filter.userSearchPlaceholder')}
             value={filterValue}
             onChange={(e) => setFilterValue(e.target.value)}
-            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground"
+            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-card text-foreground"
           />
         ) : (
           <button
@@ -175,7 +175,7 @@ export default function AuditLogViewer({
             return (
           <div
             key={entry.id}
-            className="p-3 rounded-lg border border-border bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-lg border border-border bg-muted cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
           >
             <div className="flex items-start gap-3">

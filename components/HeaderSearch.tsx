@@ -128,7 +128,7 @@ export default function HeaderSearch() {
       <div className="relative flex-1">
         <input
           id={inputId}
-          className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border bg-card text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-sm"
           placeholder={t('catalog.searchPlaceholder')}
           value={query}
           role="combobox"
@@ -161,7 +161,7 @@ export default function HeaderSearch() {
                     onClick={() => handleSuggestionClick(suggestion.title)}
                     onMouseEnter={() => setActiveIndex(index)}
                     className={`w-full text-left px-3 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                      activeIndex === index ? 'bg-gray-50 dark:bg-gray-800' : ''
+                      activeIndex === index ? 'bg-muted' : ''
                     }`}
                   >
                     <p className="text-sm text-foreground">{highlightText(suggestion.title, query)}</p>

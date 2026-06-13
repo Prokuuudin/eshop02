@@ -7,7 +7,7 @@ export default function AdminTableSkeleton({ rows = 5, cols = 4 }: AdminTableSke
   return (
     <div className="admin-table-skeleton animate-pulse rounded-xl border border-border bg-card overflow-hidden">
       {/* Header row */}
-      <div className="flex items-center gap-4 px-5 py-3 border-b border-border bg-gray-50 dark:bg-gray-800">
+      <div className="flex items-center gap-4 px-5 py-3 border-b border-border bg-muted">
         {Array.from({ length: cols }, (_, i) => (
           <div
             key={i}

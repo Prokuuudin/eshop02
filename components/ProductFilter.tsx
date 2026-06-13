@@ -189,7 +189,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('catalog.filters.orderBy', 'Упорядочить по')}</label>
         <Select value={order || 'default'} onValueChange={(value) => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice, order: value === 'default' ? '' : value })}>
-          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-foreground border-border">
+          <SelectTrigger className="w-full bg-card text-foreground border-border">
             <SelectValue placeholder={t('catalog.filters.orderBy.default', 'По умолчанию')} />
           </SelectTrigger>
           <SelectContent>
@@ -204,7 +204,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('categories.title')}</label>
         <Select value={group || 'all'} onValueChange={(value) => onFilter({ group: value === 'all' ? '' : value, onSale, purposes, brands, minPrice, maxPrice, order })}>
-          <SelectTrigger className="w-full bg-white dark:bg-gray-800 text-foreground border-border">
+          <SelectTrigger className="w-full bg-card text-foreground border-border">
             <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ group: '' })})`} />
           </SelectTrigger>
           <SelectContent>
@@ -263,8 +263,8 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>
         <div className="flex gap-2">
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
-          <Input type="number" className="w-full bg-white dark:bg-gray-800 text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
+          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice: e.target.value, maxPrice, order })} />
+          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice: e.target.value, order })} />
         </div>
       </div>
       {activeFilters.length > 0 && (

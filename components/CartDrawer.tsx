@@ -124,7 +124,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {/* Backdrop */}
             <div
                 data-testid="cart-drawer-backdrop"
-                className={`fixed inset-0 z-[10000] bg-black/50 transition-opacity duration-300 ${
+                className={`fixed inset-0 z-drawer bg-black/50 transition-opacity duration-300 ${
                     isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 }`}
                 onClick={onClose}
@@ -133,7 +133,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {/* Drawer panel */}
             <div
                 data-testid="cart-drawer-panel"
-                className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-[10001] bg-card shadow-lg flex flex-col transition-transform duration-300 ${
+                className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-drawer bg-card shadow-lg flex flex-col transition-transform duration-300 ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
                 style={{ willChange: 'transform' }}

@@ -59,7 +59,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[10100] flex items-center justify-center">
+    <div className="fixed inset-0 z-modal flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 bg-card rounded-xl shadow-xl border border-border w-full max-w-md p-6 space-y-5">
         <div className="flex items-center justify-between">

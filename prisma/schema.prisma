@@ -313,10 +313,14 @@ model Order {
   paymentProvider  String?
   paymentSessionId String?
   language         String?  @default("ru")
+  userId           String?
+  companyId        String?
 
   @@index([email])
   @@index([createdAt])
   @@index([paymentStatus])
+  @@index([userId])
+  @@index([companyId])
 }
 
 model Review {

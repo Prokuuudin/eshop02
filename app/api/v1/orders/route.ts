@@ -1,19 +1,16 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
-import { useOrders } from '@/lib/orders-store'
-import { logAuditAction } from '@/lib/audit-log-store'
-import { triggerCompanyWebhook } from '@/lib/webhook-sender'
+import { prisma } from '@/lib/prisma'
+import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { createOrUpdateServerOrder, type ServerOrder } from '@/lib/orders-data-store'
+
+export const runtime = 'nodejs'
 
 /**
  * GET /api/v1/orders
- * Returns paginated list of company orders
- * 
- * Query parameters:
- * - page: number (default: 1)
- * - limit: number (default: 20, max: 100)
- * - status: string (optional) - pending, processing, shipped, delivered, cancelled
- * - sortBy: string (optional) - date, total, status (default: date)
- * - sortOrder: asc|desc (optional, default: desc)
+ * Paginated list of the calling company's orders (read from the DB, scoped by companyId).
+ *
+ * Query: page, limit, paymentStatus, sortBy (date|total), sortOrder (asc|desc)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -22,90 +19,62 @@ export async function GET(req: NextRequest) {
       return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
     }
 
+    // Orders are tenant-scoped by companyId. Without a company scope we must not return
+    // every order in the system, so require it.
+    const companyId = auth.user.companyId
+    if (!companyId) {
+      return errorResponse('Company scope required (x-company-id)', 400)
+    }
+
     const { page, limit, offset } = parsePagination(req)
     const { searchParams } = new URL(req.url)
 
-    const ordersStore = useOrders.getState()
-    let orders = [...ordersStore.orders] as Array<Record<string, any>>
+    const where: Record<string, unknown> = { companyId }
+    const paymentStatus = searchParams.get('paymentStatus')
+    if (paymentStatus) where.paymentStatus = paymentStatus
 
-    // Filter by status if provided
-    const status = searchParams.get('status')
-    if (status) {
-      orders = orders.filter((o) => (o.status || 'processing') === status)
-    }
+    const dir: 'asc' | 'desc' = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+    const orderBy =
+      searchParams.get('sortBy') === 'total' ? { total: dir } : { createdAt: dir }
 
-    // Filter by company if user has companyId
-    if (auth.user.companyId) {
-      orders = orders.filter((o) => o.companyId === auth.user.companyId || !o.companyId)
-    }
-
-    // Sort
-    const sortBy = searchParams.get('sortBy') || 'date'
-    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1
-
-    orders.sort((a, b) => {
-      let aVal, bVal
-      switch (sortBy) {
-        case 'total':
-          aVal = a.total || 0
-          bVal = b.total || 0
-          break
-        case 'status':
-          aVal = (a.status || '').localeCompare(b.status || '')
-          return aVal * sortOrder
-        case 'date':
-        default:
-          aVal = new Date(a.createdAt).getTime()
-          bVal = new Date(b.createdAt).getTime()
-      }
-      return (aVal - bVal) * sortOrder
-    })
-
-    const total = orders.length
-    const paginatedOrders = orders.slice(offset, offset + limit)
+    const [rows, total] = await Promise.all([
+      prisma.order.findMany({ where, orderBy, skip: offset, take: limit }),
+      prisma.order.count({ where }),
+    ])
 
     return successResponse({
-      orders: paginatedOrders.map(order => ({
-        id: order.id,
-        email: order.email,
-        status: order.status || 'processing',
-        createdAt: order.createdAt,
-        items: order.items,
-        total: order.total,
+      orders: rows.map((o) => ({
+        id: o.id,
+        email: o.email,
+        createdAt: o.createdAt instanceof Date ? o.createdAt.toISOString() : String(o.createdAt),
+        items: o.items,
+        subtotal: o.subtotal,
+        total: o.total,
+        paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod,
         address: {
-          firstName: order.firstName,
-          lastName: order.lastName,
-          address: order.address,
-          city: order.city,
-          postalCode: order.postalCode,
-          phone: order.phone
+          firstName: o.firstName,
+          lastName: o.lastName,
+          address: o.address,
+          city: o.city,
+          postalCode: o.postalCode,
+          phone: o.phone,
         },
-        payment: order.paymentMethod
       })),
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {
-    console.error('API Error:', error)
+    console.error('[v1/orders GET]', error)
     return errorResponse('Internal server error', 500)
   }
 }
 
 /**
  * POST /api/v1/orders
- * Create a new order (API key required)
- * 
- * Body:
- * {
- *   "items": [{ "productId": "p1", "quantity": 2 }],
- *   "address": { "street": "...", "city": "...", ... },
- *   "payment": "card|invoice|transfer",
- *   "notes": "optional"
- * }
+ * Create an order (API key required). Prices are recomputed server-side from the catalog;
+ * client-supplied prices are ignored.
+ *
+ * Body: { items: [{ productId, quantity }], address: {...}, payment?, promoCode?, deliveryMethod?, notes? }
  */
 export async function POST(req: NextRequest) {
   try {
@@ -113,82 +82,102 @@ export async function POST(req: NextRequest) {
     if (!auth.authenticated) {
       return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
     }
-
-    // API key access only for this endpoint
     if (!auth.user.apiAccess) {
       return errorResponse('API access required', 403)
     }
 
     const body = await req.json()
-    const { items, address, payment, notes } = body
-
-    // Validation
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return errorResponse('Invalid items', 400)
+    const { items, address, payment, notes } = body as {
+      items?: Array<{ productId?: string; quantity?: number }>
+      address?: Record<string, string>
+      payment?: string
+      notes?: string
     }
 
+    if (!Array.isArray(items) || items.length === 0) {
+      return errorResponse('Invalid items', 400)
+    }
     if (!address) {
       return errorResponse('Address is required', 400)
     }
 
-    const ordersStore = useOrders.getState()
+    const normalizedItems = items
+      .filter((i) => typeof i.productId === 'string' && i.productId.length > 0)
+      .map((i) => ({ id: i.productId as string, quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)) }))
 
-    const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    if (normalizedItems.length === 0) {
+      return errorResponse('No valid items', 400)
+    }
 
-    const newOrder = {
+    // Authoritative pricing from the catalog.
+    const pricing = await recomputeOrderPricing({
+      items: normalizedItems,
+      promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
+      deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
+      userBonusBalance: null,
+    })
+
+    // Build full order line items from the catalog (title/brand/etc.) for display.
+    const products = await prisma.product.findMany({
+      where: { id: { in: normalizedItems.map((i) => i.id) } },
+      select: { id: true, title: true, brand: true, image: true, category: true, rating: true, stock: true },
+    })
+    const productById = new Map(products.map((p) => [p.id, p]))
+
+    const orderItems = pricing.items.map((line) => {
+      const p = productById.get(line.id)
+      return {
+        id: line.id,
+        title: p?.title ?? line.id,
+        brand: p?.brand ?? '',
+        image: p?.image ?? '',
+        category: p?.category ?? '',
+        price: line.price,
+        rating: p?.rating ?? 0,
+        stock: p?.stock ?? 0,
+        quantity: line.quantity,
+      }
+    })
+
+    const orderId = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+    const order: ServerOrder = {
       id: orderId,
-      createdAt: new Date(),
-      items: items.map((item: any) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price || 0
-      })),
-      subtotal: Number(body.subtotal || 0),
-      tax: Number(body.tax || 0),
-      delivery: Number(body.delivery || 0),
-      deliveryMethod: body.deliveryMethod || 'courier',
+      createdAt: new Date().toISOString(),
+      items: orderItems,
+      subtotal: pricing.subtotal,
+      tax: pricing.tax,
+      delivery: pricing.delivery,
+      deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
       paymentMethod: payment || 'transfer',
-      discount: Number(body.discount || 0),
-      total: Number(body.total || 0),
-      firstName: address?.firstName || 'API',
-      lastName: address?.lastName || 'User',
-      email: body.email || auth.user.email || 'api-user@example.com',
-      phone: address?.phone || '',
-      address: address?.address || '',
-      city: address?.city || '',
-      postalCode: address?.postalCode,
-      notes,
+      discount: pricing.discount,
+      total: pricing.total,
+      firstName: address.firstName || 'API',
+      lastName: address.lastName || 'User',
+      email: (typeof body.email === 'string' && body.email) || auth.user.email || 'api-user@example.com',
+      phone: address.phone || '',
+      address: address.address || '',
+      city: address.city || '',
+      postalCode: address.postalCode,
+      paymentStatus: 'unpaid',
       companyId: auth.user.companyId,
-      status: 'processing'
+      language: 'ru',
     }
 
-    ordersStore.addOrder(newOrder as any)
+    await createOrUpdateServerOrder(order)
 
-    // Log audit action
-    if (auth.user.companyId) {
-      logAuditAction(
-        auth.user.companyId,
-        auth.user.id,
-        'order_created',
-        { source: 'api', orderId, itemCount: items.length }
-      )
-
-      await triggerCompanyWebhook(auth.user.companyId, 'order.created', {
+    return successResponse(
+      {
         orderId,
-        itemCount: items.length,
-        total: newOrder.total,
-        createdAt: newOrder.createdAt.toISOString()
-      })
-    }
-
-    return successResponse({
-      orderId,
-      status: newOrder.status,
-      createdAt: newOrder.createdAt,
-      message: 'Order created successfully'
-    }, 201)
+        status: order.paymentStatus,
+        total: order.total,
+        createdAt: order.createdAt,
+        notes,
+        message: 'Order created successfully',
+      },
+      201
+    )
   } catch (error) {
-    console.error('API Error:', error)
+    console.error('[v1/orders POST]', error)
     return errorResponse('Internal server error', 500)
   }
 }

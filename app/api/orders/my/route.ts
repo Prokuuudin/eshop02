@@ -8,7 +8,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
     const rows = await prisma.order.findMany({
-      where: { email: user.email },
+      where: { OR: [{ userId: user.id }, { email: user.email }] },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })

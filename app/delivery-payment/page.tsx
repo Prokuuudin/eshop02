@@ -61,7 +61,7 @@ export default function DeliveryPaymentPage() {
 
                 <div className="delivery-payment bem-delivery-payment grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
                     {/* Левая колонка: Доставка */}
-                    <section className="delivery-payment__section bem-delivery-payment__section bg-white dark:bg-gray-800 rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
+                    <section className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
                         <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300">
                             Доставка
                         </h2>
@@ -240,7 +240,7 @@ export default function DeliveryPaymentPage() {
                         </Accordion>
                     </section>
                     {/* Правая колонка: Оплата */}
-                    <section className="delivery-payment__section bem-delivery-payment__section bg-white dark:bg-gray-800 rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
+                    <section className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
                         <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-green-700 dark:text-green-300">
                             Оплата
                         </h2>

@@ -139,7 +139,7 @@ export default function AdminMarketingAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800/50">
+                    <tr className="text-left text-xs text-muted-foreground bg-muted/50">
                       <th className="px-5 py-3 font-medium">Код</th>
                       <th className="px-5 py-3 font-medium">Использований</th>
                       <th className="px-5 py-3 font-medium">Общая скидка</th>

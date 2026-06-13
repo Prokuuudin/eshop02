@@ -477,7 +477,7 @@ export default function AdminBannersPage() {
                       <select
                         value={bannerForm.type}
                         onChange={(e) => setBannerForm((f) => ({ ...f, type: e.target.value as BannerType }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(BANNER_TYPE_LABELS) as BannerType[]).map((t) => (
                           <option key={t} value={t}>{BANNER_TYPE_LABELS[t]}</option>
@@ -527,7 +527,7 @@ export default function AdminBannersPage() {
                         <img
                           src={bannerForm.image}
                           alt="Превью баннера"
-                          className="h-32 w-full rounded-md border border-border object-cover bg-gray-50 dark:bg-gray-800"
+                          className="h-32 w-full rounded-md border border-border object-cover bg-muted"
                         />
                       </div>
                     )}
@@ -555,7 +555,7 @@ export default function AdminBannersPage() {
                       <select
                         value={bannerForm.ctaStyle}
                         onChange={(e) => setBannerForm((f) => ({ ...f, ctaStyle: e.target.value as CtaStyle }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(CTA_STYLE_LABELS) as CtaStyle[]).map((s) => (
                           <option key={s} value={s}>{CTA_STYLE_LABELS[s]}</option>
@@ -568,7 +568,7 @@ export default function AdminBannersPage() {
                       <select
                         value={bannerForm.textColor}
                         onChange={(e) => setBannerForm((f) => ({ ...f, textColor: e.target.value as TextColor }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         <option value="dark">Тёмный</option>
                         <option value="light">Светлый</option>
@@ -598,7 +598,7 @@ export default function AdminBannersPage() {
                       <select
                         value={bannerForm.active ? 'yes' : 'no'}
                         onChange={(e) => setBannerForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         <option value="yes">Да — отображается на сайте</option>
                         <option value="no">Нет — скрыт</option>
@@ -738,7 +738,7 @@ export default function AdminBannersPage() {
                       <select
                         value={blockForm.type}
                         onChange={(e) => setBlockForm((f) => ({ ...f, type: e.target.value as BlockType }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         {(Object.keys(BLOCK_TYPE_LABELS) as BlockType[]).map((t) => (
                           <option key={t} value={t}>{BLOCK_TYPE_LABELS[t]}</option>
@@ -824,7 +824,7 @@ export default function AdminBannersPage() {
                       <select
                         value={blockForm.active ? 'yes' : 'no'}
                         onChange={(e) => setBlockForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                       >
                         <option value="yes">Да — отображается на сайте</option>
                         <option value="no">Нет — скрыт</option>

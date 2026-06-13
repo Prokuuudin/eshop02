@@ -303,7 +303,7 @@ export default function ContactPage() {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-foreground border-border"
+                      className="bg-card text-foreground border-border"
                       minLength={2}
                       maxLength={80}
                       required
@@ -316,7 +316,7 @@ export default function ContactPage() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-foreground border-border"
+                      className="bg-card text-foreground border-border"
                       maxLength={160}
                       required
                     />
@@ -328,7 +328,7 @@ export default function ContactPage() {
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-foreground border-border"
+                      className="bg-card text-foreground border-border"
                       placeholder={t('contact.subjectPlaceholder')}
                       minLength={3}
                       maxLength={140}
@@ -341,7 +341,7 @@ export default function ContactPage() {
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      className="bg-white dark:bg-gray-800 text-foreground border-border"
+                      className="bg-card text-foreground border-border"
                       rows={5}
                       minLength={10}
                       maxLength={5000}

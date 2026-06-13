@@ -230,7 +230,7 @@ export default function DesignSystemPage() {
                   { cls: 'shadow-xl',  label: 'shadow-xl' },
                 ].map(s => (
                   <div key={s.cls} className="flex items-center gap-4">
-                    <div className={`w-12 h-8 bg-white dark:bg-gray-800 rounded-lg shrink-0 ${s.cls}`} />
+                    <div className={`w-12 h-8 bg-card rounded-lg shrink-0 ${s.cls}`} />
                     <span className="text-[11px] font-mono text-gray-500">{s.label}</span>
                   </div>
                 ))}

@@ -26,7 +26,7 @@ export default function AuditLogsPage() {
   if (!user?.companyId) {
     return (
       <main className="max-w-6xl mx-auto px-4 py-12">
-        <div className="rounded-lg border border-border p-12 text-center bg-gray-50 dark:bg-gray-800">
+        <div className="rounded-lg border border-border p-12 text-center bg-muted">
           <p className="text-lg text-muted-foreground mb-4">
             {t('account.auditLog.companyOnly')}
           </p>

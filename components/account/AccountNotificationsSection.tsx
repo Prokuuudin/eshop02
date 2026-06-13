@@ -106,7 +106,7 @@ function NotificationItem({
                     ? 'bg-indigo-50 dark:bg-indigo-950/20'
                     : notification.isRead
                     ? 'bg-card'
-                    : 'bg-gray-50 dark:bg-gray-800/60'
+                    : 'bg-muted/60'
             }`}
         >
             {/* Unread dot */}

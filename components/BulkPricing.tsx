@@ -46,7 +46,7 @@ export default function BulkPricing({ product }: BulkPricingProps) {
                 <tr 
                   key={idx} 
                   className={`border-b border-border last:border-0 ${
-                    idx === 0 ? 'bg-gray-50 dark:bg-gray-800/50' : ''
+                    idx === 0 ? 'bg-muted/50' : ''
                   }`}
                 >
                   <td className="py-3 px-3 text-foreground">

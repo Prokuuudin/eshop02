@@ -111,7 +111,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 <div className="product-card__actions mt-auto w-full space-y-2">
                     <div className="add-to-cart space-y-3 w-full">
                         <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-                            <div className="flex items-center border border-border rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
+                            <div className="flex items-center border border-border rounded-full bg-card px-1 py-0.5 shadow-sm w-auto">
                                 <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Уменьшить количество">−</button>
                                 <input id="qty-preview" type="number" min={1} value={quantity} readOnly className="w-10 h-7 mx-1 text-center bg-transparent text-base font-semibold outline-none border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" disabled />
                                 <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Увеличить количество">+</button>

@@ -135,8 +135,8 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
           <button
             className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium ${
               mode === 'once'
-                ? 'bg-white dark:bg-gray-800 text-foreground'
-                : 'bg-gray-50 dark:bg-gray-900 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-card text-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
             onClick={() => setMode('once')}
           >
@@ -147,7 +147,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
             className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium border-l border-border ${
               mode === 'subscribe'
                 ? 'bg-primary text-white'
-                : 'bg-gray-50 dark:bg-gray-900 text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'bg-muted text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
             onClick={() => setMode('subscribe')}
           >

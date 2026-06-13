@@ -196,7 +196,7 @@ export default function AdminLogPage() {
           <>
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="min-w-full text-sm bg-card">
-                <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                <thead className="bg-muted sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">Время</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Кто</th>
@@ -244,7 +244,7 @@ export default function AdminLogPage() {
                         </td>
                       </tr>
                       {expandedId === entry.id && (
-                        <tr key={`${entry.id}-exp`} className="bg-gray-50 dark:bg-gray-800/30">
+                        <tr key={`${entry.id}-exp`} className="bg-muted/30">
                           <td colSpan={6} className="px-4 py-3">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                               <div>

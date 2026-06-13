@@ -270,7 +270,7 @@ export default function AdminOnboardingPage() {
         {/* Steps */}
         {groups.map((group) => (
           <div key={group} className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-muted/50">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 {groupLabels[group]}
               </h2>

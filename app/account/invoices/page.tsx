@@ -276,7 +276,7 @@ export default function InvoicesPage() {
                     <p className="mt-1 font-medium text-foreground">
                       {formatPrice(company.creditLimit)}
                     </p>
-                    <div className="mt-3 h-2 rounded bg-gray-100 dark:bg-gray-700">
+                    <div className="mt-3 h-2 rounded bg-secondary">
                       <div
                         className="h-2 rounded bg-blue-500"
                         style={{

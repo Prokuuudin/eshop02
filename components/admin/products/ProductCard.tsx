@@ -112,7 +112,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             </div>
 
             {/* Управление остатком */}
-            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-muted/50">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">Остаток:</span>
                 <input
                     type="number"
@@ -150,7 +150,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     <Pencil className="w-3.5 h-3.5" />
                     Редактировать
                 </button>
-                <div className="w-px bg-gray-100 dark:bg-gray-700" />
+                <div className="w-px bg-secondary" />
                 <button
                     type="button"
                     onClick={onDelete}

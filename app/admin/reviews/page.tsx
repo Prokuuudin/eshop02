@@ -447,7 +447,7 @@ export default function AdminReviewsPage() {
                       value={replyDrafts[review.id] ?? review.adminReply?.text ?? ''}
                       onChange={(e) => setReplyDrafts((d) => ({ ...d, [review.id]: e.target.value }))}
                       placeholder={l('Напишите ответ покупателю...', 'Write a reply to the customer...', 'Rakstiet atbildi klientam...')}
-                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                     <div className="flex flex-wrap gap-2">
                       <Button

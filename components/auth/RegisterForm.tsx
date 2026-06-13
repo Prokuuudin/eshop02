@@ -81,7 +81,7 @@ export default function RegisterForm({ onClose }: Props) {
                     {t('auth.name', 'Имя')}
                 </label>
                 <Input
-                    className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border"
+                    className="register-form__input bg-card text-foreground border-border"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -95,7 +95,7 @@ export default function RegisterForm({ onClose }: Props) {
                     {t('auth.clientCardNumber', 'Номер карты клиента')}
                 </label>
                 <Input
-                    className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border"
+                    className="register-form__input bg-card text-foreground border-border"
                     type="text"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
@@ -113,7 +113,7 @@ export default function RegisterForm({ onClose }: Props) {
                 </label>
                 <div className="register-form__password-wrapper relative flex items-center">
                     <Input
-                        className="register-form__input bg-white dark:bg-gray-800 text-foreground border-border pr-10"
+                        className="register-form__input bg-card text-foreground border-border pr-10"
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}

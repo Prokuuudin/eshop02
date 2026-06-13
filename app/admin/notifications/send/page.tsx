@@ -273,7 +273,7 @@ export default function AdminNotificationsSendPage() {
                 {t('admin.notifications.form.type')}
               </label>
               <select
-                className="w-full rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                 value={type}
                 onChange={(e) => setType(e.target.value as NotificationType)}
               >

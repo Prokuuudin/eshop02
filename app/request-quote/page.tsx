@@ -112,7 +112,7 @@ export default function RequestQuotePage() {
     return (
       <main className="max-w-5xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-foreground mb-4">Запросить спецпредложение</h1>
-        <div className="rounded-lg border border-border p-10 text-center bg-gray-50 dark:bg-gray-800">
+        <div className="rounded-lg border border-border p-10 text-center bg-muted">
           <p className="text-gray-700 dark:text-gray-300 mb-4">Функция доступна только для B2B-компаний.</p>
           <Link href="/account">
             <Button variant="outline">Перейти в аккаунт</Button>

@@ -422,7 +422,7 @@ export default function NewOrderPage() {
               ) : (
                 <div className="space-y-2">
                   {items.map((item) => (
-                    <div key={item.product.id} className="flex items-center gap-3 rounded-lg border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2.5">
+                    <div key={item.product.id} className="flex items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5">
                       {item.product.image && (
                         <img src={item.product.image} alt="" className="h-10 w-10 rounded object-cover shrink-0" />
                       )}
@@ -637,7 +637,7 @@ export default function NewOrderPage() {
 
               {/* Customer */}
               {(firstName || email) && (
-                <div className="rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm">
+                <div className="rounded-lg bg-muted px-3 py-2.5 text-sm">
                   <p className="font-medium text-foreground">
                     {[firstName, lastName].filter(Boolean).join(' ') || '—'}
                   </p>

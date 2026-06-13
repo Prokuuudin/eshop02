@@ -358,7 +358,7 @@ export default function AdminReturnsPage() {
           const isExpanded = expandedReturn === ret.id
 
           return (
-            <div key={ret.id} className="rounded-xl border border-border bg-gray-50 dark:bg-gray-800 overflow-hidden">
+            <div key={ret.id} className="rounded-xl border border-border bg-muted overflow-hidden">
               <button
                 type="button"
                 onClick={() => setExpandedReturn(isExpanded ? null : ret.id)}
@@ -503,7 +503,7 @@ export default function AdminReturnsPage() {
                     <p className="text-sm font-semibold text-foreground">Решение администратора</p>
 
                     {ret.resolution && (
-                      <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-border px-3 py-2 text-sm text-gray-700 dark:text-gray-300 italic">
+                      <div className="rounded-lg bg-muted border border-border px-3 py-2 text-sm text-gray-700 dark:text-gray-300 italic">
                         {ret.resolution}
                       </div>
                     )}
@@ -543,7 +543,7 @@ export default function AdminReturnsPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="rounded-xl border border-border p-10 bg-gray-50 dark:bg-gray-800 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
             {returns.length === 0 ? 'Заявок на возврат пока нет' : 'Нет заявок по выбранным фильтрам'}
           </div>
         )}

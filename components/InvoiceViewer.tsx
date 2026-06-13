@@ -93,7 +93,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           </div>
 
           {/* Amount Details */}
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+          <div className="bg-muted rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-gray-700 dark:text-gray-300">
               <span>{t('account.invoiceViewer.itemsTotal')}</span>
               <span>{formatPrice(invoice.subtotal)}</span>
@@ -165,7 +165,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
               <h3 className="font-semibold text-foreground mb-3">{t('account.invoiceViewer.paymentHistoryTitle')}</h3>
               <div className="space-y-2">
                 {invoice.paymentRecords.map((record) => (
-                  <div key={record.id} className="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded">
+                  <div key={record.id} className="flex justify-between items-center text-sm bg-muted p-3 rounded">
                     <div>
                       <p className="font-medium text-foreground">
                         {record.date.toLocaleDateString(locale)}
@@ -187,7 +187,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
           {invoice.notes && (
             <div>
               <h3 className="font-semibold text-foreground mb-2">{t('account.invoiceViewer.notesTitle')}</h3>
-              <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded">
+              <p className="text-sm text-gray-700 dark:text-gray-300 bg-muted p-3 rounded">
                 {invoice.notes}
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-border p-6 bg-gray-50 dark:bg-gray-800">
+        <div className="border-t border-border p-6 bg-muted">
           {showPaymentForm && invoice.status === 'issued' ? (
             <form onSubmit={handleRecordPayment} className="space-y-3">
               <div>

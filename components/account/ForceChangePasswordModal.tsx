@@ -63,7 +63,7 @@ export default function ForceChangePasswordModal() {
                                 value={next}
                                 onChange={(e) => setNext(e.target.value)}
                                 placeholder="Не менее 6 символов"
-                                className="pr-10 bg-white dark:bg-gray-800"
+                                className="pr-10 bg-card"
                                 autoComplete="new-password"
                                 autoFocus
                             />
@@ -89,7 +89,7 @@ export default function ForceChangePasswordModal() {
                                 value={confirm}
                                 onChange={(e) => setConfirm(e.target.value)}
                                 placeholder="Повторите новый пароль"
-                                className="pr-10 bg-white dark:bg-gray-800"
+                                className="pr-10 bg-card"
                                 autoComplete="new-password"
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
                             />

@@ -16,7 +16,7 @@ import {
 } from '@/lib/locale-settings-store'
 
 const SELECT_CLASS =
-  'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
+  'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   ru: 'Русский',
@@ -170,7 +170,7 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Символ (определяется автоматически)
                 </label>
-                <div className="w-full rounded-md border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                   {currencySymbol}
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Превью цены
                 </label>
-                <div className="w-full rounded-md border border-border bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm font-medium text-foreground">
+                <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground">
                   {pricePreview}
                 </div>
               </div>

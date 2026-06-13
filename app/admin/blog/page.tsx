@@ -326,7 +326,7 @@ export default function AdminBlogPage() {
                       <input
                         value={blogForm.slug}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, slug: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         placeholder="spring-skin-reset-checklist"
                         required
                       />
@@ -337,7 +337,7 @@ export default function AdminBlogPage() {
                       <input
                         value={blogForm.category}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, category: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         placeholder="уход за лицом"
                         required
                       />
@@ -348,7 +348,7 @@ export default function AdminBlogPage() {
                       <input
                         value={blogForm.title}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, title: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         required
                       />
                     </label>
@@ -358,7 +358,7 @@ export default function AdminBlogPage() {
                       <textarea
                         value={blogForm.excerpt}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, excerpt: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[72px]"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[72px]"
                         required
                       />
                     </label>
@@ -368,7 +368,7 @@ export default function AdminBlogPage() {
                       <input
                         value={blogForm.author}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, author: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         required
                       />
                     </label>
@@ -380,7 +380,7 @@ export default function AdminBlogPage() {
                         min={1}
                         value={blogForm.readTime}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, readTime: Number(e.target.value) }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         required
                       />
                     </label>
@@ -390,7 +390,7 @@ export default function AdminBlogPage() {
                       <input
                         value={blogForm.image}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, image: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                         placeholder="/blog/skincare-guide.jpg"
                         required
                       />
@@ -401,7 +401,7 @@ export default function AdminBlogPage() {
                       <textarea
                         value={blogForm.content}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, content: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[120px]"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[120px]"
                         placeholder="# Заголовок&#10;&#10;Текст..."
                       />
                     </label>
@@ -414,7 +414,7 @@ export default function AdminBlogPage() {
                       <textarea
                         value={blogForm.contentBlocksJson}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, contentBlocksJson: e.target.value }))}
-                        className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
+                        className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
                         placeholder='[{"type":"paragraph","text":"..."}]'
                         required
                       />
@@ -433,7 +433,7 @@ export default function AdminBlogPage() {
                         <input
                           value={blogForm.translations[lang].title}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], title: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                           placeholder={blogForm.title || `Заголовок на ${lang}`}
                         />
                       </label>
@@ -443,7 +443,7 @@ export default function AdminBlogPage() {
                         <textarea
                           value={blogForm.translations[lang].excerpt}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], excerpt: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[72px]"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[72px]"
                           placeholder={blogForm.excerpt || `Описание на ${lang}`}
                         />
                       </label>
@@ -453,7 +453,7 @@ export default function AdminBlogPage() {
                         <input
                           value={blogForm.translations[lang].author}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], author: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                           placeholder={blogForm.author || `Author (${lang})`}
                         />
                       </label>
@@ -463,7 +463,7 @@ export default function AdminBlogPage() {
                         <input
                           value={blogForm.translations[lang].category}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], category: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                           placeholder={blogForm.category || `Category (${lang})`}
                         />
                       </label>
@@ -473,7 +473,7 @@ export default function AdminBlogPage() {
                         <textarea
                           value={blogForm.translations[lang].content}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], content: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[120px]"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[120px]"
                           placeholder="# Heading&#10;&#10;Text..."
                         />
                       </label>
@@ -486,7 +486,7 @@ export default function AdminBlogPage() {
                         <textarea
                           value={blogForm.translations[lang].contentBlocksJson}
                           onChange={(e) => setBlogForm((prev) => ({ ...prev, translations: { ...prev.translations, [lang]: { ...prev.translations[lang], contentBlocksJson: e.target.value } } }))}
-                          className="w-full rounded border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
+                          className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
                           placeholder='[{"type":"paragraph","text":"..."}]'
                         />
                       </label>

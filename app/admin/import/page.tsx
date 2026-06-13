@@ -228,7 +228,7 @@ export default function AdminImportPage() {
               <Button variant="outline">Скачать шаблон (1 пример)</Button>
             </a>
           </div>
-          <div className="rounded-md bg-gray-50 dark:bg-gray-800 border border-border p-3">
+          <div className="rounded-md bg-muted border border-border p-3">
             <p className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">Колонки в CSV:</p>
             <p className="text-xs text-muted-foreground leading-relaxed font-mono">
               <span className="text-red-600 dark:text-red-400">{REQUIRED_COLS.join(', ')}</span>
@@ -372,7 +372,7 @@ export default function AdminImportPage() {
                   {/* Enriched table */}
                   <div className="overflow-auto max-h-[480px] rounded-md border border-border">
                     <table className="min-w-full text-xs">
-                      <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                      <thead className="bg-muted sticky top-0 z-10">
                         <tr>
                           <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">#</th>
                           <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">Действие</th>
@@ -461,14 +461,14 @@ export default function AdminImportPage() {
                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{result.updated}</p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">Обновлено</p>
                 </div>
-                <div className="rounded-lg border border-border bg-gray-50 dark:bg-gray-800 p-3 text-center">
+                <div className="rounded-lg border border-border bg-muted p-3 text-center">
                   <p className="text-2xl font-bold text-muted-foreground">{result.skipped}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Пропущено</p>
                 </div>
                 <div className={`rounded-lg border p-3 text-center ${
                   result.errors.length > 0
                     ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
-                    : 'border-border bg-gray-50 dark:bg-gray-800'
+                    : 'border-border bg-muted'
                 }`}>
                   <p className={`text-2xl font-bold ${result.errors.length > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
                     {result.errors.length}

@@ -500,7 +500,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.firstName')}
                                     value={formData.firstName}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
+                                    className={`w-full px-3 py-2 border rounded bg-card text-foreground border-border ${
                                         errors.firstName
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -522,7 +522,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.lastName')}
                                     value={formData.lastName}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
+                                    className={`w-full px-3 py-2 border rounded bg-card text-foreground border-border ${
                                         errors.lastName
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -546,7 +546,7 @@ export default function CheckoutPage() {
                                 placeholder={t('checkout.email')}
                                 value={formData.email}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
+                                className={`w-full px-3 py-2 border rounded bg-card text-foreground border-border ${
                                     errors.email ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''
                                 }`}
                                 aria-required="true"
@@ -584,7 +584,7 @@ export default function CheckoutPage() {
                                 placeholder={t('checkout.address')}
                                 value={formData.address}
                                 onChange={handleChange}
-                                className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
+                                className={`w-full px-3 py-2 border rounded bg-card text-foreground border-border ${
                                     errors.address ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''
                                 }`}
                                 aria-required="true"
@@ -606,7 +606,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.city')}
                                     value={formData.city}
                                     onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border ${
+                                    className={`w-full px-3 py-2 border rounded bg-card text-foreground border-border ${
                                         errors.city
                                             ? 'border-red-500 bg-red-50 dark:bg-red-950'
                                             : ''
@@ -628,7 +628,7 @@ export default function CheckoutPage() {
                                     placeholder={t('checkout.postalCode')}
                                     value={formData.postalCode}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-800 text-foreground border-border"
+                                    className="w-full px-3 py-2 border rounded bg-card text-foreground border-border"
                                 />
                             </div>
                         </div>
@@ -756,7 +756,7 @@ export default function CheckoutPage() {
                                         setPromoError('');
                                     }}
                                     disabled={!!appliedPromo}
-                                    className="flex-1 px-3 py-2 border rounded text-sm bg-white dark:bg-gray-800 text-foreground border-border"
+                                    className="flex-1 px-3 py-2 border rounded text-sm bg-card text-foreground border-border"
                                 />
                                 <Button
                                     ref={applyBtnRef}

@@ -143,7 +143,7 @@ export default function AdminDiscountsPage() {
     await load()
   }
 
-  const selectCls = 'w-full rounded-md border border-border bg-white dark:bg-gray-800 text-foreground px-3 py-2 text-sm'
+  const selectCls = 'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
 
   return (
     <AdminGate>

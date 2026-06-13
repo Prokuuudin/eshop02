@@ -180,7 +180,7 @@ export default function StockAlertsPage() {
                             placeholder="admin@example.com"
                             value={alertEmail}
                             onChange={(e) => { setAlertEmail(e.target.value); setAlertResult(null); }}
-                            className="flex-1 min-w-[220px] rounded-md border border-border bg-white dark:bg-gray-800 px-3 py-1.5 text-sm text-foreground"
+                            className="flex-1 min-w-[220px] rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground"
                         />
                         <button
                             type="button"

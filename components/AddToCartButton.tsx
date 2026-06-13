@@ -92,7 +92,7 @@ export default function AddToCartButton({ product }: Props) {
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-              <div className="flex items-center border border-border rounded-full bg-white dark:bg-gray-800 px-1 py-0.5 shadow-sm w-auto">
+              <div className="flex items-center border border-border rounded-full bg-card px-1 py-0.5 shadow-sm w-auto">
                 <button
                   onClick={() => setQuantity(Math.max(minOrderQuantity, quantity - 1))}
                   className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"

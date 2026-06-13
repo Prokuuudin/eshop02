@@ -160,7 +160,7 @@ export default function Reviews({ productId }: ReviewsProps) {
               {[5, 4, 3, 2, 1].map((rating) => (
                 <div key={rating} className="flex items-center gap-2 text-sm mb-1 text-gray-800 dark:text-gray-200">
                   <span className="w-12">{rating} ★</span>
-                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded">
+                  <div className="flex-1 h-2 bg-muted rounded">
                     <div
                       className="h-full bg-yellow-400 rounded"
                       style={{ width: `${stats.count > 0 ? (stats.distribution[rating] / stats.count) * 100 : 0}%` }}

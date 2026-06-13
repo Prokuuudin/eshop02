@@ -57,7 +57,7 @@ export default function TopCategories({
                   {categoryShare.toFixed(1)}%
                 </p>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
                   style={{ width: `${percentage}%` }}

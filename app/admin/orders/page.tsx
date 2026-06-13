@@ -461,7 +461,7 @@ export default function AdminOrdersPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground w-full sm:w-auto"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
             >
               <option value="all">Все статусы</option>
               {STATUS_LIST.map((s) => (
@@ -473,7 +473,7 @@ export default function AdminOrdersPage() {
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground w-full sm:w-auto"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
             >
               <option value="all">Все оплаты</option>
               <option value="unpaid">Не оплачен</option>
@@ -484,7 +484,7 @@ export default function AdminOrdersPage() {
             <select
               value={deliveryFilter}
               onChange={(e) => setDeliveryFilter(e.target.value)}
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground w-full sm:w-auto"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
             >
               <option value="all">Все доставки</option>
               <option value="courier">Курьер</option>
@@ -684,19 +684,19 @@ export default function AdminOrdersPage() {
                             value={editAddress}
                             onChange={(e) => setEditAddress(e.target.value)}
                             placeholder="Адрес"
-                            className="sm:col-span-2 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="sm:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
                           />
                           <input
                             value={editPostalCode}
                             onChange={(e) => setEditPostalCode(e.target.value)}
                             placeholder="Индекс"
-                            className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
                           />
                           <input
                             value={editCity}
                             onChange={(e) => setEditCity(e.target.value)}
                             placeholder="Город"
-                            className="sm:col-span-3 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="sm:col-span-3 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400"
                           />
                         </div>
                       </div>
@@ -742,7 +742,7 @@ export default function AdminOrdersPage() {
                             value={editProductSearch}
                             onChange={(e) => setEditProductSearch(e.target.value)}
                             placeholder="Добавить товар (введите название или SKU)..."
-                            className="w-full rounded-lg border border-dashed border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-gray-400"
+                            className="w-full rounded-lg border border-dashed border-indigo-300 dark:border-indigo-700 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-gray-400"
                           />
                           {editProductResults.length > 0 && (
                             <div className="absolute z-30 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-xl max-h-60 overflow-y-auto">

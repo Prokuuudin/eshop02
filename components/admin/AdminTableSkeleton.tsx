@@ -24,7 +24,7 @@ export default function AdminTableSkeleton({ rows = 5, cols = 4 }: AdminTableSke
             {Array.from({ length: cols }, (_, colIdx) => (
               <div
                 key={colIdx}
-                className="h-4 bg-gray-200 dark:bg-gray-700 rounded"
+                className="h-4 bg-muted rounded"
                 style={{
                   flex: colIdx === 0 ? '2' : '1',
                   width: `${65 + ((rowIdx * 7 + colIdx * 13) % 30)}%`,

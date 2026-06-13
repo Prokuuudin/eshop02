@@ -141,7 +141,7 @@ export default function AddToCartButton({ product }: Props) {
                 </span>
                 <span className="font-mono">{progressPct}%</span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-indigo-500 transition-all duration-300"
                   style={{ width: `${progressPct}%` }}

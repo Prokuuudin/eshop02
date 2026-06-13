@@ -115,7 +115,7 @@ export default function B2BChat() {
             </div>
           </div>
 
-          <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gray-50 dark:bg-gray-950">
+          <div className="h-72 overflow-y-auto p-3 space-y-2 bg-muted">
             {loading ? (
               <p className="text-xs text-muted-foreground">Загрузка...</p>
             ) : messages.length === 0 ? (
@@ -141,7 +141,7 @@ export default function B2BChat() {
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="flex-1 rounded border border-border bg-white dark:bg-gray-950 px-2 py-1.5 text-xs"
+              className="flex-1 rounded border border-border bg-background px-2 py-1.5 text-xs"
               placeholder="Сообщение менеджеру"
             />
             <Button size="sm" type="submit" disabled={sending || !text.trim()}>

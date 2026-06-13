@@ -176,7 +176,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 </div>
 
                 {/* Items scroll area */}
-                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-gray-200 dark:bg-gray-950">
+                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-muted">
                     {items.length > 0 && (
                         <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-border bg-card p-2 text-xs">
                             <span className="text-gray-700 dark:text-gray-300">

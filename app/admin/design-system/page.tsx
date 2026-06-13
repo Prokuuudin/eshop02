@@ -449,13 +449,13 @@ export default function DesignSystemPage() {
         {/* ── 9. Skeleton / Loading ─────────────────────────────────── */}
         <Section title="9 · Skeleton & Loading">
           <div className="space-y-3 max-w-sm">
-            <div className="h-5 w-3/4 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
-            <div className="h-4 w-full rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
-            <div className="h-4 w-5/6 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
-            <div className="h-32 w-full rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="h-5 w-3/4 rounded-md bg-muted animate-pulse" />
+            <div className="h-4 w-full rounded-md bg-muted animate-pulse" />
+            <div className="h-4 w-5/6 rounded-md bg-muted animate-pulse" />
+            <div className="h-32 w-full rounded-lg bg-muted animate-pulse" />
             <div className="flex gap-3">
-              <div className="h-9 w-24 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
-              <div className="h-9 w-20 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse" />
+              <div className="h-9 w-24 rounded-md bg-muted animate-pulse" />
+              <div className="h-9 w-20 rounded-md bg-muted animate-pulse" />
             </div>
           </div>
         </Section>

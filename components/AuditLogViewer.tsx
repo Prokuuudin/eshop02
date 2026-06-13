@@ -117,7 +117,7 @@ export default function AuditLogViewer({
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               filterType === 'all'
                 ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
+                : 'bg-muted text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             {t('account.auditLog.filter.all')}
@@ -140,7 +140,7 @@ export default function AuditLogViewer({
         ) : (
           <button
             onClick={() => { setFilterType('action'); setFilterValue('') }}
-            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 rounded text-sm font-medium bg-muted text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {t('account.auditLog.filter.byActions')}
           </button>
@@ -157,7 +157,7 @@ export default function AuditLogViewer({
         ) : (
           <button
             onClick={() => { setFilterType('user'); setFilterValue('') }}
-            className="px-3 py-1 rounded text-sm font-medium bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-3 py-1 rounded text-sm font-medium bg-muted text-foreground hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {t('account.auditLog.filter.byUser')}
           </button>
@@ -180,7 +180,7 @@ export default function AuditLogViewer({
           >
             <div className="flex items-start gap-3">
               <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
-                ACTION_COLORS[entry.action] || 'bg-gray-200 dark:bg-gray-700 text-foreground'
+                ACTION_COLORS[entry.action] || 'bg-muted text-foreground'
               }`}>
                 {getActionLabel(entry.action)}
               </div>

@@ -237,7 +237,7 @@ export default function AdminReturnsPage() {
               value={formOrderId}
               onChange={(e) => setFormOrderId(e.target.value)}
               placeholder="ID заказа (например ORD-...)"
-              className="flex-1 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
             <Button size="sm" variant="outline" onClick={lookupOrder}>Найти заказ</Button>
           </div>
@@ -252,10 +252,10 @@ export default function AdminReturnsPage() {
 
           {/* Customer info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <input value={formFirstName} onChange={(e) => setFormFirstName(e.target.value)} placeholder="Имя *" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
-            <input value={formLastName} onChange={(e) => setFormLastName(e.target.value)} placeholder="Фамилия" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
-            <input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email *" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
-            <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Телефон" className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground" />
+            <input value={formFirstName} onChange={(e) => setFormFirstName(e.target.value)} placeholder="Имя *" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
+            <input value={formLastName} onChange={(e) => setFormLastName(e.target.value)} placeholder="Фамилия" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
+            <input value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="Email *" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
+            <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="Телефон" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
           </div>
 
           {/* Reason + refund */}
@@ -263,7 +263,7 @@ export default function AdminReturnsPage() {
             <select
               value={formReason}
               onChange={(e) => setFormReason(e.target.value as ReturnReason)}
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               {REASON_LIST.map((r) => (
                 <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
@@ -275,13 +275,13 @@ export default function AdminReturnsPage() {
               value={formRefund}
               onChange={(e) => setFormRefund(e.target.value)}
               placeholder="Сумма возврата (€) *"
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
             <input
               value={formComment}
               onChange={(e) => setFormComment(e.target.value)}
               placeholder="Комментарий клиента"
-              className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
           </div>
 
@@ -301,7 +301,7 @@ export default function AdminReturnsPage() {
                       max={99}
                       value={item.quantity}
                       onChange={(e) => updateItemQty(idx, Number(e.target.value))}
-                      className="w-16 rounded border border-border bg-white dark:bg-gray-950 px-2 py-1 text-sm text-center text-foreground"
+                      className="w-16 rounded border border-border bg-background px-2 py-1 text-sm text-center text-foreground"
                     />
                   </div>
                 ))}
@@ -324,12 +324,12 @@ export default function AdminReturnsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по ID, заказу, имени, email..."
-            className="flex-1 min-w-[220px] rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex-1 min-w-[220px] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ReturnStatus | 'all')}
-            className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="all">Все статусы</option>
             {STATUS_LIST.map((s) => (
@@ -339,7 +339,7 @@ export default function AdminReturnsPage() {
           <select
             value={reasonFilter}
             onChange={(e) => setReasonFilter(e.target.value as ReturnReason | 'all')}
-            className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="all">Все причины</option>
             {REASON_LIST.map((r) => (
@@ -371,7 +371,7 @@ export default function AdminReturnsPage() {
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[ret.status]}`}>
                       {STATUS_LABELS[ret.status]}
                     </span>
-                    <span className="text-xs rounded-full px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-muted-foreground">
+                    <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                       {RETURN_REASON_LABELS[ret.reason]}
                     </span>
                   </div>
@@ -513,7 +513,7 @@ export default function AdminReturnsPage() {
                       value={resolutionDraft[ret.id] ?? ''}
                       onChange={(e) => setResolutionDraft((prev) => ({ ...prev, [ret.id]: e.target.value }))}
                       placeholder="Добавьте комментарий к решению..."
-                      className="w-full rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
 
                     <div className="flex flex-wrap gap-2">

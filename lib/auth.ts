@@ -708,6 +708,8 @@ export const activateRegistration = (data: ActivatePayload): { success: boolean;
 
 export const seedTestAccounts = (): void => {
   if (typeof window === 'undefined') return
+  // Never inject demo admin/user accounts (admin@test.com / admin123) into production browsers.
+  if (process.env.NODE_ENV === 'production') return
 
   const users = readUsers()
 

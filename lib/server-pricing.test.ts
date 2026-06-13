@@ -126,6 +126,37 @@ describe('recomputeOrderPricing', () => {
     expect(r.total).toBe(1000 + 180 + 500 - 300)
   })
 
+  it('computes bonusEarned from catalog bonusRate (no bonus spent)', async () => {
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 1000, bulkPricingTiers: null, bonusRate: 5 },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 3 }],
+      deliveryMethod: 'pickup',
+      userBonusBalance: null,
+    })
+    expect(r.bonusEarned).toBe(15) // 5 * 3
+  })
+
+  it('scales bonusEarned down when points are spent', async () => {
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 1000, bulkPricingTiers: null, bonusRate: 10 },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    // grandTotal = 1000 + 180(tax) + 0(pickup) = 1180; spend 590 -> total 590 (half)
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      bonusSpent: 590,
+      userBonusBalance: 1000,
+    })
+    expect(r.bonusSpent).toBe(590)
+    expect(r.bonusEarned).toBe(Math.round((10 * 590) / 1180)) // base 10 scaled by total/grandTotal = 5
+  })
+
   it('applies a valid promo discount', async () => {
     vi.mocked(prisma.product.findMany as any).mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },

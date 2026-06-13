@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       tax: pricing.tax,
       delivery: pricing.delivery,
       bonusSpent: pricing.bonusSpent || undefined,
+      bonusEarned: pricing.bonusEarned || undefined,
       total: pricing.total,
       promoCode: pricing.promoApplied ? order.promoCode : undefined,
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.

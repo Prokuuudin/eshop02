@@ -69,7 +69,7 @@ export default function RegisterForm({ onClose }: Props) {
     return (
         <form
             onSubmit={handleSubmit}
-            className="register-form space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
+            className="register-form space-y-3 bg-card p-3 rounded-lg"
         >
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 text-sm">{error}</p>

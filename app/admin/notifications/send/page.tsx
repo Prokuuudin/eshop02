@@ -166,7 +166,7 @@ export default function AdminNotificationsSendPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Left: User selection */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -239,7 +239,7 @@ export default function AdminNotificationsSendPage() {
           </section>
 
           {/* Right: Notification form */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
             {/* Title */}
             <div>
               <label className="block text-sm font-medium mb-1">

@@ -77,7 +77,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
 
     if (success) {
         return (
-            <div className="register-form bg-white dark:bg-gray-900 p-3 rounded-lg space-y-4">
+            <div className="register-form bg-card p-3 rounded-lg space-y-4">
                 <p className="register-form__success rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                     {t(
                         'auth.requestNoCardSent',
@@ -96,7 +96,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     return (
         <form
             onSubmit={handleSubmit}
-            className="register-form space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
+            className="register-form space-y-3 bg-card p-3 rounded-lg"
         >
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>

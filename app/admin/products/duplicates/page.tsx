@@ -154,7 +154,7 @@ export default function DuplicatesPage() {
                       'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
                       filter === tab.value
                         ? 'bg-primary border-primary text-white'
-                        : 'border-border bg-white dark:bg-gray-900 text-muted-foreground hover:border-gray-300',
+                        : 'border-border bg-card text-muted-foreground hover:border-gray-300',
                     ].join(' ')}
                   >
                     {tab.label}
@@ -212,11 +212,11 @@ export default function DuplicatesPage() {
 
                     {/* Products in group */}
                     {isOpen && (
-                      <div className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                      <div className="divide-y divide-gray-100 dark:divide-gray-800 bg-card">
                         {group.products.map((p, i) => (
                           <div key={p.id} className="flex items-center gap-4 px-5 py-3">
                             {/* Image */}
-                            <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 border border-border">
+                            <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border">
                               {p.image
                                 ? <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center text-xs text-gray-300 dark:text-gray-600">нет</div>
@@ -230,7 +230,7 @@ export default function DuplicatesPage() {
                                   {p.title}
                                 </p>
                                 {i === 0 && (
-                                  <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-muted-foreground">оригинал?</span>
+                                  <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">оригинал?</span>
                                 )}
                               </div>
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">

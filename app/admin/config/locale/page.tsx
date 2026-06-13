@@ -113,7 +113,7 @@ export default function AdminLocalePage() {
 
         <div className="space-y-4">
           {/* Language */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Язык интерфейса</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
@@ -140,7 +140,7 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Currency */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Валюта</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
@@ -178,7 +178,7 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Date and time */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Дата и время</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
@@ -224,7 +224,7 @@ export default function AdminLocalePage() {
           </section>
 
           {/* Price format */}
-          <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+          <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Формат цены</h2>
               <p className="text-sm text-muted-foreground mt-0.5">

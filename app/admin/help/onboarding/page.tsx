@@ -247,7 +247,7 @@ export default function AdminOnboardingPage() {
         </div>
 
         {/* Progress */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Прогресс: {done} из {total}
@@ -269,7 +269,7 @@ export default function AdminOnboardingPage() {
 
         {/* Steps */}
         {groups.map((group) => (
-          <div key={group} className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
+          <div key={group} className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 {groupLabels[group]}

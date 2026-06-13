@@ -26,7 +26,7 @@ export default function BlogCard({ post }: BlogCardProps) {
         resolveBlogCategoryKey(post.category, t);
 
     return (
-        <article className="blog-card bg-white dark:bg-gray-900 rounded-lg border border-border overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
+        <article className="blog-card bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
             <Link href={`/blog/${localizedPost.slug}`}>
                 <div className="relative aspect-video bg-gray-100 overflow-hidden">
                     <Image

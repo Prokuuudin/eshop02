@@ -21,7 +21,7 @@ export default function TopProducts({
 
   if (topItems.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <Card className="p-6 bg-card border border-border">
         <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.topProducts.title')}
         </h3>
@@ -33,7 +33,7 @@ export default function TopProducts({
   }
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+    <Card className="p-6 bg-card border border-border">
       <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.topProducts.titleWithIcon')}
       </h3>

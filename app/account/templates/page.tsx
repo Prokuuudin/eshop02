@@ -303,7 +303,7 @@ export default function AccountTemplatesPage() {
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-5 py-16 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
                         <Package className="h-8 w-8 text-gray-400" />
                     </div>
                     <div className="max-w-sm">

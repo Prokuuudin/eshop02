@@ -211,7 +211,7 @@ export default function AdminCustomerSegmentsPage() {
                     className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
                       activeTab === tab
                         ? 'bg-primary text-white border-primary'
-                        : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-border hover:bg-gray-50 dark:hover:bg-gray-800'
+                        : 'bg-card text-gray-700 dark:text-gray-300 border-border hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
                     {tab}
@@ -229,7 +229,7 @@ export default function AdminCustomerSegmentsPage() {
 
             {/* Broadcast panel */}
             {customers.length > 0 && (
-              <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-gray-900">
+              <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-card">
                 <button
                   type="button"
                   onClick={() => { setShowBroadcast((v) => !v); setBResult(null) }}
@@ -258,7 +258,7 @@ export default function AdminCustomerSegmentsPage() {
                         {activeTab === 'Все' && ' (все клиенты)'}
                       </span>
                       <span className="text-gray-300 dark:text-gray-600">·</span>
-                      <span>Переменные: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{first_name}'}</code> <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{last_name}'}</code> <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{email}'}</code></span>
+                      <span>Переменные: <code className="bg-muted px-1 rounded">{'{first_name}'}</code> <code className="bg-muted px-1 rounded">{'{last_name}'}</code> <code className="bg-muted px-1 rounded">{'{email}'}</code></span>
                     </div>
 
                     {/* Subject */}

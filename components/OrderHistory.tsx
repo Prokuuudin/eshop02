@@ -19,7 +19,7 @@ export default function OrderHistory({
 
   if (monthlyData.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-border col-span-2">
+      <Card className="p-6 bg-card border border-border col-span-2">
         <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.orderHistory.title')}
         </h3>
@@ -33,7 +33,7 @@ export default function OrderHistory({
   const maxRevenue = Math.max(...monthlyData.map(m => m.revenue))
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-border col-span-2">
+    <Card className="p-6 bg-card border border-border col-span-2">
       <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.orderHistory.titleWithIcon')}
       </h3>

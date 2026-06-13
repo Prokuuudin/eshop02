@@ -23,7 +23,7 @@ export default function MetricCard({
   helpText
 }: MetricCardProps) {
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+    <Card className="p-6 bg-card border border-border">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-muted-foreground">

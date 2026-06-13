@@ -193,7 +193,7 @@ export default function AdminShowcasesPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-5">
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
             <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать подборку' : 'Новая подборка'}
             </h2>
@@ -315,7 +315,7 @@ export default function AdminShowcasesPage() {
             {items.sort((a, b) => a.order - b.order).map((item) => (
               <div
                 key={item.id}
-                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800'}`}
+                className={`rounded-xl border bg-card p-5 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800'}`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1 flex-1">

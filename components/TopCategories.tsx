@@ -21,7 +21,7 @@ export default function TopCategories({
 
   if (topItems.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <Card className="p-6 bg-card border border-border">
         <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.topCategories.title')}
         </h3>
@@ -36,7 +36,7 @@ export default function TopCategories({
   const categories = analytics.topCategories
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+    <Card className="p-6 bg-card border border-border">
       <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.topCategories.titleWithIcon')}
       </h3>

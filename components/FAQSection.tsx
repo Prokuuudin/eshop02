@@ -32,7 +32,7 @@ export default function FAQSection() {
         <p className="text-sm text-muted-foreground mb-6">{t('faq.site.subtitle')}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded-lg border bg-white dark:bg-gray-900 px-4 md:px-6">
+          <div className="rounded-lg border bg-card px-4 md:px-6">
             <Accordion type="single" collapsible>
               {col1.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>
@@ -42,7 +42,7 @@ export default function FAQSection() {
               ))}
             </Accordion>
           </div>
-          <div className="rounded-lg border bg-white dark:bg-gray-900 px-4 md:px-6">
+          <div className="rounded-lg border bg-card px-4 md:px-6">
             <Accordion type="single" collapsible>
               {col2.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>

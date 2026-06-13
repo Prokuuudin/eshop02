@@ -94,7 +94,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Конфигурация',
         icon: Settings,
-        color: 'text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-400',
+        color: 'text-gray-600 bg-muted dark:text-gray-400',
         items: [
             { label: 'Доставка и оплата', href: '/admin/config/shipping' },
             { label: 'Бонусная программа', href: '/admin/bonus' },

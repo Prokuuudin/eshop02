@@ -446,7 +446,7 @@ export default function AdminBannersPage() {
         )}
 
         {loading ? (
-          <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             Загрузка...
           </div>
         ) : (
@@ -466,7 +466,7 @@ export default function AdminBannersPage() {
 
               {/* Banner form */}
               {showBannerForm && (
-                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-900 p-5 space-y-4">
+                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-card p-5 space-y-4">
                   <h2 className="text-base font-semibold text-foreground">
                     {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
                   </h2>
@@ -627,7 +627,7 @@ export default function AdminBannersPage() {
                   {banners.map((banner, idx) => (
                     <div
                       key={banner.id}
-                      className={`rounded-lg border bg-white dark:bg-gray-900 p-4 flex gap-3 items-start transition-opacity ${
+                      className={`rounded-lg border bg-card p-4 flex gap-3 items-start transition-opacity ${
                         banner.active
                           ? 'border-border'
                           : 'border-border opacity-50'
@@ -638,7 +638,7 @@ export default function AdminBannersPage() {
                         <img
                           src={banner.image}
                           alt={banner.title}
-                          className="h-16 w-24 rounded object-cover bg-gray-100 dark:bg-gray-800 flex-shrink-0"
+                          className="h-16 w-24 rounded object-cover bg-muted flex-shrink-0"
                         />
                       ) : (
                         <div
@@ -655,13 +655,13 @@ export default function AdminBannersPage() {
                           <span className="text-sm font-semibold text-foreground truncate">
                             {banner.title}
                           </span>
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-muted-foreground">
+                          <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                             {BANNER_TYPE_LABELS[banner.type]}
                           </span>
                           <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
                             banner.active
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                              : 'bg-muted text-gray-500'
                           }`}>
                             {banner.active ? 'Активен' : 'Скрыт'}
                           </span>
@@ -727,7 +727,7 @@ export default function AdminBannersPage() {
 
               {/* Block form */}
               {showBlockForm && (
-                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-900 p-5 space-y-4">
+                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-card p-5 space-y-4">
                   <h2 className="text-base font-semibold text-foreground">
                     {editingBlockId ? 'Редактировать блок' : 'Новый контентный блок'}
                   </h2>
@@ -853,7 +853,7 @@ export default function AdminBannersPage() {
                   {blocks.map((block, idx) => (
                     <div
                       key={block.id}
-                      className={`rounded-lg border bg-white dark:bg-gray-900 p-4 flex gap-3 items-start transition-opacity ${
+                      className={`rounded-lg border bg-card p-4 flex gap-3 items-start transition-opacity ${
                         block.active
                           ? 'border-border'
                           : 'border-border opacity-50'
@@ -873,13 +873,13 @@ export default function AdminBannersPage() {
                           <span className="text-sm font-semibold text-foreground truncate">
                             {block.title}
                           </span>
-                          <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-muted-foreground">
+                          <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                             {BLOCK_TYPE_LABELS[block.type]}
                           </span>
                           <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
                             block.active
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                              : 'bg-muted text-gray-500'
                           }`}>
                             {block.active ? 'Активен' : 'Скрыт'}
                           </span>

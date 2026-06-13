@@ -123,7 +123,7 @@ export default function AdminAccountsPage() {
         )}
 
         {/* DB Users section */}
-        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
+        <section className="rounded-lg border border-border bg-card p-6">
           <div className="flex flex-wrap gap-3 items-center mb-4">
             <h2 className="text-xl font-semibold flex-1">
               {tl('admin.accounts.dbUsers', 'Пользователи в БД', 'Users in DB', 'Lietotaji DB')} ({dbTotal})
@@ -195,7 +195,7 @@ export default function AdminAccountsPage() {
         </section>
 
         {/* Company team roles section (localStorage-based) */}
-        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
+        <section className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-xl font-semibold mb-4">{tl('admin.accounts.companies', 'Компании', 'Companies', 'Uznemumi')} ({companies.length})</h2>
 
           <div className="space-y-4">

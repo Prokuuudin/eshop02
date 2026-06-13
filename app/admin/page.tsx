@@ -269,19 +269,19 @@ export default function AdminPage() {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+          <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">📦 {t('admin.stats.totalOrders')}</p>
             <p className="text-3xl font-bold mt-2 text-foreground">{orders.length}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+          <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">💰 {t('admin.stats.totalRevenue')}</p>
             <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(totalRevenue, locale)}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+          <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">💵 {t('admin.stats.averageOrder')}</p>
             <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(avgOrderValue, locale)}</p>
           </div>
-          <div className="group flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+          <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">📋 {t('admin.stats.itemsSold')}</p>
             <p className="text-3xl font-bold mt-2 text-foreground">{totalItems}</p>
           </div>
@@ -322,7 +322,7 @@ export default function AdminPage() {
         })()}
 
         {/* Revenue Chart */}
-        <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-lg border border-border p-6 mb-8">
+        <div className="hidden sm:block bg-card rounded-lg border border-border p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
@@ -348,7 +348,7 @@ export default function AdminPage() {
                     'px-3 py-1 text-sm rounded-md transition-colors',
                     chartPeriod === p
                       ? 'bg-primary text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700',
+                      : 'bg-muted text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700',
                   ].join(' ')}
                 >
                   {p === '7d' ? l('7 дней', '7 days', '7 dienas') : p === '30d' ? l('30 дней', '30 days', '30 dienas') : l('90 дней', '90 days', '90 dienas')}
@@ -366,7 +366,7 @@ export default function AdminPage() {
         </div>
 
         {/* Orders Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+        <div className="bg-card rounded-lg border border-border p-6">
           <h2 className="text-2xl font-bold mb-6 text-foreground">{t('admin.orders')}</h2>
           {orders.length > 0 ? (
             <div className="space-y-3 max-h-96 overflow-y-auto">

@@ -89,7 +89,7 @@ const AccountAddressesSection: React.FC<AccountAddressesSectionProps> = ({
             </div>
         ) : (
             <div className="account-addresses__empty flex flex-col items-center gap-2 py-8 text-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                     <MapPin className="h-5 w-5 text-gray-400" />
                 </div>
                 <p className="text-sm text-muted-foreground">

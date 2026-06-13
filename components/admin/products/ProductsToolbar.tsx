@@ -108,7 +108,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                             )}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl w-full rounded-2xl p-8 bg-white dark:bg-gray-900 shadow-2xl border border-gray-100 dark:border-gray-800">
+                    <DialogContent className="max-w-2xl w-full rounded-2xl p-8 bg-card shadow-2xl border border-gray-100 dark:border-gray-800">
                         <DialogHeader className="flex flex-row items-center justify-between mb-4 p-0">
                             <DialogTitle className="text-2xl font-bold text-foreground">
                                 {translations[language]['admin.productsPage.archiveTitle'] ||

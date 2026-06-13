@@ -169,7 +169,7 @@ export default function AdminDiscountsPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать промокод' : 'Новый промокод'}
             </h2>
@@ -261,7 +261,7 @@ export default function AdminDiscountsPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`rounded-xl border bg-white dark:bg-gray-900 p-5 space-y-3 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}
+                className={`rounded-xl border bg-card p-5 space-y-3 ${item.active ? 'border-border' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-mono text-xl font-bold text-foreground tracking-wider">{item.code}</span>

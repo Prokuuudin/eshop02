@@ -59,7 +59,7 @@ function genOrderId(): string {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5 space-y-4">
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{title}</h2>
       {children}
     </div>
@@ -345,7 +345,7 @@ export default function NewOrderPage() {
                   />
                 </Field>
                 {showEmailList && emailSuggestions.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-white dark:bg-gray-900 shadow-lg">
+                  <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-lg">
                     {emailSuggestions.map((u) => (
                       <button
                         key={u.email}
@@ -387,7 +387,7 @@ export default function NewOrderPage() {
                   placeholder="Поиск по названию, SKU, бренду..."
                 />
                 {showDropdown && productResults.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-white dark:bg-gray-900 shadow-xl max-h-72 overflow-y-auto">
+                  <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-xl max-h-72 overflow-y-auto">
                     {productResults.map((p) => (
                       <button
                         key={p.id}
@@ -439,7 +439,7 @@ export default function NewOrderPage() {
                           step={0.01}
                           value={item.unitPrice}
                           onChange={(e) => updateUnitPrice(item.product.id, parseFloat(e.target.value))}
-                          className="w-20 rounded border border-border bg-white dark:bg-gray-900 px-2 py-1 text-sm text-center tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          className="w-20 rounded border border-border bg-card px-2 py-1 text-sm text-center tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-400"
                           title="Цена за единицу (можно изменить)"
                         />
                       </div>
@@ -632,7 +632,7 @@ export default function NewOrderPage() {
 
           {/* ── Right: order summary (sticky) ── */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 rounded-xl border border-border bg-white dark:bg-gray-900 p-5 space-y-4">
+            <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Сводка заказа</h2>
 
               {/* Customer */}

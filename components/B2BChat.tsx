@@ -102,7 +102,7 @@ export default function B2BChat() {
   return (
     <div className="fixed right-4 bottom-4 z-50">
       {open ? (
-        <div className="w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
+        <div className="w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-emerald-50 dark:bg-emerald-900/30">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -127,7 +127,7 @@ export default function B2BChat() {
                   className={`max-w-[85%] rounded px-2 py-1.5 text-xs ${
                     message.from === 'client'
                       ? 'ml-auto bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200'
-                      : 'mr-auto bg-white dark:bg-gray-900 border border-border text-gray-800 dark:text-gray-200'
+                      : 'mr-auto bg-card border border-border text-gray-800 dark:text-gray-200'
                   }`}
                 >
                   <p>{message.text}</p>

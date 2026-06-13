@@ -139,7 +139,7 @@ export default function RequestQuotePage() {
         </p>
       </section>
 
-      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
+      <section className="rounded-lg border border-border p-5 bg-card">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             {items.map((item, index) => (
@@ -187,7 +187,7 @@ export default function RequestQuotePage() {
         </form>
       </section>
 
-      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
+      <section className="rounded-lg border border-border p-5 bg-card">
         <h2 className="text-xl font-semibold text-foreground mb-4">Мои заявки</h2>
         <div className="space-y-3">
           {rfqList.map((rfq) => (
@@ -197,7 +197,7 @@ export default function RequestQuotePage() {
                   <p className="text-sm font-medium">{rfq.id}</p>
                   <p className="text-xs text-muted-foreground">Создано: {formatDate(rfq.createdAt, 'ru-RU')}</p>
                 </div>
-                <span className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800">{rfq.status}</span>
+                <span className="text-xs rounded px-2 py-1 bg-muted">{rfq.status}</span>
               </div>
 
               <ul className="mt-3 text-sm space-y-1">

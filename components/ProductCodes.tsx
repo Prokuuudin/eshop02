@@ -17,7 +17,7 @@ export const ProductCodes: React.FC<Props> = ({ sku, barcode }) => {
                     <span className="product-detail__sku-label text-xs text-muted-foreground uppercase tracking-wider">
                         {t('product.skuLabel')}
                     </span>
-                    <span className="product-detail__sku-value font-mono text-sm text-foreground bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
+                    <span className="product-detail__sku-value font-mono text-sm text-foreground bg-muted rounded px-2 py-1">
                         {sku}
                     </span>
                 </div>
@@ -27,7 +27,7 @@ export const ProductCodes: React.FC<Props> = ({ sku, barcode }) => {
                     <span className="product-detail__barcode-label text-xs text-muted-foreground uppercase tracking-wider">
                         {t('product.barcodeLabel')}
                     </span>
-                    <span className="product-detail__barcode-value font-mono text-sm text-foreground bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
+                    <span className="product-detail__barcode-value font-mono text-sm text-foreground bg-muted rounded px-2 py-1">
                         {barcode}
                     </span>
                 </div>

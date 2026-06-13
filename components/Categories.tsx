@@ -32,13 +32,13 @@ export default function Categories() {
     const gridClassName =
         'categories__grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 overflow-visible';
     const itemWithDropdownClassName =
-        'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-white dark:bg-gray-900 hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col';
+        'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-card hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col';
     const imageWrapClassName = 'categories__image relative aspect-square w-full';
     const imageClassName = 'object-cover group-hover:scale-105 transition-transform';
     const metaClassName =
         'categories__meta p-2 sm:p-3 text-center text-sm sm:text-base text-foreground leading-tight';
     const dropdownPanelClassName =
-        'w-[min(260px,calc(100vw-2rem))] rounded-lg border border-border bg-white dark:bg-gray-900 shadow-lg overflow-hidden';
+        'w-[min(260px,calc(100vw-2rem))] rounded-lg border border-border bg-card shadow-lg overflow-hidden';
     const dropdownItemClassName =
         'px-3 py-1 flex items-center text-sm text-foreground hover:bg-gray-100 dark:hover:bg-gray-800';
 

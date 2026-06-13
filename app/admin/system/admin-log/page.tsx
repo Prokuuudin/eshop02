@@ -145,7 +145,7 @@ export default function AdminLogPage() {
             { label: 'За последние 24 ч', value: stats.today, cls: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
             { label: 'За 7 дней', value: stats.week, cls: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/10 dark:border-indigo-800' },
           ].map((s) => (
-            <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-border bg-white dark:bg-gray-900'}`}>
+            <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-border bg-card'}`}>
               <p className="text-2xl font-bold text-foreground">{s.value}</p>
               <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
             </div>
@@ -163,7 +163,7 @@ export default function AdminLogPage() {
           <select
             value={actionFilter}
             onChange={(e) => { setActionFilter(e.target.value as AdminLogAction | ''); setPage(0) }}
-            className="rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-2 text-sm text-foreground"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
           >
             <option value="">Все действия</option>
             {uniqueActions.map((a) => (
@@ -173,7 +173,7 @@ export default function AdminLogPage() {
           <select
             value={adminFilter}
             onChange={(e) => { setAdminFilter(e.target.value); setPage(0) }}
-            className="rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-2 text-sm text-foreground"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
           >
             <option value="">Все администраторы</option>
             {uniqueAdmins.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -195,7 +195,7 @@ export default function AdminLogPage() {
         ) : (
           <>
             <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="min-w-full text-sm bg-white dark:bg-gray-900">
+              <table className="min-w-full text-sm bg-card">
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">Время</th>

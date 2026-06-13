@@ -92,7 +92,7 @@ export default function AuditLogViewer({
 
   if (allEntries.length === 0) {
     return (
-      <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+      <Card className="p-6 bg-card border border-border">
         <h3 className="text-lg font-semibold text-foreground mb-4">
           {t('account.auditLog.title')}
         </h3>
@@ -104,7 +104,7 @@ export default function AuditLogViewer({
   }
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-900 border border-border">
+    <Card className="p-6 bg-card border border-border">
       <h3 className="text-lg font-semibold text-foreground mb-4">
         {t('account.auditLog.titleWithCount', undefined, { count: allEntries.length })}
       </h3>
@@ -209,7 +209,7 @@ export default function AuditLogViewer({
 
             {/* Expanded details */}
             {expandedId === entry.id && entry.details && (
-              <div className="mt-3 p-3 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-600">
+              <div className="mt-3 p-3 bg-card rounded border border-gray-300 dark:border-gray-600">
                 <p className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words">
                   {JSON.stringify(entry.details, null, 2)}
                 </p>

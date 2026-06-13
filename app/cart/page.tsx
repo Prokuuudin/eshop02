@@ -121,7 +121,7 @@ export default function CartPage() {
             <h1 className="cart__title cart__title--main text-3xl font-bold mb-8 text-foreground">
                 {t('cart.title')} ({items.length})
             </h1>
-            <div className="cart__select-bar mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-white dark:bg-gray-900 p-3 text-sm">
+            <div className="cart__select-bar mb-4 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-3 text-sm">
                 <span className="cart__select-label text-gray-700 dark:text-gray-300">
                     {t('cart.selectedForCheckout')}:{' '}
                     <span className="cart__select-count font-semibold">
@@ -177,7 +177,7 @@ export default function CartPage() {
                             return (
                                 <div
                                     key={item.id}
-                                    className="cart__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-border flex gap-4"
+                                    className="cart__item p-4 bg-card rounded-lg border border-border flex gap-4"
                                 >
                                     <div className="cart__item-checkbox pt-1">
                                         <Checkbox
@@ -190,7 +190,7 @@ export default function CartPage() {
                                         />
                                     </div>
 
-                                    <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative">
+                                    <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">
                                         <Image
                                             src={item.image || '/placeholder.png'}
                                             alt={localizedTitle}
@@ -275,7 +275,7 @@ export default function CartPage() {
 
                 {/* Сумма */}
                 <aside className="cart__summary sticky top-20 h-fit">
-                    <div className="cart__summary-inner bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                    <div className="cart__summary-inner bg-card rounded-lg border border-border p-6">
                         <h2 className="cart__summary-title font-bold text-lg mb-4 text-foreground">
                             {t('cart.total')}
                         </h2>

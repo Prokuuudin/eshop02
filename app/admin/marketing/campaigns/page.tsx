@@ -189,7 +189,7 @@ export default function AdminCampaignsPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <h2 className="text-lg font-semibold text-foreground">
               {editId ? 'Редактировать кампанию' : 'Новая кампания'}
             </h2>
@@ -311,7 +311,7 @@ export default function AdminCampaignsPage() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5"
+                  className="rounded-xl border border-border bg-card p-5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="space-y-1 flex-1">

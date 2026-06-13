@@ -54,7 +54,7 @@ export default function Header() {
       <header
         ref={headerRef}
         className={
-          `header fixed top-0 left-0 w-full bg-white dark:bg-gray-900 shadow transition-all duration-300 text-foreground z-[9999]`
+          `header fixed top-0 left-0 w-full bg-card shadow transition-all duration-300 text-foreground z-[9999]`
         }
           style={{
             transform: scrolled ? 'scaleY(0.92)' : 'scaleY(1)',

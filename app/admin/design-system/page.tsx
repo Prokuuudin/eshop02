@@ -164,7 +164,7 @@ export default function DesignSystemPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {(['font-thin','font-light','font-normal','font-medium','font-semibold','font-bold','font-extrabold','font-black'] as const).map(w => (
-              <div key={w} className="rounded-lg border border-border bg-white dark:bg-gray-900 p-3 text-center">
+              <div key={w} className="rounded-lg border border-border bg-card p-3 text-center">
                 <p className={`text-lg ${w} text-foreground`}>Aa</p>
                 <p className="text-[10px] font-mono text-gray-400 mt-1">{w}</p>
               </div>

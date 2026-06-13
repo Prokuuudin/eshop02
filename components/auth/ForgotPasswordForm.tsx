@@ -45,7 +45,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white dark:bg-gray-900 p-4 rounded-lg">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-card p-4 rounded-lg">
       <p className="text-sm text-muted-foreground">{t('auth.resetPasswordHint')}</p>
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
       <div>

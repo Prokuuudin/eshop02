@@ -57,7 +57,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-white dark:bg-gray-900 border border-border text-foreground"
+            className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground"
             onClick={handleCardClick}
         >
             <div className="absolute right-3 top-3 z-10">
@@ -79,7 +79,7 @@ export default function ProductCard({ product }: Props) {
                             loading="lazy"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400 text-xs">
+                        <div className="w-full h-full flex items-center justify-center bg-muted text-gray-400 text-xs">
                             {t('product.imageNotSet')}
                         </div>
                     )}

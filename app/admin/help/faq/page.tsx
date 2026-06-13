@@ -128,7 +128,7 @@ export default function AdminFaqPage() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpenId(null) }}
             placeholder="Поиск по вопросам..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-white dark:bg-gray-900 text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}
@@ -138,7 +138,7 @@ export default function AdminFaqPage() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {filtered.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               Ничего не найдено по запросу «{query}»

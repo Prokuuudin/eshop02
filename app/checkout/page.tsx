@@ -483,7 +483,7 @@ export default function CheckoutPage() {
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Форма */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                    <div className="checkout__section bg-card rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.delivery.title')}
                         </h2>
@@ -635,7 +635,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Delivery options */}
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                    <div className="checkout__section bg-card rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.delivery.method')}
                         </h2>
@@ -668,7 +668,7 @@ export default function CheckoutPage() {
                         </RadioGroup>
                     </div>
 
-                    <div className="checkout__section bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                    <div className="checkout__section bg-card rounded-lg border border-border p-6">
                         <h2 className="checkout__section-title font-bold text-lg mb-4">
                             {t('checkout.payment.title')}
                         </h2>
@@ -721,7 +721,7 @@ export default function CheckoutPage() {
 
                 {/* Сумма и промокод */}
                 <aside className="checkout__summary sticky top-20 h-fit">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                    <div className="bg-card rounded-lg border border-border p-6">
                         <h2 className="font-bold text-lg mb-4 text-foreground">
                             {t('checkout.summary.title')}
                         </h2>

@@ -214,7 +214,7 @@ export default function UserMenu() {
             {isOpen && dropPos && (
                 <div
                     style={{ position: 'fixed', top: dropPos.top, left: dropPos.left }}
-                    className="w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-border z-[10002]"
+                    className="w-48 bg-card rounded-lg shadow-lg border border-border z-[10002]"
                 >
                     <nav className="py-2">
                         <Link

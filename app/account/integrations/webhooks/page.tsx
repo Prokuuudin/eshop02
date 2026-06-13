@@ -174,7 +174,7 @@ export default function WebhooksPage() {
         <p className="text-sm text-muted-foreground mt-1">Компания: {companyId}</p>
       </div>
 
-      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900 space-y-4">
+      <section className="rounded-lg border border-border p-5 bg-card space-y-4">
         <h2 className="text-lg font-semibold">Добавить endpoint</h2>
         <input
           value={url}
@@ -204,7 +204,7 @@ export default function WebhooksPage() {
         <Button onClick={addEndpoint} disabled={loading}>Добавить и протестировать</Button>
       </section>
 
-      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
+      <section className="rounded-lg border border-border p-5 bg-card">
         <h2 className="text-lg font-semibold mb-3">Активные endpoints ({endpoints.length})</h2>
         <div className="space-y-3">
           {endpoints.map((item) => (
@@ -222,7 +222,7 @@ export default function WebhooksPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-border p-5 bg-white dark:bg-gray-900">
+      <section className="rounded-lg border border-border p-5 bg-card">
         <h2 className="text-lg font-semibold mb-3">История доставок ({deliveries.length})</h2>
         <div className="space-y-3 max-h-[420px] overflow-y-auto">
           {deliveries.map((item) => {

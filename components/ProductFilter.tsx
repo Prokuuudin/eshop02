@@ -185,7 +185,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg border border-border shadow p-4 mb-6 space-y-4">
+    <div className="bg-card rounded-lg border border-border shadow p-4 mb-6 space-y-4">
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('catalog.filters.orderBy', 'Упорядочить по')}</label>
         <Select value={order || 'default'} onValueChange={(value) => onFilter({ group, onSale, purposes, brands, minPrice, maxPrice, order: value === 'default' ? '' : value })}>

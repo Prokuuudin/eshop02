@@ -57,7 +57,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
     return (
         <article className="admin-product-card flex flex-col rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {/* Изображение */}
-            <div className="admin-product-card__image relative h-40 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+            <div className="admin-product-card__image relative h-40 bg-muted flex items-center justify-center overflow-hidden">
                 {imageUrl ? (
                     <img
                         src={imageUrl}
@@ -119,7 +119,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     min={0}
                     value={stock}
                     onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
                     type="button"

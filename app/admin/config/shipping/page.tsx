@@ -155,7 +155,7 @@ export default function AdminShippingPage() {
         ) : (
           <>
             {/* Delivery */}
-            <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-4">
+            <section className="rounded-lg border border-border bg-card p-4 space-y-4">
               <h2 className="text-lg font-semibold text-foreground">Способы доставки</h2>
 
               <div className="space-y-4">
@@ -232,7 +232,7 @@ export default function AdminShippingPage() {
             </section>
 
             {/* Payment */}
-            <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-4">
+            <section className="rounded-lg border border-border bg-card p-4 space-y-4">
               <h2 className="text-lg font-semibold text-foreground">Способы оплаты</h2>
 
               <div className="space-y-3">

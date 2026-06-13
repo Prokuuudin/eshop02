@@ -175,7 +175,7 @@ export default function AdminGlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         title="Глобальный поиск (Ctrl+K)"
       >
         <Search className="h-4 w-4" />
@@ -197,7 +197,7 @@ export default function AdminGlobalSearch() {
 
       {/* Modal */}
       <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-2xl">
-        <div className="rounded-2xl border border-border bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
 
           {/* Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">

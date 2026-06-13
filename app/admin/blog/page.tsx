@@ -310,7 +310,7 @@ export default function AdminBlogPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6 mt-8">
+          <div className="bg-card rounded-lg border border-border p-6 mt-8">
             <form onSubmit={handleBlogCreate} className="space-y-4 mb-8">
               <Tabs defaultValue="base">
                 <TabsList className="mb-4">

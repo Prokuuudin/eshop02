@@ -46,7 +46,7 @@ const LOC = 'ru-RU'
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
       {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
@@ -211,7 +211,7 @@ export default function CustomerProfilePage() {
               const status = getOrderStatus(order.id)
               const note = getOrderNote(order.id)
               return (
-                <div key={order.id} className="rounded-xl border border-border bg-white dark:bg-gray-900 px-5 py-4">
+                <div key={order.id} className="rounded-xl border border-border bg-card px-5 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -259,7 +259,7 @@ export default function CustomerProfilePage() {
               <div className="py-10 text-center text-sm text-gray-400">Возвратов нет</div>
             )}
             {customerReturns.map((ret) => (
-              <div key={ret.id} className="rounded-xl border border-border bg-white dark:bg-gray-900 px-5 py-4">
+              <div key={ret.id} className="rounded-xl border border-border bg-card px-5 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function CustomerProfilePage() {
               <div className="py-10 text-center text-sm text-gray-400">Нет данных</div>
             )}
             {topProducts.map((p, i) => (
-              <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-white dark:bg-gray-900 px-4 py-3">
+              <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3">
                 {p.image && <img src={p.image} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-sm text-gray-400 w-5 shrink-0 tabular-nums">{i + 1}</span>

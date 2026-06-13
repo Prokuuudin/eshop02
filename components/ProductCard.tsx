@@ -57,7 +57,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground"
+            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground"
             onClick={handleCardClick}
         >
             <div className="absolute right-3 top-3 z-10">

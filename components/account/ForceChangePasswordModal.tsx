@@ -34,7 +34,7 @@ export default function ForceChangePasswordModal() {
 
     return (
         // Блокирующий оверлей — не пропускает клики вниз
-        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
             <div className="w-full max-w-sm rounded-2xl bg-card shadow-2xl p-6 space-y-5">
                 {/* Заголовок */}
                 <div className="flex items-center gap-3">

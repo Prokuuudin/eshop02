@@ -8,6 +8,16 @@ module.exports = {
     ],
     theme: {
         extend: {
+            // Single source of truth for stacking order. Higher = closer to user.
+            // header (sticky bar) < drawer (cart/mobile nav) < modal (dialogs) < dropdown
+            // (menus/selects, must sit above dialogs) < toast (always on top).
+            zIndex: {
+                header: '100',
+                drawer: '200',
+                modal: '300',
+                dropdown: '400',
+                toast: '500',
+            },
             borderRadius: {
                 lg: 'var(--radius)',
                 md: 'calc(var(--radius) - 2px)',

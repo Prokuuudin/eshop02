@@ -55,7 +55,7 @@ export default function WelcomeModal({ user }: { user: User }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
             <div className="w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden">
                 {/* Шапка */}
                 <div className="bg-primary px-6 py-5 text-white">

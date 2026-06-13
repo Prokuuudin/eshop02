@@ -18,13 +18,18 @@ export async function GET(_req: NextRequest, context: Context) {
     }
 
     // Order ids are sequential — never expose another customer's order (PII / IDOR).
-    // Only the admin or the order's owner (matching session email) may read it.
-    // Return 404 to others so existence isn't leaked.
+    // Only the admin or the order's owner may read it. New orders are bound by userId;
+    // legacy orders (no userId) fall back to an email match. Return 404 to others so
+    // existence isn't leaked.
     const caller = await getServerUser()
     const isAdmin = caller?.platformRole === 'admin'
-    const isOwner =
-      !!caller?.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
-    if (!isAdmin && !isOwner) {
+    const isOwnerById = !!caller && !!order.userId && order.userId === caller.id
+    const isOwnerByEmail =
+      !order.userId &&
+      !!caller?.email &&
+      !!order.email &&
+      caller.email.toLowerCase() === order.email.toLowerCase()
+    if (!isAdmin && !isOwnerById && !isOwnerByEmail) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 

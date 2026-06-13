@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
       bonusSpent: pricing.bonusSpent || undefined,
       total: pricing.total,
       promoCode: pricing.promoApplied ? order.promoCode : undefined,
+      // Bind the order to the authenticated user/company at creation for reliable ownership checks.
+      userId: caller?.id,
+      companyId: caller?.companyId,
       createdAt: order.createdAt || new Date().toISOString()
     }
 

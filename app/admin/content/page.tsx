@@ -188,7 +188,7 @@ export default function AdminContentPage() {
       )}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Тексты</h2>
           <p className="text-sm text-muted-foreground">
             Редактируйте тексты по ключам переводов (например: hero.title, newsletter.title).
@@ -257,7 +257,7 @@ export default function AdminContentPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Картинки</h2>
           <p className="text-sm text-muted-foreground">
             Заменяйте любые изображения, подменяя исходный src на новый путь или URL.
@@ -352,7 +352,7 @@ export default function AdminContentPage() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <h3 className="font-semibold mb-3 text-foreground">Текущие text override ({language.toUpperCase()})</h3>
           <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
             {Object.entries(overrides.text[language] ?? {}).map(([key, value]) => (
@@ -372,7 +372,7 @@ export default function AdminContentPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <h3 className="font-semibold mb-3 text-foreground">Текущие image override</h3>
           <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
             {Object.entries(overrides.images).map(([from, to]) => (
@@ -393,7 +393,7 @@ export default function AdminContentPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 text-sm text-muted-foreground">
+      <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
         <p>
           Подсказка: сначала загрузите файл в блоке "Картинки", затем сохраните замену src. Можно также указывать уже существующие пути в public и внешние URL.
         </p>

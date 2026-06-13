@@ -37,7 +37,7 @@ const pct = (v: number, total: number) => total > 0 ? `${Math.round((v / total) 
 function HBar({ value, max, color = '#6366f1' }: { value: number; max: number; color?: string }) {
   const w = max > 0 ? Math.max(2, (value / max) * 100) : 0
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
       <div className="h-full rounded-full transition-all" style={{ width: `${w}%`, background: color }} />
     </div>
   )

@@ -385,7 +385,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                     </article>
 
                     <aside className="xl:sticky xl:top-[var(--header-offset)] self-start space-y-5 md:space-y-6 xl:max-h-[calc(100vh-var(--header-offset)-16px)] xl:overflow-y-auto xl:pr-1">
-                        <section className="rounded-lg border border-border p-3 md:p-4 bg-white dark:bg-gray-900">
+                        <section className="rounded-lg border border-border p-3 md:p-4 bg-card">
                             <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                                 <p className="font-semibold text-foreground">
                                     {t('blog.shareArticle')}:

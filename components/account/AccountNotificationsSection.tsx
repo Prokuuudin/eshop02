@@ -105,7 +105,7 @@ function NotificationItem({
                 isSelected
                     ? 'bg-indigo-50 dark:bg-indigo-950/20'
                     : notification.isRead
-                    ? 'bg-white dark:bg-gray-900'
+                    ? 'bg-card'
                     : 'bg-gray-50 dark:bg-gray-800/60'
             }`}
         >

@@ -41,7 +41,7 @@ export default function Benefits() {
                     {BENEFITS.map((item, idx) => (
                         <article
                             key={idx}
-                            className="benefits__item p-4 bg-white dark:bg-gray-900 rounded-lg border border-border shadow-sm flex items-center gap-4"
+                            className="benefits__item p-4 bg-card rounded-lg border border-border shadow-sm flex items-center gap-4"
                         >
                             <div className="benefits__icon w-10 h-10 shrink-0">
                                 <Image

@@ -133,13 +133,13 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {/* Drawer panel */}
             <div
                 data-testid="cart-drawer-panel"
-                className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-[10001] bg-white dark:bg-gray-900 shadow-lg flex flex-col transition-transform duration-300 ${
+                className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-[10001] bg-card shadow-lg flex flex-col transition-transform duration-300 ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
                 style={{ willChange: 'transform' }}
             >
                 {/* Header */}
-                <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-white dark:bg-gray-900">
+                <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">
                     <div className="flex items-baseline gap-3">
                         <h2 className="text-lg font-semibold text-foreground">
                             {t('cart.title')}
@@ -178,7 +178,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 {/* Items scroll area */}
                 <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-gray-200 dark:bg-gray-950">
                     {items.length > 0 && (
-                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-border bg-white dark:bg-gray-900 p-2 text-xs">
+                        <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-border bg-card p-2 text-xs">
                             <span className="text-gray-700 dark:text-gray-300">
                                 {t('cart.selectedForCheckout')}:{' '}
                                 <span className="font-semibold">{selectedItemIds.length}</span>
@@ -304,7 +304,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                 {/* Footer with summary */}
                 {items.length > 0 && (
-                    <div className="cart-drawer__footer border-t border-border px-4 py-3 space-y-2 bg-white dark:bg-gray-900">
+                    <div className="cart-drawer__footer border-t border-border px-4 py-3 space-y-2 bg-card">
                         {!wholesaleGuard.isMinimumReached && selectedItemIds.length > 0 && (
                             <WholesaleMinimumAlert
                                 minOrderAmount={wholesaleGuard.minOrderAmount}

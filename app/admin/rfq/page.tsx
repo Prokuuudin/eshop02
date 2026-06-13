@@ -190,7 +190,7 @@ export default function AdminRFQPage() {
               'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
               statusFilter === tab.value
                 ? 'bg-primary border-primary text-white'
-                : 'border-border bg-white dark:bg-gray-900 text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600',
+                : 'border-border bg-card text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600',
             ].join(' ')}
           >
             {tab.label}
@@ -208,7 +208,7 @@ export default function AdminRFQPage() {
             <article
               key={rfq.id}
               className={[
-                'rounded-xl border border-l-4 bg-white dark:bg-gray-900 overflow-hidden transition-colors',
+                'rounded-xl border border-l-4 bg-card overflow-hidden transition-colors',
                 STATUS_CARD_BORDER[rfq.status],
                 rfq.status === 'rejected' ? 'opacity-75' : '',
               ].join(' ')}

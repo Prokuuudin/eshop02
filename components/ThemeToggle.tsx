@@ -46,7 +46,7 @@ export default function ThemeToggle() {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border transition"
+            className="px-3 py-2 rounded bg-muted text-gray-700 dark:text-gray-200 border transition"
             onClick={() => setDark((v) => !v)}
             aria-label={tooltipLabel}
           >

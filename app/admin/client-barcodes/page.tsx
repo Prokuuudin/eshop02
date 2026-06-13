@@ -217,7 +217,7 @@ export default function AdminClientBarcodesPage() {
                 )}
 
                 {/* ── Заявки мастеров без карты ── */}
-                <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900 p-6">
+                <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-card p-6">
                     <div className="mb-4">
                         <h2 className="text-xl font-semibold text-foreground">
                             Заявки мастеров (без карты){' '}
@@ -357,7 +357,7 @@ export default function AdminClientBarcodesPage() {
                 </section>
 
                 {/* ── Список клиентов ── */}
-                <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-6">
+                <section className="rounded-lg border border-border bg-card p-6">
                     <h2 className="text-xl font-semibold mb-4">
                         {tl('admin.clientBarcodes.companies', 'Компании', 'Companies', 'Uznemumi')}{' '}
                         <span className="text-gray-400 dark:text-gray-500 font-normal text-base">

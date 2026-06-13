@@ -341,7 +341,7 @@ export default function OrderPage({ params }: PageProps) {
                     {/* Main info */}
                     <div className="md:col-span-2 space-y-6">
                         {/* Order ID and date */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <div className="bg-card rounded-lg border border-border p-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-1">
@@ -369,7 +369,7 @@ export default function OrderPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <div className="bg-card rounded-lg border border-border p-6">
                             <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.timelineTitle')}
                             </h2>
@@ -412,7 +412,7 @@ export default function OrderPage({ params }: PageProps) {
                         </div>
 
                         {/* Delivery info */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <div className="bg-card rounded-lg border border-border p-6">
                             <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.deliveryAddress')}
                             </h2>
@@ -446,7 +446,7 @@ export default function OrderPage({ params }: PageProps) {
 
                         {/* Delivery and payment */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                            <div className="bg-card rounded-lg border border-border p-6">
                                 <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.deliveryMethod')}
                                 </h3>
@@ -454,7 +454,7 @@ export default function OrderPage({ params }: PageProps) {
                                     {getDeliveryLabel(order.deliveryMethod)}
                                 </p>
                             </div>
-                            <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                            <div className="bg-card rounded-lg border border-border p-6">
                                 <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.paymentMethod')}
                                 </h3>
@@ -476,7 +476,7 @@ export default function OrderPage({ params }: PageProps) {
                         </div>
 
                         {/* Items */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6">
+                        <div className="bg-card rounded-lg border border-border p-6">
                             <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.itemsInOrder')}
                             </h2>
@@ -527,7 +527,7 @@ export default function OrderPage({ params }: PageProps) {
 
                     {/* Summary sidebar */}
                     <div className="md:col-span-1">
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-border p-6 sticky top-24">
+                        <div className="bg-card rounded-lg border border-border p-6 sticky top-24">
                             <h2 className="font-bold text-lg mb-4 text-foreground">
                                 {t('order.summaryTitle')}
                             </h2>

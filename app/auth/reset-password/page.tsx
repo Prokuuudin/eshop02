@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
 
   return (
     <main className="w-full px-4 py-12">
-      <div className="max-w-md mx-auto rounded-lg border bg-white dark:bg-gray-900 p-6">
+      <div className="max-w-md mx-auto rounded-lg border bg-card p-6">
         <h1 className="text-2xl font-bold mb-5 text-foreground">Новый пароль</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}

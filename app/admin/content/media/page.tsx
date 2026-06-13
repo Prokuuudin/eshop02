@@ -247,7 +247,7 @@ export default function AdminMediaPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Медиа-библиотека</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">public/uploads/</code>
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">public/uploads/</code>
               {' '}· {files.length} файлов · {imgCount} изображений · {fmtBytes(totalSize)}
             </p>
           </div>
@@ -295,7 +295,7 @@ export default function AdminMediaPage() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-8 rounded-lg border border-border bg-white dark:bg-gray-900 px-2 text-xs text-gray-700 dark:text-gray-300"
+            className="h-8 rounded-lg border border-border bg-card px-2 text-xs text-gray-700 dark:text-gray-300"
           >
             <option value="date">По дате</option>
             <option value="name">По имени</option>
@@ -370,7 +370,7 @@ export default function AdminMediaPage() {
                       <div
                         key={file.name}
                         className={[
-                          'group relative rounded-lg border bg-white dark:bg-gray-900 overflow-hidden transition-all hover:shadow-md',
+                          'group relative rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md',
                           isSelected ? 'border-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'border-border',
                           isChecked ? 'ring-2 ring-red-300 dark:ring-red-700 border-red-300' : '',
                         ].join(' ')}
@@ -421,7 +421,7 @@ export default function AdminMediaPage() {
               ) : (
                 /* List view */
                 <div className="rounded-xl border border-border overflow-hidden">
-                  <table className="min-w-full text-sm bg-white dark:bg-gray-900">
+                  <table className="min-w-full text-sm bg-card">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
                         <th className="w-8 px-3 py-2.5"></th>
@@ -450,7 +450,7 @@ export default function AdminMediaPage() {
                               <div className="flex items-center gap-2">
                                 {file.isImage
                                   ? <img src={file.path} alt="" className="h-8 w-8 rounded object-cover shrink-0" loading="lazy" />
-                                  : <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 uppercase shrink-0">{file.ext}</div>
+                                  : <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold text-gray-400 uppercase shrink-0">{file.ext}</div>
                                 }
                                 <span className="truncate text-gray-800 dark:text-gray-200 max-w-xs">{file.name}</span>
                               </div>
@@ -482,7 +482,7 @@ export default function AdminMediaPage() {
 
             {/* Detail panel */}
             {selected && (
-              <div className="w-72 flex-shrink-0 rounded-xl border border-border bg-white dark:bg-gray-900 p-4 space-y-4 sticky top-4">
+              <div className="w-72 flex-shrink-0 rounded-xl border border-border bg-card p-4 space-y-4 sticky top-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground truncate">{selected.name}</p>
                   <button type="button" onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none ml-2 shrink-0">×</button>
@@ -526,7 +526,7 @@ export default function AdminMediaPage() {
                 {/* Path copy */}
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">Путь:</p>
-                  <code className="block text-xs bg-gray-100 dark:bg-gray-800 rounded px-2 py-1.5 break-all text-gray-800 dark:text-gray-200">
+                  <code className="block text-xs bg-muted rounded px-2 py-1.5 break-all text-gray-800 dark:text-gray-200">
                     {selected.path}
                   </code>
                   <Button size="sm" variant={copied === selected.path ? 'default' : 'outline'} className="w-full text-xs"

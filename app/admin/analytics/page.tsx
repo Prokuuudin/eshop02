@@ -157,7 +157,7 @@ function AbcSection() {
               'rounded-xl border p-4 text-left transition-colors cursor-pointer',
               filter === g
                 ? 'border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-border bg-white dark:bg-gray-900 hover:border-gray-300',
+                : 'border-border bg-card hover:border-gray-300',
             ].join(' ')}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -195,7 +195,7 @@ function AbcSection() {
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">Группа</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-card">
             {filtered.map((r, i) => (
               <tr key={r.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${GRADE_STYLES[r.grade].row}`}>
                 <td className="px-4 py-2.5 text-gray-400 tabular-nums">{rows.indexOf(r) + 1}</td>
@@ -353,7 +353,7 @@ function CohortSection() {
 
               return (
                 <tr key={cohort} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10 border-r border-border">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap sticky left-0 bg-card z-10 border-r border-border">
                     {monthLabel(cohort)}
                   </td>
                   <td className="px-3 py-2 text-center text-muted-foreground font-medium">
@@ -500,7 +500,7 @@ function SeoSection() {
 
       {filtered.length > 0 && (
         <div className="overflow-auto rounded-xl border border-border">
-          <table className="min-w-full text-sm bg-white dark:bg-gray-900">
+          <table className="min-w-full text-sm bg-card">
             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>

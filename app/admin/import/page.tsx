@@ -214,7 +214,7 @@ export default function AdminImportPage() {
         </div>
 
         {/* ══ EXPORT ══════════════════════════════════════════════════════════ */}
-        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Экспорт каталога</h2>
           <p className="text-sm text-muted-foreground">
             Скачайте все товары в формате CSV — включая базовые и добавленные через админку.
@@ -244,7 +244,7 @@ export default function AdminImportPage() {
         </section>
 
         {/* ══ IMPORT ══════════════════════════════════════════════════════════ */}
-        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-5 space-y-5">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-5">
           <h2 className="text-base font-semibold text-foreground">Импорт из CSV</h2>
 
           {/* Step 1: Upload */}
@@ -285,7 +285,7 @@ export default function AdminImportPage() {
                     className={`text-xs rounded px-2 py-0.5 font-mono ${
                       REQUIRED_COLS.includes(col)
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                        : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {col}
@@ -505,7 +505,7 @@ export default function AdminImportPage() {
         </section>
 
         {/* ══ HINTS ═══════════════════════════════════════════════════════════ */}
-        <section className="rounded-lg border border-border bg-white dark:bg-gray-900 p-4 text-sm text-muted-foreground space-y-1">
+        <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground space-y-1">
           <p className="font-medium text-foreground">Сценарии использования</p>
           <ul className="list-disc list-inside space-y-1 text-sm">
             <li>Первичная загрузка каталога: режим <strong>create</strong></li>

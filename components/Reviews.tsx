@@ -179,7 +179,7 @@ export default function Reviews({ productId }: ReviewsProps) {
           {t("reviews.write")}
         </Button>
       ) : (
-        <div className="bg-white dark:bg-gray-900 border border-border rounded-lg p-6 mb-6">
+        <div className="bg-card border border-border rounded-lg p-6 mb-6">
           <h3 className="font-bold mb-4 text-foreground">{t("reviews.your")}</h3>
           {submitted ? (
             <div className="text-center py-4 text-green-600">✓ {t("reviews.thankYou")}</div>
@@ -252,7 +252,7 @@ export default function Reviews({ productId }: ReviewsProps) {
       <div className="space-y-4">
         {productReviews.length > 0 ? (
           productReviews.map((review) => (
-            <div key={review.id} className="border border-border rounded-lg p-4 bg-white dark:bg-gray-900">
+            <div key={review.id} className="border border-border rounded-lg p-4 bg-card">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">

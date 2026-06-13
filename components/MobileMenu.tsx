@@ -53,7 +53,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
     <div className="header__menu-overlay fixed inset-0 z-40">
       <div className="header__menu-backdrop absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 text-foreground shadow-md p-4 z-50 border-b border-border">
+      <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-card text-foreground shadow-md p-4 z-50 border-b border-border">
         <div className="header__menu-top flex items-center justify-between mb-4">
           <div className="header__brand flex items-center gap-3">
             <Link href="/" className="header__brand-link text-lg font-semibold" onClick={onClose}>

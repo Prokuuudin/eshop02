@@ -287,7 +287,7 @@ export default function SalesAnalyticsPage() {
                                                     {formatMoney(c.revenue)}
                                                 </span>
                                             </div>
-                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                 <div
                                                     className="h-full rounded-full bg-emerald-500"
                                                     style={{ width: `${pct}%` }}

@@ -32,7 +32,7 @@ export const CreditCalculator: React.FC<CreditCalculatorProps> = ({ price }) => 
                         step={1}
                         value={downPaymentPercent}
                         onChange={(e) => setDownPaymentPercent(Number(e.target.value))}
-                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-white dark:bg-gray-900 text-foreground text-sm"
+                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-card text-foreground text-sm"
                     />
                 </div>
                 <div className="flex flex-col gap-1 min-w-[160px]">
@@ -50,7 +50,7 @@ export const CreditCalculator: React.FC<CreditCalculatorProps> = ({ price }) => 
                         step={1}
                         value={creditTerm}
                         onChange={(e) => setCreditTerm(Number(e.target.value))}
-                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-white dark:bg-gray-900 text-foreground text-sm"
+                        className="shadcn-input w-24 px-2 py-1 rounded border border-border bg-card text-foreground text-sm"
                     />
                 </div>
             </div>

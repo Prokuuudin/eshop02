@@ -111,20 +111,20 @@ export default function AdminMarketingAnalyticsPage() {
           <>
             {/* Stats cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Заказов с промокодом</p>
                 <p className="text-3xl font-bold text-foreground">{stats.totalWithPromo}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">из {stats.totalOrders} всего</p>
               </div>
-              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Сумма скидок</p>
                 <p className="text-3xl font-bold text-primary">{formatEur(stats.totalDiscounts)}</p>
               </div>
-              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Средняя скидка</p>
                 <p className="text-3xl font-bold text-foreground">{stats.avgDiscount.toFixed(1)}%</p>
               </div>
-              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+              <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Конверсия промо</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.conversionRate.toFixed(1)}%</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">заказов используют промокод</p>
@@ -132,7 +132,7 @@ export default function AdminMarketingAnalyticsPage() {
             </div>
 
             {/* Code usage table */}
-            <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-foreground">Использование промокодов</h2>
               </div>
@@ -162,7 +162,7 @@ export default function AdminMarketingAnalyticsPage() {
 
             {/* Categories */}
             {categoryStats.length > 0 && (
-              <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="px-5 py-4 border-b border-border">
                   <h2 className="font-semibold text-foreground">Покупки со скидкой по категориям</h2>
                 </div>
@@ -176,7 +176,7 @@ export default function AdminMarketingAnalyticsPage() {
                           <span className="text-gray-700 dark:text-gray-300 font-medium">{row.label}</span>
                           <span className="text-muted-foreground">{row.count} ед. &middot; {formatEur(row.totalDiscount)}</span>
                         </div>
-                        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-indigo-500 dark:bg-primary rounded-full transition-all"
                             style={{ width: `${widthPct}%` }}
@@ -190,7 +190,7 @@ export default function AdminMarketingAnalyticsPage() {
             )}
 
             {/* Recent promo orders */}
-            <div className="rounded-xl border border-border bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-foreground">Последние заказы с промокодом</h2>
               </div>

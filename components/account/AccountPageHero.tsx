@@ -12,7 +12,7 @@ type Props = {
 
 const AccountPageHero: React.FC<Props> = ({ eyebrow, title, description, icon: Icon, accentClassName }) => {
     return (
-        <div className={`account-page-hero p-4 mb-6 rounded-lg shadow flex items-center gap-4 ${accentClassName ?? 'bg-white dark:bg-gray-900'}`}>
+        <div className={`account-page-hero p-4 mb-6 rounded-lg shadow flex items-center gap-4 ${accentClassName ?? 'bg-card'}`}>
             {Icon && <Icon className="w-8 h-8 text-primary" />}
             <div>
                 <div className="text-xs uppercase tracking-wider text-primary font-semibold">

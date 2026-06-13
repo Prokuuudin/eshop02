@@ -42,9 +42,9 @@ export default function ProductListRow({ product }: Props) {
   }, []);
 
   return (
-    <div className="product-list-row flex items-center gap-4 p-3 rounded-lg border border-border bg-white dark:bg-gray-900 hover:shadow-sm transition-shadow">
+    <div className="product-list-row flex items-center gap-4 p-3 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
       {/* Image */}
-      <Link href={`/product/${product.id}`} className="flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <Link href={`/product/${product.id}`} className="flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden bg-muted">
         {product.image && product.image.trim() ? (
           <Image
             src={product.image}

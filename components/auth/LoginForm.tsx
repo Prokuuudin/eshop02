@@ -74,7 +74,7 @@ export default function LoginForm({
     return (
         <form
             onSubmit={handleSubmit}
-            className="space-y-3 bg-white dark:bg-gray-900 p-3 rounded-lg"
+            className="space-y-3 bg-card p-3 rounded-lg"
         >
             {confirmed && (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">

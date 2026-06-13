@@ -115,7 +115,7 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'loading') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-border p-8 bg-card text-center text-sm text-muted-foreground">
           {labels.loading}
         </div>
       </main>
@@ -125,7 +125,7 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'unauthenticated') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+        <div className="rounded-lg border border-border p-8 bg-card text-center">
           <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.loginRequired}</h1>
           <p className="text-sm text-muted-foreground mb-4">
             {labels.loginRedirect}
@@ -141,7 +141,7 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   if (status === 'setup-required') {
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+        <div className="rounded-lg border border-border p-8 bg-card text-center">
           <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.setupRequired}</h1>
           <p className="text-sm text-muted-foreground mb-4">
             {labels.setupRedirect}
@@ -159,7 +159,7 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
 
     return (
       <main className="max-w-md mx-auto px-4 py-12">
-        <div className="rounded-lg border border-border p-8 bg-white dark:bg-gray-900 text-center">
+        <div className="rounded-lg border border-border p-8 bg-card text-center">
           <h1 className="text-2xl font-bold mb-3 text-foreground">{labels.forbidden}</h1>
           <p className="text-sm text-muted-foreground mb-4">
             {access === 'full'

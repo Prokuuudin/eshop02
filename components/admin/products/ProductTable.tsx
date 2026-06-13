@@ -55,7 +55,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
         <div className="overflow-x-auto">
             <table className="admin-products__table min-w-full border border-border rounded-lg">
                 <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-800">
+                    <tr className="bg-muted">
                         <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Картинка</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Название</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">ID / SKU</th>
@@ -79,7 +79,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                         return (
                             <tr
                                 key={product.id}
-                                className={`${idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'} ${isSaving ? 'opacity-60' : ''}`}
+                                className={`${idx % 2 === 0 ? 'bg-card' : 'bg-gray-50 dark:bg-gray-800'} ${isSaving ? 'opacity-60' : ''}`}
                             >
                                 <td className="p-3 align-middle">
                                     <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">

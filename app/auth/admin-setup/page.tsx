@@ -61,7 +61,7 @@ export default function AdminSetupPage() {
 
     return (
         <main className="w-full px-4 py-12">
-            <div className="max-w-md mx-auto rounded-2xl border border-border bg-white dark:bg-gray-900 p-6 shadow-sm">
+            <div className="max-w-md mx-auto rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.22em] text-amber-700 dark:text-amber-400">
                     Admin Setup
                 </p>

@@ -270,7 +270,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
               )
             ) : (
               filtered.length === 0 ? (
-                <div className="rounded-lg border border-border bg-white dark:bg-gray-900 p-8 text-center">
+                <div className="rounded-lg border border-border bg-card p-8 text-center">
                   <p className="text-gray-700 dark:text-gray-300">{emptyStateMessage}</p>
                 </div>
               ) : (

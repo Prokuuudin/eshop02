@@ -52,7 +52,7 @@ function SubscriptionCard({
     });
 
     return (
-        <div className="account-subscriptions__card rounded-lg border border-border bg-white dark:bg-gray-900 p-4">
+        <div className="account-subscriptions__card rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
                 {sub.productImage ? (
                     <img
@@ -61,7 +61,7 @@ function SubscriptionCard({
                         className="w-14 h-14 rounded-md object-cover shrink-0 border border-gray-100 dark:border-gray-800"
                     />
                 ) : (
-                    <div className="w-14 h-14 rounded-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                    <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center shrink-0">
                         <Package className="w-6 h-6 text-gray-400" />
                     </div>
                 )}
@@ -181,7 +181,7 @@ export const AccountSubscriptionsSection: React.FC = () => {
     const cancelled = subs.filter((s) => s.status === 'cancelled');
 
     return (
-        <section className="account-subscriptions rounded-xl border border-border bg-white dark:bg-gray-900 p-5">
+        <section className="account-subscriptions rounded-xl border border-border bg-card p-5">
             <div className="account-subscriptions__header flex items-center gap-2 mb-4">
                 <RefreshCw className="w-4 h-4 text-primary" />
                 <h2 className="text-base font-semibold text-foreground">

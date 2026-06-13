@@ -423,7 +423,7 @@ export default function AdminOrdersPage() {
 
       {/* Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div className="col-span-2 md:col-span-2 rounded-xl border border-border bg-white dark:bg-gray-900 p-4">
+        <div className="col-span-2 md:col-span-2 rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Выручка</p>
           <p className="text-2xl font-bold mt-1 text-foreground">{formatEuro(totalRevenue, locale)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{orders.length} заказов всего</p>
@@ -436,7 +436,7 @@ export default function AdminOrdersPage() {
             className={`rounded-xl border p-4 text-left transition-colors cursor-pointer ${
               statusFilter === s
                 ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-900/20'
-                : 'border-border bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'
+                : 'border-border bg-card hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
             <p className="text-xs text-muted-foreground">{STATUS_LABELS[s]}</p>
@@ -446,7 +446,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-4 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
           <div className="flex flex-1 min-w-[220px] items-center gap-2">
             <Input
@@ -544,7 +544,7 @@ export default function AdminOrdersPage() {
             <select
               value={bulkStatus}
               onChange={(e) => setBulkStatus(e.target.value as OrderStatus | '')}
-              className="rounded-lg border border-indigo-300 dark:border-primary bg-white dark:bg-gray-900 px-3 py-1.5 text-sm text-foreground"
+              className="rounded-lg border border-indigo-300 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground"
             >
               <option value="">Изменить статус...</option>
               {STATUS_LIST.map((s) => (
@@ -608,7 +608,7 @@ export default function AdminOrdersPage() {
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${PAYMENT_COLORS[payStatus]}`}>
                       {PAYMENT_LABELS[payStatus]}
                     </span>
-                    <span className="text-xs rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-muted-foreground">
+                    <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                       {DELIVERY_LABELS[order.deliveryMethod] ?? order.deliveryMethod}
                     </span>
                   </div>
@@ -719,7 +719,7 @@ export default function AdminOrdersPage() {
                       {/* Items */}
                       <div className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Позиции заказа</p>
-                        <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                        <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800 bg-card">
                           {editItems.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
                               {item.image && <img src={item.image} alt="" className="w-9 h-9 rounded object-cover shrink-0" />}
@@ -745,7 +745,7 @@ export default function AdminOrdersPage() {
                             className="w-full rounded-lg border border-dashed border-indigo-300 dark:border-indigo-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-gray-400"
                           />
                           {editProductResults.length > 0 && (
-                            <div className="absolute z-30 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-white dark:bg-gray-900 shadow-xl max-h-60 overflow-y-auto">
+                            <div className="absolute z-30 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-xl max-h-60 overflow-y-auto">
                               {editProductResults.map((p) => (
                                 <button key={p.id} type="button" onClick={() => editAddProduct(p)}
                                   className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-b border-gray-100 dark:border-gray-800 last:border-0">

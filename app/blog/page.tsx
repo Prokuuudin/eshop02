@@ -172,7 +172,7 @@ export default function BlogPage() {
           <p className="text-muted-foreground mb-6">{t('blog.subscribeCtaDesc')}</p>
           <form onSubmit={handleSubscribe} className="mx-auto max-w-xl flex flex-col sm:flex-row gap-2">
             <input
-              className="w-full rounded-md border border-border px-3 py-2 bg-white dark:bg-gray-900 text-foreground"
+              className="w-full rounded-md border border-border px-3 py-2 bg-card text-foreground"
               placeholder={t('newsletter.placeholder')}
               value={subscribeEmail}
               onChange={(e) => setSubscribeEmail(e.target.value)}

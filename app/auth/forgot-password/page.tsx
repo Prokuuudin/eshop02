@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="w-full px-4 py-12">
-      <div className="max-w-md mx-auto rounded-lg border bg-white dark:bg-gray-900 p-6">
+      <div className="max-w-md mx-auto rounded-lg border bg-card p-6">
         <h1 className="text-2xl font-bold mb-2 text-foreground">
           {t('auth.resetPassword')}
         </h1>

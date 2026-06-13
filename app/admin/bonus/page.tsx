@@ -120,7 +120,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* Настройки */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setSettingsOpen((v) => !v)}
@@ -191,7 +191,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* Калькулятор */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setCalcOpen((v) => !v)}
@@ -264,7 +264,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* Балансы пользователей */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             type="button"
             onClick={() => setBalancesOpen((v) => !v)}
@@ -299,7 +299,7 @@ export default function AdminBonusPage() {
                         <tr><td colSpan={3} className="py-4 text-sm text-gray-400">Ничего не найдено</td></tr>
                       )}
                       {filteredUsers.map((user, idx) => (
-                        <tr key={user.id} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-100 dark:bg-gray-800'}>
+                        <tr key={user.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted'}>
                           <td className="py-2 pr-4">
                             <p className="font-medium">{user.name || user.email}</p>
                             {user.name && <p className="text-xs text-gray-500">{user.email}</p>}
@@ -342,7 +342,7 @@ export default function AdminBonusPage() {
 
         {/* Сегментация + Топ-5 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-3">Сегментация по балансу</h2>
             <div className="space-y-2">
               {segments.map((s) => (
@@ -354,7 +354,7 @@ export default function AdminBonusPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
+          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-3">Топ-5 по балансу</h2>
             {top5.length === 0 ? (
               <p className="text-sm text-gray-400">Ни у кого нет баллов</p>
@@ -376,7 +376,7 @@ export default function AdminBonusPage() {
         </div>
 
         {/* История операций */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-border p-5 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
           <h2 className="text-lg font-semibold mb-3">История операций</h2>
           {bonusOrders.length === 0 ? (
             <p className="text-sm text-gray-400">Операций с бонусами пока не было</p>
@@ -394,7 +394,7 @@ export default function AdminBonusPage() {
                 </thead>
                 <tbody>
                   {bonusOrders.map((o, idx) => (
-                    <tr key={o.id} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                    <tr key={o.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-gray-50 dark:bg-gray-800/50'}>
                       <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                         {new Date(o.createdAt).toLocaleDateString('ru-RU')}
                       </td>

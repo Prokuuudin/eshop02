@@ -13,7 +13,7 @@ import { StockNotifyButton } from './StockNotifyButton';
 
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 
 type Props = {
     product: Product;
@@ -34,17 +34,10 @@ export default function ProductCard({ product }: Props) {
     const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0];
     const firstTierPrice = firstTier ? calculatePrice(product, firstTier.quantity) : null;
 
-    // Проверка авторизации пользователя
-    const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
-    React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setIsAuthenticated(!!getCurrentUser());
-            // Подписка на событие смены пользователя
-            const handler = () => setIsAuthenticated(!!getCurrentUser());
-            window.addEventListener('eshop-user-changed', handler);
-            return () => window.removeEventListener('eshop-user-changed', handler);
-        }
-    }, []);
+    // Reactive auth from the shared store. `isHydrated` lets us show a neutral placeholder
+    // until the real auth state is known, instead of flashing the login prompt for logged-in users.
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const isHydrated = useAuthStore((s) => s.isHydrated);
 
     const handleCardClick = (event: React.MouseEvent<HTMLElement>): void => {
         const target = event.target as HTMLElement;
@@ -112,7 +105,10 @@ export default function ProductCard({ product }: Props) {
 
                 <div className="product-card__meta mt-2 flex items-center justify-between gap-3">
                     <div>
-                        {isAuthenticated ? (
+                        {!isHydrated ? (
+                            // Neutral placeholder until auth is known — avoids the login/price flash.
+                            <div className="h-7 w-20 rounded bg-muted animate-pulse" />
+                        ) : isAuthenticated ? (
                             <>
                                 <div className="product-card__price text-lg font-semibold">
                                     {formatEuro(displayPrice, 'en-US')}

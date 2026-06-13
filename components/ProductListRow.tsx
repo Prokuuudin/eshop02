@@ -6,7 +6,7 @@ import { Product } from '../data/products';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
@@ -31,15 +31,8 @@ export default function ProductListRow({ product }: Props) {
   const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0];
   const firstTierPrice = firstTier ? calculatePrice(product, firstTier.quantity) : null;
 
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsAuthenticated(!!getCurrentUser());
-      const handler = () => setIsAuthenticated(!!getCurrentUser());
-      window.addEventListener('eshop-user-changed', handler);
-      return () => window.removeEventListener('eshop-user-changed', handler);
-    }
-  }, []);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
 
   return (
     <div className="product-list-row flex items-center gap-4 p-3 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
@@ -93,7 +86,9 @@ export default function ProductListRow({ product }: Props) {
 
       {/* Price + Action */}
       <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-[140px]">
-        {isAuthenticated ? (
+        {!isHydrated ? (
+          <div className="h-6 w-20 rounded bg-muted animate-pulse" />
+        ) : isAuthenticated ? (
           <div className="text-right">
             <div className="text-base font-semibold">{formatEuro(displayPrice, locale)}</div>
             {displayOldPrice && (

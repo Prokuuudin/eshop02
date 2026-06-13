@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { canAccessAdminPanel, getAdminAccessLevel, getCurrentUser, hasAdminUsers, type AdminAccessLevel, type User } from '@/lib/auth'
+import { canAccessAdminPanel, getAdminAccessLevel, hasAdminUsers, type AdminAccessLevel } from '@/lib/auth'
+import { useAuthStore } from '@/lib/auth-store'
 import { useTranslation } from '@/lib/use-translation'
 
 type AdminGateProps = {
@@ -15,8 +16,9 @@ type AdminGateProps = {
 export default function AdminGate({ children, access = 'full' }: AdminGateProps) {
   const router = useRouter()
   const { language } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
   const [status, setStatus] = useState<'loading' | 'allowed' | 'forbidden' | 'unauthenticated' | 'setup-required'>('loading')
-  const [user, setUser] = useState<User | null>(null)
   const [accessLevel, setAccessLevel] = useState<AdminAccessLevel>('none')
 
   const labels = {
@@ -71,37 +73,24 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
   }[language]
 
   useEffect(() => {
-    const syncUser = () => {
-      try {
-        const currentUser = getCurrentUser()
-        setUser(currentUser)
-
-        if (!currentUser) {
-          setStatus(hasAdminUsers() ? 'unauthenticated' : 'setup-required')
-          setAccessLevel('none')
-          return
-        }
-
-        const level = getAdminAccessLevel(currentUser)
-        setAccessLevel(level)
-
-        if (access === 'full') {
-          setStatus(level === 'admin' ? 'allowed' : 'forbidden')
-          return
-        }
-
-        setStatus(canAccessAdminPanel(currentUser) ? 'allowed' : 'forbidden')
-      } catch {
-        setUser(null)
-        setAccessLevel('none')
-        setStatus('unauthenticated')
-      }
+    // Derive access from the shared auth store. 'loading' until the store has hydrated.
+    if (!isHydrated) {
+      setStatus('loading')
+      return
     }
-
-    syncUser()
-    window.addEventListener('eshop-user-changed', syncUser as EventListener)
-    return () => window.removeEventListener('eshop-user-changed', syncUser as EventListener)
-  }, [access])
+    if (!user) {
+      setStatus(hasAdminUsers() ? 'unauthenticated' : 'setup-required')
+      setAccessLevel('none')
+      return
+    }
+    const level = getAdminAccessLevel(user)
+    setAccessLevel(level)
+    if (access === 'full') {
+      setStatus(level === 'admin' ? 'allowed' : 'forbidden')
+      return
+    }
+    setStatus(canAccessAdminPanel(user) ? 'allowed' : 'forbidden')
+  }, [user, isHydrated, access])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

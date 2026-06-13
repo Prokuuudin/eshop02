@@ -16,7 +16,6 @@ import { useViewedProducts } from '@/lib/viewed-products-store';
 import { useProductLocalization } from '@/hooks/useProductLocalization';
 
 import { getMinimumOrderQuantity, getDisplayPrice } from '@/lib/customer-segmentation';
-import { getCurrentUser } from '@/lib/auth';
 
 type Props = {
     product: Product;
@@ -40,17 +39,6 @@ export default function ProductPageContent({ product, allProducts }: Props): JSX
     const { addView, getRecentViews } = useViewedProducts();
     const recentViews = getRecentViews(4);
 
-    // Проверка авторизации пользователя
-    const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
-    React.useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setIsAuthenticated(!!getCurrentUser());
-            // Подписка на событие смены пользователя
-            const handler = () => setIsAuthenticated(!!getCurrentUser());
-            window.addEventListener('eshop-user-changed', handler);
-            return () => window.removeEventListener('eshop-user-changed', handler);
-        }
-    }, []);
     const minOrderQuantity = getMinimumOrderQuantity(product);
     const ratingCount = product.ratingCount ?? product.reviewCount ?? 127;
 
@@ -110,7 +98,6 @@ export default function ProductPageContent({ product, allProducts }: Props): JSX
                             ratingCount={ratingCount}
                             displayPrice={displayPrice}
                             displayOldPrice={displayOldPrice}
-                            isAuthenticated={isAuthenticated}
                             priceLocale={priceLocale}
                             productDescription={productDescription}
                             productFeatures={productFeatures}

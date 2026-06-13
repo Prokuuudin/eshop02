@@ -6,7 +6,6 @@ import { CreditCalculator } from '@/components/CreditCalculator';
 interface ProductPricesProps {
     price: number;
     oldPrice?: number;
-    isAuthenticated: boolean;
     priceLocale: string;
     stock: number;
     creditPrice: number;
@@ -17,7 +16,6 @@ interface ProductPricesProps {
 export const ProductPrices: React.FC<ProductPricesProps> = ({
     price,
     oldPrice,
-    isAuthenticated,
     priceLocale,
     stock,
     creditPrice,
@@ -29,7 +27,6 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
             <ProductPrice
                 price={price}
                 oldPrice={oldPrice}
-                isAuthenticated={isAuthenticated}
                 priceLocale={priceLocale}
             />
             <ProductStock stock={stock} productId={productId} productTitle={productTitle} />

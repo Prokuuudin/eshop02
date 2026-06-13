@@ -16,7 +16,6 @@ interface ProductInfoProps {
     ratingCount: number;
     displayPrice: number;
     displayOldPrice?: number;
-    isAuthenticated: boolean;
     priceLocale: string;
     productDescription: string;
     productFeatures: string[];
@@ -29,7 +28,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     ratingCount,
     displayPrice,
     displayOldPrice,
-    isAuthenticated,
     priceLocale,
     productDescription,
     productFeatures,
@@ -45,7 +43,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <ProductPrices
                 price={displayPrice}
                 oldPrice={displayOldPrice}
-                isAuthenticated={isAuthenticated}
                 priceLocale={priceLocale}
                 stock={product.stock}
                 creditPrice={product.price}

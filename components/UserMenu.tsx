@@ -10,7 +10,8 @@ import {
 } from './ui/dialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, logout, type User } from '@/lib/auth';
+import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, logout } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { Button } from './ui/button';
 import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -23,7 +24,7 @@ import LoginForm from './auth/LoginForm';
 import ForgotPasswordForm from './auth/ForgotPasswordForm';
 
 export default function UserMenu() {
-    const [user, setUser] = useState<User | null>(null);
+    const user = useAuthStore((s) => s.user);
     const [isOpen, setIsOpen] = useState(false);
     const [registerOpen, setRegisterOpen] = useState(false);
     const [loginOpen, setLoginOpen] = useState(false);
@@ -32,21 +33,13 @@ export default function UserMenu() {
     const router = useRouter();
     const { t } = useTranslation();
 
+    // Recompute "first admin not set up yet" whenever the current user changes (store-driven).
     useEffect(() => {
-        const syncUser = () => {
-            const currentUser = getCurrentUser();
-            setUser(currentUser);
-            setSetupRequired(!hasAdminUsers());
-        };
-
-        syncUser();
-        window.addEventListener('eshop-user-changed', syncUser as EventListener);
-        return () => window.removeEventListener('eshop-user-changed', syncUser as EventListener);
-    }, []);
+        setSetupRequired(!hasAdminUsers());
+    }, [user]);
 
     const handleLoginSuccess = () => {
         const currentUser = getCurrentUser();
-        setUser(currentUser);
         setLoginOpen(false);
         setForgotOpen(false);
         setIsOpen(false);
@@ -62,7 +55,6 @@ export default function UserMenu() {
 
     const handleLogout = () => {
         logout();
-        setUser(null);
         router.push('/');
     };
 

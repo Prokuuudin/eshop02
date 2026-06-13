@@ -1,25 +1,14 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { getCurrentUser, type User } from '@/lib/auth';
+import React from 'react';
+import { useAuthStore } from '@/lib/auth-store';
 import ForceChangePasswordModal from '@/components/account/ForceChangePasswordModal';
 import WelcomeModal from '@/components/account/WelcomeModal';
 
 export default function AccountGuard({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [ready, setReady] = useState(false);
+    const user = useAuthStore((s) => s.user);
+    const isHydrated = useAuthStore((s) => s.isHydrated);
 
-    const sync = () => {
-        setUser(getCurrentUser());
-        setReady(true);
-    };
-
-    useEffect(() => {
-        sync();
-        window.addEventListener('eshop-user-changed', sync);
-        return () => window.removeEventListener('eshop-user-changed', sync);
-    }, []);
-
-    if (!ready) return null;
+    if (!isHydrated) return null;
 
     return (
         <>

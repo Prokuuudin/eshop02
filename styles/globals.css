@@ -88,14 +88,6 @@
     justify-content: center;
     align-items: flex-end;
 }
-/* Ensure Swiper pagination is always below the cards with space */
-.swiper-pagination {
-    margin-top: 32px;
-    min-height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-}
 
 /* Keep bestseller cards equal to the tallest slide content */
 .bestsellers-swiper .swiper-wrapper {
@@ -116,9 +108,14 @@
 @tailwind utilities;
 
 html {
+    /* html is the scroll container — an always-present scrollbar keeps the sticky header
+       pinned (top:0) and prevents width shift. The neutralization rules below cancel the
+       padding react-remove-scroll adds on top of this when Radix locks scroll.
+       These work together; do not remove one without the others (sticky/shift regress). */
     overflow-y: scroll !important;
     overflow-x: clip;
     height: auto !important;
+    scrollbar-gutter: stable;
 }
 
 /* Chrome, Safari and Edge scrollbar */
@@ -164,12 +161,6 @@ html {
     }
 }
 
-/* Firefox scrollbar */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
-}
-
 /*
   Global styles (mobile-first) using BEM-style class names.
 
@@ -208,14 +199,14 @@ body {
     overflow-y: visible !important;
 }
 
-/* Prevent page shift when radix opens dropdowns/dialogs */
+/* Neutralize react-remove-scroll's padding/margin compensation so Radix dialogs/dropdowns
+   don't shift the layout (the html scrollbar is always present, so no compensation is needed). */
 body[data-radix-dialog-open],
 body[style*='overflow: hidden'] {
     overflow-y: scroll !important;
     padding-right: 0 !important;
 }
 
-/* Prevent external scroll-lock styles from shifting layout */
 body[data-scroll-locked][data-scroll-locked] {
     margin-right: 0 !important;
     padding-right: 0 !important;

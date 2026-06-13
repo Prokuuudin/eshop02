@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '../data/products';
@@ -21,7 +20,6 @@ type Props = {
 
 export default function ProductCard({ product }: Props) {
     const { t, language } = useTranslation();
-    const router = useRouter();
     const isOutOfStock = product.stock === 0;
     const localizedTitle =
         language === 'en' && product.titleEn
@@ -39,28 +37,15 @@ export default function ProductCard({ product }: Props) {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isHydrated = useAuthStore((s) => s.isHydrated);
 
-    const handleCardClick = (event: React.MouseEvent<HTMLElement>): void => {
-        const target = event.target as HTMLElement;
-        if (target.closest('a, button, input, select, textarea, label, [role="button"]')) {
-            return;
-        }
-
-        router.push(`/product/${product.id}`);
-    };
-
     return (
         <Card
-            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground"
-            onClick={handleCardClick}
+            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring"
         >
             <div className="absolute right-3 top-3 z-10">
                 <WishlistButton product={product} />
             </div>
 
-            <Link
-                href={`/product/${product.id}`}
-                className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group"
-            >
+            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group">
                 <div className="relative w-full h-48">
                     {product.image && product.image.trim() ? (
                         <Image
@@ -84,15 +69,17 @@ export default function ProductCard({ product }: Props) {
                         </div>
                     )}
                 </div>
-            </Link>
+            </div>
 
             <div className="product-card__body mt-3 flex-1 flex flex-col min-w-0">
                 <div className="product-card__brand text-xs text-muted-foreground">
                     {product.brand}
                 </div>
+                {/* Stretched link: the whole card is one keyboard-focusable link to the product
+                    (after:inset-0 overlay). Interactive children (wishlist, cart) sit above it via z-10. */}
                 <Link
                     href={`/product/${product.id}`}
-                    className="product-card__title text-sm font-medium mt-1 hover:text-primary"
+                    className="product-card__title text-sm font-medium mt-1 hover:text-primary focus:outline-none after:absolute after:inset-0 after:content-['']"
                 >
                     {localizedTitle}
                 </Link>
@@ -165,7 +152,7 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__actions mt-auto w-full space-y-2">
+                <div className="product-card__actions relative z-10 mt-auto w-full space-y-2">
                     {isOutOfStock ? (
                         <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
                     ) : (

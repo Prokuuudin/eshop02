@@ -1,21 +1,28 @@
+'use client';
 import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro } from '@/lib/utils';
+import { useAuthStore } from '@/lib/auth-store';
 
 interface ProductPriceProps {
     price: number;
     oldPrice?: number;
-    isAuthenticated: boolean;
     priceLocale: string;
 }
 
 export const ProductPrice: React.FC<ProductPriceProps> = ({
     price,
     oldPrice,
-    isAuthenticated,
     priceLocale,
 }) => {
     const { t } = useTranslation();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const isHydrated = useAuthStore((s) => s.isHydrated);
+
+    // Neutral placeholder until auth resolves — avoids the login/price flash for logged-in users.
+    if (!isHydrated) {
+        return <div className="h-10 w-28 rounded bg-muted animate-pulse" />;
+    }
     if (!isAuthenticated) {
         return (
             <div className="text-gray-400 text-lg font-medium">

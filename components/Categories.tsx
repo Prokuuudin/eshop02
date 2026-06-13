@@ -1,10 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 import { useCategoriesConfig } from '@/lib/use-categories-config';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,16 +17,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 export default function Categories() {
     const { t, language } = useTranslation();
     const { categories } = useCategoriesConfig();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const isHydrated = useAuthStore((s) => s.isHydrated);
 
-    useEffect(() => {
-        setIsAuthenticated(!!getCurrentUser());
-        const handler = () => setIsAuthenticated(!!getCurrentUser());
-        window.addEventListener('eshop-user-changed', handler);
-        return () => window.removeEventListener('eshop-user-changed', handler);
-    }, []);
-
-    if (!isAuthenticated) return null;
+    if (!isHydrated || !isAuthenticated) return null;
     const sectionClassName = 'categories py-8 relative z-30 overflow-visible';
     const gridClassName =
         'categories__grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 overflow-visible';

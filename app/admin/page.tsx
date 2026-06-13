@@ -6,7 +6,8 @@ import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
-import { getAdminAccessLevel, getCurrentUser } from '@/lib/auth'
+import { getAdminAccessLevel } from '@/lib/auth'
+import { useAuthStore } from '@/lib/auth-store'
 
 function RevenueBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -125,15 +126,11 @@ export default function AdminPage() {
     cancelled: t('order.status.cancelled'),
   }
 
+  const currentUser = useAuthStore((s) => s.user)
   useEffect(() => {
-    const syncAccessLevel = () => {
-      const level = getAdminAccessLevel(getCurrentUser())
-      setAccessLevel(level === 'admin' ? 'admin' : 'manager')
-    }
-    syncAccessLevel()
-    window.addEventListener('eshop-user-changed', syncAccessLevel as EventListener)
-    return () => window.removeEventListener('eshop-user-changed', syncAccessLevel as EventListener)
-  }, [])
+    const level = getAdminAccessLevel(currentUser)
+    setAccessLevel(level === 'admin' ? 'admin' : 'manager')
+  }, [currentUser])
 
   const hasFullAccess = accessLevel === 'admin'
 

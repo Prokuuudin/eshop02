@@ -1,9 +1,9 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from '@/lib/use-translation'
 import Link from 'next/link'
 import { Button } from './ui/button'
-import { getCurrentUser, type User } from '@/lib/auth'
+import { useAuthStore } from '@/lib/auth-store'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog'
 import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
@@ -26,20 +26,12 @@ const CATEGORIES = [
 export default function MobileMenu({ isOpen, onClose }: Props) {
   const { t } = useTranslation();
   const [expandCategories, setExpandCategories] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const user = useAuthStore((s) => s.user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
 
-  useEffect(() => {
-    const sync = () => setUser(getCurrentUser());
-    sync();
-    window.addEventListener('eshop-user-changed', sync);
-    return () => window.removeEventListener('eshop-user-changed', sync);
-  }, []);
-
   const handleLoginSuccess = () => {
-    setUser(getCurrentUser());
     setLoginOpen(false);
     setForgotOpen(false);
     onClose();

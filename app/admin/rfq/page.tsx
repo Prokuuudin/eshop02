@@ -57,7 +57,7 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
   return (
     <div className="relative pl-6">
       {/* Vertical line */}
-      <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="absolute left-[9px] top-2 bottom-2 w-px bg-muted" />
 
       <div className="space-y-4">
         {sorted.map((ev, i) => (
@@ -303,7 +303,7 @@ export default function AdminRFQPage() {
                           step={0.01}
                           value={quotePrice[rfq.id] ?? (rfq.quote?.totalPrice ?? '')}
                           onChange={(e) => setQuotePrice((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+                          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                           placeholder="Сумма, €"
                         />
                         <input
@@ -311,14 +311,14 @@ export default function AdminRFQPage() {
                           min={1}
                           value={quoteValidDays[rfq.id] ?? '7'}
                           onChange={(e) => setQuoteValidDays((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+                          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                           placeholder="Действует, дней"
                         />
                         <input
                           type="text"
                           value={quoteTerms[rfq.id] ?? (rfq.quote?.terms ?? '')}
                           onChange={(e) => setQuoteTerms((p) => ({ ...p, [rfq.id]: e.target.value }))}
-                          className="rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground"
+                          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                           placeholder="Условия оплаты/поставки"
                         />
                       </div>
@@ -367,7 +367,7 @@ export default function AdminRFQPage() {
                         onChange={(e) => setNoteDraft((p) => ({ ...p, [rfq.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && submitNote(rfq.id)}
                         placeholder="Внутренний комментарий..."
-                        className="flex-1 rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-1.5 text-sm text-foreground"
+                        className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
                       />
                       <Button
                         size="sm"

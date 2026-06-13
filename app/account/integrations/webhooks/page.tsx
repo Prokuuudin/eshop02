@@ -180,7 +180,7 @@ export default function WebhooksPage() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com/webhook"
-          className="w-full rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
         />
         <div className="flex flex-wrap gap-2">
           {ALL_EVENTS.map((event) => {

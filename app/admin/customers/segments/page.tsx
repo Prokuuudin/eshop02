@@ -175,8 +175,8 @@ export default function AdminCustomerSegmentsPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="rounded-lg border p-4 bg-muted animate-pulse">
-                <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-8 w-12 bg-muted rounded mb-2" />
+                <div className="h-4 w-20 bg-muted rounded" />
               </div>
             ))}
           </div>

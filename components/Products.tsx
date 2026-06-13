@@ -260,7 +260,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
               viewMode === 'list' ? (
                 <div className="flex flex-col gap-3">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-28 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
                   ))}
                 </div>
               ) : (
@@ -281,7 +281,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
                         <ProductListRow key={p.id} product={p} />
                       ))}
                       {loading && Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-28 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                        <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
                       ))}
                     </div>
                   ) : (

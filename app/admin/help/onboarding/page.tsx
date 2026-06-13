@@ -254,7 +254,7 @@ export default function AdminOnboardingPage() {
             </span>
             <Button variant="outline" size="sm" onClick={reset}>Сбросить прогресс</Button>
           </div>
-          <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
             <div
               className="h-3 rounded-full transition-all duration-300"
               style={{ width: `${Math.round((done / total) * 100)}%`, background: allDone ? '#16a34a' : '#6366f1' }}

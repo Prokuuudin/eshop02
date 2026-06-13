@@ -147,7 +147,7 @@ export default function RequestQuotePage() {
                 <select
                   value={item.productId}
                   onChange={(e) => updateRow(index, { productId: e.target.value })}
-                  className="rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm"
+                  className="rounded border border-border bg-background px-3 py-2 text-sm"
                 >
                   {products.map((product) => (
                     <option key={product.id} value={product.id}>
@@ -161,7 +161,7 @@ export default function RequestQuotePage() {
                   min={1}
                   value={item.quantity}
                   onChange={(e) => updateRow(index, { quantity: Number(e.target.value) })}
-                  className="rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm"
+                  className="rounded border border-border bg-background px-3 py-2 text-sm"
                   placeholder="Кол-во"
                 />
 
@@ -179,7 +179,7 @@ export default function RequestQuotePage() {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm min-h-[100px]"
+            className="w-full rounded border border-border bg-background px-3 py-2 text-sm min-h-[100px]"
             placeholder="Комментарий к заявке: желаемые условия, сроки, требования"
           />
 

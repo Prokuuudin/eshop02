@@ -311,7 +311,7 @@ export default function NewOrderPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
-  const inputCls = 'w-full rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputCls = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
   const selectCls = inputCls
 
   return (
@@ -616,7 +616,7 @@ export default function NewOrderPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Внутренний комментарий (клиент не видит)..."
-                className="w-full rounded-lg border border-border bg-white dark:bg-gray-950 px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
             </Section>
 

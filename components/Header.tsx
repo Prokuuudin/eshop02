@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import MobileMenu from './MobileMenu'
 import CartDrawer from './CartDrawer'
@@ -10,56 +10,29 @@ import HeaderLogo from './HeaderLogo'
 import ThemeToggle from './ThemeToggle'
 import UserMenu from './UserMenu'
 import AdminHeaderNav from './admin/AdminHeaderNav'
+import { Menu } from 'lucide-react'
 
 export default function Header() {
-  const headerRef = useRef<HTMLElement | null>(null)
   const pathname = usePathname()
   const isAdminPage = pathname.startsWith('/admin')
 
-  // Плавное уменьшение header при скролле, но без исчезновения
+  // Плавное уменьшение header при скролле, но без исчезновения.
+  // Только переключаем булев флаг — без измерения offsetHeight (sticky сам держит layout).
   const [scrolled, setScrolled] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-
-    // Устанавливаем CSS переменную для main
-    const setHeaderOffset = () => {
-      if (headerRef.current) {
-        document.documentElement.style.setProperty('--header-offset', headerRef.current.offsetHeight + 'px');
-      }
-    };
-
-    setHeaderOffset();
-    window.addEventListener('resize', setHeaderOffset);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', setHeaderOffset);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Обновлять переменную при изменении scrolled
-  useEffect(() => {
-    if (headerRef.current) {
-      document.documentElement.style.setProperty('--header-offset', headerRef.current.offsetHeight + 'px');
-    }
-  }, [scrolled]);
 
   return (
     <>
       <header
-        ref={headerRef}
-        className={
-          `header fixed top-0 left-0 w-full bg-card shadow transition-all duration-300 text-foreground z-[9999]`
-        }
-          style={{
-            transform: scrolled ? 'scaleY(0.92)' : 'scaleY(1)',
-            transformOrigin: 'top center',
-          }}
+        className="header sticky top-0 w-full bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
           <div className={`w-full px-2 sm:px-4 flex items-center relative transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
@@ -83,7 +56,7 @@ export default function Header() {
               <div className="md:hidden flex items-center gap-1">
                 <HeaderActions onlyLangSwitcher />
                 <button className="p-2" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
-                  <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  <Menu className="w-7 h-7" />
                 </button>
               </div>
             )}
@@ -92,8 +65,8 @@ export default function Header() {
         {!isAdminPage && (
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
-            <div className="border-t border-gray-200 border-b border-b-transparent dark:border-t-gray-700 dark:border-b-gray-700 w-full">
-              <div className="w-full px-2 sm:px-4 py-2 flex flex-wrap items-center gap-y-2 gap-x-4">
+            <div className="border-t border-border border-b border-b-transparent dark:border-b-border w-full">
+              <div className={`w-full px-2 sm:px-4 flex flex-wrap items-center gap-y-2 gap-x-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="flex-1 min-w-0 order-2 md:order-none w-full max-w-xl mx-auto">
                   <HeaderSearch />
                 </div>
@@ -106,7 +79,7 @@ export default function Header() {
           </>
         )}
         {isAdminPage && (
-          <div className="border-t border-gray-200 dark:border-t-gray-700 w-full px-2 sm:px-4 py-2">
+          <div className="border-t border-border w-full px-2 sm:px-4 py-2">
             <AdminHeaderNav />
           </div>
         )}

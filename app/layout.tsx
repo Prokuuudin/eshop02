@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <RouteUiEffects />
           <AuthHydrator />
           <Header />
-          <main className="w-full pt-[calc(var(--header-offset,150px))] pb-6">
+          <main className="w-full pb-6">
             <div className="mx-auto mt-2 w-full max-w-7xl px-4">
               <AppBreadcrumbs />
             </div>

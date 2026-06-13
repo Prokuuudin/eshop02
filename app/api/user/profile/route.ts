@@ -17,12 +17,18 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
 
-    // Only safe personal fields — never platformRole, companyId, approvalRequired etc.
+    // Email changes are NOT allowed here: there is no verification flow, and order access is
+    // authorized by email match (app/api/orders/[id]/route.ts). Letting a user freely set their
+    // email to a victim's order email would be an IDOR. Reject any actual change.
+    if (newEmail !== undefined && newEmail !== user.email) {
+      return NextResponse.json({ error: 'email_change_not_supported' }, { status: 400 })
+    }
+
+    // Only safe personal fields — never email, platformRole, companyId, approvalRequired etc.
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         name: body.name !== undefined ? (body.name ?? null) : undefined,
-        email: newEmail !== undefined && newEmail !== user.email ? newEmail : undefined,
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
         cardNumber: body.cardNumber !== undefined ? (String(body.cardNumber).trim() || null) : undefined,

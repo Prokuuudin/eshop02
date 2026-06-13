@@ -16,10 +16,16 @@ export const DELIVERY_FEES: Record<string, number> = {
 
 type BulkTier = { quantity: number; pricePerUnit: number }
 
-type CatalogPrice = { price: number; bulkPricingTiers?: BulkTier[] }
+type CatalogPrice = { price: number; bulkPricingTiers?: BulkTier[]; bonusRate: number }
 
 export type LineItemInput = { id: string; quantity: number; price?: number }
-export type ResolvedLineItem = { id: string; quantity: number; price: number; fromCatalog: boolean }
+export type ResolvedLineItem = {
+  id: string
+  quantity: number
+  price: number
+  bonusRate: number
+  fromCatalog: boolean
+}
 
 function sanitizeBulkTiers(value: unknown): BulkTier[] | undefined {
   if (!Array.isArray(value)) return undefined
@@ -41,7 +47,7 @@ export async function getCatalogPrices(ids: string[]): Promise<Map<string, Catal
 
   const rows = await prisma.product.findMany({
     where: { id: { in: uniqueIds }, isDeleted: false },
-    select: { id: true, price: true, bulkPricingTiers: true },
+    select: { id: true, price: true, bulkPricingTiers: true, bonusRate: true },
   })
 
   const map = new Map<string, CatalogPrice>()
@@ -49,6 +55,7 @@ export async function getCatalogPrices(ids: string[]): Promise<Map<string, Catal
     map.set(row.id, {
       price: row.price,
       bulkPricingTiers: sanitizeBulkTiers(row.bulkPricingTiers),
+      bonusRate: typeof row.bonusRate === 'number' ? row.bonusRate : 0,
     })
   }
   return map
@@ -66,12 +73,18 @@ export async function resolveLineItems(items: LineItemInput[]): Promise<Resolved
     const catalog = prices.get(item.id)
 
     if (catalog) {
-      return { id: item.id, quantity, price: calculatePrice(catalog, quantity), fromCatalog: true }
+      return {
+        id: item.id,
+        quantity,
+        price: calculatePrice(catalog, quantity),
+        bonusRate: catalog.bonusRate,
+        fromCatalog: true,
+      }
     }
 
     const fallback = Number(item.price)
     const safePrice = Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 0
-    return { id: item.id, quantity, price: safePrice, fromCatalog: false }
+    return { id: item.id, quantity, price: safePrice, bonusRate: 0, fromCatalog: false }
   })
 }
 
@@ -110,6 +123,7 @@ export type RecomputedPricing = {
   tax: number
   delivery: number
   bonusSpent: number
+  bonusEarned: number
   total: number
   promoApplied: boolean
 }
@@ -133,6 +147,14 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
 
   const total = Math.max(0, grandTotal - bonusSpent)
 
+  // Points earned = sum(catalog bonusRate * qty), scaled down proportionally when the customer
+  // pays part of the order with points (mirrors the checkout: bonusToEarn * total / grandTotal).
+  const bonusEarnedBase = items.reduce((sum, item) => sum + Math.max(0, item.bonusRate) * item.quantity, 0)
+  const bonusEarned =
+    bonusSpent > 0 && grandTotal > 0
+      ? Math.max(0, Math.round((bonusEarnedBase * total) / grandTotal))
+      : Math.round(bonusEarnedBase)
+
   return {
     items,
     subtotal,
@@ -140,6 +162,7 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
     tax,
     delivery,
     bonusSpent,
+    bonusEarned,
     total,
     promoApplied: discountPct > 0,
   }

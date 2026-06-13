@@ -507,3 +507,11 @@ model UserNotification {
   @@index([userId, appDelivered])
   @@index([createdAt])
 }
+
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}

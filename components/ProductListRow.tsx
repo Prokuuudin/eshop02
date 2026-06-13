@@ -69,7 +69,12 @@ export default function ProductListRow({ product }: Props) {
           <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">SKU: {product.sku}</p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className="text-xs text-yellow-500">{product.rating.toFixed(1)} ★</span>
+          <span
+            className="text-xs text-yellow-500"
+            aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
+          >
+            {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
+          </span>
           {product.badges?.includes('sale') && (
             <Badge className="bg-red-600 text-white text-xs">{t('product.sale')}</Badge>
           )}

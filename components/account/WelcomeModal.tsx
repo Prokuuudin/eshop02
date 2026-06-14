@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { User2, Mail, Phone, PartyPopper, ArrowRight } from 'lucide-react';
@@ -21,21 +21,21 @@ export default function WelcomeModal({ user }: { user: User }) {
     const fields: FieldHint[] = [
         {
             key: 'name',
-            icon: <User2 className="h-4 w-4 text-primary" />,
+            icon: <User2 className="h-4 w-4 text-indigo-500" />,
             label: 'Имя',
             hint: 'Как к вам обращаться в переписке и на документах',
             missing: !user.name?.trim(),
         },
         {
             key: 'email',
-            icon: <Mail className="h-4 w-4 text-primary" />,
+            icon: <Mail className="h-4 w-4 text-indigo-500" />,
             label: 'E-mail',
             hint: 'Для уведомлений о заказах, доставке и счетов',
             missing: !user.email || isInternalEmail(user.email),
         },
         {
             key: 'phone',
-            icon: <Phone className="h-4 w-4 text-primary" />,
+            icon: <Phone className="h-4 w-4 text-indigo-500" />,
             label: 'Телефон',
             hint: 'Менеджер свяжется с вами по вопросам заказа',
             missing: !user.phone?.trim(),
@@ -79,7 +79,7 @@ export default function WelcomeModal({ user }: { user: User }) {
                             </p>
                             <ul className="space-y-3">
                                 {missingFields.map((f) => (
-                                    <li key={f.key} className="flex items-start gap-3 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-primary/5 dark:bg-indigo-950/30 px-4 py-3">
+                                    <li key={f.key} className="flex items-start gap-3 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
                                         <span className="mt-0.5 flex-shrink-0">{f.icon}</span>
                                         <div>
                                             <span className="text-sm font-medium text-foreground">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -156,7 +156,7 @@ export default function OrderPage({ params }: PageProps) {
         if (status === 'confirmed')
             return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200';
         if (status === 'shipped')
-            return 'bg-primary/10 text-primary dark:bg-primary/20/40 dark:text-indigo-200';
+            return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200';
         if (status === 'delivered')
             return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200';
         if (status === 'cancelled')
@@ -501,7 +501,7 @@ export default function OrderPage({ params }: PageProps) {
                                         <div className="flex-1">
                                             <Link
                                                 href={`/product/${item.id}`}
-                                                className="hover:text-primary dark:hover:text-primary/70"
+                                                className="hover:text-primary dark:hover:text-indigo-300"
                                             >
                                                 <h3 className="font-medium text-foreground">
                                                     {item.title}
@@ -588,8 +588,8 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             {(order.bonusEarned ?? 0) > 0 && (
-                                <div className="mb-4 p-3 bg-primary/5 dark:bg-primary/15 border border-primary/30 dark:border-primary/40 rounded text-sm">
-                                    <p className="font-medium text-primary dark:text-indigo-200">
+                                <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded text-sm">
+                                    <p className="font-medium text-indigo-700 dark:text-indigo-200">
                                         {t('order.bonusEarned')}
                                     </p>
                                     <p className="text-primary">

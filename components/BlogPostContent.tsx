@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Image from 'next/image';
@@ -262,7 +262,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
             return (
                 <blockquote
                     key={index}
-                    className="rounded-lg border-l-4 border-primary bg-primary/5 dark:bg-primary/15 px-4 py-3 text-gray-800 dark:text-gray-200"
+                    className="rounded-lg border-l-4 border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-3 text-gray-800 dark:text-gray-200"
                 >
                     <p className="italic">{block.text}</p>
                     {block.author && (
@@ -356,7 +356,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
 
                         <div className="border-t border-b border-border py-5 md:py-6 my-6 md:my-8">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary/10 dark:bg-primary/20/40 flex items-center justify-center text-xl md:text-2xl">
+                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-xl md:text-2xl">
                                     👤
                                 </div>
                                 <div>

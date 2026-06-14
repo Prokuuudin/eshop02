@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -353,7 +353,7 @@ export default function AdminMediaPage() {
                     checked={isAllChecked}
                     ref={(el) => { if (el) el.indeterminate = isSomeChecked && !isAllChecked }}
                     onChange={toggleAll}
-                    className="h-3.5 w-3.5 accent-primary"
+                    className="h-3.5 w-3.5 accent-indigo-600"
                   />
                   Выбрать все ({displayed.length})
                 </label>
@@ -371,7 +371,7 @@ export default function AdminMediaPage() {
                         key={file.name}
                         className={[
                           'group relative rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md',
-                          isSelected ? 'border-primary/70 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'border-border',
+                          isSelected ? 'border-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'border-border',
                           isChecked ? 'ring-2 ring-red-300 dark:ring-red-700 border-red-300' : '',
                         ].join(' ')}
                       >
@@ -384,7 +384,7 @@ export default function AdminMediaPage() {
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleCheck(file.name)}
-                            className="h-4 w-4 accent-primary rounded"
+                            className="h-4 w-4 accent-indigo-600 rounded"
                           />
                         </label>
 
@@ -440,11 +440,11 @@ export default function AdminMediaPage() {
                         return (
                           <tr
                             key={file.name}
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${isSelected ? 'bg-primary/5 dark:bg-primary/20/10' : ''}`}
+                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/10' : ''}`}
                             onClick={() => setSelected(isSelected ? null : file)}
                           >
                             <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                              <input type="checkbox" checked={isChecked} onChange={() => toggleCheck(file.name)} className="h-4 w-4 accent-primary" />
+                              <input type="checkbox" checked={isChecked} onChange={() => toggleCheck(file.name)} className="h-4 w-4 accent-indigo-600" />
                             </td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
@@ -511,7 +511,7 @@ export default function AdminMediaPage() {
                   )
                   return (
                     <div className="text-xs">
-                      <p className="font-medium text-primary dark:text-primary mb-1">
+                      <p className="font-medium text-indigo-700 dark:text-primary mb-1">
                         Используется в {usedIn.length} товарах:
                       </p>
                       <div className="space-y-0.5 max-h-24 overflow-y-auto">
@@ -546,7 +546,7 @@ export default function AdminMediaPage() {
                     <button type="button"
                       disabled={replacing}
                       onClick={() => replaceInputRef.current?.click()}
-                      className="text-xs rounded-lg border border-primary/50 dark:border-primary/50 px-3 py-1.5 text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-50">
+                      className="text-xs rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-50">
                       {replacing ? 'Замена...' : 'Заменить файл (путь не изменится)'}
                     </button>
                   )}

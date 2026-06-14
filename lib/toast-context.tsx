@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React from 'react'
 
@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/40 dark:border-green-700 dark:text-green-200'
                 : toast.type === 'error'
                   ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/40 dark:border-red-700 dark:text-red-200'
-                  : 'bg-primary/5 border-primary/30 text-primary dark:bg-primary/20/40 dark:border-primary/50 dark:text-indigo-200'
+                  : 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-700 dark:text-indigo-200'
             }`}
           >
             {toast.message}

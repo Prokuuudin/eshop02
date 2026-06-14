@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
@@ -141,14 +141,14 @@ export default function RegisterForm({ onClose }: Props) {
                 <div className="flex gap-2">
                     <a
                         href="tel:+37127067730"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-primary dark:hover:text-indigo-400 transition-colors"
                     >
                         <Phone className="w-3 h-3" />
                         +371 27067730
                     </a>
                     <a
                         href="mailto:office@miksplus.eu"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-indigo-400 hover:text-primary dark:hover:text-indigo-400 transition-colors"
                     >
                         <Mail className="w-3 h-3" />
                         office@miksplus.eu

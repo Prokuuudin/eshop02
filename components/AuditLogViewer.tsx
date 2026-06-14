@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useMemo, useState } from 'react'
 import { useAuditLogStore } from '@/lib/audit-log-store'
@@ -40,7 +40,7 @@ const ACTION_COLORS: Record<string, string> = {
   'access_request_approved': 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300',
   'access_request_rejected': 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300',
   'settings_updated': 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300',
-  'api_call': 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary',
+  'api_call': 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-primary',
   'bulk_import': 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300',
 }
 

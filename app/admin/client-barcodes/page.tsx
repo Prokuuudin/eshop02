@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -329,7 +329,7 @@ export default function AdminClientBarcodesPage() {
                                                 }
                                                 rows={2}
                                                 placeholder="Например: предоставленный документ не является действующим сертификатом..."
-                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             />
                                         </div>
                                         <div className="flex gap-2">

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, ShoppingBag, ChevronDown } from 'lucide-react'
@@ -99,14 +99,14 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
 
   if (existingSub) {
     return (
-      <div className="subscription-widget subscription-widget--active mt-4 rounded-lg border border-primary/30 bg-primary/5 dark:border-primary/40 dark:bg-primary/20 p-3">
+      <div className="subscription-widget subscription-widget--active mt-4 rounded-lg border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40 p-3">
         <div className="subscription-widget__header flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4 text-primary shrink-0" />
-            <span className="text-sm font-medium text-primary dark:text-indigo-200">
+            <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
               {t('subscription.activeTitle')}
             </span>
-            <Badge variant="outline" className="text-xs border-primary/50 text-primary dark:border-primary dark:text-primary">
+            <Badge variant="outline" className="text-xs border-indigo-300 text-indigo-700 dark:border-primary dark:text-primary">
               -{existingSub.discountPercent}%
             </Badge>
           </div>
@@ -117,7 +117,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
             {t('subscription.cancel')}
           </button>
         </div>
-        <p className="mt-1.5 text-xs text-primary dark:text-primary">
+        <p className="mt-1.5 text-xs text-indigo-700 dark:text-primary">
           {t(existingSub.interval === 'monthly' ? 'subscription.monthly' : 'subscription.quarterly')}
           {' · '}
           {existingSub.quantity} {t('product.pcs')}
@@ -168,8 +168,8 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
                     onClick={() => setInterval(iv)}
                     className={`subscription-widget__interval-btn flex-1 rounded-lg border p-2.5 text-left transition-all ${
                       interval === iv
-                        ? 'border-primary bg-primary/5 dark:bg-indigo-950/50 ring-1 ring-primary'
-                        : 'border-border hover:border-primary/50'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 ring-1 ring-indigo-500'
+                        : 'border-border hover:border-indigo-300'
                     }`}
                   >
                     <div className="text-xs font-semibold text-foreground">

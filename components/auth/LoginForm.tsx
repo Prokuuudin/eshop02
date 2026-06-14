@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -129,14 +129,14 @@ export default function LoginForm({
                         <button
                             type="button"
                             onClick={onForgotPassword}
-                            className="text-sm text-primary hover:text-primary hover:underline"
+                            className="text-sm text-primary hover:text-indigo-700 hover:underline"
                         >
                             {t('auth.forgotPassword')}
                         </button>
                     ) : (
                         <Link
                             href="/auth/forgot-password"
-                            className="text-sm text-primary hover:text-primary hover:underline"
+                            className="text-sm text-primary hover:text-indigo-700 hover:underline"
                         >
                             {t('auth.forgotPassword')}
                         </Link>

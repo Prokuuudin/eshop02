@@ -58,7 +58,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
             <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
-                <div className="account-profile__avatar flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm overflow-hidden relative">
+                <div className="account-profile__avatar flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-sm overflow-hidden relative">
                     {(isEditing ? profileDraft?.avatarUrl : user.avatarUrl) ? (
                         <Image
                             src={isEditing ? profileDraft?.avatarUrl : user.avatarUrl}
@@ -75,7 +75,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             className="absolute bottom-0 right-0 bg-white bg-opacity-80 rounded-full p-1 cursor-pointer border border-gray-300"
                             title={t('account.avatarHint')}
                         >
-                            <ImagePlus className="w-4 h-4 text-indigo-600" />
+                            <ImagePlus className="w-4 h-4 text-primary" />
                             <input
                                 type="file"
                                 accept="image/*"
@@ -120,14 +120,14 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                     )}
                 </div>
                 <div className="account-profile__info min-w-0">
-                    <h2 className="account-profile__name truncate text-xl font-bold text-gray-900 dark:text-gray-100">
+                    <h2 className="account-profile__name truncate text-xl font-bold text-foreground">
                         {user.name || t('account.userDefault')}
                     </h2>
-                    <p className="account-profile__email mt-1 break-all text-sm text-gray-600 dark:text-gray-300">
+                    <p className="account-profile__email mt-1 break-all text-sm text-muted-foreground">
                         {user.email}
                     </p>
-                    <p className="account-profile__phone mt-1 break-all text-sm text-gray-600 dark:text-gray-300">
-                        {user.phone ? user.phone : t('account.phoneNotSet', 'Телефон не указан')}
+                    <p className="account-profile__phone mt-1 break-all text-sm text-muted-foreground">
+                        {user.phone ? user.phone : t('account.phoneNotSet')}
                     </p>
                 </div>
             </div>
@@ -135,7 +135,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                 <>
                     <div className="space-y-2">
                         <div className="text-sm">
-                            <span className="text-gray-600 dark:text-gray-300 font-medium">
+                            <span className="text-muted-foreground font-medium">
                                 {tl(
                                     'account.page.cardNumber',
                                     'Номер карты клиента',
@@ -146,7 +146,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             : <span className="font-mono">{user.cardNumber || '-'}</span>
                         </div>
                         <div className="text-sm">
-                            <span className="text-gray-600 dark:text-gray-300 font-medium">
+                            <span className="text-muted-foreground font-medium">
                                 {tl('account.page.company', 'Компания', 'Company', 'Uzņēmums')}
                             </span>
                             : <span>{user.companyName || '-'}</span>
@@ -166,7 +166,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                 >
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 {t('account.name')}
                             </label>
                             <Input
@@ -186,7 +186,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 Email
                             </label>
                             <Input
@@ -206,8 +206,8 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                                {t('account.phone', 'Телефон')}
+                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
+                                {t('account.phone')}
                             </label>
                             <div ref={phoneWrapperRef}>
                             <PhoneInput
@@ -223,7 +223,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-gray-600 dark:text-gray-300 mb-1">
+                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 {t('account.company')}
                             </label>
                             <Input

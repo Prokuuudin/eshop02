@@ -78,7 +78,7 @@ export default function LoginForm({
         >
             {confirmed && (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    E-mail подтверждён! Войдите с номером карты и паролем.
+                    {t('auth.emailConfirmed')}
                 </p>
             )}
             {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
@@ -155,9 +155,9 @@ export default function LoginForm({
             </div>
             {setupRequired && (
                 <p className="text-sm text-center text-amber-700 dark:text-amber-400">
-                    Первый администратор ещё не создан.
+                    {t('auth.adminNotSetup')}
                     <Link href="/auth/admin-setup" className="ml-2 underline underline-offset-2">
-                        Открыть первичную настройку
+                        {t('auth.openAdminSetup')}
                     </Link>
                 </p>
             )}

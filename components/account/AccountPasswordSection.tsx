@@ -42,19 +42,19 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
         if (!user) return;
 
         if (!current) {
-            setError(t('account.password.errorCurrentRequired', 'Введите текущий пароль'));
+            setError(t('account.password.errorCurrentRequired'));
             return;
         }
         if (user.password !== current) {
-            setError(t('account.password.errorCurrentWrong', 'Текущий пароль неверный'));
+            setError(t('account.password.errorCurrentWrong'));
             return;
         }
         if (next.length < 6) {
-            setError(t('account.password.errorTooShort', 'Новый пароль должен быть не менее 6 символов'));
+            setError(t('account.password.errorTooShort'));
             return;
         }
         if (next !== confirm) {
-            setError(t('account.password.errorMismatch', 'Пароли не совпадают'));
+            setError(t('account.password.errorMismatch'));
             return;
         }
 
@@ -81,17 +81,17 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                         <Lock className="h-4 w-4" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            {t('account.password.title', 'Пароль')}
+                        <h3 className="text-sm font-semibold text-foreground">
+                            {t('account.password.title')}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {t('account.password.hint', 'Рекомендуем менять пароль регулярно')}
+                        <p className="text-xs text-muted-foreground">
+                            {t('account.password.hint')}
                         </p>
                     </div>
                 </div>
                 {!open && (
                     <Button size="sm" variant="outline" onClick={handleOpen}>
-                        {t('account.password.change', 'Изменить')}
+                        {t('account.password.change')}
                     </Button>
                 )}
             </div>
@@ -101,13 +101,13 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                     {success ? (
                         <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
                             <CheckCircle className="h-4 w-4" />
-                            {t('account.password.successMsg', 'Пароль успешно изменён')}
+                            {t('account.password.successMsg')}
                         </div>
                     ) : (
                         <div className="space-y-3 max-w-sm">
                             <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                                    {t('account.password.current', 'Текущий пароль')}
+                                <label className="block text-xs text-muted-foreground mb-1">
+                                    {t('account.password.current')}
                                 </label>
                                 <div className="relative flex items-center">
                                     <Input
@@ -129,8 +129,8 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                             </div>
 
                             <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                                    {t('account.password.new', 'Новый пароль')}
+                                <label className="block text-xs text-muted-foreground mb-1">
+                                    {t('account.password.new')}
                                 </label>
                                 <div className="relative flex items-center">
                                     <Input
@@ -152,8 +152,8 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                             </div>
 
                             <div>
-                                <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
-                                    {t('account.password.confirm', 'Повторите новый пароль')}
+                                <label className="block text-xs text-muted-foreground mb-1">
+                                    {t('account.password.confirm')}
                                 </label>
                                 <Input
                                     type="password"
@@ -170,10 +170,10 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
 
                             <div className="flex gap-2 pt-1">
                                 <Button size="sm" variant="outline" onClick={handleCancel}>
-                                    {t('common.cancel', 'Отмена')}
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button size="sm" onClick={handleSave}>
-                                    {t('common.save', 'Сохранить')}
+                                    {t('common.save')}
                                 </Button>
                             </div>
                         </div>

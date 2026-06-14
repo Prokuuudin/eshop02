@@ -30,7 +30,7 @@ export default function ForgotPasswordForm() {
 
       setSent(true)
     } catch {
-      setError('Ошибка соединения. Попробуйте ещё раз.')
+      setError(t('auth.connectionError'))
     } finally {
       setLoading(false)
     }
@@ -61,7 +61,7 @@ export default function ForgotPasswordForm() {
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Отправляем…' : t('auth.sendResetLink')}
+        {loading ? t('auth.sending') : t('auth.sendResetLink')}
       </Button>
     </form>
   )

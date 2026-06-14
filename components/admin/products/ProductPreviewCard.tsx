@@ -117,7 +117,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                                 <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Увеличить количество">+</button>
                             </div>
                         </div>
-                        <button className="w-full add-to-cart__button bg-primary hover:bg-primary/90 text-white font-semibold py-2 rounded-md transition opacity-60 cursor-not-allowed" disabled tabIndex={-1}>
+                        <button className="w-full add-to-cart__button bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md transition opacity-60 cursor-not-allowed" disabled tabIndex={-1}>
                             В корзину
                         </button>
                     </div>

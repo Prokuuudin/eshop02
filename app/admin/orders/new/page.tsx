@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -311,7 +311,7 @@ export default function NewOrderPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
-  const inputCls = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
+  const inputCls = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary'
   const selectCls = inputCls
 
   return (
@@ -393,7 +393,7 @@ export default function NewOrderPage() {
                         key={p.id}
                         type="button"
                         onClick={() => addProduct(p)}
-                        className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                        className="w-full text-left px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 last:border-0"
                       >
                         {p.image && (
                           <img src={p.image} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
@@ -439,7 +439,7 @@ export default function NewOrderPage() {
                           step={0.01}
                           value={item.unitPrice}
                           onChange={(e) => updateUnitPrice(item.product.id, parseFloat(e.target.value))}
-                          className="w-20 rounded border border-border bg-card px-2 py-1 text-sm text-center tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          className="w-20 rounded border border-border bg-card px-2 py-1 text-sm text-center tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
                           title="Цена за единицу (можно изменить)"
                         />
                       </div>
@@ -508,7 +508,7 @@ export default function NewOrderPage() {
                           key={p.code}
                           type="button"
                           onClick={() => { setPromoInput(p.code); setPromoResult(null) }}
-                          className="text-xs rounded-full border border-border px-2 py-0.5 text-muted-foreground hover:border-indigo-300 hover:text-primary dark:hover:text-indigo-400 transition-colors"
+                          className="text-xs rounded-full border border-border px-2 py-0.5 text-muted-foreground hover:border-primary/50 hover:text-primary dark:hover:text-primary/80 transition-colors"
                         >
                           {p.code} −{p.discountPct}%
                         </button>
@@ -555,7 +555,7 @@ export default function NewOrderPage() {
                     className={[
                       'rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
                       deliveryMethod === opt.value
-                        ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-primary dark:bg-indigo-900/20 dark:text-primary'
+                        ? 'border-primary/70 bg-primary/5 text-primary dark:border-primary dark:bg-primary/10 dark:text-primary'
                         : 'border-border text-muted-foreground hover:border-gray-300',
                     ].join(' ')}
                   >
@@ -616,7 +616,7 @@ export default function NewOrderPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Внутренний комментарий (клиент не видит)..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </Section>
 

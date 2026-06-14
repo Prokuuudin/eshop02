@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React from 'react'
 import Link from 'next/link'
@@ -466,7 +466,7 @@ export default function AdminBannersPage() {
 
               {/* Banner form */}
               {showBannerForm && (
-                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-card p-5 space-y-4">
+                <div className="rounded-lg border border-primary/30 dark:border-primary/50 bg-card p-5 space-y-4">
                   <h2 className="text-base font-semibold text-foreground">
                     {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
                   </h2>
@@ -670,7 +670,7 @@ export default function AdminBannersPage() {
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{banner.subtitle}</p>
                         )}
                         {banner.link && (
-                          <p className="text-xs text-indigo-500 mt-0.5 truncate">{banner.link}</p>
+                          <p className="text-xs text-primary mt-0.5 truncate">{banner.link}</p>
                         )}
                       </div>
 
@@ -727,7 +727,7 @@ export default function AdminBannersPage() {
 
               {/* Block form */}
               {showBlockForm && (
-                <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-card p-5 space-y-4">
+                <div className="rounded-lg border border-primary/30 dark:border-primary/50 bg-card p-5 space-y-4">
                   <h2 className="text-base font-semibold text-foreground">
                     {editingBlockId ? 'Редактировать блок' : 'Новый контентный блок'}
                   </h2>

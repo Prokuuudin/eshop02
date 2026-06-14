@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -37,7 +37,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 const ORDER_STATUS_COLORS: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
   confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
-  shipped:   'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200',
+  shipped:   'bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary/60',
   delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
@@ -134,8 +134,8 @@ export default function CustomerProfilePage() {
         {/* Header */}
         <div className="flex flex-wrap items-start gap-5">
           {/* Avatar */}
-          <div className="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-            <span className="text-2xl font-bold text-indigo-700 dark:text-primary">{initials}</span>
+          <div className="h-16 w-16 rounded-full bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0">
+            <span className="text-2xl font-bold text-primary dark:text-primary">{initials}</span>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -148,7 +148,7 @@ export default function CustomerProfilePage() {
               </span>
             </div>
             <div className="flex flex-wrap gap-4 mt-1.5 text-sm text-muted-foreground">
-              <a href={`mailto:${email}`} className="hover:text-primary dark:hover:text-indigo-400 hover:underline">{email}</a>
+              <a href={`mailto:${email}`} className="hover:text-primary dark:hover:text-primary/80 hover:underline">{email}</a>
               {stats.phone && <span>{stats.phone}</span>}
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function CustomerProfilePage() {
               </button>
             </a>
             <Link href={`/admin/orders?q=${encodeURIComponent(email)}`}>
-              <button type="button" className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-sm text-indigo-700 dark:text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
+              <button type="button" className="rounded-lg border border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 text-sm text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/40 transition-colors">
                 Все заказы ↗
               </button>
             </Link>
@@ -192,7 +192,7 @@ export default function CustomerProfilePage() {
               className={[
                 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                 tab === t.key
-                  ? 'border-primary text-primary dark:border-indigo-400'
+                  ? 'border-primary text-primary dark:border-primary/70'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >

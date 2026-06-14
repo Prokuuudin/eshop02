@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -24,22 +24,22 @@ import { formatEuro } from '@/lib/utils';
 function HowItWorks({ t }: { t: (k: string) => string }) {
     const [open, setOpen] = useState(false);
     return (
-        <div className="rounded-xl border border-indigo-100 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 p-4">
+        <div className="rounded-xl border border-primary/10 bg-primary/5 dark:border-primary/40 dark:bg-primary/15 p-4">
             <button
                 className="flex w-full items-center justify-between gap-2 text-left"
                 onClick={() => setOpen((v) => !v)}
             >
-                <div className="flex items-center gap-2 text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary dark:text-primary/60">
                     <Info className="w-4 h-4 shrink-0" />
                     {t('templates.howTitle')}
                 </div>
                 {open
-                    ? <ChevronUp className="w-4 h-4 text-indigo-400 shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-indigo-400 shrink-0" />
+                    ? <ChevronUp className="w-4 h-4 text-primary/80 shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-primary/80 shrink-0" />
                 }
             </button>
             {open && (
-                <ol className="mt-3 space-y-2 text-sm text-indigo-700 dark:text-primary list-none pl-0">
+                <ol className="mt-3 space-y-2 text-sm text-primary dark:text-primary list-none pl-0">
                     <li className="flex items-start gap-2">
                         <ShoppingBag className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>{t('templates.howStep1')}</span>
@@ -134,7 +134,7 @@ function TemplateCard({
                             </div>
                         ) : (
                             <p
-                                className="text-sm font-semibold text-foreground truncate cursor-pointer hover:text-primary dark:hover:text-indigo-400 transition-colors"
+                                className="text-sm font-semibold text-foreground truncate cursor-pointer hover:text-primary dark:hover:text-primary/80 transition-colors"
                                 title={t('templates.clickToRename')}
                                 onClick={startEdit}
                             >
@@ -188,7 +188,7 @@ function TemplateCard({
                     {hasMore && (
                         <button
                             onClick={() => setExpanded((v) => !v)}
-                            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 dark:text-primary mt-1 transition-colors"
+                            className="flex items-center gap-1 text-xs text-primary hover:text-primary dark:text-primary mt-1 transition-colors"
                         >
                             {expanded
                                 ? <><ChevronUp className="w-3 h-3" />{t('templates.showLess')}</>
@@ -266,7 +266,7 @@ export default function AccountTemplatesPage() {
                     {t('common.back')}
                 </Link>
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-primary dark:bg-indigo-900/40 dark:text-primary">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5 text-primary dark:bg-primary/40 dark:text-primary">
                         <BookmarkPlus className="h-5 w-5" />
                     </div>
                     <div>
@@ -315,11 +315,11 @@ export default function AccountTemplatesPage() {
                         </p>
                     </div>
                     <div className="flex flex-col gap-2 text-sm">
-                        <Link href="/cart" className="inline-flex items-center gap-2 text-primary hover:text-indigo-700 dark:text-primary font-medium">
+                        <Link href="/cart" className="inline-flex items-center gap-2 text-primary hover:text-primary dark:text-primary font-medium">
                             <ShoppingBag className="w-4 h-4" />
                             {t('templates.emptyCta1')}
                         </Link>
-                        <Link href="/account#orders-history" className="inline-flex items-center gap-2 text-primary hover:text-indigo-700 dark:text-primary font-medium">
+                        <Link href="/account#orders-history" className="inline-flex items-center gap-2 text-primary hover:text-primary dark:text-primary font-medium">
                             <ClipboardList className="w-4 h-4" />
                             {t('templates.emptyCta2')}
                         </Link>

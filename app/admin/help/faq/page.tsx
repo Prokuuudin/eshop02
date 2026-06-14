@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -128,7 +128,7 @@ export default function AdminFaqPage() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpenId(null) }}
             placeholder="Поиск по вопросам..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}
@@ -176,7 +176,7 @@ export default function AdminFaqPage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-900/20 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="rounded-xl border border-primary/10 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-foreground">Не нашли ответ?</p>
             <p className="text-sm text-muted-foreground mt-0.5">Обратитесь в службу поддержки — мы поможем разобраться.</p>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -215,7 +215,7 @@ export default function AdminReturnsPage() {
             onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
             className={`rounded-xl border p-4 text-left transition-colors ${
               statusFilter === s
-                ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-900/20'
+                ? 'border-primary/70 bg-primary/5 dark:border-primary dark:bg-primary/10'
                 : 'border-border bg-card hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
@@ -227,7 +227,7 @@ export default function AdminReturnsPage() {
 
       {/* Create form */}
       {showCreate && (
-        <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/20/10 p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Новая заявка на возврат</h2>
 
           {/* Order lookup */}
@@ -324,7 +324,7 @@ export default function AdminReturnsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Поиск по ID, заказу, имени, email..."
-            className="flex-1 min-w-[220px] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex-1 min-w-[220px] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <select
             value={statusFilter}
@@ -411,7 +411,7 @@ export default function AdminReturnsPage() {
                       type="button"
                       disabled={notifySending === ret.id}
                       onClick={() => void sendNotification(ret)}
-                      className="inline-flex items-center rounded-lg border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-primary hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center rounded-lg border border-primary/50 dark:border-primary/50 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/40 transition-colors disabled:opacity-50"
                     >
                       {notifySending === ret.id ? 'Отправка...' : 'Уведомить клиента'}
                     </button>
@@ -513,7 +513,7 @@ export default function AdminReturnsPage() {
                       value={resolutionDraft[ret.id] ?? ''}
                       onChange={(e) => setResolutionDraft((prev) => ({ ...prev, [ret.id]: e.target.value }))}
                       placeholder="Добавьте комментарий к решению..."
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                     />
 
                     <div className="flex flex-wrap gap-2">

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -98,7 +98,7 @@ export default async function BrandPage({ params }: PageProps) {
           </p>
           <Link
             href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-            className="inline-block px-4 py-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition"
+            className="inline-block px-4 py-2 bg-primary/5 text-primary rounded hover:bg-primary/10 transition"
           >
             {t['brands.viewAllProducts'] ?? 'View all brand products'}
           </Link>

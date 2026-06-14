@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import type { Product } from '@/data/products';
@@ -119,7 +119,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     min={0}
                     value={stock}
                     onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <button
                     type="button"
@@ -130,7 +130,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     {saving ? '...' : 'Сохр.'}
                 </button>
                 {subscribers.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-[11px] text-indigo-500 dark:text-primary ml-auto">
+                    <span className="flex items-center gap-0.5 text-[11px] text-primary dark:text-primary ml-auto">
                         <Bell className="w-3 h-3" />
                         {subscribers.length}
                     </span>
@@ -145,7 +145,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
                 >
                     <Pencil className="w-3.5 h-3.5" />
                     Редактировать

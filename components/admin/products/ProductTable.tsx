@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState } from 'react';
 import type { Product } from '@/data/products';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
         if (e.key === 'Escape') setEditing(null)
     }
 
-    const cellCls = 'px-2 py-1 w-24 rounded border border-indigo-300 dark:border-primary bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400'
+    const cellCls = 'px-2 py-1 w-24 rounded border border-primary/50 dark:border-primary bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary'
 
     return (
         <div className="overflow-x-auto">
@@ -115,7 +115,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'price')}
                                             title={onQuickSave ? 'Кликните для редактирования' : undefined}
-                                            className={`text-sm font-medium text-foreground tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-primary/90 cursor-pointer' : 'cursor-default'}`}
+                                            className={`text-sm font-medium text-foreground tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary/90 cursor-pointer' : 'cursor-default'}`}
                                         >
                                             €{product.price.toFixed(2)}
                                         </button>
@@ -139,7 +139,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'stock')}
                                             title={onQuickSave ? 'Кликните для редактирования' : undefined}
-                                            className={`text-sm tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer' : 'cursor-default'} ${product.stock === 0 ? 'text-red-600 dark:text-red-400 font-semibold' : product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-foreground'}`}
+                                            className={`text-sm tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-primary/5 dark:hover:bg-primary/10 cursor-pointer' : 'cursor-default'} ${product.stock === 0 ? 'text-red-600 dark:text-red-400 font-semibold' : product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-foreground'}`}
                                         >
                                             {product.stock}
                                         </button>

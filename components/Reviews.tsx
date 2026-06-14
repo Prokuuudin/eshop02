@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/use-translation";
 import { Button } from "@/components/ui/button";
@@ -266,13 +266,13 @@ export default function Reviews({ productId }: ReviewsProps) {
               <p className="text-gray-700 dark:text-gray-200 mb-3">{review.text}</p>
               <button
                 onClick={() => void handleHelpful(review.id)}
-                className="text-sm text-muted-foreground hover:text-primary dark:hover:text-indigo-400"
+                className="text-sm text-muted-foreground hover:text-primary dark:hover:text-primary/80"
               >
                 👍 {t("reviews.helpful")} ({review.helpful})
               </button>
               {review.adminReply && (
-                <div className="mt-4 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3">
-                  <p className="text-xs font-semibold text-indigo-700 dark:text-primary mb-1.5">
+                <div className="mt-4 ml-2 rounded-lg border-l-[3px] border-primary/70 dark:border-primary bg-primary/5 dark:bg-primary/10 px-4 py-3">
+                  <p className="text-xs font-semibold text-primary dark:text-primary mb-1.5">
                     Ответ магазина
                   </p>
                   <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -254,7 +254,7 @@ export default function DuplicatesPage() {
                             {/* Edit link */}
                             <Link
                               href={`/admin/products/${p.id}`}
-                              className="shrink-0 rounded-lg border border-indigo-300 dark:border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors whitespace-nowrap"
+                              className="shrink-0 rounded-lg border border-primary/50 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors whitespace-nowrap"
                             >
                               Редактировать
                             </Link>

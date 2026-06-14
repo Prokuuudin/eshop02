@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -260,12 +260,12 @@ export default function AdminGlobalSearch() {
                         className={[
                           'w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors',
                           isSelected
-                            ? 'bg-indigo-50 dark:bg-indigo-900/20'
+                            ? 'bg-primary/5 dark:bg-primary/10'
                             : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
                         ].join(' ')}
                       >
                         <div className="min-w-0">
-                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-indigo-700 dark:text-primary' : 'text-foreground'}`}>
+                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary dark:text-primary' : 'text-foreground'}`}>
                             {item.label}
                           </p>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{item.sub}</p>

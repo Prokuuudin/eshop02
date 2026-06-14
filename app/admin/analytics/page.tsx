@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -156,7 +156,7 @@ function AbcSection() {
             className={[
               'rounded-xl border p-4 text-left transition-colors cursor-pointer',
               filter === g
-                ? 'border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20'
+                ? 'border-primary/70 dark:border-primary bg-primary/5 dark:bg-primary/10'
                 : 'border-border bg-card hover:border-gray-300',
             ].join(' ')}
           >
@@ -202,7 +202,7 @@ function AbcSection() {
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/admin/products/${r.id}`}
-                    className="text-foreground hover:text-primary dark:hover:text-indigo-400 hover:underline"
+                    className="text-foreground hover:text-primary dark:hover:text-primary/80 hover:underline"
                   >
                     {r.title}
                   </Link>
@@ -483,7 +483,7 @@ function SeoSection() {
             className={[
               'rounded-xl border p-4 text-left transition-colors',
               s.color,
-              issueFilter === s.key ? 'ring-2 ring-indigo-400 ring-offset-1' : '',
+              issueFilter === s.key ? 'ring-2 ring-primary ring-offset-1' : '',
             ].join(' ')}
           >
             <p className={`text-2xl font-bold ${s.text}`}>{counts[s.key]}</p>
@@ -620,7 +620,7 @@ export default function AdminAnalyticsPage() {
               className={[
                 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                 tab === t.value
-                  ? 'border-primary text-primary dark:border-indigo-400'
+                  ? 'border-primary text-primary dark:border-primary/70'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
               ].join(' ')}
             >

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useState } from 'react';
 
 export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string) => string, orderFilter: 'all' | 'active' | 'completed') {
@@ -43,7 +43,7 @@ export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string)
         if (status === 'confirmed')
             return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200';
         if (status === 'shipped')
-            return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200';
+            return 'bg-primary/10 text-primary dark:bg-primary/40 dark:text-primary/60';
         if (status === 'delivered')
             return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200';
         if (status === 'cancelled')

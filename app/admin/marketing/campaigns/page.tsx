@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
@@ -320,7 +320,7 @@ export default function AdminCampaignsPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
                           {status.label}
                         </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary dark:bg-primary/40 dark:text-primary font-medium">
                           {TYPE_LABELS[item.type]}
                         </span>
                       </div>

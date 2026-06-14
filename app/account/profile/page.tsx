@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountProfileCard from '@/components/account/AccountProfileCard';
 import { AccountPasswordSection } from '@/components/account/AccountPasswordSection';
@@ -37,7 +38,7 @@ export default function AccountProfilePage(): React.ReactElement {
     if (loading) {
         return (
             <main className="w-full px-4 py-12">
-                <p className="text-gray-600 dark:text-gray-300">{t('common.loading')}</p>
+                <p className="text-muted-foreground">{t('common.loading')}</p>
             </main>
         );
     }
@@ -45,7 +46,7 @@ export default function AccountProfilePage(): React.ReactElement {
     if (!user) {
         return (
             <main className="w-full px-4 py-12">
-                <p className="text-gray-600 dark:text-gray-300">{t('account.authRequired')}</p>
+                <p className="text-muted-foreground">{t('account.authRequired')}</p>
             </main>
         );
     }
@@ -53,11 +54,22 @@ export default function AccountProfilePage(): React.ReactElement {
     return (
         <main className="w-full px-4 py-12">
             <div className="mx-auto max-w-6xl">
-                <h1 className="mb-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {t('account.myProfile', 'Мой профиль')}
+                <div className="mb-6">
+                    <Link
+                        href="/account"
+                        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 active:bg-indigo-800 transition-colors"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        {t('account.goToAccount')}
+                    </Link>
+                </div>
+                <h1 className="mb-1 text-2xl font-bold text-foreground">
+                    {t('account.myProfile')}
                 </h1>
-                <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-                    {t('account.profileHint', 'Здесь вы можете обновить личные данные и сменить пароль. Изменения сохраняются сразу после нажатия кнопки «Сохранить».')}
+                <p className="mb-6 text-sm text-muted-foreground">
+                    {t('account.profileHint')}
                 </p>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">

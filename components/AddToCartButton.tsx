@@ -6,8 +6,10 @@ import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useCart } from '@/lib/cart-store'
 import { useToast } from '@/lib/toast-context'
+import { useAuthStore } from '@/lib/auth-store'
 import { getMinimumOrderQuantity, calculatePrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
+import AuthGateDialog from '@/components/AuthGateDialog'
 
 type Props = {
   product: Product
@@ -16,6 +18,9 @@ type Props = {
 export default function AddToCartButton({ product }: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
+  const [authGateOpen, setAuthGateOpen] = useState(false)
   const minOrderQuantity = useMemo(() => getMinimumOrderQuantity(product), [product])
   const [quantity, setQuantity] = useState(minOrderQuantity)
   const { addItem } = useCart()
@@ -55,6 +60,11 @@ export default function AddToCartButton({ product }: Props) {
   }, [minOrderQuantity])
 
   const handleAdd = (): void => {
+    if (!isAuthenticated) {
+      setAuthGateOpen(true)
+      return
+    }
+
     if (isOutOfStock) {
       showToast(t('toast.errorOutOfStock'), 'error')
       return
@@ -165,13 +175,14 @@ export default function AddToCartButton({ product }: Props) {
       <Button
         ref={buttonRef}
         onClick={handleAdd}
-        disabled={isOutOfStock}
+        disabled={isOutOfStock || !isHydrated}
         className={`w-full add-to-cart__button ${
           added ? 'bg-green-600 hover:bg-green-600' : 'bg-primary hover:bg-primary/90'
         } ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {added ? `✓ ${t('product.addedToCart')}` : t('product.addToCart')}
       </Button>
+      <AuthGateDialog open={authGateOpen} onOpenChange={setAuthGateOpen} />
     </div>
   )
 }

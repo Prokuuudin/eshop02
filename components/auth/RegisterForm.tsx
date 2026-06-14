@@ -28,23 +28,23 @@ export default function RegisterForm({ onClose }: Props) {
 
         const trimmedCard = cardNumber.trim().replace(/\s+/g, '').toUpperCase();
         if (!trimmedCard) {
-            setError('Укажите номер карты клиента.');
+            setError(t('auth.enterCardNumber'));
             return;
         }
 
         if (!password) {
-            setError('Укажите пароль.');
+            setError(t('auth.enterPassword'));
             return;
         }
 
         if (password !== FIRST_LOGIN_PASSWORD) {
-            setError('Неверный пароль.');
+            setError(t('auth.wrongPassword'));
             return;
         }
 
         const company = useCompanyStore.getState().getCompanyByCardNumber(trimmedCard);
         if (!company) {
-            setError('Клиент с таким номером карты не найден.');
+            setError(t('auth.cardNotFound'));
             return;
         }
 
@@ -58,7 +58,7 @@ export default function RegisterForm({ onClose }: Props) {
         setLoading(false);
 
         if (!result.success) {
-            setError(result.error ?? 'Ошибка регистрации.');
+            setError(result.error ?? t('auth.registrationError'));
             return;
         }
 
@@ -136,7 +136,7 @@ export default function RegisterForm({ onClose }: Props) {
             <div className="register-form__card-hint space-y-1">
                 <p className="text-xs text-muted-foreground">
                     <span className="text-gray-400 dark:text-gray-500 mr-0.5">*</span>
-                    Есть карта, но нет пароля? Свяжитесь с нами:
+                    {t('auth.hasCardNoPassword')}
                 </p>
                 <div className="flex gap-2">
                     <a
@@ -158,7 +158,7 @@ export default function RegisterForm({ onClose }: Props) {
 
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={loading}>
-                    ПОДТВЕРДИТЬ
+                    {t('auth.confirm')}
                 </Button>
                 {onClose && (
                     <Button type="button" variant="outline" className="register-form__close" onClick={onClose}>

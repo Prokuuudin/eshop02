@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/mssql": "^12.3.0",
     "@types/node": "^20.19.0",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.2.14",
@@ -67,6 +68,7 @@
     "eslint": "8.39.0",
     "eslint-config-next": "13.5.0",
     "eslint-config-prettier": "^10.1.8",
+    "mssql": "^12.5.5",
     "postcss": "8.4.0",
     "prettier": "2.8.8",
     "tailwindcss": "3.4.0",

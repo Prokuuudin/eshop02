@@ -11,3 +11,5 @@ yarn-error.log*
 .claude/worktrees/
 
 /generated/prisma
+tsconfig.tsbuildinfo
+/test-results/

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/use-translation'
 import { Product } from '@/data/products'
@@ -153,7 +153,7 @@ export default function AddToCartButton({ product }: Props) {
               </div>
               <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                  className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -177,7 +177,7 @@ export default function AddToCartButton({ product }: Props) {
         onClick={handleAdd}
         disabled={isOutOfStock || !isHydrated}
         className={`w-full add-to-cart__button ${
-          added ? 'bg-green-600 hover:bg-green-600' : 'bg-primary hover:bg-primary/90'
+          added ? 'bg-green-600 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'
         } ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {added ? `✓ ${t('product.addedToCart')}` : t('product.addToCart')}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -26,13 +26,13 @@ export const AccountTemplatesWidget: React.FC = () => {
     return (
         <Link
             href="/account/templates"
-            className="group flex flex-col rounded-2xl border border-indigo-100 bg-indigo-50 p-5 shadow-sm hover:shadow-md hover:border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:hover:border-indigo-700 transition-all"
+            className="group flex flex-col rounded-2xl border border-primary/10 bg-primary/5 p-5 shadow-sm hover:shadow-md hover:border-primary/30 dark:border-primary/40 dark:bg-primary/10 dark:hover:border-primary/70 transition-all"
         >
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-primary shadow-sm dark:bg-gray-950/40 dark:text-primary">
                     <BookmarkPlus className="h-5 w-5" />
                 </div>
-                <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-primary dark:group-hover:text-indigo-400 transition-colors" />
+                <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-primary dark:group-hover:text-primary/80 transition-colors" />
             </div>
 
             <p className="text-sm font-semibold text-foreground">
@@ -59,7 +59,7 @@ export const AccountTemplatesWidget: React.FC = () => {
                 </p>
             )}
 
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 dark:text-primary">
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary dark:text-primary">
                 {first ? t('templates.manageTemplates') : t('templates.widgetCta')}
                 <ChevronRight className="h-3.5 w-3.5" />
             </span>

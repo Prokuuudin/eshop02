@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -183,7 +183,7 @@ export default function SalesAnalyticsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                     <Link
                         href="/admin/sales/breakdown"
-                        className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 dark:border-primary/40 dark:bg-primary/10 dark:text-primary"
+                        className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-primary"
                     >
                         Товары и категории →
                     </Link>

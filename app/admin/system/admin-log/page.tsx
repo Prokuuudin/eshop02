@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -14,7 +14,7 @@ const ACTION_BADGE: Record<string, string> = {
   'product': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
   'promo':   'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
   'return':  'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
-  'rfq':     'bg-primary/10 text-primary dark:bg-primary/15 dark:text-indigo-200',
+  'rfq':     'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200',
   'review':  'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-200',
 }
 
@@ -143,7 +143,7 @@ export default function AdminLogPage() {
           {[
             { label: 'Всего событий', value: stats.total },
             { label: 'За последние 24 ч', value: stats.today, cls: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
-            { label: 'За 7 дней', value: stats.week, cls: 'bg-primary/5 border-primary/30 dark:bg-primary/20/10 dark:border-primary/40' },
+            { label: 'За 7 дней', value: stats.week, cls: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/10 dark:border-indigo-800' },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-border bg-card'}`}>
               <p className="text-2xl font-bold text-foreground">{s.value}</p>

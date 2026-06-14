@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -373,14 +373,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <div className="flex items-center justify-between text-xs pt-1">
                                 <button
                                     onClick={() => setTemplateOpen(true)}
-                                    className="flex items-center gap-1 text-primary hover:text-primary dark:text-primary transition-colors"
+                                    className="flex items-center gap-1 text-primary hover:text-indigo-700 dark:text-primary transition-colors"
                                 >
                                     <BookmarkPlus className="w-3.5 h-3.5" />
                                     {t('templates.saveAsTemplate')}
                                 </button>
                                 <button
                                     onClick={() => { onClose(); router.push('/account/templates'); }}
-                                    className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary/80 transition-colors"
+                                    className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
                                 >
                                     {t('templates.useSavedTemplates')}
                                 </button>

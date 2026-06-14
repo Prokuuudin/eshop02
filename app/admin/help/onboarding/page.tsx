@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -285,7 +285,7 @@ export default function AdminOnboardingPage() {
                       onClick={() => toggle(step.id)}
                       aria-label={isDone ? 'Снять отметку' : 'Отметить выполненным'}
                       className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        isDone ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-primary/70'
+                        isDone ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400'
                       }`}
                     >
                       {isDone && (

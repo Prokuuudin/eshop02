@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useMemo } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
@@ -178,7 +178,7 @@ export default function AdminMarketingAnalyticsPage() {
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-primary dark:bg-primary rounded-full transition-all"
+                            className="h-full bg-indigo-500 dark:bg-primary rounded-full transition-all"
                             style={{ width: `${widthPct}%` }}
                           />
                         </div>

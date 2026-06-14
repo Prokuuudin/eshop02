@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -229,17 +229,17 @@ export default function AdminCustomerSegmentsPage() {
 
             {/* Broadcast panel */}
             {customers.length > 0 && (
-              <div className="rounded-xl border border-primary/30 dark:border-primary/40 bg-card">
+              <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-card">
                 <button
                   type="button"
                   onClick={() => { setShowBroadcast((v) => !v); setBResult(null) }}
                   className="w-full flex items-center justify-between px-5 py-3.5 text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-primary dark:text-primary">
+                    <span className="text-sm font-semibold text-indigo-700 dark:text-primary">
                       Рассылка по сегменту
                     </span>
-                    <span className="rounded-full bg-primary/10 dark:bg-primary/20/40 px-2.5 py-0.5 text-xs font-medium text-primary dark:text-primary">
+                    <span className="rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-primary">
                       {broadcastRecipients.length} получателей
                       {activeTab !== 'Все' && ` · ${activeTab}`}
                     </span>
@@ -248,7 +248,7 @@ export default function AdminCustomerSegmentsPage() {
                 </button>
 
                 {showBroadcast && (
-                  <div className="border-t border-indigo-100 dark:border-primary/40 px-5 py-4 space-y-4">
+                  <div className="border-t border-indigo-100 dark:border-indigo-800 px-5 py-4 space-y-4">
 
                     {/* Recipients info */}
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -388,7 +388,7 @@ export default function AdminCustomerSegmentsPage() {
                         <td className="px-4 py-3 text-foreground">
                           <Link
                             href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
-                            className="hover:text-primary dark:hover:text-primary/80 hover:underline"
+                            className="hover:text-primary dark:hover:text-indigo-400 hover:underline"
                           >
                             {c.email}
                           </Link>

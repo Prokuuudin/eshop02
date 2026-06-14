@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React from 'react'
 import Link from 'next/link'
@@ -115,7 +115,7 @@ export default function DesignSystemPage() {
             <p className="text-xs text-gray-400 mb-3 font-medium">Проектные цвета (hardcoded Tailwind)</p>
             <div className="flex flex-wrap gap-4">
               <Token name="indigo-600" bg="bg-primary" text="links, focus" />
-              <Token name="indigo-50" bg="bg-primary/5" text="hero bg" border="border-border" />
+              <Token name="indigo-50" bg="bg-indigo-50" text="hero bg" border="border-border" />
               <Token name="amber-500" bg="bg-amber-500" text="bonus" />
               <Token name="amber-50" bg="bg-amber-50" text="bonus bg" border="border-border" />
               <Token name="green-600" bg="bg-green-600" text="success" />
@@ -289,7 +289,7 @@ export default function DesignSystemPage() {
             <Badge variant="outline">Outline</Badge>
             {/* Custom project badges */}
             <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Bonus</span>
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary dark:bg-primary/20/40 dark:text-primary">Новинка</span>
+            <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-primary">Новинка</span>
             <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">В наличии</span>
             <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">Нет в наличии</span>
           </div>

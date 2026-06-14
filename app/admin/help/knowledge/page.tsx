@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -311,10 +311,10 @@ export default function AdminKnowledgePage() {
               >
                 <span className="text-xl leading-none flex-shrink-0">{article.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-sm font-semibold text-foreground mb-0.5 group-hover:text-primary dark:group-hover:text-primary/80 transition-colors">{article.title}</h2>
+                  <h2 className="text-sm font-semibold text-foreground mb-0.5 group-hover:text-primary dark:group-hover:text-indigo-400 transition-colors">{article.title}</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">{article.description}</p>
                 </div>
-                <svg className="flex-shrink-0 w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary/80 transition-colors" viewBox="0 0 16 16" fill="none">
+                <svg className="flex-shrink-0 w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors" viewBox="0 0 16 16" fill="none">
                   <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>

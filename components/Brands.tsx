@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React from 'react'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
@@ -10,7 +10,7 @@ import BrandCardSkeleton from './BrandCardSkeleton';
 const PALETTE = [
   'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
   'bg-green-50', 'bg-teal-50', 'bg-cyan-50', 'bg-sky-50', 'bg-blue-50',
-  'bg-primary/5', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
+  'bg-indigo-50', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
 ];
 
 function buildColorSequence(count: number): string[] {
@@ -112,7 +112,7 @@ export default function Brands() {
                       <Link
                         key={brand.id}
                         href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                        className="inline-block rounded border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-primary/50 hover:text-primary hover:scale-110 sm:text-base"
+                        className="inline-block rounded border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-indigo-300 hover:text-indigo-700 hover:scale-110 sm:text-base"
                         title={brand.name}
                       >
                         {brand.name}

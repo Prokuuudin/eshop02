@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
@@ -418,7 +418,7 @@ export default function AdminReviewsPage() {
                     variant="outline"
                     disabled={isSaving}
                     onClick={() => toggleReply(review.id, review.adminReply?.text)}
-                    className="ml-auto border-primary/50 text-primary hover:bg-primary/5 dark:border-primary/50 dark:text-primary dark:hover:bg-indigo-900/20"
+                    className="ml-auto border-indigo-300 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-primary dark:hover:bg-indigo-900/20"
                   >
                     {review.adminReply
                       ? (replyExpanded.has(review.id) ? l('Закрыть', 'Close', 'Aizvert') : l('Изменить ответ', 'Edit reply', 'Labot atbildi'))
@@ -428,8 +428,8 @@ export default function AdminReviewsPage() {
 
                 {/* Existing reply preview */}
                 {review.adminReply && !replyExpanded.has(review.id) && (
-                  <div className="mt-2 ml-2 rounded-lg border-l-[3px] border-primary/70 dark:border-primary bg-primary/5 dark:bg-primary/10 px-3 py-2">
-                    <p className="text-xs font-semibold text-primary dark:text-primary mb-0.5">
+                  <div className="mt-2 ml-2 rounded-lg border-l-[3px] border-indigo-400 dark:border-primary bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-primary mb-0.5">
                       {l('Ответ магазина', 'Store reply', 'Veikala atbilde')}
                     </p>
                     <p className="text-xs text-gray-700 dark:text-gray-300">{review.adminReply.text}</p>
@@ -438,8 +438,8 @@ export default function AdminReviewsPage() {
 
                 {/* Reply editor */}
                 {replyExpanded.has(review.id) && (
-                  <div className="mt-3 space-y-2 rounded-lg border border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/20/10 p-3">
-                    <p className="text-xs font-semibold text-primary dark:text-primary">
+                  <div className="mt-3 space-y-2 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-3">
+                    <p className="text-xs font-semibold text-indigo-700 dark:text-primary">
                       {l('Ответ от магазина (публичный)', 'Store reply (public)', 'Veikala atbilde (publiska)')}
                     </p>
                     <textarea
@@ -447,7 +447,7 @@ export default function AdminReviewsPage() {
                       value={replyDrafts[review.id] ?? review.adminReply?.text ?? ''}
                       onChange={(e) => setReplyDrafts((d) => ({ ...d, [review.id]: e.target.value }))}
                       placeholder={l('Напишите ответ покупателю...', 'Write a reply to the customer...', 'Rakstiet atbildi klientam...')}
-                      className="w-full rounded-md border border-primary/30 dark:border-primary/50 bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="w-full rounded-md border border-indigo-200 dark:border-indigo-700 bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                     <div className="flex flex-wrap gap-2">
                       <Button

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/use-translation';
 
@@ -19,13 +19,13 @@ export const ProductNavigationLinks: React.FC<ProductNavigationLinksProps> = ({
             </Link>
             <Link
                 href={categoryUrl}
-                className="inline-block rounded bg-primary/5 text-primary px-3 py-1 text-sm font-medium hover:bg-primary/10 transition"
+                className="inline-block rounded bg-indigo-50 text-indigo-700 px-3 py-1 text-sm font-medium hover:bg-indigo-100 transition"
             >
                 {t('product.moreFromCategory', 'Другие товары этой категории')}
             </Link>
             <Link
                 href={brandUrl}
-                className="inline-block rounded bg-primary/5 text-primary px-3 py-1 text-sm font-medium hover:bg-primary/10 transition"
+                className="inline-block rounded bg-indigo-50 text-indigo-700 px-3 py-1 text-sm font-medium hover:bg-indigo-100 transition"
             >
                 {t('product.moreFromBrand', 'Другие товары этого бренда')}
             </Link>

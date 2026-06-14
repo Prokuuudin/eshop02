@@ -3,11 +3,7 @@
     "allow": [
       "Bash(dir \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\components\" -Recurse -Name)",
       "Bash(dir \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\lib\" -Name)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")",
-      "Bash(node -e ' *)",
-      "Bash(sort -t: -k2 -rn)",
-      "Bash(node scripts/color-codemod-phase2c.mjs)",
-      "Bash(node scripts/color-codemod-phase2c.mjs --apply)"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")"
     ]
   }
 }

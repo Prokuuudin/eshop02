@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Pause, Play, X, Package, ChevronDown, ShoppingBag } from 'lucide-react';
@@ -188,7 +188,7 @@ export const AccountSubscriptionsSection: React.FC = () => {
                     {t('subscription.sectionTitle')}
                 </h2>
                 {active.length > 0 && (
-                    <Badge className="ml-1 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary border-0">
+                    <Badge className="ml-1 text-xs bg-primary/10 text-primary dark:bg-primary/20/40 dark:text-primary border-0">
                         {active.length}
                     </Badge>
                 )}
@@ -196,8 +196,8 @@ export const AccountSubscriptionsSection: React.FC = () => {
 
             {subs.length === 0 ? (
                 <div className="account-subscriptions__empty flex flex-col items-center gap-3 py-6 text-center">
-                    <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-                        <RefreshCw className="w-5 h-5 text-indigo-400" />
+                    <div className="w-12 h-12 rounded-full bg-primary/5 dark:bg-primary/20 flex items-center justify-center">
+                        <RefreshCw className="w-5 h-5 text-primary/80" />
                     </div>
                     <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">

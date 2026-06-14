@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -129,8 +129,8 @@ export default function AdminSystemLogsPage() {
             <div className="text-2xl font-bold text-blue-700">{stats.last24h}</div>
             <div className="text-sm text-muted-foreground mt-1">За последние 24 ч</div>
           </div>
-          <div className="border rounded-lg p-4 bg-indigo-50 border-indigo-200">
-            <div className="text-2xl font-bold text-indigo-700">{stats.last7d}</div>
+          <div className="border rounded-lg p-4 bg-primary/5 border-primary/30">
+            <div className="text-2xl font-bold text-primary">{stats.last7d}</div>
             <div className="text-sm text-muted-foreground mt-1">За 7 дней</div>
           </div>
         </div>

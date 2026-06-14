@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { MapPin, Pencil, Trash2, ShoppingCart } from 'lucide-react'
@@ -83,7 +83,7 @@ export default function AccountAddressCard({
         <div className="flex flex-wrap items-center gap-1 border-t border-gray-100 pt-2 dark:border-gray-800">
           <Link
             href={checkoutHref}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-indigo-50 dark:text-primary dark:hover:bg-indigo-950/40 transition-colors"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 dark:text-primary dark:hover:bg-indigo-950/40 transition-colors"
           >
             <ShoppingCart className="h-3.5 w-3.5" />
             {labels.useAddress}

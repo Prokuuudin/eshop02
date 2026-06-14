@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import Link from 'next/link'
@@ -69,7 +69,7 @@ export default function AccountOrderCard({
             </p>
           )}
           {(order.bonusEarned ?? 0) > 0 && (
-            <p className="mt-1 text-xs text-indigo-700">
+            <p className="mt-1 text-xs text-primary">
               {bonusEarnedLabel}: +{order.bonusEarned ?? 0}
             </p>
           )}
@@ -82,7 +82,7 @@ export default function AccountOrderCard({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-primary hover:text-indigo-700 hover:bg-indigo-50 dark:text-primary dark:hover:bg-indigo-950/40"
+            className="gap-1.5 text-primary hover:text-primary hover:bg-primary/5 dark:text-primary dark:hover:bg-indigo-950/40"
             onClick={() => setTemplateOpen(true)}
           >
             <BookmarkPlus className="w-3.5 h-3.5" />

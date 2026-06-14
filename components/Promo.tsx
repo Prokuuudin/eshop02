@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { useTranslation } from '@/lib/use-translation'
@@ -31,7 +31,7 @@ export default function Promo() {
 
           <div className="promo__controls flex items-center gap-4">
             <div className="promo__timer text-lg font-mono bg-white/10 px-3 py-2 rounded">{formatTime(seconds)}</div>
-            <Button className="promo__cta bg-white text-indigo-700">{t('promo.shopNow')}</Button>
+            <Button className="promo__cta bg-white text-primary">{t('promo.shopNow')}</Button>
           </div>
         </div>
       </div>

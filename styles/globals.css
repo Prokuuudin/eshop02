@@ -237,7 +237,7 @@ body[data-scroll-locked][data-scroll-locked] {
         --card-foreground: 221 39% 11%;
         --popover: 0 0% 100%;
         --popover-foreground: 221 39% 11%;
-        --primary: 243 75% 59%;
+        --primary: 228 90% 52%;
         --primary-foreground: 0 0% 100%;
         --secondary: 220 14% 96%;
         --secondary-foreground: 221 39% 11%;
@@ -245,11 +245,13 @@ body[data-scroll-locked][data-scroll-locked] {
         --muted-foreground: 220 9% 46%;
         --accent: 220 14% 96%;
         --accent-foreground: 221 39% 11%;
-        --destructive: 0 84% 60%;
+        --destructive: 0 84% 46%;
         --destructive-foreground: 0 0% 100%;
         --border: 220 13% 91%;
         --input: 220 13% 91%;
-        --ring: 243 75% 59%;
+        --ring: 228 90% 52%;
+        --promo: 0 84% 46%;
+        --promo-foreground: 0 0% 100%;
         --chart-1: 12 76% 61%;
         --chart-2: 173 58% 39%;
         --chart-3: 197 37% 24%;
@@ -264,7 +266,7 @@ body[data-scroll-locked][data-scroll-locked] {
         --card-foreground: 220 14% 96%;
         --popover: 221 39% 11%;
         --popover-foreground: 220 14% 96%;
-        --primary: 239 84% 67%;
+        --primary: 225 85% 63%;
         --primary-foreground: 0 0% 100%;
         --secondary: 215 28% 17%;
         --secondary-foreground: 220 14% 96%;
@@ -276,7 +278,9 @@ body[data-scroll-locked][data-scroll-locked] {
         --destructive-foreground: 0 0% 100%;
         --border: 217 19% 27%;
         --input: 217 19% 27%;
-        --ring: 239 84% 67%;
+        --ring: 225 85% 63%;
+        --promo: 0 72% 42%;
+        --promo-foreground: 0 0% 100%;
         --chart-1: 220 70% 50%;
         --chart-2: 160 60% 45%;
         --chart-3: 30 80% 55%;

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
@@ -30,7 +30,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 const STATUS_COLORS: Record<OrderStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
   confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
-  shipped: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200',
+  shipped: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-indigo-200',
   delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
@@ -435,7 +435,7 @@ export default function AdminOrdersPage() {
             onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
             className={`rounded-xl border p-4 text-left transition-colors cursor-pointer ${
               statusFilter === s
-                ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-900/20'
+                ? 'border-primary/70 bg-primary/5 dark:border-primary dark:bg-primary/10'
                 : 'border-border bg-card hover:border-gray-300 dark:hover:border-gray-600'
             }`}
           >
@@ -501,7 +501,7 @@ export default function AdminOrdersPage() {
               checked={isAllSelected}
               ref={(el) => { if (el) el.indeterminate = isSomeSelected && !isAllSelected }}
               onChange={toggleSelectAll}
-              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-indigo-600 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-primary cursor-pointer"
             />
             <span className="text-xs text-muted-foreground">Выбрать все</span>
           </label>
@@ -511,7 +511,7 @@ export default function AdminOrdersPage() {
             onClick={() => toggleSort('date')}
             className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
               sortField === 'date'
-                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20/40 dark:text-primary'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
             }`}
           >
@@ -522,7 +522,7 @@ export default function AdminOrdersPage() {
             onClick={() => toggleSort('total')}
             className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
               sortField === 'total'
-                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-primary'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20/40 dark:text-primary'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
             }`}
           >
@@ -536,15 +536,15 @@ export default function AdminOrdersPage() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-3">
-          <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 dark:border-primary/50 bg-primary/5 dark:bg-primary/15 px-4 py-3">
+          <span className="text-sm font-medium text-primary dark:text-indigo-200">
             Выбрано: {selectedIds.size}
           </span>
           <div className="flex items-center gap-2">
             <select
               value={bulkStatus}
               onChange={(e) => setBulkStatus(e.target.value as OrderStatus | '')}
-              className="rounded-lg border border-indigo-300 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground"
+              className="rounded-lg border border-primary/50 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground"
             >
               <option value="">Изменить статус...</option>
               {STATUS_LIST.map((s) => (
@@ -559,7 +559,7 @@ export default function AdminOrdersPage() {
             <Printer className="h-3.5 w-3.5" />
             Печать
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="ml-auto text-indigo-700 dark:text-primary">
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="ml-auto text-primary dark:text-primary">
             Снять выбор
           </Button>
         </div>
@@ -578,7 +578,7 @@ export default function AdminOrdersPage() {
               className={[
                 'rounded-xl border overflow-hidden transition-colors',
                 selectedIds.has(order.id)
-                  ? 'border-indigo-300 dark:border-primary bg-indigo-50/40 dark:bg-indigo-900/10'
+                  ? 'border-primary/50 dark:border-primary bg-primary/5/40 dark:bg-primary/20/10'
                   : 'border-border bg-muted',
               ].join(' ')}
             >
@@ -590,7 +590,7 @@ export default function AdminOrdersPage() {
                     onChange={() => toggleSelect(order.id)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Выбрать заказ ${order.id}`}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-indigo-600 cursor-pointer"
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-primary cursor-pointer"
                   />
                 </div>
                 <button
@@ -645,7 +645,7 @@ export default function AdminOrdersPage() {
                       <button
                         type="button"
                         onClick={() => editingOrderId === order.id ? cancelEdit() : startEdit(order)}
-                        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${editingOrderId === order.id ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300' : 'border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${editingOrderId === order.id ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300' : 'border-primary/50 dark:border-primary/50 text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-indigo-900/20'}`}
                       >
                         {editingOrderId === order.id ? 'Отменить правку' : '✏ Редактировать'}
                       </button>
@@ -659,7 +659,7 @@ export default function AdminOrdersPage() {
                     <button
                       type="button"
                       onClick={() => setInvoiceOrder(order)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-indigo-900/20 transition-colors"
                     >
                       📄 Счёт
                     </button>
@@ -673,8 +673,8 @@ export default function AdminOrdersPage() {
 
                   {/* ── EDIT FORM ─────────────────────────────────────────── */}
                   {editingOrderId === order.id && (
-                    <div className="rounded-xl border-2 border-indigo-200 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 p-4 space-y-5">
-                      <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Редактирование заказа</p>
+                    <div className="rounded-xl border-2 border-primary/30 dark:border-primary/50 bg-primary/5/30 dark:bg-primary/20/10 p-4 space-y-5">
+                      <p className="text-sm font-semibold text-primary dark:text-indigo-200">Редактирование заказа</p>
 
                       {/* Address */}
                       <div className="space-y-2">
@@ -708,7 +708,7 @@ export default function AdminOrdersPage() {
                           {(['pickup', 'courier', 'post'] as const).map((dm) => (
                             <button key={dm} type="button"
                               onClick={() => setEditDelivery(dm)}
-                              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${editDelivery === dm ? 'border-indigo-400 bg-indigo-100 text-indigo-800 dark:border-primary dark:bg-indigo-900/40 dark:text-indigo-200' : 'border-border text-muted-foreground hover:border-gray-400'}`}
+                              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${editDelivery === dm ? 'border-primary/70 bg-primary/10 text-primary dark:border-primary dark:bg-primary/20/40 dark:text-indigo-200' : 'border-border text-muted-foreground hover:border-gray-400'}`}
                             >
                               {DELIVERY_LABELS[dm]} {EDIT_DELIVERY_COSTS[dm] === 0 ? '(бесплатно)' : `(€${EDIT_DELIVERY_COSTS[dm]})`}
                             </button>
@@ -742,13 +742,13 @@ export default function AdminOrdersPage() {
                             value={editProductSearch}
                             onChange={(e) => setEditProductSearch(e.target.value)}
                             placeholder="Добавить товар (введите название или SKU)..."
-                            className="w-full rounded-lg border border-dashed border-indigo-300 dark:border-indigo-700 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-gray-400"
+                            className="w-full rounded-lg border border-dashed border-primary/50 dark:border-primary/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-gray-400"
                           />
                           {editProductResults.length > 0 && (
                             <div className="absolute z-30 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-xl max-h-60 overflow-y-auto">
                               {editProductResults.map((p) => (
                                 <button key={p.id} type="button" onClick={() => editAddProduct(p)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-primary/5 dark:hover:bg-indigo-900/20 border-b border-gray-100 dark:border-gray-800 last:border-0">
                                   {p.image && <img src={p.image} alt="" className="h-8 w-8 rounded object-cover shrink-0" />}
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm text-foreground truncate">{p.title}</p>

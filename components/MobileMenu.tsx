@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import React, { useState } from 'react'
 import { useTranslation } from '@/lib/use-translation'
 import Link from 'next/link'
@@ -37,7 +37,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
     onClose();
   };
   const menuLinkClass =
-    'inline-flex w-full items-center rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60';
+    'inline-flex w-full items-center rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/90/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60';
 
   if (!isOpen) return null;
 
@@ -73,7 +73,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
           <li className="header__menu-item">
             <button
               onClick={() => setExpandCategories(!expandCategories)}
-              className="w-full text-left flex items-center justify-between rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60"
+              className="w-full text-left flex items-center justify-between rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/90/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               aria-expanded={expandCategories}
             >
               <span>{t('categories.title')}</span>
@@ -83,7 +83,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               <ul className="ml-4 mt-2 space-y-2 border-l border-border pl-3">
                 {CATEGORIES.map((cat) => (
                   <li key={cat.id}>
-                    <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className="inline-flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60">
+                    <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className="inline-flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/90/15 dark:hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
                       {t(cat.labelKey)}
                     </Link>
                   </li>

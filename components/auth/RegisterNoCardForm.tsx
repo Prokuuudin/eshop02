@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useRef, useState } from 'react';
 import { Upload, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -163,17 +163,17 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
                 <div className={`register-form__file-upload w-full rounded-lg border-2 border-dashed px-4 py-4 transition-colors ${
                     certificate
-                        ? 'border-indigo-400 bg-indigo-50 dark:border-primary dark:bg-indigo-950/30'
+                        ? 'border-primary/70 bg-primary/5 dark:border-primary dark:bg-indigo-950/30'
                         : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800'
                 }`}>
                     {certificate ? (
-                        <div className="register-form__file-selected flex items-center gap-2 text-indigo-700 dark:text-primary">
+                        <div className="register-form__file-selected flex items-center gap-2 text-primary dark:text-primary">
                             <Upload className="w-4 h-4 shrink-0" />
                             <span className="register-form__file-name truncate max-w-[220px]">{certificate.name}</span>
                             <span
                                 role="button"
                                 aria-label="Удалить файл"
-                                className="register-form__file-clear ml-1 rounded-full p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                                className="register-form__file-clear ml-1 rounded-full p-0.5 hover:bg-primary/20 dark:hover:bg-indigo-800"
                                 onClick={() => {
                                     setCertificate(null);
                                     setFileKey((k) => k + 1);
@@ -188,7 +188,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => galleryRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
                                 >
                                     <Upload className="w-4 h-4" />
                                     {t('auth.uploadFromGallery')}
@@ -196,7 +196,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => cameraRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-indigo-400 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
                                 >
                                     <Camera className="w-4 h-4" />
                                     {t('auth.takePhoto')}

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -176,7 +176,7 @@ export default function AdminFaqPage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-900/20 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="rounded-xl border border-indigo-100 dark:border-indigo-900 bg-primary/5 dark:bg-primary/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-foreground">Не нашли ответ?</p>
             <p className="text-sm text-muted-foreground mt-0.5">Обратитесь в службу поддержки — мы поможем разобраться.</p>

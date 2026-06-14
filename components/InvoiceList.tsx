@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import { Invoice, InvoiceStatus } from '@/lib/invoices-store'
@@ -137,7 +137,7 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
             onClick={() => onSelectInvoice(invoice)}
             className={`rounded-lg border-2 p-4 cursor-pointer transition-colors ${
               selectedInvoiceId === invoice.id
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                ? 'border-primary bg-primary/5 dark:bg-primary/10'
                 : 'border-border hover:border-gray-300 dark:hover:border-gray-600'
             } `}
           >

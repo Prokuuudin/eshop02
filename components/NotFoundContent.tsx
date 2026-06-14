@@ -16,7 +16,7 @@ export default function NotFoundContent() {
         <main className="w-full px-4 py-20">
             <div className="max-w-2xl mx-auto text-center mb-16">
                 {/* 404 Graphic */}
-                <div className="not-found__code bem-not-found__code text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-600 mb-4">
+                <div className="not-found__code bem-not-found__code text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-600 mb-4">
                     {t('notFound.code', '404')}
                 </div>
                 <h1 className="not-found__title bem-not-found__title text-4xl font-bold mb-4">

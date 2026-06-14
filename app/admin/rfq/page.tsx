@@ -45,7 +45,7 @@ const EVENT_DOT: Record<TimelineEventType, string> = {
   quote_sent: 'bg-blue-500',
   accepted:   'bg-green-500',
   rejected:   'bg-red-400',
-  note:       'bg-indigo-400',
+  note:       'bg-primary/60',
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

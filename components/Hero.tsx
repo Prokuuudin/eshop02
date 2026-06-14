@@ -10,7 +10,7 @@ export default function Hero() {
 
   return (
     <section id="home" className="hero relative rounded-xl py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-card overflow-hidden">
-      <div className="hero__bg absolute inset-0 -z-10 bg-gradient-to-r from-pink-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-indigo-950/40" />
+      <div className="hero__bg absolute inset-0 -z-10 bg-gradient-to-r from-pink-50 via-white to-primary/5 dark:from-gray-900 dark:via-gray-900 dark:to-primary/10" />
 
       <div className="w-full flex flex-col-reverse lg:flex-row items-center gap-6 sm:gap-8 px-1 sm:px-4">
         <div className="hero__content flex-1 text-center lg:text-left">

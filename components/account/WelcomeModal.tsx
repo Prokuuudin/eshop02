@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { User2, Mail, Phone, PartyPopper, ArrowRight } from 'lucide-react';
@@ -21,21 +21,21 @@ export default function WelcomeModal({ user }: { user: User }) {
     const fields: FieldHint[] = [
         {
             key: 'name',
-            icon: <User2 className="h-4 w-4 text-indigo-500" />,
+            icon: <User2 className="h-4 w-4 text-primary" />,
             label: 'Имя',
             hint: 'Как к вам обращаться в переписке и на документах',
             missing: !user.name?.trim(),
         },
         {
             key: 'email',
-            icon: <Mail className="h-4 w-4 text-indigo-500" />,
+            icon: <Mail className="h-4 w-4 text-primary" />,
             label: 'E-mail',
             hint: 'Для уведомлений о заказах, доставке и счетов',
             missing: !user.email || isInternalEmail(user.email),
         },
         {
             key: 'phone',
-            icon: <Phone className="h-4 w-4 text-indigo-500" />,
+            icon: <Phone className="h-4 w-4 text-primary" />,
             label: 'Телефон',
             hint: 'Менеджер свяжется с вами по вопросам заказа',
             missing: !user.phone?.trim(),
@@ -60,12 +60,12 @@ export default function WelcomeModal({ user }: { user: User }) {
                 {/* Шапка */}
                 <div className="bg-primary px-6 py-5 text-white">
                     <div className="flex items-center gap-3 mb-1">
-                        <PartyPopper className="h-6 w-6 text-indigo-200" />
+                        <PartyPopper className="h-6 w-6 text-white/70" />
                         <h2 className="text-lg font-bold">
                             Добро пожаловать{user.name ? `, ${user.name}` : ''}!
                         </h2>
                     </div>
-                    <p className="text-indigo-200 text-sm">
+                    <p className="text-white/70 text-sm">
                         Вы успешно зарегистрированы. Кабинет готов к работе.
                     </p>
                 </div>
@@ -79,7 +79,7 @@ export default function WelcomeModal({ user }: { user: User }) {
                             </p>
                             <ul className="space-y-3">
                                 {missingFields.map((f) => (
-                                    <li key={f.key} className="flex items-start gap-3 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3">
+                                    <li key={f.key} className="flex items-start gap-3 rounded-xl border border-primary/10 dark:border-primary/20 bg-primary/5 dark:bg-primary/15 px-4 py-3">
                                         <span className="mt-0.5 flex-shrink-0">{f.icon}</span>
                                         <div>
                                             <span className="text-sm font-medium text-foreground">

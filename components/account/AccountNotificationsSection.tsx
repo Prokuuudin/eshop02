@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React from 'react';
 import {
     Bell,
@@ -36,7 +36,7 @@ const TYPE_CONFIG: Record<
     NotificationType,
     { icon: React.ElementType; border: string; dot: string; iconColor: string }
 > = {
-    info:    { icon: Info,          border: 'border-l-indigo-400', dot: 'bg-indigo-500', iconColor: 'text-indigo-500' },
+    info:    { icon: Info,          border: 'border-l-primary/70', dot: 'bg-primary', iconColor: 'text-primary' },
     success: { icon: CheckCircle,   border: 'border-l-emerald-400', dot: 'bg-emerald-500', iconColor: 'text-emerald-500' },
     warning: { icon: AlertTriangle, border: 'border-l-amber-400',   dot: 'bg-amber-500',   iconColor: 'text-amber-500' },
     promo:   { icon: Tag,           border: 'border-l-purple-400',  dot: 'bg-purple-500',  iconColor: 'text-purple-500' },
@@ -103,7 +103,7 @@ function NotificationItem({
         <div
             className={`notifications__item relative flex gap-3 rounded-lg border-l-4 p-4 transition-colors ${cfg.border} ${
                 isSelected
-                    ? 'bg-indigo-50 dark:bg-indigo-950/20'
+                    ? 'bg-primary/5 dark:bg-primary/10'
                     : notification.isRead
                     ? 'bg-card'
                     : 'bg-muted/60'
@@ -157,7 +157,7 @@ function NotificationItem({
                         <button
                             type="button"
                             onClick={onMarkRead}
-                            className="notifications__item-mark-read flex items-center gap-1 text-[11px] text-primary hover:text-indigo-700 dark:text-primary dark:hover:text-indigo-300"
+                            className="notifications__item-mark-read flex items-center gap-1 text-[11px] text-primary hover:text-primary dark:text-primary dark:hover:text-primary/70"
                         >
                             <Check className="h-3 w-3" />
                             {t('notifications.markRead')}
@@ -260,14 +260,14 @@ export default function AccountNotificationsSection() {
             >
                 {/* Левая часть: иконка + заголовок + счётчики */}
                 <div className="flex items-center gap-2 min-w-0">
-                    <Bell className="h-5 w-5 text-indigo-500 shrink-0" />
+                    <Bell className="h-5 w-5 text-primary shrink-0" />
                     <h2 className="notifications__title text-base font-semibold text-foreground truncate">
                         {t('notifications.sectionTitle')}
                     </h2>
                     {unread > 0 && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className="notifications__badge-unread inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-primary cursor-default shrink-0">
+                                <span className="notifications__badge-unread inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary dark:bg-primary/40 dark:text-primary cursor-default shrink-0">
                                     {unread}
                                 </span>
                             </TooltipTrigger>
@@ -317,7 +317,7 @@ export default function AccountNotificationsSection() {
                             type="button"
                             onClick={(e) => { e.stopPropagation(); markAllRead(); }}
                             title={t('notifications.markAllRead')}
-                            className="notifications__mark-all rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-indigo-400"
+                            className="notifications__mark-all rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-primary/80"
                         >
                             <CheckCheck className="h-4 w-4" />
                         </button>
@@ -326,7 +326,7 @@ export default function AccountNotificationsSection() {
                     {/* Пилюля-подсказка — клик проходит до хедера и открывает секцию */}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <span className="notifications__toggle ml-1 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 transition-colors group-hover:border-indigo-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            <span className="notifications__toggle ml-1 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 transition-colors group-hover:border-primary/50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
                                 {isExpanded
                                     ? <><ChevronUp className="h-3.5 w-3.5" />{t('notifications.tooltip.collapse')}</>
                                     : <><ChevronDown className="h-3.5 w-3.5" />{t('notifications.tooltip.expand')}</>
@@ -360,7 +360,7 @@ export default function AccountNotificationsSection() {
                                     htmlFor={`channel-${value}`}
                                     className={`notifications__channel-option flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
                                         isActive
-                                            ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-primary dark:bg-indigo-950/30 dark:text-primary'
+                                            ? 'border-primary/70 bg-primary/5 text-primary dark:border-primary dark:bg-primary/15 dark:text-primary'
                                             : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600'
                                     }`}
                                 >

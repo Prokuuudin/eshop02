@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/use-translation';
 import { useCategoriesConfig } from '@/lib/use-categories-config';
@@ -16,7 +16,7 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
     const homeHref = onlyCatalog ? '/' : '/#home';
 
     const navLinkClass =
-        'inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 dark:hover:bg-indigo-500/15 dark:hover:text-indigo-200';
+        'inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:hover:bg-primary/80/15 dark:hover:text-primary';
 
     const [open, setOpen] = React.useState(false);
     return (

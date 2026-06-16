@@ -40,28 +40,39 @@ function saveConsent(analytics: boolean, marketing: boolean): void {
 export default function CookieConsent() {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
+  const [shown, setShown] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
   useEffect(() => {
-    if (!getCookieConsent()) setVisible(true)
+    if (getCookieConsent()) return
+    const timer = setTimeout(() => {
+      setVisible(true)
+      requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)))
+    }, 800)
+    return () => clearTimeout(timer)
   }, [])
+
+  const dismiss = () => {
+    setShown(false)
+    setTimeout(() => setVisible(false), 300)
+  }
 
   const acceptAll = () => {
     saveConsent(true, true)
-    setVisible(false)
+    dismiss()
     setConfigOpen(false)
   }
 
   const necessaryOnly = () => {
     saveConsent(false, false)
-    setVisible(false)
+    dismiss()
   }
 
   const saveSelection = () => {
     saveConsent(analytics, marketing)
-    setVisible(false)
+    dismiss()
     setConfigOpen(false)
   }
 
@@ -69,7 +80,11 @@ export default function CookieConsent() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background shadow-lg">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background shadow-lg transition-all duration-300 ease-out ${
+          shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+        }`}
+      >
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-6">
           <p className="flex-1 text-sm text-muted-foreground">{t('cookie.banner.text')}</p>
           <div className="flex flex-wrap gap-2 shrink-0">

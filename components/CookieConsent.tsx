@@ -99,7 +99,7 @@ export default function CookieConsent() {
               size="sm"
               variant="outline"
               onClick={() => setConfigOpen(true)}
-              className="border-slate-500 text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="border-slate-400 text-white hover:bg-slate-700"
             >
               {t('cookie.banner.configure')}
             </Button>

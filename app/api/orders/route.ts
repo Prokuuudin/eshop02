@@ -42,6 +42,73 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
   await sendEmail(order.email, subjects[lang], html)
 }
 
+async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void> {
+  const adminEmail = process.env.CONTACT_TO
+  if (!adminEmail) return
+
+  const date = new Date(order.createdAt ?? Date.now()).toLocaleString('ru-RU', { timeZone: 'Europe/Riga' })
+  const items = Array.isArray(order.items) ? order.items : []
+
+  const itemRows = items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:4px 8px">${item.title ?? '—'}</td>
+          <td style="padding:4px 8px;text-align:center">${item.quantity ?? 1}</td>
+          <td style="padding:4px 8px;text-align:right">€${(item.price ?? 0).toFixed(2)}</td>
+          <td style="padding:4px 8px;text-align:right">€${((item.price ?? 0) * (item.quantity ?? 1)).toFixed(2)}</td>
+        </tr>`
+    )
+    .join('')
+
+  const discountRow =
+    order.discount && order.discount > 0
+      ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Скидка</td><td style="padding:4px 8px;text-align:right">−€${order.discount.toFixed(2)}</td></tr>`
+      : ''
+
+  const html = `<div style="font-family:sans-serif;max-width:640px;margin:0 auto;padding:24px">
+  <h2 style="margin-top:0">Новый заказ №${order.id}</h2>
+  <p style="color:#6b7280;margin-top:-8px">${date}</p>
+
+  <h3>Покупатель</h3>
+  <table style="border-collapse:collapse;width:100%">
+    <tr><td style="padding:4px 8px;color:#6b7280;width:120px">Имя</td><td style="padding:4px 8px">${order.firstName ?? ''} ${order.lastName ?? ''}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Email</td><td style="padding:4px 8px">${order.email ?? ''}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${order.phone ?? '—'}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${order.address ?? ''}, ${order.city ?? ''}${order.postalCode ? ', ' + order.postalCode : ''}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${order.deliveryMethod ?? '—'}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${order.paymentMethod ?? '—'}</td></tr>
+  </table>
+
+  <h3>Товары</h3>
+  <table style="border-collapse:collapse;width:100%">
+    <thead>
+      <tr style="background:#f3f4f6">
+        <th style="padding:4px 8px;text-align:left;font-weight:600">Товар</th>
+        <th style="padding:4px 8px;text-align:center;font-weight:600">Кол.</th>
+        <th style="padding:4px 8px;text-align:right;font-weight:600">Цена</th>
+        <th style="padding:4px 8px;text-align:right;font-weight:600">Итого</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+    <tfoot>
+      <tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Доставка</td><td style="padding:4px 8px;text-align:right">€${(order.delivery ?? 0).toFixed(2)}</td></tr>
+      ${discountRow}
+      <tr style="font-weight:bold;border-top:2px solid #e5e7eb">
+        <td colspan="3" style="padding:8px 8px 4px;text-align:right">ИТОГО</td>
+        <td style="padding:8px 8px 4px;text-align:right">€${(order.total ?? 0).toFixed(2)}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>`
+
+  await sendEmail(
+    adminEmail,
+    `Новый заказ №${order.id} — ${order.firstName ?? ''} ${order.lastName ?? ''} — €${(order.total ?? 0).toFixed(2)}`,
+    html
+  )
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { order } = (await req.json()) as { order?: ServerOrder }
@@ -89,6 +156,7 @@ export async function POST(req: NextRequest) {
     await createOrUpdateServerOrder(normalizedOrder)
 
     sendOrderConfirmationEmail(normalizedOrder).catch(console.error)
+    sendAdminOrderNotificationEmail(normalizedOrder).catch(console.error)
 
     return NextResponse.json({ success: true, orderId: normalizedOrder.id })
   } catch (error) {

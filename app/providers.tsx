@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart-store'
 import { seedTestAccounts } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
 import FlyToCart from '@/components/FlyToCart'
+import CookieConsent from '@/components/CookieConsent'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -111,6 +112,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
         <CartUserSync />
         <ChunkErrorRecovery />
         <FlyToCart />
+        <CookieConsent />
         {children}
       </ToastProvider>
     </I18nProvider>

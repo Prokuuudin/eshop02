@@ -6,10 +6,10 @@ import type { Swiper as SwiperType } from 'swiper';
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
-import { PRODUCTS } from "../data/products"
+import type { Product } from "../data/products"
 import ProductCard from "./ProductCard"
-export default function BestsellersSlider({ arrowsContainerId }: { arrowsContainerId?: string }) {
-  const bestsellers = PRODUCTS.filter(p => p.badges?.includes("bestseller"))
+export default function BestsellersSlider({ arrowsContainerId, products }: { arrowsContainerId?: string; products: Product[] }) {
+  const bestsellers = products
   const swiperRef = useRef<SwiperType | null>(null)
   // Render arrows into the container next to the title if id is provided
   useEffect(() => {

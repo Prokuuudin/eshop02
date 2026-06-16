@@ -1,15 +1,22 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { PRODUCTS } from '../data/products';
+import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
 import { useTranslation } from '@/lib/use-translation';
 
 export default function BestsellersSection() {
     const { t } = useTranslation();
-    const bestsellers = PRODUCTS.filter((p) => p.badges && p.badges.includes('bestseller'));
+    const [products, setProducts] = useState<Product[]>([]);
 
-    if (!bestsellers.length) return null;
+    useEffect(() => {
+        fetch('/api/products/bestsellers')
+            .then((r) => r.json())
+            .then((d) => { if (d.products?.length) setProducts(d.products) })
+            .catch(() => {});
+    }, []);
+
+    if (!products.length) return null;
 
     return (
         <section className="bestsellers py-8">
@@ -29,7 +36,7 @@ export default function BestsellersSection() {
                     </div>
                     <div id="bestsellers-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
-                <BestsellersSlider arrowsContainerId="bestsellers-slider-arrows" />
+                <BestsellersSlider arrowsContainerId="bestsellers-slider-arrows" products={products} />
             </div>
         </section>
     );

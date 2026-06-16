@@ -3,8 +3,13 @@ const nextConfig = {
     reactStrictMode: true,
     // experimental: {},
     images: {
-        // Configure allowed external domains here for next/image
-        domains: [],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'hairshop.lv',
+                pathname: '/content/images/**',
+            },
+        ],
     },
     webpack: (config, { dev }) => {
         if (dev) {

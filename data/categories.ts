@@ -12,12 +12,12 @@ export type CategoryCardData = {
 }
 
 export const CATEGORY_CARDS: CategoryCardData[] = [
-  { id: 'hair', titleKey: 'categories.haircare', href: '/catalog?cat=hair', image: '/categories/hair.jpg' },
-  { id: 'face', titleKey: 'categories.skincare', href: '/catalog?cat=face', image: '/categories/face.jpg' },
-  { id: 'body', titleKey: 'categories.bodycare', href: '/catalog?cat=body', image: '/categories/body.jpg' },
-  { id: 'nails', titleKey: 'categories.nails', href: '/catalog?cat=nails', image: '/categories/pro.jpg' },
-  { id: 'equipment', titleKey: 'categories.equipment', href: '/catalog?cat=equipment', image: '/categories/equipment.jpg' },
-  { id: 'new', titleKey: 'categories.newArrivals', href: '/catalog?cat=new', image: '/categories/new.jpg' }
+  { id: 'hair', titleKey: 'categories.haircare', href: '/catalog?cat=hair', image: 'https://hairshop.lv/content/images/thumbs/0017168_kallos-lab35-indulging-nourishing-hair-oil-50ml-barojosa-matu-ella-50ml-pitatelnoe-maslo-dl-volos-50_400.jpeg' },
+  { id: 'face', titleKey: 'categories.skincare', href: '/catalog?cat=face', image: 'https://hairshop.lv/content/images/thumbs/0027878_janssen-goodnight-night-lip-mask-15ml-nakts-lupu-maska-15ml-nona-maska-dl-gub-15ml-oine-huulemask-15_400.jpeg' },
+  { id: 'body', titleKey: 'categories.bodycare', href: '/catalog?cat=body', image: 'https://hairshop.lv/content/images/thumbs/0028476_sanctuary-spa-lily-rose-collection-body-lotion-250ml-kermena-losjons-250ml-loson-dl-tela-250ml-kehak_400.jpeg' },
+  { id: 'nails', titleKey: 'categories.nails', href: '/catalog?cat=nails', image: 'https://hairshop.lv/content/images/thumbs/0029118_orly-lacquer-1970s-6-piece-nail-polish-collection-lak-dl-nogtej-nagu-laka-nail-polish-kuunelakk-nagu_400.jpeg' },
+  { id: 'equipment', titleKey: 'categories.equipment', href: '/catalog?cat=equipment', image: 'https://hairshop.lv/content/images/thumbs/0014641_cera-professional-bullet-hair-straightener-matu-taisnotajs-vyprmitel-dl-volos-juuste-sirgendaja-plau_400.jpeg' },
+  { id: 'new', titleKey: 'categories.newArrivals', href: '/catalog?cat=new', image: 'https://hairshop.lv/content/images/thumbs/0027750_olivia-garden-fingerbrush-combo-medium-hairbrush-pastel-pink-matu-suka-etka-dl-volos-juuksehari-plau_400.jpeg' }
 ]
 
 export const SUBCATEGORIES_BY_ID: Record<string, Subcategory[]> = {

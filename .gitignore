@@ -13,3 +13,4 @@ yarn-error.log*
 /generated/prisma
 tsconfig.tsbuildinfo
 /test-results/
+*.bak

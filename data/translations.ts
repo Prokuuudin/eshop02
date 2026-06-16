@@ -1787,6 +1787,21 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Reviews
     // 'reviews.title', 'reviews.rating', 'reviews.verified', 'reviews.helpful' duplicates removed (see above for originals)
+
+    // Cookies
+    'cookie.banner.text': 'Мы используем файлы cookie для работы сайта, анализа трафика и персонализации.',
+    'cookie.banner.acceptAll': 'Принять все',
+    'cookie.banner.configure': 'Настроить',
+    'cookie.banner.necessaryOnly': 'Только обязательные',
+    'cookie.configure.title': 'Настройки файлов cookie',
+    'cookie.configure.necessary': 'Обязательные',
+    'cookie.configure.necessaryDesc': 'Необходимы для работы сайта: авторизация, корзина. Нельзя отключить.',
+    'cookie.configure.analytics': 'Аналитика',
+    'cookie.configure.analyticsDesc': 'Помогают понять, как посетители используют сайт.',
+    'cookie.configure.marketing': 'Маркетинг',
+    'cookie.configure.marketingDesc': 'Используются для показа персональной рекламы.',
+    'cookie.configure.save': 'Сохранить выбор',
+    'cookie.configure.acceptAll': 'Принять все',
   },
 
   en: {
@@ -3554,6 +3569,21 @@ export const translations: Record<Language, Record<string, string>> = {
     // Reviews
     'reviews.title': 'Customer Reviews',
     'reviews.verified': 'Verified Purchase',
+
+    // Cookies
+    'cookie.banner.text': 'We use cookies to keep the site working, analyse traffic and personalise content.',
+    'cookie.banner.acceptAll': 'Accept all',
+    'cookie.banner.configure': 'Configure',
+    'cookie.banner.necessaryOnly': 'Necessary only',
+    'cookie.configure.title': 'Cookie settings',
+    'cookie.configure.necessary': 'Necessary',
+    'cookie.configure.necessaryDesc': 'Required for the site to function: login, cart. Cannot be disabled.',
+    'cookie.configure.analytics': 'Analytics',
+    'cookie.configure.analyticsDesc': 'Help us understand how visitors use the site.',
+    'cookie.configure.marketing': 'Marketing',
+    'cookie.configure.marketingDesc': 'Used to show personalised advertisements.',
+    'cookie.configure.save': 'Save selection',
+    'cookie.configure.acceptAll': 'Accept all',
   },
 
   lv: {
@@ -5321,5 +5351,20 @@ export const translations: Record<Language, Record<string, string>> = {
     // Reviews
     'reviews.title': 'Klientu atsauksmes',
     'reviews.verified': 'Pārbaudīts pirkums',
+
+    // Cookies
+    'cookie.banner.text': 'Mēs izmantojam sīkdatnes vietnes darbībai, apmeklētāju plūsmas analīzei un satura personalizācijai.',
+    'cookie.banner.acceptAll': 'Pieņemt visas',
+    'cookie.banner.configure': 'Konfigurēt',
+    'cookie.banner.necessaryOnly': 'Tikai nepieciešamās',
+    'cookie.configure.title': 'Sīkdatņu iestatījumi',
+    'cookie.configure.necessary': 'Nepieciešamās',
+    'cookie.configure.necessaryDesc': 'Nepieciešamas vietnes darbībai: pieteikšanās, grozs. Nevar atspējot.',
+    'cookie.configure.analytics': 'Analītika',
+    'cookie.configure.analyticsDesc': 'Palīdz saprast, kā apmeklētāji izmanto vietni.',
+    'cookie.configure.marketing': 'Mārketings',
+    'cookie.configure.marketingDesc': 'Izmanto personalizētu reklāmu rādīšanai.',
+    'cookie.configure.save': 'Saglabāt izvēli',
+    'cookie.configure.acceptAll': 'Pieņemt visas',
   }
 }

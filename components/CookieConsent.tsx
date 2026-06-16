@@ -81,20 +81,34 @@ export default function CookieConsent() {
   return (
     <>
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background shadow-lg transition-all duration-300 ease-out ${
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700 bg-slate-900 shadow-xl transition-all duration-300 ease-out ${
           shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-6">
-          <p className="flex-1 text-sm text-muted-foreground">{t('cookie.banner.text')}</p>
+          <p className="flex-1 text-sm text-slate-300">{t('cookie.banner.text')}</p>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <Button size="sm" onClick={acceptAll}>
+            <Button
+              size="sm"
+              onClick={acceptAll}
+              className="bg-white text-slate-900 hover:bg-slate-100 border-0"
+            >
               {t('cookie.banner.acceptAll')}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setConfigOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setConfigOpen(true)}
+              className="border-slate-500 text-slate-200 hover:bg-slate-700 hover:text-white"
+            >
               {t('cookie.banner.configure')}
             </Button>
-            <Button size="sm" variant="ghost" onClick={necessaryOnly}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={necessaryOnly}
+              className="text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            >
               {t('cookie.banner.necessaryOnly')}
             </Button>
           </div>

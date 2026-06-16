@@ -42,18 +42,23 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
   await sendEmail(order.email, subjects[lang], html)
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void> {
   const adminEmail = process.env.CONTACT_TO
   if (!adminEmail) return
 
-  const date = new Date(order.createdAt ?? Date.now()).toLocaleString('ru-RU', { timeZone: 'Europe/Riga' })
+  // Admin notification is intentionally in Russian regardless of order.language
+  const date = new Date(order.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Riga' })
   const items = Array.isArray(order.items) ? order.items : []
 
   const itemRows = items
     .map(
       (item) =>
         `<tr>
-          <td style="padding:4px 8px">${item.title ?? '—'}</td>
+          <td style="padding:4px 8px">${escHtml(item.title ?? '—')}</td>
           <td style="padding:4px 8px;text-align:center">${item.quantity ?? 1}</td>
           <td style="padding:4px 8px;text-align:right">€${(item.price ?? 0).toFixed(2)}</td>
           <td style="padding:4px 8px;text-align:right">€${((item.price ?? 0) * (item.quantity ?? 1)).toFixed(2)}</td>
@@ -62,22 +67,22 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void
     .join('')
 
   const discountRow =
-    order.discount && order.discount > 0
+    order.discount > 0
       ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Скидка</td><td style="padding:4px 8px;text-align:right">−€${order.discount.toFixed(2)}</td></tr>`
       : ''
 
   const html = `<div style="font-family:sans-serif;max-width:640px;margin:0 auto;padding:24px">
-  <h2 style="margin-top:0">Новый заказ №${order.id}</h2>
+  <h2 style="margin-top:0">Новый заказ №${escHtml(order.id)}</h2>
   <p style="color:#6b7280;margin-top:-8px">${date}</p>
 
   <h3>Покупатель</h3>
   <table style="border-collapse:collapse;width:100%">
-    <tr><td style="padding:4px 8px;color:#6b7280;width:120px">Имя</td><td style="padding:4px 8px">${order.firstName ?? ''} ${order.lastName ?? ''}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Email</td><td style="padding:4px 8px">${order.email ?? ''}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${order.phone ?? '—'}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${order.address ?? ''}, ${order.city ?? ''}${order.postalCode ? ', ' + order.postalCode : ''}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${order.deliveryMethod ?? '—'}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${order.paymentMethod ?? '—'}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280;width:120px">Имя</td><td style="padding:4px 8px">${escHtml(order.firstName ?? '')} ${escHtml(order.lastName ?? '')}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Email</td><td style="padding:4px 8px">${escHtml(order.email ?? '')}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${escHtml(order.phone ?? '—')}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${escHtml(order.address ?? '')}, ${escHtml(order.city ?? '')}${order.postalCode ? ', ' + escHtml(order.postalCode) : ''}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${escHtml(order.deliveryMethod ?? '—')}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${escHtml(order.paymentMethod ?? '—')}</td></tr>
   </table>
 
   <h3>Товары</h3>
@@ -104,7 +109,7 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void
 
   await sendEmail(
     adminEmail,
-    `Новый заказ №${order.id} — ${order.firstName ?? ''} ${order.lastName ?? ''} — €${(order.total ?? 0).toFixed(2)}`,
+    `Новый заказ №${escHtml(order.id)} — ${escHtml(order.firstName ?? '')} ${escHtml(order.lastName ?? '')} — €${(order.total ?? 0).toFixed(2)}`,
     html
   )
 }

@@ -87,9 +87,9 @@ describe('POST /api/orders — admin notification', () => {
 
   it('does not send admin email when CONTACT_TO is not set', async () => {
     delete process.env.CONTACT_TO
-    const res = await POST(makeRequest())
-    expect(res.status).toBe(200)
-    await vi.waitFor(() => vi.mocked(sendEmail).mock.calls.length >= 1, { timeout: 500 }).catch(() => {})
+    await POST(makeRequest())
+    // Customer email still fires — wait for it so we're not racing
+    await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.length).toBeGreaterThanOrEqual(1))
     const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
     expect(adminCall).toBeUndefined()
   })

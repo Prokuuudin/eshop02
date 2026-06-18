@@ -1,8 +1,8 @@
 name: ERP Product Sync
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'
+  # TODO: вернуть cron-расписание, когда подключим реальную ERP/складскую БД
+  # - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:

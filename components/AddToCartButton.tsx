@@ -1,7 +1,8 @@
 ﻿'use client'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
-import { Product } from '@/data/products'
+import { Product, SelectedVariant } from '@/data/products'
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useCart } from '@/lib/cart-store'
@@ -9,13 +10,19 @@ import { useToast } from '@/lib/toast-context'
 import { useAuthStore } from '@/lib/auth-store'
 import { getMinimumOrderQuantity, calculatePrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
+import { getMissingRequiredGroups } from '@/lib/product-variants'
 import AuthGateDialog from '@/components/AuthGateDialog'
 
 type Props = {
   product: Product
+  /**
+   * undefined = no variant selector is present in this context (catalog card quick-add).
+   * array (possibly empty) = a selector is present (product detail page) and this is its current value.
+   */
+  selectedVariants?: SelectedVariant[]
 }
 
-export default function AddToCartButton({ product }: Props) {
+export default function AddToCartButton({ product, selectedVariants }: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -24,6 +31,12 @@ export default function AddToCartButton({ product }: Props) {
   const minOrderQuantity = useMemo(() => getMinimumOrderQuantity(product), [product])
   const [quantity, setQuantity] = useState(minOrderQuantity)
   const { addItem } = useCart()
+  const hasVariantSelector = selectedVariants !== undefined
+  const missingRequired = useMemo(
+    () => getMissingRequiredGroups(product.variantGroups, selectedVariants ?? []),
+    [product.variantGroups, selectedVariants]
+  )
+  const needsVariantSelectionElsewhere = !hasVariantSelector && (product.variantGroups ?? []).some((g) => g.required)
   const [added, setAdded] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -75,7 +88,12 @@ export default function AddToCartButton({ product }: Props) {
       return
     }
 
-    addItem(product, quantity)
+    if (missingRequired.length > 0) {
+      showToast(`${t('product.selectVariantRequired')}: ${missingRequired.map((g) => g.name).join(', ')}`, 'error')
+      return
+    }
+
+    addItem(product, quantity, selectedVariants)
     showToast(t('toast.addedToCart'), 'success')
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
@@ -88,6 +106,14 @@ export default function AddToCartButton({ product }: Props) {
         })
       )
     }
+  }
+
+  if (needsVariantSelectionElsewhere) {
+    return (
+      <Button asChild className="w-full add-to-cart__button">
+        <Link href={`/product/${product.id}`}>{t('product.selectVariant')}</Link>
+      </Button>
+    )
   }
 
   return (
@@ -175,7 +201,7 @@ export default function AddToCartButton({ product }: Props) {
       <Button
         ref={buttonRef}
         onClick={handleAdd}
-        disabled={isOutOfStock || !isHydrated}
+        disabled={isOutOfStock || !isHydrated || missingRequired.length > 0}
         className={`w-full add-to-cart__button ${
           added ? 'bg-green-600 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'
         } ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}

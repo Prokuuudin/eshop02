@@ -243,6 +243,7 @@ model Product {
   oftenBoughtTogether String[]
   minOrderQuantities  Json?
   technicalSpecs      Json?
+  variantGroups       Json?
   bulkPricingTiers    Json?
   demoVideo           Json?
   distributorName     Json?

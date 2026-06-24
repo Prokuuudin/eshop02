@@ -56,7 +56,7 @@ const DELIVERY_LABELS: Record<string, string> = {
 }
 
 type CatalogProduct = { id: string; title: string; brand: string; price: number; stock: number; image?: string; sku?: string }
-type EditItem = { id: string; title: string; price: number; quantity: number; image?: string }
+type EditItem = { id: string; title: string; price: number; quantity: number; image?: string; variantLabel?: string }
 
 const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, post: 3 }
 
@@ -213,7 +213,7 @@ export default function AdminOrdersPage() {
       const payStatus = order.paymentStatus ?? 'unpaid'
       const items = order.items.map((item) =>
         `<div style="display:flex;justify-content:space-between;font-size:12px;margin:3px 0">
-          <span>${item.title} × ${item.quantity}</span>
+          <span>${item.title}${item.variantLabel ? ` <span style="color:#6b7280">(${item.variantLabel})</span>` : ''} × ${item.quantity}</span>
           <span>${formatEuro(item.price * item.quantity, locale)}</span>
         </div>`
       ).join('')
@@ -260,7 +260,7 @@ export default function AdminOrdersPage() {
 
   const startEdit = (order: (typeof orders)[number]) => {
     setEditingOrderId(order.id)
-    setEditItems(order.items.map((i) => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity, image: i.image })))
+    setEditItems(order.items.map((i) => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity, image: i.image, variantLabel: i.variantLabel })))
     setEditAddress(order.address)
     setEditCity(order.city)
     setEditPostalCode(order.postalCode ?? '')
@@ -723,7 +723,12 @@ export default function AdminOrdersPage() {
                           {editItems.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
                               {item.image && <img src={item.image} alt="" className="w-9 h-9 rounded object-cover shrink-0" />}
-                              <p className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
+                                {item.variantLabel && (
+                                  <p className="text-xs text-gray-400 truncate">{item.variantLabel}</p>
+                                )}
+                              </div>
                               <span className="text-xs text-gray-400 shrink-0">€{item.price.toFixed(2)}</span>
                               <div className="flex items-center gap-1 shrink-0">
                                 <button type="button" onClick={() => editUpdateQty(item.id, item.quantity - 1)} className="h-6 w-6 rounded border border-border text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-base leading-none">−</button>

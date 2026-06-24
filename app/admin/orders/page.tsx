@@ -207,27 +207,29 @@ export default function AdminOrdersPage() {
   }
 
   const printSelected = () => {
+    const escapeHtml = (s: string): string =>
+      s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
     const selected = orders.filter((o) => selectedIds.has(o.id))
     const rows = selected.map((order) => {
       const status = getOrderStatus(order.id)
       const payStatus = order.paymentStatus ?? 'unpaid'
       const items = order.items.map((item) =>
         `<div style="display:flex;justify-content:space-between;font-size:12px;margin:3px 0">
-          <span>${item.title}${item.variantLabel ? ` <span style="color:#6b7280">(${item.variantLabel})</span>` : ''} × ${item.quantity}</span>
+          <span>${escapeHtml(item.title)}${item.variantLabel ? ` <span style="color:#6b7280">(${escapeHtml(item.variantLabel)})</span>` : ''} × ${item.quantity}</span>
           <span>${formatEuro(item.price * item.quantity, locale)}</span>
         </div>`
       ).join('')
       return `<div style="margin-bottom:20px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;page-break-inside:avoid">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-family:monospace;font-size:11px;color:#6b7280">${order.id}</span>
+          <span style="font-family:monospace;font-size:11px;color:#6b7280">${escapeHtml(order.id)}</span>
           <div style="display:flex;gap:8px">
             <span style="font-size:12px;font-weight:600">${STATUS_LABELS[status]}</span>
             <span style="font-size:12px;color:#6b7280">${PAYMENT_LABELS[payStatus]}</span>
           </div>
         </div>
-        <p style="margin:2px 0;font-size:14px;font-weight:600">${order.firstName} ${order.lastName}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${order.email} · ${order.phone}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${order.address}, ${order.city}${order.postalCode ? ', ' + order.postalCode : ''}</p>
+        <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(order.firstName)} ${escapeHtml(order.lastName)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.email)} · ${escapeHtml(order.phone)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.address)}, ${escapeHtml(order.city)}${order.postalCode ? ', ' + escapeHtml(order.postalCode) : ''}</p>
         <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(order.createdAt).toLocaleDateString('ru-RU')}</p>
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
         ${items}

@@ -46,6 +46,7 @@ export default function OrderPage({ params }: PageProps) {
                         createdAt: string;
                         items: Array<{
                             id: string;
+                            lineKey: string;
                             title: string;
                             brand: string;
                             image: string;

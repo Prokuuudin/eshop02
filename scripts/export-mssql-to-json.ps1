@@ -75,6 +75,22 @@ JOIN Picture pic ON pic.Id = ppm.PictureId
 WHERE pic.SeoFilename IS NOT NULL AND pic.SeoFilename != ''
 "@
 
+# ── Product variant attributes (color/size dropdowns, lost in the first migration pass) ──
+Export-Query "product_attributes" @"
+SELECT
+  pam.ProductId      AS productId,
+  pa.Name            AS attrName,
+  pam.IsRequired     AS isRequired,
+  pav.Name           AS value,
+  pav.PriceAdjustment AS priceAdjustment,
+  pav.DisplayOrder   AS displayOrder
+FROM Product_ProductAttribute_Mapping pam
+JOIN ProductAttribute pa ON pa.Id = pam.ProductAttributeId
+JOIN ProductAttributeValue pav ON pav.ProductAttributeMappingId = pam.Id
+JOIN Product p ON p.Id = pam.ProductId AND p.Deleted = 0
+ORDER BY pam.ProductId, pam.Id, pav.DisplayOrder
+"@
+
 # ── Users ─────────────────────────────────────────────────────────────────────
 Export-Paged "users" @"
 SELECT

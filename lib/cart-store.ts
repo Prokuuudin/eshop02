@@ -51,6 +51,23 @@ type CartStore = {
   total: () => number
 }
 
+/**
+ * Migrates a persisted cart-store state from before `CartItem.lineKey` existed
+ * (version 0 / unversioned) to the current shape. Any item missing `lineKey`
+ * (every pre-this-branch persisted item) gets one computed the same way
+ * `addItem` does, which for items with no `selectedVariants` simply yields
+ * the product id — preserving prior single-variant cart behavior exactly.
+ */
+export function migrateCartState(persistedState: unknown): CartStore {
+  const state = persistedState as { items?: Array<Partial<CartItem> & { id: string }> }
+  if (state?.items) {
+    state.items = state.items.map((item) =>
+      item.lineKey ? item : { ...item, lineKey: buildLineKey(item.id, item.selectedVariants) }
+    )
+  }
+  return state as CartStore
+}
+
 export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
@@ -114,6 +131,10 @@ export const useCart = create<CartStore>()(
         return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0)
       }
     }),
-    { name: 'cart-store' }
+    {
+      name: 'cart-store',
+      version: 1,
+      migrate: migrateCartState,
+    }
   )
 )

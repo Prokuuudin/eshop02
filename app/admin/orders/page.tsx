@@ -56,7 +56,7 @@ const DELIVERY_LABELS: Record<string, string> = {
 }
 
 type CatalogProduct = { id: string; title: string; brand: string; price: number; stock: number; image?: string; sku?: string }
-type EditItem = { id: string; title: string; price: number; quantity: number; image?: string; variantLabel?: string }
+type EditItem = { id: string; lineKey: string; title: string; price: number; quantity: number; image?: string; variantLabel?: string }
 
 const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, post: 3 }
 
@@ -262,7 +262,7 @@ export default function AdminOrdersPage() {
 
   const startEdit = (order: (typeof orders)[number]) => {
     setEditingOrderId(order.id)
-    setEditItems(order.items.map((i) => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity, image: i.image, variantLabel: i.variantLabel })))
+    setEditItems(order.items.map((i) => ({ id: i.id, lineKey: i.lineKey, title: i.title, price: i.price, quantity: i.quantity, image: i.image, variantLabel: i.variantLabel })))
     setEditAddress(order.address)
     setEditCity(order.city)
     setEditPostalCode(order.postalCode ?? '')
@@ -315,19 +315,22 @@ export default function AdminOrdersPage() {
     setEditProductSearch('')
   }
 
-  const editUpdateQty = (itemId: string, qty: number) => {
+  const editUpdateQty = (lineKey: string, qty: number) => {
     if (qty <= 0) {
-      setEditItems((prev) => prev.filter((i) => i.id !== itemId))
+      setEditItems((prev) => prev.filter((i) => i.lineKey !== lineKey))
     } else {
-      setEditItems((prev) => prev.map((i) => i.id === itemId ? { ...i, quantity: qty } : i))
+      setEditItems((prev) => prev.map((i) => i.lineKey === lineKey ? { ...i, quantity: qty } : i))
     }
   }
 
   const editAddProduct = (p: CatalogProduct) => {
+    // Adding from the catalog search has no variant selection, so the new
+    // line's identity is the plain product id — matches CartItem's
+    // plain-id lineKey for items without selectedVariants (see buildLineKey).
     setEditItems((prev) => {
-      const existing = prev.find((i) => i.id === p.id)
-      if (existing) return prev.map((i) => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i)
-      return [...prev, { id: p.id, title: p.title, price: p.price, quantity: 1, image: p.image }]
+      const existing = prev.find((i) => i.lineKey === p.id)
+      if (existing) return prev.map((i) => i.lineKey === p.id ? { ...i, quantity: i.quantity + 1 } : i)
+      return [...prev, { id: p.id, lineKey: p.id, title: p.title, price: p.price, quantity: 1, image: p.image }]
     })
     setEditProductSearch('')
   }
@@ -723,7 +726,7 @@ export default function AdminOrdersPage() {
                         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Позиции заказа</p>
                         <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800 bg-card">
                           {editItems.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
+                            <div key={item.lineKey} className="flex items-center gap-3 px-3 py-2.5">
                               {item.image && <img src={item.image} alt="" className="w-9 h-9 rounded object-cover shrink-0" />}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
@@ -733,12 +736,12 @@ export default function AdminOrdersPage() {
                               </div>
                               <span className="text-xs text-gray-400 shrink-0">€{item.price.toFixed(2)}</span>
                               <div className="flex items-center gap-1 shrink-0">
-                                <button type="button" onClick={() => editUpdateQty(item.id, item.quantity - 1)} className="h-6 w-6 rounded border border-border text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-base leading-none">−</button>
+                                <button type="button" onClick={() => editUpdateQty(item.lineKey, item.quantity - 1)} className="h-6 w-6 rounded border border-border text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-base leading-none">−</button>
                                 <span className="w-7 text-center text-sm tabular-nums">{item.quantity}</span>
-                                <button type="button" onClick={() => editUpdateQty(item.id, item.quantity + 1)} className="h-6 w-6 rounded border border-border text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-base leading-none">+</button>
+                                <button type="button" onClick={() => editUpdateQty(item.lineKey, item.quantity + 1)} className="h-6 w-6 rounded border border-border text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-base leading-none">+</button>
                               </div>
                               <span className="text-sm font-medium text-foreground w-16 text-right tabular-nums shrink-0">€{(item.price * item.quantity).toFixed(2)}</span>
-                              <button type="button" onClick={() => editUpdateQty(item.id, 0)} className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 text-lg leading-none shrink-0">×</button>
+                              <button type="button" onClick={() => editUpdateQty(item.lineKey, 0)} className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 text-lg leading-none shrink-0">×</button>
                             </div>
                           ))}
                         </div>
@@ -853,7 +856,7 @@ export default function AdminOrdersPage() {
                     <p className="text-sm font-semibold text-foreground mb-2">Состав заказа</p>
                     <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
+                        <div key={item.lineKey} className="flex items-center gap-3 px-3 py-2.5">
                           {item.image && (
                             <img
                               src={item.image}

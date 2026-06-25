@@ -1,5 +1,5 @@
 import { ProductFeatures } from '@/components/ProductFeatures';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { ProductBrand } from '@/components/ProductBrand';
 import { ProductTitle } from '@/components/ProductTitle';
 import { ProductCodes } from '@/components/ProductCodes';
@@ -8,7 +8,9 @@ import { ProductRating } from '@/components/ProductRating';
 import { ProductPrices } from '@/components/ProductPrices';
 import { ProductDescription } from '@/components/ProductDescription';
 import { ProductActions } from '@/components/ProductActions';
-import { Product } from '@/data/products';
+import { ProductVariantSelector } from '@/components/ProductVariantSelector';
+import { Product, SelectedVariant } from '@/data/products';
+import { getVariantGroups, sumPriceAdjustment } from '@/lib/product-variants';
 
 interface ProductInfoProps {
     product: Product;
@@ -33,6 +35,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     productFeatures,
     minOrderQuantity,
 }) => {
+    const variantGroups = useMemo(() => getVariantGroups(product), [product]);
+    const [selectedVariants, setSelectedVariants] = useState<SelectedVariant[]>([]);
+    const priceAdjustment = useMemo(() => sumPriceAdjustment(selectedVariants), [selectedVariants]);
+    const adjustedPrice = displayPrice + priceAdjustment;
+    const adjustedOldPrice = displayOldPrice !== undefined ? displayOldPrice + priceAdjustment : undefined;
+
     return (
         <div className="product-detail__info">
             <ProductBrand brand={product.brand} />
@@ -40,9 +48,16 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <ProductCodes sku={product.sku} barcode={product.barcode} />
             <ProductBadges badges={product.badges} />
             <ProductRating rating={product.rating} count={ratingCount} />
+            {variantGroups && variantGroups.length > 0 && (
+                <ProductVariantSelector
+                    groups={variantGroups}
+                    selected={selectedVariants}
+                    onChange={setSelectedVariants}
+                />
+            )}
             <ProductPrices
-                price={displayPrice}
-                oldPrice={displayOldPrice}
+                price={adjustedPrice}
+                oldPrice={adjustedOldPrice}
                 priceLocale={priceLocale}
                 stock={product.stock}
                 creditPrice={product.price}
@@ -51,7 +66,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             />
             <ProductDescription description={productDescription} productId={product.id} />
             <ProductFeatures features={productFeatures} />
-            <ProductActions product={product} minOrderQuantity={minOrderQuantity} displayPrice={displayPrice} />
+            <ProductActions
+                product={product}
+                minOrderQuantity={minOrderQuantity}
+                displayPrice={adjustedPrice}
+                selectedVariants={selectedVariants}
+            />
         </div>
     );
 };

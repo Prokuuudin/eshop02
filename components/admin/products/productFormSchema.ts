@@ -56,7 +56,15 @@ export const addProductSchema = z.object({
     required: z.boolean(),
     options: z.array(z.object({
       value: z.string().min(1, 'Значение обязательно'),
-      priceAdjustment: z.number().optional(),
+      // `valueAsNumber` from react-hook-form yields NaN (not undefined) for
+      // an empty input. zod's `z.number().optional()` does NOT treat NaN as
+      // absent, so an admin leaving this field blank would otherwise fail
+      // validation and block saving the entire form. `.catch(undefined)`
+      // falls back to undefined whenever the inner `z.number()` check fails
+      // (including on NaN), without changing the inferred input/output type
+      // the way `z.preprocess` would (which broke react-hook-form's
+      // Resolver typing here).
+      priceAdjustment: z.number().optional().catch(undefined),
     })),
   })),
 

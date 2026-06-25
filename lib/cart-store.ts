@@ -1,14 +1,5 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { SelectedVariant } from '@/data/products'
-import { sumPriceAdjustment } from '@/lib/product-variants'
-
-export type { SelectedVariant }
-
-export function buildLineKey(id: string, selectedVariants?: SelectedVariant[]): string {
-  if (!selectedVariants || selectedVariants.length === 0) return id
-  return id + '::' + selectedVariants.map((v) => `${v.groupName}=${v.value}`).join(',')
-}
 
 type AddableProduct = {
   id: string
@@ -26,8 +17,6 @@ type AddableProduct = {
 
 export type CartItem = {
   id: string
-  lineKey: string
-  selectedVariants?: SelectedVariant[]
   title: string
   brand: string
   image?: string
@@ -38,55 +27,29 @@ export type CartItem = {
   minOrderQuantities?: Record<string, number>
   category?: string
   sku?: string
-  variantLabel?: string
 }
 
 type CartStore = {
   items: CartItem[]
-  addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => void
-  removeItem: (lineKey: string) => void
-  updateQuantity: (lineKey: string, quantity: number) => void
+  addItem: (product: AddableProduct, quantity: number) => void
+  removeItem: (productId: string) => void
+  updateQuantity: (productId: string, quantity: number) => void
   replaceWithItems: (items: CartItem[]) => void
   clearCart: () => void
   total: () => number
-}
-
-/**
- * Migrates a persisted cart-store state from before `CartItem.lineKey` existed
- * (version 0 / unversioned) to the current shape. Any item missing `lineKey`
- * (every pre-this-branch persisted item) gets one computed the same way
- * `addItem` does, which for items with no `selectedVariants` simply yields
- * the product id — preserving prior single-variant cart behavior exactly.
- */
-export function migrateCartState(persistedState: unknown): CartStore {
-  const state = persistedState as { items?: Array<Partial<CartItem> & { id: string }> }
-  if (state?.items) {
-    state.items = state.items.map((item) =>
-      item.lineKey ? item : { ...item, lineKey: buildLineKey(item.id, item.selectedVariants) }
-    )
-  }
-  return state as CartStore
 }
 
 export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => {
-        const lineKey = buildLineKey(product.id, selectedVariants)
-        const priceAdjustment = sumPriceAdjustment(selectedVariants ?? [])
-        const variantLabel = selectedVariants?.length
-          ? selectedVariants.map((v) => `${v.groupName}: ${v.value}`).join(', ')
-          : undefined
+      addItem: (product: AddableProduct, quantity: number) => {
         const slim: Omit<CartItem, 'quantity'> = {
           id: product.id,
-          lineKey,
-          selectedVariants,
-          variantLabel,
           title: product.title,
           brand: product.brand,
           image: product.image || product.images?.[0],
-          price: product.price + priceAdjustment,
+          price: product.price,
           bonusRate: product.bonusRate,
           bulkPricingTiers: product.bulkPricingTiers,
           minOrderQuantities: product.minOrderQuantities,
@@ -94,11 +57,11 @@ export const useCart = create<CartStore>()(
           sku: product.sku,
         }
         set((state) => {
-          const existing = state.items.find((i) => i.lineKey === lineKey)
+          const existing = state.items.find((i) => i.id === slim.id)
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.lineKey === lineKey ? { ...i, quantity: i.quantity + quantity } : i
+                i.id === slim.id ? { ...i, quantity: i.quantity + quantity } : i
               )
             }
           }
@@ -107,17 +70,17 @@ export const useCart = create<CartStore>()(
           }
         })
       },
-      removeItem: (lineKey: string) => {
+      removeItem: (productId: string) => {
         set((state) => ({
-          items: state.items.filter((i) => i.lineKey !== lineKey)
+          items: state.items.filter((i) => i.id !== productId)
         }))
       },
-      updateQuantity: (lineKey: string, quantity: number) => {
+      updateQuantity: (productId: string, quantity: number) => {
         if (quantity <= 0) {
-          get().removeItem(lineKey)
+          get().removeItem(productId)
         } else {
           set((state) => ({
-            items: state.items.map((i) => (i.lineKey === lineKey ? { ...i, quantity } : i))
+            items: state.items.map((i) => (i.id === productId ? { ...i, quantity } : i))
           }))
         }
       },
@@ -131,10 +94,6 @@ export const useCart = create<CartStore>()(
         return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0)
       }
     }),
-    {
-      name: 'cart-store',
-      version: 1,
-      migrate: migrateCartState,
-    }
+    { name: 'cart-store' }
   )
 )

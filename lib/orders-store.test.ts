@@ -45,7 +45,6 @@ function computeTax(subtotal: number, taxRatePercent: number): number {
 function makeItem(id: string, price: number, quantity: number): CartItem {
   return {
     id,
-    lineKey: id,
     title: `Product ${id}`,
     brand: 'Brand',
     category: 'hair',

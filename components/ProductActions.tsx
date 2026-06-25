@@ -3,27 +3,21 @@ import AddToCartButton from '@/components/AddToCartButton';
 import WishlistButton from '@/components/WishlistButton';
 import { SubscriptionWidget } from '@/components/SubscriptionWidget';
 import { useTranslation } from '@/lib/use-translation';
-import { Product, SelectedVariant } from '@/data/products';
+import { Product } from '@/data/products';
 
 interface ProductActionsProps {
     product: Product;
     minOrderQuantity: number;
     displayPrice: number;
-    selectedVariants?: SelectedVariant[];
 }
 
-export const ProductActions: React.FC<ProductActionsProps> = ({
-    product,
-    minOrderQuantity,
-    displayPrice,
-    selectedVariants,
-}) => {
+export const ProductActions: React.FC<ProductActionsProps> = ({ product, minOrderQuantity, displayPrice }) => {
     const { t } = useTranslation();
     return (
         <div className="product-detail__actions mt-8">
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[220px]">
-                    <AddToCartButton product={product} selectedVariants={selectedVariants} />
+                    <AddToCartButton product={product} />
                 </div>
                 <WishlistButton product={product} asButton />
             </div>

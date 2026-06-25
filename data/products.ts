@@ -7,23 +7,6 @@ export function getProductById(id: string): Product | undefined {
 export type BadgeType = 'sale' | 'bestseller' | 'new';
 export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment' | 'new';
 
-export interface VariantOption {
-  value: string // код как в исходнике: "A-11", "111", "WHITE" — не переводим, не маппим на hex
-  priceAdjustment?: number
-}
-
-export interface VariantGroup {
-  name: string // как в исходнике: "Krāsu numurs", "Izmērs"...
-  required: boolean
-  options: VariantOption[]
-}
-
-export interface SelectedVariant {
-  groupName: string
-  value: string
-  priceAdjustment?: number
-}
-
 export interface Product {
     barcode?: string // Штрихкод товара
   id: string
@@ -57,7 +40,6 @@ export interface Product {
   sku?: string // Product article number
   unitOfMeasure?: string // шт, л, кг, etc
   technicalSpecs?: Record<string, string> // Technical characteristics
-  variantGroups?: VariantGroup[] // Цвет/комплектация — выбор перед добавлением в корзину
   certificates?: string[] // URLs to certificate PDFs
   packagingSize?: number // Units per package
   compatibleEquipment?: string[] // Equipment compatibility

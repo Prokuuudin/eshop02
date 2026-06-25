@@ -50,24 +50,6 @@ export const addProductSchema = z.object({
   // Технические характеристики (ключ-значение, как в Product.technicalSpecs)
   technicalSpecs: z.array(z.object({ key: z.string(), value: z.string() })),
 
-  // Варианты товара (цвет/комплектация, как в Product.variantGroups)
-  variantGroups: z.array(z.object({
-    name: z.string().min(1, 'Название группы обязательно'),
-    required: z.boolean(),
-    options: z.array(z.object({
-      value: z.string().min(1, 'Значение обязательно'),
-      // `valueAsNumber` from react-hook-form yields NaN (not undefined) for
-      // an empty input. zod's `z.number().optional()` does NOT treat NaN as
-      // absent, so an admin leaving this field blank would otherwise fail
-      // validation and block saving the entire form. `.catch(undefined)`
-      // falls back to undefined whenever the inner `z.number()` check fails
-      // (including on NaN), without changing the inferred input/output type
-      // the way `z.preprocess` would (which broke react-hook-form's
-      // Resolver typing here).
-      priceAdjustment: z.number().optional().catch(undefined),
-    })),
-  })),
-
   // Совместимость (как Product.compatibleEquipment)
   compatibleEquipment: z.array(z.string()),
 

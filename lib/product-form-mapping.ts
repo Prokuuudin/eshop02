@@ -37,7 +37,6 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
             key,
             value,
         })),
-        variantGroups: product.variantGroups ?? [],
         compatibleEquipment: product.compatibleEquipment ?? [],
         certificates: product.certificates ?? [],
         relatedProductIds: product.relatedProductIds ?? [],
@@ -116,7 +115,6 @@ export function mapFormValuesToProductPatch(
         images: cleanArray(values.images).length > 0 ? cleanArray(values.images) : undefined,
         badges: values.badges.length > 0 ? values.badges : undefined,
         technicalSpecs: Object.keys(techSpecs).length > 0 ? techSpecs : undefined,
-        variantGroups: values.variantGroups.length > 0 ? values.variantGroups : undefined,
         compatibleEquipment:
             cleanArray(values.compatibleEquipment).length > 0
                 ? cleanArray(values.compatibleEquipment)

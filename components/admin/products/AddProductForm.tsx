@@ -19,7 +19,6 @@ import ProductSeoFields from './ProductSeoFields';
 import ProductTranslationsFields from './ProductTranslationsFields';
 import ProductGalleryFields from './ProductGalleryFields';
 import ProductTechSpecsFields from './ProductTechSpecsFields';
-import ProductVariantGroupsFields from './ProductVariantGroupsFields';
 import ProductCertificatesFields from './ProductCertificatesFields';
 import ProductBulkPricingFields from './ProductBulkPricingFields';
 import ProductRelatedFields from './ProductRelatedFields';
@@ -67,7 +66,6 @@ const emptyDefaults: AddProductFormValues = {
 
     badges: [],
     technicalSpecs: [],
-    variantGroups: [],
     compatibleEquipment: [],
     certificates: [],
     relatedProductIds: [],
@@ -211,7 +209,6 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductInventoryFields />
                             <ProductGalleryFields />
                             <ProductTechSpecsFields />
-                            <ProductVariantGroupsFields />
                             <ProductCertificatesFields />
                             <ProductBulkPricingFields />
                             <ProductRelatedFields />

@@ -44,14 +44,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     React.useEffect(() => {
         setSelectedItemIds((prev) => {
             if (prev.length === 0 && !selectionTouched) {
-                return items.map((item) => item.lineKey);
+                return items.map((item) => item.id);
             }
 
-            const currentIds = new Set(items.map((item) => item.lineKey));
+            const currentIds = new Set(items.map((item) => item.id));
             const next = prev.filter((id) => currentIds.has(id));
 
             if (next.length === 0 && items.length > 0 && !selectionTouched) {
-                return items.map((item) => item.lineKey);
+                return items.map((item) => item.id);
             }
 
             return next;
@@ -64,7 +64,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         }
     }, [items.length]);
 
-    const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
+    const selectedItems = items.filter((item) => selectedItemIds.includes(item.id));
     const bonusToEarn = selectedItems.reduce(
         (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
         0
@@ -84,10 +84,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             ? `/checkout?items=${encodeURIComponent(selectedIdsParam)}`
             : '/checkout';
 
-    const toggleSelected = (lineKey: string): void => {
+    const toggleSelected = (productId: string): void => {
         setSelectionTouched(true);
         setSelectedItemIds((prev) =>
-            prev.includes(lineKey) ? prev.filter((id) => id !== lineKey) : [...prev, lineKey]
+            prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
         );
     };
 
@@ -108,11 +108,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    const handleDecrease = (lineKey: string, quantity: number, minQuantity: number): void => {
+    const handleDecrease = (productId: string, quantity: number, minQuantity: number): void => {
         if (quantity <= minQuantity) {
             return;
         }
-        updateQuantity(lineKey, quantity - 1);
+        updateQuantity(productId, quantity - 1);
     };
 
     if (!mounted) {
@@ -187,7 +187,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 type="button"
                                 onClick={() => {
                                     setSelectionTouched(true);
-                                    setSelectedItemIds(items.map((item) => item.lineKey));
+                                    setSelectedItemIds(items.map((item) => item.id));
                                 }}
                                 className="text-primary hover:underline"
                             >
@@ -214,16 +214,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         items.map((item) => {
                             const minQuantity = getMinimumOrderQuantity(item);
                             const localizedTitle = t(`products.${item.id}.title`, item.title);
-                            const isSelected = selectedItemIds.includes(item.lineKey);
+                            const isSelected = selectedItemIds.includes(item.id);
                             return (
                                 <div
-                                    key={item.lineKey}
+                                    key={item.id}
                                     className="cart-drawer__item flex gap-3 border-b border-border pb-3"
                                 >
                                     <div className="pt-1">
                                         <Checkbox
                                             checked={isSelected}
-                                            onCheckedChange={() => toggleSelected(item.lineKey)}
+                                            onCheckedChange={() => toggleSelected(item.id)}
                                             aria-label={`${t(
                                                 'cart.selectForCheckout'
                                             )}: ${localizedTitle}`}
@@ -248,7 +248,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                 <button
                                                     onClick={() =>
                                                         handleDecrease(
-                                                            item.lineKey,
+                                                            item.id,
                                                             item.quantity,
                                                             minQuantity
                                                         )
@@ -262,7 +262,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                 </span>
                                                 <button
                                                     onClick={() =>
-                                                        updateQuantity(item.lineKey, item.quantity + 1)
+                                                        updateQuantity(item.id, item.quantity + 1)
                                                     }
                                                     className="w-6 h-6 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
@@ -275,7 +275,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                 confirmLabel={t('cart.remove')}
                                                 cancelLabel={t('common.cancel')}
                                                 onConfirm={() => {
-                                                    removeItem(item.lineKey);
+                                                    removeItem(item.id);
                                                     showToast(t('toast.removedFromCart'), 'info');
                                                 }}
                                                 trigger={

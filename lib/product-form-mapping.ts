@@ -1,5 +1,6 @@
 import type { Product } from '@/data/products';
 import type { AddProductFormValues } from '@/components/admin/products/productFormSchema';
+import { getVariantGroups } from '@/lib/product-variants';
 
 export function mapProductToFormValues(product: Product): AddProductFormValues {
     return {
@@ -33,10 +34,10 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
 
         badges: product.badges ?? [],
 
-        technicalSpecs: Object.entries(product.technicalSpecs ?? {}).map(([key, value]) => ({
-            key,
-            value,
-        })),
+        technicalSpecs: Object.entries(product.technicalSpecs ?? {})
+            .filter(([key]) => key !== '__variantGroupsJson')
+            .map(([key, value]) => ({ key, value })),
+        variantGroups: getVariantGroups(product) ?? [],
         compatibleEquipment: product.compatibleEquipment ?? [],
         certificates: product.certificates ?? [],
         relatedProductIds: product.relatedProductIds ?? [],
@@ -89,6 +90,9 @@ export function mapFormValuesToProductPatch(
             acc[key] = value;
             return acc;
         }, {});
+    if (values.variantGroups.length > 0) {
+        techSpecs['__variantGroupsJson'] = JSON.stringify(values.variantGroups);
+    }
 
     const cleanArray = (arr: string[]) => arr.filter(Boolean);
 

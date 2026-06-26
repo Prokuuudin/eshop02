@@ -6,6 +6,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useOrders, type DeliveryMethod } from '@/lib/orders-store'
 import { readUsers } from '@/lib/auth'
 import { formatEuro } from '@/lib/utils'
@@ -588,23 +589,25 @@ export default function NewOrderPage() {
             <Section title="Оплата">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Способ оплаты">
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className={selectCls}
-                  >
-                    {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className={selectCls}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Статус оплаты">
-                  <select
-                    value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value as 'unpaid' | 'paid')}
-                    className={selectCls}
-                  >
-                    <option value="unpaid">Не оплачен</option>
-                    <option value="paid">Оплачен</option>
-                  </select>
+                  <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v as 'unpaid' | 'paid')}>
+                    <SelectTrigger className={selectCls}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unpaid">Не оплачен</SelectItem>
+                      <SelectItem value="paid">Оплачен</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </Field>
               </div>
             </Section>

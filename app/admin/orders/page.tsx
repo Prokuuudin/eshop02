@@ -8,6 +8,8 @@ import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Search, Printer, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/use-translation'
 import { logAdminAction } from '@/lib/admin-log-store'
@@ -460,50 +462,50 @@ export default function AdminOrdersPage() {
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           <div className="grid grid-cols-3 sm:contents gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
-            >
-              <option value="all">Все статусы</option>
-              {STATUS_LIST.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABELS[s]}
-                </option>
-              ))}
-            </select>
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
-            >
-              <option value="all">Все оплаты</option>
-              <option value="unpaid">Не оплачен</option>
-              <option value="pending">Ожидает оплаты</option>
-              <option value="paid">Оплачен</option>
-              <option value="failed">Ошибка оплаты</option>
-            </select>
-            <select
-              value={deliveryFilter}
-              onChange={(e) => setDeliveryFilter(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto"
-            >
-              <option value="all">Все доставки</option>
-              <option value="courier">Курьер</option>
-              <option value="pickup">Самовывоз</option>
-              <option value="post">Почта</option>
-            </select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as OrderStatus | 'all')}>
+              <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все статусы</SelectItem>
+                {STATUS_LIST.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+              <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все оплаты</SelectItem>
+                <SelectItem value="unpaid">Не оплачен</SelectItem>
+                <SelectItem value="pending">Ожидает оплаты</SelectItem>
+                <SelectItem value="paid">Оплачен</SelectItem>
+                <SelectItem value="failed">Ошибка оплаты</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
+              <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground w-full sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все доставки</SelectItem>
+                <SelectItem value="courier">Курьер</SelectItem>
+                <SelectItem value="pickup">Самовывоз</SelectItem>
+                <SelectItem value="post">Почта</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
           <label className="flex items-center gap-1.5 cursor-pointer mr-2">
-            <input
-              type="checkbox"
-              checked={isAllSelected}
-              ref={(el) => { if (el) el.indeterminate = isSomeSelected && !isAllSelected }}
-              onChange={toggleSelectAll}
-              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-primary cursor-pointer"
+            <Checkbox
+              checked={isAllSelected ? true : isSomeSelected ? 'indeterminate' : false}
+              onCheckedChange={toggleSelectAll}
             />
             <span className="text-xs text-muted-foreground">Выбрать все</span>
           </label>
@@ -543,16 +545,16 @@ export default function AdminOrdersPage() {
             Выбрано: {selectedIds.size}
           </span>
           <div className="flex items-center gap-2">
-            <select
-              value={bulkStatus}
-              onChange={(e) => setBulkStatus(e.target.value as OrderStatus | '')}
-              className="rounded-lg border border-primary/50 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground"
-            >
-              <option value="">Изменить статус...</option>
-              {STATUS_LIST.map((s) => (
-                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-              ))}
-            </select>
+            <Select value={bulkStatus} onValueChange={(v) => setBulkStatus(v as OrderStatus | '')}>
+              <SelectTrigger className="rounded-lg border border-primary/50 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground">
+                <SelectValue placeholder="Изменить статус..." />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_LIST.map((s) => (
+                  <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button size="sm" disabled={!bulkStatus} onClick={applyBulkStatus}>
               Применить
             </Button>
@@ -586,13 +588,11 @@ export default function AdminOrdersPage() {
             >
               <div className="flex items-start px-5 py-4 hover:bg-black/[.02] dark:hover:bg-white/[.02] transition-colors">
                 <div className="flex items-center pt-1.5 mr-3 shrink-0">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedIds.has(order.id)}
-                    onChange={() => toggleSelect(order.id)}
+                    onCheckedChange={() => toggleSelect(order.id)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Выбрать заказ ${order.id}`}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-primary cursor-pointer"
                   />
                 </div>
                 <button

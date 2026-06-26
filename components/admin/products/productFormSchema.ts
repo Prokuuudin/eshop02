@@ -50,6 +50,17 @@ export const addProductSchema = z.object({
   // Технические характеристики (ключ-значение, как в Product.technicalSpecs)
   technicalSpecs: z.array(z.object({ key: z.string(), value: z.string() })),
 
+  // Варианты товара (цвет/комплектация) — на диске хранятся внутри technicalSpecs.__variantGroupsJson,
+  // в форме отдельное поле, см. lib/product-form-mapping.ts
+  variantGroups: z.array(z.object({
+    name: z.string().min(1, 'Название группы обязательно'),
+    required: z.boolean(),
+    options: z.array(z.object({
+      value: z.string().min(1, 'Значение обязательно'),
+      priceAdjustment: z.number().optional().catch(undefined),
+    })),
+  })),
+
   // Совместимость (как Product.compatibleEquipment)
   compatibleEquipment: z.array(z.string()),
 

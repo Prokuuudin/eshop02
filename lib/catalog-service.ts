@@ -34,7 +34,9 @@ export async function getCatalogItems(category?: string): Promise<CatalogItem[]>
     rating: p.rating,
     stock: p.stock,
     description: p.description,
-    technicalSpecs: p.technicalSpecs,
+    technicalSpecs: p.technicalSpecs
+      ? Object.fromEntries(Object.entries(p.technicalSpecs).filter(([key]) => key !== '__variantGroupsJson'))
+      : p.technicalSpecs,
     certificates: p.certificates,
     bulkPricingTiers: p.bulkPricingTiers,
     compatibleEquipment: p.compatibleEquipment

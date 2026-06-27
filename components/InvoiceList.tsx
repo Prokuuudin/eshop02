@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type InvoiceListProps = {
   invoices: Invoice[]
@@ -100,28 +101,30 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
       {/* Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2 flex-wrap">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as InvoiceStatus | 'all')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm"
-          >
-            <option value="all">{t('account.invoiceList.filter.allStatuses')}</option>
-            <option value="issued">{t('account.invoice.status.issued')}</option>
-            <option value="paid">{t('account.invoice.status.paid')}</option>
-            <option value="overdue">{t('account.invoice.status.overdue')}</option>
-            <option value="draft">{t('account.invoice.status.draft')}</option>
-            <option value="cancelled">{t('account.invoice.status.cancelled')}</option>
-          </select>
+          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as InvoiceStatus | 'all')}>
+            <SelectTrigger className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('account.invoiceList.filter.allStatuses')}</SelectItem>
+              <SelectItem value="issued">{t('account.invoice.status.issued')}</SelectItem>
+              <SelectItem value="paid">{t('account.invoice.status.paid')}</SelectItem>
+              <SelectItem value="overdue">{t('account.invoice.status.overdue')}</SelectItem>
+              <SelectItem value="draft">{t('account.invoice.status.draft')}</SelectItem>
+              <SelectItem value="cancelled">{t('account.invoice.status.cancelled')}</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'status')}
-            className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm"
-          >
-            <option value="date">{t('account.invoiceList.sort.byDate')}</option>
-            <option value="amount">{t('account.invoiceList.sort.byAmount')}</option>
-            <option value="status">{t('account.invoiceList.sort.byStatus')}</option>
-          </select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'date' | 'amount' | 'status')}>
+            <SelectTrigger className="rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground px-3 py-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">{t('account.invoiceList.sort.byDate')}</SelectItem>
+              <SelectItem value="amount">{t('account.invoiceList.sort.byAmount')}</SelectItem>
+              <SelectItem value="status">{t('account.invoiceList.sort.byStatus')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="text-sm text-muted-foreground">

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const SELECT_CLASS =
   'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
@@ -176,14 +177,18 @@ export default function AdminShippingPage() {
                           <label className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
-                          <select
-                            className={SELECT_CLASS}
+                          <Select
                             value={method.enabled ? 'yes' : 'no'}
-                            onChange={(e) => updateDelivery(key, 'enabled', e.target.value === 'yes')}
+                            onValueChange={(v) => updateDelivery(key, 'enabled', v === 'yes')}
                           >
-                            <option value="yes">Включён</option>
-                            <option value="no">Отключён</option>
-                          </select>
+                            <SelectTrigger className={SELECT_CLASS}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Включён</SelectItem>
+                              <SelectItem value="no">Отключён</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-1">
@@ -253,14 +258,18 @@ export default function AdminShippingPage() {
                           <label className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
-                          <select
-                            className={SELECT_CLASS}
+                          <Select
                             value={method.enabled ? 'yes' : 'no'}
-                            onChange={(e) => updatePayment(key, 'enabled', e.target.value === 'yes')}
+                            onValueChange={(v) => updatePayment(key, 'enabled', v === 'yes')}
                           >
-                            <option value="yes">Включён</option>
-                            <option value="no">Отключён</option>
-                          </select>
+                            <SelectTrigger className={SELECT_CLASS}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Включён</SelectItem>
+                              <SelectItem value="no">Отключён</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-1">

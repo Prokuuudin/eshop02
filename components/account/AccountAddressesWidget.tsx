@@ -22,7 +22,7 @@ export const AccountAddressesWidget: React.FC = () => {
     return (
         <Link
             href="/account/addresses"
-            className="group flex flex-col rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm hover:shadow-md hover:border-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/30 dark:hover:border-emerald-700 transition-all"
+            className="account-addresses-widget group flex flex-col rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm hover:shadow-md hover:border-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/30 dark:hover:border-emerald-700 transition-all"
         >
             <div className="mb-4 flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-emerald-600 shadow-sm dark:bg-gray-950/40 dark:text-emerald-400">

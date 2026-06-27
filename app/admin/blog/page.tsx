@@ -288,7 +288,7 @@ export default function AdminBlogPage() {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 text-foreground">
+      <main className="admin-blog-page w-full py-4 text-foreground">
 <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground">{tl('admin.blog.title', 'Управление блогом', 'Blog management', 'Bloga parvaldiba')}</h1>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuditLogStore } from '@/lib/audit-log-store'
 
 const PAGE_SIZE = 50
@@ -104,16 +105,17 @@ export default function AdminCustomerHistoryPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
             className="max-w-xs"
           />
-          <select
-            value={actionFilter}
-            onChange={(e) => { setActionFilter(e.target.value); setPage(0) }}
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-          >
-            <option value="">Все действия</option>
-            {uniqueActions.map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
+          <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v); setPage(0) }}>
+            <SelectTrigger className="border rounded-md px-3 py-2 text-sm bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все действия</SelectItem>
+              {uniqueActions.map((a) => (
+                <SelectItem key={a} value={a}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="flex items-center gap-2 text-sm">
             <label className="text-muted-foreground">От:</label>
             <input

@@ -138,11 +138,12 @@ export default function AdminAccountsPage() {
                 onChange={(e) => setDbSearch(e.target.value)}
               />
             </div>
-            <Select value={dbRoleFilter} onValueChange={setDbRoleFilter}>
+            <Select value={dbRoleFilter || 'all'} onValueChange={(v) => setDbRoleFilter(v === 'all' ? '' : v)}>
               <SelectTrigger className="rounded-md border border-border bg-card px-3 py-2 text-sm">
-                <SelectValue placeholder="Все роли" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Все роли</SelectItem>
                 <SelectItem value="customer">customer</SelectItem>
                 <SelectItem value="admin">admin</SelectItem>
               </SelectContent>

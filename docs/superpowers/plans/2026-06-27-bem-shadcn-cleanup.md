@@ -1032,16 +1032,19 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in marke
 -              <option value="customer">customer</option>
 -              <option value="admin">admin</option>
 -            </select>
-+            <Select value={dbRoleFilter} onValueChange={setDbRoleFilter}>
++            <Select value={dbRoleFilter || 'all'} onValueChange={(v) => setDbRoleFilter(v === 'all' ? '' : v)}>
 +              <SelectTrigger className="rounded-md border border-border bg-card px-3 py-2 text-sm">
-+                <SelectValue placeholder="Все роли" />
++                <SelectValue />
 +              </SelectTrigger>
 +              <SelectContent>
++                <SelectItem value="all">Все роли</SelectItem>
 +                <SelectItem value="customer">customer</SelectItem>
 +                <SelectItem value="admin">admin</SelectItem>
 +              </SelectContent>
 +            </Select>
 ```
+
+(sentinel `'all'` ↔ `''` — это исправление уже применено в коде через фикс-сабагента в Task 5, см. ledger; здесь обновлено для консистентности документации плана)
 
 (пустая строка `""` как значение "все роли" не работает как value у shadcn `SelectItem` — заменена на `placeholder`, показывается когда `dbRoleFilter === ''`; поведение фильтра не меняется, т.к. и раньше пустая строка просто не матчила ни одну роль и в `useEffect`/фильтрации трактовалась как "без фильтра" — проверить эту логику при ручной проверке Step 12)
 
@@ -1319,6 +1322,8 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 
 - [ ] **Step 2: Фильтр действия (строки ~140-149)**
 
+**Важно:** `actionFilter` хранит `''` как "без фильтра" (обычный `string`, не литерал `'all'` в типе). У raw-select был реальный, всегда выбираемый `<option value="">Все действия</option>` — пользователь мог открыть список повторно и выбрать "Все действия" снова, чтобы снять фильтр. Голый `placeholder` показывается ТОЛЬКО пока `actionFilter === ''` и недостижим из дропдауна после выбора конкретного действия — реальная потеря UX (обнаружена и исправлена в Task 5 для похожего случая в `admin/accounts/page.tsx`, тот же класс ошибки). Использовать sentinel-значение `'all'`, транслируемое в `''` на границе:
+
 ```diff
 -          <select
 -            value={actionFilter}
@@ -1330,11 +1335,12 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 -              <option key={a} value={a}>{a}</option>
 -            ))}
 -          </select>
-+          <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0) }}>
++          <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v); setPage(0) }}>
 +            <SelectTrigger className="border rounded-md px-3 py-2 text-sm bg-background">
-+              <SelectValue placeholder="Все действия" />
++              <SelectValue />
 +            </SelectTrigger>
 +            <SelectContent>
++              <SelectItem value="all">Все действия</SelectItem>
 +              {uniqueActions.map((a) => (
 +                <SelectItem key={a} value={a}>{a}</SelectItem>
 +              ))}
@@ -1342,7 +1348,7 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 +          </Select>
 ```
 
-(пустая строка как "все действия" заменена на placeholder, как в Task 5 Step 7)
+(sentinel `'all'` ↔ `''` на границе `value`/`onValueChange` — `actionFilter` снаружи этого блока остаётся `''`/конкретным значением, как раньше; "Все действия" теперь реальный, всегда выбираемый пункт списка)
 
 - [ ] **Step 3: Импорт — `app/admin/system/admin-log/page.tsx`**
 
@@ -1353,6 +1359,8 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 (после строки 7)
 
 - [ ] **Step 4: Фильтр действия (строки ~163-172)**
+
+**Важно:** `actionFilter` хранит `''` как "без фильтра" (тип `AdminLogAction | ''`). Та же ситуация, что в Task 7 Step 2 — без sentinel-значения "Все действия" станет недостижимым после первого выбора. Использовать `'all'`:
 
 ```diff
 -          <select
@@ -1365,11 +1373,12 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 -              <option key={a} value={a}>{ACTION_LABELS[a as AdminLogAction] ?? a}</option>
 -            ))}
 -          </select>
-+          <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v as AdminLogAction | ''); setPage(0) }}>
++          <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v as AdminLogAction); setPage(0) }}>
 +            <SelectTrigger className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-+              <SelectValue placeholder="Все действия" />
++              <SelectValue />
 +            </SelectTrigger>
 +            <SelectContent>
++              <SelectItem value="all">Все действия</SelectItem>
 +              {uniqueActions.map((a) => (
 +                <SelectItem key={a} value={a}>{ACTION_LABELS[a as AdminLogAction] ?? a}</SelectItem>
 +              ))}
@@ -1378,6 +1387,8 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 ```
 
 - [ ] **Step 5: Фильтр администратора (строки ~173-180)**
+
+**Важно:** `adminFilter` хранит `''` как "без фильтра" (обычный `string`). Тот же класс ошибки, тот же sentinel-фикс:
 
 ```diff
 -          <select
@@ -1388,11 +1399,12 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 -            <option value="">Все администраторы</option>
 -            {uniqueAdmins.map((a) => <option key={a} value={a}>{a}</option>)}
 -          </select>
-+          <Select value={adminFilter} onValueChange={(v) => { setAdminFilter(v); setPage(0) }}>
++          <Select value={adminFilter || 'all'} onValueChange={(v) => { setAdminFilter(v === 'all' ? '' : v); setPage(0) }}>
 +            <SelectTrigger className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
-+              <SelectValue placeholder="Все администраторы" />
++              <SelectValue />
 +            </SelectTrigger>
 +            <SelectContent>
++              <SelectItem value="all">Все администраторы</SelectItem>
 +              {uniqueAdmins.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
 +            </SelectContent>
 +          </Select>
@@ -1482,6 +1494,8 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 
 - [ ] **Step 11: Фильтр категории (строки ~215-226)**
 
+**Важно:** `catFilter` хранит `''` как "без фильтра" (обычный `string`). Тот же класс ошибки, что в Task 7 Step 2/4/5 — голый placeholder делает "Все категории" недостижимым после первого выбора. Sentinel-фикс:
+
 ```diff
 -                    <select
 -                        value={catFilter}
@@ -1495,11 +1509,12 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in retur
 -                            </option>
 -                        ))}
 -                    </select>
-+                    <Select value={catFilter} onValueChange={setCatFilter}>
++                    <Select value={catFilter || 'all'} onValueChange={(v) => setCatFilter(v === 'all' ? '' : v)}>
 +                        <SelectTrigger className="rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-+                            <SelectValue placeholder="Все категории" />
++                            <SelectValue />
 +                        </SelectTrigger>
 +                        <SelectContent>
++                            <SelectItem value="all">Все категории</SelectItem>
 +                            {CATEGORIES.map((c) => (
 +                                <SelectItem key={c} value={c}>
 +                                    {c}
@@ -1691,6 +1706,8 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in syste
 
 - [ ] **Step 5: Фильтр действия (строки ~128-139)**
 
+**Важно:** `filterValue` хранит `''` как "без фильтра" (обычный `string`). Тот же класс ошибки, что в Task 7 — голый placeholder делает пункт "все действия" недостижимым после первого выбора (см. Task 7 Step 2 для полного объяснения, найдено и исправлено ревьюером в Task 5). Sentinel-фикс:
+
 ```diff
          {filterType === 'action' ? (
 -          <select
@@ -1705,11 +1722,12 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in syste
 -              </option>
 -            ))}
 -          </select>
-+          <Select value={filterValue} onValueChange={setFilterValue}>
++          <Select value={filterValue || 'all'} onValueChange={(v) => setFilterValue(v === 'all' ? '' : v)}>
 +            <SelectTrigger className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-card text-foreground">
-+              <SelectValue placeholder={t('account.auditLog.filter.allActions')} />
++              <SelectValue />
 +            </SelectTrigger>
 +            <SelectContent>
++              <SelectItem value="all">{t('account.auditLog.filter.allActions')}</SelectItem>
 +              {actionTypes.map(action => (
 +                <SelectItem key={action} value={action}>
 +                  {getActionLabel(action)}
@@ -1719,8 +1737,6 @@ git commit -m "refactor(admin): replace raw select/checkbox with shadcn in syste
 +          </Select>
          ) : (
 ```
-
-(пустая строка как "все действия" заменена на placeholder, как в предыдущих задачах)
 
 - [ ] **Step 6: Импорт — `components/InvoiceViewer.tsx`**
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminLogStore, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -160,24 +161,26 @@ export default function AdminLogPage() {
             placeholder="Поиск по объекту, email, деталям..."
             className="w-64"
           />
-          <select
-            value={actionFilter}
-            onChange={(e) => { setActionFilter(e.target.value as AdminLogAction | ''); setPage(0) }}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
-          >
-            <option value="">Все действия</option>
-            {uniqueActions.map((a) => (
-              <option key={a} value={a}>{ACTION_LABELS[a as AdminLogAction] ?? a}</option>
-            ))}
-          </select>
-          <select
-            value={adminFilter}
-            onChange={(e) => { setAdminFilter(e.target.value); setPage(0) }}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
-          >
-            <option value="">Все администраторы</option>
-            {uniqueAdmins.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v as AdminLogAction); setPage(0) }}>
+            <SelectTrigger className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все действия</SelectItem>
+              {uniqueActions.map((a) => (
+                <SelectItem key={a} value={a}>{ACTION_LABELS[a as AdminLogAction] ?? a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={adminFilter || 'all'} onValueChange={(v) => { setAdminFilter(v === 'all' ? '' : v); setPage(0) }}>
+            <SelectTrigger className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все администраторы</SelectItem>
+              {uniqueAdmins.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <span className="self-center text-sm text-muted-foreground ml-auto">
             {filtered.length} из {entries.length}
           </span>

@@ -7,6 +7,7 @@ import AdminGate from '@/components/admin/AdminGate'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { BrandConfigItem, BrandsConfigPayload, LocalizedBrandDescription } from '@/lib/brands-config'
 import { useTranslation } from '@/lib/use-translation'
 
@@ -270,14 +271,15 @@ export default function AdminBrandsPage() {
               </label>
               <label className="text-xs">
                 <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
-                <select
-                  value={newBrand.popular ? 'yes' : 'no'}
-                  onChange={(event) => setNewBrand((prev) => ({ ...prev, popular: event.target.value === 'yes' }))}
-                  className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800"
-                >
-                  <option value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</option>
-                  <option value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</option>
-                </select>
+                <Select value={newBrand.popular ? 'yes' : 'no'} onValueChange={(v) => setNewBrand((prev) => ({ ...prev, popular: v === 'yes' }))}>
+                  <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                    <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="text-xs md:col-span-3">
                 <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>
@@ -389,14 +391,15 @@ export default function AdminBrandsPage() {
                     </label>
                     <label className="text-xs">
                       <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
-                      <select
-                        value={brand.popular ? 'yes' : 'no'}
-                        onChange={(event) => updateBrand(brand.id, { popular: event.target.value === 'yes' })}
-                        className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800"
-                      >
-                        <option value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</option>
-                        <option value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</option>
-                      </select>
+                      <Select value={brand.popular ? 'yes' : 'no'} onValueChange={(v) => updateBrand(brand.id, { popular: v === 'yes' })}>
+                        <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                          <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </label>
                     <label className="text-xs md:col-span-3">
                       <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.logoPath', 'Путь к логотипу', 'Logo path', 'Logo cels')}</span>

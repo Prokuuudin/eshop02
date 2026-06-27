@@ -8,6 +8,7 @@ import { useRFQStore } from '@/lib/rfq-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/lib/toast-context'
 
 type DraftItem = {
@@ -144,17 +145,18 @@ export default function RequestQuotePage() {
           <div className="space-y-3">
             {items.map((item, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_140px_100px] gap-2">
-                <select
-                  value={item.productId}
-                  onChange={(e) => updateRow(index, { productId: e.target.value })}
-                  className="rounded border border-border bg-background px-3 py-2 text-sm"
-                >
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.title}
-                    </option>
-                  ))}
-                </select>
+                <Select value={item.productId} onValueChange={(v) => updateRow(index, { productId: v })}>
+                  <SelectTrigger className="rounded border border-border bg-background px-3 py-2 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 <input
                   type="number"

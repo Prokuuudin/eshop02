@@ -5,6 +5,7 @@ import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type Showcase = {
   id: string
@@ -228,14 +229,15 @@ export default function AdminShowcasesPage() {
               </label>
               <label className="space-y-1">
                 <span className="text-sm text-muted-foreground">Видимость</span>
-                <select
-                  value={form.active ? 'true' : 'false'}
-                  onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}
-                  className={selectCls}
-                >
-                  <option value="true">Активна</option>
-                  <option value="false">Скрыта</option>
-                </select>
+                <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
+                  <SelectTrigger className={selectCls}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Активна</SelectItem>
+                    <SelectItem value="false">Скрыта</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
             </div>
 

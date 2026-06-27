@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuditLogStore } from '@/lib/audit-log-store'
 
 function getActionBadgeClass(action: string): string {
@@ -137,16 +138,17 @@ export default function AdminSystemLogsPage() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <select
-            value={actionFilter}
-            onChange={(e) => { setActionFilter(e.target.value); setPage(0) }}
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-          >
-            <option value="">Все действия</option>
-            {uniqueActions.map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
+          <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v); setPage(0) }}>
+            <SelectTrigger className="border rounded-md px-3 py-2 text-sm bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все действия</SelectItem>
+              {uniqueActions.map((a) => (
+                <SelectItem key={a} value={a}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             placeholder="Поиск по userId или details…"
             value={search}

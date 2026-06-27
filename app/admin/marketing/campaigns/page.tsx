@@ -5,6 +5,8 @@ import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type CampaignType = 'discount' | 'gift' | 'bundle' | 'free_shipping'
 
@@ -213,16 +215,17 @@ export default function AdminCampaignsPage() {
               </label>
               <label className="space-y-1">
                 <span className="text-sm text-muted-foreground">Тип</span>
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as CampaignType }))}
-                  className={selectCls}
-                >
-                  <option value="discount">Скидка</option>
-                  <option value="gift">Подарок</option>
-                  <option value="bundle">Набор</option>
-                  <option value="free_shipping">Бесплатная доставка</option>
-                </select>
+                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as CampaignType }))}>
+                  <SelectTrigger className={selectCls}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="discount">Скидка</SelectItem>
+                    <SelectItem value="gift">Подарок</SelectItem>
+                    <SelectItem value="bundle">Набор</SelectItem>
+                    <SelectItem value="free_shipping">Бесплатная доставка</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-1">
                 <span className="text-sm text-muted-foreground">Скидка, %</span>
@@ -261,25 +264,24 @@ export default function AdminCampaignsPage() {
               </label>
               <label className="space-y-1">
                 <span className="text-sm text-muted-foreground">Статус</span>
-                <select
-                  value={form.active ? 'true' : 'false'}
-                  onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'true' }))}
-                  className={selectCls}
-                >
-                  <option value="true">Активна</option>
-                  <option value="false">Неактивна</option>
-                </select>
+                <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
+                  <SelectTrigger className={selectCls}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Активна</SelectItem>
+                    <SelectItem value="false">Неактивна</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <div className="space-y-2 sm:col-span-2">
                 <span className="text-sm text-muted-foreground block">Категории товаров (пусто = все)</span>
                 <div className="flex flex-wrap gap-3">
                   {CATEGORIES.map((cat) => (
                     <label key={cat.value} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={form.targetCategories.includes(cat.value)}
-                        onChange={() => toggleCategory(cat.value)}
-                        className="rounded border-gray-300 dark:border-gray-600"
+                        onCheckedChange={() => toggleCategory(cat.value)}
                       />
                       <span className="text-gray-700 dark:text-gray-300">{cat.label}</span>
                     </label>

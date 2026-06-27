@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCompanyStore } from '@/lib/company-store'
 import { getCurrentUser, listCompanyUsers, updateUserTeamRole, type TeamRole } from '@/lib/auth'
 import { useTranslation } from '@/lib/use-translation'
@@ -137,15 +138,16 @@ export default function AdminAccountsPage() {
                 onChange={(e) => setDbSearch(e.target.value)}
               />
             </div>
-            <select
-              className="rounded-md border border-border bg-card px-3 py-2 text-sm"
-              value={dbRoleFilter}
-              onChange={(e) => setDbRoleFilter(e.target.value)}
-            >
-              <option value="">Все роли</option>
-              <option value="customer">customer</option>
-              <option value="admin">admin</option>
-            </select>
+            <Select value={dbRoleFilter || 'all'} onValueChange={(v) => setDbRoleFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="rounded-md border border-border bg-card px-3 py-2 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все роли</SelectItem>
+                <SelectItem value="customer">customer</SelectItem>
+                <SelectItem value="admin">admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {dbLoading ? (
@@ -173,15 +175,16 @@ export default function AdminAccountsPage() {
                       <td className="py-2 pr-4 font-mono text-xs">{u.cardNumber ?? '—'}</td>
                       <td className="py-2 pr-4">{u.bonusPoints}</td>
                       <td className="py-2 pr-4">
-                        <select
-                          className="rounded border border-border bg-card px-2 py-1 text-xs"
-                          value={u.platformRole}
-                          onChange={(e) => handleUpdateDbRole(u.id, e.target.value)}
-                        >
-                          <option value="customer">customer</option>
-                          <option value="admin">admin</option>
-                          <option value="b2b">b2b</option>
-                        </select>
+                        <Select value={u.platformRole} onValueChange={(v) => handleUpdateDbRole(u.id, v)}>
+                          <SelectTrigger className="rounded border border-border bg-card px-2 py-1 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="customer">customer</SelectItem>
+                            <SelectItem value="admin">admin</SelectItem>
+                            <SelectItem value="b2b">b2b</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="py-2 text-xs text-muted-foreground">
                         {u.companyName ?? u.companyId ?? '—'}
@@ -228,19 +231,23 @@ export default function AdminAccountsPage() {
                                 <p className="text-xs text-muted-foreground">{companyUser.email}</p>
                               </div>
 
-                              <select
+                              <Select
                                 value={selectedRole}
-                                onChange={(event) => {
-                                  const role = event.target.value as TeamRole
+                                onValueChange={(v) => {
+                                  const role = v as TeamRole
                                   setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }))
                                 }}
-                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                               >
-                                <option value="viewer">viewer</option>
-                                <option value="buyer">buyer</option>
-                                <option value="manager">manager</option>
-                                <option value="admin">admin</option>
-                              </select>
+                                <SelectTrigger className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="viewer">viewer</SelectItem>
+                                  <SelectItem value="buyer">buyer</SelectItem>
+                                  <SelectItem value="manager">manager</SelectItem>
+                                  <SelectItem value="admin">admin</SelectItem>
+                                </SelectContent>
+                              </Select>
 
                               <Button
                                 size="sm"

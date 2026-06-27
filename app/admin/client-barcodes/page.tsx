@@ -16,6 +16,7 @@ import {
 } from '@/lib/auth';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/lib/use-translation';
 
 // Для заявок мастеров: короткий номер от 4 до 6 цифр, уникальный среди всех карт
@@ -434,19 +435,23 @@ export default function AdminClientBarcodesPage() {
                                                                     {companyUser.email}
                                                                 </p>
                                                             </div>
-                                                            <select
+                                                            <Select
                                                                 value={selectedRole}
-                                                                onChange={(event) => {
-                                                                    const role = event.target.value as TeamRole;
+                                                                onValueChange={(value) => {
+                                                                    const role = value as TeamRole;
                                                                     setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }));
                                                                 }}
-                                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
                                                             >
-                                                                <option value="viewer">viewer</option>
-                                                                <option value="buyer">buyer</option>
-                                                                <option value="manager">manager</option>
-                                                                <option value="admin">admin</option>
-                                                            </select>
+                                                                <SelectTrigger className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="viewer">viewer</SelectItem>
+                                                                    <SelectItem value="buyer">buyer</SelectItem>
+                                                                    <SelectItem value="manager">manager</SelectItem>
+                                                                    <SelectItem value="admin">admin</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"

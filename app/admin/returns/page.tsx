@@ -6,6 +6,7 @@ import { useReturnsStore, type ReturnStatus, type ReturnReason, type ReturnItem,
 import { useOrders } from '@/lib/orders-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTranslation } from '@/lib/use-translation'
 import { logAdminAction } from '@/lib/admin-log-store'
 
@@ -260,15 +261,16 @@ export default function AdminReturnsPage() {
 
           {/* Reason + refund */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select
-              value={formReason}
-              onChange={(e) => setFormReason(e.target.value as ReturnReason)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-            >
-              {REASON_LIST.map((r) => (
-                <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
-              ))}
-            </select>
+            <Select value={formReason} onValueChange={(v) => setFormReason(v as ReturnReason)}>
+              <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REASON_LIST.map((r) => (
+                  <SelectItem key={r} value={r}>{RETURN_REASON_LABELS[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <input
               type="number"
               min={0}
@@ -326,26 +328,28 @@ export default function AdminReturnsPage() {
             placeholder="Поиск по ID, заказу, имени, email..."
             className="flex-1 min-w-[220px] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as ReturnStatus | 'all')}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          >
-            <option value="all">Все статусы</option>
-            {STATUS_LIST.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-            ))}
-          </select>
-          <select
-            value={reasonFilter}
-            onChange={(e) => setReasonFilter(e.target.value as ReturnReason | 'all')}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          >
-            <option value="all">Все причины</option>
-            {REASON_LIST.map((r) => (
-              <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
-            ))}
-          </select>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ReturnStatus | 'all')}>
+            <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все статусы</SelectItem>
+              {STATUS_LIST.map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={reasonFilter} onValueChange={(v) => setReasonFilter(v as ReturnReason | 'all')}>
+            <SelectTrigger className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все причины</SelectItem>
+              {REASON_LIST.map((r) => (
+                <SelectItem key={r} value={r}>{RETURN_REASON_LABELS[r]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <span className="ml-auto self-center text-xs text-muted-foreground">
             {filtered.length} из {returns.length}
           </span>

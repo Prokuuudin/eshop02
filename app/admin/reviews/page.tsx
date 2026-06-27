@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 
 type ReviewStatus = 'approved' | 'hidden' | 'pending'
@@ -310,27 +312,26 @@ export default function AdminReviewsPage() {
               placeholder={l('Поиск по товару, автору, заголовку и тексту', 'Search by product, author, title and text', 'Meklet pec produkta, autora, virsraksta un teksta')}
               className="h-9"
             />
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value as 'all' | ReviewStatus)}
-              className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800"
-            >
-              <option value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</option>
-              <option value="approved">{STATUS_LABELS.approved}</option>
-              <option value="hidden">{STATUS_LABELS.hidden}</option>
-              <option value="pending">{STATUS_LABELS.pending}</option>
-            </select>
+            <Select value={status} onValueChange={(v) => setStatus(v as 'all' | ReviewStatus)}>
+              <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</SelectItem>
+                <SelectItem value="approved">{STATUS_LABELS.approved}</SelectItem>
+                <SelectItem value="hidden">{STATUS_LABELS.hidden}</SelectItem>
+                <SelectItem value="pending">{STATUS_LABELS.pending}</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">{l('Всего', 'Total', 'Kopa')}: {filteredClientSide.length}</p>
           </div>
 
           <div className="mt-3 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700">
             <div className="flex flex-wrap items-center gap-2">
               <label className="inline-flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={allVisibleSelected}
-                  onChange={(event) => toggleSelectAllVisible(event.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  onCheckedChange={(checked) => toggleSelectAllVisible(checked === true)}
                 />
                 {l('Выбрать все видимые', 'Select all visible', 'Atlasit visas redzamas')}
               </label>
@@ -381,11 +382,9 @@ export default function AdminReviewsPage() {
               <article key={review.id} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-wrap items-start gap-2">
                   <label className="inline-flex items-center">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={isSelected}
-                      onChange={(event) => toggleReviewSelection(review.id, event.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      onCheckedChange={(checked) => toggleReviewSelection(review.id, checked === true)}
                     />
                   </label>
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">{review.id}</span>

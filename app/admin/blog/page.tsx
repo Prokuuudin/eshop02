@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatDate } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 import AdminGate from '@/components/admin/AdminGate'
@@ -288,7 +289,7 @@ export default function AdminBlogPage() {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 text-foreground">
+      <main className="admin-blog-page w-full py-4 text-foreground">
 <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground">{tl('admin.blog.title', 'Управление блогом', 'Blog management', 'Bloga parvaldiba')}</h1>
@@ -496,10 +497,9 @@ export default function AdminBlogPage() {
               </Tabs>
 
               <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={blogForm.featured}
-                  onChange={(e) => setBlogForm((prev) => ({ ...prev, featured: e.target.checked }))}
+                  onCheckedChange={(checked) => setBlogForm((prev) => ({ ...prev, featured: checked === true }))}
                 />
                 {tl('admin.blog.featuredToggle', 'Показать как featured', 'Mark as featured', 'Atzimet ka izceltu')}
               </label>

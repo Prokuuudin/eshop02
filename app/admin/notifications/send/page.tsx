@@ -4,6 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 
 type DbUser = {
@@ -220,11 +222,9 @@ export default function AdminNotificationsSendPage() {
                     key={u.id}
                     className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 accent-emerald-600"
+                    <Checkbox
                       checked={selectedIds.has(u.id)}
-                      onChange={() => toggleUser(u.id)}
+                      onCheckedChange={() => toggleUser(u.id)}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-mono truncate">{u.email}</p>
@@ -272,16 +272,17 @@ export default function AdminNotificationsSendPage() {
               <label className="block text-sm font-medium mb-1">
                 {t('admin.notifications.form.type')}
               </label>
-              <select
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
-                value={type}
-                onChange={(e) => setType(e.target.value as NotificationType)}
-              >
-                <option value="info">info</option>
-                <option value="success">success</option>
-                <option value="warning">warning</option>
-                <option value="promo">promo</option>
-              </select>
+              <Select value={type} onValueChange={(v) => setType(v as NotificationType)}>
+                <SelectTrigger className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">info</SelectItem>
+                  <SelectItem value="success">success</SelectItem>
+                  <SelectItem value="warning">warning</SelectItem>
+                  <SelectItem value="promo">promo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Link */}

@@ -53,18 +53,19 @@ SELECT
   p.MetaDescription                                           AS metaDescription,
   p.Published                                                 AS isActive,
   p.CreatedOnUtc                                              AS createdAt,
-  p.UpdatedOnUtc                                              AS updatedAt,
-  cat.Name                                                    AS category
+  p.UpdatedOnUtc                                              AS updatedAt
 FROM Product p
 LEFT JOIN Product_Manufacturer_Mapping pmm ON pmm.ProductId = p.Id
 LEFT JOIN Manufacturer m ON m.Id = pmm.ManufacturerId AND m.Deleted = 0
-LEFT JOIN (
-  SELECT pcm.ProductId, c.Name,
-    ROW_NUMBER() OVER (PARTITION BY pcm.ProductId ORDER BY pcm.Id) AS rn
-  FROM Product_Category_Mapping pcm
-  JOIN Category c ON c.Id = pcm.CategoryId AND c.Deleted = 0
-) cat ON cat.ProductId = p.Id AND cat.rn = 1
 WHERE p.Deleted = 0
+"@
+
+# ── Product categories (ALL tags per product, not just first — see project_category_recategorize memory) ──
+Export-Query "product_categories" @"
+SELECT pcm.ProductId AS productId, c.Name AS catName
+FROM Product_Category_Mapping pcm
+JOIN Product p ON p.Id = pcm.ProductId AND p.Deleted = 0
+JOIN Category c ON c.Id = pcm.CategoryId AND c.Deleted = 0
 "@
 
 # ── Product images ────────────────────────────────────────────────────────────

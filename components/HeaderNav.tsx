@@ -16,12 +16,12 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
     const homeHref = onlyCatalog ? '/' : '/#home';
 
     const navLinkClass =
-        'inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:hover:bg-primary/80/15 dark:hover:text-primary';
+        'inline-flex items-center rounded-md px-2 lg:px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:hover:bg-primary/80/15 dark:hover:text-primary';
 
     const [open, setOpen] = React.useState(false);
     return (
-        <nav className="header__nav w-full overflow-hidden whitespace-nowrap">
-            <ul className="header__nav-list flex flex-nowrap gap-1">
+        <nav className="header__nav max-w-full overflow-hidden whitespace-nowrap">
+            <ul className="header__nav-list flex flex-nowrap gap-0.5 lg:gap-1">
                 <li className="header__nav-item">
                     <Link href={homeHref} className={navLinkClass}>
                         {t('nav.home')}

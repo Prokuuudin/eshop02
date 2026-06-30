@@ -90,9 +90,7 @@ export default function ProductPageContent({ product, allProducts, manufacturer,
                         productSpecVolume={productSpecVolume}
                         productSpecType={productSpecType}
                         productSpecCountry={productSpecCountry}
-                        brandId={product.brand}
                         language={language}
-                        product={product}
                         manufacturer={manufacturer}
                         distributor={distributor}
                     />

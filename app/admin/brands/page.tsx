@@ -514,7 +514,7 @@ export default function AdminBrandsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3">
+                <div className="admin-brands__legal-section mt-3">
                   <Accordion type="single" collapsible>
                     <AccordionItem value="legal" className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                       <AccordionTrigger className="px-4 py-2 text-sm font-medium hover:no-underline hover:bg-gray-50 dark:hover:bg-gray-800/50 [&>svg]:shrink-0">
@@ -528,11 +528,11 @@ export default function AdminBrandsPage() {
                       </AccordionTrigger>
                       <AccordionContent className="px-4 pb-4 pt-2">
                         <div className="grid gap-4">
-                          <div>
+                          <div className="admin-brands__manufacturer-group">
                             <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                               {tl('admin.brands.field.manufacturer', 'Производитель', 'Manufacturer', 'Ražotājs')}
                             </p>
-                            <div className="grid gap-2 md:grid-cols-3">
+                            <div className="admin-brands__legal-fields grid gap-2 md:grid-cols-3">
                               <label className="text-xs">
                                 <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.mfgName', 'Полное наименование', 'Full name', 'Pilns nosaukums')}</span>
                                 <Input
@@ -556,11 +556,11 @@ export default function AdminBrandsPage() {
                               </label>
                             </div>
                           </div>
-                          <div>
+                          <div className="admin-brands__distributor-group">
                             <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                               {tl('admin.brands.field.distributor', 'Дистрибьютор в ЕС', 'EU Distributor', 'ES Izplatītājs')}
                             </p>
-                            <div className="grid gap-2 md:grid-cols-3">
+                            <div className="admin-brands__legal-fields grid gap-2 md:grid-cols-3">
                               <label className="text-xs">
                                 <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.distName', 'Наименование', 'Name', 'Nosaukums')}</span>
                                 <Input

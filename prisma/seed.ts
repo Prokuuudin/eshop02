@@ -4,7 +4,7 @@ config({ path: '.env.local' })
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client'
-import { PRODUCTS } from '../data/products'
+import { SAMPLE_PRODUCTS } from '../data/sample-products'
 import bcrypt from 'bcryptjs'
 import { randomUUID, randomBytes } from 'node:crypto'
 
@@ -14,7 +14,7 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   let count = 0
-  for (const p of PRODUCTS) {
+  for (const p of SAMPLE_PRODUCTS) {
     await prisma.product.upsert({
       where: { id: p.id },
       update: {},

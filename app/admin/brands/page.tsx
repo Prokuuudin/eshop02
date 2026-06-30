@@ -270,7 +270,7 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'В дистрибуции', 'In distribution', 'Distribūcijā')}</span>
                 <Select value={newBrand.popular ? 'yes' : 'no'} onValueChange={(v) => setNewBrand((prev) => ({ ...prev, popular: v === 'yes' }))}>
                   <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
                     <SelectValue />
@@ -390,7 +390,7 @@ export default function AdminBrandsPage() {
                       <Input value={brand.name} onChange={(event) => updateBrand(brand.id, { name: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный', 'Popular', 'Populars')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'В дистрибуции', 'In distribution', 'Distribūcijā')}</span>
                       <Select value={brand.popular ? 'yes' : 'no'} onValueChange={(v) => updateBrand(brand.id, { popular: v === 'yes' })}>
                         <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
                           <SelectValue />

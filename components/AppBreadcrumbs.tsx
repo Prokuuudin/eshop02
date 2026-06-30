@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import {
@@ -12,7 +12,7 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { BLOG_POSTS, localizeBlogPost } from '@/data/blog';
-import { PRODUCTS } from '@/data/products';
+import type { Product } from '@/data/products';
 import { useBrandsConfig } from '@/lib/use-brands-config';
 import { useTranslation } from '@/lib/use-translation';
 
@@ -103,11 +103,10 @@ function normalizeSegment(segment: string): string {
 }
 
 function getProductTitle(
-    segment: string,
+    product: Product | undefined,
     t: (key: string, defaultValue?: string) => string,
     language: string
 ): string | null {
-    const product = PRODUCTS.find((item) => item.id === decodeURIComponent(segment));
     if (!product) {
         return null;
     }
@@ -138,6 +137,24 @@ export default function AppBreadcrumbs() {
     const pathname = usePathname();
     const { t, language } = useTranslation();
     const { brands } = useBrandsConfig();
+    const [productCache, setProductCache] = useState<Record<string, Product>>({});
+
+    useEffect(() => {
+        if (!pathname) return;
+        const segments = pathname.split('/').filter(Boolean);
+        const productIdIndex = segments.findIndex((s) => s === 'product');
+        const productId = productIdIndex >= 0 ? segments[productIdIndex + 1] : undefined;
+        if (!productId || productCache[productId]) return;
+
+        fetch(`/api/products/${encodeURIComponent(productId)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data: { product?: Product } | null) => {
+                if (data?.product) {
+                    setProductCache((prev) => ({ ...prev, [productId]: data.product as Product }));
+                }
+            })
+            .catch(() => {});
+    }, [pathname, productCache]);
 
     const crumbs = useMemo<Crumb[]>(() => {
         if (!pathname || pathname === '/') return [];
@@ -150,7 +167,7 @@ export default function AppBreadcrumbs() {
             const isBrandIdSegment = segments[index - 1] === 'brand';
             const isBlogSlugSegment = segments[index - 1] === 'blog';
             const resolvedEntityLabel = isProductIdSegment
-                ? getProductTitle(segment, t, language)
+                ? getProductTitle(productCache[decodeURIComponent(segment)], t, language)
                 : isBrandIdSegment
                 ? getBrandName(segment, brands)
                 : isBlogSlugSegment
@@ -162,7 +179,7 @@ export default function AppBreadcrumbs() {
 
             return { href, label };
         });
-    }, [brands, language, pathname, t]);
+    }, [brands, language, pathname, t, productCache]);
 
     return (
         <Breadcrumb

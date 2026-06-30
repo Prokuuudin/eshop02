@@ -1,57 +1,43 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
-import { PRODUCTS } from '@/data/products';
-import { getAutocompleteSuggestions } from '@/lib/search';
 import { IconSearch } from './ui/icon-search';
-import type { Product } from '@/data/products';
-import { translations } from '@/data/translations';
+
+type Suggestion = {
+  id: string;
+  title: string;
+  brand: string;
+};
 
 export default function HeaderSearch() {
   const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [focused, setFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
-  const localizeTitle = useMemo(() => (product: Product) =>
-    (language === 'en' && product.titleEn)
-      ? product.titleEn
-      : (language === 'lv' && product.titleLv)
-        ? product.titleLv
-        : t(product.titleKey ?? `products.${product.id}.title`, product.title),
-    [t, language]
-  );
 
-  // Products with all 3 language titles concatenated for cross-language search
-  const searchableProducts = useMemo(
-    () => PRODUCTS.map((product) => {
-      const key = product.titleKey ?? `products.${product.id}.title`
-      const allTitles = [
-        product.title,
-        translations.ru[key],
-        translations.en[key],
-        translations.lv[key],
-      ].filter((v): v is string => typeof v === 'string' && v.length > 0)
-       .filter((v, i, arr) => arr.indexOf(v) === i)
-       .join(' ')
-      return { ...product, title: allTitles, titleEn: undefined, titleLv: undefined }
-    }),
-    []
-  );
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
 
-  const rawSuggestions = useMemo(
-    () => getAutocompleteSuggestions(searchableProducts, query, 5),
-    [searchableProducts, query]
-  );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(trimmed)}&take=5`, { signal: controller.signal })
+        .then((r) => r.json())
+        .then((p: { products?: Suggestion[] }) => setSuggestions(p.products ?? []))
+        .catch(() => {});
+    }, 200);
 
-  // Map back to localized display title
-  const suggestions = useMemo(
-    () => rawSuggestions.map((p) => {
-      const orig = PRODUCTS.find((o) => o.id === p.id) ?? p
-      return { ...orig, title: localizeTitle(orig) }
-    }),
-    [rawSuggestions, localizeTitle]
-  );
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [query]);
+
   const listboxId = 'header-search-suggestions';
   const inputId = 'site-search';
 

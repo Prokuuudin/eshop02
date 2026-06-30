@@ -9,6 +9,7 @@ import { ProductPrices } from '@/components/ProductPrices';
 import { ProductDescription } from '@/components/ProductDescription';
 import { ProductActions } from '@/components/ProductActions';
 import { Product } from '@/data/products';
+import { stripBrandPrefix } from '@/lib/product-title';
 
 interface ProductInfoProps {
     product: Product;
@@ -36,7 +37,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     return (
         <div className="product-detail__info">
             <ProductBrand brand={product.brand} />
-            <ProductTitle title={localizedTitle} />
+            <ProductTitle title={stripBrandPrefix(localizedTitle, product.brand)} />
             <ProductCodes sku={product.sku} barcode={product.barcode} />
             <ProductBadges badges={product.badges} />
             <ProductRating rating={product.rating} count={ratingCount} />

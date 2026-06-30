@@ -11,6 +11,7 @@ import { ProductActions } from '@/components/ProductActions';
 import { ProductVariantSelector } from '@/components/ProductVariantSelector';
 import { Product, SelectedVariant } from '@/data/products';
 import { getVariantGroups, sumPriceAdjustment } from '@/lib/product-variants';
+import { stripBrandPrefix } from '@/lib/product-title';
 
 interface ProductInfoProps {
     product: Product;
@@ -44,7 +45,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     return (
         <div className="product-detail__info">
             <ProductBrand brand={product.brand} />
-            <ProductTitle title={localizedTitle} />
+            <ProductTitle title={stripBrandPrefix(localizedTitle, product.brand)} />
             <ProductCodes sku={product.sku} barcode={product.barcode} />
             <ProductBadges badges={product.badges} />
             <ProductRating rating={product.rating} count={ratingCount} />

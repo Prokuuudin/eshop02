@@ -5,7 +5,7 @@ import { ProductBenefits } from '@/components/ProductBenefits';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
 
-import { Product } from '@/data/products';
+import type { BrandManufacturerInfo } from '@/lib/brands-config';
 
 interface ProductGalleryBlockProps {
     images: string[];
@@ -14,9 +14,9 @@ interface ProductGalleryBlockProps {
     productSpecVolume: string;
     productSpecType: string;
     productSpecCountry: string;
-    brandId: string;
     language: string;
-    product: Product;
+    manufacturer?: BrandManufacturerInfo;
+    distributor?: BrandManufacturerInfo;
 }
 
 export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
@@ -26,9 +26,9 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     productSpecVolume,
     productSpecType,
     productSpecCountry,
-    brandId,
     language,
-    product,
+    manufacturer,
+    distributor,
 }) => {
     return (
         <div className="flex flex-col gap-4">
@@ -39,7 +39,11 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 type={productSpecType}
                 country={productSpecCountry}
             />
-            <ManufacturerDistributorInfo product={product} brandId={brandId} language={language} />
+            <ManufacturerDistributorInfo
+                manufacturer={manufacturer}
+                distributor={distributor}
+                language={language}
+            />
         </div>
     );
 };

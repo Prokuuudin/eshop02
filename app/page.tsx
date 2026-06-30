@@ -52,7 +52,7 @@ export default async function Home() {
         t['meta.homeDescription'] ?? 'Online store of professional cosmetics and equipment';
 
     return (
-        <>
+        <div className="bg-[#EAAC63] dark:bg-background">
             <Hero />
             <Benefits />
             <BestsellersSection />
@@ -65,6 +65,6 @@ export default async function Home() {
                 <HomeRetailBanner />
                 <HomeClient />
             </main>
-        </>
+        </div>
     );
 }

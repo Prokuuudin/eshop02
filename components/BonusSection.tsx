@@ -27,7 +27,7 @@ const STEPS = [
         icon: TrendingUp,
         titleKey: 'bonus.section.step.grow.title',
         descKey: 'bonus.section.step.grow.desc',
-        badgeKey: null,
+        badgeKey: 'expiry' as const,
         badgeParam: null,
         badgeSource: null,
     },
@@ -62,7 +62,11 @@ export default function BonusSection() {
                     {STEPS.map((step, idx) => {
                         const Icon = step.icon;
                         const badge =
-                            step.badgeKey && step.badgeSource
+                            step.badgeKey === 'expiry'
+                                ? bonusProgram.pointsExpiryDays > 0
+                                    ? t('bonus.section.expiresIn', undefined, { days: bonusProgram.pointsExpiryDays })
+                                    : t('bonus.section.neverExpire')
+                                : step.badgeKey && step.badgeSource
                                 ? t(step.badgeKey, undefined, {
                                       [step.badgeParam]: bonusProgram[step.badgeSource],
                                   })

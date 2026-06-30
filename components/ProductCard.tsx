@@ -13,6 +13,7 @@ import { StockNotifyButton } from './StockNotifyButton';
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
 import { useAuthStore } from '@/lib/auth-store';
+import { stripBrandPrefix } from '@/lib/product-title';
 
 type Props = {
     product: Product;
@@ -39,13 +40,13 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring"
+            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
         >
             <div className="absolute right-3 top-3 z-10">
                 <WishlistButton product={product} />
             </div>
 
-            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group">
+            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative">
                 <div className="relative w-full h-48">
                     {product.image && product.image.trim() ? (
                         <Image
@@ -81,7 +82,7 @@ export default function ProductCard({ product }: Props) {
                     href={`/product/${product.id}`}
                     className="product-card__title text-sm font-medium mt-1 hover:text-primary focus:outline-none after:absolute after:inset-0 after:content-['']"
                 >
-                    {localizedTitle}
+                    {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>
 
                 {product.sku && (
@@ -90,7 +91,7 @@ export default function ProductCard({ product }: Props) {
                     </p>
                 )}
 
-                <div className="product-card__meta mt-2 flex items-center justify-between gap-3">
+                <div className="product-card__meta mt-auto pt-2 flex items-center justify-between gap-3">
                     <div>
                         {!isHydrated ? (
                             // Neutral placeholder until auth is known — avoids the login/price flash.
@@ -152,7 +153,7 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__actions relative z-10 mt-auto w-full space-y-2">
+                <div className="product-card__actions relative z-10 mt-2 w-full space-y-2">
                     {isOutOfStock ? (
                         <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
                     ) : (

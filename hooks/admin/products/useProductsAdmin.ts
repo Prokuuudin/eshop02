@@ -1,15 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
-import { PRODUCTS, type Product } from '@/data/products';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { Product } from '@/data/products';
 import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
-import type { DraftValues, NewProductDraft } from '@/types/product-admin';
+import type { NewProductDraft } from '@/types/product-admin';
 import { useTranslation } from '@/lib/use-translation';
-import { useSiteContent } from '@/lib/use-site-content';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
+
+type ApiEnvelope<T> = { success: true; data: T } | { error: string };
 
 export function useProductsAdmin() {
   const { t } = useTranslation();
-  const { overrides, setText } = useSiteContent();
-  const [baseProducts, setBaseProducts] = useState<Product[]>(PRODUCTS);
+  const [baseProducts, setBaseProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -31,12 +31,39 @@ export function useProductsAdmin() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    setLoading(false);
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/products', { cache: 'no-store' });
+      const json = (await res.json()) as ApiEnvelope<{ products: Product[] }>;
+      if (!res.ok || 'error' in json) throw new Error('failed_to_load_products');
+      setBaseProducts(json.data.products);
+    } catch {
+      setError(t('admin.productsPage.msg.loadApiFailed', 'Failed to load products from API'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  const loadArchive = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/products/archive', { cache: 'no-store' });
+      const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
+      if (!res.ok || 'error' in json) throw new Error('failed_to_load_archive');
+      setArchiveItems(json.data.archive);
+    } catch {
+      // Archive is secondary — a failed fetch shouldn't block the main product list.
+    }
   }, []);
+
+  useEffect(() => {
+    void loadProducts();
+    void loadArchive();
+  }, [loadProducts, loadArchive]);
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) return baseProducts;
     return baseProducts.filter((product) => {
       const values = [
         product.id,
@@ -57,10 +84,68 @@ export function useProductsAdmin() {
     });
   }, [searchQuery, baseProducts]);
 
-  // Заглушки для обработчиков (реализуйте по необходимости)
-  const handleDeleteProduct = (product: Product) => {};
-  const handleRestoreProduct = (id: string) => {};
-  const handlePurgeArchivedProduct = (id: string) => {};
+  const handleDeleteProduct = async (product: Product) => {
+    setSavingId(product.id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: product.id, permanently: true }),
+      });
+      const json = (await res.json()) as ApiEnvelope<{ products: Product[] }>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+      setBaseProducts(json.data.products);
+      await loadArchive();
+      setMessage(t('admin.productsPage.msg.movedToTrash', 'Product {id} moved to trash', { id: product.id }));
+    } catch {
+      setError(t('admin.productsPage.msg.deleteByIdFailed', 'Failed to delete product {id}', { id: product.id }));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleRestoreProduct = async (id: string) => {
+    setRestoringId(id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/products/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = (await res.json()) as ApiEnvelope<{ products: Product[]; archive: ArchivedProductRecord[] }>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+      setBaseProducts(json.data.products);
+      setArchiveItems(json.data.archive);
+      setMessage(t('admin.productsPage.msg.restored', 'Product {id} restored', { id }));
+    } catch {
+      setError(t('admin.productsPage.msg.restoreByIdFailed', 'Failed to restore product {id}', { id }));
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const handlePurgeArchivedProduct = async (id: string) => {
+    setPurgingArchiveId(id);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/products/archive', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+      setArchiveItems(json.data.archive);
+      setMessage(t('admin.productsPage.msg.deletedForever', 'Product {id} removed from trash permanently', { id }));
+    } catch {
+      setError(t('admin.productsPage.msg.deleteTrashByIdFailed', 'Failed to delete product {id} from trash', { id }));
+    } finally {
+      setPurgingArchiveId(null);
+    }
+  };
+
   const handleCreateProduct = () => {};
 
   return {
@@ -78,7 +163,11 @@ export function useProductsAdmin() {
     handleCreateProduct,
     loading,
     creating,
+    savingId,
+    restoringId,
+    purgingArchiveId,
     message,
     error,
+    reload: loadProducts,
   };
 }

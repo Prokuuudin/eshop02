@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   useLocaleSettingsStore,
   CURRENCY_SYMBOLS,
@@ -125,17 +126,18 @@ export default function AdminLocalePage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Язык по умолчанию
               </label>
-              <select
-                className={SELECT_CLASS}
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-              >
-                {(['ru', 'en', 'lv'] as SupportedLanguage[]).map((lang) => (
-                  <option key={lang} value={lang}>
-                    {LANGUAGE_LABELS[lang]}
-                  </option>
-                ))}
-              </select>
+              <Select value={language} onValueChange={(v) => setLanguage(v as SupportedLanguage)}>
+                <SelectTrigger className={SELECT_CLASS}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(['ru', 'en', 'lv'] as SupportedLanguage[]).map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {LANGUAGE_LABELS[lang]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </section>
 
@@ -153,17 +155,18 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Валюта
                 </label>
-                <select
-                  className={SELECT_CLASS}
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
-                >
-                  {(['EUR', 'USD', 'RUB'] as SupportedCurrency[]).map((cur) => (
-                    <option key={cur} value={cur}>
-                      {CURRENCY_LABELS[cur]}
-                    </option>
-                  ))}
-                </select>
+                <Select value={currency} onValueChange={(v) => setCurrency(v as SupportedCurrency)}>
+                  <SelectTrigger className={SELECT_CLASS}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(['EUR', 'USD', 'RUB'] as SupportedCurrency[]).map((cur) => (
+                      <SelectItem key={cur} value={cur}>
+                        {CURRENCY_LABELS[cur]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
@@ -191,34 +194,36 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Формат даты
                 </label>
-                <select
-                  className={SELECT_CLASS}
-                  value={dateFormat}
-                  onChange={(e) => setDateFormat(e.target.value as DateFormatOption)}
-                >
-                  {(['DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] as DateFormatOption[]).map((fmt) => (
-                    <option key={fmt} value={fmt}>
-                      {DATE_FORMAT_LABELS[fmt]}
-                    </option>
-                  ))}
-                </select>
+                <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as DateFormatOption)}>
+                  <SelectTrigger className={SELECT_CLASS}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(['DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] as DateFormatOption[]).map((fmt) => (
+                      <SelectItem key={fmt} value={fmt}>
+                        {DATE_FORMAT_LABELS[fmt]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Часовой пояс
                 </label>
-                <select
-                  className={SELECT_CLASS}
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value as SupportedTimezone)}
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {TIMEZONE_LABELS[tz]}
-                    </option>
-                  ))}
-                </select>
+                <Select value={timezone} onValueChange={(v) => setTimezone(v as SupportedTimezone)}>
+                  <SelectTrigger className={SELECT_CLASS}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONES.map((tz) => (
+                      <SelectItem key={tz} value={tz}>
+                        {TIMEZONE_LABELS[tz]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </section>
@@ -237,17 +242,18 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Расположение символа
                 </label>
-                <select
-                  className={SELECT_CLASS}
-                  value={priceFormat}
-                  onChange={(e) => setPriceFormat(e.target.value as PriceFormatOption)}
-                >
-                  {(['symbol_before', 'symbol_after'] as PriceFormatOption[]).map((fmt) => (
-                    <option key={fmt} value={fmt}>
-                      {PRICE_FORMAT_LABELS[fmt]}
-                    </option>
-                  ))}
-                </select>
+                <Select value={priceFormat} onValueChange={(v) => setPriceFormat(v as PriceFormatOption)}>
+                  <SelectTrigger className={SELECT_CLASS}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(['symbol_before', 'symbol_after'] as PriceFormatOption[]).map((fmt) => (
+                      <SelectItem key={fmt} value={fmt}>
+                        {PRICE_FORMAT_LABELS[fmt]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1">

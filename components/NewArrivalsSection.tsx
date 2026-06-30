@@ -1,13 +1,23 @@
 "use client";
 import React from 'react'
 import Link from 'next/link'
-import { PRODUCTS } from '../data/products'
+import type { Product } from '../data/products'
 import ProductCard from './ProductCard'
 import { useTranslation } from '@/lib/use-translation'
 
 export default function NewArrivalsSection() {
   const { t } = useTranslation()
-  const newArrivals = PRODUCTS.filter(p => p.badges && p.badges.includes('new'))
+  const [newArrivals, setNewArrivals] = React.useState<Product[]>([])
+
+  React.useEffect(() => {
+    fetch('/api/products', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((p: { data?: { products?: Product[] } }) => {
+        const products = p.data?.products ?? []
+        setNewArrivals(products.filter((item) => item.badges?.includes('new')).slice(0, 8))
+      })
+      .catch(() => setNewArrivals([]))
+  }, [])
 
   if (!newArrivals.length) return null
 

@@ -28,7 +28,7 @@ const ProductGalleryFields: React.FC = () => {
                     )}
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-2">Галерея (до 5 изображений)</label>
+                    <label className="block text-sm font-medium mb-2">Галерея</label>
                     <div className="flex flex-col gap-2">
                         {(fields as { id: string }[]).map((field, index) => (
                             <div key={field.id} className="flex gap-2">
@@ -41,17 +41,15 @@ const ProductGalleryFields: React.FC = () => {
                                 </Button>
                             </div>
                         ))}
-                        {fields.length < 5 && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="mt-1 self-start"
-                                onClick={() => append('' as never)}
-                            >
-                                + Добавить изображение
-                            </Button>
-                        )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-1 self-start"
+                            onClick={() => append('' as never)}
+                        >
+                            + Добавить изображение
+                        </Button>
                     </div>
                 </div>
             </div>

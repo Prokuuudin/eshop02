@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
 import { useAuthStore } from '@/lib/auth-store';
+import { stripBrandPrefix } from '@/lib/product-title';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
@@ -63,7 +64,7 @@ export default function ProductListRow({ product }: Props) {
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground">{product.brand}</p>
         <Link href={`/product/${product.id}`} className="text-sm font-medium hover:text-primary line-clamp-2">
-          {localizedTitle}
+          {stripBrandPrefix(localizedTitle, product.brand)}
         </Link>
         {product.sku && (
           <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">SKU: {product.sku}</p>

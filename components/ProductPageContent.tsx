@@ -12,6 +12,8 @@ import React, { useEffect } from 'react';
 import type { JSX } from 'react';
 import { Product } from '@/data/products';
 import { useViewedProducts } from '@/lib/viewed-products-store';
+import { brandSlug } from '@/lib/brand-slug';
+import type { BrandManufacturerInfo } from '@/lib/brands-config';
 
 import { useProductLocalization } from '@/hooks/useProductLocalization';
 
@@ -20,9 +22,11 @@ import { getMinimumOrderQuantity, getDisplayPrice } from '@/lib/customer-segment
 type Props = {
     product: Product;
     allProducts: Product[];
+    manufacturer?: BrandManufacturerInfo;
+    distributor?: BrandManufacturerInfo;
 };
 
-export default function ProductPageContent({ product, allProducts }: Props): JSX.Element {
+export default function ProductPageContent({ product, allProducts, manufacturer, distributor }: Props): JSX.Element {
     const {
         t,
         language,
@@ -60,7 +64,7 @@ export default function ProductPageContent({ product, allProducts }: Props): JSX
         ? `/catalog?cat=${encodeURIComponent(product.category)}`
         : '/catalog';
     const brandUrl = product.brand
-        ? `/catalog?brand=${encodeURIComponent(product.brand)}`
+        ? `/catalog?brand=${encodeURIComponent(brandSlug(product.brand))}`
         : '/catalog';
 
     // useState для фотопревью и видеопревью
@@ -86,9 +90,9 @@ export default function ProductPageContent({ product, allProducts }: Props): JSX
                         productSpecVolume={productSpecVolume}
                         productSpecType={productSpecType}
                         productSpecCountry={productSpecCountry}
-                        brandId={product.brand}
                         language={language}
-                        product={product}
+                        manufacturer={manufacturer}
+                        distributor={distributor}
                     />
                     {/* Правая колонка: вся остальная информация */}
                     <div className="flex flex-col gap-4">

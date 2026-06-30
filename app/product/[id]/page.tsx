@@ -5,6 +5,8 @@ import ProductPageContent from '@/components/ProductPageContent';
 import { getSiteUrl } from '@/lib/site-url';
 import { translations, type Language } from '@/data/translations';
 import { getMergedProducts } from '@/lib/product-overrides-store';
+import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
+import { brandSlug } from '@/lib/brand-slug';
 
 type PageProps = {
     params: Promise<{
@@ -85,6 +87,13 @@ export default async function ProductPage({ params }: PageProps) {
         );
     }
 
+    const brandsConfig = await getBrandsConfigFromStore();
+    const brand = brandsConfig.brands.find(
+        (b) => b.id === brandSlug(product.brand) || b.name.toLowerCase() === product.brand.toLowerCase()
+    );
+    const manufacturer = brand?.manufacturer;
+    const distributor = brand?.distributor;
+
     const siteUrl = getSiteUrl();
     const productUrl = `${siteUrl}/product/${product.id}`;
     const schemaReviewCount = product.reviewCount ?? product.ratingCount ?? 127;
@@ -147,7 +156,7 @@ export default async function ProductPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
-            <ProductPageContent product={product} allProducts={mergedProducts} />
+            <ProductPageContent product={product} allProducts={mergedProducts} manufacturer={manufacturer} distributor={distributor} />
         </>
     );
 }

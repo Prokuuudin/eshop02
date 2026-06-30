@@ -1,11 +1,11 @@
 "use client";
 import React from 'react'
-import { PRODUCTS, type Product } from '../data/products'
+import { type Product } from '../data/products'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import ProductCard from './ProductCard'
 import ProductCardSkeleton from './ProductCardSkeleton'
 import { useTranslation } from '@/lib/use-translation'
-import { getCategoryProductIdsOverrideById, getSubcategoryProductIdsBySlug } from '@/data/categories'
+import { brandSlug } from '@/lib/brand-slug'
 
 import ProductFilter from './ProductFilter'
 import { LayoutGrid, List } from 'lucide-react'
@@ -40,10 +40,6 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const searchQuery = initialSearch.trim();
-  const subcategoryProductIds = React.useMemo(
-    () => getSubcategoryProductIdsBySlug(initialSubcategory),
-    [initialSubcategory]
-  );
   // Single source of truth for filters
   const [filters, setFilters] = React.useState<ProductsFilters>({
     group: initialFilters?.group ?? '',
@@ -96,9 +92,8 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
         const payload = (await response.json()) as { data?: { products?: Product[] } }
         setProducts(payload.data?.products ?? [])
       } catch {
-        // Fallback keeps catalog usable if API is temporarily unavailable.
-        setProducts(PRODUCTS)
-        setProductsWarning('Не удалось загрузить товары из API, показан резервный список')
+        setProducts([])
+        setProductsWarning('Не удалось загрузить товары из API')
       } finally {
         setProductsLoading(false)
       }
@@ -143,12 +138,8 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
       || product.brand.toLowerCase().includes(normalizedSearch);
   });
 
-  const subcategoryMatchedProducts = subcategoryProductIds
-    ? searchMatchedProducts.filter((product) => subcategoryProductIds.has(product.id))
-    : searchMatchedProducts
-
   // сортировка
-  const sortProducts = (arr: typeof subcategoryMatchedProducts, order: string | undefined) => {
+  const sortProducts = (arr: typeof searchMatchedProducts, order: string | undefined) => {
     if (!order || order === '') return arr;
     if (order === 'price-asc') return [...arr].sort((a, b) => a.price - b.price);
     if (order === 'price-desc') return [...arr].sort((a, b) => b.price - a.price);
@@ -171,15 +162,11 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
 
   const filtered = sortProducts(
-    subcategoryMatchedProducts.filter(p => {
-      const categoryOverrideIds = filters.group ? getCategoryProductIdsOverrideById(filters.group) : null;
-      const groupOk = !filters.group
-        || (categoryOverrideIds
-          ? categoryOverrideIds.has(p.id)
-          : p.category === filters.group);
+    searchMatchedProducts.filter(p => {
+      const groupOk = !filters.group || p.category === filters.group;
       const onSaleOk = !filters.onSale || isProductOnSale(p);
       const purposesOk = !filters.purposes || filters.purposes.length === 0 || filters.purposes.includes(p.purpose ?? '');
-      const brandOk = filters.brands.length === 0 || filters.brands.includes(p.brand);
+      const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));
       const minOk = !filters.minPrice || p.price >= Number(filters.minPrice);
       const maxOk = !filters.maxPrice || p.price <= Number(filters.maxPrice);
       return groupOk && onSaleOk && purposesOk && brandOk && minOk && maxOk;

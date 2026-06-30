@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminStore } from '@/lib/admin-store'
 import { useOrders } from '@/lib/orders-store'
 import { readUsers, adjustUserBonusPoints, type User } from '@/lib/auth'
@@ -94,7 +95,7 @@ export default function AdminBonusPage() {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 space-y-6 text-foreground">
+      <main className="admin-bonus-page w-full py-4 space-y-6 text-foreground">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1>
@@ -135,14 +136,15 @@ export default function AdminBonusPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.enabled')}</span>
-                  <select
-                    value={draft.enabled ? 'yes' : 'no'}
-                    onChange={(e) => setDraft((p) => ({ ...p, enabled: e.target.value === 'yes' }))}
-                    className="w-full rounded border border-border bg-card px-3 py-2 text-sm"
-                  >
-                    <option value="yes">{t('common.yes')}</option>
-                    <option value="no">{t('common.no')}</option>
-                  </select>
+                  <Select value={draft.enabled ? 'yes' : 'no'} onValueChange={(v) => setDraft((p) => ({ ...p, enabled: v === 'yes' }))}>
+                    <SelectTrigger className="w-full rounded border border-border bg-card px-3 py-2 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">{t('common.yes')}</SelectItem>
+                      <SelectItem value="no">{t('common.no')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </label>
 
                 <label className="text-sm">

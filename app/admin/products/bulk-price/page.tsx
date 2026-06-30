@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type Product = {
     id: string;
@@ -173,11 +175,9 @@ export default function BulkPricePage() {
                             />
                         </div>
                         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={saveOldPrice}
-                                onChange={(e) => setSaveOldPrice(e.target.checked)}
-                                className="h-4 w-4 rounded"
+                                onCheckedChange={(checked) => setSaveOldPrice(checked === true)}
                             />
                             Сохранить старую цену (зачёркнутая)
                         </label>
@@ -212,18 +212,19 @@ export default function BulkPricePage() {
                         onChange={(e) => setSearch(e.target.value)}
                         className="min-w-[240px] flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                     />
-                    <select
-                        value={catFilter}
-                        onChange={(e) => setCatFilter(e.target.value)}
-                        className="rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                        <option value="">Все категории</option>
-                        {CATEGORIES.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={catFilter || 'all'} onValueChange={(v) => setCatFilter(v === 'all' ? '' : v)}>
+                        <SelectTrigger className="rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Все категории</SelectItem>
+                            {CATEGORIES.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                    {c}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <span className="flex items-center text-sm text-gray-500">
                         Выбрано: {selected.size} из {filtered.length}
                     </span>
@@ -237,11 +238,9 @@ export default function BulkPricePage() {
                             <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                                 <tr>
                                     <th className="w-10 px-4 py-3">
-                                        <input
-                                            type="checkbox"
+                                        <Checkbox
                                             checked={filtered.length > 0 && selected.size === filtered.length}
-                                            onChange={toggleAll}
-                                            className="h-4 w-4 rounded"
+                                            onCheckedChange={toggleAll}
                                         />
                                     </th>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
@@ -280,12 +279,10 @@ export default function BulkPricePage() {
                                             }`}
                                         >
                                             <td className="px-4 py-3">
-                                                <input
-                                                    type="checkbox"
+                                                <Checkbox
                                                     checked={isSelected}
-                                                    onChange={() => toggle(p.id)}
+                                                    onCheckedChange={() => toggle(p.id)}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    className="h-4 w-4 rounded"
                                                 />
                                             </td>
                                             <td className="px-4 py-3">

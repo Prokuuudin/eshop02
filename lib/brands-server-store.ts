@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { BRANDS } from '@/data/brands'
 import { BRAND_DESCRIPTIONS } from '@/data/brandDescriptions'
-import type { BrandsConfigPayload, BrandConfigItem, LocalizedBrandDescription } from '@/lib/brands-config'
+import type { BrandsConfigPayload, BrandConfigItem, LocalizedBrandDescription, BrandManufacturerInfo } from '@/lib/brands-config'
 
 const BRANDS_CONFIG_KEY = 'brands-config'
 
@@ -36,13 +36,28 @@ const resolveDescriptionFromStatic = (brandId: string, brandDescription?: string
   return normalizeDescription({ ru: fallback, en: fallback, lv: fallback }, fallback)
 }
 
+const normalizeBrandManufacturerInfo = (
+  input?: Partial<BrandManufacturerInfo> | null
+): BrandManufacturerInfo | undefined => {
+  if (!input) return undefined
+  const name = input.name?.trim() || undefined
+  const address = input.address?.trim() || undefined
+  const email = input.email?.trim() || undefined
+  if (!name && !address && !email) return undefined
+  return { name, address, email }
+}
+
 const buildDefaultPayload = (): BrandsConfigPayload => {
   const brands: BrandConfigItem[] = BRANDS.map((brand) => ({
     id: sanitizeSlug(brand.id),
     name: brand.name,
     logo: brand.logo,
     popular: Boolean(brand.popular),
+    isDistributor: Boolean(brand.isDistributor),
+    allowLogo: brand.allowLogo !== false,
     description: resolveDescriptionFromStatic(brand.id, brand.description),
+    manufacturer: normalizeBrandManufacturerInfo((brand as any).manufacturer),
+    distributor: normalizeBrandManufacturerInfo((brand as any).distributor),
   }))
 
   return { brands }
@@ -59,7 +74,11 @@ const normalizeBrand = (brand: BrandConfigItem): BrandConfigItem | null => {
     name,
     logo,
     popular: Boolean(brand.popular),
+    isDistributor: Boolean(brand.isDistributor),
+    allowLogo: brand.allowLogo !== false,
     description: normalizeDescription(brand.description),
+    manufacturer: normalizeBrandManufacturerInfo(brand.manufacturer),
+    distributor: normalizeBrandManufacturerInfo(brand.distributor),
   }
 }
 

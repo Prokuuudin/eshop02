@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import { useAuditLogStore } from '@/lib/audit-log-store'
 import { Card } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 
@@ -125,18 +126,19 @@ export default function AuditLogViewer({
         </div>
 
         {filterType === 'action' ? (
-          <select
-            value={filterValue}
-            onChange={(e) => setFilterValue(e.target.value)}
-            className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-card text-foreground"
-          >
-            <option value="">{t('account.auditLog.filter.allActions')}</option>
-            {actionTypes.map(action => (
-              <option key={action} value={action}>
-                {getActionLabel(action)}
-              </option>
-            ))}
-          </select>
+          <Select value={filterValue || 'all'} onValueChange={(v) => setFilterValue(v === 'all' ? '' : v)}>
+            <SelectTrigger className="px-3 py-1 rounded text-sm border border-gray-300 dark:border-gray-600 bg-card text-foreground">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('account.auditLog.filter.allActions')}</SelectItem>
+              {actionTypes.map(action => (
+                <SelectItem key={action} value={action}>
+                  {getActionLabel(action)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <button
             onClick={() => { setFilterType('action'); setFilterValue('') }}

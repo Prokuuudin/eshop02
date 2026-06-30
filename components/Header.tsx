@@ -32,34 +32,35 @@ export default function Header() {
   return (
     <>
       <header
-        className="header sticky top-0 w-full bg-card shadow transition-all duration-300 text-foreground z-header"
+        className="header sticky top-0 w-full bg-[#EAAC63] dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`w-full px-2 sm:px-4 flex items-center relative transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`w-full px-2 sm:px-4 flex items-center gap-1 transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex items-center flex-shrink-0 min-w-[100px]">
             <HeaderLogo />
           </div>
           {/* Навигация по центру (desktop) */}
-          <div className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-auto max-w-[60%]">
+          <div className="hidden min-[880px]:flex flex-1 min-w-0 justify-center">
             <HeaderNav onlyCatalog={isAdminPage} />
           </div>
           {/* Действия справа */}
-          <div className="flex items-center gap-2 ml-auto">
-            <div className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            <div className="hidden min-[880px]:flex items-center gap-2">
               <HeaderActions onlyLangSwitcher />
-              <ThemeToggle />
+              <ThemeToggle responsive />
               {isAdminPage && <UserMenu />}
             </div>
-            {/* Mobile: lang switcher + menu button */}
-            {!isAdminPage && (
-              <div className="md:hidden flex items-center gap-1">
-                <HeaderActions onlyLangSwitcher />
+            {/* Mobile: lang switcher + theme + menu button */}
+            <div className="min-[880px]:hidden flex items-center gap-1">
+              <HeaderActions onlyLangSwitcher />
+              <ThemeToggle compact />
+              {!isAdminPage && (
                 <button className="p-2" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
                   <Menu className="w-7 h-7" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         {!isAdminPage && (
@@ -67,7 +68,7 @@ export default function Header() {
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="border-t border-border border-b border-b-transparent dark:border-b-border w-full">
               <div className={`w-full px-2 sm:px-4 flex flex-wrap items-center gap-y-2 gap-x-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2'}`}>
-                <div className="flex-1 min-w-0 order-2 md:order-none w-full max-w-xl mx-auto">
+                <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
                   <HeaderSearch />
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-auto">

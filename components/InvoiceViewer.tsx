@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type InvoiceViewerProps = {
   invoice: Invoice
@@ -219,16 +220,17 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
                 <label className="block text-sm font-medium text-foreground mb-1">
                   {t('account.invoiceViewer.paymentMethodLabel')}
                 </label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-foreground px-3 py-2"
-                >
-                  <option value="bank_transfer">{t('account.invoiceViewer.paymentMethod.bankTransfer')}</option>
-                  <option value="card">{t('account.invoiceViewer.paymentMethod.card')}</option>
-                  <option value="cash">{t('account.invoiceViewer.paymentMethod.cash')}</option>
-                  <option value="check">{t('account.invoiceViewer.paymentMethod.check')}</option>
-                </select>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-foreground px-3 py-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bank_transfer">{t('account.invoiceViewer.paymentMethod.bankTransfer')}</SelectItem>
+                    <SelectItem value="card">{t('account.invoiceViewer.paymentMethod.card')}</SelectItem>
+                    <SelectItem value="cash">{t('account.invoiceViewer.paymentMethod.cash')}</SelectItem>
+                    <SelectItem value="check">{t('account.invoiceViewer.paymentMethod.check')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

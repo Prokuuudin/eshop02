@@ -5,6 +5,8 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Download, Grid2X2, LayoutList } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -292,15 +294,16 @@ export default function AdminMediaPage() {
           </div>
 
           {/* Sort */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-8 rounded-lg border border-border bg-card px-2 text-xs text-gray-700 dark:text-gray-300"
-          >
-            <option value="date">По дате</option>
-            <option value="name">По имени</option>
-            <option value="size">По размеру</option>
-          </select>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+            <SelectTrigger className="h-8 rounded-lg border border-border bg-card px-2 text-xs text-gray-700 dark:text-gray-300">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">По дате</SelectItem>
+              <SelectItem value="name">По имени</SelectItem>
+              <SelectItem value="size">По размеру</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* View toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">
@@ -348,12 +351,9 @@ export default function AdminMediaPage() {
               {/* Select all row */}
               <div className="flex items-center gap-2 mb-2 px-1">
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isAllChecked}
-                    ref={(el) => { if (el) el.indeterminate = isSomeChecked && !isAllChecked }}
-                    onChange={toggleAll}
-                    className="h-3.5 w-3.5 accent-primary"
+                  <Checkbox
+                    checked={isAllChecked ? true : isSomeChecked ? 'indeterminate' : false}
+                    onCheckedChange={toggleAll}
                   />
                   Выбрать все ({displayed.length})
                 </label>
@@ -380,11 +380,9 @@ export default function AdminMediaPage() {
                           className="absolute top-1.5 left-1.5 z-10 cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={isChecked}
-                            onChange={() => toggleCheck(file.name)}
-                            className="h-4 w-4 accent-primary rounded"
+                            onCheckedChange={() => toggleCheck(file.name)}
                           />
                         </label>
 
@@ -444,7 +442,7 @@ export default function AdminMediaPage() {
                             onClick={() => setSelected(isSelected ? null : file)}
                           >
                             <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                              <input type="checkbox" checked={isChecked} onChange={() => toggleCheck(file.name)} className="h-4 w-4 accent-primary" />
+                              <Checkbox checked={isChecked} onCheckedChange={() => toggleCheck(file.name)} />
                             </td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Checkbox } from './ui/checkbox'
 import { Badge } from './ui/badge'
 import { Input } from './ui/input'
+import { Button } from './ui/button'
 import {
   Select,
   SelectContent,
@@ -9,11 +11,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from './ui/dropdown-menu'
 import { isProductOnSale, type Product } from '../data/products'
 import { useTranslation } from '@/lib/use-translation'
-import { getCategoryProductIdsOverrideById } from '@/data/categories'
 import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { useBrandsConfig } from '@/lib/use-brands-config'
+import { brandSlug } from '@/lib/brand-slug'
 
 const PURPOSE_KEYS: Record<string, { key: string; fallback: string }> = {
   'Для увлажнения': { key: 'product.purpose.moisturizing', fallback: 'For moisturizing' },
@@ -79,9 +87,6 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         onFilter({ group: '', onSale: false, purposes: [], brands: [], minPrice: '', maxPrice: '', order: '' });
       };
     const sourceProducts = products ?? [];
-    const availableBrands = React.useMemo(() => {
-      return Array.from(new Set(sourceProducts.map((product) => product.brand)));
-    }, [sourceProducts]);
     const availablePurposes = React.useMemo(
       () => Array.from(new Set(sourceProducts.map((product) => product.purpose).filter(Boolean) as string[])),
       [sourceProducts]
@@ -94,6 +99,10 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   const { t, language } = useTranslation();
   const { categories } = useCategoriesConfig()
   const { brands: configuredBrands } = useBrandsConfig()
+  const availableBrands = React.useMemo(() => {
+    const ids = Array.from(new Set(sourceProducts.map((product) => brandSlug(product.brand))));
+    return ids.sort((a, b) => getBrandName(a, configuredBrands).localeCompare(getBrandName(b, configuredBrands), language));
+  }, [sourceProducts, configuredBrands, language]);
   // Controlled filter values from props
   const group = initialFilters.group ?? '';
   const onSale = initialFilters.onSale ?? false;
@@ -112,14 +121,10 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   const matchesFilters = (product: Product, current: ProductFiltersState): boolean => {
-    const categoryOverrideIds = current.group ? getCategoryProductIdsOverrideById(current.group) : null
-    const matchCategory = !current.group
-      || (categoryOverrideIds
-        ? categoryOverrideIds.has(product.id)
-        : product.category === current.group)
+    const matchCategory = !current.group || product.category === current.group
     const matchOnSale = !current.onSale || isProductOnSale(product)
     const matchPurpose = current.purposes.length === 0 || current.purposes.includes(product.purpose ?? '')
-    const matchBrand = current.brands.length === 0 || current.brands.includes(product.brand)
+    const matchBrand = current.brands.length === 0 || current.brands.includes(brandSlug(product.brand))
     const minValue = current.minPrice ? Number(current.minPrice) : null
     const maxValue = current.maxPrice ? Number(current.maxPrice) : null
     const matchMinPrice = minValue === null || product.price >= minValue
@@ -239,26 +244,43 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
           ))}
         </div>
       </div>
-      <div>
-        <label className="block text-sm mb-1 text-foreground">{t('product.brand')}</label>
-        <div className="flex flex-col gap-2">
-          {availableBrands.map((brandId) => {
-            const nextBrands = brands.includes(brandId)
-              ? [brandId]
-              : [...brands, brandId]
-            const brandCount = getCountByFilters({ brands: nextBrands })
+      <div className="product-filter__brand">
+        <label className="product-filter__brand-label block text-sm mb-1 text-foreground">{t('product.brand')}</label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="product-filter__brand-trigger w-full justify-between bg-card text-foreground border-border font-normal"
+            >
+              <span className="product-filter__brand-trigger-text truncate">
+                {brands.length === 0
+                  ? t('common.viewAll')
+                  : brands.map((id) => getBrandName(id, configuredBrands)).join(', ')}
+              </span>
+              <ChevronDown className="product-filter__brand-trigger-icon h-4 w-4 shrink-0 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="product-filter__brand-menu max-h-72 w-72 overflow-y-auto">
+            {availableBrands.map((brandId) => {
+              const nextBrands = brands.includes(brandId)
+                ? [brandId]
+                : [...brands, brandId]
+              const brandCount = getCountByFilters({ brands: nextBrands })
 
-            return (
-              <Checkbox
-                key={brandId}
-                className="w-full"
-                label={`${getBrandName(brandId, configuredBrands)} (${brandCount})`}
-                checked={brands.includes(brandId)}
-                onCheckedChange={() => handleBrandChange(brandId)}
-              />
-            )
-          })}
-        </div>
+              return (
+                <DropdownMenuCheckboxItem
+                  key={brandId}
+                  className="product-filter__brand-option"
+                  checked={brands.includes(brandId)}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() => handleBrandChange(brandId)}
+                >
+                  {getBrandName(brandId, configuredBrands)} ({brandCount})
+                </DropdownMenuCheckboxItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>

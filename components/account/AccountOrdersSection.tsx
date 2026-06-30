@@ -40,7 +40,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
 }) => (
     <section
         id="orders-history"
-        className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-6"
+        className="account-orders-section rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-6"
     >
         <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 className="text-2xl font-bold text-foreground">

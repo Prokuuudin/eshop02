@@ -9,7 +9,7 @@ const applyTheme = (isDark: boolean): void => {
   document.documentElement.classList.toggle("dark", isDark);
 };
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }) {
   const { t } = useTranslation();
   const [dark, setDark] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -46,11 +46,24 @@ export default function ThemeToggle() {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className="px-3 py-2 rounded bg-muted text-gray-700 dark:text-gray-200 border transition"
+            className={`rounded bg-muted text-gray-700 dark:text-gray-200 border transition ${
+              compact
+                ? 'px-2 py-2 text-lg leading-none'
+                : responsive
+                  ? 'px-2 min-[940px]:px-3 py-2 text-lg min-[940px]:text-sm leading-none min-[940px]:leading-normal'
+                  : 'px-3 py-2'
+            }`}
             onClick={() => setDark((v) => !v)}
             aria-label={tooltipLabel}
           >
-            {dark ? `🌙 ${t("theme.dark")}` : `☀️ ${t("theme.light")}`}
+            {compact && (dark ? '🌙' : '☀️')}
+            {responsive && (
+              <>
+                <span className="min-[940px]:hidden">{dark ? '🌙' : '☀️'}</span>
+                <span className="hidden min-[940px]:inline">{dark ? `🌙 ${t("theme.dark")}` : `☀️ ${t("theme.light")}`}</span>
+              </>
+            )}
+            {!compact && !responsive && (dark ? `🌙 ${t("theme.dark")}` : `☀️ ${t("theme.light")}`)}
           </button>
         </TooltipTrigger>
         <TooltipContent>{tooltipLabel}</TooltipContent>

@@ -25,6 +25,16 @@ export default function AdminProductsPage() {
                     <h1 className="text-2xl font-bold mb-6">
                         {t('admin.productsPage.title') || 'Товары: управление'}
                     </h1>
+                    {admin.message && (
+                        <p className="mb-4 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-200">
+                            {admin.message}
+                        </p>
+                    )}
+                    {admin.error && (
+                        <p className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-200">
+                            {admin.error}
+                        </p>
+                    )}
                     <div className="space-y-6">
                         <NewProductForm title={t('admin.productsPage.addBtn')} />
                         <ProductsToolbar
@@ -38,7 +48,11 @@ export default function AdminProductsPage() {
                             archiveOpen={archiveOpen}
                             archiveItems={admin.archiveItems}
                             onRestoreArchive={admin.handleRestoreProduct}
-                            onDeleteArchive={admin.handlePurgeArchivedProduct}
+                            onDeleteArchive={(id) => {
+                                if (window.confirm(t('admin.productsPage.confirm.deleteForever').replace('{id}', id))) {
+                                    admin.handlePurgeArchivedProduct(id);
+                                }
+                            }}
                         />
                         <hr className="my-8 border-t border-border" />
                         <div>
@@ -52,6 +66,7 @@ export default function AdminProductsPage() {
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={(product: Product) => {
+                                        if (!window.confirm(t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id))) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
                                             type: 'product', id: product.id, title: product.title,
@@ -63,6 +78,7 @@ export default function AdminProductsPage() {
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={(product: Product) => {
+                                        if (!window.confirm(t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id))) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
                                             type: 'product', id: product.id, title: product.title,
@@ -75,6 +91,7 @@ export default function AdminProductsPage() {
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ id, changes }),
                                         })
+                                        await admin.reload()
                                         if (changes.price !== undefined) {
                                             logAdminAction('product.price_changed', {
                                                 type: 'product', id, title: product?.title,

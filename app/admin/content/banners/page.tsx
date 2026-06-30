@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -474,15 +475,19 @@ export default function AdminBannersPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Тип</label>
-                      <select
+                      <Select
                         value={bannerForm.type}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, type: e.target.value as BannerType }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBannerForm((f) => ({ ...f, type: v as BannerType }))}
                       >
-                        {(Object.keys(BANNER_TYPE_LABELS) as BannerType[]).map((t) => (
-                          <option key={t} value={t}>{BANNER_TYPE_LABELS[t]}</option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(BANNER_TYPE_LABELS) as BannerType[]).map((t) => (
+                            <SelectItem key={t} value={t}>{BANNER_TYPE_LABELS[t]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -552,27 +557,35 @@ export default function AdminBannersPage() {
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Стиль кнопки</label>
-                      <select
+                      <Select
                         value={bannerForm.ctaStyle}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, ctaStyle: e.target.value as CtaStyle }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBannerForm((f) => ({ ...f, ctaStyle: v as CtaStyle }))}
                       >
-                        {(Object.keys(CTA_STYLE_LABELS) as CtaStyle[]).map((s) => (
-                          <option key={s} value={s}>{CTA_STYLE_LABELS[s]}</option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(CTA_STYLE_LABELS) as CtaStyle[]).map((s) => (
+                            <SelectItem key={s} value={s}>{CTA_STYLE_LABELS[s]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Цвет текста</label>
-                      <select
+                      <Select
                         value={bannerForm.textColor}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, textColor: e.target.value as TextColor }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBannerForm((f) => ({ ...f, textColor: v as TextColor }))}
                       >
-                        <option value="dark">Тёмный</option>
-                        <option value="light">Светлый</option>
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dark">Тёмный</SelectItem>
+                          <SelectItem value="light">Светлый</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -595,14 +608,18 @@ export default function AdminBannersPage() {
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Активен</label>
-                      <select
+                      <Select
                         value={bannerForm.active ? 'yes' : 'no'}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBannerForm((f) => ({ ...f, active: v === 'yes' }))}
                       >
-                        <option value="yes">Да — отображается на сайте</option>
-                        <option value="no">Нет — скрыт</option>
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Да — отображается на сайте</SelectItem>
+                          <SelectItem value="no">Нет — скрыт</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -735,15 +752,19 @@ export default function AdminBannersPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Тип блока</label>
-                      <select
+                      <Select
                         value={blockForm.type}
-                        onChange={(e) => setBlockForm((f) => ({ ...f, type: e.target.value as BlockType }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBlockForm((f) => ({ ...f, type: v as BlockType }))}
                       >
-                        {(Object.keys(BLOCK_TYPE_LABELS) as BlockType[]).map((t) => (
-                          <option key={t} value={t}>{BLOCK_TYPE_LABELS[t]}</option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(BLOCK_TYPE_LABELS) as BlockType[]).map((t) => (
+                            <SelectItem key={t} value={t}>{BLOCK_TYPE_LABELS[t]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-1">
@@ -821,14 +842,18 @@ export default function AdminBannersPage() {
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Активен</label>
-                      <select
+                      <Select
                         value={blockForm.active ? 'yes' : 'no'}
-                        onChange={(e) => setBlockForm((f) => ({ ...f, active: e.target.value === 'yes' }))}
-                        className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                        onValueChange={(v) => setBlockForm((f) => ({ ...f, active: v === 'yes' }))}
                       >
-                        <option value="yes">Да — отображается на сайте</option>
-                        <option value="no">Нет — скрыт</option>
-                      </select>
+                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Да — отображается на сайте</SelectItem>
+                          <SelectItem value="no">Нет — скрыт</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 

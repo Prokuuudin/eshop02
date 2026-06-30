@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { BrandConfigItem, BrandsConfigPayload, LocalizedBrandDescription } from '@/lib/brands-config'
+import type { BrandConfigItem, BrandsConfigPayload, LocalizedBrandDescription, BrandManufacturerInfo } from '@/lib/brands-config'
 import { useTranslation } from '@/lib/use-translation'
 
 type NewBrandDraft = {
@@ -16,6 +16,8 @@ type NewBrandDraft = {
   name: string
   logo: string
   popular: boolean
+  isDistributor: boolean
+  allowLogo: boolean
   descriptionRu: string
   descriptionEn: string
   descriptionLv: string
@@ -26,6 +28,8 @@ const EMPTY_NEW_BRAND: NewBrandDraft = {
   name: '',
   logo: '/brands/new-brand.svg',
   popular: false,
+  isDistributor: false,
+  allowLogo: true,
   descriptionRu: '',
   descriptionEn: '',
   descriptionLv: ''
@@ -129,6 +133,26 @@ export default function AdminBrandsPage() {
     )
   }
 
+  const updateBrandManufacturer = (brandId: string, patch: Partial<BrandManufacturerInfo>) => {
+    setBrands((prev) =>
+      prev.map((brand) =>
+        brand.id === brandId
+          ? { ...brand, manufacturer: { ...brand.manufacturer, ...patch } }
+          : brand
+      )
+    )
+  }
+
+  const updateBrandDistributor = (brandId: string, patch: Partial<BrandManufacturerInfo>) => {
+    setBrands((prev) =>
+      prev.map((brand) =>
+        brand.id === brandId
+          ? { ...brand, distributor: { ...brand.distributor, ...patch } }
+          : brand
+      )
+    )
+  }
+
   const handleCreateBrand = async () => {
     const id = sanitizeSlug(newBrand.id)
     const name = newBrand.name.trim()
@@ -151,6 +175,8 @@ export default function AdminBrandsPage() {
         name,
         logo,
         popular: newBrand.popular,
+        isDistributor: newBrand.isDistributor,
+        allowLogo: newBrand.allowLogo,
         description: normalizeDescription(newBrand.descriptionRu, newBrand.descriptionEn, newBrand.descriptionLv)
       }
     ]
@@ -270,8 +296,32 @@ export default function AdminBrandsPage() {
                 />
               </label>
               <label className="text-xs">
-                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'В дистрибуции', 'In distribution', 'Distribūcijā')}</span>
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный (на главной)', 'Featured (homepage)', 'Populārs (galvenaja)')}</span>
                 <Select value={newBrand.popular ? 'yes' : 'no'} onValueChange={(v) => setNewBrand((prev) => ({ ...prev, popular: v === 'yes' }))}>
+                  <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                    <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.isDistributor', 'Дистрибьютор', 'Distributor', 'Distributors')}</span>
+                <Select value={newBrand.isDistributor ? 'yes' : 'no'} onValueChange={(v) => setNewBrand((prev) => ({ ...prev, isDistributor: v === 'yes' }))}>
+                  <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                    <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="text-xs">
+                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.allowLogo', 'Разрешение на лого', 'Logo permission', 'Logo atlauja')}</span>
+                <Select value={newBrand.allowLogo ? 'yes' : 'no'} onValueChange={(v) => setNewBrand((prev) => ({ ...prev, allowLogo: v === 'yes' }))}>
                   <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
                     <SelectValue />
                   </SelectTrigger>
@@ -390,8 +440,32 @@ export default function AdminBrandsPage() {
                       <Input value={brand.name} onChange={(event) => updateBrand(brand.id, { name: event.target.value })} />
                     </label>
                     <label className="text-xs">
-                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'В дистрибуции', 'In distribution', 'Distribūcijā')}</span>
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.popular', 'Популярный (на главной)', 'Featured (homepage)', 'Populārs (galvenaja)')}</span>
                       <Select value={brand.popular ? 'yes' : 'no'} onValueChange={(v) => updateBrand(brand.id, { popular: v === 'yes' })}>
+                        <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                          <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+                    <label className="text-xs">
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.isDistributor', 'Дистрибьютор', 'Distributor', 'Distributors')}</span>
+                      <Select value={brand.isDistributor ? 'yes' : 'no'} onValueChange={(v) => updateBrand(brand.id, { isDistributor: v === 'yes' })}>
+                        <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">{tl('admin.brands.option.no', 'Нет', 'No', 'Ne')}</SelectItem>
+                          <SelectItem value="yes">{tl('admin.brands.option.yes', 'Да', 'Yes', 'Ja')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </label>
+                    <label className="text-xs">
+                      <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.allowLogo', 'Разрешение на лого', 'Logo permission', 'Logo atlauja')}</span>
+                      <Select value={brand.allowLogo ? 'yes' : 'no'} onValueChange={(v) => updateBrand(brand.id, { allowLogo: v === 'yes' })}>
                         <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
                           <SelectValue />
                         </SelectTrigger>
@@ -438,6 +512,82 @@ export default function AdminBrandsPage() {
                       <p className="mt-2 text-center text-sm font-medium text-foreground">{brand.name}</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-3">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="legal" className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <AccordionTrigger className="px-4 py-2 text-sm font-medium hover:no-underline hover:bg-gray-50 dark:hover:bg-gray-800/50 [&>svg]:shrink-0">
+                        <span className="flex items-center gap-2">
+                          {tl('admin.brands.field.manufacturerSection', 'Производитель / Дистрибьютор (EU)', 'Manufacturer / Distributor (EU)', 'Ražotājs / Izplatītājs (ES)')}
+                          {(brand.manufacturer?.name || brand.manufacturer?.address || brand.manufacturer?.email ||
+                            brand.distributor?.name || brand.distributor?.address || brand.distributor?.email) && (
+                            <span className="inline-block h-2 w-2 rounded-full bg-green-500" title={tl('admin.brands.field.hasData', 'Данные заполнены', 'Data filled', 'Dati aizpildīti')} />
+                          )}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4 pt-2">
+                        <div className="grid gap-4">
+                          <div>
+                            <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                              {tl('admin.brands.field.manufacturer', 'Производитель', 'Manufacturer', 'Ražotājs')}
+                            </p>
+                            <div className="grid gap-2 md:grid-cols-3">
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.mfgName', 'Полное наименование', 'Full name', 'Pilns nosaukums')}</span>
+                                <Input
+                                  value={brand.manufacturer?.name || ''}
+                                  onChange={(e) => updateBrandManufacturer(brand.id, { name: e.target.value })}
+                                />
+                              </label>
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.mfgAddress', 'Почтовый адрес', 'Postal address', 'Pasta adrese')}</span>
+                                <Input
+                                  value={brand.manufacturer?.address || ''}
+                                  onChange={(e) => updateBrandManufacturer(brand.id, { address: e.target.value })}
+                                />
+                              </label>
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.mfgEmail', 'E-mail', 'E-mail', 'E-pasts')}</span>
+                                <Input
+                                  value={brand.manufacturer?.email || ''}
+                                  onChange={(e) => updateBrandManufacturer(brand.id, { email: e.target.value })}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                              {tl('admin.brands.field.distributor', 'Дистрибьютор в ЕС', 'EU Distributor', 'ES Izplatītājs')}
+                            </p>
+                            <div className="grid gap-2 md:grid-cols-3">
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.distName', 'Наименование', 'Name', 'Nosaukums')}</span>
+                                <Input
+                                  value={brand.distributor?.name || ''}
+                                  onChange={(e) => updateBrandDistributor(brand.id, { name: e.target.value })}
+                                />
+                              </label>
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.distAddress', 'Почтовый адрес', 'Postal address', 'Pasta adrese')}</span>
+                                <Input
+                                  value={brand.distributor?.address || ''}
+                                  onChange={(e) => updateBrandDistributor(brand.id, { address: e.target.value })}
+                                />
+                              </label>
+                              <label className="text-xs">
+                                <span className="mb-1 block text-muted-foreground">{tl('admin.brands.field.distEmail', 'E-mail', 'E-mail', 'E-pasts')}</span>
+                                <Input
+                                  value={brand.distributor?.email || ''}
+                                  onChange={(e) => updateBrandDistributor(brand.id, { email: e.target.value })}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               </article>
             ))

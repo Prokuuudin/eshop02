@@ -35,7 +35,7 @@ export default function Brands() {
   const [loading, setLoading] = React.useState(false);
   const [showAll, setShowAll] = React.useState(false);
 
-  const POPULAR = brands ? brands.filter(b => b.popular) : [];
+  const DISTRIBUTOR_BRANDS = brands ? brands.filter(b => b.isDistributor) : [];
 
   const GROUPED = React.useMemo(() => {
     const sorted = [...brands].sort((a, b) => a.name.localeCompare(b.name, language));
@@ -69,7 +69,7 @@ export default function Brands() {
         <div className="brands__grid mb-4 grid grid-cols-2 gap-2 rounded-lg bg-white p-3 sm:grid-cols-4 sm:gap-3 sm:p-5 md:grid-cols-5 lg:grid-cols-6">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <BrandCardSkeleton key={i} />)
-            : POPULAR.map((brand) => (
+            : DISTRIBUTOR_BRANDS.map((brand) => (
                 <Link
                   key={brand.id}
                   href={`/catalog?brand=${encodeURIComponent(brand.id)}`}

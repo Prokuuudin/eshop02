@@ -17,6 +17,8 @@ const fallbackBrands: BrandConfigItem[] = BRANDS.map((brand) => {
     name: brand.name,
     logo: brand.logo,
     popular: Boolean(brand.popular),
+    isDistributor: Boolean(brand.isDistributor),
+    allowLogo: brand.allowLogo !== false,
     description: {
       ru: typeof brand.description === 'object' ? brand.description.ru : fallbackDescription.ru,
       en: typeof brand.description === 'object' ? brand.description.en : fallbackDescription.en,

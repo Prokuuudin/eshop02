@@ -5,7 +5,6 @@ import { ProductBenefits } from '@/components/ProductBenefits';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
 
-import { Product } from '@/data/products';
 import type { BrandManufacturerInfo } from '@/lib/brands-config';
 
 interface ProductGalleryBlockProps {
@@ -15,9 +14,7 @@ interface ProductGalleryBlockProps {
     productSpecVolume: string;
     productSpecType: string;
     productSpecCountry: string;
-    brandId: string;
     language: string;
-    product: Product;
     manufacturer?: BrandManufacturerInfo;
     distributor?: BrandManufacturerInfo;
 }
@@ -29,9 +26,7 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     productSpecVolume,
     productSpecType,
     productSpecCountry,
-    brandId,
     language,
-    product,
     manufacturer,
     distributor,
 }) => {

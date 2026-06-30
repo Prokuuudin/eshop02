@@ -27,7 +27,7 @@ export default function Categories() {
     const itemWithDropdownClassName =
         'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-card hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col';
     const imageWrapClassName = 'categories__image relative aspect-square w-full';
-    const imageClassName = 'object-cover group-hover:scale-105 transition-transform';
+    const imageClassName = 'object-cover grayscale group-hover:scale-105 transition-transform';
     const metaClassName =
         'categories__meta p-2 sm:p-3 text-center text-sm sm:text-base text-foreground leading-tight';
     const dropdownPanelClassName =

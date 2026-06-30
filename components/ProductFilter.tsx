@@ -11,9 +11,9 @@ import {
 } from './ui/select'
 import { isProductOnSale, type Product } from '../data/products'
 import { useTranslation } from '@/lib/use-translation'
-import { getCategoryProductIdsOverrideById } from '@/data/categories'
 import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { useBrandsConfig } from '@/lib/use-brands-config'
+import { brandSlug } from '@/lib/brand-slug'
 
 const PURPOSE_KEYS: Record<string, { key: string; fallback: string }> = {
   'Для увлажнения': { key: 'product.purpose.moisturizing', fallback: 'For moisturizing' },
@@ -80,7 +80,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       };
     const sourceProducts = products ?? [];
     const availableBrands = React.useMemo(() => {
-      return Array.from(new Set(sourceProducts.map((product) => product.brand)));
+      return Array.from(new Set(sourceProducts.map((product) => brandSlug(product.brand))));
     }, [sourceProducts]);
     const availablePurposes = React.useMemo(
       () => Array.from(new Set(sourceProducts.map((product) => product.purpose).filter(Boolean) as string[])),
@@ -112,14 +112,13 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   const matchesFilters = (product: Product, current: ProductFiltersState): boolean => {
-    const categoryOverrideIds = current.group ? getCategoryProductIdsOverrideById(current.group) : null
     const matchCategory = !current.group
-      || (categoryOverrideIds
-        ? categoryOverrideIds.has(product.id)
+      || (current.group === 'new'
+        ? !!product.badges?.includes('new')
         : product.category === current.group)
     const matchOnSale = !current.onSale || isProductOnSale(product)
     const matchPurpose = current.purposes.length === 0 || current.purposes.includes(product.purpose ?? '')
-    const matchBrand = current.brands.length === 0 || current.brands.includes(product.brand)
+    const matchBrand = current.brands.length === 0 || current.brands.includes(brandSlug(product.brand))
     const minValue = current.minPrice ? Number(current.minPrice) : null
     const maxValue = current.maxPrice ? Number(current.maxPrice) : null
     const matchMinPrice = minValue === null || product.price >= minValue

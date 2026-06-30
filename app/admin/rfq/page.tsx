@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { PRODUCTS, type Product } from '@/data/products'
+import { type Product } from '@/data/products'
 import { useRFQStore, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -112,10 +112,10 @@ export default function AdminRFQPage() {
     fetch('/api/products', { cache: 'no-store' })
       .then((r) => r.json())
       .then((p: { data?: { products?: Product[] } }) => setLoadedProducts(p.data?.products ?? []))
-      .catch(() => setLoadedProducts(PRODUCTS))
+      .catch(() => setLoadedProducts([]))
   }, [])
 
-  const products = loadedProducts.length > 0 ? loadedProducts : PRODUCTS
+  const products = loadedProducts
 
   const counts = useMemo(() => {
     const r: Record<RFQStatus | 'all', number> = { all: requests.length, pending: 0, quoted: 0, accepted: 0, rejected: 0 }

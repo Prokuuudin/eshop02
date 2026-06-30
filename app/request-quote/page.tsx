@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { PRODUCTS, type Product } from '@/data/products'
+import { type Product } from '@/data/products'
 import { getCurrentUser } from '@/lib/auth'
 import { useRFQStore } from '@/lib/rfq-store'
 import { logAuditAction } from '@/lib/audit-log-store'
@@ -42,11 +42,7 @@ export default function RequestQuotePage() {
           : item
         )))
       } catch {
-        setProducts(PRODUCTS)
-        setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
-          ? { ...item, productId: PRODUCTS[0]?.id ?? '' }
-          : item
-        )))
+        setProducts([])
       } finally {
         setProductsLoading(false)
       }

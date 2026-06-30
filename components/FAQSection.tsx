@@ -35,7 +35,7 @@ export default function FAQSection() {
           <div className="rounded-lg border bg-card px-4 md:px-6">
             <Accordion type="single" collapsible>
               {col1.map((item) => (
-                <AccordionItem key={item.id} value={item.id}>
+                <AccordionItem key={item.id} value={item.id} className="border-b last:border-b-0">
                   <AccordionTrigger className="text-foreground">{item.question}</AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
                 </AccordionItem>
@@ -45,7 +45,7 @@ export default function FAQSection() {
           <div className="rounded-lg border bg-card px-4 md:px-6">
             <Accordion type="single" collapsible>
               {col2.map((item) => (
-                <AccordionItem key={item.id} value={item.id}>
+                <AccordionItem key={item.id} value={item.id} className="border-b last:border-b-0">
                   <AccordionTrigger className="text-foreground">{item.question}</AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
                 </AccordionItem>

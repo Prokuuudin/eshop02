@@ -32,7 +32,7 @@ export default function Header() {
   return (
     <>
       <header
-        className="header sticky top-0 w-full bg-card shadow transition-all duration-300 text-foreground z-header"
+        className="header sticky top-0 w-full bg-[#EAAC63] dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
           <div className={`w-full px-2 sm:px-4 flex items-center relative transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>

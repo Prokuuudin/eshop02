@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PRODUCTS } from '@/data/products'
+import { SAMPLE_PRODUCTS as PRODUCTS } from '@/data/sample-products'
 import {
   normalizeSearchValue,
   searchProducts,
@@ -23,7 +23,7 @@ describe('search utils', () => {
     const suggestions = getAutocompleteSuggestions(PRODUCTS, 'rev', 5)
 
     expect(suggestions.length).toBeGreaterThan(0)
-    expect(suggestions.some((item) => item.brand === 'Revitaluxe')).toBe(true)
+    expect(suggestions.some((item) => item.brand === 'revitaluxe')).toBe(true)
   })
 
   it('returns fallback recommendations when query has no direct matches', () => {

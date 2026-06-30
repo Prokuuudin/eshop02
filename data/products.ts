@@ -17,7 +17,7 @@ export interface Product {
   ratingCount?: number
   reviewCount?: number
   image?: string // для обратной совместимости
-  images?: string[] // до 5 изображений
+  images?: string[]
   metaTitle?: string
   metaDescription?: string
   ogImage?: string

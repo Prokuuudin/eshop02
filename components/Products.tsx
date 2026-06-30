@@ -163,10 +163,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
   const filtered = sortProducts(
     searchMatchedProducts.filter(p => {
-      const groupOk = !filters.group
-        || (filters.group === 'new'
-          ? !!p.badges?.includes('new')
-          : p.category === filters.group);
+      const groupOk = !filters.group || p.category === filters.group;
       const onSaleOk = !filters.onSale || isProductOnSale(p);
       const purposesOk = !filters.purposes || filters.purposes.length === 0 || filters.purposes.includes(p.purpose ?? '');
       const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));

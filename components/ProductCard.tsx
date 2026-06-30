@@ -40,13 +40,13 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring"
+            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
         >
             <div className="absolute right-3 top-3 z-10">
                 <WishlistButton product={product} />
             </div>
 
-            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group">
+            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative">
                 <div className="relative w-full h-48">
                     {product.image && product.image.trim() ? (
                         <Image

@@ -88,8 +88,14 @@ export default async function ProductPage({ params }: PageProps) {
     }
 
     const brandsConfig = await getBrandsConfigFromStore();
+    const productBrandSlug = brandSlug(product.brand);
+    const productBrandLower = product.brand.toLowerCase();
     const brand = brandsConfig.brands.find(
-        (b) => b.id === brandSlug(product.brand) || b.name.toLowerCase() === product.brand.toLowerCase()
+        (b) =>
+            b.id === productBrandSlug ||
+            b.name.toLowerCase() === productBrandLower ||
+            productBrandSlug.startsWith(b.id + '-') ||
+            productBrandLower.startsWith(b.name.toLowerCase() + ' ')
     );
     const manufacturer = brand?.manufacturer;
     const distributor = brand?.distributor;

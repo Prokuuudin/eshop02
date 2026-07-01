@@ -13,6 +13,16 @@ export function useProductLocalization(product: Product) {
       : t(product.titleKey ?? `products.${product.id}.title`, product.title);
 
   const productDescription = (() => {
+    // technicalSpecs.__descriptionEn/__descriptionLv hold the translated description —
+    // reserved-key convention (like __variantGroupsJson), no separate schema column.
+    const localized =
+      language === 'en'
+        ? product.technicalSpecs?.__descriptionEn
+        : language === 'lv'
+        ? product.technicalSpecs?.__descriptionLv
+        : undefined;
+    if (localized) return localized;
+    if (product.description) return product.description;
     const fromI18n = t(`${productBaseKey}.description`);
     return fromI18n !== `${productBaseKey}.description` ? fromI18n : t('product.descriptionText');
   })();
@@ -35,34 +45,19 @@ export function useProductLocalization(product: Product) {
     return fromI18n !== `${productBaseKey}.spec.country` ? fromI18n : t('product.spec.value.country');
   })();
 
-  const productFeatures = [1, 2, 3, 4].map((index) => {
-    const featureKey = `feature${index}` as keyof Product;
-    const featureEnKey = `feature${index}En` as keyof Product;
-    const featureLvKey = `feature${index}Lv` as keyof Product;
+  const productFeatures = [1, 2, 3, 4]
+    .map((index) => {
+      const featureKey = `feature${index}` as keyof Product;
+      const featureEnKey = `feature${index}En` as keyof Product;
+      const featureLvKey = `feature${index}Lv` as keyof Product;
 
-    const productValue =
-      language === 'en'
+      return language === 'en'
         ? (product[featureEnKey] as string | undefined) || (product[featureKey] as string | undefined)
         : language === 'lv'
         ? (product[featureLvKey] as string | undefined) || (product[featureKey] as string | undefined)
         : (product[featureKey] as string | undefined);
-
-    if (productValue) return productValue;
-
-    return t(
-      `${productBaseKey}.feature${index}`,
-      t(
-        `product.feature${index}`,
-        index === 1
-          ? 'Natural components'
-          : index === 2
-          ? 'Paraben-free'
-          : index === 3
-          ? 'Dermatologically tested'
-          : 'Suitable for all skin types'
-      )
-    );
-  });
+    })
+    .filter((value): value is string => Boolean(value));
 
   return {
     t,

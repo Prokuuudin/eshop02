@@ -84,6 +84,7 @@ export default function ProductPageContent({ product, allProducts, manufacturer,
                 <div className="product-detail__grid grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     {/* Левая колонка: галерея, дисклеймер, бенефиты, характеристики, производитель */}
                     <ProductGalleryBlock
+                        product={product}
                         images={images}
                         demoVideos={demoVideos}
                         title={localizedTitle}

@@ -35,16 +35,20 @@ function Export-Paged($name, $baseQuery, $pageSize = 5000) {
 }
 
 # ── Products ──────────────────────────────────────────────────────────────────
+# Source Product.Price/OldPrice are net (pricesincludetax=False in nopCommerce settings).
+# The storefront displays VAT-inclusive prices (Latvia VAT 21%), so gross them up on export.
 Export-Query "products" @"
 SELECT
   CAST(p.Id AS VARCHAR)                                       AS id,
   p.Name                                                      AS title,
   COALESCE(NULLIF(p.FullDescription,''), p.ShortDescription)  AS description,
   COALESCE(m.Name, 'Unknown')                                 AS brand,
-  p.Price                                                     AS price,
-  NULLIF(p.OldPrice, 0)                                       AS oldPrice,
+  ROUND(p.Price * 1.21, 2)                                    AS price,
+  ROUND(NULLIF(p.OldPrice, 0) * 1.21, 2)                       AS oldPrice,
   p.StockQuantity                                             AS stock,
   NULLIF(p.SKU,'')                                            AS sku,
+  NULLIF(p.Gtin,'')                                           AS barcode,
+  p.MarkAsNew                                                 AS markAsNew,
   CAST(CASE WHEN p.ApprovedTotalReviews > 0
     THEN CAST(p.ApprovedRatingSum AS FLOAT) / p.ApprovedTotalReviews
     ELSE 0 END AS DECIMAL(4,2))                               AS rating,
@@ -66,6 +70,30 @@ SELECT pcm.ProductId AS productId, c.Name AS catName
 FROM Product_Category_Mapping pcm
 JOIN Product p ON p.Id = pcm.ProductId AND p.Deleted = 0
 JOIN Category c ON c.Id = pcm.CategoryId AND c.Deleted = 0
+"@
+
+# ── Localized product descriptions (EN/LV/RU — see scripts/backfill-descriptions-i18n.ts) ──
+Export-Query "localized_descriptions" @"
+SELECT lp.EntityId AS productId, lp.LanguageId AS langId, lp.LocaleValue AS text
+FROM LocalizedProperty lp
+JOIN Product p ON p.Id = lp.EntityId AND p.Deleted = 0
+WHERE lp.LocaleKeyGroup='Product' AND lp.LocaleKey='FullDescription' AND lp.LanguageId IN (1,2,3)
+  AND NULLIF(lp.LocaleValue,'') IS NOT NULL
+"@
+
+# ── Related / cross-sell products ───────────────────────────────────────────────
+Export-Query "related_products" @"
+SELECT rp.ProductId1 AS productId, rp.ProductId2 AS relatedId
+FROM RelatedProduct rp
+JOIN Product p1 ON p1.Id = rp.ProductId1 AND p1.Deleted = 0
+JOIN Product p2 ON p2.Id = rp.ProductId2 AND p2.Deleted = 0
+"@
+
+Export-Query "crosssell_products" @"
+SELECT cs.ProductId1 AS productId, cs.ProductId2 AS crossSellId
+FROM CrossSellProduct cs
+JOIN Product p1 ON p1.Id = cs.ProductId1 AND p1.Deleted = 0
+JOIN Product p2 ON p2.Id = cs.ProductId2 AND p2.Deleted = 0
 "@
 
 # ── Product images ────────────────────────────────────────────────────────────

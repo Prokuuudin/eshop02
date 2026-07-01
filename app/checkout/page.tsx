@@ -11,6 +11,7 @@ import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { calculateDiscount } from '@/lib/promo-codes';
+import { extractVat } from '@/lib/tax';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
@@ -240,8 +241,9 @@ export default function CheckoutPage() {
         const subtotalAfterDiscount = subtotal - discount;
         const normalizedCheckoutEmail = formData.email.trim().toLowerCase();
 
-        const taxAmount = Math.round(subtotalAfterDiscount * 0.18);
-        const grandTotal = subtotalAfterDiscount + taxAmount + deliveryFee;
+        // Catalog prices already include VAT — taxAmount is informational, not added to the total.
+        const taxAmount = extractVat(subtotalAfterDiscount);
+        const grandTotal = subtotalAfterDiscount + deliveryFee;
         const bonusDiscount = bonusApplied
             ? Math.min(currentUser?.bonusPoints ?? 0, Math.round(grandTotal * bonusProgram.maxSpendPercent / 100))
             : 0;
@@ -458,8 +460,9 @@ export default function CheckoutPage() {
         ? calculateDiscount(subtotal, appliedPromoDiscountPct)
         : 0;
     const subtotalAfterDiscount = subtotal - discount;
-    const taxAmount = Math.round(subtotalAfterDiscount * 0.18);
-    const grandTotal = subtotalAfterDiscount + taxAmount + deliveryFee;
+    // Catalog prices already include VAT — taxAmount is informational, not added to the total.
+    const taxAmount = extractVat(subtotalAfterDiscount);
+    const grandTotal = subtotalAfterDiscount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const bonusToEarn = checkoutItems.reduce(

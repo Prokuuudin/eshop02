@@ -2,11 +2,11 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { calculateDiscount } from '@/lib/promo-codes'
+import { extractVat } from '@/lib/tax'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
 
-export const TAX_RATE = 0.18
 export const DEFAULT_DELIVERY_FEE = 500
 export const DELIVERY_FEES: Record<string, number> = {
   courier: 500,
@@ -137,8 +137,9 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
   const discount = discountPct > 0 ? calculateDiscount(subtotal, discountPct) : 0
 
   const delivery = DELIVERY_FEES[input.deliveryMethod ?? ''] ?? DEFAULT_DELIVERY_FEE
-  const tax = Math.round((subtotal - discount) * TAX_RATE)
-  const grandTotal = subtotal - discount + tax + delivery
+  // Catalog prices already include VAT — tax here is informational only, not added to the total.
+  const tax = extractVat(subtotal - discount)
+  const grandTotal = subtotal - discount + delivery
 
   // Bonus can only be spent by an authenticated user, capped by real balance and the order total.
   const balance = typeof input.userBonusBalance === 'number' ? Math.max(0, input.userBonusBalance) : 0

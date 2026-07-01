@@ -13,9 +13,9 @@ export const ManufacturerDistributorInfo: React.FC<{
     const address = manufacturer?.address || '—';
     const email = manufacturer?.email;
 
-    const distributorName = distributor?.name || '—';
-    const distributorAddress = distributor?.address || '—';
-    const distributorEmail = distributor?.email;
+    const distributorName = distributor?.name || fullName;
+    const distributorAddress = distributor?.address || address;
+    const distributorEmail = distributor?.email || email;
 
     return (
         <div className="product-detail__manufacturer-distributor mt-2 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700 text-sm">

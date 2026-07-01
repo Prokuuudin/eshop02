@@ -1,5 +1,6 @@
 import { Order } from '@/lib/orders-store'
 import { translations } from '@/data/translations'
+import { displayOrderTax } from '@/lib/tax'
 
 type Lang = 'ru' | 'en' | 'lv'
 
@@ -100,7 +101,7 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
     ? `<tr><td colspan="3" style="padding:4px 12px;text-align:right;color:#555">${L.discount}</td><td style="padding:4px 12px;text-align:right;color:#dc2626">−${eur(order.discount)}</td></tr>`
     : ''
 
-  const taxAmount = Math.round((order.subtotal - order.discount) * 0.21)
+  const taxAmount = displayOrderTax(order)
 
   return `<!DOCTYPE html>
 <html lang="${lang}">

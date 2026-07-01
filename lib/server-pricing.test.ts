@@ -93,8 +93,8 @@ describe('recomputeOrderPricing', () => {
 
     expect(r.subtotal).toBe(2000) // 1000 * 2, not 2
     expect(r.delivery).toBe(500)
-    expect(r.tax).toBe(360) // round(2000 * 0.18)
-    expect(r.total).toBe(2000 + 360 + 500)
+    expect(r.tax).toBe(347.11) // VAT already included in price, extracted for display: 2000 - 2000/1.21
+    expect(r.total).toBe(2000 + 500) // tax not added — it's already inside subtotal
   })
 
   it('forbids bonus spend for guests (no balance)', async () => {
@@ -123,7 +123,7 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: 300,
     })
     expect(r.bonusSpent).toBe(300)
-    expect(r.total).toBe(1000 + 180 + 500 - 300)
+    expect(r.total).toBe(1000 + 500 - 300) // tax already included in the 1000, not added
   })
 
   it('computes bonusEarned from catalog bonusRate (no bonus spent)', async () => {
@@ -146,7 +146,7 @@ describe('recomputeOrderPricing', () => {
     ])
     vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
 
-    // grandTotal = 1000 + 180(tax) + 0(pickup) = 1180; spend 590 -> total 590 (half)
+    // grandTotal = 1000 (tax already included) + 0(pickup) = 1000; spend 590 -> total 410
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
       deliveryMethod: 'pickup',
@@ -154,7 +154,7 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: 1000,
     })
     expect(r.bonusSpent).toBe(590)
-    expect(r.bonusEarned).toBe(Math.round((10 * 590) / 1180)) // base 10 scaled by total/grandTotal = 5
+    expect(r.bonusEarned).toBe(Math.round((10 * 410) / 1000)) // base 10 scaled by total/grandTotal = 4
   })
 
   it('applies a valid promo discount', async () => {
@@ -174,7 +174,7 @@ describe('recomputeOrderPricing', () => {
     expect(r.discount).toBe(100)
     expect(r.promoApplied).toBe(true)
     expect(r.delivery).toBe(0)
-    expect(r.tax).toBe(162) // round((1000-100)*0.18)
-    expect(r.total).toBe(900 + 162)
+    expect(r.tax).toBe(156.2) // VAT extracted for display: (1000-100) - 900/1.21
+    expect(r.total).toBe(900) // tax already included, not added
   })
 })

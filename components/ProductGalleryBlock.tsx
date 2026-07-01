@@ -4,10 +4,13 @@ import { ProductImageDisclaimer } from '@/components/ProductImageDisclaimer';
 import { ProductBenefits } from '@/components/ProductBenefits';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
+import TechnicalSpecs from '@/components/TechnicalSpecs';
 
 import type { BrandManufacturerInfo } from '@/lib/brands-config';
+import type { Product } from '@/data/products';
 
 interface ProductGalleryBlockProps {
+    product: Product;
     images: string[];
     demoVideos: any[];
     title: string;
@@ -20,6 +23,7 @@ interface ProductGalleryBlockProps {
 }
 
 export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
+    product,
     images,
     demoVideos,
     title,
@@ -44,6 +48,7 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 distributor={distributor}
                 language={language}
             />
+            <TechnicalSpecs product={product} />
         </div>
     );
 };

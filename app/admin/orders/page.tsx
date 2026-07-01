@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useOrders } from '@/lib/orders-store'
+import { isOrderTaxIncluded, extractVat } from '@/lib/tax'
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -291,7 +292,11 @@ export default function AdminOrdersPage() {
     const newDiscount = order.promoCode && origDiscountPct > 0
       ? Math.round(newSubtotal * origDiscountPct * 100) / 100
       : order.discount
-    const newTotal = Math.max(0, newSubtotal - newDiscount + newDelivery + order.tax)
+    // Items unchanged since order creation keep that order's price model (VAT already
+    // included vs added on top) — detect it from the order itself, no schema flag needed.
+    const taxIncluded = isOrderTaxIncluded(order)
+    const newTax = taxIncluded ? extractVat(newSubtotal - newDiscount) : order.tax
+    const newTotal = Math.max(0, newSubtotal - newDiscount + newDelivery + (taxIncluded ? 0 : newTax))
 
     setEditSaving(true)
     const updated = {
@@ -304,6 +309,7 @@ export default function AdminOrdersPage() {
       subtotal: newSubtotal,
       discount: newDiscount,
       delivery: newDelivery,
+      tax: newTax,
       total: newTotal,
     }
     upsertOrder(updated)
@@ -770,7 +776,8 @@ export default function AdminOrdersPage() {
                         const newDel = EDIT_DELIVERY_COSTS[editDelivery] ?? 0
                         const origPct = order.subtotal > 0 ? order.discount / order.subtotal : 0
                         const newDisc = order.promoCode && origPct > 0 ? Math.round(newSub * origPct * 100) / 100 : order.discount
-                        const newTotal = Math.max(0, newSub - newDisc + newDel)
+                        const taxIncluded = isOrderTaxIncluded(order)
+                        const newTotal = Math.max(0, newSub - newDisc + newDel + (taxIncluded ? 0 : order.tax))
                         return (
                           <div className="flex justify-end">
                             <div className="text-sm space-y-1 min-w-[220px]">

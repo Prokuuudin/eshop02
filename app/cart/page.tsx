@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-store';
+import { extractVat } from '@/lib/tax';
 import { Button } from '@/components/ui/button';
 import BenefitsList from '@/components/BenefitsList';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -101,9 +102,10 @@ export default function CartPage() {
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
     );
-    const taxAmount = Math.round(subtotal * 0.18);
+    // Catalog prices already include VAT — taxAmount is informational, not added to the total.
+    const taxAmount = extractVat(subtotal);
     const deliveryFee = subtotal > 0 ? 500 : 0;
-    const grandTotal = subtotal + taxAmount + deliveryFee;
+    const grandTotal = subtotal + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const bonusToEarn = selectedItems.reduce(
         (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,

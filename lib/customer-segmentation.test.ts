@@ -14,9 +14,10 @@ describe('getDisplayPrice', () => {
     expect(getDisplayPrice(1200)).toBe(1200)
   })
 
-  it('rounds fractional prices', () => {
-    expect(getDisplayPrice(99.6)).toBe(100)
-    expect(getDisplayPrice(99.4)).toBe(99)
+  it('rounds to the nearest cent, not the nearest euro', () => {
+    expect(getDisplayPrice(99.456)).toBe(99.46)
+    expect(getDisplayPrice(99.454)).toBe(99.45)
+    expect(getDisplayPrice(17.4999)).toBe(17.5)
   })
 
   it('clamps negative prices to 0', () => {

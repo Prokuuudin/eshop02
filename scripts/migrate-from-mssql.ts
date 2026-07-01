@@ -121,12 +121,28 @@ async function migrateProducts() {
   console.log('\n[1/7] Products...')
   const products = load<any>('products')
   const images   = load<any>('product_images')
+  const related  = load<any>('related_products')
+  const crossSell = load<any>('crosssell_products')
 
   const imageMap: Record<string, string[]> = {}
   for (const r of images) {
     const pid = String(r.productId)
     if (!imageMap[pid]) imageMap[pid] = []
     imageMap[pid].push(imgUrl(r.picId, r.seoFilename))
+  }
+
+  const relatedMap: Record<string, string[]> = {}
+  for (const r of related) {
+    const pid = String(r.productId)
+    if (!relatedMap[pid]) relatedMap[pid] = []
+    relatedMap[pid].push(String(r.relatedId))
+  }
+
+  const crossSellMap: Record<string, string[]> = {}
+  for (const r of crossSell) {
+    const pid = String(r.productId)
+    if (!crossSellMap[pid]) crossSellMap[pid] = []
+    crossSellMap[pid].push(String(r.crossSellId))
   }
 
   const rows = products.map((p: any) => {
@@ -140,6 +156,7 @@ async function migrateProducts() {
       oldPrice: p.oldPrice ? Number(p.oldPrice) : null,
       stock: Number(p.stock) || 0,
       sku: p.sku ?? null,
+      barcode: p.barcode ?? null,
       rating: Number(p.rating) || 0,
       ratingCount: Number(p.ratingCount) || 0,
       reviewCount: Number(p.ratingCount) || 0,
@@ -151,10 +168,10 @@ async function migrateProducts() {
       isActive: Boolean(p.isActive),
       isDeleted: false,
       isCustom: false,
-      badges: [],
+      badges: p.markAsNew ? ['new'] : [],
       certificates: [],
-      relatedProductIds: [],
-      oftenBoughtTogether: [],
+      relatedProductIds: relatedMap[String(p.id)] ?? [],
+      oftenBoughtTogether: crossSellMap[String(p.id)] ?? [],
       compatibleEquipment: [],
       createdAt: new Date(p.createdAt),
       updatedAt: new Date(p.updatedAt),

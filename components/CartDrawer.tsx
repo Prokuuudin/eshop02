@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-store';
+import { extractVat } from '@/lib/tax';
 import BenefitsList from '@/components/BenefitsList';
 import { Checkbox } from '@/components/ui/checkbox';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
@@ -74,9 +75,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
     );
-    const tax = Math.round(subtotal * 0.18);
+    // Catalog prices already include VAT — tax is informational, not added to the total.
+    const tax = extractVat(subtotal);
     const delivery = subtotal > 0 ? 10 : 0; // фиксированная доставка в евро
-    const finalTotal = subtotal + tax + delivery;
+    const finalTotal = subtotal + delivery;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const selectedIdsParam = selectedItemIds.join(',');
     const checkoutHref =

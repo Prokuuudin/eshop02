@@ -31,7 +31,7 @@ export const getDefaultMinQuantity = (): number => {
 }
 
 export const getDisplayPrice = (basePrice: number): number => {
-  return Math.max(0, Math.round(basePrice))
+  return Math.max(0, Math.round(basePrice * 100) / 100)
 }
 
 export const calculatePrice = (
@@ -48,7 +48,7 @@ export const calculatePrice = (
     unitPrice = tier.pricePerUnit
   }
 
-  return Math.max(0, Math.round(unitPrice))
+  return Math.max(0, Math.round(unitPrice * 100) / 100)
 }
 
 export const getMinimumOrderQuantity = (

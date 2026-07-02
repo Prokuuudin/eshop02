@@ -8,6 +8,11 @@ interface ProductGalleryProps {
     title: string;
 }
 
+// Видео из nopCommerce-миграции — это embed-URL (Facebook/YouTube/Vimeo), их
+// играем через iframe; прямые файлы (mp4 и т.п.) — через <video>.
+const isEmbedUrl = (src: string): boolean =>
+    /(facebook\.com\/plugins\/video|youtube(-nocookie)?\.com\/embed|player\.vimeo\.com\/video)/i.test(src);
+
 export const ProductGallery: React.FC<ProductGalleryProps> = ({
     images,
     demoVideos = [],
@@ -32,12 +37,13 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                 )}
             </div>
             {images.length > 1 && (
-                <div className="product-detail__thumbs flex gap-2 mt-3 justify-center">
+                <div className="product-detail__thumbs mt-3 overflow-x-auto">
+                    <div className="flex gap-2 w-max mx-auto px-1 pb-1">
                     {images.map((img, idx) => (
                         <button
                             key={img}
                             type="button"
-                            className={`product-detail__thumb rounded border-2 transition-all ${
+                            className={`product-detail__thumb flex-shrink-0 rounded border-2 transition-all ${
                                 activeImage === idx
                                     ? 'border-primary ring-2 ring-primary/50'
                                     : 'border-transparent opacity-70 hover:opacity-100'
@@ -55,15 +61,31 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                             />
                         </button>
                     ))}
+                    </div>
                 </div>
             )}
             {/* Галерея видео, если есть */}
             {demoVideos.length > 0 && (
                 <div className="mb-4 mt-4">
-                    <VideoPlayer
-                        src={demoVideos[activeVideo].src}
-                        poster={demoVideos[activeVideo].poster || images[0] || undefined}
-                    />
+                    {isEmbedUrl(demoVideos[activeVideo].src) ? (
+                        <div className="aspect-video rounded-lg overflow-hidden border border-border bg-black">
+                            <iframe
+                                key={demoVideos[activeVideo].src}
+                                src={demoVideos[activeVideo].src}
+                                title={`${title} — видео ${activeVideo + 1}`}
+                                className="w-full h-full"
+                                frameBorder="0"
+                                loading="lazy"
+                                allow="autoplay; encrypted-media; picture-in-picture; web-share"
+                                allowFullScreen
+                            />
+                        </div>
+                    ) : (
+                        <VideoPlayer
+                            src={demoVideos[activeVideo].src}
+                            poster={demoVideos[activeVideo].poster || images[0] || undefined}
+                        />
+                    )}
                     {demoVideos.length > 1 && (
                         <div className="flex gap-2 mt-3 justify-center">
                             {demoVideos.map((video, idx) => (

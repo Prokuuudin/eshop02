@@ -71,7 +71,7 @@ export default function ProductPageContent({ product, allProducts, manufacturer,
     const demoVideos = product.demoVideo || [];
     const images =
         product.images && product.images.length > 0
-            ? product.images.slice(0, 5)
+            ? product.images
             : product.image
             ? [product.image]
             : [];

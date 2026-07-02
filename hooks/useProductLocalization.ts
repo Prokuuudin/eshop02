@@ -27,22 +27,25 @@ export function useProductLocalization(product: Product) {
     return fromI18n !== `${productBaseKey}.description` ? fromI18n : t('product.descriptionText');
   })();
 
+  // Пустая строка = данных нет, строка в блоке «Характеристики» не рендерится.
+  // Никаких выдуманных дефолтов ('50-300ml' / 'Швейцария' и т.п.) — только
+  // реальное поле из БД или точечный i18n-ключ товара.
   const productSpecVolume = (() => {
     if (product.specVolume) return product.specVolume;
     const fromI18n = t(`${productBaseKey}.spec.volume`);
-    return fromI18n !== `${productBaseKey}.spec.volume` ? fromI18n : t('product.spec.value.volume');
+    return fromI18n !== `${productBaseKey}.spec.volume` ? fromI18n : '';
   })();
 
   const productSpecType = (() => {
     if (product.specType) return product.specType;
     const fromI18n = t(`${productBaseKey}.spec.type`);
-    return fromI18n !== `${productBaseKey}.spec.type` ? fromI18n : t('product.spec.value.type');
+    return fromI18n !== `${productBaseKey}.spec.type` ? fromI18n : '';
   })();
 
   const productSpecCountry = (() => {
     if (product.specCountry) return product.specCountry;
     const fromI18n = t(`${productBaseKey}.spec.country`);
-    return fromI18n !== `${productBaseKey}.spec.country` ? fromI18n : t('product.spec.value.country');
+    return fromI18n !== `${productBaseKey}.spec.country` ? fromI18n : '';
   })();
 
   const productFeatures = [1, 2, 3, 4]

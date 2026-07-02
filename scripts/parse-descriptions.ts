@@ -6,6 +6,11 @@
  * up in description, a feature, or technicalSpecs. Nothing is dropped: if more than
  * 4 non-ingredient labelled chunks exist, the overflow is appended to `description`.
  *
+ * Block-level tag boundaries (</p>, <br>, </li>, ...) are kept as newlines, so the
+ * stored description preserves paragraphs (\n\n). When the source has NO bold labels,
+ * the text is split by sentences instead: the first 2 sentences stay as the short
+ * description, the rest become feature bullets (bullet 4 absorbs any remainder).
+ *
  * Run with --sample=N to preview N random parses without touching the DB.
  */
 import { readFileSync } from 'fs'
@@ -18,10 +23,61 @@ const DESCRIPTION_LABEL_RE = /^apraksts$|^description$|^описание$/i
 
 type Chunk = { label: string | null; html: string }
 
+const flattenWs = (s: string): string => s.replace(/\s+/g, ' ').trim()
+
 function stripAndDecode(html: string): string {
-  const noTags = html.replace(/<[^>]*>/g, ' ')
+  const withBreaks = html
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\/\s*(p|div|h[1-6]|table)\s*>/gi, '\n\n')
+    .replace(/<\/\s*(li|tr)\s*>/gi, '\n')
+  const noTags = withBreaks.replace(/<[^>]*>/g, ' ')
   const decoded = decode(noTags)
-  return decoded.replace(/\s+/g, ' ').trim()
+  return decoded
+    .split('\n')
+    .map((line) => line.replace(/[ \t\u00A0]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\n+|\n+$/g, '')
+}
+
+// Deliberately conservative: a missed split leaves a longer sentence (harmless),
+// a false split chops a sentence in half (visible damage).
+const ABBREVIATIONS = new Set([
+  'мл', 'гр', 'кг', 'шт', 'др', 'арт', 'ок', 'см', 'мм', 'руб',
+  'ml', 'gr', 'oz', 'no', 'nr', 'approx', 'inc', 'ltd', 'art',
+  'piem', 'utt', 'gab', 'min', 'max',
+])
+
+const SENTENCE_START_RE = /[A-ZА-ЯЁĀČĒĢĪĶĻŅŠŪŽ0-9«"„(]/
+
+function splitLine(line: string): string[] {
+  const sentences: string[] = []
+  let start = 0
+  const re = /[.!?…]+\s+/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(line)) !== null) {
+    const next = line.charAt(m.index + m[0].length)
+    if (!next || !SENTENCE_START_RE.test(next)) continue
+    const lastWord = line.slice(start, m.index).split(/\s+/).pop() ?? ''
+    const bare = lastWord.replace(/[()«»"„'’]/g, '')
+    if (bare.includes('.') || /^\p{L}$/u.test(bare)) continue
+    if (ABBREVIATIONS.has(bare.toLowerCase())) continue
+    const terminatorEnd = m.index + m[0].trimEnd().length
+    const candidate = line.slice(start, terminatorEnd).trim()
+    if (candidate.length < 4) continue
+    sentences.push(candidate)
+    start = m.index + m[0].length
+  }
+  const tail = line.slice(start).trim()
+  if (tail) sentences.push(tail)
+  return sentences
+}
+
+export function splitSentences(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .flatMap((chunk) => splitLine(chunk.trim()))
+    .filter(Boolean)
 }
 
 function splitIntoChunks(html: string): Chunk[] {
@@ -73,18 +129,34 @@ export function parseDescription(rawHtml: string): ParsedDescription {
     const label = chunk.label === null ? null : decode(chunk.label).trim()
 
     if (label === null || DESCRIPTION_LABEL_RE.test(label)) {
-      description = description ? `${description} ${text}` : text
+      description = description ? `${description}\n\n${text}` : text
     } else if (INGREDIENT_LABEL_RE.test(label)) {
-      technicalSpecs[label] = text
+      technicalSpecs[label] = flattenWs(text)
     } else if (features.length < 4) {
-      features.push(`${label}: ${text}`)
+      features.push(flattenWs(`${label}: ${text}`))
     } else {
-      overflow.push(`${label}: ${text}`)
+      overflow.push(flattenWs(`${label}: ${text}`))
     }
   }
 
   if (overflow.length > 0) {
-    description = description ? `${description} ${overflow.join(' ')}` : overflow.join(' ')
+    const tail = overflow.join('\n\n')
+    description = description ? `${description}\n\n${tail}` : tail
+  }
+
+  // Label-less text: first 2 sentences stay as the short description, the rest
+  // become feature bullets (one sentence each, bullet 4 absorbs the remainder).
+  if (features.length === 0 && description) {
+    const sentences = splitSentences(description)
+    if (sentences.length >= 3) {
+      description = sentences.slice(0, 2).join(' ')
+      const rest = sentences.slice(2)
+      if (rest.length <= 4) {
+        features.push(...rest)
+      } else {
+        features.push(rest[0], rest[1], rest[2], rest.slice(3).join(' '))
+      }
+    }
   }
 
   return { description: description || null, features, technicalSpecs }

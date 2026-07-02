@@ -24,7 +24,7 @@ export function useProductLocalization(product: Product) {
     if (localized) return localized;
     if (product.description) return product.description;
     const fromI18n = t(`${productBaseKey}.description`);
-    return fromI18n !== `${productBaseKey}.description` ? fromI18n : t('product.descriptionText');
+    return fromI18n !== `${productBaseKey}.description` ? fromI18n : '';
   })();
 
   // Пустая строка = данных нет, строка в блоке «Характеристики» не рендерится.

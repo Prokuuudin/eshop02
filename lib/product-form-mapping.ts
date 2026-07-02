@@ -16,6 +16,8 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         titleLv: product.titleLv ?? '',
 
         description: product.description ?? '',
+        descriptionEn: product.technicalSpecs?.__descriptionEn ?? '',
+        descriptionLv: product.technicalSpecs?.__descriptionLv ?? '',
         purpose: product.purpose ?? '',
         purposeEn: product.purposeEn ?? '',
         purposeLv: product.purposeLv ?? '',
@@ -35,8 +37,15 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         badges: product.badges ?? [],
 
         technicalSpecs: Object.entries(product.technicalSpecs ?? {})
-            .filter(([key]) => key !== '__variantGroupsJson')
+            .filter(([key]) => !key.startsWith('__'))
             .map(([key, value]) => ({ key, value })),
+        reservedTechSpecs: Object.fromEntries(
+            Object.entries(product.technicalSpecs ?? {}).filter(
+                ([key]) =>
+                    key.startsWith('__') &&
+                    !['__variantGroupsJson', '__descriptionEn', '__descriptionLv'].includes(key)
+            )
+        ),
         variantGroups: getVariantGroups(product) ?? [],
         compatibleEquipment: product.compatibleEquipment ?? [],
         certificates: product.certificates ?? [],
@@ -85,13 +94,20 @@ export function mapFormValuesToProductPatch(
     values: AddProductFormValues
 ): Partial<Omit<Product, 'id'>> {
     const techSpecs = values.technicalSpecs
-        .filter((s) => s.key.trim())
+        .filter((s) => s.key.trim() && !s.key.trim().startsWith('__'))
         .reduce<Record<string, string>>((acc, { key, value }) => {
             acc[key] = value;
             return acc;
         }, {});
+    Object.assign(techSpecs, values.reservedTechSpecs ?? {});
     if (values.variantGroups.length > 0) {
         techSpecs['__variantGroupsJson'] = JSON.stringify(values.variantGroups);
+    }
+    if (values.descriptionEn?.trim()) {
+        techSpecs['__descriptionEn'] = values.descriptionEn;
+    }
+    if (values.descriptionLv?.trim()) {
+        techSpecs['__descriptionLv'] = values.descriptionLv;
     }
 
     const cleanArray = (arr: string[]) => arr.filter(Boolean);

@@ -52,3 +52,48 @@ describe('variantGroups round-trip through technicalSpecs', () => {
     expect(patch.technicalSpecs).toBeUndefined()
   })
 })
+
+describe('description translations round-trip through technicalSpecs', () => {
+  it('extracts __descriptionEn/Lv into form fields and hides all __ keys from spec rows', () => {
+    const product: Product = {
+      ...baseProduct,
+      technicalSpecs: {
+        'Объём': '50 мл',
+        __descriptionEn: 'English text',
+        __descriptionLv: 'Latvian text',
+        __futureReserved: 'x',
+      },
+    }
+    const values = mapProductToFormValues(product)
+    expect(values.descriptionEn).toBe('English text')
+    expect(values.descriptionLv).toBe('Latvian text')
+    expect(values.technicalSpecs).toEqual([{ key: 'Объём', value: '50 мл' }])
+    expect(values.reservedTechSpecs).toEqual({ __futureReserved: 'x' })
+  })
+
+  it('writes edited description translations and untouched reserved keys back into the patch', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { 'Тип': 'крем', __descriptionEn: 'Old EN', __futureReserved: 'x' },
+    })
+    values.descriptionEn = 'New EN'
+    values.descriptionLv = 'Jauns LV'
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toEqual({
+      'Тип': 'крем',
+      __futureReserved: 'x',
+      __descriptionEn: 'New EN',
+      __descriptionLv: 'Jauns LV',
+    })
+  })
+
+  it('drops __description keys when the admin empties the fields', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { __descriptionEn: 'EN' },
+    })
+    values.descriptionEn = ''
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toBeUndefined()
+  })
+})

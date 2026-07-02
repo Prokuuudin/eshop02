@@ -49,6 +49,8 @@ const emptyDefaults: AddProductFormValues = {
     titleLv: '',
 
     description: '',
+    descriptionEn: '',
+    descriptionLv: '',
     purpose: '',
     purposeEn: '',
     purposeLv: '',
@@ -67,6 +69,7 @@ const emptyDefaults: AddProductFormValues = {
 
     badges: [],
     technicalSpecs: [],
+    reservedTechSpecs: {},
     variantGroups: [],
     compatibleEquipment: [],
     certificates: [],

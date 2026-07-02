@@ -19,8 +19,11 @@ export const addProductSchema = z.object({
   titleEn: z.string().optional(),
   titleLv: z.string().optional(),
 
-  // Описание и назначение
+  // Описание и назначение (EN/LV-переводы описания хранятся в technicalSpecs.__descriptionEn/Lv,
+  // в форме — отдельные поля, см. lib/product-form-mapping.ts)
   description: z.string().optional(),
+  descriptionEn: z.string().optional(),
+  descriptionLv: z.string().optional(),
   purpose: z.string().optional(),
   purposeEn: z.string().optional(),
   purposeLv: z.string().optional(),
@@ -49,6 +52,10 @@ export const addProductSchema = z.object({
 
   // Технические характеристики (ключ-значение, как в Product.technicalSpecs)
   technicalSpecs: z.array(z.object({ key: z.string(), value: z.string() })),
+
+  // Служебные __-ключи technicalSpecs (кроме вариантов и переводов описания) —
+  // проносятся через форму нетронутыми, в списке характеристик не показываются
+  reservedTechSpecs: z.record(z.string(), z.string()).optional(),
 
   // Варианты товара (цвет/комплектация) — на диске хранятся внутри technicalSpecs.__variantGroupsJson,
   // в форме отдельное поле, см. lib/product-form-mapping.ts

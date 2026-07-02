@@ -86,6 +86,10 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         <label className="block text-sm font-medium mb-1">Purpose / short description</label>
                         <Textarea placeholder="What the product is for" {...register('purposeEn')} />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Full description</label>
+                        <Textarea placeholder="Full product description" {...register('descriptionEn')} />
+                    </div>
                 </div>
 
                 <h3 className="add-product__section-subtitle mt-4">Feature cards (EN)</h3>
@@ -122,6 +126,10 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                 <div>
                     <label className="block text-sm font-medium mb-1">Mērķis / īss apraksts</label>
                     <Textarea placeholder="Kam produkts paredzēts" {...register('purposeLv')} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Pilns apraksts</label>
+                    <Textarea placeholder="Pilns produkta apraksts" {...register('descriptionLv')} />
                 </div>
             </div>
 

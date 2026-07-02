@@ -72,7 +72,11 @@ export function useProductsAdmin() {
         product.brand,
         product.category,
         product.purpose,
-        ...Object.values(product.technicalSpecs || {}),
+        ...Object.values(
+          Object.fromEntries(
+            Object.entries(product.technicalSpecs || {}).filter(([key]) => key !== '__variantGroupsJson')
+          )
+        ),
       ]
         .filter(Boolean)
         .map((v) => String(v).toLowerCase());

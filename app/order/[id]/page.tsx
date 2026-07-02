@@ -46,6 +46,8 @@ export default function OrderPage({ params }: PageProps) {
                         createdAt: string;
                         items: Array<{
                             id: string;
+                            lineKey: string;
+                            variantLabel?: string;
                             title: string;
                             brand: string;
                             image: string;
@@ -483,7 +485,7 @@ export default function OrderPage({ params }: PageProps) {
                             <div className="space-y-4">
                                 {order.items.map((item) => (
                                     <div
-                                        key={item.id}
+                                        key={item.lineKey}
                                         className="flex gap-4 pb-4 border-b border-border last:border-b-0"
                                     >
                                         <Link
@@ -507,6 +509,11 @@ export default function OrderPage({ params }: PageProps) {
                                                     {item.title}
                                                 </h3>
                                             </Link>
+                                            {item.variantLabel && (
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                    {item.variantLabel}
+                                                </p>
+                                            )}
                                             <p className="text-sm text-muted-foreground">
                                                 {item.brand}
                                             </p>

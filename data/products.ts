@@ -2,6 +2,23 @@
 export type BadgeType = 'sale' | 'bestseller' | 'new';
 export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment' | 'new';
 
+export interface VariantOption {
+  value: string            // код как в исходнике: "A-11", "111", "WHITE" — не переводим, не маппим на hex
+  priceAdjustment?: number
+}
+
+export interface VariantGroup {
+  name: string              // как в исходнике: "Krāsu numurs", "Izmērs"...
+  required: boolean
+  options: VariantOption[]
+}
+
+export interface SelectedVariant {
+  groupName: string
+  value: string
+  priceAdjustment?: number
+}
+
 export interface Product {
     barcode?: string // Штрихкод товара
   id: string

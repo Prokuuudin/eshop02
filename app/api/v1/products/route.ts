@@ -71,7 +71,9 @@ export async function GET(req: NextRequest) {
       oldPrice: product.oldPrice,
       rating: product.rating,
       stock: product.stock,
-      technicalSpecs: product.technicalSpecs,
+      technicalSpecs: Object.fromEntries(
+        Object.entries(product.technicalSpecs ?? {}).filter(([key]) => key !== '__variantGroupsJson')
+      ),
       certificates: product.certificates,
       bulkPricingTiers: product.bulkPricingTiers,
       compatibleEquipment: product.compatibleEquipment

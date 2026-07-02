@@ -1,5 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { SelectedVariant } from '@/data/products'
+import { sumPriceAdjustment } from '@/lib/product-variants'
+
+export type { SelectedVariant }
+
+export function buildLineKey(id: string, selectedVariants?: SelectedVariant[]): string {
+  if (!selectedVariants || selectedVariants.length === 0) return id
+  return id + '::' + selectedVariants.map((v) => `${v.groupName}=${v.value}`).join(',')
+}
 
 type AddableProduct = {
   id: string
@@ -17,6 +26,8 @@ type AddableProduct = {
 
 export type CartItem = {
   id: string
+  lineKey: string
+  selectedVariants?: SelectedVariant[]
   title: string
   brand: string
   image?: string
@@ -27,29 +38,60 @@ export type CartItem = {
   minOrderQuantities?: Record<string, number>
   category?: string
   sku?: string
+  variantLabel?: string
 }
 
 type CartStore = {
   items: CartItem[]
-  addItem: (product: AddableProduct, quantity: number) => void
-  removeItem: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
+  addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => void
+  removeItem: (lineKey: string) => void
+  updateQuantity: (lineKey: string, quantity: number) => void
   replaceWithItems: (items: CartItem[]) => void
   clearCart: () => void
   total: () => number
+}
+
+// Бэкафилл lineKey для корзин, сохранённых в localStorage до введения составного ключа.
+export function migrateCartState(persistedState: unknown, _version: number): unknown {
+  if (
+    !persistedState ||
+    typeof persistedState !== 'object' ||
+    !('items' in persistedState) ||
+    !Array.isArray((persistedState as { items: unknown }).items)
+  ) {
+    return persistedState
+  }
+  const state = persistedState as { items: Array<Record<string, unknown>> }
+  return {
+    ...state,
+    items: state.items.map((item) => {
+      if (typeof item.lineKey === 'string' && item.lineKey.length > 0) return item
+      const id = item.id as string
+      const selectedVariants = item.selectedVariants as SelectedVariant[] | undefined
+      return { ...item, lineKey: buildLineKey(id, selectedVariants) }
+    }),
+  }
 }
 
 export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
-      addItem: (product: AddableProduct, quantity: number) => {
+      addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => {
+        const lineKey = buildLineKey(product.id, selectedVariants)
+        const priceAdjustment = sumPriceAdjustment(selectedVariants ?? [])
+        const variantLabel = selectedVariants?.length
+          ? selectedVariants.map((v) => `${v.groupName}: ${v.value}`).join(', ')
+          : undefined
         const slim: Omit<CartItem, 'quantity'> = {
           id: product.id,
+          lineKey,
+          selectedVariants,
+          variantLabel,
           title: product.title,
           brand: product.brand,
           image: product.image || product.images?.[0],
-          price: product.price,
+          price: product.price + priceAdjustment,
           bonusRate: product.bonusRate,
           bulkPricingTiers: product.bulkPricingTiers,
           minOrderQuantities: product.minOrderQuantities,
@@ -57,11 +99,11 @@ export const useCart = create<CartStore>()(
           sku: product.sku,
         }
         set((state) => {
-          const existing = state.items.find((i) => i.id === slim.id)
+          const existing = state.items.find((i) => i.lineKey === lineKey)
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === slim.id ? { ...i, quantity: i.quantity + quantity } : i
+                i.lineKey === lineKey ? { ...i, quantity: i.quantity + quantity } : i
               )
             }
           }
@@ -70,17 +112,17 @@ export const useCart = create<CartStore>()(
           }
         })
       },
-      removeItem: (productId: string) => {
+      removeItem: (lineKey: string) => {
         set((state) => ({
-          items: state.items.filter((i) => i.id !== productId)
+          items: state.items.filter((i) => i.lineKey !== lineKey)
         }))
       },
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (lineKey: string, quantity: number) => {
         if (quantity <= 0) {
-          get().removeItem(productId)
+          get().removeItem(lineKey)
         } else {
           set((state) => ({
-            items: state.items.map((i) => (i.id === productId ? { ...i, quantity } : i))
+            items: state.items.map((i) => (i.lineKey === lineKey ? { ...i, quantity } : i))
           }))
         }
       },
@@ -94,6 +136,6 @@ export const useCart = create<CartStore>()(
         return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0)
       }
     }),
-    { name: 'cart-store' }
+    { name: 'cart-store', version: 1, migrate: migrateCartState }
   )
 )

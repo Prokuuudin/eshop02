@@ -82,7 +82,7 @@ export default function CheckoutPage() {
         if (!selectedItemIds) return items;
 
         const selectedSet = new Set(selectedItemIds);
-        return items.filter((item) => selectedSet.has(item.id));
+        return items.filter((item) => selectedSet.has(item.lineKey));
     }, [items, selectedItemIds]);
 
     const subtotal = React.useMemo(
@@ -396,8 +396,8 @@ export default function CheckoutPage() {
             );
         }
 
-        const selectedSet = new Set(checkoutItems.map((item) => item.id));
-        const remainingItems = items.filter((item) => !selectedSet.has(item.id));
+        const selectedSet = new Set(checkoutItems.map((item) => item.lineKey));
+        const remainingItems = items.filter((item) => !selectedSet.has(item.lineKey));
         replaceWithItems(remainingItems);
         setSubmitted(true);
 
@@ -734,7 +734,7 @@ export default function CheckoutPage() {
                                 const localizedTitle = t(`products.${item.id}.title`, item.title);
                                 const unitPrice = calculatePrice(item, item.quantity);
                                 return (
-                                    <div key={item.id} className="text-sm flex justify-between">
+                                    <div key={item.lineKey} className="text-sm flex justify-between">
                                         <span>
                                             {localizedTitle} × {item.quantity}
                                         </span>

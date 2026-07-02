@@ -46,14 +46,14 @@ export default function CartPage() {
     React.useEffect(() => {
         setSelectedItemIds((prev) => {
             if (prev.length === 0 && !selectionTouched) {
-                return items.map((item) => item.id);
+                return items.map((item) => item.lineKey);
             }
 
-            const currentIds = new Set(items.map((item) => item.id));
+            const currentIds = new Set(items.map((item) => item.lineKey));
             const next = prev.filter((id) => currentIds.has(id));
 
             if (next.length === 0 && items.length > 0 && !selectionTouched) {
-                return items.map((item) => item.id);
+                return items.map((item) => item.lineKey);
             }
 
             return next;
@@ -66,17 +66,17 @@ export default function CartPage() {
         }
     }, [items.length]);
 
-    const handleDecrease = (productId: string, quantity: number, minQuantity: number): void => {
+    const handleDecrease = (lineKey: string, quantity: number, minQuantity: number): void => {
         if (quantity <= minQuantity) {
             return;
         }
-        updateQuantity(productId, quantity - 1);
+        updateQuantity(lineKey, quantity - 1);
     };
 
-    const toggleSelected = (productId: string): void => {
+    const toggleSelected = (lineKey: string): void => {
         setSelectionTouched(true);
         setSelectedItemIds((prev) =>
-            prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+            prev.includes(lineKey) ? prev.filter((id) => id !== lineKey) : [...prev, lineKey]
         );
     };
 
@@ -97,7 +97,7 @@ export default function CartPage() {
         );
     }
 
-    const selectedItems = items.filter((item) => selectedItemIds.includes(item.id));
+    const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
     const subtotal = selectedItems.reduce(
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
@@ -134,7 +134,7 @@ export default function CartPage() {
                     type="button"
                     onClick={() => {
                         setSelectionTouched(true);
-                        setSelectedItemIds(items.map((item) => item.id));
+                        setSelectedItemIds(items.map((item) => item.lineKey));
                     }}
                     className="cart__select-all text-primary hover:underline"
                 >
@@ -175,16 +175,16 @@ export default function CartPage() {
                             const minQuantity = getMinimumOrderQuantity(item);
                             const unitPrice = calculatePrice(item, item.quantity);
                             const localizedTitle = t(`products.${item.id}.title`, item.title);
-                            const isSelected = selectedItemIds.includes(item.id);
+                            const isSelected = selectedItemIds.includes(item.lineKey);
                             return (
                                 <div
-                                    key={item.id}
+                                    key={item.lineKey}
                                     className="cart__item p-4 bg-card rounded-lg border border-border flex gap-4"
                                 >
                                     <div className="cart__item-checkbox pt-1">
                                         <Checkbox
                                             checked={isSelected}
-                                            onCheckedChange={() => toggleSelected(item.id)}
+                                            onCheckedChange={() => toggleSelected(item.lineKey)}
                                             className="select-none"
                                             aria-label={`${t(
                                                 'cart.selectForCheckout'
@@ -223,7 +223,7 @@ export default function CartPage() {
                                             confirmLabel={t('cart.remove')}
                                             cancelLabel={t('common.cancel')}
                                             onConfirm={() => {
-                                                removeItem(item.id);
+                                                removeItem(item.lineKey);
                                                 showToast(t('toast.removedFromCart'), 'info');
                                             }}
                                             trigger={
@@ -237,7 +237,7 @@ export default function CartPage() {
                                             <button
                                                 onClick={() =>
                                                     handleDecrease(
-                                                        item.id,
+                                                        item.lineKey,
                                                         item.quantity,
                                                         minQuantity
                                                     )
@@ -251,7 +251,7 @@ export default function CartPage() {
                                             </span>
                                             <button
                                                 onClick={() =>
-                                                    updateQuantity(item.id, item.quantity + 1)
+                                                    updateQuantity(item.lineKey, item.quantity + 1)
                                                 }
                                                 className="cart__item-qty-btn px-2 py-1"
                                             >

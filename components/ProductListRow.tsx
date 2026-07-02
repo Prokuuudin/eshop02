@@ -38,14 +38,14 @@ export default function ProductListRow({ product }: Props) {
   return (
     <div className="product-list-row flex items-center gap-4 p-3 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
       {/* Image */}
-      <Link href={`/product/${product.id}`} className="flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden bg-muted">
+      <Link href={`/product/${product.id}`} className="flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden bg-white">
         {product.image && product.image.trim() ? (
           <Image
             src={product.image}
             alt={localizedTitle}
             fill
             sizes="80px"
-            className="object-cover"
+            className="object-contain p-1"
             loading="lazy"
           />
         ) : (
@@ -110,7 +110,7 @@ export default function ProductListRow({ product }: Props) {
             )}
           </div>
         ) : (
-          <div className="text-gray-400 text-sm">{t('product.loginToSeePrice')}</div>
+          <div className="text-gray-400 text-sm">{t('product.loginToSeePrice', 'Войдите, чтобы увидеть цену')}</div>
         )}
         <div className="flex items-center gap-1">
           {isOutOfStock ? (

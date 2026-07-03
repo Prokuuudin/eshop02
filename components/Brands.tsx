@@ -8,7 +8,7 @@ import Link from 'next/link';
 import BrandCardSkeleton from './BrandCardSkeleton';
 import { Button } from '@/components/ui/button';
 
-const PREVIEW_MIN_BRANDS = 40;
+const COLLAPSED_MAX_HEIGHT = 360;
 
 const PALETTE = [
   'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
@@ -58,19 +58,18 @@ export default function Brands() {
 
   const GROUP_ENTRIES = React.useMemo(() => Object.entries(GROUPED), [GROUPED]);
 
-  const PREVIEW_ENTRIES = React.useMemo(() => {
-    const preview: typeof GROUP_ENTRIES = [];
-    let count = 0;
-    for (const entry of GROUP_ENTRIES) {
-      if (count >= PREVIEW_MIN_BRANDS) break;
-      preview.push(entry);
-      count += entry[1].length;
-    }
-    return preview;
-  }, [GROUP_ENTRIES]);
+  const listRef = React.useRef<HTMLDivElement | null>(null);
+  const [hasOverflow, setHasOverflow] = React.useState(false);
 
-  const visibleEntries = showAll ? GROUP_ENTRIES : PREVIEW_ENTRIES;
-  const hasMore = PREVIEW_ENTRIES.length < GROUP_ENTRIES.length;
+  React.useEffect(() => {
+    const measure = () => {
+      const el = listRef.current;
+      if (el) setHasOverflow(el.scrollHeight > COLLAPSED_MAX_HEIGHT + 1);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [brands, language]);
 
   React.useEffect(() => {
     setLoading(true);
@@ -108,24 +107,36 @@ export default function Brands() {
               <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.alphabeticalTitle')}</h2>
             </div>
             <div className="brands__alphabetical rounded-lg bg-white p-4 sm:p-6">
-              <div className="flex flex-wrap gap-3">
-                {visibleEntries.map(([letter, letterBrands], index) => (
-                  <div key={letter} className={`brands__letter-group flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-3 py-2 ${COLORS[index]}`}>
-                    <span className="brands__letter text-2xl font-bold text-gray-800 sm:text-3xl">{letter}</span>
-                    {letterBrands.map((brand) => (
-                      <Link
-                        key={brand.id}
-                        href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                        className="inline-block rounded border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-primary/50 hover:text-primary hover:scale-110 sm:text-base"
-                        title={brand.name}
-                      >
-                        {brand.name}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
+              <div className="brands__list-clip relative">
+                <div
+                  ref={listRef}
+                  className={`brands__list flex flex-wrap gap-3 ${showAll ? '' : 'overflow-hidden'}`}
+                  style={showAll ? undefined : { maxHeight: COLLAPSED_MAX_HEIGHT }}
+                >
+                  {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
+                    <div key={letter} className={`brands__letter-group flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg px-3 py-2 ${COLORS[index]}`}>
+                      <span className="brands__letter text-2xl font-bold text-gray-800 sm:text-3xl">{letter}</span>
+                      {letterBrands.map((brand) => (
+                        <Link
+                          key={brand.id}
+                          href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
+                          className="brands__brand-link text-sm font-medium text-gray-700 transition-colors duration-200 hover:text-primary hover:underline sm:text-base"
+                          title={brand.name}
+                        >
+                          {brand.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                {!showAll && hasOverflow && (
+                  <div
+                    aria-hidden="true"
+                    className="brands__fade pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/70 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_45%,transparent)]"
+                  />
+                )}
               </div>
-              {hasMore && (
+              {hasOverflow && (
                 <div className="brands__toggle-row mt-4 flex justify-center">
                   <Button
                     variant="outline"

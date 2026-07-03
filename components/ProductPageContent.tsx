@@ -7,6 +7,7 @@ import { ProductReviews } from '@/components/ProductReviews';
 import { ProductBulkPricing } from '@/components/ProductBulkPricing';
 import { ProductRelatedList } from '@/components/ProductRelatedList';
 import { ProductBenefits } from '@/components/ProductBenefits';
+import ProductRequestSection from '@/components/ProductRequestSection';
 
 import React, { useEffect } from 'react';
 import type { JSX } from 'react';
@@ -115,6 +116,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                     title={t('product.oftenBoughtTogether')}
                     products={oftenBoughtTogether}
                 />
+                <ProductRequestSection embedded />
                 <ProductRelatedList
                     title={t('product.recentlyViewed')}
                     products={recentViews.filter((p) => p.id !== product.id)}

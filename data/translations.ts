@@ -685,6 +685,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'home.productRequest.comment': 'Комментарий (необязательно)',
     'home.productRequest.commentPlaceholder': 'Количество, объём, желаемый срок — всё, что поможет нам с поиском',
     'home.productRequest.send': 'Отправить запрос',
+    'home.productRequest.open': 'Оставить запрос',
+    'home.productRequest.openHint': 'Заполните короткую форму — это займёт меньше минуты.',
     'home.productRequest.success': 'Запрос отправлен! Мы свяжемся с вами в ближайшее время.',
     'home.productRequest.note': 'Отправляя запрос, вы соглашаетесь на обработку указанных контактных данных для ответа на ваш запрос.',
 
@@ -2159,6 +2161,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'home.productRequest.comment': 'Comment (optional)',
     'home.productRequest.commentPlaceholder': 'Quantity, volume, desired timing — anything that helps us with the search',
     'home.productRequest.send': 'Send request',
+    'home.productRequest.open': 'Leave a request',
+    'home.productRequest.openHint': 'Fill in a short form — it takes less than a minute.',
     'home.productRequest.success': 'Request sent! We will contact you shortly.',
     'home.productRequest.note': 'By sending the request you agree to the processing of the provided contact details in order to respond to your request.',
 
@@ -3960,6 +3964,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'home.productRequest.comment': 'Komentārs (nav obligāti)',
     'home.productRequest.commentPlaceholder': 'Daudzums, tilpums, vēlamais termiņš — viss, kas palīdzēs mums meklēšanā',
     'home.productRequest.send': 'Nosūtīt pieprasījumu',
+    'home.productRequest.open': 'Atstāt pieprasījumu',
+    'home.productRequest.openHint': 'Aizpildiet īsu formu — tas aizņems mazāk nekā minūti.',
     'home.productRequest.success': 'Pieprasījums nosūtīts! Mēs ar jums sazināsimies tuvākajā laikā.',
     'home.productRequest.note': 'Nosūtot pieprasījumu, jūs piekrītat norādīto kontaktdatu apstrādei, lai atbildētu uz jūsu pieprasījumu.',
 

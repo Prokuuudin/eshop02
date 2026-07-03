@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Script from 'next/script'
 import { PackageSearch, Truck, Headset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,14 +22,24 @@ const initialFormState = {
   website: ''
 }
 
-export default function ProductRequestSection() {
+export default function ProductRequestSection({ embedded = false }: { embedded?: boolean }) {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState(initialFormState)
   const [startedAt] = useState(() => Date.now())
+  const [expanded, setExpanded] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const turnstile = useTurnstile()
+
+  const renderTurnstile = turnstile.render
+
+  // Контейнер капчи монтируется только вместе с формой
+  useEffect(() => {
+    if (expanded) {
+      renderTurnstile()
+    }
+  }, [expanded, renderTurnstile])
 
   const benefits = [
     { id: 'search', icon: PackageSearch, text: t('home.productRequest.benefitSearch') },
@@ -95,6 +105,7 @@ export default function ProductRequestSection() {
 
       setTimeout(() => {
         setSubmitted(false)
+        setExpanded(false)
       }, 5000)
     } catch {
       setSubmitError(t('contact.errorGeneric'))
@@ -104,11 +115,11 @@ export default function ProductRequestSection() {
   }
 
   return (
-    <section className="product-request py-10" id="product-request">
+    <section className={embedded ? 'product-request mb-12' : 'product-request py-10'} id="product-request">
       {turnstile.enabled && (
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
       )}
-      <div className="product-request__container max-w-6xl mx-auto px-4">
+      <div className={embedded ? 'product-request__container' : 'product-request__container max-w-6xl mx-auto px-4'}>
         <div className="product-request__layout grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div className="product-request__content">
             <h2 className="product-request__title text-2xl font-semibold text-foreground mb-2">
@@ -139,6 +150,19 @@ export default function ProductRequestSection() {
               >
                 ✓ {t('home.productRequest.success')}
               </div>
+            ) : !expanded ? (
+              <div className="product-request__cta flex flex-col items-start gap-3">
+                <p className="product-request__cta-hint text-sm text-muted-foreground">
+                  {t('home.productRequest.openHint')}
+                </p>
+                <Button
+                  type="button"
+                  className="product-request__open w-full sm:w-auto"
+                  onClick={() => setExpanded(true)}
+                >
+                  {t('home.productRequest.open')}
+                </Button>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="product-request__form space-y-4">
                 <input
@@ -165,6 +189,7 @@ export default function ProductRequestSection() {
                     placeholder={t('home.productRequest.productPlaceholder')}
                     minLength={3}
                     maxLength={200}
+                    autoFocus
                     required
                   />
                 </div>

@@ -8,6 +8,7 @@ import BonusSection from '../components/BonusSection';
 import Promo from '../components/Promo';
 import Brands from '../components/Brands';
 import FAQSection from '../components/FAQSection';
+import ProductRequestSection from '../components/ProductRequestSection';
 import { translations, type Language } from '@/data/translations';
 import HomeClient from '../components/HomeClient';
 import Stores from '../components/Stores';
@@ -61,6 +62,7 @@ export default async function Home() {
             <Promo />
             <BonusSection />
             <FAQSection />
+            <ProductRequestSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />
                 <HomeClient />

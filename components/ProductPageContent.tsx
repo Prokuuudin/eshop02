@@ -21,12 +21,13 @@ import { getMinimumOrderQuantity, getDisplayPrice } from '@/lib/customer-segment
 
 type Props = {
     product: Product;
-    allProducts: Product[];
+    relatedProducts: Product[];
+    oftenBoughtTogether: Product[];
     manufacturer?: BrandManufacturerInfo;
     distributor?: BrandManufacturerInfo;
 };
 
-export default function ProductPageContent({ product, allProducts, manufacturer, distributor }: Props): JSX.Element {
+export default function ProductPageContent({ product, relatedProducts, oftenBoughtTogether, manufacturer, distributor }: Props): JSX.Element {
     const {
         t,
         language,
@@ -50,14 +51,6 @@ export default function ProductPageContent({ product, allProducts, manufacturer,
     useEffect(() => {
         addView(product);
     }, [product, addView]);
-
-    const relatedProducts = product.relatedProductIds
-        ? allProducts.filter((p) => product.relatedProductIds?.includes(p.id)).slice(0, 4)
-        : allProducts.filter((p) => p.brand === product.brand && p.id !== product.id).slice(0, 4);
-
-    const oftenBoughtTogether = product.oftenBoughtTogether
-        ? allProducts.filter((p) => product.oftenBoughtTogether?.includes(p.id)).slice(0, 4)
-        : [];
 
     // Формируем ссылки для категории и бренда
     const categoryUrl = product.category

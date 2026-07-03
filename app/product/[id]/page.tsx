@@ -135,6 +135,16 @@ export default async function ProductPage({ params }: PageProps) {
         ],
     };
 
+    const relatedProducts = product.relatedProductIds
+        ? mergedProducts.filter((p) => product.relatedProductIds?.includes(p.id)).slice(0, 4)
+        : mergedProducts
+              .filter((p) => p.brand === product.brand && p.id !== product.id)
+              .slice(0, 4);
+
+    const oftenBoughtTogether = product.oftenBoughtTogether
+        ? mergedProducts.filter((p) => product.oftenBoughtTogether?.includes(p.id)).slice(0, 4)
+        : [];
+
     const breadcrumbSchema = {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -155,7 +165,13 @@ export default async function ProductPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
             />
-            <ProductPageContent product={product} allProducts={mergedProducts} manufacturer={manufacturer} distributor={distributor} />
+            <ProductPageContent
+                product={product}
+                relatedProducts={relatedProducts}
+                oftenBoughtTogether={oftenBoughtTogether}
+                manufacturer={manufacturer}
+                distributor={distributor}
+            />
         </>
     );
 }

@@ -15,6 +15,11 @@ if (!dbUrl) {
   );
 }
 
+// prisma migrate holds a session-scoped advisory lock; through the Neon pooler
+// (pgbouncer) the lock survives in the pooled connection after the CLI exits and
+// blocks every subsequent migrate run with P1002. Migrations must use the direct host.
+const directUrl = dbUrl.replace("-pooler.", ".");
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -22,6 +27,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: dbUrl,
+    url: directUrl,
   },
 });

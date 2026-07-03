@@ -61,7 +61,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 oldPrice={adjustedOldPrice}
                 priceLocale={priceLocale}
                 stock={product.stock}
-                creditPrice={product.price}
                 productId={product.id}
                 productTitle={localizedTitle}
             />

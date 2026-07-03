@@ -1,5 +1,4 @@
 'use client';
-import { CreditCalculator } from '@/components/CreditCalculator';
 import { ProductGalleryBlock } from '@/components/ProductGalleryBlock';
 import { ProductInfo } from '@/components/ProductInfo';
 import { ProductNavigationLinks } from '@/components/ProductNavigationLinks';
@@ -103,7 +102,6 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                             minOrderQuantity={minOrderQuantity}
                         />
                         <ProductBenefits />
-                        <CreditCalculator price={product.price} />
                     </div>
                 </div>
                 <ProductBulkPricing product={product} />

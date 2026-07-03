@@ -1,14 +1,12 @@
 import React from 'react';
 import { ProductPrice } from '@/components/ProductPrice';
 import { ProductStock } from '@/components/ProductStock';
-import { CreditCalculator } from '@/components/CreditCalculator';
 
 interface ProductPricesProps {
     price: number;
     oldPrice?: number;
     priceLocale: string;
     stock: number;
-    creditPrice: number;
     productId: string;
     productTitle: string;
 }
@@ -18,7 +16,6 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
     oldPrice,
     priceLocale,
     stock,
-    creditPrice,
     productId,
     productTitle,
 }) => {

@@ -6,6 +6,9 @@ import { useSiteContent } from '@/lib/use-site-content'
 import { useBrandsConfig } from '@/lib/use-brands-config'
 import Link from 'next/link';
 import BrandCardSkeleton from './BrandCardSkeleton';
+import { Button } from '@/components/ui/button';
+
+const PREVIEW_MIN_BRANDS = 40;
 
 const PALETTE = [
   'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
@@ -53,6 +56,22 @@ export default function Brands() {
     [GROUPED]
   );
 
+  const GROUP_ENTRIES = React.useMemo(() => Object.entries(GROUPED), [GROUPED]);
+
+  const PREVIEW_ENTRIES = React.useMemo(() => {
+    const preview: typeof GROUP_ENTRIES = [];
+    let count = 0;
+    for (const entry of GROUP_ENTRIES) {
+      if (count >= PREVIEW_MIN_BRANDS) break;
+      preview.push(entry);
+      count += entry[1].length;
+    }
+    return preview;
+  }, [GROUP_ENTRIES]);
+
+  const visibleEntries = showAll ? GROUP_ENTRIES : PREVIEW_ENTRIES;
+  const hasMore = PREVIEW_ENTRIES.length < GROUP_ENTRIES.length;
+
   React.useEffect(() => {
     setLoading(true);
     const timeout = setTimeout(() => setLoading(false), 800);
@@ -83,29 +102,14 @@ export default function Brands() {
               ))}
         </div>
 
-        {!showAll && (
-          <button
-            className="mb-6 text-sm text-primary hover:underline sm:text-base"
-            onClick={() => setShowAll(true)}
-          >
-            {t('brands.showAll')}
-          </button>
-        )}
-
-        {showAll && (
+        {GROUP_ENTRIES.length > 0 && (
           <>
-            <div className="mb-4 flex items-baseline gap-3 sm:mb-5">
+            <div className="mb-4 sm:mb-5">
               <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.alphabeticalTitle')}</h2>
-              <button
-                className="text-sm text-primary hover:underline sm:text-base"
-                onClick={() => setShowAll(false)}
-              >
-                {t('brands.hide')}
-              </button>
             </div>
             <div className="brands__alphabetical rounded-lg bg-white p-4 sm:p-6">
               <div className="flex flex-wrap gap-3">
-                {Object.entries(GROUPED).map(([letter, letterBrands], index) => (
+                {visibleEntries.map(([letter, letterBrands], index) => (
                   <div key={letter} className={`brands__letter-group flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-3 py-2 ${COLORS[index]}`}>
                     <span className="brands__letter text-2xl font-bold text-gray-800 sm:text-3xl">{letter}</span>
                     {letterBrands.map((brand) => (
@@ -121,6 +125,21 @@ export default function Brands() {
                   </div>
                 ))}
               </div>
+              {hasMore && (
+                <div className="brands__toggle-row mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="brands__toggle"
+                    aria-expanded={showAll}
+                    onClick={() => setShowAll((prev) => !prev)}
+                  >
+                    {showAll
+                      ? t('brands.hide')
+                      : t('brands.showAllCount', t('brands.showAll'), { count: brands.length })}
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         )}

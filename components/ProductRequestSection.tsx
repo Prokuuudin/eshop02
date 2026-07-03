@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import Script from 'next/script'
-import { PackageSearch, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,11 +39,6 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
       renderTurnstile()
     }
   }, [expanded, renderTurnstile])
-
-  const benefits = [
-    { id: 'search', icon: PackageSearch, text: t('home.productRequest.benefitSearch') },
-    { id: 'order', icon: Truck, text: t('home.productRequest.benefitOrder') }
-  ]
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -119,48 +113,32 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
       )}
       <div className={embedded ? 'product-request__container' : 'product-request__container max-w-6xl mx-auto px-4'}>
-        <div className="product-request__layout grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          <div className="product-request__content">
-            <h2 className="product-request__title text-2xl font-semibold text-foreground mb-2">
-              {t('home.productRequest.title')}
-            </h2>
-            <p className="product-request__subtitle text-sm text-muted-foreground mb-6">
-              {t('home.productRequest.subtitle')}
-            </p>
-            <ul className="product-request__benefits space-y-4">
-              {benefits.map((benefit) => (
-                <li key={benefit.id} className="product-request__benefit flex items-start gap-3">
-                  <span className="product-request__benefit-icon w-10 h-10 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <benefit.icon className="w-5 h-5" aria-hidden="true" />
-                  </span>
-                  <span className="product-request__benefit-text text-sm text-foreground pt-2.5">
-                    {benefit.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="product-request__banner rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <h2 className="product-request__title text-lg md:text-xl font-bold uppercase tracking-wide text-white text-center md:text-left">
+            {t('home.productRequest.title')}{' '}
+            <span className="product-request__title-accent text-amber-300">
+              {t('home.productRequest.titleAccent')}
+            </span>
+          </h2>
+          <Button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls="product-request-card"
+            className="product-request__open shrink-0 rounded-full border border-white bg-transparent text-white hover:bg-white/10 uppercase tracking-wide px-6"
+            onClick={() => setExpanded((prev) => !prev)}
+          >
+            {t('home.productRequest.open')}
+          </Button>
+        </div>
 
-          <div className="product-request__card rounded-lg border bg-card p-4 md:p-6">
+        {expanded && (
+          <div id="product-request-card" className="product-request__card rounded-lg border bg-card p-4 md:p-6 mt-4">
             {submitted ? (
               <div
                 aria-live="polite"
                 className="product-request__success bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4 rounded text-green-700 dark:text-green-200"
               >
                 ✓ {t('home.productRequest.success')}
-              </div>
-            ) : !expanded ? (
-              <div className="product-request__cta flex flex-col items-start gap-3">
-                <p className="product-request__cta-hint text-sm text-muted-foreground">
-                  {t('home.productRequest.openHint')}
-                </p>
-                <Button
-                  type="button"
-                  className="product-request__open w-full sm:w-auto"
-                  onClick={() => setExpanded(true)}
-                >
-                  {t('home.productRequest.open')}
-                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="product-request__form space-y-4">
@@ -276,7 +254,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
               </form>
             )}
           </div>
-        </div>
+        )}
       </div>
     </section>
   )

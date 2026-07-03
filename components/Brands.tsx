@@ -8,7 +8,13 @@ import Link from 'next/link';
 import BrandCardSkeleton from './BrandCardSkeleton';
 import { Button } from '@/components/ui/button';
 
-const COLLAPSED_MAX_HEIGHT = 360;
+const COLLAPSED_MAX_HEIGHT = 240;
+
+const LETTER_PALETTE = [
+  'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
+  'bg-green-50', 'bg-teal-50', 'bg-cyan-50', 'bg-sky-50', 'bg-blue-50',
+  'bg-primary/5', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
+];
 
 export default function Brands() {
   const { t, language } = useTranslation();
@@ -90,9 +96,9 @@ export default function Brands() {
                   className={`brands__list flex flex-wrap gap-x-8 gap-y-2 ${showAll ? '' : 'overflow-hidden'}`}
                   style={showAll ? undefined : { maxHeight: COLLAPSED_MAX_HEIGHT }}
                 >
-                  {GROUP_ENTRIES.map(([letter, letterBrands]) => (
-                    <div key={letter} className="brands__letter-group flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="brands__letter text-lg font-bold text-gray-900 sm:text-xl">{letter}</span>
+                  {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
+                    <div key={letter} className="brands__letter-group flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className={`brands__letter inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-bold text-gray-800 ${LETTER_PALETTE[index % LETTER_PALETTE.length]}`}>{letter}</span>
                       {letterBrands.map((brand) => (
                         <Link
                           key={brand.id}
@@ -114,7 +120,7 @@ export default function Brands() {
                 )}
               </div>
               {hasOverflow && (
-                <div className="brands__toggle-row mt-4 flex justify-center">
+                <div className={`brands__toggle-row relative flex justify-center ${showAll ? 'mt-4' : '-mt-6'}`}>
                   <Button
                     variant="outline"
                     size="sm"

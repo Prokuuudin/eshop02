@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Script from 'next/script'
-import { PackageSearch, Truck, Headset } from 'lucide-react'
+import { PackageSearch, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -43,8 +43,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
 
   const benefits = [
     { id: 'search', icon: PackageSearch, text: t('home.productRequest.benefitSearch') },
-    { id: 'order', icon: Truck, text: t('home.productRequest.benefitOrder') },
-    { id: 'reply', icon: Headset, text: t('home.productRequest.benefitReply') }
+    { id: 'order', icon: Truck, text: t('home.productRequest.benefitOrder') }
   ]
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

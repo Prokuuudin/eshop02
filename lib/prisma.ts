@@ -1,6 +1,10 @@
-import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { neonConfig } from '@neondatabase/serverless'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import ws from 'ws'
 import { PrismaClient } from '../generated/prisma/client'
+
+// WebSocket через 443 вместо TCP 5432 — не режется VPN/файрволами
+neonConfig.webSocketConstructor = ws
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
@@ -15,8 +19,7 @@ function getDbUrl(): string {
 }
 
 function createPrismaClient() {
-  const pool = new Pool({ connectionString: getDbUrl() })
-  const adapter = new PrismaPg(pool)
+  const adapter = new PrismaNeon({ connectionString: getDbUrl() })
   return new PrismaClient({ adapter })
 }
 

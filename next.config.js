@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    // ws нельзя бандлить: webpack ломает его optional-нативы (bufferutil) → TypeError bufferUtil.mask
+    serverExternalPackages: ['ws', '@neondatabase/serverless'],
     // experimental: {},
     images: {
         remotePatterns: [

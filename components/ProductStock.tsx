@@ -29,9 +29,7 @@ export const ProductStock: React.FC<ProductStockProps> = ({ stock, productId, pr
     }
     return (
         <div className="product-detail__stock mt-4 p-3 rounded bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
-            <p className="text-green-600 font-medium">
-                {t('product.inStock')}: {stock} {t('product.pcs')}
-            </p>
+            <p className="text-green-600 font-medium">{t('product.inStock')}</p>
         </div>
     );
 };

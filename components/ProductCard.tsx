@@ -124,12 +124,14 @@ export default function ProductCard({ product }: Props) {
                         )}
                     </div>
 
-                    <div
-                        className="product-card__rating text-sm text-yellow-500"
-                        aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
-                    >
-                        {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
-                    </div>
+                    {product.rating > 0 && (
+                        <div
+                            className="product-card__rating text-sm text-yellow-500"
+                            aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
+                        >
+                            {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="product-card__badges mt-2 flex flex-wrap gap-2 mb-3 max-w-full overflow-hidden">

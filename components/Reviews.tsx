@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RatingDisplay from "./RatingDisplay";
 import { formatDate, getLocaleFromLanguage } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
 
 type ReviewsProps = {
   productId: string;
@@ -69,6 +70,17 @@ export default function Reviews({ productId }: ReviewsProps) {
     void loadReviews();
   }, [productId]);
 
+  // Для залогиненного юзера имя берётся из профиля (сервер всё равно
+  // перезапишет автора именем из сессии — см. POST /api/reviews)
+  const [lockedAuthor, setLockedAuthor] = useState<string | null>(null);
+  useEffect(() => {
+    const name = getCurrentUser()?.name?.trim();
+    if (name) {
+      setLockedAuthor(name);
+      setFormData((prev) => ({ ...prev, author: name }));
+    }
+  }, []);
+
   const getBasedOnLabel = (count: number): string => {
     if (language === 'ru') {
       const key = count % 10 === 1 && count % 100 !== 11 ? 'reviews.basedOnOne' : 'reviews.basedOnMany'
@@ -113,12 +125,11 @@ export default function Reviews({ productId }: ReviewsProps) {
         if (!response.ok) throw new Error('failed-to-submit-review');
 
         setSubmitted(true);
-        setFormData({ author: "", rating: 5, title: "", text: "" });
-        await loadReviews();
+        setFormData({ author: lockedAuthor ?? "", rating: 5, title: "", text: "" });
         setTimeout(() => {
           setShowForm(false);
           setSubmitted(false);
-        }, 2000);
+        }, 4000);
       } catch {
         setSubmitted(false);
       }
@@ -194,6 +205,7 @@ export default function Reviews({ productId }: ReviewsProps) {
                   onChange={handleChange}
                   placeholder={t("reviews.namePlaceholder")}
                   className="bg-card border-border text-foreground"
+                  disabled={Boolean(lockedAuthor)}
                 />
               </div>
               <div>

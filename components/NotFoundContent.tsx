@@ -81,10 +81,12 @@ export default function NotFoundContent() {
                                         <span className="text-primary font-bold">
                                             {formatEuro(product.price, locale)}
                                         </span>
-                                        <span className="text-xs text-yellow-500">
-                                            ★ {t('notFound.rating', 'Rating')}{' '}
-                                            {product.rating.toFixed(1)}
-                                        </span>
+                                        {product.rating > 0 && (
+                                            <span className="text-xs text-yellow-500">
+                                                ★ {t('notFound.rating', 'Rating')}{' '}
+                                                {product.rating.toFixed(1)}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </Link>

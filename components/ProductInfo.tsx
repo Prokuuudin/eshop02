@@ -48,7 +48,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <ProductTitle title={stripBrandPrefix(localizedTitle, product.brand)} />
             <ProductCodes sku={product.sku} barcode={product.barcode} />
             <ProductBadges badges={product.badges} />
-            <ProductRating rating={product.rating} count={ratingCount} />
+            {ratingCount > 0 && <ProductRating rating={product.rating} count={ratingCount} />}
             {variantGroups && variantGroups.length > 0 && (
                 <ProductVariantSelector
                     groups={variantGroups}

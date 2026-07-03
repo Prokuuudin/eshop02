@@ -51,6 +51,15 @@ export const getAllReviews = async (): Promise<ReviewRecord[]> => {
   return rows.map(mapDbToReview)
 }
 
+export const getReviewsByAuthor = async (author: string): Promise<ReviewRecord[]> => {
+  const rows = await prisma.review.findMany({
+    where: { author },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  })
+  return rows.map(mapDbToReview)
+}
+
 export const getProductPublicReviews = async (productId: string): Promise<ReviewRecord[]> => {
   const rows = await prisma.review.findMany({
     where: { productId, status: 'approved' },
@@ -79,6 +88,22 @@ export const getProductReviewStats = async (
   return { averageRating, count: reviews.length, distribution }
 }
 
+// Денормализованные Product.rating/ratingCount/reviewCount читает витрина
+// (карточки каталога, шапка товара) — пересчитываем при любой мутации отзывов.
+export const recomputeProductRating = async (productId: string): Promise<void> => {
+  const agg = await prisma.review.aggregate({
+    where: { productId, status: 'approved' },
+    _avg: { rating: true },
+    _count: true,
+  })
+  const count = agg._count
+  const rating = count > 0 ? Math.round((agg._avg.rating ?? 0) * 100) / 100 : 0
+  await prisma.product.updateMany({
+    where: { id: productId },
+    data: { rating, ratingCount: count, reviewCount: count },
+  })
+}
+
 export const createReview = async (input: CreateReviewInput): Promise<ReviewRecord> => {
   const row = await prisma.review.create({
     data: {
@@ -90,7 +115,7 @@ export const createReview = async (input: CreateReviewInput): Promise<ReviewReco
       text: input.text,
       createdAt: new Date(),
       helpful: 0,
-      status: 'approved',
+      status: 'pending',
     },
   })
   return mapDbToReview(row)
@@ -111,6 +136,7 @@ export const updateReviewStatus = async (reviewId: string, status: ReviewModerat
   const existing = await prisma.review.findUnique({ where: { id: reviewId } })
   if (!existing) return false
   await prisma.review.update({ where: { id: reviewId }, data: { status } })
+  await recomputeProductRating(existing.productId)
   return true
 }
 
@@ -135,5 +161,6 @@ export const deleteReview = async (reviewId: string): Promise<boolean> => {
   const existing = await prisma.review.findUnique({ where: { id: reviewId } })
   if (!existing) return false
   await prisma.review.delete({ where: { id: reviewId } })
+  await recomputeProductRating(existing.productId)
   return true
 }

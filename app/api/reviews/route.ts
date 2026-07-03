@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { createReview, getProductPublicReviews, getProductReviewStats } from '@/lib/reviews-data-store'
+import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -36,7 +37,10 @@ export async function POST(req: NextRequest) {
     }
 
     const productId = body.productId?.trim()
-    const author = body.author?.trim() || 'Anonymous'
+    // Автор из сессии, если юзер залогинен — по этому имени /api/reviews/my
+    // находит отзывы в кабинете (у Review нет userId)
+    const sessionUser = await getServerUser()
+    const author = sessionUser?.name?.trim() || body.author?.trim() || 'Anonymous'
     const title = body.title?.trim()
     const text = body.text?.trim()
     const rating = Number(body.rating)

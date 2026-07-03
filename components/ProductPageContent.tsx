@@ -46,7 +46,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
     const recentViews = getRecentViews(4);
 
     const minOrderQuantity = getMinimumOrderQuantity(product);
-    const ratingCount = product.ratingCount ?? product.reviewCount ?? 127;
+    const ratingCount = product.ratingCount ?? product.reviewCount ?? 0;
 
     // Track view
     useEffect(() => {

@@ -21,7 +21,7 @@ export default function RatingDisplay({ rating, count, showLabel = true }: Ratin
       </div>
       {showLabel && (
         <span className="text-sm text-gray-600">
-          {rating.toFixed(1)} {count && `(${count})`}
+          {rating.toFixed(1)}{count ? ` (${count})` : ''}
         </span>
       )}
     </div>

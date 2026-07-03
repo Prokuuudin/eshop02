@@ -55,7 +55,7 @@ describe('POST /api/orders — admin notification', () => {
     vi.mocked(createOrUpdateServerOrder).mockResolvedValue(undefined as never)
     vi.mocked(getTemplates).mockResolvedValue([])
     vi.mocked(recomputeOrderPricing).mockResolvedValue({
-      items: [{ id: 'p1', price: 25, quantity: 2 }],
+      items: [{ id: 'p1', price: 25, quantity: 2, bonusRate: 0, fromCatalog: true }],
       subtotal: 50,
       discount: 0,
       tax: 9,

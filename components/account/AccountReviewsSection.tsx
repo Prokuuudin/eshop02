@@ -1,11 +1,23 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Star, MessageSquare, ChevronRight } from 'lucide-react';
-import { useReviews } from '@/lib/reviews-store';
-import { getCurrentUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
+
+type ReviewStatus = 'approved' | 'hidden' | 'pending';
+
+type ReviewItem = {
+    id: string;
+    productId: string;
+    author: string;
+    rating: number;
+    title: string;
+    text: string;
+    createdAt: string;
+    helpful: number;
+    status: ReviewStatus;
+};
 
 function StarRow({ rating }: { rating: number }) {
     return (
@@ -22,25 +34,47 @@ function StarRow({ rating }: { rating: number }) {
 
 export const AccountReviewsSection: React.FC = () => {
     const { t } = useTranslation();
-    const allReviews = useReviews((s) => s.reviews);
-    const [userName, setUserName] = useState<string | null>(null);
+    const [userReviews, setUserReviews] = useState<ReviewItem[]>([]);
 
     useEffect(() => {
-        const user = getCurrentUser();
-        setUserName(user?.name ?? user?.email ?? null);
+        let cancelled = false;
+        void (async () => {
+            try {
+                const response = await fetch('/api/reviews/my', { cache: 'no-store' });
+                if (!response.ok) return;
+                const payload = (await response.json()) as { data?: { reviews?: ReviewItem[] } };
+                if (!cancelled) setUserReviews(payload.data?.reviews ?? []);
+            } catch {
+                // Секция просто не показывается, если отзывы не загрузились.
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
-
-    const userReviews = useMemo(() => {
-        if (!userName) return [];
-        return allReviews
-            .filter((r) => r.author === userName)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [allReviews, userName]);
 
     if (userReviews.length === 0) return null;
 
     const avgRating =
         Math.round((userReviews.reduce((s, r) => s + r.rating, 0) / userReviews.length) * 10) / 10;
+
+    const statusBadge = (status: ReviewStatus) => {
+        if (status === 'pending') {
+            return (
+                <span className="shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                    {t('account.reviews.pending', 'На модерации')}
+                </span>
+            );
+        }
+        if (status === 'hidden') {
+            return (
+                <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    {t('account.reviews.hidden', 'Скрыт')}
+                </span>
+            );
+        }
+        return null;
+    };
 
     return (
         <section className="rounded-2xl border border-amber-100 bg-white shadow-sm dark:border-amber-900/50 dark:bg-gray-900">
@@ -75,6 +109,7 @@ export const AccountReviewsSection: React.FC = () => {
                                         <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
                                             {review.title}
                                         </p>
+                                        {statusBadge(review.status)}
                                     </div>
                                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                                         {review.text}

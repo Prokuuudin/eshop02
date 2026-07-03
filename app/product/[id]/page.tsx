@@ -21,13 +21,6 @@ const interpolate = (template: string, params: Record<string, string>): string =
 export const revalidate = 3600;
 const DEFAULT_METADATA_LANGUAGE: Language = 'en';
 
-export async function generateStaticParams(): Promise<Array<{ id: string }>> {
-    const products = await getMergedProducts();
-    return products.map((p) => ({
-        id: p.id,
-    }));
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { id } = await params;
     const t = translations[DEFAULT_METADATA_LANGUAGE];

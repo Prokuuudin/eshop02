@@ -10,27 +10,6 @@ import { Button } from '@/components/ui/button';
 
 const COLLAPSED_MAX_HEIGHT = 360;
 
-const PALETTE = [
-  'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
-  'bg-green-50', 'bg-teal-50', 'bg-cyan-50', 'bg-sky-50', 'bg-blue-50',
-  'bg-primary/5', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
-];
-
-function buildColorSequence(count: number): string[] {
-  const result: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const prev = result[i - 1];
-    for (let j = 0; j < PALETTE.length; j++) {
-      const candidate = PALETTE[(i + j) % PALETTE.length];
-      if (candidate !== prev) {
-        result.push(candidate);
-        break;
-      }
-    }
-  }
-  return result;
-}
-
 export default function Brands() {
   const { t, language } = useTranslation();
   const { resolveImageSrc } = useSiteContent();
@@ -50,11 +29,6 @@ export default function Brands() {
     }
     return groups;
   }, [brands, language]);
-
-  const COLORS = React.useMemo(
-    () => buildColorSequence(Object.keys(GROUPED).length),
-    [GROUPED]
-  );
 
   const GROUP_ENTRIES = React.useMemo(() => Object.entries(GROUPED), [GROUPED]);
 
@@ -104,18 +78,21 @@ export default function Brands() {
         {GROUP_ENTRIES.length > 0 && (
           <>
             <div className="mb-4 sm:mb-5">
-              <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.alphabeticalTitle')}</h2>
+              <h2 className="brands__title text-xl font-semibold sm:text-2xl">
+                {t('brands.alphabeticalTitle')}{' '}
+                <span className="brands__count font-normal text-muted-foreground">({brands.length})</span>
+              </h2>
             </div>
             <div className="brands__alphabetical rounded-lg bg-white p-4 sm:p-6">
               <div className="brands__list-clip relative">
                 <div
                   ref={listRef}
-                  className={`brands__list flex flex-wrap gap-3 ${showAll ? '' : 'overflow-hidden'}`}
+                  className={`brands__list flex flex-wrap gap-x-8 gap-y-2 ${showAll ? '' : 'overflow-hidden'}`}
                   style={showAll ? undefined : { maxHeight: COLLAPSED_MAX_HEIGHT }}
                 >
-                  {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
-                    <div key={letter} className={`brands__letter-group flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg px-3 py-2 ${COLORS[index]}`}>
-                      <span className="brands__letter text-2xl font-bold text-gray-800 sm:text-3xl">{letter}</span>
+                  {GROUP_ENTRIES.map(([letter, letterBrands]) => (
+                    <div key={letter} className="brands__letter-group flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="brands__letter text-lg font-bold text-gray-900 sm:text-xl">{letter}</span>
                       {letterBrands.map((brand) => (
                         <Link
                           key={brand.id}
@@ -145,9 +122,7 @@ export default function Brands() {
                     aria-expanded={showAll}
                     onClick={() => setShowAll((prev) => !prev)}
                   >
-                    {showAll
-                      ? t('brands.hide')
-                      : t('brands.showAllCount', t('brands.showAll'), { count: brands.length })}
+                    {showAll ? t('brands.hide') : t('brands.more')}
                   </Button>
                 </div>
               )}

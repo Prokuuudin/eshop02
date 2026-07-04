@@ -825,6 +825,11 @@ export default function CheckoutPage() {
                                             </span>
                                         )}
                                         +{adjustedBonusToEarn} {t('cart.bonus.unit')}
+                                        {adjustedBonusToEarn > 0 && (
+                                            <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                                                (= −{formatCurrency(pointsToEuros(adjustedBonusToEarn))})
+                                            </span>
+                                        )}
                                     </span>
                                 </div>
                                 {bonusApplicable && (

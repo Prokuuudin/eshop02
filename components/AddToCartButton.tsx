@@ -20,9 +20,11 @@ type Props = {
    * массив (возможно пустой) = селектор есть (страница товара), это его текущее значение.
    */
   selectedVariants?: SelectedVariant[]
+  /** Родитель хочет знать выбранное количество (бонус-блок на странице товара). */
+  onQuantityChange?: (quantity: number) => void
 }
 
-export default function AddToCartButton({ product, selectedVariants }: Props) {
+export default function AddToCartButton({ product, selectedVariants, onQuantityChange }: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -72,6 +74,10 @@ export default function AddToCartButton({ product, selectedVariants }: Props) {
   useEffect(() => {
     setQuantity((prev) => Math.max(prev, minOrderQuantity))
   }, [minOrderQuantity])
+
+  useEffect(() => {
+    onQuantityChange?.(quantity)
+  }, [quantity, onQuantityChange])
 
   const handleAdd = (): void => {
     if (!isAuthenticated) {

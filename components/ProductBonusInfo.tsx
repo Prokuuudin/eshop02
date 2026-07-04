@@ -4,30 +4,42 @@ import { Star } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
-import { DEFAULT_BONUS_PROGRAM_CONFIG, calcOrderBonus } from '@/lib/bonus-program';
+import {
+    DEFAULT_BONUS_PROGRAM_CONFIG,
+    calcOrderBonus,
+    pointsToEuros,
+} from '@/lib/bonus-program';
+import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { Product } from '@/data/products';
 
 interface ProductBonusInfoProps {
     product: Product;
+    /** Количество из степпера AddToCartButton — начисление считается за выбранный объём. */
+    quantity?: number;
+    /** Цена единицы с учётом выбранных вариантов; по умолчанию базовая цена товара. */
+    unitPrice?: number;
 }
 
 /**
- * Бонусы клиента над кнопкой «в корзину»: баланс + правило начисления.
- * Гостям не показывается (они не видят и цен); процент — из DEFAULT-конфига,
- * тот же, что использует серверное начисление.
+ * Бонусы клиента над кнопкой «в корзину»: баланс + начисление за выбранное
+ * количество с евро-эквивалентом экономии. Гостям не показывается (они не
+ * видят и цен); курс и процент — те же, что в серверном начислении.
  */
-export default function ProductBonusInfo({ product }: ProductBonusInfoProps) {
-    const { t } = useTranslation();
+export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: ProductBonusInfoProps) {
+    const { t, language } = useTranslation();
     const user = useAuthStore((s) => s.user);
     const isHydrated = useAuthStore((s) => s.isHydrated);
     const bonusProgramEnabled = useAdminStore((s) => s.bonusProgram.enabled);
 
     if (!isHydrated || !user || !bonusProgramEnabled) return null;
 
-    // Баллы за единицу: явный bonusRate или 0.5% цены по курсу 1 балл = 1 цент.
-    const perUnitPoints = calcOrderBonus([
-        { price: product.price, quantity: 1, bonusRate: product.bonusRate },
+    const price = unitPrice ?? product.price;
+    const safeQuantity = Math.max(1, quantity);
+    const points = calcOrderBonus([
+        { price, quantity: safeQuantity, bonusRate: product.bonusRate },
     ]);
+    const savedEuros = pointsToEuros(points);
+    const locale = getLocaleFromLanguage(language);
 
     return (
         <div className="product-detail__bonus mb-3 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
@@ -40,11 +52,14 @@ export default function ProductBonusInfo({ product }: ProductBonusInfoProps) {
                     {user.bonusPoints ?? 0} {t('cart.bonus.unit')}
                 </span>
             </div>
-            {perUnitPoints > 0 ? (
+            {points > 0 ? (
                 <div className="product-detail__bonus-earn flex items-center justify-between gap-2 text-amber-700 dark:text-amber-400">
                     <span>{t('checkout.bonus.willEarn')}</span>
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                        +{perUnitPoints} {t('cart.bonus.unit')}
+                        +{points} {t('cart.bonus.unit')}
+                        <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                            (= −{formatEuro(savedEuros, locale)})
+                        </span>
                     </span>
                 </div>
             ) : (

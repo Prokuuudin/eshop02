@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AddToCartButton from '@/components/AddToCartButton';
 import ProductBonusInfo from '@/components/ProductBonusInfo';
 import WishlistButton from '@/components/WishlistButton';
@@ -20,12 +20,17 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
     selectedVariants,
 }) => {
     const { t } = useTranslation();
+    const [quantity, setQuantity] = useState(minOrderQuantity);
     return (
         <div className="product-detail__actions mt-8">
-            <ProductBonusInfo product={product} />
+            <ProductBonusInfo product={product} quantity={quantity} unitPrice={displayPrice} />
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[220px]">
-                    <AddToCartButton product={product} selectedVariants={selectedVariants} />
+                    <AddToCartButton
+                        product={product}
+                        selectedVariants={selectedVariants}
+                        onQuantityChange={setQuantity}
+                    />
                 </div>
                 <WishlistButton product={product} asButton />
             </div>

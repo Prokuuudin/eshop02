@@ -22,7 +22,7 @@ import {
     getMinimumOrderQuantity,
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
-import { calcOrderBonus } from '@/lib/bonus-program';
+import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
 import AnimatedPrice from '@/components/AnimatedPrice';
 
 export default function CartPage() {
@@ -332,7 +332,14 @@ export default function CartPage() {
                                 </div>
                                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
                                     <span>{t('checkout.bonus.willEarn')}</span>
-                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{bonusToEarn} {t('cart.bonus.unit')}</span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                        +{bonusToEarn} {t('cart.bonus.unit')}
+                                        {bonusToEarn > 0 && (
+                                            <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                                                (= −{formatEuro(pointsToEuros(bonusToEarn), getLocaleFromLanguage(language))})
+                                            </span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                         )}

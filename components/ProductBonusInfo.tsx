@@ -4,7 +4,7 @@ import { Star } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
-import { DEFAULT_BONUS_PROGRAM_CONFIG } from '@/lib/bonus-program';
+import { DEFAULT_BONUS_PROGRAM_CONFIG, calcOrderBonus } from '@/lib/bonus-program';
 import { Product } from '@/data/products';
 
 interface ProductBonusInfoProps {
@@ -24,7 +24,10 @@ export default function ProductBonusInfo({ product }: ProductBonusInfoProps) {
 
     if (!isHydrated || !user || !bonusProgramEnabled) return null;
 
-    const bonusRate = product.bonusRate ?? 0;
+    // Баллы за единицу: явный bonusRate или 0.5% цены по курсу 1 балл = 1 цент.
+    const perUnitPoints = calcOrderBonus([
+        { price: product.price, quantity: 1, bonusRate: product.bonusRate },
+    ]);
 
     return (
         <div className="product-detail__bonus mb-3 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
@@ -37,11 +40,11 @@ export default function ProductBonusInfo({ product }: ProductBonusInfoProps) {
                     {user.bonusPoints ?? 0} {t('cart.bonus.unit')}
                 </span>
             </div>
-            {bonusRate > 0 ? (
+            {perUnitPoints > 0 ? (
                 <div className="product-detail__bonus-earn flex items-center justify-between gap-2 text-amber-700 dark:text-amber-400">
                     <span>{t('checkout.bonus.willEarn')}</span>
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                        +{bonusRate} {t('cart.bonus.unit')}
+                        +{perUnitPoints} {t('cart.bonus.unit')}
                     </span>
                 </div>
             ) : (

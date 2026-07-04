@@ -775,3 +775,24 @@ export const adjustUserBonusPoints = (
 
   return { success: true, newBalance }
 }
+
+// Подтянуть баланс баллов из БД в localStorage — сервер сам дебетует/кредитует
+// его при создании заказа, клиенту начислять напрямую запрещено (403 на положительную дельту).
+export const syncBonusBalanceFromServer = async (): Promise<void> => {
+  try {
+    const res = await fetch('/api/user/bonus')
+    if (!res.ok) return
+    const { bonusPoints } = (await res.json()) as { bonusPoints?: number }
+    const current = getCurrentUser()
+    if (!current || typeof bonusPoints !== 'number') return
+
+    const users = readUsers()
+    const idx = users.findIndex((u) => u.id === current.id)
+    if (idx !== -1) {
+      users[idx] = { ...users[idx], bonusPoints }
+      writeUsers(users)
+    }
+    writeCurrentUser({ ...current, bonusPoints })
+    notifyAuthChanged()
+  } catch { /* ignore — баланс подтянется на странице аккаунта */ }
+}

@@ -131,6 +131,22 @@ export const createOrUpdateServerOrder = async (order: ServerOrder): Promise<Ser
         })
       }
 
+      // Apply bonus balance changes once, at creation: spent points debit, earned points credit.
+      // Values are already recomputed and capped server-side (recomputeOrderPricing).
+      const bonusDelta = (order.bonusEarned ?? 0) - (order.bonusSpent ?? 0)
+      if (order.userId && bonusDelta !== 0) {
+        const user = await tx.user.findUnique({
+          where: { id: order.userId },
+          select: { bonusPoints: true },
+        })
+        if (user) {
+          await tx.user.update({
+            where: { id: order.userId },
+            data: { bonusPoints: Math.max(0, user.bonusPoints + bonusDelta) },
+          })
+        }
+      }
+
       return created
     })
   }

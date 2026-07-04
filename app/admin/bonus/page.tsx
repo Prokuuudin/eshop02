@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAdminStore } from '@/lib/admin-store'
 import { useOrders } from '@/lib/orders-store'
 import { readUsers, adjustUserBonusPoints, type User } from '@/lib/auth'
+import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
 
@@ -73,9 +74,11 @@ export default function AdminBonusPage() {
     : users
 
   const calcAmount = parseFloat(calcOrder) || 0
-  const calcEarned = Math.floor(calcAmount * (draft.earnRatePercent / 100))
+  // Баллы: евро-эквивалент по курсу 1 балл = 1 цент
+  const calcEarned = eurosToPoints(calcAmount * (draft.earnRatePercent / 100))
   const calcEarnedCapped = draft.maxEarnPerOrder > 0 ? Math.min(calcEarned, draft.maxEarnPerOrder) : calcEarned
   const calcEligible = calcAmount >= draft.minOrderForEarn
+  const calcMaxSpend = eurosToPoints(calcAmount * (draft.maxSpendPercent / 100))
 
   const segments = [
     { label: '0 баллов',  range: (p: number) => p === 0             },
@@ -240,15 +243,15 @@ export default function AdminBonusPage() {
                           )}
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} баллов{draft.maxEarnPerOrder > 0 ? `, лимит ${draft.maxEarnPerOrder} баллов` : ''}
+                          €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} баллов (1 балл = 1 цент){draft.maxEarnPerOrder > 0 ? `, лимит ${draft.maxEarnPerOrder} баллов` : ''}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-700 dark:text-gray-300 font-medium">
-                          Макс. списать: <strong>{Math.floor(calcAmount * (draft.maxSpendPercent / 100))} баллов</strong>
+                          Макс. списать: <strong>{calcMaxSpend} баллов</strong> (−€{pointsToEuros(calcMaxSpend).toFixed(2)})
                         </p>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          €{calcAmount} × {draft.maxSpendPercent}% = {Math.floor(calcAmount * (draft.maxSpendPercent / 100))} баллов
+                          €{calcAmount} × {draft.maxSpendPercent}% = {calcMaxSpend} баллов, 1 балл = 1 цент
                           {draft.minPointsToSpend > 0 && ` · минимум на балансе для списания: ${draft.minPointsToSpend} баллов`}
                         </p>
                       </div>

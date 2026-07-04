@@ -15,9 +15,9 @@ import { extractVat } from '@/lib/tax';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
-import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
+import { canPlaceOrders, getCurrentUser, syncBonusBalanceFromServer } from '@/lib/auth';
 import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation';
-import { calcOrderBonus } from '@/lib/bonus-program';
+import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program';
 import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
@@ -245,9 +245,11 @@ export default function CheckoutPage() {
         // Catalog prices already include VAT — taxAmount is informational, not added to the total.
         const taxAmount = extractVat(subtotalAfterDiscount);
         const grandTotal = subtotalAfterDiscount + deliveryFee;
-        const bonusDiscount = bonusApplied
-            ? Math.min(currentUser?.bonusPoints ?? 0, Math.round(grandTotal * bonusProgram.maxSpendPercent / 100))
+        // Списание в баллах (1 балл = 1 цент); скидка — его евро-эквивалент.
+        const bonusSpentPoints = bonusApplied
+            ? Math.min(currentUser?.bonusPoints ?? 0, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
             : 0;
+        const bonusDiscount = pointsToEuros(bonusSpentPoints);
         const finalGrandTotal = grandTotal - bonusDiscount;
 
         // Create order
@@ -266,7 +268,7 @@ export default function CheckoutPage() {
             promoCode: appliedPromo,
             discount,
             total: finalGrandTotal,
-            bonusSpent: bonusDiscount > 0 ? bonusDiscount : undefined,
+            bonusSpent: bonusSpentPoints > 0 ? bonusSpentPoints : undefined,
             paymentStatus: (formData.paymentMethod === 'card'
                 ? 'pending'
                 : 'unpaid') as import('@/lib/orders-store').PaymentStatus,
@@ -295,6 +297,11 @@ export default function CheckoutPage() {
             });
         } catch {
             // Checkout should still proceed even if server order persistence is temporarily unavailable.
+        }
+
+        // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
+        if (currentUser) {
+            await syncBonusBalanceFromServer();
         }
 
         let stripeCheckoutUrl: string | undefined;
@@ -474,9 +481,11 @@ export default function CheckoutPage() {
         }))
     );
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
-    const maxBonusDiscount = bonusApplicable
-        ? Math.min(userBonusBalance, Math.round(grandTotal * bonusProgram.maxSpendPercent / 100))
+    // Потолок списания в баллах (1 балл = 1 цент); в € — для строк итога.
+    const maxBonusSpendPoints = bonusApplicable
+        ? Math.min(userBonusBalance, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
         : 0;
+    const maxBonusDiscount = pointsToEuros(maxBonusSpendPoints);
     const bonusDiscount = bonusApplied ? maxBonusDiscount : 0;
     const finalGrandTotal = grandTotal - bonusDiscount;
     const adjustedBonusToEarn = grandTotal > 0 && bonusApplied

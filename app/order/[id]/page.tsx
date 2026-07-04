@@ -8,6 +8,7 @@ import { useOrders } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
+import { pointsToEuros } from '@/lib/bonus-program';
 
 type PageProps = {
     params: Promise<{
@@ -557,7 +558,7 @@ export default function OrderPage({ params }: PageProps) {
                                     <div className="flex justify-between text-green-600 dark:text-green-300">
                                         <span>{t('order.bonusSpent')}:</span>
                                         <span className="font-medium">
-                                            -{formatCurrency(order.bonusSpent ?? 0)}
+                                            -{formatCurrency(pointsToEuros(order.bonusSpent ?? 0))}
                                         </span>
                                     </div>
                                 )}

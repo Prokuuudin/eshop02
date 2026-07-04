@@ -1,5 +1,6 @@
 import React from 'react';
 import AddToCartButton from '@/components/AddToCartButton';
+import ProductBonusInfo from '@/components/ProductBonusInfo';
 import WishlistButton from '@/components/WishlistButton';
 import { SubscriptionWidget } from '@/components/SubscriptionWidget';
 import { useTranslation } from '@/lib/use-translation';
@@ -21,6 +22,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
     const { t } = useTranslation();
     return (
         <div className="product-detail__actions mt-8">
+            <ProductBonusInfo product={product} />
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[220px]">
                     <AddToCartButton product={product} selectedVariants={selectedVariants} />

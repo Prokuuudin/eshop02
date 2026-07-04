@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { calculateDiscount } from '@/lib/promo-codes'
 import { extractVat } from '@/lib/tax'
-import { calcOrderBonus } from '@/lib/bonus-program'
+import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
@@ -143,11 +143,12 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
   const grandTotal = subtotal - discount + delivery
 
   // Bonus can only be spent by an authenticated user, capped by real balance and the order total.
+  // bonusSpent is in points (1 point = BONUS_POINT_VALUE_EUR); the discount is its euro value.
   const balance = typeof input.userBonusBalance === 'number' ? Math.max(0, input.userBonusBalance) : 0
   const requested = Math.max(0, Math.round(Number(input.bonusSpent) || 0))
-  const bonusSpent = Math.min(requested, balance, Math.max(0, grandTotal))
+  const bonusSpent = Math.min(requested, balance, eurosToPoints(Math.max(0, grandTotal)))
 
-  const total = Math.max(0, grandTotal - bonusSpent)
+  const total = Math.max(0, Math.round((grandTotal - pointsToEuros(bonusSpent)) * 100) / 100)
 
   // Points earned: catalog bonusRate per unit when set, otherwise the program percent of the
   // item subtotal (same calcOrderBonus as cart/checkout display). Scaled down proportionally

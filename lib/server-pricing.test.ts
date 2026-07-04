@@ -111,7 +111,7 @@ describe('recomputeOrderPricing', () => {
     expect(r.bonusSpent).toBe(0)
   })
 
-  it('caps bonus spend at the real user balance', async () => {
+  it('caps bonus spend at the real user balance; discount is points * point value', async () => {
     vi.mocked(prisma.product.findMany as any).mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
@@ -122,8 +122,24 @@ describe('recomputeOrderPricing', () => {
       bonusSpent: 9999,
       userBonusBalance: 300,
     })
-    expect(r.bonusSpent).toBe(300)
-    expect(r.total).toBe(1000 + 500 - 300) // tax already included in the 1000, not added
+    expect(r.bonusSpent).toBe(300) // points
+    expect(r.total).toBe(1000 + 500 - 3) // 300 points = €3.00
+  })
+
+  it('caps bonus spend at the order total converted to points', async () => {
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 10, bulkPricingTiers: null },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      bonusSpent: 999999,
+      userBonusBalance: 999999,
+    })
+    expect(r.bonusSpent).toBe(1000) // €10 order = max 1000 points
+    expect(r.total).toBe(0)
   })
 
   it('computes bonusEarned from catalog bonusRate (no bonus spent)', async () => {
@@ -146,15 +162,16 @@ describe('recomputeOrderPricing', () => {
     ])
     vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
 
-    // grandTotal = 1000 (tax already included) + 0(pickup) = 1000; spend 590 -> total 410
+    // grandTotal = 1000 (pickup); spend 50000 points = €500 -> total 500
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
       deliveryMethod: 'pickup',
-      bonusSpent: 590,
-      userBonusBalance: 1000,
+      bonusSpent: 50000,
+      userBonusBalance: 50000,
     })
-    expect(r.bonusSpent).toBe(590)
-    expect(r.bonusEarned).toBe(Math.round((10 * 410) / 1000)) // base 10 scaled by total/grandTotal = 4
+    expect(r.bonusSpent).toBe(50000)
+    expect(r.total).toBe(500)
+    expect(r.bonusEarned).toBe(Math.round((10 * 500) / 1000)) // base 10 scaled = 5
   })
 
   it('falls back to 0.5% of item subtotal when bonusRate is null', async () => {
@@ -168,10 +185,10 @@ describe('recomputeOrderPricing', () => {
       deliveryMethod: 'pickup',
       userBonusBalance: null,
     })
-    expect(r.bonusEarned).toBe(1) // 0.5% of 200
+    expect(r.bonusEarned).toBe(100) // 0.5% of €200 = €1 = 100 points
   })
 
-  it('earns 0 when 0.5% of the order rounds down', async () => {
+  it('earns visible points on a small order (€60 -> 30 points)', async () => {
     vi.mocked(prisma.product.findMany as any).mockResolvedValue([
       { id: 'p1', price: 60, bulkPricingTiers: null, bonusRate: null },
     ])
@@ -182,7 +199,7 @@ describe('recomputeOrderPricing', () => {
       deliveryMethod: 'pickup',
       userBonusBalance: null,
     })
-    expect(r.bonusEarned).toBe(0) // 0.5% of 60 = 0.3 -> 0
+    expect(r.bonusEarned).toBe(30) // 0.5% of €60 = €0.30 = 30 points
   })
 
   it('mixes explicit bonusRate items with percent-fallback items', async () => {
@@ -200,7 +217,7 @@ describe('recomputeOrderPricing', () => {
       deliveryMethod: 'pickup',
       userBonusBalance: null,
     })
-    expect(r.bonusEarned).toBe(11) // 10 + 0.5% of 200
+    expect(r.bonusEarned).toBe(110) // 10 + 100 (0.5% of €200 in points)
   })
 
   it('scales fallback earn down when points are spent', async () => {
@@ -209,14 +226,14 @@ describe('recomputeOrderPricing', () => {
     ])
     vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
 
-    // base = 0.5% of 400 = 2; grandTotal 400 (pickup), spend 200 -> total 200
+    // base = 200 points; grandTotal €400 (pickup), spend 20000 points = €200 -> total €200
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
       deliveryMethod: 'pickup',
-      bonusSpent: 200,
-      userBonusBalance: 1000,
+      bonusSpent: 20000,
+      userBonusBalance: 20000,
     })
-    expect(r.bonusEarned).toBe(1) // round(2 * 200 / 400)
+    expect(r.bonusEarned).toBe(100) // round(200 * 200 / 400)
   })
 
   it('applies a valid promo discount', async () => {

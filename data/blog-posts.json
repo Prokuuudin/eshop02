@@ -1,241 +1,705 @@
 [
   {
-    "id": "post-6",
-    "slug": "spring-skin-reset-checklist",
-    "title": "Весенний reset кожи: чеклист на 10 минут в день",
-    "excerpt": "Простой план ухода на весну: как вернуть сияние, убрать сухость и не перегрузить кожу.",
-    "content": "\n# Весенний reset кожи: чеклист\n\nВесной кожа часто становится чувствительнее из-за перепадов температуры и сухого воздуха в помещениях.\n\n## Что делать каждый день\n\n1. **Мягкое очищение утром и вечером**\n2. **Увлажняющая сыворотка** (например, с гиалуроновой кислотой)\n3. **Крем по типу кожи**\n4. **SPF утром** даже в пасмурную погоду\n\n## Что делать 1-2 раза в неделю\n\n- Энзимный или мягкий кислотный пилинг\n- Успокаивающая маска\n\n## Частые ошибки весной\n\n- Резкая смена всей рутины сразу\n- Игнорирование SPF\n- Слишком агрессивное очищение\n\nГлавное правило: вводите новые средства постепенно и наблюдайте за реакцией Рожи.\n    ",
+    "id": "19",
+    "slug": "otkrylsya-internet-magazin-19",
+    "title": "Открылся интернет магазин",
+    "excerpt": "Поздравляем всех с открытием нового интернет магазина! Ассортимент товаров, предлагаемых нашей компанией насчитывает более 4500 наименований.",
+    "content": "Поздравляем всех с открытием нового интернет магазина! Ассортимент товаров, предлагаемых нашей компанией насчитывает более 4500 наименований.",
     "contentBlocks": [
       {
-        "type": "heading",
-        "level": 1,
-        "text": "Весенний reset кожи: чеклист"
-      },
-      {
         "type": "paragraph",
-        "text": "Весной кожа часто становится чувствительнее из-за перепадов температуры и сухого воздуха в помещениях."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Что делать каждый день"
-      },
-      {
-        "type": "list",
-        "ordered": true,
-        "items": [
-          "Мягкое очищение утром и вечером",
-          "Увлажняющая сыворотка (например, с гиалуроновой кислотой)",
-          "Крем по типу кожи",
-          "SPF утром даже в пасмурную погоду"
-        ]
-      },
-      {
-        "type": "image",
-        "src": "/blog/skincare-guide.jpg",
-        "alt": "Весенний уход за кожей: базовый набор средств",
-        "caption": "Базовая рутина весной должна быть мягкой и стабильной."
-      },
-      {
-        "type": "heading",
-        "level": 2,
-        "text": "Что делать 1-2 раза в неделю"
-      },
-      {
-        "type": "list",
-        "items": [
-          "Энзимный или мягкий кислотный пилинг",
-          "Успокаивающая маска"
-        ]
-      },
-      {
-        "type": "gallery",
-        "images": [
+        "text": "Поздравляем всех с открытием нового интернет магазина! Ассортимент товаров, предлагаемых нашей компанией насчитывает более 4500 наименований."
+      }
+    ],
+    "author": "Admin",
+    "image": "https://hairshop.lv/content/images/uploaded/novij-magazin.jpg",
+    "category": "blog.category.news",
+    "readTime": 1,
+    "createdAt": "2015-01-20T09:31:49.210Z",
+    "featured": false,
+    "translations": {
+      "lv": {
+        "title": "Jauns interneta veikals",
+        "excerpt": "Atvērts jauns interneta veikals! Mūsu kompānijas piedāvājamais preču sortiments ir vairāk nekā 4500 produktu nosaukumi.",
+        "content": "Atvērts jauns interneta veikals! Mūsu kompānijas piedāvājamais preču sortiments ir vairāk nekā 4500 produktu nosaukumi.",
+        "contentBlocks": [
           {
-            "src": "/blog/body-care.jpg",
-            "alt": "Домашний уход и восстановление кожи",
-            "caption": "Добавляйте мягкие восстанавливающие этапы."
-          },
-          {
-            "src": "/blog/retinol.jpg",
-            "alt": "Активные компоненты в уходе",
-            "caption": "Новые активы вводите постепенно и по одному."
+            "type": "paragraph",
+            "text": "Atvērts jauns interneta veikals! Mūsu kompānijas piedāvājamais preču sortiments ir vairāk nekā 4500 produktu nosaukumi."
           }
         ]
       },
+      "en": {
+        "title": "new online shop",
+        "excerpt": "Opened new online shop!",
+        "content": "Opened new online shop!",
+        "contentBlocks": [
+          {
+            "type": "paragraph",
+            "text": "Opened new online shop!"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "24",
+    "slug": "uhod-za-volosami-v-holodnuyu-pogodu-24",
+    "title": "Уход за волосами в холодную погоду",
+    "excerpt": "Лето сменяется осенью, на смену теплым и солнечным дням приходят холодные сумерки. Уход за волосами в холодную погоду требует от вас больше усилий и внимания, нежели Вы привыкли.",
+    "content": "Лето сменяется осенью, на смену теплым и солнечным дням приходят холодные сумерки. Уход за волосами в холодную погоду требует от вас больше усилий и внимания, нежели Вы привыкли. Основополагающих правил тут не многое, но соблюдать их крайне важно.\n## 1. Носите шапку\nПравило, знакомое каждому с детства по прошествии лета становится актуальным. Часто оно не соблюдается, так как многие думают, что шапка портит красоту. Этот надуманный стереотип может сыграть злую шутку с Вашими волосами, и сильно ударит по кошельку, вынудив оплачивать процедуры по восстановлению.\nВ идеале у каждой девушки или женщины должно быть четыре или пять шапок на разные типы погоды. Благо, сегодня имеется большое количество моделей головных уборов, что-нибудь из них Вам подойдет.\nВ холодное время 75% дня мы проводим в помещении. Лучше два часа отходить в шапке и радовать коллег блестящими и шелковистыми волосами, чем пренебречь этим правилом, и страдать от неопрятного вида.\nЗимой откажитесь от объемных стрижек и укладок, проведя некоторое время под шапкой они потеряют вид и будут выглядеть неряшливо и неопрятно.\nЕсли эти доводы Вас не убедили, то хотя бы задумайтесь о здоровье организма: переохлаждение головы вызывает простудные заболевания.\n## 2. Правильно мойте голову\nМойте голову как можно реже, чтобы не переохлаждать волосы лишний раз. Под воздействием низких температур чешуйки открываются, и волосы начинают сечься и тускнеют.\nВыходом из ситуации послужат сухие шампуни. Раньше такие делали из соды и пшеничной муки, но сегодня они представлены в линейках фирм, делающих средства по уходу за волосами. Помимо прочего, при использовании таких шампуней волосы будут пачкаться медленнее, и мыть их придется раз в неделю.\nЕще один способом свести к минимуму водные процедуры - использование натуральных шампуней, без сульфатов и парабенов. Они позволяют моющему средству мылиться и пениться, но из-за них также волосы пачкаются гораздо быстрее. Вас приятно удивит, как долго они остаются чистыми и красивыми, если пользоваться натуральными шампунями. Минусом - дороговизна и малая практичность: они не пенятся и тяжело наносятся на голову, но результат Вас не разочарует.\nИ, последний совет: в холодное время года стоит отказаться от фиксирующих средств. Они с легкостью поглощают из окружающей среды грязь, токсины и шлаки. Отмыть это потом сложно, поэтому лучше дважды подумать, хотите ли Вы, что бы продукты жизнедеятельности города осели в волосах.\n## 3. Профилактика\nЛетом волосы получают витамины из овощей и фруктов, однако начиная с осени используйте средства, поддерживающие баланс питательных веществ, что бы не пришлось проводить первые месяцы весны в салонах, оплачивая дорогостоящие операции по восстановлению и ламинированию.\nПомощником на время холодов станет масло для кончиков волос: выжимка из семян льна или репейника, так же можно обратить внимание на костровое масло и масло ши. Избавиться от сечения волос у Вас не выйдет – это естественный процесс, но вот свести его к минимуму – посильная задача.\nТак же нельзя недооценивать пользу масок для волос. Предпочесть стоит те, в состав которых входит масло какао, жожоба и ши, эти компоненты обеспечат волосы необходимыми витаминами. На пользу пойдут и маски на основе марокканской глины, у нее способности к лечению и восстановлению волос. А вот от таких ингредиентов как горчица и перец стоит отказаться, они - активаторы роста и повредят или даже сожгут волосы.\nНе последнюю роль в здоровье и красоте волос играет правильное питание. В холодное время года будет не лишним строже следить за тем, что Вы едите. Откажитесь от вредной пищи и газировки, кушайте больше овощей и фруктов.\nСогласитесь, эти правила не так сложно соблюдать, а результат заметите, и Вы и окружающие. И не забывайте, на Hairshop.lv Вы найдете еще много информации, как заботиться о волосах, и сможете приобрести средства по уходу за ними!",
+    "contentBlocks": [
       {
-        "type": "quote",
-        "text": "Главное правило: вводите новые средства постепенно и наблюдайте за реакцией РоЖи.",
-        "author": "Ольга Дермо косметолог"
+        "type": "paragraph",
+        "text": "Лето сменяется осенью, на смену теплым и солнечным дням приходят холодные сумерки. Уход за волосами в холодную погоду требует от вас больше усилий и внимания, нежели Вы привыкли. Основополагающих правил тут не многое, но соблюдать их крайне важно."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "1. Носите шапку"
+      },
+      {
+        "type": "paragraph",
+        "text": "Правило, знакомое каждому с детства по прошествии лета становится актуальным. Часто оно не соблюдается, так как многие думают, что шапка портит красоту. Этот надуманный стереотип может сыграть злую шутку с Вашими волосами, и сильно ударит по кошельку, вынудив оплачивать процедуры по восстановлению."
+      },
+      {
+        "type": "paragraph",
+        "text": "В идеале у каждой девушки или женщины должно быть четыре или пять шапок на разные типы погоды. Благо, сегодня имеется большое количество моделей головных уборов, что-нибудь из них Вам подойдет."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/head.jpg",
+        "alt": "Носите шапку"
+      },
+      {
+        "type": "paragraph",
+        "text": "В холодное время 75% дня мы проводим в помещении. Лучше два часа отходить в шапке и радовать коллег блестящими и шелковистыми волосами, чем пренебречь этим правилом, и страдать от неопрятного вида."
+      },
+      {
+        "type": "paragraph",
+        "text": "Зимой откажитесь от объемных стрижек и укладок, проведя некоторое время под шапкой они потеряют вид и будут выглядеть неряшливо и неопрятно."
+      },
+      {
+        "type": "paragraph",
+        "text": "Если эти доводы Вас не убедили, то хотя бы задумайтесь о здоровье организма: переохлаждение головы вызывает простудные заболевания."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "2. Правильно мойте голову"
+      },
+      {
+        "type": "paragraph",
+        "text": "Мойте голову как можно реже, чтобы не переохлаждать волосы лишний раз. Под воздействием низких температур чешуйки открываются, и волосы начинают сечься и тускнеют."
+      },
+      {
+        "type": "paragraph",
+        "text": "Выходом из ситуации послужат сухие шампуни. Раньше такие делали из соды и пшеничной муки, но сегодня они представлены в линейках фирм, делающих средства по уходу за волосами. Помимо прочего, при использовании таких шампуней волосы будут пачкаться медленнее, и мыть их придется раз в неделю."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/wash.jpg",
+        "alt": "Правильно мойте голову"
+      },
+      {
+        "type": "paragraph",
+        "text": "Еще один способом свести к минимуму водные процедуры - использование натуральных шампуней, без сульфатов и парабенов. Они позволяют моющему средству мылиться и пениться, но из-за них также волосы пачкаются гораздо быстрее. Вас приятно удивит, как долго они остаются чистыми и красивыми, если пользоваться натуральными шампунями. Минусом - дороговизна и малая практичность: они не пенятся и тяжело наносятся на голову, но результат Вас не разочарует."
+      },
+      {
+        "type": "paragraph",
+        "text": "И, последний совет: в холодное время года стоит отказаться от фиксирующих средств. Они с легкостью поглощают из окружающей среды грязь, токсины и шлаки. Отмыть это потом сложно, поэтому лучше дважды подумать, хотите ли Вы, что бы продукты жизнедеятельности города осели в волосах."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "3. Профилактика"
+      },
+      {
+        "type": "paragraph",
+        "text": "Летом волосы получают витамины из овощей и фруктов, однако начиная с осени используйте средства, поддерживающие баланс питательных веществ, что бы не пришлось проводить первые месяцы весны в салонах, оплачивая дорогостоящие операции по восстановлению и ламинированию."
+      },
+      {
+        "type": "paragraph",
+        "text": "Помощником на время холодов станет масло для кончиков волос: выжимка из семян льна или репейника, так же можно обратить внимание на костровое масло и масло ши. Избавиться от сечения волос у Вас не выйдет – это естественный процесс, но вот свести его к минимуму – посильная задача."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/fruit.jpg",
+        "alt": "Профилактика"
+      },
+      {
+        "type": "paragraph",
+        "text": "Так же нельзя недооценивать пользу масок для волос. Предпочесть стоит те, в состав которых входит масло какао, жожоба и ши, эти компоненты обеспечат волосы необходимыми витаминами. На пользу пойдут и маски на основе марокканской глины, у нее способности к лечению и восстановлению волос. А вот от таких ингредиентов как горчица и перец стоит отказаться, они - активаторы роста и повредят или даже сожгут волосы."
+      },
+      {
+        "type": "paragraph",
+        "text": "Не последнюю роль в здоровье и красоте волос играет правильное питание. В холодное время года будет не лишним строже следить за тем, что Вы едите. Откажитесь от вредной пищи и газировки, кушайте больше овощей и фруктов."
+      },
+      {
+        "type": "paragraph",
+        "text": "Согласитесь, эти правила не так сложно соблюдать, а результат заметите, и Вы и окружающие. И не забывайте, на Hairshop.lv Вы найдете еще много информации, как заботиться о волосах, и сможете приобрести средства по уходу за ними!"
       }
     ],
-    "author": "Ольга Дерма косметолог",
-    "image": "/blog/skincare-guide.jpg",
-    "category": "blog.category.faceCare",
-    "readTime": 4,
-    "createdAt": "2026-03-12T00:00:00.000Z",
-    "featured": false
-  ,
-    "translations": {
-      "en": {
-        "title": "Spring Skin Reset: 10-Minute Daily Checklist",
-        "excerpt": "A simple spring routine to restore glow, reduce dryness, and avoid overloading your skin.",
-        "content": "\n# Spring Skin Reset Checklist\n\nIn spring, skin often becomes more reactive due to temperature changes and dry indoor air.\n\n## Daily routine\n\n1. **Gentle cleansing morning and evening**\n2. **Hydrating serum** (for example, hyaluronic acid)\n3. **Moisturizer for your skin type**\n4. **SPF every morning**, even on cloudy days\n\n## 1-2 times per week\n\n- Enzyme or mild acid exfoliation\n- Soothing mask\n\n## Common spring mistakes\n\n- Replacing the entire routine at once\n- Skipping SPF\n- Over-cleansing\n\nKey rule: introduce new products gradually and monitor your skin response.\n    ",
-        "author": "Olga Dermacosmetologist"
-      },
-      "lv": {
-        "title": "Pavasara ādas reset: 10 minūšu ikdienas kontrolsaraksts",
-        "excerpt": "Vienkārša pavasara rutīna, lai atjaunotu mirdzumu, mazinātu sausumu un nepārslogotu ādu.",
-        "content": "\n# Pavasara ādas reset kontrolsaraksts\n\nPavasarī āda bieži kļūst jutīgāka temperatūras svārstību un sausa iekštelpu gaisa dēļ.\n\n## Ikdienā\n\n1. **Maiga attīrīšana no rīta un vakarā**\n2. **Mitrinošs serums** (piemēram, ar hialuronskābi)\n3. **Krēms atbilstoši ādas tipam**\n4. **SPF katru rītu**, arī mākoņainā laikā\n\n## 1-2 reizes nedēļā\n\n- Enzīmu vai maigs skābju pīlings\n- Nomierinoša maska\n\n## Biežākās pavasara kļūdas\n\n- Visa kopšanas plāna nomaiņa uzreiz\n- SPF ignorēšana\n- Pārāk agresīva attīrīšana\n\nGalvenais noteikums: ieviesiet jaunus līdzekļus pakāpeniski un vērojiet ādas reakciju.\n    ",
-        "author": "Olga, dermakosmetoloģe"
-      }
-    }
-  },
-  {
-    "id": "post-1",
-    "slug": "skincare-routine-guide",
-    "title": "Полное руководство по уходу за кожей в 2026 году",
-    "excerpt": "Узнайте о правильном порядке нанесения косметики и лучших практиках для здоровой кожи.",
-    "content": "\n# Полное руководство по уходу за кожей\n\nПравильный уход за кожей — это не просто косметика, это инвестиция в здоровье вашей кожи.\n\n## Основные этапы\n\n1. **Очищение** (утром и вечером)\n   - Используйте мягкий очищающий средство\n   - Массируйте лицо 60 секунд\n   - Смойте теплой водой\n\n2. **Тонер**\n   - Увлажняет и подготавливает кожу\n   - Наносится после очищения\n\n3. **Сыворотка**\n   - Концентрированные активные компоненты\n   - Наносится на влажную кожу\n\n4. **Крем**\n   - Завершающий этап\n   - Запечатывает влагу\n\n## Частые ошибки\n\n- Слишком частое очищение\n- Игнорирование SPF\n- Использование горячей воды\n- Переусложнение рутины\n\nПомните, что каждая кожа уникальна!\n    ",
-    "author": "Мария Косметолог",
-    "image": "/blog/skincare-guide.jpg",
-    "category": "blog.category.faceCare",
-    "readTime": 5,
-    "createdAt": "2026-02-15T00:00:00.000Z",
-    "featured": true,
-    "translations": {
-      "en": {
-        "title": "Complete Skincare Guide for 2026",
-        "excerpt": "Learn the right product layering order and best practices for healthy skin.",
-        "content": "\n  # Complete Skincare Guide\n\n  Proper skincare is not only about cosmetics — it is an investment in skin health.\n\n  ## Core Steps\n\n  1. **Cleansing** (morning and evening)\n    - Use a gentle cleanser\n    - Massage for 60 seconds\n    - Rinse with lukewarm water\n\n  2. **Toner**\n    - Hydrates and preps the skin\n    - Apply right after cleansing\n\n  3. **Serum**\n    - Concentrated active ingredients\n    - Apply to slightly damp skin\n\n  4. **Moisturizer**\n    - Final step\n    - Locks in hydration\n\n  ## Common Mistakes\n\n  - Over-cleansing\n  - Skipping SPF\n  - Using very hot water\n  - Overcomplicating your routine\n\n  Remember: every skin type is unique.\n     ",
-        "author": "Maria Cosmetologist"
-      },
-      "lv": {
-        "title": "Pilnīgs ādas kopšanas ceļvedis 2026. gadam",
-        "excerpt": "Uzziniet pareizu līdzekļu lietošanas secību un labākās prakses veselīgai ādai.",
-        "content": "\n  # Pilnīgs ādas kopšanas ceļvedis\n\n  Pareiza ādas kopšana nav tikai kosmētika — tā ir investīcija ādas veselībā.\n\n  ## Galvenie soļi\n\n  1. **Attīrīšana** (no rīta un vakarā)\n    - Lietojiet maigu attīrītāju\n    - Masējiet 60 sekundes\n    - Noskalojiet ar remdenu ūdeni\n\n  2. **Toniks**\n    - Mitrina un sagatavo ādu\n    - Uzklājiet pēc attīrīšanas\n\n  3. **Serums**\n    - Koncentrētas aktīvās sastāvdaļas\n    - Uzklājiet uz viegli mitras ādas\n\n  4. **Krēms**\n    - Noslēdzošais solis\n    - Noslēdz mitrumu ādā\n\n  ## Biežākās kļūdas\n\n  - Pārāk bieža attīrīšana\n  - SPF ignorēšana\n  - Pārāk karsts ūdens\n  - Pārāk sarežģīta rutīna\n\n  Atcerieties: katra āda ir unikāla.\n     ",
-        "author": "Marija, kosmetoloģe"
-      }
-    }
-  },
-  {
-    "id": "post-2",
-    "slug": "hair-care-winter",
-    "title": "Уход за волосами зимой: советы и средства",
-    "excerpt": "Как защитить волосы от холода, сухого воздуха и минусовых температур.",
-    "content": "\n# Уход за волосами в Зимний период\n\nЗима — сложное время для волос. Холод, ветер и сухой воздух повреждают структуру волоса.\n\n## Основные проблемы\n\n- Ломкость\n- Сухость\n- Электризация\n- Потеря блеска\n\n## Решения\n\nИспользуйте увлажняющие маски 2-3 раза в неделю.\nНаносите масло перед сном для интенсивного питания.\nНосите шапку для защиты.\n    ",
-    "author": "Анна Стилист",
-    "image": "/blog/winter-hair.jpg",
+    "author": "Admin",
+    "image": "https://hairshop.lv/content/images/uploaded/uhod-za-volosami-v%20holodnuju-pogodu.jpg",
     "category": "blog.category.hairCare",
-    "readTime": 4,
-    "createdAt": "2026-02-10T00:00:00.000Z",
-    "featured": true,
-    "translations": {
-      "en": {
-        "title": "Winter Hair Care: Tips and Products",
-        "excerpt": "How to protect your hair from cold weather, dry air, and sub-zero temperatures.",
-        "content": "\n# Winter Hair Care\n\nWinter is a challenging season for hair. Cold wind and dry indoor air can damage the hair fiber.\n\n## Main Issues\n\n- Breakage\n- Dryness\n- Static electricity\n- Loss of shine\n\n## Solutions\n\nUse hydrating masks 2-3 times a week.\nApply hair oil before bed for deeper nourishment.\nWear a hat to protect your hair outside.\n    ",
-        "author": "Anna Stylist"
-      },
-      "lv": {
-        "title": "Matu kopšana ziemā: padomi un līdzekļi",
-        "excerpt": "Kā pasargāt matus no aukstuma, sausa gaisa un mīnusa temperatūrām.",
-        "content": "\n# Matu kopšana ziemā\n\nZiema matiem ir sarežģīts periods. Aukstums, vējš un sausais gaiss bojā matu struktūru.\n\n## Galvenās problēmas\n\n- Lūšana\n- Sausums\n- Elektrizēšanās\n- Spīduma zudums\n\n## Risinājumi\n\nLietojiet mitrinošas maskas 2-3 reizes nedēļā.\nPirms miega uzklājiet matu eļļu intensīvai barošanai.\nNēsājiet cepuri, lai pasargātu matus ārā.\n    ",
-        "author": "Anna, stiliste"
-      }
-    }
-  },
-  {
-    "id": "post-3",
-    "slug": "body-care-tips",
-    "title": "SPA-уход за телом дома: 7 простых шагов",
-    "excerpt": "Превратите ванную комнату в спа-салон с помощью простых процедур.",
-    "content": "\n# SPA-уход за телом дома\n\nВам не нужен салон, чтобы получить качественный уход.\n\n## Процедура\n\n1. Горячая ванна 15 минут\n2. Скраб для тела\n3. Маска или масло\n4. Лосьон для тела\n5. Массаж\n\nРегулярность — ключ к успеху!\n    ",
-    "author": "Елена Специалист",
-    "image": "/blog/body-care.jpg",
-    "category": "blog.category.bodyCare",
     "readTime": 3,
-    "createdAt": "2026-02-05T00:00:00.000Z",
+    "createdAt": "2015-11-11T11:45:15.620Z",
+    "featured": false,
     "translations": {
-      "en": {
-        "title": "At-Home SPA Body Care: 7 Easy Steps",
-        "excerpt": "Turn your bathroom into a mini spa with simple yet effective routines.",
-        "content": "\n# At-Home SPA Body Care\n\nYou do not need a salon to get high-quality body care.\n\n## Routine\n\n1. Hot bath for 15 minutes\n2. Body scrub\n3. Mask or body oil\n4. Body lotion\n5. Massage\n\nConsistency is the key to great results.\n    ",
-        "author": "Elena Specialist"
-      },
       "lv": {
-        "title": "SPA ķermeņa kopšana mājās: 7 vienkārši soļi",
-        "excerpt": "Pārvērtiet vannasistabu par mini spa ar vienkāršām procedūrām.",
-        "content": "\n# SPA ķermeņa kopšana mājās\n\nLai iegūtu kvalitatīvu kopšanu, salons nav obligāts.\n\n## Procedūra\n\n1. Karsta vanna 15 minūtes\n2. Ķermeņa skrubis\n3. Maska vai eļļa\n4. Ķermeņa losjons\n5. Masāža\n\nRegulāritāte ir panākumu atslēga.\n    ",
-        "author": "Elēna, speciāliste"
+        "title": "Matu kopšana aukstā laikā",
+        "excerpt": "Pēc vasaras iestājas rudens, silto un saulaino dienu vietā nāk auksta krēsla. Matu kopšana aukstā laikā prasa no jums lielāku uzmanību un pūles nekā jūs esat pieraduši.",
+        "content": "Pēc vasaras iestājas rudens, silto un saulaino dienu vietā nāk auksta krēsla. Matu kopšana aukstā laikā prasa no jums lielāku uzmanību un pūles nekā jūs esat pieraduši. Pamatnoteikumu nav daudz, bet to ievērošana ir ļoti svarīga.\n## 1. Valkājiet cepuri\nNoteikums, kurš ir zināms ikvienam kopš bērnības, vasarai beidzoties atkal kļūst aktuāls. Bieži to neievēro, jo daudzi uzskata, ka cepure bojā skaistumu. Šis iedomātais stereotips var nospēlēt ar jūsu matiem ļaunu joku un iecirst pamatīgu robu, liekot apmaksāt atjaunošanas procedūras.\nIdeālā variantā katrai meitenei vai sievietei ir jābūt četrām vai piecām cepurēm dažādiem laika apstākļiem. Priecē tas, ka šodien lielā izvēle ir atrodami dažādi galvassegu modeļi, kāds no tiem noteikti būs jums piemērots.\nAukstā laikā lielāko dienas daļu mēs pavadām telpā, aizdomājieties, kas ir labāk: divas stundas pavadīt ar cepuri galvā un priecēt savus kolēģus ar spīdīgiem un zīdainiem matiem vai neņemt vērā šo noteikumu un ciest no nekārtīga izskata?\nZiemā atsakieties no apjomīgiem griezumiem un frizūrām, jo pavadot zināmu laiku zem cepures tās zaudē kuplumu un izskatās nekārtīgi un nevīžīgi.\nJa šie argumenti jūs nepārliecināja, tad vismaz aizdomājieties par organisma veselību: galvas apaukstēšana izraisa saaukstēšanās slimības.\n## 2. Pareizi mazgājiet galvu\nMazgājiet galvu pēc iespējas retāk, lai lieku reizi nepakļautu matus aukstuma iedarbībai. Zemo temperatūru iedarbībā zvīņas atveras un mati sāk šķelties un kļūst blāvi.\nViens no risinājumiem šādā situācijā ir sausie šampūni. Agrāk tie tika izgatavoti no sodas un kviešu miltiem, taču šodien tos ražo firmas, kuras izgatavo matu kopšanas līdzekļus. Lietojot šādus šampūnus mati taukosies lēnāk un tie būs jāmazgā reizi nedēļā.\nVēl viens veids, kā mazināt ūdens procedūru biežumu ir dabīgo šampūnu lietošana, bez sulfātiem un parabēniem. Tie ļauj mazgāšanas līdzeklim putot un ziepēties, bet pateicoties tiem mati daudz ātrāk kļūst netīri. Jūs būsiet patīkami pārsteigti , cik ilgi mati var būt tīri un skaisti, ja lieto dabīgos šampūnus. Šo līdzekļu mīnuss ir augstas izmaksas un zems praktiskums: tie neputo un ir grūti ieziežami matos, bet rezultāts jums neliks vilties.\nUn pēdējais ieteikums: aukstā gada laikā ir ieteicams atteikties no fiksējošiem līdzekļiem. Tie viegli uzsūc netīrumus, toksīnus un piesārņojumus no apkārtējās vides. Nomazgāt to pēc tam ir grūti, tāpēc labāk divreiz padomāt, vai jūs vēlaties, lai pilsētas piesārņojums nogulsnējas jūsu matos.\n## 3. Profilakse\nVasarā mati saņem vitamīnus no augļiem un dārzeņiem, taču iestājoties rudenim izmantojiet līdzekļus, kuri uzturēs barības vielu līdzsvaru, lai nenāktos pirmos pavasara mēnešus pavadīt salonos, apmaksājot dārgas laminēšanas un atjaunošanas procedūras.\nAukstā laikā par jūsu palīgu kļūs eļļa matu galiem: dadža vai linu sēklu ekstrakts, var arī pievērst uzmanību rīcineļļai un šī eļļai. Atbrīvoties no matu šķelšanās jums neizdosies - tas ir dabisks process, bet, samazināt to līdz minimumam – tas ir reāli izpildāms uzdevumu.\nNevar pārvērtēt matu masku nozīmi. Ir vērts izvēlēties tās, kuru sastāvā ir kakao, žožoba un ši eļļas, šīs sastāvdaļas nodrošinās matiem nepieciešamos vitamīnus. Lietderīgi būs izmantot arī tās maskas, kuru pamatā ir Marokas māls, jo tas dziedina un atjauno matus. Bet no tādām sastāvdaļām kā sinepes un pipari ir vērts atteikties, tie aktivē augšanu un bojās vai pat sadedzinās matus.\nLiela loma matu veselībai un skaistumam ir pareizam uzturam. Aukstā gada laikā ir stingrāk jāseko tam, ko Jūs ēdat. Atsakieties no neveselīgas pārtikas un gāzētiem dzērieniem, ēdiet vairāk augļu un dārzeņu.\nJūs piekritīsiet ka šos noteikumus nav grūti ievērot, bet rezultātu ievērosiet gan Jūs, gan apkārtējie. Un neaizmirstiet, Hairshop.lv Jūs atradīsiet vēl daudz informācijas par to, kā rūpēties par matiem un varēsiet iegādāties matu kopšanas līdzekļus!",
+        "contentBlocks": [
+          {
+            "type": "paragraph",
+            "text": "Pēc vasaras iestājas rudens, silto un saulaino dienu vietā nāk auksta krēsla. Matu kopšana aukstā laikā prasa no jums lielāku uzmanību un pūles nekā jūs esat pieraduši. Pamatnoteikumu nav daudz, bet to ievērošana ir ļoti svarīga."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "1. Valkājiet cepuri"
+          },
+          {
+            "type": "paragraph",
+            "text": "Noteikums, kurš ir zināms ikvienam kopš bērnības, vasarai beidzoties atkal kļūst aktuāls. Bieži to neievēro, jo daudzi uzskata, ka cepure bojā skaistumu. Šis iedomātais stereotips var nospēlēt ar jūsu matiem ļaunu joku un iecirst pamatīgu robu, liekot apmaksāt atjaunošanas procedūras."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ideālā variantā katrai meitenei vai sievietei ir jābūt četrām vai piecām cepurēm dažādiem laika apstākļiem. Priecē tas, ka šodien lielā izvēle ir atrodami dažādi galvassegu modeļi, kāds no tiem noteikti būs jums piemērots."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/head.jpg",
+            "alt": "Valkājiet cepuri"
+          },
+          {
+            "type": "paragraph",
+            "text": "Aukstā laikā lielāko dienas daļu mēs pavadām telpā, aizdomājieties, kas ir labāk: divas stundas pavadīt ar cepuri galvā un priecēt savus kolēģus ar spīdīgiem un zīdainiem matiem vai neņemt vērā šo noteikumu un ciest no nekārtīga izskata?"
+          },
+          {
+            "type": "paragraph",
+            "text": "Ziemā atsakieties no apjomīgiem griezumiem un frizūrām, jo pavadot zināmu laiku zem cepures tās zaudē kuplumu un izskatās nekārtīgi un nevīžīgi."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ja šie argumenti jūs nepārliecināja, tad vismaz aizdomājieties par organisma veselību: galvas apaukstēšana izraisa saaukstēšanās slimības."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "2. Pareizi mazgājiet galvu"
+          },
+          {
+            "type": "paragraph",
+            "text": "Mazgājiet galvu pēc iespējas retāk, lai lieku reizi nepakļautu matus aukstuma iedarbībai. Zemo temperatūru iedarbībā zvīņas atveras un mati sāk šķelties un kļūst blāvi."
+          },
+          {
+            "type": "paragraph",
+            "text": "Viens no risinājumiem šādā situācijā ir sausie šampūni. Agrāk tie tika izgatavoti no sodas un kviešu miltiem, taču šodien tos ražo firmas, kuras izgatavo matu kopšanas līdzekļus. Lietojot šādus šampūnus mati taukosies lēnāk un tie būs jāmazgā reizi nedēļā."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/wash.jpg",
+            "alt": "Pareizi mazgājiet galvu"
+          },
+          {
+            "type": "paragraph",
+            "text": "Vēl viens veids, kā mazināt ūdens procedūru biežumu ir dabīgo šampūnu lietošana, bez sulfātiem un parabēniem. Tie ļauj mazgāšanas līdzeklim putot un ziepēties, bet pateicoties tiem mati daudz ātrāk kļūst netīri. Jūs būsiet patīkami pārsteigti , cik ilgi mati var būt tīri un skaisti, ja lieto dabīgos šampūnus. Šo līdzekļu mīnuss ir augstas izmaksas un zems praktiskums: tie neputo un ir grūti ieziežami matos, bet rezultāts jums neliks vilties."
+          },
+          {
+            "type": "paragraph",
+            "text": "Un pēdējais ieteikums: aukstā gada laikā ir ieteicams atteikties no fiksējošiem līdzekļiem. Tie viegli uzsūc netīrumus, toksīnus un piesārņojumus no apkārtējās vides. Nomazgāt to pēc tam ir grūti, tāpēc labāk divreiz padomāt, vai jūs vēlaties, lai pilsētas piesārņojums nogulsnējas jūsu matos."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "3. Profilakse"
+          },
+          {
+            "type": "paragraph",
+            "text": "Vasarā mati saņem vitamīnus no augļiem un dārzeņiem, taču iestājoties rudenim izmantojiet līdzekļus, kuri uzturēs barības vielu līdzsvaru, lai nenāktos pirmos pavasara mēnešus pavadīt salonos, apmaksājot dārgas laminēšanas un atjaunošanas procedūras."
+          },
+          {
+            "type": "paragraph",
+            "text": "Aukstā laikā par jūsu palīgu kļūs eļļa matu galiem: dadža vai linu sēklu ekstrakts, var arī pievērst uzmanību rīcineļļai un šī eļļai. Atbrīvoties no matu šķelšanās jums neizdosies - tas ir dabisks process, bet, samazināt to līdz minimumam – tas ir reāli izpildāms uzdevumu."
+          },
+          {
+            "type": "paragraph",
+            "text": "Nevar pārvērtēt matu masku nozīmi. Ir vērts izvēlēties tās, kuru sastāvā ir kakao, žožoba un ši eļļas, šīs sastāvdaļas nodrošinās matiem nepieciešamos vitamīnus. Lietderīgi būs izmantot arī tās maskas, kuru pamatā ir Marokas māls, jo tas dziedina un atjauno matus. Bet no tādām sastāvdaļām kā sinepes un pipari ir vērts atteikties, tie aktivē augšanu un bojās vai pat sadedzinās matus."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/fruit.jpg",
+            "alt": "Profilakse"
+          },
+          {
+            "type": "paragraph",
+            "text": "Liela loma matu veselībai un skaistumam ir pareizam uzturam. Aukstā gada laikā ir stingrāk jāseko tam, ko Jūs ēdat. Atsakieties no neveselīgas pārtikas un gāzētiem dzērieniem, ēdiet vairāk augļu un dārzeņu."
+          },
+          {
+            "type": "paragraph",
+            "text": "Jūs piekritīsiet ka šos noteikumus nav grūti ievērot, bet rezultātu ievērosiet gan Jūs, gan apkārtējie. Un neaizmirstiet, Hairshop.lv Jūs atradīsiet vēl daudz informācijas par to, kā rūpēties par matiem un varēsiet iegādāties matu kopšanas līdzekļus!"
+          }
+        ]
       }
     }
   },
   {
-    "id": "post-4",
-    "slug": "makeup-trends-2026",
-    "title": "Тренды макияжа 2026: что в моде",
-    "excerpt": "Актуальные тренды макияжа этого года — от nude до ярких цветов.",
-    "content": "\n# Тренды макияжа 2026\n\nНовый год — новые тренды в макияже.\n\n## В моде\n\n- Natural skin\n- Graphic eyeliner\n- Bold lips\n- Glass skin effect\n\nЭкспериментируйте и найдите свой стиль!\n    ",
-    "author": "Ирина Визажист",
-    "image": "/blog/makeup-trends.jpg",
-    "category": "blog.category.makeup",
-    "readTime": 4,
-    "createdAt": "2026-01-28T00:00:00.000Z",
-    "translations": {
-      "en": {
-        "title": "Makeup Trends 2026: What Is In",
-        "excerpt": "This year’s key makeup trends — from clean nude looks to bold accents.",
-        "content": "\n# Makeup Trends 2026\n\nNew year, new beauty trends.\n\n## Trending Now\n\n- Natural skin\n- Graphic eyeliner\n- Bold lips\n- Glass skin effect\n\nExperiment and find the style that fits you best.\n    ",
-        "author": "Irina Makeup Artist"
+    "id": "26",
+    "slug": "kak-izbavitsya-ot-zhvachki-v-volosah-26",
+    "title": "Как избавиться от жвачки в волосах",
+    "excerpt": "Зачастую с нами случаются неприятности, которые вызывают лишь смех и недоумение в связи с абсолютным незнанием того, как от них избавиться.",
+    "content": "Зачастую с нами случаются неприятности, которые вызывают лишь смех и недоумение в связи с абсолютным незнанием того, как от них избавиться. Об одной из таких ситуаций мы сегодня поговорим, и расскажем, как избавиться от жвачки в волосах .\n## 1. Удаляем жвачку с помощью масла\nСамый легкий и эффективный способ – использование масла. Подойдет любое: оливковое, растительное, арахисовое и даже детское. Пропитайте им жвачку и участок пряди волос до и после нее, подождите несколько минут, пока масло не впитается, и при помощи губки или зубной щетки «стягивайте» жвачку вниз по волосам. Для удобства советуем подложить под волосы что-нибудь твердое: крышку от банки или пластикового контейнера. Если масло хорошо впиталось, жвачка соскользнет с волос легко, без особых усилий. Когда все сделано, расчешите волосы мелким гребнем и тщательно вымойте голову: подержите шампунь 2-3 минуты на волосах и как следует прополоскайте их.\nВместо масла можно использовать любые продукты с высоким содержанием натуральных жиров, например, майонез или холодный заварной крем. Также можно воспользоваться вазелином или кремом для рук, после процедуры смыть их можно жидкостью для полоскания рта. Хорошей альтернативой послужит и мусс для волос.\n## 2. Замораживаем жвачку при помощи льда\nВозможно, многим знаком способ удаления жвачки с одежды с помощью льда. С таким же успехом его можно применить и для волос. Приложите несколько кубиков к пряди и дайте время, что бы жвачка застыла. После этого она треснет и буквально осыплется сама собой. Если льда под рукой нету можно использовать холодную воду. Для лучшего эффекта в ней можно растворить немного соли.\nЕсли с первого раза удалить резинку полностью не удалось, опустите волосы теперь в теплую воду и расплющите жвачку, она станет плоской, а, следовательно, более тонкой. Теперь надо снова ее заморозить и повторить процедуру. Даже в сложных случаях с помощью двух-трех таких манипуляций вы избавитесь от жевательной резинки в волосах. После, как и в предыдущем случае необходимо вымыть волосы.\nКак видите, обрезать драгоценную прядь совсем не нужно, немного смекалки выручат Вас в этой ситуации, но все же старайтесь избегать таких казусов, лед и масло не всегда есть под рукой. На Hairshop.lv есть еще много интересной информации, а также большой выбор средств по уходу за волосами!",
+    "contentBlocks": [
+      {
+        "type": "paragraph",
+        "text": "Зачастую с нами случаются неприятности, которые вызывают лишь смех и недоумение в связи с абсолютным незнанием того, как от них избавиться. Об одной из таких ситуаций мы сегодня поговорим, и расскажем, как избавиться от жвачки в волосах ."
       },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "1. Удаляем жвачку с помощью масла"
+      },
+      {
+        "type": "paragraph",
+        "text": "Самый легкий и эффективный способ – использование масла. Подойдет любое: оливковое, растительное, арахисовое и даже детское. Пропитайте им жвачку и участок пряди волос до и после нее, подождите несколько минут, пока масло не впитается, и при помощи губки или зубной щетки «стягивайте» жвачку вниз по волосам. Для удобства советуем подложить под волосы что-нибудь твердое: крышку от банки или пластикового контейнера. Если масло хорошо впиталось, жвачка соскользнет с волос легко, без особых усилий. Когда все сделано, расчешите волосы мелким гребнем и тщательно вымойте голову: подержите шампунь 2-3 минуты на волосах и как следует прополоскайте их."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/maslo.jpg",
+        "alt": "Удаляем жвачку с помощью масла"
+      },
+      {
+        "type": "paragraph",
+        "text": "Вместо масла можно использовать любые продукты с высоким содержанием натуральных жиров, например, майонез или холодный заварной крем. Также можно воспользоваться вазелином или кремом для рук, после процедуры смыть их можно жидкостью для полоскания рта. Хорошей альтернативой послужит и мусс для волос."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "2. Замораживаем жвачку при помощи льда"
+      },
+      {
+        "type": "paragraph",
+        "text": "Возможно, многим знаком способ удаления жвачки с одежды с помощью льда. С таким же успехом его можно применить и для волос. Приложите несколько кубиков к пряди и дайте время, что бы жвачка застыла. После этого она треснет и буквально осыплется сама собой. Если льда под рукой нету можно использовать холодную воду. Для лучшего эффекта в ней можно растворить немного соли."
+      },
+      {
+        "type": "paragraph",
+        "text": "Если с первого раза удалить резинку полностью не удалось, опустите волосы теперь в теплую воду и расплющите жвачку, она станет плоской, а, следовательно, более тонкой. Теперь надо снова ее заморозить и повторить процедуру. Даже в сложных случаях с помощью двух-трех таких манипуляций вы избавитесь от жевательной резинки в волосах. После, как и в предыдущем случае необходимо вымыть волосы."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/led.jpg",
+        "alt": "Замораживаем жвачку при помощи льда"
+      },
+      {
+        "type": "paragraph",
+        "text": "Как видите, обрезать драгоценную прядь совсем не нужно, немного смекалки выручат Вас в этой ситуации, но все же старайтесь избегать таких казусов, лед и масло не всегда есть под рукой. На Hairshop.lv есть еще много интересной информации, а также большой выбор средств по уходу за волосами!"
+      }
+    ],
+    "author": "Admin",
+    "image": "https://hairshop.lv/content/images/uploaded/kak-izbavitsja-ot-zhvacki-v-volosah.jpg",
+    "category": "blog.category.hairCare",
+    "readTime": 2,
+    "createdAt": "2015-11-24T05:55:32.623Z",
+    "featured": false,
+    "translations": {
       "lv": {
-        "title": "Grima tendences 2026: kas ir modē",
-        "excerpt": "Aktuālās gada grima tendences — no nude līdz drosmīgiem akcentiem.",
-        "content": "\n# Grima tendences 2026\n\nJauns gads — jaunas tendences grimā.\n\n## Modē\n\n- Dabiska āda\n- Grafisks acu laineris\n- Izteiksmīgas lūpas\n- Glass skin efekts\n\nEksperimentējiet un atrodiet savu stilu.\n    ",
-        "author": "Irina, vizāžiste"
+        "title": "Kā atbrīvoties no košļājamās gumijas matos",
+        "excerpt": "Reizēm mums gadās nepatikšanas, kuras izraisa tikai smieklus un neizpratni, kas saistās ar absolūto nezināšanu, kā no tiem atbrīvoties.",
+        "content": "Reizēm mums gadās nepatikšanas, kuras izraisa tikai smieklus un neizpratni, kas saistās ar absolūto nezināšanu, kā no tiem atbrīvoties. Par vienu no šādām situācijām mēs šodien parunāsim un pastāstīsim, kā atbrīvoties no košļājamās gumijas matos .\n## 1. Izņemam košļājamo gumiju ar eļļas palīdzību\nVisvieglākais un efektīvākais veids- izmantot eļļu. Derēs jebkāda: olīvu, augu, zemesriekstu un pat bērnu. Piesūciniet ar to košļājamo gumiju un matu šķipsnas daļu virs un zem tās, uzgaidiet dažas minūtes, kamēr eļļa iesūcas un, ar švammes vai zobu birstes palīdzību „velciet” košļājamo gumiju lejā pa matiem. Ērtības labad, iesakām palikt zem matiem kaut ko cietu: burkas vai plastmasas konteinera vāku. Ja eļļa ir labi iesūkusies, košļājamā gumija „noslīdēs” no matiem viegli, bez īpašām pūlēm. Kad viss ir izdarīts, izķemmējiet matus ar smalko ķemmi un kārtīgi izmazgājiet matus: paturiet šampūnu matos 2-3 minūtes un labi izskalojiet tos.\nEļļas vietā var izmantot jebkurus produktus ar augstu dabīgo taukvielu saturu, piemēram, majonēzi vai aukstu vārīto krēmu. Var izmantot arī vazelīnu vai roku krēmu. Pēc procedūras tos nomazgāt tos var ar mutes skalojamo līdzekli. Laba alternatīva būs arī matu putas.\n## 2. Sasaldējam košļājamo gumiju ar ledus palīdzību\nIespējams, daudziem ir zināms veids, kā iztīrīt košļājamo gumiju no apģērba ar ledus palīdzību. To lieliski var pielietot arī matiem. Pielieciet dažus ledus gabaliņus matu šķipsnai un uzgaidiet, kamēr košļājamā gumija sasalst. Tā plīsīs un burtiski nokritīs pati. Ja pa rokai nav ledus, var izmantot aukstu ūdeni. Labākam efektam ūdenim var pievienot nedaudz sāls.\nJa ar pirmo reizi izņemt košļājamo gumiju pilnībā neizdevās, iemērciet matus siltā ūdenī un saspiediet košļājamo gumiju. Tā kļūs plakana, kā rezultātā plānāka. Tagad tā atkal jāsasaldē un jāatkārto procedūra. Pat sarežģītos gadījumos pateicoties divām- trim šādām manipulācijām jūs tiksiet vaļā no košļājamās gumijas jūsu matos. Vēlāk, kā arī iepriekšējā gadījumā mati ir jāizmazgā.\nKā redzat, griezt vērtīgo matu šķipsnu nav nepieciešams, nedaudz attapības glābs Jūs šādā situācijā, tomēr centieties izvairīties no šādām problēmām, jo eļļa un ledus ne vienmēr var būt pa rokai. Atcerieties ka Hairshop.lv ir vēl daudz interesantas un noderīgas informācijas, kā arī lielā izvēlē ir matu kopšanas līdzekļi!",
+        "contentBlocks": [
+          {
+            "type": "paragraph",
+            "text": "Reizēm mums gadās nepatikšanas, kuras izraisa tikai smieklus un neizpratni, kas saistās ar absolūto nezināšanu, kā no tiem atbrīvoties. Par vienu no šādām situācijām mēs šodien parunāsim un pastāstīsim, kā atbrīvoties no košļājamās gumijas matos ."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "1. Izņemam košļājamo gumiju ar eļļas palīdzību"
+          },
+          {
+            "type": "paragraph",
+            "text": "Visvieglākais un efektīvākais veids- izmantot eļļu. Derēs jebkāda: olīvu, augu, zemesriekstu un pat bērnu. Piesūciniet ar to košļājamo gumiju un matu šķipsnas daļu virs un zem tās, uzgaidiet dažas minūtes, kamēr eļļa iesūcas un, ar švammes vai zobu birstes palīdzību „velciet” košļājamo gumiju lejā pa matiem. Ērtības labad, iesakām palikt zem matiem kaut ko cietu: burkas vai plastmasas konteinera vāku. Ja eļļa ir labi iesūkusies, košļājamā gumija „noslīdēs” no matiem viegli, bez īpašām pūlēm. Kad viss ir izdarīts, izķemmējiet matus ar smalko ķemmi un kārtīgi izmazgājiet matus: paturiet šampūnu matos 2-3 minūtes un labi izskalojiet tos."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/maslo.jpg",
+            "alt": "Izņemam košļājamo gumiju ar eļļas palīdzību"
+          },
+          {
+            "type": "paragraph",
+            "text": "Eļļas vietā var izmantot jebkurus produktus ar augstu dabīgo taukvielu saturu, piemēram, majonēzi vai aukstu vārīto krēmu. Var izmantot arī vazelīnu vai roku krēmu. Pēc procedūras tos nomazgāt tos var ar mutes skalojamo līdzekli. Laba alternatīva būs arī matu putas."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "2. Sasaldējam košļājamo gumiju ar ledus palīdzību"
+          },
+          {
+            "type": "paragraph",
+            "text": "Iespējams, daudziem ir zināms veids, kā iztīrīt košļājamo gumiju no apģērba ar ledus palīdzību. To lieliski var pielietot arī matiem. Pielieciet dažus ledus gabaliņus matu šķipsnai un uzgaidiet, kamēr košļājamā gumija sasalst. Tā plīsīs un burtiski nokritīs pati. Ja pa rokai nav ledus, var izmantot aukstu ūdeni. Labākam efektam ūdenim var pievienot nedaudz sāls."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ja ar pirmo reizi izņemt košļājamo gumiju pilnībā neizdevās, iemērciet matus siltā ūdenī un saspiediet košļājamo gumiju. Tā kļūs plakana, kā rezultātā plānāka. Tagad tā atkal jāsasaldē un jāatkārto procedūra. Pat sarežģītos gadījumos pateicoties divām- trim šādām manipulācijām jūs tiksiet vaļā no košļājamās gumijas jūsu matos. Vēlāk, kā arī iepriekšējā gadījumā mati ir jāizmazgā."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/led.jpg",
+            "alt": "Sasaldējam košļājamo gumiju ar ledus palīdzību"
+          },
+          {
+            "type": "paragraph",
+            "text": "Kā redzat, griezt vērtīgo matu šķipsnu nav nepieciešams, nedaudz attapības glābs Jūs šādā situācijā, tomēr centieties izvairīties no šādām problēmām, jo eļļa un ledus ne vienmēr var būt pa rokai. Atcerieties ka Hairshop.lv ir vēl daudz interesantas un noderīgas informācijas, kā arī lielā izvēlē ir matu kopšanas līdzekļi!"
+          }
+        ]
       }
     }
   },
   {
-    "id": "post-5",
-    "slug": "ingredient-spotlight-retinol",
-    "title": "Ретинол: панацея от морщин или маркетинг?",
-    "excerpt": "Научный взгляд на самый популярный антивозрастной ингредиент.",
-    "content": "\n# Ретинол: полное руководство\n\nРетинол (витамин A) — один из наиболее изученных компонентов в косметике.\n\n## Доказанные эффекты\n\n- Уменьшение морщин\n- Улучшение текстуры\n- Выравнивание тона\n- Стимуляция коллагена\n\n## Как использовать\n\nНачните с низкой концентрации.\nУвеличивайте постепенно.\nИспользуйте SPF днем!\n    ",
-    "author": "Доктор Смирнов",
-    "image": "/blog/retinol.jpg",
-    "category": "blog.category.ingredients",
-    "readTime": 6,
-    "createdAt": "2026-01-20T00:00:00.000Z",
-    "translations": {
-      "en": {
-        "title": "Retinol: Wrinkle Cure or Marketing Hype?",
-        "excerpt": "A science-based look at one of the most popular anti-age ingredients.",
-        "content": "\n# Retinol: Complete Guide\n\nRetinol (vitamin A) is one of the most researched ingredients in skincare.\n\n## Proven Effects\n\n- Reduced fine lines\n- Better skin texture\n- More even tone\n- Collagen stimulation\n\n## How to Use\n\nStart with a low concentration.\nIncrease gradually.\nAlways use SPF during daytime.\n    ",
-        "author": "Dr. Smirnov"
+    "id": "28",
+    "slug": "kto-takoy-parikmaher-28",
+    "title": "Кто такой парикмахер",
+    "excerpt": "В стиле человека прическа играет такую же большую роль, как и одежда. Но, если одеваемся мы, как правило сами, то создание прически привыкли доверять профессионалам-парикмахерам.",
+    "content": "В стиле человека прическа играет такую же большую роль, как и одежда. Но, если одеваемся мы, как правило сами, то создание прически привыкли доверять профессионалам-парикмахерам. Дело тут не столько в том, что подстричь себя самостоятельно технически сложная задача, а в том, что парикмахер это прежде всего художник. Осваивать эту профессию люди начали еще в древности, руководствуясь преимущественно практическими соображениями, однако довольно быстро прическа стала символом индивидуальности человека. Римского патриция от простого гражданина отличала не только тога, но и хорошо ухоженные и аккуратно подстриженные волосы.\nСегодня прическа никак не указывает на сословие, но она по-прежнему остается средством визуального самовыражения человека, а парикмахер творцом, который воплощает задуманное. Он всегда держит руку на пульсе современной культуры, так как этой профессии учатся на протяжении всей жизни, постоянно меняющиеся направления моды, большое обилие техник и инструментов заставляет парикмахера овладевать десятками навыков и постоянно развивать в себе творческие качества. Не стоит забывать и о немалой физической нагрузке, которая ложится на профессионала, рабочий день он проводит на ногах, а изящное порхание ножниц вокруг Ваших волос – результат долгих тренировок. Для многих парикмахер становится спутником и другом, с ним мы обсуждаем свою жизнь, говорим о вещах, далеко выходящих за рамки профессии.\nКак мы видим, набор умений, необходимых парикмахеру широк, что делает это ремесло далеко не самым легким в освоении, но тем ценнее становится хороший специалист. По опросам более 90% респондентов отмечают, что профессия эта востребована, а значит, быть парикмахером - это намного больше, чем просто делать прически.",
+    "contentBlocks": [
+      {
+        "type": "paragraph",
+        "text": "В стиле человека прическа играет такую же большую роль, как и одежда. Но, если одеваемся мы, как правило сами, то создание прически привыкли доверять профессионалам-парикмахерам. Дело тут не столько в том, что подстричь себя самостоятельно технически сложная задача, а в том, что парикмахер это прежде всего художник. Осваивать эту профессию люди начали еще в древности, руководствуясь преимущественно практическими соображениями, однако довольно быстро прическа стала символом индивидуальности человека. Римского патриция от простого гражданина отличала не только тога, но и хорошо ухоженные и аккуратно подстриженные волосы."
       },
+      {
+        "type": "paragraph",
+        "text": "Сегодня прическа никак не указывает на сословие, но она по-прежнему остается средством визуального самовыражения человека, а парикмахер творцом, который воплощает задуманное. Он всегда держит руку на пульсе современной культуры, так как этой профессии учатся на протяжении всей жизни, постоянно меняющиеся направления моды, большое обилие техник и инструментов заставляет парикмахера овладевать десятками навыков и постоянно развивать в себе творческие качества. Не стоит забывать и о немалой физической нагрузке, которая ложится на профессионала, рабочий день он проводит на ногах, а изящное порхание ножниц вокруг Ваших волос – результат долгих тренировок. Для многих парикмахер становится спутником и другом, с ним мы обсуждаем свою жизнь, говорим о вещах, далеко выходящих за рамки профессии."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/hairdresser.jpg",
+        "alt": "Парикмахер"
+      },
+      {
+        "type": "paragraph",
+        "text": "Как мы видим, набор умений, необходимых парикмахеру широк, что делает это ремесло далеко не самым легким в освоении, но тем ценнее становится хороший специалист. По опросам более 90% респондентов отмечают, что профессия эта востребована, а значит, быть парикмахером - это намного больше, чем просто делать прически."
+      }
+    ],
+    "author": "Admin",
+    "image": "https://hairshop.lv/content/images/uploaded/kto-takoj-parikmaher.jpg",
+    "category": "blog.category.hairCare",
+    "readTime": 2,
+    "createdAt": "2015-12-21T06:47:13.117Z",
+    "featured": false,
+    "translations": {
       "lv": {
-        "title": "Retinols: glābiņš pret grumbām vai mārketings?",
-        "excerpt": "Zinātnisks skats uz vienu no populārākajām anti-age sastāvdaļām.",
-        "content": "\n# Retinols: pilnīgs ceļvedis\n\nRetinols (A vitamīns) ir viena no visvairāk pētītajām sastāvdaļām kosmētikā.\n\n## Pierādītie efekti\n\n- Grumbu mazināšana\n- Ādas tekstūras uzlabošana\n- Toņa izlīdzināšana\n- Kolagēna stimulēšana\n\n## Kā lietot\n\nSāciet ar zemāku koncentrāciju.\nPakāpeniski palieliniet.\nDienā vienmēr lietojiet SPF.\n    ",
-        "author": "Dr. Smirnovs"
+        "title": "Kas ir frizieris",
+        "excerpt": "Cilvēka stilā frizūrai ir tik pat liela loma, kā apģērbam. Taču, ja apģērbu mēs pārsvarā izvēlamies paši, tad frizūras veidošanu esam pieradušu uzticēt profesionāļiem- frizieriem.",
+        "content": "Cilvēka stilā frizūrai ir tik pat liela loma, kā apģērbam. Taču, ja apģērbu mēs pārsvarā izvēlamies paši, tad frizūras veidošanu esam pieradušu uzticēt profesionāļiem- frizieriem. Runa nav tikai par to, ka veidot matu griezumu sev ir tehniski sarežģīts uzdevums, bet gan par to, ka frizieris pirmkārt ir mākslinieks. Apgūt šo profesiju cilvēki sāka jau senatnē, praktisku iemeslu vadīti, taču diezgan ātri matu sakārtojums kļuva par cilvēka individualitātes simbolu. Romas patricieti no parastā pilsoņa atšķīra ne tikai toga, bet arī labi sakārtoti un kārtīgi apgriezti mati.\nŠodien matu sakārtojums nenorāda kārtu, bet tas joprojām ir un paliek par cilvēku vizuālās pašizpausmes līdzekli, bet frizieris par radītāju, kurš īsteno iecerēto. Viņš vienmēr seko mūsdienu kultūras izmaiņām, jo šo profesiju apgūst visa mūža garumā. Nepārtraukti mainīgās modes tendences, liela tehniku un instrumentu izvēle liek frizierim apgūt desmitiem jaunu iemaņu un pastāvīgi attīstīt sevī radošās īpašības.\nNevar aizmirst arī lielu fizisko slodzi, kura gulstas uz profesionāli: darba dienu viņš pavada kājās, bet elegants šķēru lidojums ap Jūsu matiem- ir ilgu treniņu rezultāts. Daudziem frizieris kļūst par draugu un biedru, ar viņu mēs apspriežam savu dzīvi, runājam par lietām, kuras ir tālu ārpus profesijas rāmjiem.\nKā redzam, frizierim nepieciešamo iemaņu kopums ir plašs, kas padara šo amatu gana sarežģītu apgūšanai, bet jo vērtīgāks kļūst labs speciālists. Pēc aptauju rezultātiem, vairāk kā 90% respondentu atzīmē, ka šī profesija ir pieprasīta, kas nozīmē, ka būt frizierim nozīmē daudz vairāk, kā tikai veidot frizūras.",
+        "contentBlocks": [
+          {
+            "type": "paragraph",
+            "text": "Cilvēka stilā frizūrai ir tik pat liela loma, kā apģērbam. Taču, ja apģērbu mēs pārsvarā izvēlamies paši, tad frizūras veidošanu esam pieradušu uzticēt profesionāļiem- frizieriem. Runa nav tikai par to, ka veidot matu griezumu sev ir tehniski sarežģīts uzdevums, bet gan par to, ka frizieris pirmkārt ir mākslinieks. Apgūt šo profesiju cilvēki sāka jau senatnē, praktisku iemeslu vadīti, taču diezgan ātri matu sakārtojums kļuva par cilvēka individualitātes simbolu. Romas patricieti no parastā pilsoņa atšķīra ne tikai toga, bet arī labi sakārtoti un kārtīgi apgriezti mati."
+          },
+          {
+            "type": "paragraph",
+            "text": "Šodien matu sakārtojums nenorāda kārtu, bet tas joprojām ir un paliek par cilvēku vizuālās pašizpausmes līdzekli, bet frizieris par radītāju, kurš īsteno iecerēto. Viņš vienmēr seko mūsdienu kultūras izmaiņām, jo šo profesiju apgūst visa mūža garumā. Nepārtraukti mainīgās modes tendences, liela tehniku un instrumentu izvēle liek frizierim apgūt desmitiem jaunu iemaņu un pastāvīgi attīstīt sevī radošās īpašības."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/hairdresser.jpg",
+            "alt": "Frizieris"
+          },
+          {
+            "type": "paragraph",
+            "text": "Nevar aizmirst arī lielu fizisko slodzi, kura gulstas uz profesionāli: darba dienu viņš pavada kājās, bet elegants šķēru lidojums ap Jūsu matiem- ir ilgu treniņu rezultāts. Daudziem frizieris kļūst par draugu un biedru, ar viņu mēs apspriežam savu dzīvi, runājam par lietām, kuras ir tālu ārpus profesijas rāmjiem."
+          },
+          {
+            "type": "paragraph",
+            "text": "Kā redzam, frizierim nepieciešamo iemaņu kopums ir plašs, kas padara šo amatu gana sarežģītu apgūšanai, bet jo vērtīgāks kļūst labs speciālists. Pēc aptauju rezultātiem, vairāk kā 90% respondentu atzīmē, ka šī profesija ir pieprasīta, kas nozīmē, ka būt frizierim nozīmē daudz vairāk, kā tikai veidot frizūras."
+          }
+        ]
       }
     }
-  ,
-  "translations": {
-    "en": {
-      "title": "Spring Skin Reset: 10-Minute Daily Checklist",
-      "excerpt": "A simple spring routine to restore glow, reduce dryness, and avoid overloading your skin.",
-      "content": "\n# Spring Skin Reset Checklist\n\nIn spring, skin often becomes more reactive due to temperature changes and dry indoor air.\n\n## Daily routine\n\n1. **Gentle cleansing morning and evening**\n2. **Hydrating serum** (for example, hyaluronic acid)\n3. **Moisturizer for your skin type**\n4. **SPF every morning**, even on cloudy days\n\n## 1-2 times per week\n\n- Enzyme or mild acid exfoliation\n- Soothing mask\n\n## Common spring mistakes\n\n- Replacing the entire routine at once\n- Skipping SPF\n- Over-cleansing\n\nKey rule: introduce new products gradually and monitor your skin response.\n    ",
-      "author": "Olga Dermacosmetologist"
-    },
-    "lv": {
-      "title": "Pavasara ādas reset: 10 minūšu ikdienas kontrolsaraksts",
-      "excerpt": "Vienkārša pavasara rutīna, lai atjaunotu mirdzumu, mazinātu sausumu un nepārslogotu ādu.",
-      "content": "\n# Pavasara ādas reset kontrolsaraksts\n\nPavasarī āda bieži kļūst jutīgāka temperatūras svārstību un sausa iekštelpu gaisa dēļ.\n\n## Ikdienā\n\n1. **Maiga attīrīšana no rīta un vakarā**\n2. **Mitrinošs serums** (piemēram, ar hialuronskābi)\n3. **Krēms atbilstoši ādas tipam**\n4. **SPF katru rītu**, arī mākoņainā laikā\n\n## 1-2 reizes nedēļā\n\n- Enzīmu vai maigs skābju pīlings\n- Nomierinoša maska\n\n## Biežākās pavasara kļūdas\n\n- Visa kopšanas plāna nomaiņa uzreiz\n- SPF ignorēšana\n- Pārāk agresīva attīrīšana\n\nGalvenais noteikums: ieviesiet jaunus līdzekļus pakāpeniski un vērojiet ādas reakciju.\n    ",
-      "author": "Olga, dermakosmetoloģe"
+  },
+  {
+    "id": "30",
+    "slug": "kakaya-kraska-dlya-volos-podoydet-imenno-tebe-30",
+    "title": "Какая краска для волос подойдет именно тебе?",
+    "excerpt": "Порой, многих людей посещает желание сменить цвет волос. Казалось бы, тут все довольно просто и прозаично – нужно пойти в магазин и выбрать понравившуюся краску.",
+    "content": "Порой, многих людей посещает желание сменить цвет волос. Казалось бы, тут все довольно просто и прозаично – нужно пойти в магазин и выбрать понравившуюся краску. Но в реальности добиться желаемого облика не всегда удается. Чтобы знать, как подобрать цвет волос, и какая краска для волос позволит достичь нужного результата , воспользуйся несколькими простыми правилами, которые мы для тебя собрали.\n## Определи цвет и оттенок кожи\nПравильно подобранная краска для волос должна подчеркивать цвет и тон твоей кожи – именно таким принципом пользуются парикмахеры и стилисты в салонах красоты. Если говорить просто, то цвет кожи может быть очень светлым, светлым, средне-светлым, загорелым и темным, но в выборе краски очень важно, чтобы она сочеталась именно с оттенком кожи.\nОттенков бывает всего два: теплый и холодный.\nПростой способ, как определить свой оттенок кожи: рассмотри в солнечном свете внутреннюю поверхность руки. Если вены выглядят синеватыми, то твоя кожа имеет холодный оттенок, а если они приобретают зеленоватый окрас, то, соответственно теплый.\nОсновной принцип – цвет волос должен дополнять оттенок кожи.\nК холодному оттенку хорошо подойдет теплый цвет волос: золотистый блонд, оранжево-красный, ореховый, шоколадно-коричневый.\nС теплыми оттенками, наоборот, сочетаются холодные цвета: бежевый, шампань-блонд, темно-красный, пепельно-коричневый и каштановый.\n## Обрати внимание на цвет глаз\nЦвет глаз, как и цвет кожи тоже помогает выбрать подходящий цвет волос. Чем светлее твои глаза, тем более светлый цвет волос ты можешь выбрать.\nК коричневым и зеленым глазам хорошо подходят краски с теплым обертоном (дополнительным оттенком), например, бордо, золотисто-коричневый и золотистый блонд.\nС голубыми и серыми глазами отлично сочетаются волосы цвета светлый блонд, пепельно-коричневый и платиновый.\n## Волосы должны сочетаться с одеждой\nВнимательно осмотри свой гардероб, примерь одежду разных цветов, чтобы определить, в каком выглядишь лучше.\nЕсли наилучшим образом тебе подходят красный, желтый, оранжевый, золотой и зеленый цвета, то смело можешь красить волосы в золотистый или клубничный блонд, золотисто-коричневый и каштановый.\nЕсли на тебе хорошо смотрятся, фиолетовый и серый цвета, то при выборе краски стоит обратить внимание на песочный блонд, шоколадный и цвет красного дерева.\nЕсли лучше всего смотришься в холодных оттенках красного, королевском синем (роял) или в черном, то обязательно попробуй винно-красный, пепельный блонд, черный или пепельно-коричневый цвета.\n## Как выбрать нужную краску в магазине?\nКартинка на упаковке, зачастую, не дает полного представления о цвете, и, ошибившись, можно не получить желаемого результата. Но, на всех упаковках есть маркировка из трех чисел, которая может дать более полное представление о цвете краски для волос.\nПервое число обозначает натуральный цвет и его глубину. Существует международная шкала:\n- 1 - Черный\n- 2 - Темно-темно каштановый\n- 3 - Темно-каштановый\n- 4 - Каштановый\n- 5 - Светло-каштановый\n- 6 - Темный блонд\n- 7 - Интенсивный блонд\n- 8 - Светлый блонд\n- 9 - Очень светлый блонд\n- 10 - Платиновый блонд\nВторое и третье числа расшифровывают оттенок краски и обертон (оттенок, которого на 50% меньше). Они приведены в этой шкале:\n- 0 - Натуральный тон\n- 1 - Пепельный\n- 2 - Матовый\n- 3 - Золотой\n- 4 - Красный (медный)\n- 5 - Махагоновый (красно-фиолетовый)\n- 6 - Фиолетовый\n- 7 - Коричневый\nНапример, на упаковке указана маркировка 8.43. Первое число говорит нам, что краска относится к гамме \"светлый блонд\", 4 обозначает медный оттенок, а 3 дополнительный золотой оттенок. В итоге получается светлый медный золотистый блонд.\nНадеемся, что теперь вопрос «Как подобрать краску для волос?» больше не будет ставить тебя в тупик. Чтобы эти простые правила всегда были под рукой, сохрани нашу инфографику, а также поделись ей со своими друзьями и знакомыми! Обязательно прочитай и другие статьи на Hairshop.lv , там можно найти еще много полезного и интересного, и приобрести косметику для волос от всемирно известных брендов.",
+    "contentBlocks": [
+      {
+        "type": "paragraph",
+        "text": "Порой, многих людей посещает желание сменить цвет волос. Казалось бы, тут все довольно просто и прозаично – нужно пойти в магазин и выбрать понравившуюся краску. Но в реальности добиться желаемого облика не всегда удается. Чтобы знать, как подобрать цвет волос, и какая краска для волос позволит достичь нужного результата , воспользуйся несколькими простыми правилами, которые мы для тебя собрали."
+      },
+      {
+        "type": "image",
+        "src": "https://hairshop.lv/content/images/uploaded/kraska-dlja-volos-hairshop.jpg",
+        "alt": "Краска для волос - Hairshop.lv"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Определи цвет и оттенок кожи"
+      },
+      {
+        "type": "paragraph",
+        "text": "Правильно подобранная краска для волос должна подчеркивать цвет и тон твоей кожи – именно таким принципом пользуются парикмахеры и стилисты в салонах красоты. Если говорить просто, то цвет кожи может быть очень светлым, светлым, средне-светлым, загорелым и темным, но в выборе краски очень важно, чтобы она сочеталась именно с оттенком кожи."
+      },
+      {
+        "type": "paragraph",
+        "text": "Оттенков бывает всего два: теплый и холодный."
+      },
+      {
+        "type": "paragraph",
+        "text": "Простой способ, как определить свой оттенок кожи: рассмотри в солнечном свете внутреннюю поверхность руки. Если вены выглядят синеватыми, то твоя кожа имеет холодный оттенок, а если они приобретают зеленоватый окрас, то, соответственно теплый."
+      },
+      {
+        "type": "paragraph",
+        "text": "Основной принцип – цвет волос должен дополнять оттенок кожи."
+      },
+      {
+        "type": "paragraph",
+        "text": "К холодному оттенку хорошо подойдет теплый цвет волос: золотистый блонд, оранжево-красный, ореховый, шоколадно-коричневый."
+      },
+      {
+        "type": "paragraph",
+        "text": "С теплыми оттенками, наоборот, сочетаются холодные цвета: бежевый, шампань-блонд, темно-красный, пепельно-коричневый и каштановый."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Обрати внимание на цвет глаз"
+      },
+      {
+        "type": "paragraph",
+        "text": "Цвет глаз, как и цвет кожи тоже помогает выбрать подходящий цвет волос. Чем светлее твои глаза, тем более светлый цвет волос ты можешь выбрать."
+      },
+      {
+        "type": "paragraph",
+        "text": "К коричневым и зеленым глазам хорошо подходят краски с теплым обертоном (дополнительным оттенком), например, бордо, золотисто-коричневый и золотистый блонд."
+      },
+      {
+        "type": "paragraph",
+        "text": "С голубыми и серыми глазами отлично сочетаются волосы цвета светлый блонд, пепельно-коричневый и платиновый."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Волосы должны сочетаться с одеждой"
+      },
+      {
+        "type": "paragraph",
+        "text": "Внимательно осмотри свой гардероб, примерь одежду разных цветов, чтобы определить, в каком выглядишь лучше."
+      },
+      {
+        "type": "paragraph",
+        "text": "Если наилучшим образом тебе подходят красный, желтый, оранжевый, золотой и зеленый цвета, то смело можешь красить волосы в золотистый или клубничный блонд, золотисто-коричневый и каштановый."
+      },
+      {
+        "type": "paragraph",
+        "text": "Если на тебе хорошо смотрятся, фиолетовый и серый цвета, то при выборе краски стоит обратить внимание на песочный блонд, шоколадный и цвет красного дерева."
+      },
+      {
+        "type": "paragraph",
+        "text": "Если лучше всего смотришься в холодных оттенках красного, королевском синем (роял) или в черном, то обязательно попробуй винно-красный, пепельный блонд, черный или пепельно-коричневый цвета."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Как выбрать нужную краску в магазине?"
+      },
+      {
+        "type": "paragraph",
+        "text": "Картинка на упаковке, зачастую, не дает полного представления о цвете, и, ошибившись, можно не получить желаемого результата. Но, на всех упаковках есть маркировка из трех чисел, которая может дать более полное представление о цвете краски для волос."
+      },
+      {
+        "type": "paragraph",
+        "text": "Первое число обозначает натуральный цвет и его глубину. Существует международная шкала:"
+      },
+      {
+        "type": "list",
+        "items": [
+          "1 - Черный",
+          "2 - Темно-темно каштановый",
+          "3 - Темно-каштановый",
+          "4 - Каштановый",
+          "5 - Светло-каштановый",
+          "6 - Темный блонд",
+          "7 - Интенсивный блонд",
+          "8 - Светлый блонд",
+          "9 - Очень светлый блонд",
+          "10 - Платиновый блонд"
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "Второе и третье числа расшифровывают оттенок краски и обертон (оттенок, которого на 50% меньше). Они приведены в этой шкале:"
+      },
+      {
+        "type": "list",
+        "items": [
+          "0 - Натуральный тон",
+          "1 - Пепельный",
+          "2 - Матовый",
+          "3 - Золотой",
+          "4 - Красный (медный)",
+          "5 - Махагоновый (красно-фиолетовый)",
+          "6 - Фиолетовый",
+          "7 - Коричневый"
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "Например, на упаковке указана маркировка 8.43. Первое число говорит нам, что краска относится к гамме \"светлый блонд\", 4 обозначает медный оттенок, а 3 дополнительный золотой оттенок. В итоге получается светлый медный золотистый блонд."
+      },
+      {
+        "type": "paragraph",
+        "text": "Надеемся, что теперь вопрос «Как подобрать краску для волос?» больше не будет ставить тебя в тупик. Чтобы эти простые правила всегда были под рукой, сохрани нашу инфографику, а также поделись ей со своими друзьями и знакомыми! Обязательно прочитай и другие статьи на Hairshop.lv , там можно найти еще много полезного и интересного, и приобрести косметику для волос от всемирно известных брендов."
+      }
+    ],
+    "author": "Admin",
+    "image": "https://hairshop.lv/content/images/uploaded/kraska-dlja-volos.jpg",
+    "category": "blog.category.hairCare",
+    "readTime": 3,
+    "createdAt": "2016-08-23T04:44:56.913Z",
+    "featured": false,
+    "translations": {
+      "lv": {
+        "title": "Kāda matu krāsa piestāvēs tieši tev?",
+        "excerpt": "Reizēm cilvēkus pārņem vēlme nomainīt matu krāsu. Pēc pirmā acu uzmetiena, viss ir viegli un prozaiski - tikai jāaiziet uz veikalu un jāizvēlas tīkamā matu krāsa.",
+        "content": "Reizēm cilvēkus pārņem vēlme nomainīt matu krāsu. Pēc pirmā acu uzmetiena, viss ir viegli un prozaiski - tikai jāaiziet uz veikalu un jāizvēlas tīkamā matu krāsa. Bet realitātē panākt vēlamo rezultātu ne vienmēr izdodas. Lai zinātu, kā izvēlēties matu krāsu, un kāds matu krāsas tonis ļaus sasniegt vēlamo rezultātu, izmanto dažus mūsu ieteikumus padomus, kurus mēs tev sagatavojām.\n## Noskaidro ādas krāsu un toni\nPareizi piemeklētai matu krāsai ir jāuzsver tava ādas krāsa un tonis - tieši šo principu izmanto frizieri un stilisti sakaistumkopšanas salonos. Vienkāršāk sakot, ādas krāsa var būt ļoti gaiša, gaiša, vidēja, iesauļota un tumša ādas krāsa, taču izvēloties matu krāsu ir svarīgi, lai tā saskan tieši ar ādas toni.\nToņi ir tikai divi: silts un auksts.\nLai vienkārši noteiktu savu ādas toni, saules gaismā apskati rokas iekšpusi. Ja vēnas izskatās zilganas, tad tavai ādai ir auksts tonis, bet ja tās ir zaļas, tad, atbilstoši, silta.\nPamatprincips - matu krāsai ir jāpapildina ādas tonis.\nAukstam tonim piestāv siltas matu krāsas tonis: zeltaini blonds, oranžīgi sarkans, riekstu vai šokolādes brūns.\nAr siltiem toņiem ir pretēji, tiem piestāv aukstas krāsas: bēša, šampanieša blonda, tumši sarkana, pelnu brūna un kastaņbrūna.\n## Pievērs uzmanību acu krāsai\nTāpat kā ādas krāsa, arī acu krāsa palīdz izvēlēties piemērotu matu krāsu. Jo gaišākas ir tavas acis, jo gaišāku matu krāsu tu vari izvēlēties.\nBrūnām un zaļām acīm piestāv krāsas ar siltiem virstoņiem (papildus nokrāsai), piemēram bordo, zeltaini brūna un zeltaini blonda.\nZilām un pelēkām acīm labi saskan mati gaiši blondā, pelnu brūnā un platīna krāsā.\n## Matiem jāsaskaņojas ar apģērbu\nUzmanīgi apskati savu garderobi, pielaiko dažādu krāsu apģērbu, lai zinātu, kurā izskaties vislabāk.\nJa visvairāk tev piestāv sarkana, dzeltena, oranža, zeltaina un zaļa krāsas, tad droši vari krāsot matus zeltaini vai zemeņu blondā, zeltaini brūnā un kastaņbrūnā krāsā.\nJa tu labi izskaties violetas un pelēkas krāsas apģērbā, tad izvēloties matu krāsu ir vērts pievērst uzmanību smilšu blondai, šokolādes brūnai un sarkankoka krāsai.\nJa tu vislabāk izskaties aukstās sarkana nokrāsās, karaliski zilā (royal) vai melnā, tad noteikti pamēģini vīna sarkanu, pelnu blondu, melnu vai pelnu brūnu krāsu.\n## Kā izvēlēties pareizu matu krāsu veikalā?\nBilde uz iepakojuma bieži nedod pilnīgu priekšstatu par krāsu, un, kļūdoties krāsas izvēlē, var nesasniegt vēlamo rezultātu. Taču uz visiem iepakojumiem atrodas trīsciparu marķējums, kurš sniedz plašāku informāciju par krāsu.\nPirmais cipars nosaka dabisko krāsu un tās dziļumu. Tās ir pieejamas starptautiskā skalā:\n- 1 - Melna\n- 2 - Brūna\n- 3 - Tumša kastaņu\n- 4 - Vidēja kastaņu\n- 5 - Gaiša kastaņu\n- 6 - Tumši blonda\n- 7 - Intensīvi blonda\n- 8 - Gaiši blonda\n- 9 - Ļoti gaiši blonda\n- 10 - Platīna blonda\nOtrais un trešais cipars atšifrē krāsas nokrāsu un virstoni (nokrāsa, kuras ir par 50% mazāk). Tie ir atspoguļoti šajā skalā:\n- 0 - Naturālais tonis\n- 1 - Pelnu\n- 2 - matēts\n- 3 - Zeltains\n- 4 - sarkans (varš)\n- 5 - sarkanviolets\n- 6 - violets\n- 7 - brūns\nPiemēram, uz iepakojuma atrodas marķējums 8.43. Pirmais skaitlis reprezentē piederību krāsu gammai \"gaiši blonds\", 4 norāda vara nokrāsu, bet 3 papildus zeltaino toni. Tātad galarezultāta krāsa būs gaiši vara zeltaini blonda.\nCeram, ka tagad jautājums \"Kā izvēlēties matu krāsu?\" vairs neļaus nonākt strupceļā. Lai šie vienkāršie padomi vienmēr būtu pie rokas, saglabā mūsu infografiku, un padalies ar to ar saviem draugiem un paziņām! Noteikti izlasi ari citus rakstus Hairshop.lv mājaslapā . Tur var atrast vēl daudz interesantas un noderīgas informācijas, un iegādāties matu kopšanas kosmētiku no pasaulslaveniem zīmoliem.",
+        "contentBlocks": [
+          {
+            "type": "paragraph",
+            "text": "Reizēm cilvēkus pārņem vēlme nomainīt matu krāsu. Pēc pirmā acu uzmetiena, viss ir viegli un prozaiski - tikai jāaiziet uz veikalu un jāizvēlas tīkamā matu krāsa. Bet realitātē panākt vēlamo rezultātu ne vienmēr izdodas. Lai zinātu, kā izvēlēties matu krāsu, un kāds matu krāsas tonis ļaus sasniegt vēlamo rezultātu, izmanto dažus mūsu ieteikumus padomus, kurus mēs tev sagatavojām."
+          },
+          {
+            "type": "image",
+            "src": "https://hairshop.lv/content/images/uploaded/matu-krasa-hairshop.jpg",
+            "alt": "Matu krāsa - Hairshop.lv"
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Noskaidro ādas krāsu un toni"
+          },
+          {
+            "type": "paragraph",
+            "text": "Pareizi piemeklētai matu krāsai ir jāuzsver tava ādas krāsa un tonis - tieši šo principu izmanto frizieri un stilisti sakaistumkopšanas salonos. Vienkāršāk sakot, ādas krāsa var būt ļoti gaiša, gaiša, vidēja, iesauļota un tumša ādas krāsa, taču izvēloties matu krāsu ir svarīgi, lai tā saskan tieši ar ādas toni."
+          },
+          {
+            "type": "paragraph",
+            "text": "Toņi ir tikai divi: silts un auksts."
+          },
+          {
+            "type": "paragraph",
+            "text": "Lai vienkārši noteiktu savu ādas toni, saules gaismā apskati rokas iekšpusi. Ja vēnas izskatās zilganas, tad tavai ādai ir auksts tonis, bet ja tās ir zaļas, tad, atbilstoši, silta."
+          },
+          {
+            "type": "paragraph",
+            "text": "Pamatprincips - matu krāsai ir jāpapildina ādas tonis."
+          },
+          {
+            "type": "paragraph",
+            "text": "Aukstam tonim piestāv siltas matu krāsas tonis: zeltaini blonds, oranžīgi sarkans, riekstu vai šokolādes brūns."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ar siltiem toņiem ir pretēji, tiem piestāv aukstas krāsas: bēša, šampanieša blonda, tumši sarkana, pelnu brūna un kastaņbrūna."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Pievērs uzmanību acu krāsai"
+          },
+          {
+            "type": "paragraph",
+            "text": "Tāpat kā ādas krāsa, arī acu krāsa palīdz izvēlēties piemērotu matu krāsu. Jo gaišākas ir tavas acis, jo gaišāku matu krāsu tu vari izvēlēties."
+          },
+          {
+            "type": "paragraph",
+            "text": "Brūnām un zaļām acīm piestāv krāsas ar siltiem virstoņiem (papildus nokrāsai), piemēram bordo, zeltaini brūna un zeltaini blonda."
+          },
+          {
+            "type": "paragraph",
+            "text": "Zilām un pelēkām acīm labi saskan mati gaiši blondā, pelnu brūnā un platīna krāsā."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Matiem jāsaskaņojas ar apģērbu"
+          },
+          {
+            "type": "paragraph",
+            "text": "Uzmanīgi apskati savu garderobi, pielaiko dažādu krāsu apģērbu, lai zinātu, kurā izskaties vislabāk."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ja visvairāk tev piestāv sarkana, dzeltena, oranža, zeltaina un zaļa krāsas, tad droši vari krāsot matus zeltaini vai zemeņu blondā, zeltaini brūnā un kastaņbrūnā krāsā."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ja tu labi izskaties violetas un pelēkas krāsas apģērbā, tad izvēloties matu krāsu ir vērts pievērst uzmanību smilšu blondai, šokolādes brūnai un sarkankoka krāsai."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ja tu vislabāk izskaties aukstās sarkana nokrāsās, karaliski zilā (royal) vai melnā, tad noteikti pamēģini vīna sarkanu, pelnu blondu, melnu vai pelnu brūnu krāsu."
+          },
+          {
+            "type": "heading",
+            "level": 2,
+            "text": "Kā izvēlēties pareizu matu krāsu veikalā?"
+          },
+          {
+            "type": "paragraph",
+            "text": "Bilde uz iepakojuma bieži nedod pilnīgu priekšstatu par krāsu, un, kļūdoties krāsas izvēlē, var nesasniegt vēlamo rezultātu. Taču uz visiem iepakojumiem atrodas trīsciparu marķējums, kurš sniedz plašāku informāciju par krāsu."
+          },
+          {
+            "type": "paragraph",
+            "text": "Pirmais cipars nosaka dabisko krāsu un tās dziļumu. Tās ir pieejamas starptautiskā skalā:"
+          },
+          {
+            "type": "list",
+            "items": [
+              "1 - Melna",
+              "2 - Brūna",
+              "3 - Tumša kastaņu",
+              "4 - Vidēja kastaņu",
+              "5 - Gaiša kastaņu",
+              "6 - Tumši blonda",
+              "7 - Intensīvi blonda",
+              "8 - Gaiši blonda",
+              "9 - Ļoti gaiši blonda",
+              "10 - Platīna blonda"
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "Otrais un trešais cipars atšifrē krāsas nokrāsu un virstoni (nokrāsa, kuras ir par 50% mazāk). Tie ir atspoguļoti šajā skalā:"
+          },
+          {
+            "type": "list",
+            "items": [
+              "0 - Naturālais tonis",
+              "1 - Pelnu",
+              "2 - matēts",
+              "3 - Zeltains",
+              "4 - sarkans (varš)",
+              "5 - sarkanviolets",
+              "6 - violets",
+              "7 - brūns"
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "Piemēram, uz iepakojuma atrodas marķējums 8.43. Pirmais skaitlis reprezentē piederību krāsu gammai \"gaiši blonds\", 4 norāda vara nokrāsu, bet 3 papildus zeltaino toni. Tātad galarezultāta krāsa būs gaiši vara zeltaini blonda."
+          },
+          {
+            "type": "paragraph",
+            "text": "Ceram, ka tagad jautājums \"Kā izvēlēties matu krāsu?\" vairs neļaus nonākt strupceļā. Lai šie vienkāršie padomi vienmēr būtu pie rokas, saglabā mūsu infografiku, un padalies ar to ar saviem draugiem un paziņām! Noteikti izlasi ari citus rakstus Hairshop.lv mājaslapā . Tur var atrast vēl daudz interesantas un noderīgas informācijas, un iegādāties matu kopšanas kosmētiku no pasaulslaveniem zīmoliem."
+          }
+        ]
+      }
     }
   }
-}
 ]

@@ -11,7 +11,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { BLOG_POSTS, localizeBlogPost } from '@/data/blog';
+import type { BlogPost } from '@/data/blog';
 import type { Product } from '@/data/products';
 import { useBrandsConfig } from '@/lib/use-brands-config';
 import { useTranslation } from '@/lib/use-translation';
@@ -123,14 +123,20 @@ function getBrandName(segment: string, brands: Array<{ id: string; name: string 
     return brand?.name ?? null;
 }
 
-function getBlogPostTitle(segment: string, language: 'ru' | 'en' | 'lv'): string | null {
-    const post = BLOG_POSTS.find((item) => item.slug === decodeURIComponent(segment));
+type BlogCrumbPost = Pick<BlogPost, 'slug' | 'title' | 'translations'>;
+
+function getBlogPostTitle(
+    segment: string,
+    language: 'ru' | 'en' | 'lv',
+    posts: Record<string, BlogCrumbPost>
+): string | null {
+    const post = posts[decodeURIComponent(segment)];
 
     if (!post) {
         return null;
     }
 
-    return localizeBlogPost(post, language).title;
+    return post.translations?.[language]?.title ?? post.title;
 }
 
 export default function AppBreadcrumbs() {
@@ -138,6 +144,30 @@ export default function AppBreadcrumbs() {
     const { t, language } = useTranslation();
     const { brands } = useBrandsConfig();
     const [productCache, setProductCache] = useState<Record<string, Product>>({});
+    const [blogPostCache, setBlogPostCache] = useState<Record<string, BlogCrumbPost>>({});
+
+    useEffect(() => {
+        if (!pathname) return;
+        const segments = pathname.split('/').filter(Boolean);
+        const blogIndex = segments.findIndex((s) => s === 'blog');
+        const slug = blogIndex >= 0 ? segments[blogIndex + 1] : undefined;
+        if (!slug || blogPostCache[decodeURIComponent(slug)]) return;
+
+        fetch('/api/blog')
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data: { posts?: BlogCrumbPost[] } | null) => {
+                if (data?.posts?.length) {
+                    setBlogPostCache((prev) => {
+                        const next = { ...prev };
+                        for (const post of data.posts as BlogCrumbPost[]) {
+                            next[post.slug] = post;
+                        }
+                        return next;
+                    });
+                }
+            })
+            .catch(() => {});
+    }, [pathname, blogPostCache]);
 
     useEffect(() => {
         if (!pathname) return;
@@ -171,7 +201,7 @@ export default function AppBreadcrumbs() {
                 : isBrandIdSegment
                 ? getBrandName(segment, brands)
                 : isBlogSlugSegment
-                ? getBlogPostTitle(segment, language)
+                ? getBlogPostTitle(segment, language, blogPostCache)
                 : null;
             const label =
                 resolvedEntityLabel ??
@@ -179,7 +209,7 @@ export default function AppBreadcrumbs() {
 
             return { href, label };
         });
-    }, [brands, language, pathname, t, productCache]);
+    }, [brands, language, pathname, t, productCache, blogPostCache]);
 
     return (
         <Breadcrumb

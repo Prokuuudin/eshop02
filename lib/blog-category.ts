@@ -3,7 +3,8 @@ const BLOG_CATEGORY_KEYS = [
   'blog.category.hairCare',
   'blog.category.bodyCare',
   'blog.category.makeup',
-  'blog.category.ingredients'
+  'blog.category.ingredients',
+  'blog.category.news'
 ] as const
 
 const BLOG_CATEGORY_TO_CATALOG: Record<string, string> = {

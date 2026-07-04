@@ -207,7 +207,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     content: payload.content ?? '',
     contentBlocks: Array.isArray(payload.contentBlocks) ? payload.contentBlocks : undefined,
     author: payload.author?.trim() || 'Admin',
-    image: payload.image?.trim() || '/blog/skincare-guide.jpg',
+    image: payload.image?.trim() || '/blog/default.jpg',
     category: payload.category?.trim() || 'face care',
     readTime: safeReadTime,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,

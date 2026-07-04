@@ -73,7 +73,7 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
   title: '',
   excerpt: '',
   author: '',
-  image: '/blog/skincare-guide.jpg',
+  image: '/blog/default.jpg',
   category: 'уход за лицом',
   readTime: 4,
   content: '',
@@ -392,7 +392,7 @@ export default function AdminBlogPage() {
                         value={blogForm.image}
                         onChange={(e) => setBlogForm((prev) => ({ ...prev, image: e.target.value }))}
                         className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
-                        placeholder="/blog/skincare-guide.jpg"
+                        placeholder="/blog/default.jpg"
                         required
                       />
                     </label>

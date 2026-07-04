@@ -18,6 +18,7 @@ import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser, syncBonusBalanceFromServer } from '@/lib/auth';
 import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation';
 import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program';
+import { calcDeliveryFee } from '@/lib/delivery';
 import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
@@ -29,10 +30,10 @@ const validateEmail = (email: string): boolean => {
 };
 
 
-const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string; price: number }> = [
-    { id: 'courier', labelKey: 'checkout.delivery.courier', price: 500 },
-    { id: 'pickup', labelKey: 'checkout.delivery.pickup', price: 0 },
-    { id: 'post', labelKey: 'checkout.delivery.omniva', price: 300 },
+const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
+    { id: 'courier', labelKey: 'checkout.delivery.courier' },
+    { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
+    { id: 'post', labelKey: 'checkout.delivery.omniva' },
 ];
 
 export default function CheckoutPage() {
@@ -40,7 +41,7 @@ export default function CheckoutPage() {
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const { items, replaceWithItems } = useCart();
-    const { addOrder, updateOrderPayment, getNextOrderNumber } = useOrders();
+    const { addOrder, updateOrderPayment } = useOrders();
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
@@ -234,12 +235,11 @@ export default function CheckoutPage() {
         }
 
         // Calculate totals
-        const deliveryOption = DELIVERY_OPTIONS.find((d) => d.id === deliveryMethod);
-        const deliveryFee = deliveryOption?.price || 500;
         const discount = appliedPromo && appliedPromoDiscountPct !== null
             ? calculateDiscount(subtotal, appliedPromoDiscountPct)
             : 0;
         const subtotalAfterDiscount = subtotal - discount;
+        const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
         const normalizedCheckoutEmail = formData.email.trim().toLowerCase();
 
         // Catalog prices already include VAT — taxAmount is informational, not added to the total.
@@ -252,10 +252,8 @@ export default function CheckoutPage() {
         const bonusDiscount = pointsToEuros(bonusSpentPoints);
         const finalGrandTotal = grandTotal - bonusDiscount;
 
-        // Create order
-        const orderId = String(getNextOrderNumber());
-        const order = {
-            id: orderId,
+        // Create order — the server assigns the canonical id (client counters collide across browsers)
+        const orderData = {
             createdAt: new Date(),
             items: checkoutItems.map((item) => ({
                 ...item,
@@ -279,25 +277,32 @@ export default function CheckoutPage() {
             ...formData,
         };
 
-        addOrder(order);
-
-        // Keep a server-side copy of the order so payment webhooks can update canonical status.
+        // Persist server-side first: the server generates the unique order id and
+        // payment webhooks update canonical status there.
+        let orderId = `local-${Date.now()}`;
         try {
-            await fetch('/api/orders', {
+            const response = await fetch('/api/orders', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     order: {
-                        ...order,
-                        createdAt: order.createdAt.toISOString(),
+                        ...orderData,
+                        createdAt: orderData.createdAt.toISOString(),
                     },
                 }),
             });
+            if (response.ok) {
+                const payload = (await response.json()) as { orderId?: string };
+                if (payload.orderId) orderId = String(payload.orderId);
+            }
         } catch {
             // Checkout should still proceed even if server order persistence is temporarily unavailable.
         }
+
+        const order = { id: orderId, ...orderData };
+        addOrder(order);
 
         // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
         if (currentUser) {
@@ -462,12 +467,11 @@ export default function CheckoutPage() {
         );
     }
 
-    const deliveryOption = DELIVERY_OPTIONS.find((d) => d.id === deliveryMethod);
-    const deliveryFee = deliveryOption?.price || 500;
     const discount = appliedPromo && appliedPromoDiscountPct !== null
         ? calculateDiscount(subtotal, appliedPromoDiscountPct)
         : 0;
     const subtotalAfterDiscount = subtotal - discount;
+    const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
     // Catalog prices already include VAT — taxAmount is informational, not added to the total.
     const taxAmount = extractVat(subtotalAfterDiscount);
     const grandTotal = subtotalAfterDiscount + deliveryFee;
@@ -674,9 +678,9 @@ export default function CheckoutPage() {
                                     <div className="flex-1">
                                         <div className="font-medium">{t(option.labelKey)}</div>
                                         <div className="text-sm text-muted-foreground">
-                                            {option.price === 0
+                                            {calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
                                                 ? t('checkout.delivery.free')
-                                                : formatCurrency(option.price)}
+                                                : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
                                         </div>
                                     </div>
                                 </label>

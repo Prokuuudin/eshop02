@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
-vi.mock('@/lib/orders-data-store', () => ({ createOrUpdateServerOrder: vi.fn() }))
+vi.mock('@/lib/orders-data-store', () => ({ createServerOrder: vi.fn() }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock('@/lib/server-pricing', () => ({
 
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
-import { createOrUpdateServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder } from '@/lib/orders-data-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { POST } from './route'
@@ -52,7 +52,11 @@ describe('POST /api/orders — admin notification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getServerUser).mockResolvedValue(null)
-    vi.mocked(createOrUpdateServerOrder).mockResolvedValue(undefined as never)
+    // Server assigns the canonical id — echo the payload back under a generated id
+    vi.mocked(createServerOrder).mockImplementation(async (order) => ({
+      ...(order as object),
+      id: '1001',
+    }) as never)
     vi.mocked(getTemplates).mockResolvedValue([])
     vi.mocked(recomputeOrderPricing).mockResolvedValue({
       items: [{ id: 'p1', price: 25, quantity: 2, bonusRate: 0, fromCatalog: true }],
@@ -79,10 +83,22 @@ describe('POST /api/orders — admin notification', () => {
     const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
     expect(adminCall).toBeDefined()
     const [, subject, html] = adminCall!
-    expect(subject).toContain('ORD-001')
-    expect(html).toContain('ORD-001')
+    expect(subject).toContain('1001')
+    expect(html).toContain('1001')
     expect(html).toContain('Ivan')
     expect(html).toContain('64')
+  })
+
+  it('ignores the client-supplied id and returns the server-generated orderId', async () => {
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+
+    const json = (await res.json()) as { orderId?: string }
+    expect(json.orderId).toBe('1001')
+
+    // The persisted payload must not carry the client id — the server generates it
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0] as Record<string, unknown>
+    expect(persisted.id).toBeUndefined()
   })
 
   it('does not send admin email when CONTACT_TO is not set', async () => {

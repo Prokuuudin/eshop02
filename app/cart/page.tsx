@@ -23,6 +23,7 @@ import {
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
 import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
+import { calcDeliveryFee } from '@/lib/delivery';
 import AnimatedPrice from '@/components/AnimatedPrice';
 
 export default function CartPage() {
@@ -105,7 +106,7 @@ export default function CartPage() {
     );
     // Catalog prices already include VAT — taxAmount is informational, not added to the total.
     const taxAmount = extractVat(subtotal);
-    const deliveryFee = subtotal > 0 ? 500 : 0;
+    const deliveryFee = subtotal > 0 ? calcDeliveryFee('courier', subtotal) : 0;
     const grandTotal = subtotal + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const bonusToEarn = calcOrderBonus(

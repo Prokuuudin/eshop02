@@ -62,23 +62,40 @@ export async function POST(req: NextRequest) {
     } else {
       // New user — create with fixed defaults for ALL privileged fields
       const passwordHash = await hashPassword(password)
-      const user = await prisma.user.create({
-        data: {
-          id: String(id),
-          email: normalizedEmail,
-          passwordHash,
-          name: body.name ?? null,
-          phone: body.phone ?? null,
-          cardNumber: body.cardNumber?.trim() ?? null,
-          avatarUrl: body.avatarUrl ?? null,
-          // Privileged fields always default — never from client
-          platformRole: 'customer',
-          approvalRequired: false,
-          auditLoggingEnabled: false,
-          mustChangePassword: false,
-          bonusPoints: 350,
-        },
+      const createUser = (userId: string) =>
+        prisma.user.create({
+          data: {
+            id: userId,
+            email: normalizedEmail,
+            passwordHash,
+            name: body.name ?? null,
+            phone: body.phone ?? null,
+            cardNumber: body.cardNumber?.trim() ?? null,
+            avatarUrl: body.avatarUrl ?? null,
+            // Privileged fields always default — never from client
+            platformRole: 'customer',
+            approvalRequired: false,
+            auditLoggingEnabled: false,
+            mustChangePassword: false,
+            bonusPoints: 350,
+          },
+        })
+
+      // Local seed ids (seed_user_001 etc.) can already belong to another account in the
+      // shared DB — fall back to a generated id instead of failing with a unique conflict.
+      const requestedId = String(id)
+      const idTaken = await prisma.user.findUnique({
+        where: { id: requestedId },
+        select: { id: true },
       })
+
+      let user
+      try {
+        user = await createUser(idTaken ? crypto.randomUUID() : requestedId)
+      } catch (e) {
+        if ((e as { code?: string })?.code !== 'P2002') throw e
+        user = await createUser(crypto.randomUUID())
+      }
       userId = user.id
     }
 

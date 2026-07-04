@@ -75,8 +75,8 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
   }
 }
 
-export const createOrUpdateServerOrder = async (order: ServerOrder): Promise<ServerOrder> => {
-  const data = {
+function buildOrderData(order: Omit<ServerOrder, 'id'>) {
+  return {
     createdAt: new Date(order.createdAt),
     items: order.items,
     subtotal: order.subtotal,
@@ -103,53 +103,93 @@ export const createOrUpdateServerOrder = async (order: ServerOrder): Promise<Ser
     userId: order.userId ?? null,
     companyId: order.companyId ?? null,
   }
+}
 
+/** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
+const createOrderWithSideEffects = async (id: string, order: Omit<ServerOrder, 'id'>): Promise<PrismaOrder> => {
+  const data = buildOrderData(order)
+
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({ data: { id, ...data } })
+
+    // Decrement stock for each item — best effort, ignore missing products
+    for (const item of order.items) {
+      if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
+        await tx.product.updateMany({
+          where: { id: item.id, isDeleted: false, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        })
+      }
+    }
+
+    // Increment promo usedCount so maxUses limit is enforced
+    if (order.promoCode) {
+      await tx.promoCode.updateMany({
+        where: { code: order.promoCode.toUpperCase(), active: true },
+        data: { usedCount: { increment: 1 } },
+      })
+    }
+
+    // Apply bonus balance changes once, at creation: spent points debit, earned points credit.
+    // Values are already recomputed and capped server-side (recomputeOrderPricing).
+    const bonusDelta = (order.bonusEarned ?? 0) - (order.bonusSpent ?? 0)
+    if (order.userId && bonusDelta !== 0) {
+      const user = await tx.user.findUnique({
+        where: { id: order.userId },
+        select: { bonusPoints: true },
+      })
+      if (user) {
+        await tx.user.update({
+          where: { id: order.userId },
+          data: { bonusPoints: Math.max(0, user.bonusPoints + bonusDelta) },
+        })
+      }
+    }
+
+    return created
+  })
+}
+
+const isUniqueConflict = (e: unknown): boolean =>
+  typeof e === 'object' && e !== null && (e as { code?: string }).code === 'P2002'
+
+/** Next sequential order id: max existing numeric id + 1 (starting from 1001). */
+const generateNextOrderId = async (): Promise<string> => {
+  const rows = await prisma.$queryRaw<Array<{ max: bigint | number | null }>>`
+    SELECT MAX(CAST(id AS BIGINT)) AS max FROM "Order" WHERE id ~ '^[0-9]+$'
+  `
+  const max = rows[0]?.max
+  const maxNum = max == null ? 1000 : Number(max)
+  return String(Math.max(maxNum, 1000) + 1)
+}
+
+/**
+ * Create a new order under a server-generated id. The id is never taken from the client:
+ * per-browser counters collide across customers and would silently overwrite foreign orders.
+ * A concurrent insert can win the generated id — retry with a fresh one.
+ */
+export const createServerOrder = async (order: Omit<ServerOrder, 'id'>): Promise<ServerOrder> => {
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const id = await generateNextOrderId()
+    try {
+      const row = await createOrderWithSideEffects(id, order)
+      return mapDbToServerOrder(row)
+    } catch (e) {
+      if (!isUniqueConflict(e)) throw e
+      lastError = e
+    }
+  }
+  throw lastError
+}
+
+/** Upsert by a caller-supplied id — used by the key-protected v1 API, not the public checkout. */
+export const createOrUpdateServerOrder = async (order: ServerOrder): Promise<ServerOrder> => {
   const existing = await prisma.order.findUnique({ where: { id: order.id } })
 
-  let row
-  if (existing) {
-    row = await prisma.order.update({ where: { id: order.id }, data })
-  } else {
-    row = await prisma.$transaction(async (tx) => {
-      const created = await tx.order.create({ data: { id: order.id, ...data } })
-
-      // Decrement stock for each item — best effort, ignore missing products
-      for (const item of order.items) {
-        if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
-          await tx.product.updateMany({
-            where: { id: item.id, isDeleted: false, stock: { gte: item.quantity } },
-            data: { stock: { decrement: item.quantity } },
-          })
-        }
-      }
-
-      // Increment promo usedCount so maxUses limit is enforced
-      if (order.promoCode) {
-        await tx.promoCode.updateMany({
-          where: { code: order.promoCode.toUpperCase(), active: true },
-          data: { usedCount: { increment: 1 } },
-        })
-      }
-
-      // Apply bonus balance changes once, at creation: spent points debit, earned points credit.
-      // Values are already recomputed and capped server-side (recomputeOrderPricing).
-      const bonusDelta = (order.bonusEarned ?? 0) - (order.bonusSpent ?? 0)
-      if (order.userId && bonusDelta !== 0) {
-        const user = await tx.user.findUnique({
-          where: { id: order.userId },
-          select: { bonusPoints: true },
-        })
-        if (user) {
-          await tx.user.update({
-            where: { id: order.userId },
-            data: { bonusPoints: Math.max(0, user.bonusPoints + bonusDelta) },
-          })
-        }
-      }
-
-      return created
-    })
-  }
+  const row = existing
+    ? await prisma.order.update({ where: { id: order.id }, data: buildOrderData(order) })
+    : await createOrderWithSideEffects(order.id, order)
 
   return mapDbToServerOrder(row)
 }

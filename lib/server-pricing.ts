@@ -4,16 +4,10 @@ import { calculatePrice } from '@/lib/customer-segmentation'
 import { calculateDiscount } from '@/lib/promo-codes'
 import { extractVat } from '@/lib/tax'
 import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
+import { calcDeliveryFee } from '@/lib/delivery'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
-
-export const DEFAULT_DELIVERY_FEE = 500
-export const DELIVERY_FEES: Record<string, number> = {
-  courier: 500,
-  pickup: 0,
-  post: 300,
-}
 
 type BulkTier = { quantity: number; pricePerUnit: number }
 
@@ -137,7 +131,7 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
   const discountPct = await getServerPromoDiscountPct(input.promoCode, subtotal)
   const discount = discountPct > 0 ? calculateDiscount(subtotal, discountPct) : 0
 
-  const delivery = DELIVERY_FEES[input.deliveryMethod ?? ''] ?? DEFAULT_DELIVERY_FEE
+  const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount)
   // Catalog prices already include VAT — tax here is informational only, not added to the total.
   const tax = extractVat(subtotal - discount)
   const grandTotal = subtotal - discount + delivery

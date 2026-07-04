@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createOrUpdateServerOrder, type ServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder, type ServerOrder } from '@/lib/orders-data-store'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
   try {
     const { order } = (await req.json()) as { order?: ServerOrder }
 
-    if (!order?.id) {
+    if (!order) {
       return NextResponse.json({ error: 'order payload is required' }, { status: 400 })
     }
 
@@ -141,8 +141,12 @@ export async function POST(req: NextRequest) {
       quantity: pricing.items[idx]?.quantity ?? item.quantity,
     }))
 
-    const normalizedOrder: ServerOrder = {
-      ...order,
+    // The id is server-generated: per-browser client counters collide across customers,
+    // and accepting a client id would let anyone overwrite a foreign order.
+    const { id: ignoredClientId, ...orderFields } = order
+    void ignoredClientId
+    const normalizedOrder: Omit<ServerOrder, 'id'> = {
+      ...orderFields,
       items: correctedItems,
       subtotal: pricing.subtotal,
       discount: pricing.discount,
@@ -158,12 +162,12 @@ export async function POST(req: NextRequest) {
       createdAt: order.createdAt || new Date().toISOString()
     }
 
-    await createOrUpdateServerOrder(normalizedOrder)
+    const created = await createServerOrder(normalizedOrder)
 
-    sendOrderConfirmationEmail(normalizedOrder).catch(console.error)
-    sendAdminOrderNotificationEmail(normalizedOrder).catch(console.error)
+    sendOrderConfirmationEmail(created).catch(console.error)
+    sendAdminOrderNotificationEmail(created).catch(console.error)
 
-    return NextResponse.json({ success: true, orderId: normalizedOrder.id })
+    return NextResponse.json({ success: true, orderId: created.id })
   } catch (error) {
     console.error('Orders API POST error:', error)
     return NextResponse.json({ error: 'Failed to persist order' }, { status: 500 })

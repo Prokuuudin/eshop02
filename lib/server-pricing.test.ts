@@ -92,9 +92,41 @@ describe('recomputeOrderPricing', () => {
     })
 
     expect(r.subtotal).toBe(2000) // 1000 * 2, not 2
-    expect(r.delivery).toBe(500)
+    expect(r.delivery).toBe(0) // free delivery from €100
     expect(r.tax).toBe(347.11) // VAT already included in price, extracted for display: 2000 - 2000/1.21
-    expect(r.total).toBe(2000 + 500) // tax not added — it's already inside subtotal
+    expect(r.total).toBe(2000) // tax not added — it's already inside subtotal
+  })
+
+  it('charges the courier fee in euros below the free-delivery threshold', async () => {
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 6, bulkPricingTiers: null },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'courier',
+      userBonusBalance: null,
+    })
+
+    expect(r.delivery).toBe(5) // €5, not €500
+    expect(r.total).toBe(11) // €6 order costs €11, not €506
+  })
+
+  it('applies free delivery from €100 of subtotal', async () => {
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'courier',
+      userBonusBalance: null,
+    })
+
+    expect(r.delivery).toBe(0)
+    expect(r.total).toBe(100)
   })
 
   it('forbids bonus spend for guests (no balance)', async () => {
@@ -123,7 +155,7 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: 300,
     })
     expect(r.bonusSpent).toBe(300) // points
-    expect(r.total).toBe(1000 + 500 - 3) // 300 points = €3.00
+    expect(r.total).toBe(1000 - 3) // 300 points = €3.00; delivery free from €100
   })
 
   it('caps bonus spend at the order total converted to points', async () => {

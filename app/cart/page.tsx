@@ -22,6 +22,7 @@ import {
     getMinimumOrderQuantity,
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
+import { calcOrderBonus } from '@/lib/bonus-program';
 import AnimatedPrice from '@/components/AnimatedPrice';
 
 export default function CartPage() {
@@ -107,9 +108,12 @@ export default function CartPage() {
     const deliveryFee = subtotal > 0 ? 500 : 0;
     const grandTotal = subtotal + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
-    const bonusToEarn = selectedItems.reduce(
-        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
-        0
+    const bonusToEarn = calcOrderBonus(
+        selectedItems.map((item) => ({
+            price: calculatePrice(item, item.quantity),
+            quantity: item.quantity,
+            bonusRate: item.bonusRate,
+        }))
     );
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const selectedIdsParam = selectedItemIds.join(',');

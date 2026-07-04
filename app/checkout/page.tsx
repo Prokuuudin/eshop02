@@ -17,6 +17,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
 import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation';
+import { calcOrderBonus } from '@/lib/bonus-program';
 import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
@@ -465,9 +466,12 @@ export default function CheckoutPage() {
     const grandTotal = subtotalAfterDiscount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
-    const bonusToEarn = checkoutItems.reduce(
-        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
-        0
+    const bonusToEarn = calcOrderBonus(
+        checkoutItems.map((item) => ({
+            price: calculatePrice(item, item.quantity),
+            quantity: item.quantity,
+            bonusRate: item.bonusRate,
+        }))
     );
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
     const maxBonusDiscount = bonusApplicable

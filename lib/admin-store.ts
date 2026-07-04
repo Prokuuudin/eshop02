@@ -3,25 +3,10 @@ import { persist } from 'zustand/middleware'
 
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
-export interface BonusProgramConfig {
-  enabled: boolean
-  earnRatePercent: number
-  maxSpendPercent: number
-  minOrderForEarn: number
-  pointsExpiryDays: number
-  minPointsToSpend: number
-  maxEarnPerOrder: number
-}
+import { DEFAULT_BONUS_PROGRAM_CONFIG, type BonusProgramConfig } from '@/lib/bonus-program'
 
-export const DEFAULT_BONUS_PROGRAM_CONFIG: BonusProgramConfig = {
-  enabled: true,
-  earnRatePercent: 5,
-  maxSpendPercent: 100,
-  minOrderForEarn: 0,
-  pointsExpiryDays: 0,
-  minPointsToSpend: 0,
-  maxEarnPerOrder: 0,
-}
+export { DEFAULT_BONUS_PROGRAM_CONFIG }
+export type { BonusProgramConfig }
 
 type AdminStore = {
   orderStatuses: Record<string, OrderStatus>
@@ -41,6 +26,12 @@ type AdminStore = {
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) return min
   return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+// Без Math.round — ставка начисления дробная (0.5%).
+const clampFloat = (value: number, min: number, max: number): number => {
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, value))
 }
 
 export const useAdminStore = create<AdminStore>()(
@@ -106,7 +97,7 @@ export const useAdminStore = create<AdminStore>()(
         set((state) => ({
           bonusProgram: {
             enabled: nextConfig.enabled ?? state.bonusProgram.enabled,
-            earnRatePercent: clamp(nextConfig.earnRatePercent ?? state.bonusProgram.earnRatePercent, 0, 100),
+            earnRatePercent: clampFloat(nextConfig.earnRatePercent ?? state.bonusProgram.earnRatePercent, 0, 100),
             maxSpendPercent: clamp(nextConfig.maxSpendPercent ?? state.bonusProgram.maxSpendPercent, 0, 100),
             minOrderForEarn: clamp(nextConfig.minOrderForEarn ?? state.bonusProgram.minOrderForEarn, 0, 1_000_000),
             pointsExpiryDays: clamp(nextConfig.pointsExpiryDays ?? state.bonusProgram.pointsExpiryDays, 0, 3650),
@@ -117,7 +108,17 @@ export const useAdminStore = create<AdminStore>()(
       }
     }),
     {
-      name: 'admin-store'
+      name: 'admin-store',
+      // v1: earnRatePercent 5 -> 0.5; в localStorage старых браузеров лежит 5,
+      // и без миграции оно перекрывает новый дефолт.
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = (persistedState ?? {}) as Record<string, unknown>
+        if (version < 1) {
+          return { ...state, bonusProgram: DEFAULT_BONUS_PROGRAM_CONFIG }
+        }
+        return state
+      },
     }
   )
 )

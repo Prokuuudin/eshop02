@@ -149,7 +149,7 @@ export default function AdminBonusPage() {
 
                 <label className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.earnRate')} (%)</span>
-                  <Input type="number" min={0} max={100} value={draft.earnRatePercent}
+                  <Input type="number" min={0} max={100} step={0.1} value={draft.earnRatePercent}
                     onChange={(e) => setDraft((p) => ({ ...p, earnRatePercent: Number(e.target.value) }))} />
                 </label>
 

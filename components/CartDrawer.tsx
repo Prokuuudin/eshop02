@@ -22,6 +22,7 @@ import {
     getMinimumOrderQuantity,
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
+import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
 
 type CartDrawerProps = {
     isOpen: boolean;
@@ -66,9 +67,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     }, [items.length]);
 
     const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
-    const bonusToEarn = selectedItems.reduce(
-        (sum, item) => sum + (item.bonusRate ?? 0) * item.quantity,
-        0
+    const bonusToEarn = calcOrderBonus(
+        selectedItems.map((item) => ({
+            price: calculatePrice(item, item.quantity),
+            quantity: item.quantity,
+            bonusRate: item.bonusRate,
+        }))
     );
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const subtotal = selectedItems.reduce(
@@ -345,7 +349,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 </div>
                                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
                                     <span>{t('checkout.bonus.willEarn')}</span>
-                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">+{bonusToEarn} {t('cart.bonus.unit')}</span>
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                        +{bonusToEarn} {t('cart.bonus.unit')}
+                                        {bonusToEarn > 0 && (
+                                            <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                                                (= −{formatCurrency(pointsToEuros(bonusToEarn))})
+                                            </span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                         )}

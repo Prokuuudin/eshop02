@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
+import type { ServerUser } from '@/lib/server-auth'
 
 export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
@@ -42,6 +43,18 @@ export type ServerOrder = {
   language?: string
   userId?: string
   companyId?: string
+}
+
+// Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
+// Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
+export function canAccessOrder(
+  order: Pick<ServerOrder, 'userId' | 'email'>,
+  caller: ServerUser | null
+): boolean {
+  if (!caller) return false
+  if (caller.platformRole === 'admin') return true
+  if (order.userId) return order.userId === caller.id
+  return !!caller.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
 }
 
 function mapDbToServerOrder(row: PrismaOrder): ServerOrder {

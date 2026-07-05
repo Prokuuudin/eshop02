@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
+import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser, requireAdmin } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
@@ -18,18 +18,9 @@ export async function GET(_req: NextRequest, context: Context) {
     }
 
     // Order ids are sequential — never expose another customer's order (PII / IDOR).
-    // Only the admin or the order's owner may read it. New orders are bound by userId;
-    // legacy orders (no userId) fall back to an email match. Return 404 to others so
-    // existence isn't leaked.
+    // Return 404 (not 403) to others so existence isn't leaked.
     const caller = await getServerUser()
-    const isAdmin = caller?.platformRole === 'admin'
-    const isOwnerById = !!caller && !!order.userId && order.userId === caller.id
-    const isOwnerByEmail =
-      !order.userId &&
-      !!caller?.email &&
-      !!order.email &&
-      caller.email.toLowerCase() === order.email.toLowerCase()
-    if (!isAdmin && !isOwnerById && !isOwnerByEmail) {
+    if (!canAccessOrder(order, caller)) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 

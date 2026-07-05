@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
 import { resolveLineItems } from '@/lib/server-pricing'
+import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
+import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -42,6 +44,23 @@ export async function POST(req: NextRequest) {
 
     if (!orderId || !Array.isArray(items) || items.length === 0 || !grandTotal) {
       return NextResponse.json({ error: 'Invalid checkout payload' }, { status: 400 })
+    }
+
+    // Order ids are sequential — never let a caller start a Stripe session for
+    // someone else's order (that session's completion would flip that order to
+    // "paid"). Logged-in callers must own the order; guest (no-account) orders
+    // require the same email the order was placed under.
+    const order = await getServerOrderById(orderId)
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+    if (order.paymentStatus === 'paid') {
+      return NextResponse.json({ error: 'Order is already paid' }, { status: 409 })
+    }
+    const caller = await getServerUser()
+    const ownsAsGuest = !caller && !order.userId && !!email && !!order.email && email.trim().toLowerCase() === order.email.toLowerCase()
+    if (!canAccessOrder(order, caller) && !ownsAsGuest) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
     // Authoritative pricing: resolve unit prices from the DB catalog, never trust client `price`.

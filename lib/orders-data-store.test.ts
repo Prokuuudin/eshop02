@@ -9,7 +9,8 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { createServerOrder, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createServerOrder, type ServerOrder } from './orders-data-store'
+import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
   createdAt: '2026-07-04T10:00:00.000Z',
@@ -93,5 +94,50 @@ describe('createServerOrder — server-side id generation', () => {
 
     await expect(createServerOrder(ORDER)).rejects.toThrow('db down')
     expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+  })
+})
+
+function makeUser(overrides: Partial<ServerUser> = {}): ServerUser {
+  return {
+    id: 'user-1',
+    email: 'owner@example.com',
+    platformRole: 'customer',
+    approvalRequired: false,
+    auditLoggingEnabled: false,
+    bonusPoints: 0,
+    mustChangePassword: false,
+    createdAt: '2026-07-04T10:00:00.000Z',
+    ...overrides,
+  }
+}
+
+describe('canAccessOrder — IDOR guard for order/payment endpoints', () => {
+  it('denies an unauthenticated caller', () => {
+    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, null)).toBe(false)
+  })
+
+  it('allows an admin regardless of ownership', () => {
+    const admin = makeUser({ id: 'admin-1', email: 'admin@example.com', platformRole: 'admin' })
+    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, admin)).toBe(true)
+  })
+
+  it('allows the account that owns the order by userId', () => {
+    const owner = makeUser({ id: 'user-1', email: 'owner@example.com' })
+    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, owner)).toBe(true)
+  })
+
+  it('denies a different logged-in account even with a matching userId order', () => {
+    const otherUser = makeUser({ id: 'user-2', email: 'attacker@example.com' })
+    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, otherUser)).toBe(false)
+  })
+
+  it('falls back to email match only for legacy/guest orders with no userId', () => {
+    const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
+    expect(canAccessOrder({ userId: undefined, email: 'owner@example.com' }, caller)).toBe(true)
+  })
+
+  it('denies email match when the order has an owning userId (no downgrade to email guessing)', () => {
+    const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
+    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, caller)).toBe(false)
   })
 })

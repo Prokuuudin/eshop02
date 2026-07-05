@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
-import { updateServerOrderPayment } from '@/lib/orders-data-store'
+import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
+import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -25,19 +26,36 @@ export async function POST(req: NextRequest) {
     const orderId = session.metadata?.orderId
 
     if (orderId) {
-      await saveOrderPaymentStatus({
-        orderId,
-        paymentStatus,
-        sessionId: session.id,
-        paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
-        customerEmail: session.customer_details?.email ?? undefined
-      })
+      const order = await getServerOrderById(orderId)
+      const sessionEmail = session.customer_details?.email?.toLowerCase()
+      const caller = await getServerUser()
 
-      await updateServerOrderPayment(orderId, {
-        paymentStatus,
-        paymentProvider: 'stripe',
-        paymentSessionId: session.id
-      })
+      // A Stripe session can only update the order it was actually created for.
+      // Accept the logged-in owner/admin, or (for guest orders) the person who
+      // actually paid on Stripe's own checkout page — never an arbitrary caller
+      // who merely knows/guesses the sequential orderId.
+      const canWrite =
+        !!order &&
+        (canAccessOrder(order, caller) ||
+          (!order.userId && !!order.email && !!sessionEmail && order.email.toLowerCase() === sessionEmail))
+
+      if (canWrite) {
+        await saveOrderPaymentStatus({
+          orderId,
+          paymentStatus,
+          sessionId: session.id,
+          paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
+          customerEmail: session.customer_details?.email ?? undefined
+        })
+
+        await updateServerOrderPayment(orderId, {
+          paymentStatus,
+          paymentProvider: 'stripe',
+          paymentSessionId: session.id
+        })
+      } else {
+        console.warn('Stripe verify: refused to update order not owned by caller/session', { orderId })
+      }
     }
 
     return NextResponse.json({

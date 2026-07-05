@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrderPaymentStatus } from '@/lib/stripe-payment-store'
-import { getServerOrderById } from '@/lib/orders-data-store'
+import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
+import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +18,12 @@ export async function GET(req: NextRequest) {
       getOrderPaymentStatus(orderId),
       getServerOrderById(orderId)
     ])
+
+    // Never expose another customer's payment/session data (PII / IDOR).
+    const caller = await getServerUser()
+    if (!serverOrder || !canAccessOrder(serverOrder, caller)) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
 
     return NextResponse.json({
       orderId,

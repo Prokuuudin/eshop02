@@ -1766,8 +1766,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'footer.emailLabel': 'E-mail',
 
     // Hero
-    'hero.title': 'Профессиональные средства и инструменты для ухода за волосами, кожей и ногтями',
-    'hero.subtitle': 'Оригинальные бренды, консультации экспертов и быстрая доставка по всей стране.',
+    'hero.title': 'Профессиональные средства и аксессуары для ухода за волосами, кожей и ногтями',
+    'hero.subtitle': 'Оригинальные бренды, консультации экспертов и быстрая доставка.',
 
     // Categories
     // 'categories.title', 'categories.skincare', 'categories.haircare', 'categories.makeup' duplicates removed (see above for originals)

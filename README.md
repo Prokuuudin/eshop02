@@ -17,11 +17,49 @@ Getting started
 npm install
 ```
 
-2. Start dev server:
+2. Copy the env template and fill in values (see [Environment variables](#environment-variables) below):
+
+```bash
+cp .env.example .env.local
+```
+
+`DATABASE_URL` is read by Prisma from `.env` specifically (not `.env.local`) — copy it there too, or export it in your shell before running `prisma` commands.
+
+3. Start dev server:
 
 ```bash
 npm run dev
 ```
+
+## Scripts
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server (webpack, not Turbopack) |
+| `npm run build` | `prisma migrate deploy && prisma generate && next build` |
+| `npm run start` | Start the production server (after `build`) |
+| `npm run lint` | ESLint via `eslint .` (`next lint` was removed in Next 16) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test:unit` | Vitest unit tests |
+| `npm run test:unit:watch` | Vitest in watch mode |
+| `npm run test:e2e` | Playwright e2e tests |
+| `npm run test:e2e:smoke` | A smaller Playwright smoke subset (critical/admin/RBAC/activation/wishlist/invoices flows) |
+
+## Environment variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Postgres connection string (Prisma). Read from `.env`, not `.env.local`. |
+| `NEXT_PUBLIC_SITE_URL` | yes | Canonical base URL for OG/JSON-LD/robots/sitemap |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | optional | Cloudflare Turnstile public site key (contact form) |
+| `TURNSTILE_SECRET_KEY` | optional | Cloudflare Turnstile secret key — server-side verification |
+| `STRIPE_SECRET_KEY` | yes for payments | Stripe secret key (server-side only) |
+| `STRIPE_WEBHOOK_SECRET` | yes for payments | Verifies the Stripe webhook signature |
+| `NEXT_PUBLIC_FIRST_LOGIN_PASSWORD` | yes | Universal first-login password for newly provisioned B2B accounts (must change on first login) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | yes for email | Outgoing mail (registration confirmation, notifications) |
+| `CONTACT_TO` | optional | Recipient for the contact form (defaults to `SMTP_USER`) |
+
+See `.env.example` for the full template (values left blank/placeholder).
 
 ## Deploy (GitHub + Vercel)
 
@@ -105,7 +143,7 @@ Vite vs Next.js
 
 ## Архитектура
 
--   **Next.js 14** (app router, SSR/ISR)
+-   **Next.js 16** (app router, SSR/ISR, webpack build — not Turbopack)
 -   **TypeScript** (строгая типизация)
 -   **Tailwind CSS** (utility-first стили)
 -   **shadcn/ui** (унифицированные UI-компоненты)
@@ -137,13 +175,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card';
 
 ## Storybook
 
--   Для запуска Storybook:
-    1. Установить: `npx storybook@latest init`
-    2. Запустить: `npm run storybook`
--   Все UI-компоненты (button, card, dialog, badge, checkbox) имеют отдельные stories.
--   Примеры:
-    -   `components/ui/button.stories.tsx`
-    -   `components/ui/card.stories.tsx`
+Storybook is not installed in this project (no config, no `storybook` script, no `.stories.tsx` files exist yet). If you want it, run `npx storybook@latest init` and add stories under `components/ui/`.
 
 ## Принципы
 

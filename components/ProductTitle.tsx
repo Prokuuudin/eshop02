@@ -6,6 +6,6 @@ type Props = {
 };
 
 export const ProductTitle: React.FC<Props> = ({ title }) => {
-    const { t } = useTranslation();
+    useTranslation();
     return <h1 className="product-detail__title text-3xl font-bold mt-2">{title}</h1>;
 };

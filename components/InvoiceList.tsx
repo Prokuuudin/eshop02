@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { Invoice, InvoiceStatus } from '@/lib/invoices-store'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 

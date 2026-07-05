@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Checkbox } from './ui/checkbox'
 import { Badge } from './ui/badge'

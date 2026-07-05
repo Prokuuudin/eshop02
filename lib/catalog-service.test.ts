@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 // Mock the DB-dependent modules before importing catalog-service
 vi.mock('@/lib/product-overrides-store', () => ({

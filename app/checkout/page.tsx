@@ -46,7 +46,6 @@ export default function CheckoutPage() {
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
     const { getCompany } = useCompanyStore();
-    const currentUserEmail = currentUser?.email.trim().toLowerCase() ?? '';
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
@@ -240,7 +239,6 @@ export default function CheckoutPage() {
             : 0;
         const subtotalAfterDiscount = subtotal - discount;
         const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-        const normalizedCheckoutEmail = formData.email.trim().toLowerCase();
 
         // Catalog prices already include VAT — taxAmount is informational, not added to the total.
         const taxAmount = extractVat(subtotalAfterDiscount);

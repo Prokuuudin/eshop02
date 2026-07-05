@@ -408,7 +408,7 @@ export default function SalesBreakdownPage() {
               <p className="py-10 text-center text-sm text-gray-400">Нет данных</p>
             ) : (
               <div className={bodyPad + ' space-y-3'}>
-                {categorySummary.map((c, i) => {
+                {categorySummary.map((c) => {
                   const val = metric === 'revenue' ? c.revenue : c.qty
                   const max = categorySummary[0] ? (metric === 'revenue' ? categorySummary[0].revenue : categorySummary[0].qty) : 1
                   const color = CAT_COLORS[c.cat] ?? '#94a3b8'

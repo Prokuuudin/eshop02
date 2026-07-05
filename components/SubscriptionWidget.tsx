@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { RefreshCw, ShoppingBag, ChevronDown } from 'lucide-react'
+import { RefreshCw, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {

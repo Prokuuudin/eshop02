@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import Image from 'next/image';
 
 import { useTranslation } from '@/lib/use-translation';
 
@@ -15,11 +14,9 @@ const ITEMS = [
 
 export default function BenefitsList({
     compact = false,
-    hideIcons = false,
     only,
 }: {
     compact?: boolean;
-    hideIcons?: boolean;
     only?: string[];
 }) {
     const { t } = useTranslation();

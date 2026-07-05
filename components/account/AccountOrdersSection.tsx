@@ -6,7 +6,6 @@ import AccountOrderCard from '@/components/account/AccountOrderCard';
 interface AccountOrdersSectionProps {
     userOrders: any[];
     filteredOrders: any[];
-    orderFilter: string;
     setOrderFilter: (filter: string) => void;
     getOrderFilterButtonClasses: (filter: string) => string;
     getStatusLabel: (status: string) => string;
@@ -24,7 +23,6 @@ interface AccountOrdersSectionProps {
 const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
     userOrders,
     filteredOrders,
-    orderFilter,
     setOrderFilter,
     getOrderFilterButtonClasses,
     getStatusLabel,

@@ -12,13 +12,9 @@ const formatMoney = (v: number) => formatEuro(v, 'ru-RU');
 
 function BarChart({
     data,
-    valueKey,
-    label,
     color = '#059669',
 }: {
     data: { label: string; value: number }[];
-    valueKey?: string;
-    label: string;
     color?: string;
 }) {
     const max = Math.max(...data.map((d) => d.value), 1);
@@ -221,7 +217,7 @@ export default function SalesAnalyticsPage() {
                         {revenueByDay.length === 0 ? (
                             <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
                         ) : (
-                            <BarChart data={revenueByDay} label="Выручка" color="#059669" />
+                            <BarChart data={revenueByDay} color="#059669" />
                         )}
                     </div>
 
@@ -232,7 +228,7 @@ export default function SalesAnalyticsPage() {
                         {ordersByDay.length === 0 ? (
                             <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
                         ) : (
-                            <BarChart data={ordersByDay} label="Заказы" color="#3b82f6" />
+                            <BarChart data={ordersByDay} color="#3b82f6" />
                         )}
                     </div>
                 </div>

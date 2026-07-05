@@ -1,10 +1,8 @@
 import React from 'react';
-import type { Product, BadgeType } from '@/data/products';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 interface ProductEditorProps {
-    product: Product;
     draft: any;
     onChange: (patch: Partial<any>) => void;
     onSave: () => void;
@@ -14,7 +12,6 @@ interface ProductEditorProps {
 }
 
 const ProductEditor: React.FC<ProductEditorProps> = ({
-    product,
     draft,
     onChange,
     onSave,

@@ -1,6 +1,5 @@
 "use client"
 import React from 'react'
-import Link from 'next/link'
 import { localizeBlogPost, type BlogPost } from '@/data/blog'
 import BlogCard from '@/components/BlogCard'
 import { Button } from '@/components/ui/button'

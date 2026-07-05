@@ -50,16 +50,6 @@ function TypeRow({ size, tailwind, weight, sample }: { size: string; tailwind: s
   )
 }
 
-function SpacingRow({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-4">
-      <span className="w-12 text-[11px] font-mono text-gray-400 shrink-0">{label}</span>
-      <div className={`h-4 bg-primary/20 rounded-sm ${value}`} />
-      <span className="text-[11px] text-gray-400">{label.replace('w-', '').replace('p-', '')}×4px</span>
-    </div>
-  )
-}
-
 // ─── page ──────────────────────────────────────────────────────────────────
 
 export default function DesignSystemPage() {

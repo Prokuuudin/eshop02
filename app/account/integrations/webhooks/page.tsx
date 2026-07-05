@@ -218,7 +218,7 @@ export default function WebhooksPage() {
               </div>
             </div>
           ))}
-          {endpoints.length === 0 && <p className="text-sm text-muted-foreground">Нет активных endpoint'ов</p>}
+          {endpoints.length === 0 && <p className="text-sm text-muted-foreground">Нет активных endpoint&apos;ов</p>}
         </div>
       </section>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Order, DeliveryMethod, PaymentStatus } from '@/lib/orders-store'
+import type { Order, DeliveryMethod } from '@/lib/orders-store'
 import type { CartItem } from '@/lib/cart-store'
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,6 @@ import FAQSection from '../components/FAQSection';
 import ProductRequestSection from '../components/ProductRequestSection';
 import { translations, type Language } from '@/data/translations';
 import HomeClient from '../components/HomeClient';
-import Stores from '../components/Stores';
 import HomeRetailBanner from '../components/HomeRetailBanner';
 
 const resolveLanguageFromHeader = (acceptLanguage: string | null): Language => {
@@ -45,14 +44,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-    const headersList = await headers();
-    const acceptLanguage = headersList.get('accept-language');
-    const language = resolveLanguageFromHeader(acceptLanguage);
-    const t = translations[language];
-    const pageTitle = 'Eshop - Professional Cosmetics';
-    const pageDescription =
-        t['meta.homeDescription'] ?? 'Online store of professional cosmetics and equipment';
-
     return (
         <div className="bg-[#EAAC63] dark:bg-background">
             <Hero />

@@ -12,7 +12,7 @@ import {
  * Использует БЭМ-нейминг и utility-классы для адаптивной и чистой верстки.
  */
 export const DeliveryInfo = () => {
-    const { t } = useTranslation();
+    useTranslation();
     return (
         <section className="delivery-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">
             <h2 className="delivery-info__title text-2xl font-semibold mb-4 text-foreground">

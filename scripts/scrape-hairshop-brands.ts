@@ -210,11 +210,6 @@ function parseManufacturerInfo(html: string): ManufacturerData | null {
   return { manufacturer, distributor }
 }
 
-// Sub-category pattern: known Latvian category words that can appear with number suffixes
-function isSubCategory(path: string): boolean {
-  return /\/(sampuni|maskas|kondicionieri|veidosanas|matu-krasosanai|matu-papildkopsana|papildkopsana|nagu|manikira|sejai|barbershop|aksesuari|feni|instrumenti|kermena|ellas)-\d+$/.test(path)
-}
-
 async function scrapeOneBrand(brandId: string, brandPagePath: string): Promise<ManufacturerData | null> {
   const brandHtml = await fetchHtml(HAIRSHOP + brandPagePath)
   await sleep(DELAY_MS)

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bell, BellOff, ChevronRight } from 'lucide-react';
+import { Bell, BellOff } from 'lucide-react';
 import { useStockNotifyStore, StockNotifySubscription } from '@/lib/stock-notify-store';
 import { getCurrentUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';

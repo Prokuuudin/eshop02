@@ -77,12 +77,6 @@ const GRADE_STYLES: Record<AbcGrade, { badge: string; row: string }> = {
   },
 }
 
-const ISSUE_LABELS: Record<string, string> = {
-  metaTitle: 'Нет metaTitle',
-  metaDesc: 'Нет metaDescription',
-  image: 'Нет изображения',
-}
-
 // ─── Sub-section: ABC ─────────────────────────────────────────────────────────
 
 function AbcSection() {
@@ -196,7 +190,7 @@ function AbcSection() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-card">
-            {filtered.map((r, i) => (
+            {filtered.map((r) => (
               <tr key={r.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${GRADE_STYLES[r.grade].row}`}>
                 <td className="px-4 py-2.5 text-gray-400 tabular-nums">{rows.indexOf(r) + 1}</td>
                 <td className="px-4 py-2.5">

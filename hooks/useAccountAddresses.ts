@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SavedAddress } from '@/lib/saved-addresses-store';
 import { validateAddress } from '@/utils/accountValidation';
 
-export function useAccountAddresses(user: any, t: (key: string) => string, getByEmail: any, upsertForEmail: any, deleteForEmail: any) {
+export function useAccountAddresses(user: any, t: (key: string) => string, getByEmail: any, upsertForEmail: any) {
     const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
     const [addressDraft, setAddressDraft] = useState<SavedAddress | null>(null);
     const [editAddressErrors, setEditAddressErrors] = useState<Record<string, string>>({});

@@ -94,8 +94,7 @@ export default function AccountPage(): React.ReactElement {
         tl,
         userOrders,
         savedAddresses,
-        totalSpent,
-        locale
+        totalSpent
     );
 
     if (loading) {
@@ -163,7 +162,6 @@ export default function AccountPage(): React.ReactElement {
                             <AccountOrdersSection
                                 userOrders={userOrders}
                                 filteredOrders={orders.filteredOrders}
-                                orderFilter={orderFilter}
                                 setOrderFilter={(filter: string) =>
                                     setOrderFilter(filter as 'all' | 'active' | 'completed')
                                 }

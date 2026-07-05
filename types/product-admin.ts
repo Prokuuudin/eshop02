@@ -1,4 +1,4 @@
-import type { Product, BadgeType, CategoryType } from '@/data/products';
+import type { BadgeType, CategoryType } from '@/data/products';
 
 export type DraftValues = {
   id: string;

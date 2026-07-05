@@ -6,7 +6,7 @@ import { useTranslation } from '@/lib/use-translation';
  * Использует БЭМ-нейминг и utility-классы для адаптивной и чистой верстки.
  */
 export const PaymentInfo = () => {
-    const { t } = useTranslation();
+    useTranslation();
     return (
         <section className="payment-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">
             <h2 className="payment-info__title text-2xl font-semibold mb-4 text-foreground">

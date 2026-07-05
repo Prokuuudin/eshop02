@@ -81,7 +81,6 @@ export default function AuditLogViewer({
   }, [allEntries, filterType, filterValue, limit])
 
   const actionTypes = [...new Set(allEntries.map(e => e.action))]
-  const userIds = [...new Set(allEntries.map(e => e.userId))]
 
   const getActionLabel = (action: string): string => {
     const key = ACTION_TRANSLATION_KEYS[action]

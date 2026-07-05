@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MapPin, ChevronRight, Plus } from 'lucide-react';
+import { MapPin, ChevronRight } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { useSavedAddresses } from '@/lib/saved-addresses-store';
 import { useTranslation } from '@/lib/use-translation';

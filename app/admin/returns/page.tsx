@@ -148,13 +148,6 @@ export default function AdminReturnsPage() {
     setFormItems((prev) => prev.map((item, i) => (i === idx ? { ...item, quantity: qty } : item)))
   }
 
-  const toggleItem = (idx: number) => {
-    const item = formItems[idx]
-    if (!item) return
-    const inList = formItems.some((it, i) => i === idx && it.quantity > 0)
-    updateItemQty(idx, inList ? 0 : 1)
-  }
-
   const submitReturn = () => {
     if (!formFirstName || !formEmail || !formRefund) {
       setFormError('Заполните обязательные поля: имя, email, сумма возврата')

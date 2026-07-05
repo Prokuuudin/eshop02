@@ -7,7 +7,6 @@ import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-store';
 import { extractVat } from '@/lib/tax';
-import BenefitsList from '@/components/BenefitsList';
 import { Checkbox } from '@/components/ui/checkbox';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import CheckoutGuardButton from '@/components/CheckoutGuardButton';
@@ -33,7 +32,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const router = useRouter();
-    const { items, removeItem, updateQuantity, total } = useCart();
+    const { items, removeItem, updateQuantity } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
     const [selectionTouched, setSelectionTouched] = React.useState(false);
     const locale = getLocaleFromLanguage(language);

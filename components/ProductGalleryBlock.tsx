@@ -1,7 +1,6 @@
 import React from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductImageDisclaimer } from '@/components/ProductImageDisclaimer';
-import { ProductBenefits } from '@/components/ProductBenefits';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
 import TechnicalSpecs from '@/components/TechnicalSpecs';

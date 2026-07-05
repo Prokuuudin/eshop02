@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Bell, Pencil, Trash2 } from 'lucide-react';
 import { useStockNotifyStore } from '@/lib/stock-notify-store';
 

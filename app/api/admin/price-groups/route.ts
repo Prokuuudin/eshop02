@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { getPriceGroups, createPriceGroup, readPriceGroupsData } from '@/lib/price-groups-server-store'
+import { createPriceGroup, readPriceGroupsData } from '@/lib/price-groups-server-store'
 
 export const runtime = 'nodejs'
 

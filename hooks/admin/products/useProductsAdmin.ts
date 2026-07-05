@@ -11,7 +11,7 @@ export function useProductsAdmin() {
   const { t } = useTranslation();
   const [baseProducts, setBaseProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [creating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingArchiveId, setPurgingArchiveId] = useState<string | null>(null);

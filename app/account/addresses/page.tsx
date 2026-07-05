@@ -36,7 +36,7 @@ export default function AccountAddressesPage() {
         setUser(u);
     }, [router]);
 
-    const addresses = useAccountAddresses(user, t, getByEmail, upsertForEmail, deleteForEmail);
+    const addresses = useAccountAddresses(user, t, getByEmail, upsertForEmail);
 
     if (!user) return null;
 

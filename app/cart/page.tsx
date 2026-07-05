@@ -30,7 +30,7 @@ export default function CartPage() {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const router = useRouter();
-    const { items, addItem, removeItem, updateQuantity, total, clearCart } = useCart();
+    const { items, removeItem, updateQuantity, clearCart } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
     const [selectionTouched, setSelectionTouched] = React.useState(false);
     const [templateOpen, setTemplateOpen] = React.useState(false);

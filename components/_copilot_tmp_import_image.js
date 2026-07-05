@@ -1,3 +1,2 @@
-import Image from 'next/image';
 // ...existing code...
 // (This import will be used for avatar rendering in the button)

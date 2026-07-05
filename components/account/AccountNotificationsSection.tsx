@@ -192,7 +192,6 @@ export default function AccountNotificationsSection() {
         markAllRead,
         deleteNotification,
         deleteSelected,
-        deleteAll,
         addNotification,
         fetchInbox,
         unreadCount,

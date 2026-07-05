@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-    BarChart2,
     Cog,
     FileText,
     FolderTree,

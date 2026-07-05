@@ -8,7 +8,7 @@ interface AccountManagerCardProps {
     tl: (...args: any[]) => string;
 }
 
-const AccountManagerCard: React.FC<AccountManagerCardProps> = ({ name, phone, email, t, tl }) => (
+const AccountManagerCard: React.FC<AccountManagerCardProps> = ({ name, phone, email, tl }) => (
     <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-900/30">
         <p className="text-sm font-medium text-foreground">
             {tl(

@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'

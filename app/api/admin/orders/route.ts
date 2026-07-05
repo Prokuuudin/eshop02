@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = req.nextUrl
     const search = searchParams.get('search')?.trim() || ''
-    const status = searchParams.get('status') || ''
     const payment = searchParams.get('payment') || ''
     const skip = parseInt(searchParams.get('skip') || '0', 10)
     const take = parseInt(searchParams.get('take') || '50', 10)

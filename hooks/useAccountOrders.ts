@@ -1,5 +1,4 @@
 ﻿import { useMemo } from 'react';
-import { useState } from 'react';
 
 export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string) => string, orderFilter: 'all' | 'active' | 'completed') {
     const activeOrdersCount = useMemo(() => userOrders.filter((order) => {

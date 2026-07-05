@@ -56,7 +56,6 @@ export default async function CatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   const category = params.cat?.trim() || '';
-  const subcategory = params.subcat?.trim() || '';
   const brands = (params.brands ?? params.brand ?? '')
     .split(',')
     .map((value) => value.trim())
@@ -98,7 +97,6 @@ export default async function CatalogPage({ searchParams }: PageProps) {
       <main>
         <Products
           initialSearch={rawSearch}
-          initialSubcategory={subcategory}
           initialFilters={{
             group: category,
             brands,

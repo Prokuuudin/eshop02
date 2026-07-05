@@ -1,9 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { headers } from 'next/headers';
-import { translations, type Language } from '@/data/translations';
-import RegisterForm from '@/components/auth/RegisterForm';
-import BenefitsList from '@/components/BenefitsList';
-import Link from 'next/link';
 import RegisterSwitcher from '@/components/auth/RegisterSwitcher';
 export default async function RegisterPage() {
     return (

@@ -1,17 +1,18 @@
+import { ShoppingBag, ClipboardList, MapPinned, Package } from 'lucide-react'
+
 export function getAccountSummaryCards(
     t: (key: string) => string,
     tl: (...args: any[]) => string,
     userOrders: any[],
     savedAddresses: any[],
-    totalSpent: string | number,
-    locale: string
+    totalSpent: string | number
 ) {
     return [
         {
             title: t('account.myOrders'),
             value: String(userOrders.length),
             caption: tl('account.page.summary.totalOrders', 'Всего заказов', 'Total orders', 'Kopa pasutijumu'),
-            icon: require('lucide-react').ShoppingBag,
+            icon: ShoppingBag,
         },
         {
             title: tl('account.page.summary.activeTitle', 'Активные', 'Active', 'Aktivi'),
@@ -20,19 +21,19 @@ export function getAccountSummaryCards(
                 return status !== 'delivered' && status !== 'cancelled';
             }).length),
             caption: tl('account.page.summary.activeCaption', 'В работе сейчас', 'Currently in progress', 'Paslaik apstrade'),
-            icon: require('lucide-react').ClipboardList,
+            icon: ClipboardList,
         },
         {
             title: tl('account.page.summary.addressesTitle', 'Адреса', 'Addresses', 'Adreses'),
             value: String(savedAddresses.length),
             caption: tl('account.page.summary.addressesCaption', 'Сохранено адресов', 'Saved addresses', 'Saglabatas adreses'),
-            icon: require('lucide-react').MapPinned,
+            icon: MapPinned,
         },
         {
             title: tl('account.page.summary.turnoverTitle', 'Оборот', 'Turnover', 'Apgrozijums'),
             value: String(totalSpent),
             caption: tl('account.page.summary.turnoverCaption', 'Сумма всех заказов', 'Total amount of all orders', 'Visu pasutijumu kopsumma'),
-            icon: require('lucide-react').Package,
+            icon: Package,
         },
     ];
 }

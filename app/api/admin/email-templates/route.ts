@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { getTemplates } from '@/lib/email-templates-server-store'
 

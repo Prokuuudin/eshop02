@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
-    DialogTrigger,
     DialogContent,
     DialogHeader,
     DialogTitle,
@@ -17,9 +16,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 import Image from 'next/image';
-import RegisterForm from './auth/RegisterForm';
 import RegisterSwitcher from './auth/RegisterSwitcher';
-import { IconClose } from './ui/icon-close';
 import LoginForm from './auth/LoginForm';
 import ForgotPasswordForm from './auth/ForgotPasswordForm';
 

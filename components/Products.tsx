@@ -24,14 +24,13 @@ type ProductsFilters = {
 type ProductsProps = {
   initialFilters?: Partial<ProductsFilters>
   initialSearch?: string
-  initialSubcategory?: string
 }
 
 const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
-export default function Products({ initialFilters, initialSearch = '', initialSubcategory }: ProductsProps) {
+export default function Products({ initialFilters, initialSearch = '' }: ProductsProps) {
   const { t, language } = useTranslation();
   const [products, setProducts] = React.useState<Product[]>([])
   const [productsLoading, setProductsLoading] = React.useState(true)
@@ -105,7 +104,6 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
     const nextBrands = filters.brands.join(',')
-    const currentBrands = params.get('brands') ?? ''
 
     if (nextBrands) {
       params.set('brands', nextBrands)

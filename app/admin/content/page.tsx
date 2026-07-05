@@ -395,7 +395,7 @@ export default function AdminContentPage() {
 
       <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
         <p>
-          Подсказка: сначала загрузите файл в блоке "Картинки", затем сохраните замену src. Можно также указывать уже существующие пути в public и внешние URL.
+          Подсказка: сначала загрузите файл в блоке &quot;Картинки&quot;, затем сохраните замену src. Можно также указывать уже существующие пути в public и внешние URL.
         </p>
         <p className="mt-2">{t('admin.dashboard')} → /admin/content</p>
       </section>

@@ -51,7 +51,7 @@ const FALLBACK_SUBJECTS: Record<string, Record<Lang, string>> = {
   },
 }
 
-function buildFallbackApproval(name: string, cardNumber: string, lang: Lang): string {
+function buildFallbackApproval(name: string, cardNumber: string): string {
   const safeName = escapeHtml(name)
   const safeCard = escapeHtml(cardNumber)
   const safePass = escapeHtml(FIRST_LOGIN_PASSWORD)
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             password: escapeHtml(FIRST_LOGIN_PASSWORD),
             site_url: SITE_URL,
           })
-        : buildFallbackApproval(name, cardNumber, lang)
+        : buildFallbackApproval(name, cardNumber)
 
       await sendEmail(email, subject, html)
 

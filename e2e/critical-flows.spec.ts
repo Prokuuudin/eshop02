@@ -305,22 +305,22 @@ test('face category decorative cosmetics subcategory applies subcat filter', asy
   expect(cardCount).toBeLessThanOrEqual(2)
 })
 
-test('misc category salon products subcategory applies subcat filter', async ({ page }) => {
+test('equipment category salon products subcategory applies subcat filter', async ({ page }) => {
   await page.goto('/')
 
-  const miscCategoryTrigger = page.getByRole('button', {
-    name: /Разное|Miscellaneous|Dažādi/i
+  const equipmentCategoryTrigger = page.getByRole('button', {
+    name: /Оборудование|Equipment|Apkopšana/i
   })
 
-  await expect(miscCategoryTrigger).toBeVisible({ timeout: 45000 })
-  await miscCategoryTrigger.click()
+  await expect(equipmentCategoryTrigger).toBeVisible({ timeout: 45000 })
+  await equipmentCategoryTrigger.click()
 
-  const salonProductsLink = page.locator('a[href*="/catalog?cat=new&subcat=salon-products"]').first()
+  const salonProductsLink = page.locator('a[href*="/catalog?cat=equipment&subcat=salon-products"]').first()
   await expect(salonProductsLink).toBeVisible()
   await salonProductsLink.click()
 
-  await page.waitForURL(/\/catalog\?cat=new&subcat=salon-products/)
-  await expect(page).toHaveURL(/\/catalog\?cat=new&subcat=salon-products/)
+  await page.waitForURL(/\/catalog\?cat=equipment&subcat=salon-products/)
+  await expect(page).toHaveURL(/\/catalog\?cat=equipment&subcat=salon-products/)
 
   const cards = page.locator('.product-card')
   await expect(cards.first()).toBeVisible({ timeout: 45000 })

@@ -5,7 +5,6 @@ export const CATEGORY_OPTIONS = [
   'body',
   'nails',
   'equipment',
-  'new',
 ];
 
 export const BADGE_META = {

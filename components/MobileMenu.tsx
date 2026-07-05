@@ -19,8 +19,7 @@ const CATEGORIES = [
   { id: 'face', labelKey: 'categories.skincare', fallback: 'Skincare' },
   { id: 'body', labelKey: 'categories.bodycare', fallback: 'Body care' },
   { id: 'equipment', labelKey: 'categories.equipment', fallback: 'Equipment' },
-  { id: 'nails', labelKey: 'categories.nails', fallback: 'Nails' },
-  { id: 'new', labelKey: 'categories.newArrivals', fallback: 'New arrivals' }
+  { id: 'nails', labelKey: 'categories.nails', fallback: 'Nails' }
 ]
 
 export default function MobileMenu({ isOpen, onClose }: Props) {

@@ -30,8 +30,7 @@ const CATEGORIES = [
   { value: 'face', label: 'Лицо' },
   { value: 'body', label: 'Тело' },
   { value: 'nails', label: 'Ногти' },
-  { value: 'equipment', label: 'Оборудование' },
-  { value: 'new', label: 'Новинки' }
+  { value: 'equipment', label: 'Оборудование' }
 ]
 
 const TYPE_LABELS: Record<CampaignType, string> = {

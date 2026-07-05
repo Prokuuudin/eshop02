@@ -17,7 +17,7 @@ type ImportResult = {
   errors: { row: number; id: string; message: string }[]
 }
 
-const VALID_CATEGORIES: CategoryType[] = ['hair', 'face', 'body', 'nails', 'equipment', 'new']
+const VALID_CATEGORIES: CategoryType[] = ['hair', 'face', 'body', 'nails', 'equipment']
 const VALID_BADGES: BadgeType[] = ['sale', 'bestseller', 'new']
 
 function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; error?: string } {

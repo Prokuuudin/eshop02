@@ -26,7 +26,7 @@ export type PreviewResult = {
   summary: { create: number; update: number; skip: number; error: number }
 }
 
-const VALID_CATEGORIES: CategoryType[] = ['hair', 'face', 'body', 'nails', 'equipment', 'new']
+const VALID_CATEGORIES: CategoryType[] = ['hair', 'face', 'body', 'nails', 'equipment']
 
 function validateRow(row: ImportRow): string | null {
   const id = row.id?.trim()

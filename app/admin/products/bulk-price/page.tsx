@@ -28,7 +28,7 @@ function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
     return Math.max(0, value);
 }
 
-const CATEGORIES = ['hair', 'face', 'body', 'nails', 'equipment', 'new'];
+const CATEGORIES = ['hair', 'face', 'body', 'nails', 'equipment'];
 
 export default function BulkPricePage() {
     const [products, setProducts] = useState<Product[]>([]);

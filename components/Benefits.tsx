@@ -19,7 +19,7 @@ export default function Benefits() {
         },
         {
             icon: '/icons/quality.svg',
-            text: t('benefits.processingFast', 'Обработка заказов в течение суток'),
+            text: t('benefits.processingFast', 'Быстрая обработка заказов'),
         },
         {
             icon: '/icons/quality.svg',

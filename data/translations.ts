@@ -36,7 +36,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'benefits.consultationMain': 'Профессиональные консультации',
     'benefits.deliveryFree': 'Бесплатная доставка от 100 €',
     'benefits.consultation': 'Профессиональная консультация 7 дней в неделю — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
-    'benefits.processingFast': 'Обработка заказов в течение суток',
+    'benefits.processingFast': 'Быстрая обработка заказов',
     'benefits.inStock': 'Более 10 000 товаров на складе',
     'benefits.brands100': '100+ оригинальных брендов',
     'benefits.bonusPoints': 'Бонусные баллы за каждую покупку',

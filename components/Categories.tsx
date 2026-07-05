@@ -23,7 +23,7 @@ export default function Categories() {
     if (!isHydrated || !isAuthenticated) return null;
     const sectionClassName = 'categories py-8 relative z-30 overflow-visible';
     const gridClassName =
-        'categories__grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 overflow-visible';
+        'categories__grid grid grid-cols-2 sm:grid-cols-5 gap-4 overflow-visible';
     const itemWithDropdownClassName =
         'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-card hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col';
     const imageWrapClassName = 'categories__image relative aspect-square w-full';

@@ -1,6 +1,6 @@
 // Fix: Define missing types for badges and category
 export type BadgeType = 'sale' | 'bestseller' | 'new';
-export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment' | 'new';
+export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment';
 
 export interface VariantOption {
   value: string            // код как в исходнике: "A-11", "111", "WHITE" — не переводим, не маппим на hex

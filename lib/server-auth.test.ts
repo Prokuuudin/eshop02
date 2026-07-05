@@ -10,10 +10,11 @@ vi.mock('next/headers', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     session: { findUnique: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() },
+    user: { count: vi.fn() },
   },
 }))
 
-import { requireAdmin } from './server-auth'
+import { getAdminAccessLevel, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
 import { prisma } from '@/lib/prisma'
 
 function futureDate() {
@@ -74,5 +75,56 @@ describe('requireAdmin', () => {
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
     expect((res as NextResponse).status).toBe(403)
+  })
+})
+
+function makeServerUser(overrides: Partial<ServerUser> = {}): ServerUser {
+  return {
+    id: 'u1',
+    email: 'a@b.c',
+    platformRole: 'customer',
+    approvalRequired: false,
+    auditLoggingEnabled: false,
+    bonusPoints: 0,
+    mustChangePassword: false,
+    createdAt: '2026-07-04T10:00:00.000Z',
+    ...overrides,
+  }
+}
+
+describe('getAdminAccessLevel', () => {
+  it('returns none for no session', () => {
+    expect(getAdminAccessLevel(null)).toBe('none')
+  })
+
+  it('returns admin for platformRole admin', () => {
+    expect(getAdminAccessLevel(makeServerUser({ platformRole: 'admin' }))).toBe('admin')
+  })
+
+  it('returns manager for teamRole manager', () => {
+    expect(getAdminAccessLevel(makeServerUser({ teamRole: 'manager' }))).toBe('manager')
+  })
+
+  it('returns none for a plain customer', () => {
+    expect(getAdminAccessLevel(makeServerUser())).toBe('none')
+  })
+})
+
+describe('hasAdminUsersInDb', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns true when at least one admin exists', async () => {
+    vi.mocked(prisma.user.count as any).mockResolvedValue(1)
+    expect(await hasAdminUsersInDb()).toBe(true)
+  })
+
+  it('returns false when no admin exists', async () => {
+    vi.mocked(prisma.user.count as any).mockResolvedValue(0)
+    expect(await hasAdminUsersInDb()).toBe(false)
+  })
+
+  it('fails closed to true (assume admin exists) if the DB call throws', async () => {
+    vi.mocked(prisma.user.count as any).mockRejectedValue(new Error('db down'))
+    expect(await hasAdminUsersInDb()).toBe(true)
   })
 })

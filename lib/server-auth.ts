@@ -120,6 +120,28 @@ export async function requireAdmin(): Promise<ServerUser | NextResponse> {
   return user
 }
 
+export type AdminAccessLevel = 'admin' | 'manager' | 'none'
+
+/**
+ * Mirrors the client-side access levels used by AdminGate, but derived from
+ * the DB-backed ServerUser — safe to use for real (server-side) authorization.
+ */
+export function getAdminAccessLevel(user: ServerUser | null): AdminAccessLevel {
+  if (!user) return 'none'
+  if (user.platformRole === 'admin') return 'admin'
+  if (user.teamRole === 'manager' || user.teamRole === 'admin') return 'manager'
+  return 'none'
+}
+
+export async function hasAdminUsersInDb(): Promise<boolean> {
+  try {
+    const count = await prisma.user.count({ where: { platformRole: 'admin' } })
+    return count > 0
+  } catch {
+    return true
+  }
+}
+
 export async function deleteSession(token: string): Promise<void> {
   await prisma.session.deleteMany({ where: { token } })
 }

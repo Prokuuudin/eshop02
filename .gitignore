@@ -14,3 +14,6 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 /test-results/
 *.bak
+
+.vercel
+.env*

@@ -402,15 +402,20 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Промо
     'promo.title': 'Весенние скидки — до 30% на избранные бренды',
-    'promo.discount': 'Успейте приобрести профессиональную косметику по специальным ценам.',
-    'promo.shopNow': 'К покупкам',
+
+    // Скидки на главной
+    'sale.title': 'Актуальные скидки!',
+    'sale.subtitle': 'Уже сейчас закупайся по супер ценам',
 
     // Newsletter
-    'newsletter.title': 'Подпишитесь на новости и акции',
-    'newsletter.subtitle': 'Получайте эксклюзивные предложения и советы по уходу за красотой.',
+    'newsletter.title': 'Подпишись на свои будущие скидки!',
+    'newsletter.subtitle': 'Получайте эксклюзивные скидки и выгодные предложения первыми...',
     'newsletter.placeholder': 'Ваш email',
-    'newsletter.subscribe': 'Подписаться',
+    'newsletter.subscribe': 'Подтверждаю',
     'newsletter.subscribed': 'Спасибо за подписку!',
+    'newsletter.consentPrefix': 'Я даю согласие на обработку моих данных в соответствии с ',
+    'newsletter.consentLinkLabel': 'Политикой конфиденциальности',
+    'newsletter.consentRequired': 'Подтвердите согласие на обработку данных',
 
        // ...existing code with duplicates removed, keeping only the last value for each key...
     'wishlist.add': 'Добавить в избранное',
@@ -3546,11 +3551,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'products.p16.feature4': 'Compact travel-friendly size',
 
     // Newsletter
-    'newsletter.title': 'Subscribe to Our Newsletter',
-    'newsletter.subtitle': 'Get exclusive offers and beauty tips',
+    'newsletter.title': 'Subscribe to future discounts!',
+    'newsletter.subtitle': 'Get exclusive discounts and deals first...',
     'newsletter.placeholder': 'Enter your email',
-    'newsletter.subscribe': 'Subscribe',
+    'newsletter.subscribe': 'Confirm',
     'newsletter.subscribed': 'Thank you for subscribing!',
+    'newsletter.consentPrefix': 'I agree to the processing of my data in accordance with the ',
+    'newsletter.consentLinkLabel': 'Privacy Policy',
+    'newsletter.consentRequired': 'Please confirm your consent to data processing',
+
+    // Sale highlights
+    'sale.title': 'Current Deals!',
+    'sale.subtitle': 'Shop now at special prices',
 
     // Benefits
     'benefits.title': 'Why choose us',
@@ -3571,9 +3583,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Promo
     'promo.title': 'Special Offer',
-    'promo.discount': '20% off your first order',
     'promo.code': 'Code: WELCOME20',
-    'promo.shopNow': 'Shop Now',
 
     // Brands
     'brands.title': 'Popular Brands',
@@ -5340,11 +5350,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'products.p16.feature4': 'Kompakts formāts somai',
 
     // Newsletter
-    'newsletter.title': 'Abonējiet mūsu biļetenu',
-    'newsletter.subtitle': 'Saņemiet eksklusīvus piedāvājumus un skaistuma padomus',
+    'newsletter.title': 'Piesakies nākotnes atlaidēm!',
+    'newsletter.subtitle': 'Saņem ekskluzīvas atlaides un izdevīgus piedāvājumus pirmais...',
     'newsletter.placeholder': 'Ievadiet savu e-pastu',
-    'newsletter.subscribe': 'Abonēt',
+    'newsletter.subscribe': 'Apstiprinu',
     'newsletter.subscribed': 'Paldies par abonēšanu!',
+    'newsletter.consentPrefix': 'Es piekrītu savu datu apstrādei saskaņā ar ',
+    'newsletter.consentLinkLabel': 'Privātuma politiku',
+    'newsletter.consentRequired': 'Lūdzu, apstipriniet piekrišanu datu apstrādei',
+
+    // Sale highlights
+    'sale.title': 'Aktuālās atlaides!',
+    'sale.subtitle': 'Iepērcies tagad par īpašām cenām',
 
     // Benefits
     'benefits.title': 'Kāpēc izvēlas mūs',
@@ -5365,9 +5382,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Promo
     'promo.title': 'Īpašs piedāvājums',
-    'promo.discount': '20% atlaide pirmajam pasūtījumam',
     'promo.code': 'Kods: WELCOME20',
-    'promo.shopNow': 'Iepirkties tagad',
 
     // Brands
     'brands.title': 'Populāras zīmoles',

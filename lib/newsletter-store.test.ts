@@ -39,25 +39,30 @@ describe('subscribeToNewsletter', () => {
 
     const call = vi.mocked(prisma.keyValueSetting.upsert).mock.calls[0][0]
 
+    // create/update.value are typed as the generic Prisma Json union, which doesn't
+    // expose our subscriber shape — cast to the shape the store actually writes.
+    const createValue = call.create.value as unknown as { email: string; consentAt: string }
+    const updateValue = call.update.value as unknown as { email: string; consentAt: string }
+
     // Check create payload
-    expect(call.create.value).toEqual(
+    expect(createValue).toEqual(
       expect.objectContaining({
         email: 'test@example.com',
       })
     )
-    expect(call.create.value.consentAt).toBeTruthy()
+    expect(createValue.consentAt).toBeTruthy()
     // Verify consentAt is an ISO string
-    expect(typeof call.create.value.consentAt).toBe('string')
-    expect(call.create.value.consentAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+    expect(typeof createValue.consentAt).toBe('string')
+    expect(createValue.consentAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
 
     // Check update payload
-    expect(call.update.value).toEqual(
+    expect(updateValue).toEqual(
       expect.objectContaining({
         email: 'test@example.com',
       })
     )
-    expect(call.update.value.consentAt).toBeTruthy()
-    expect(typeof call.update.value.consentAt).toBe('string')
+    expect(updateValue.consentAt).toBeTruthy()
+    expect(typeof updateValue.consentAt).toBe('string')
   })
 
   it('handles re-subscribe by calling upsert both times without error', async () => {

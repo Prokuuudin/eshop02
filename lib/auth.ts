@@ -299,19 +299,6 @@ export const rejectAccessRequest = (
   return { success: true }
 }
 
-export const loginUser = (email: string, password: string): { success: boolean; error?: string } => {
-  const users = readUsers()
-  const normalizedEmail = normalizeEmail(email)
-  const user = users.find((u) => u.email.toLowerCase() === normalizedEmail && u.password === password)
-  if (!user) return { success: false, error: 'Неверный email или пароль' }
-  if (user.companyId) {
-    useCompanyStore.getState().setCurrentCompany(user.companyId)
-  }
-  writeCurrentUser(user)
-  notifyAuthChanged()
-  return { success: true }
-}
-
 export const logout = (): void => {
   localStorage.removeItem(CURRENT_KEY)
   notifyAuthChanged()
@@ -645,26 +632,74 @@ export const approveNoCardRequest = (
   return { success: true, cardNumber: normalizedCard }
 }
 
-export const loginByCard = (cardNumber: string, password: string): { success: boolean; error?: string } => {
+const cardToEmail = (cardNumber: string): string =>
+  `card.${normalizeCard(cardNumber).toLowerCase()}@client.local`
+
+/**
+ * Authenticates against the server (bcrypt-verified, rate-limited) — the client
+ * never decides whether a password is correct. `identifier` may be an email or
+ * a client card number; card numbers resolve to their deterministic internal
+ * email (same pattern used at card registration) without needing to trust any
+ * locally-cached password. On success, the local mirror is refreshed for UI
+ * purposes only, with the password field blanked — it is never the source of
+ * truth for auth again once a login round-trip has verified the account.
+ */
+export const loginUserAuto = async (
+  identifier: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> => {
+  const trimmed = identifier.trim()
+  const isEmail = trimmed.includes('@')
+  const email = isEmail ? normalizeEmail(trimmed) : cardToEmail(trimmed)
   const users = readUsers()
-  const normalized = normalizeCard(cardNumber)
-  const user = users.find(
-    (u) => u.cardNumber && normalizeCard(u.cardNumber) === normalized && u.password === password
-  )
-  if (!user) return { success: false, error: 'Неверный номер карты или пароль' }
-  if (user.companyId) {
-    useCompanyStore.getState().setCurrentCompany(user.companyId)
+  const localUser = findUserByEmail(users, email)
+
+  let res: Response
+  try {
+    res = await fetch('/api/auth/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: localUser?.id ?? `u_${Date.now()}`,
+        email,
+        password,
+        name: localUser?.name,
+        phone: localUser?.phone,
+        cardNumber: localUser?.cardNumber ?? (isEmail ? undefined : normalizeCard(trimmed)),
+        avatarUrl: localUser?.avatarUrl,
+      }),
+    })
+  } catch {
+    return { success: false, error: 'Сервер недоступен. Попробуйте позже.' }
   }
-  writeCurrentUser(user)
+
+  if (res.status === 429) {
+    return { success: false, error: 'Слишком много попыток входа. Попробуйте позже.' }
+  }
+  if (!res.ok) {
+    return { success: false, error: isEmail ? 'Неверный email или пароль' : 'Неверный номер карты или пароль' }
+  }
+
+  const verifiedUser: User = localUser
+    ? { ...localUser, password: '' }
+    : normalizeUser({ id: `u_${Date.now()}`, email, password: '' })
+
+  if (!localUser) {
+    writeUsers([...users, verifiedUser])
+  } else if (localUser.password) {
+    const idx = users.findIndex((u) => u.id === localUser.id)
+    if (idx !== -1) {
+      users[idx] = verifiedUser
+      writeUsers(users)
+    }
+  }
+
+  if (verifiedUser.companyId) {
+    useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId)
+  }
+  writeCurrentUser(verifiedUser)
   notifyAuthChanged()
   return { success: true }
-}
-
-export const loginUserAuto = (identifier: string, password: string): { success: boolean; error?: string } => {
-  if (identifier.includes('@')) {
-    return loginUser(identifier, password)
-  }
-  return loginByCard(identifier, password)
 }
 
 export type ActivatePayload = {

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, loginUserAuto } from '@/lib/auth';
+import { hasAdminUsers, loginUserAuto } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
@@ -26,6 +26,7 @@ export default function LoginForm({
     const [setupRequired, setSetupRequired] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         setSetupRequired(!hasAdminUsers());
@@ -34,37 +35,12 @@ export default function LoginForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = loginUserAuto(identifier.trim(), password);
-        if (!res.success) return setError(res.error || t('form.error'));
+        if (submitting) return;
+        setSubmitting(true);
         setError('');
-        const loggedInUser = getCurrentUser();
-        if (loggedInUser) {
-            try {
-                await fetch('/api/auth/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: loggedInUser.id,
-                        email: loggedInUser.email,
-                        password,
-                        name: loggedInUser.name,
-                        platformRole: loggedInUser.platformRole,
-                        companyId: loggedInUser.companyId,
-                        companyName: loggedInUser.companyName,
-                        teamRole: loggedInUser.teamRole,
-                        phone: loggedInUser.phone,
-                        cardNumber: loggedInUser.cardNumber,
-                        avatarUrl: loggedInUser.avatarUrl,
-                        bonusPoints: loggedInUser.bonusPoints,
-                        mustChangePassword: loggedInUser.mustChangePassword,
-                        approvalRequired: loggedInUser.approvalRequired,
-                        auditLoggingEnabled: loggedInUser.auditLoggingEnabled,
-                    }),
-                });
-            } catch {
-                // non-blocking — localStorage auth already succeeded
-            }
-        }
+        const res = await loginUserAuto(identifier.trim(), password);
+        setSubmitting(false);
+        if (!res.success) return setError(res.error || t('form.error'));
         if (onSuccess) { onSuccess(); return; }
         const redirect = searchParams.get('redirect');
         if (redirect) return router.push(redirect);

@@ -14,7 +14,7 @@ describe('categories subcategory resolvers', () => {
 
 describe('category consolidation shape', () => {
   it('has exactly the 5 consolidated category cards, in order', () => {
-    expect(CATEGORY_CARDS.map((c) => c.id)).toEqual(['hair', 'face', 'body', 'nails', 'equipment'])
+    expect(CATEGORY_CARDS.map((c) => c.id)).toEqual(['hair', 'nails', 'face', 'body', 'equipment'])
   })
 
   it('includes leg-care and hand-care under body', () => {

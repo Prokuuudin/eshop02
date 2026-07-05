@@ -27,9 +27,9 @@ type PromoCampaign = {
 
 const CATEGORIES = [
   { value: 'hair', label: 'Волосы' },
+  { value: 'nails', label: 'Ногти' },
   { value: 'face', label: 'Лицо' },
   { value: 'body', label: 'Тело' },
-  { value: 'nails', label: 'Ногти' },
   { value: 'equipment', label: 'Аксессуары и инструменты' }
 ]
 

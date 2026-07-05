@@ -309,7 +309,7 @@ test('equipment category salon products subcategory applies subcat filter', asyn
   await page.goto('/')
 
   const equipmentCategoryTrigger = page.getByRole('button', {
-    name: /Оборудование|Equipment|Apkopšana/i
+    name: /Аксессуары и инструменты|Accessories & Tools|Piederumi un instrumenti/i
   })
 
   await expect(equipmentCategoryTrigger).toBeVisible({ timeout: 45000 })

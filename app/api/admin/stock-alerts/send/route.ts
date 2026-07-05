@@ -16,7 +16,7 @@ type AlertProduct = {
 
 const CATEGORY_LABEL: Record<string, string> = {
   hair: 'Волосы', face: 'Лицо', body: 'Тело',
-  nails: 'Ногти', equipment: 'Оборудование', new: 'Новинки',
+  nails: 'Ногти', equipment: 'Аксессуары и инструменты',
 }
 
 function buildHtml(products: AlertProduct[], threshold: number): string {

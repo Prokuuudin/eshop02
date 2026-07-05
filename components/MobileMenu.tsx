@@ -18,7 +18,7 @@ const CATEGORIES = [
   { id: 'hair', labelKey: 'categories.haircare', fallback: 'Hair care' },
   { id: 'face', labelKey: 'categories.skincare', fallback: 'Skincare' },
   { id: 'body', labelKey: 'categories.bodycare', fallback: 'Body care' },
-  { id: 'equipment', labelKey: 'categories.equipment', fallback: 'Equipment' },
+  { id: 'equipment', labelKey: 'categories.equipment', fallback: 'Accessories & Tools' },
   { id: 'nails', labelKey: 'categories.nails', fallback: 'Nails' }
 ]
 

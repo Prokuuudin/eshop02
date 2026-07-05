@@ -16,8 +16,7 @@ const CAT_LABELS: Record<string, string> = {
   face: 'Лицо',
   body: 'Тело',
   nails: 'Ногти',
-  equipment: 'Оборудование',
-  new: 'Новинки',
+  equipment: 'Аксессуары и инструменты',
 }
 
 const CAT_COLORS: Record<string, string> = {
@@ -26,7 +25,6 @@ const CAT_COLORS: Record<string, string> = {
   body: '#f59e0b',
   nails: '#10b981',
   equipment: '#3b82f6',
-  new: '#8b5cf6',
 }
 
 const fmt = (v: number) => formatEuro(v, 'ru-RU')

@@ -9,8 +9,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   face: 'Лицо',
   body: 'Тело',
   nails: 'Ногти',
-  equipment: 'Оборудование',
-  new: 'Новинки'
+  equipment: 'Аксессуары и инструменты'
 }
 
 function formatEur(amount: number): string {

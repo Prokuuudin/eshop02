@@ -19,6 +19,7 @@ export default function Newsletter() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setSuccess(false)
     if (!validateEmail(email)) {
       setError('Введите корректный email')
       return
@@ -34,7 +35,7 @@ export default function Newsletter() {
         body: JSON.stringify({ email, consent }),
       })
       if (!res.ok) {
-        setError('Введите корректный email')
+        setError('Не удалось подписаться, попробуйте позже')
         return
       }
       setSuccess(true)

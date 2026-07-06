@@ -1,9 +1,8 @@
 import type { InviteLang } from './invitations'
 
 export function interpolate(template: string, vars: Record<string, string>): string {
-  return Object.entries(vars).reduce(
-    (html, [key, value]) => html.replaceAll(`{{${key}}}`, value),
-    template
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
+    Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : match
   )
 }
 

@@ -4,6 +4,10 @@ describe('interpolate', () => {
   it('заменяет все вхождения переменной', () => {
     expect(interpolate('{{a}} и {{a}}', { a: 'x' })).toBe('x и x')
   })
+
+  it('не переподставляет плейсхолдеры из значений переменных', () => {
+    expect(interpolate('{{a}} {{b}}', { a: '{{b}}', b: 'x' })).toBe('{{b}} x')
+  })
 })
 
 describe('buildInviteEmail', () => {

@@ -85,17 +85,15 @@ export async function POST(req: NextRequest) {
           await writeInvitations(tx, fresh)
 
           // Персональная компания мастера (паттерн approveNoCardRequest).
-          // Карта компании может конфликтовать по @unique — тогда компания без карты.
-          try {
-            await tx.company.create({
-              data: { id: companyId, companyName, cardNumber: inv.cardNumber },
-            })
-          } catch (e) {
-            if ((e as { code?: string })?.code !== 'P2002') throw e
-            await tx.company.create({
-              data: { id: companyId, companyName, cardNumber: null },
-            })
-          }
+          // Карта компании может быть занята (@unique) — проверяем заранее:
+          // P2002 внутри транзакции необратимо абортит её (25P02), catch-retry не работает
+          const cardTaken = await tx.company.findUnique({
+            where: { cardNumber: inv.cardNumber },
+            select: { id: true },
+          })
+          await tx.company.create({
+            data: { id: companyId, companyName, cardNumber: cardTaken ? null : inv.cardNumber },
+          })
           await tx.companyMember.create({
             data: {
               id: randomUUID(),

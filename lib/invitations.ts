@@ -57,13 +57,13 @@ export async function writeInvitations(db: Db, invitations: ProInvitation[]): Pr
   })
 }
 
-export async function readCampaign(db: PrismaClient): Promise<CampaignState> {
+export async function readCampaign(db: Db): Promise<CampaignState> {
   const row = await db.keyValueSetting.findUnique({ where: { key: CAMPAIGN_KV_KEY } })
   if (!row) return { ...DEFAULT_CAMPAIGN }
   return { ...DEFAULT_CAMPAIGN, ...(row.value as Partial<CampaignState>) }
 }
 
-export async function writeCampaign(db: PrismaClient, state: CampaignState): Promise<void> {
+export async function writeCampaign(db: Db, state: CampaignState): Promise<void> {
   const value = state as unknown as Prisma.InputJsonValue
   await db.keyValueSetting.upsert({
     where: { key: CAMPAIGN_KV_KEY },

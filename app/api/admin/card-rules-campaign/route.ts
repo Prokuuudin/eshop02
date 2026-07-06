@@ -9,11 +9,15 @@ import {
   isEligibleRulesRecipient,
   CAMPAIGN_BATCH_SIZE,
   CAMPAIGN_LOCK_MS,
+  type CampaignState,
 } from '@/lib/invitations'
 import { buildRulesEmail } from '@/lib/invitation-emails'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+class CampaignBusyError extends Error {}
+class CampaignFinishedError extends Error {}
 
 // Фильтр сегмента B на уровне SQL; isEligibleRulesRecipient дублирует его в памяти
 // как страховка + для юнит-тестов.
@@ -42,25 +46,41 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 
+  let state: CampaignState | undefined
   try {
     const body = (await req.json().catch(() => ({}))) as { reset?: boolean }
-    let state = await readCampaign(prisma)
 
-    if (body.reset) {
-      state = { sentCount: 0, errorCount: 0, cursor: null, lastRunAt: null, finished: false, runningSince: null }
-      await writeCampaign(prisma, state)
-      return NextResponse.json({ state })
+    // Проверка и захват замка атомарны (serializable) — два параллельных POST
+    // не могут оба пройти busy-check и разослать один и тот же батч
+    try {
+      state = await prisma.$transaction(
+        async (tx) => {
+          const s = await readCampaign(tx)
+          if (body.reset) {
+            const zero: CampaignState = { sentCount: 0, errorCount: 0, cursor: null, lastRunAt: null, finished: false, runningSince: null }
+            await writeCampaign(tx, zero)
+            return zero
+          }
+          if (s.finished) throw new CampaignFinishedError()
+          if (s.runningSince && Date.now() - new Date(s.runningSince).getTime() < CAMPAIGN_LOCK_MS) {
+            throw new CampaignBusyError()
+          }
+          s.runningSince = new Date().toISOString()
+          await writeCampaign(tx, s)
+          return s
+        },
+        { isolationLevel: 'Serializable' }
+      )
+    } catch (e) {
+      if (e instanceof CampaignFinishedError) {
+        return NextResponse.json({ error: 'finished', state: await readCampaign(prisma) }, { status: 409 })
+      }
+      if (e instanceof CampaignBusyError || (e as { code?: string })?.code === 'P2034') {
+        return NextResponse.json({ error: 'busy', state: await readCampaign(prisma) }, { status: 409 })
+      }
+      throw e
     }
-
-    if (state.finished) {
-      return NextResponse.json({ error: 'finished', state }, { status: 409 })
-    }
-    // Замок от параллельных батчей
-    if (state.runningSince && Date.now() - new Date(state.runningSince).getTime() < CAMPAIGN_LOCK_MS) {
-      return NextResponse.json({ error: 'busy', state }, { status: 409 })
-    }
-    state.runningSince = new Date().toISOString()
-    await writeCampaign(prisma, state)
+    if (body.reset) return NextResponse.json({ state })
 
     const users = await prisma.user.findMany({
       where: {
@@ -103,11 +123,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ state, processed })
   } catch (e) {
     console.error('[card-rules-campaign POST]', e)
-    // снять замок, чтобы не заблокировать кампанию навсегда
+    // Сохраняем продвинутый cursor/sentCount — иначе повторный POST перешлёт тот же батч
     try {
-      const state = await readCampaign(prisma)
-      state.runningSince = null
-      await writeCampaign(prisma, state)
+      if (state) {
+        state.runningSince = null
+        await writeCampaign(prisma, state)
+      }
     } catch { /* уже залогировано выше */ }
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

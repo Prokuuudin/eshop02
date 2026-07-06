@@ -3,20 +3,26 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
+import SaleBanner, { type PromoBanner } from './SaleBanner';
 import { useTranslation } from '@/lib/use-translation';
 
 export default function SaleSection() {
     const { t } = useTranslation();
     const [products, setProducts] = useState<Product[]>([]);
+    const [banner, setBanner] = useState<PromoBanner | null>(null);
 
     useEffect(() => {
         fetch('/api/products/sale')
             .then((r) => r.json())
             .then((d) => { if (d.products?.length) setProducts(d.products) })
             .catch(() => {});
+        fetch('/api/banners?type=sale')
+            .then((r) => r.json())
+            .then((d) => { if (d.banners?.length) setBanner(d.banners[0]) })
+            .catch(() => {});
     }, []);
 
-    if (!products.length) return null;
+    if (!products.length && !banner) return null;
 
     return (
         <section className="sale-section py-8">
@@ -39,7 +45,14 @@ export default function SaleSection() {
                     </div>
                     <div id="sale-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
-                <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                {banner && (
+                    <div className="sale-section__banner mb-4">
+                        <SaleBanner banner={banner} />
+                    </div>
+                )}
+                {products.length > 0 && (
+                    <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                )}
             </div>
         </section>
     );

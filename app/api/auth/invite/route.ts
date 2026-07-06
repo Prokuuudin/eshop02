@@ -6,6 +6,8 @@ import { readInvitations, writeInvitations, deriveStatus } from '@/lib/invitatio
 
 export const runtime = 'nodejs'
 
+class InviteConsumedError extends Error {}
+
 type Found =
   | { ok: true; index: number }
   | { ok: false; res: NextResponse }
@@ -20,6 +22,10 @@ async function findValid(token: string | null): Promise<Found & { invitations: A
     return { ok: false, res: NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 }), invitations }
   }
   const status = deriveStatus(invitations[index])
+  // Письмо не ушло (status 'error') — токен не активируем: админский resend заменит запись
+  if (status === 'error') {
+    return { ok: false, res: NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 }), invitations }
+  }
   if (status === 'accepted') {
     return { ok: false, res: NextResponse.json({ ok: false, error: 'already_used' }, { status: 409 }), invitations }
   }
@@ -67,47 +73,61 @@ export async function POST(req: NextRequest) {
     const companyId = `company_master_${randomUUID()}`
     const companyName = user.name || inv.email
 
-    // Персональная компания мастера (паттерн approveNoCardRequest).
-    // Карта компании может конфликтовать по @unique — тогда компания без карты.
     try {
-      await prisma.company.create({
-        data: { id: companyId, companyName, cardNumber: inv.cardNumber },
-      })
-    } catch (e) {
-      if ((e as { code?: string })?.code !== 'P2002') throw e
-      await prisma.company.create({
-        data: { id: companyId, companyName, cardNumber: null },
-      })
-    }
-    await prisma.companyMember.create({
-      data: {
-        id: randomUUID(),
-        companyId,
-        userId: user.id,
-        email: inv.email,
-        name: user.name ?? inv.email,
-        role: 'admin',
-        addedBy: 'invitation',
-      },
-    })
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        mustChangePassword: false,
-        cardNumber: inv.cardNumber,
-        companyId,
-        companyName,
-        teamRole: 'admin',
-      },
-    })
+      await prisma.$transaction(
+        async (tx) => {
+          // Перечитать и потребить токен внутри транзакции — двойная активация
+          // упирается в serializable-конфликт, а не плодит дубли компаний
+          const fresh = await readInvitations(tx)
+          const idx = fresh.findIndex((i) => i.token === body.token)
+          if (idx < 0 || fresh[idx].acceptedAt) throw new InviteConsumedError()
+          fresh[idx] = { ...fresh[idx], acceptedAt: new Date().toISOString(), status: 'accepted' }
+          await writeInvitations(tx, fresh)
 
-    found.invitations[found.index] = {
-      ...inv,
-      acceptedAt: new Date().toISOString(),
-      status: 'accepted',
+          // Персональная компания мастера (паттерн approveNoCardRequest).
+          // Карта компании может конфликтовать по @unique — тогда компания без карты.
+          try {
+            await tx.company.create({
+              data: { id: companyId, companyName, cardNumber: inv.cardNumber },
+            })
+          } catch (e) {
+            if ((e as { code?: string })?.code !== 'P2002') throw e
+            await tx.company.create({
+              data: { id: companyId, companyName, cardNumber: null },
+            })
+          }
+          await tx.companyMember.create({
+            data: {
+              id: randomUUID(),
+              companyId,
+              userId: user.id,
+              email: inv.email,
+              name: user.name ?? inv.email,
+              role: 'admin',
+              addedBy: 'invitation',
+            },
+          })
+          await tx.user.update({
+            where: { id: user.id },
+            data: {
+              passwordHash,
+              mustChangePassword: false,
+              cardNumber: inv.cardNumber,
+              companyId,
+              companyName,
+              teamRole: 'admin',
+            },
+          })
+        },
+        { isolationLevel: 'Serializable' }
+      )
+    } catch (e) {
+      if (e instanceof InviteConsumedError || (e as { code?: string })?.code === 'P2034') {
+        // Параллельная активация или уже потреблённый токен
+        return NextResponse.json({ ok: false, error: 'already_used' }, { status: 409 })
+      }
+      throw e
     }
-    await writeInvitations(prisma, found.invitations)
 
     const token = await createSession(user.id)
     const res = NextResponse.json({ ok: true, email: inv.email })

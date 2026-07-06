@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import type { PrismaClient } from '@/generated/prisma/client'
 import { Prisma } from '@/generated/prisma/client'
 
+type Db = PrismaClient | Prisma.TransactionClient
+
 export const INVITES_KV_KEY = 'pro-invitations'
 export const CAMPAIGN_KV_KEY = 'card-rules-campaign'
 export const INVITE_TTL_DAYS = 7
@@ -40,13 +42,13 @@ const DEFAULT_CAMPAIGN: CampaignState = {
   runningSince: null,
 }
 
-export async function readInvitations(db: PrismaClient): Promise<ProInvitation[]> {
+export async function readInvitations(db: Db): Promise<ProInvitation[]> {
   const row = await db.keyValueSetting.findUnique({ where: { key: INVITES_KV_KEY } })
   if (!row) return []
   return ((row.value as { invitations?: ProInvitation[] })?.invitations) ?? []
 }
 
-export async function writeInvitations(db: PrismaClient, invitations: ProInvitation[]): Promise<void> {
+export async function writeInvitations(db: Db, invitations: ProInvitation[]): Promise<void> {
   const value = { invitations } as unknown as Prisma.InputJsonValue
   await db.keyValueSetting.upsert({
     where: { key: INVITES_KV_KEY },

@@ -81,6 +81,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                         images={images}
                         demoVideos={demoVideos}
                         title={localizedTitle}
+                        productDescription={productDescription}
                         productSpecVolume={productSpecVolume}
                         productSpecType={productSpecType}
                         productSpecCountry={productSpecCountry}
@@ -97,7 +98,6 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                             displayPrice={displayPrice}
                             displayOldPrice={displayOldPrice}
                             priceLocale={priceLocale}
-                            productDescription={productDescription}
                             productFeatures={productFeatures}
                             minOrderQuantity={minOrderQuantity}
                         />

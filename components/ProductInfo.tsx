@@ -6,7 +6,6 @@ import { ProductCodes } from '@/components/ProductCodes';
 import { ProductBadges } from '@/components/ProductBadges';
 import { ProductRating } from '@/components/ProductRating';
 import { ProductPrices } from '@/components/ProductPrices';
-import { ProductDescription } from '@/components/ProductDescription';
 import { ProductActions } from '@/components/ProductActions';
 import { ProductVariantSelector } from '@/components/ProductVariantSelector';
 import { Product, SelectedVariant } from '@/data/products';
@@ -20,7 +19,6 @@ interface ProductInfoProps {
     displayPrice: number;
     displayOldPrice?: number;
     priceLocale: string;
-    productDescription: string;
     productFeatures: string[];
     minOrderQuantity: number;
 }
@@ -32,7 +30,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     displayPrice,
     displayOldPrice,
     priceLocale,
-    productDescription,
     productFeatures,
     minOrderQuantity,
 }) => {
@@ -66,7 +63,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 productId={product.id}
                 productTitle={localizedTitle}
             />
-            <ProductDescription description={productDescription} productId={product.id} />
             <ProductFeatures features={productFeatures} />
             <ProductActions
                 product={product}

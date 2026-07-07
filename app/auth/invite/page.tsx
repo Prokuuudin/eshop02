@@ -38,6 +38,7 @@ export default function InvitePage() {
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setPassword2] = useState('');
+    const [loginFailed, setLoginFailed] = useState(false);
 
     useEffect(() => {
         if (!token) {
@@ -87,7 +88,15 @@ export default function InvitePage() {
                 return;
             }
             // Полный клиентский логин (zustand-сторы + серверная сессия)
-            await loginUserAuto(json.email ?? email, password);
+            const login = await loginUserAuto(json.email ?? email, password);
+            if (!login.success) {
+                // Аккаунт активирован на сервере; клиентский логин не удался —
+                // отправляем на страницу входа вместо ложного «залогинен»
+                setLoginFailed(true);
+                setStage('done');
+                setTimeout(() => router.push('/auth/login'), 2500);
+                return;
+            }
             setStage('done');
             setTimeout(() => router.push('/account'), 1500);
         } catch {
@@ -128,7 +137,9 @@ export default function InvitePage() {
                         {l('Аккаунт активирован!', 'Account activated!', 'Konts aktivizēts!')}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        {l('Перенаправляем в личный кабинет…', 'Redirecting to your account…', 'Novirzām uz jūsu kontu…')}
+                        {loginFailed
+                            ? l('Аккаунт активирован. Войдите с новым паролем.', 'Account activated. Log in with your new password.', 'Konts aktivizēts. Piesakieties ar jauno paroli.')
+                            : l('Перенаправляем в личный кабинет…', 'Redirecting to your account…', 'Novirzām uz jūsu kontu…')}
                     </p>
                 </div>
             </main>

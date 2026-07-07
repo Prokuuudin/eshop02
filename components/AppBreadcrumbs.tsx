@@ -57,17 +57,23 @@ const segmentLabelKeys: Record<string, string> = {
     reviews: 'breadcrumb.reviews',
     'stock-alerts': 'breadcrumb.stockAlerts',
     'bulk-price': 'breadcrumb.bulkPrice',
+    duplicates: 'breadcrumb.duplicates',
     // Admin — sales
     sales: 'breadcrumb.sales',
     orders: 'breadcrumb.orders',
+    new: 'breadcrumb.newOrder',
+    breakdown: 'breadcrumb.breakdown',
     rfq: 'breadcrumb.rfq',
     returns: 'breadcrumb.returns',
     // Admin — customers
     customers: 'breadcrumb.customers',
     accounts: 'breadcrumb.accounts',
     'client-barcodes': 'breadcrumb.clientBarcodes',
+    invitations: 'breadcrumb.invitations',
     segments: 'breadcrumb.segments',
     history: 'breadcrumb.history',
+    notifications: 'breadcrumb.notifications',
+    send: 'breadcrumb.send',
     // Admin — marketing
     marketing: 'breadcrumb.marketing',
     campaigns: 'breadcrumb.campaigns',
@@ -89,7 +95,9 @@ const segmentLabelKeys: Record<string, string> = {
     system: 'breadcrumb.system',
     users: 'breadcrumb.users',
     logs: 'breadcrumb.logs',
+    'admin-log': 'breadcrumb.adminLog',
     backup: 'breadcrumb.backup',
+    'design-system': 'breadcrumb.designSystem',
     // Admin — help
     help: 'breadcrumb.help',
     knowledge: 'breadcrumb.knowledge',

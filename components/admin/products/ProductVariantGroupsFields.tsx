@@ -17,17 +17,37 @@ const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) 
     return (
         <div className="flex flex-col gap-2 mt-2 pl-4 border-l border-border">
             {fields.map((field, idx) => (
-                <div key={field.id} className="flex gap-2">
+                <div key={field.id} className="flex gap-2 items-center flex-wrap">
                     <Input
+                        className="w-40"
                         placeholder="Значение (напр.: A-11)"
                         {...register(`variantGroups.${groupIndex}.options.${idx}.value`)}
                     />
                     <Input
+                        className="w-40"
                         type="number"
                         step="0.01"
                         placeholder="Надбавка к цене, €"
                         {...register(`variantGroups.${groupIndex}.options.${idx}.priceAdjustment`, { valueAsNumber: true })}
                     />
+                    <Input
+                        className="flex-1 min-w-48"
+                        placeholder="URL картинки опции"
+                        {...register(`variantGroups.${groupIndex}.options.${idx}.image`)}
+                    />
+                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap">
+                        <Controller
+                            control={control}
+                            name={`variantGroups.${groupIndex}.options.${idx}.preselected`}
+                            render={({ field: checkboxField }) => (
+                                <Checkbox
+                                    checked={checkboxField.value ?? false}
+                                    onCheckedChange={checkboxField.onChange}
+                                />
+                            )}
+                        />
+                        По умолчанию
+                    </label>
                     <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
                         ✕
                     </Button>
@@ -73,6 +93,21 @@ const ProductVariantGroupsFields: React.FC = () => {
                                     )}
                                 />
                                 Обязательно
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
+                                <Controller
+                                    control={control}
+                                    name={`variantGroups.${idx}.displayType`}
+                                    render={({ field: displayField }) => (
+                                        <Checkbox
+                                            checked={displayField.value === 'imageSquares'}
+                                            onCheckedChange={(checked) =>
+                                                displayField.onChange(checked ? 'imageSquares' : undefined)
+                                            }
+                                        />
+                                    )}
+                                />
+                                Плитки с картинками
                             </label>
                             <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
                                 ✕ Удалить группу

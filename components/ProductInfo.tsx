@@ -10,7 +10,7 @@ import { ProductDescription } from '@/components/ProductDescription';
 import { ProductActions } from '@/components/ProductActions';
 import { ProductVariantSelector } from '@/components/ProductVariantSelector';
 import { Product, SelectedVariant } from '@/data/products';
-import { getVariantGroups, sumPriceAdjustment } from '@/lib/product-variants';
+import { getVariantGroups, getPreselectedVariants, sumPriceAdjustment } from '@/lib/product-variants';
 import { stripBrandPrefix } from '@/lib/product-title';
 
 interface ProductInfoProps {
@@ -37,7 +37,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     minOrderQuantity,
 }) => {
     const variantGroups = useMemo(() => getVariantGroups(product), [product]);
-    const [selectedVariants, setSelectedVariants] = useState<SelectedVariant[]>([]);
+    const [selectedVariants, setSelectedVariants] = useState<SelectedVariant[]>(
+        () => getPreselectedVariants(getVariantGroups(product))
+    );
     const priceAdjustment = useMemo(() => sumPriceAdjustment(selectedVariants), [selectedVariants]);
     const adjustedPrice = displayPrice + priceAdjustment;
     const adjustedOldPrice = displayOldPrice !== undefined ? displayOldPrice + priceAdjustment : undefined;

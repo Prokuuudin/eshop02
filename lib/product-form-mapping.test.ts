@@ -26,6 +26,34 @@ describe('variantGroups round-trip through technicalSpecs', () => {
     expect(values.technicalSpecs).toEqual([{ key: 'Объём', value: '50 мл' }])
   })
 
+  it('round-trips image, preselected and displayType fields', () => {
+    const groups: VariantGroup[] = [
+      {
+        name: 'COLOR BASIC',
+        required: true,
+        displayType: 'imageSquares',
+        options: [
+          { value: '111', image: 'https://hairshop.lv/content/images/thumbs/0021552.jpeg', preselected: true },
+          { value: '113', image: 'https://hairshop.lv/content/images/thumbs/0021553.jpeg' },
+        ],
+      },
+      {
+        name: 'BASE',
+        required: true,
+        displayType: 'imageSquares',
+        options: [{ value: 'BASE XM', priceAdjustment: 46.04 }],
+      },
+    ]
+    const product: Product = {
+      ...baseProduct,
+      technicalSpecs: { __variantGroupsJson: JSON.stringify(groups) },
+    }
+    const values = mapProductToFormValues(product)
+    expect(values.variantGroups).toEqual(groups)
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toEqual({ __variantGroupsJson: JSON.stringify(groups) })
+  })
+
   it('mapFormValuesToProductPatch serializes variantGroups back into technicalSpecs', () => {
     const groups: VariantGroup[] = [
       { name: 'Izmērs', required: false, options: [{ value: 'M' }, { value: 'L', priceAdjustment: 2 }] },

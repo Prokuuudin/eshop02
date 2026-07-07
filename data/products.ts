@@ -4,12 +4,15 @@ export type CategoryType = 'hair' | 'face' | 'body' | 'nails' | 'equipment';
 
 export interface VariantOption {
   value: string            // код как в исходнике: "A-11", "111", "WHITE" — не переводим, не маппим на hex
-  priceAdjustment?: number
+  priceAdjustment?: number // gross € (×1.21), тот же базис НДС, что и Product.price
+  image?: string           // URL картинки опции (свотч ImageSquares или фото товара в этом варианте)
+  preselected?: boolean    // IsPreSelected из nopCommerce — выбирается по умолчанию
 }
 
 export interface VariantGroup {
   name: string              // как в исходнике: "Krāsu numurs", "Izmērs"...
   required: boolean
+  displayType?: 'imageSquares' // nopCommerce ctrl=45 — грид плиток с картинками; отсутствует = dropdown
   options: VariantOption[]
 }
 

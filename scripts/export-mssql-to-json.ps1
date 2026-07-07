@@ -104,19 +104,28 @@ JOIN Picture pic ON pic.Id = ppm.PictureId
 WHERE pic.SeoFilename IS NOT NULL AND pic.SeoFilename != ''
 "@
 
-# ── Product variant attributes (color/size dropdowns, lost in the first migration pass) ──
+# ── Product variant attributes (color/size dropdowns + image squares) ──
+# PriceAdjustment grossed up ×1.21 like Product.Price (source values are net).
+# ctrlType 45 = ImageSquares (плитки с картинками), 1 = DropdownList.
+# Option image: ImageSquaresPictureId (swatch) first, else PictureId (product photo in that variant).
 Export-Query "product_attributes" @"
 SELECT
   pam.ProductId      AS productId,
   pa.Name            AS attrName,
   pam.IsRequired     AS isRequired,
+  pam.AttributeControlTypeId AS ctrlType,
   pav.Name           AS value,
-  pav.PriceAdjustment AS priceAdjustment,
-  pav.DisplayOrder   AS displayOrder
+  ROUND(pav.PriceAdjustment * 1.21, 2) AS priceAdjustment,
+  pav.IsPreSelected  AS isPreSelected,
+  pav.DisplayOrder   AS displayOrder,
+  COALESCE(NULLIF(pav.ImageSquaresPictureId, 0), NULLIF(pav.PictureId, 0)) AS imagePicId,
+  pic.SeoFilename    AS imageSeoFilename,
+  pic.MimeType       AS imageMimeType
 FROM Product_ProductAttribute_Mapping pam
 JOIN ProductAttribute pa ON pa.Id = pam.ProductAttributeId
 JOIN ProductAttributeValue pav ON pav.ProductAttributeMappingId = pam.Id
 JOIN Product p ON p.Id = pam.ProductId AND p.Deleted = 0
+LEFT JOIN Picture pic ON pic.Id = COALESCE(NULLIF(pav.ImageSquaresPictureId, 0), NULLIF(pav.PictureId, 0))
 ORDER BY pam.ProductId, pam.Id, pav.DisplayOrder
 "@
 

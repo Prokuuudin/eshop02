@@ -62,9 +62,12 @@ export const addProductSchema = z.object({
   variantGroups: z.array(z.object({
     name: z.string().min(1, 'Название группы обязательно'),
     required: z.boolean(),
+    displayType: z.literal('imageSquares').optional().catch(undefined),
     options: z.array(z.object({
       value: z.string().min(1, 'Значение обязательно'),
       priceAdjustment: z.number().optional().catch(undefined),
+      image: z.string().optional(),
+      preselected: z.boolean().optional(),
     })),
   })),
 

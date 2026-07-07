@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getVariantGroups, getMissingRequiredGroups, sumPriceAdjustment } from './product-variants'
+import { getVariantGroups, getMissingRequiredGroups, getPreselectedVariants, sumPriceAdjustment } from './product-variants'
 import type { VariantGroup, SelectedVariant } from '@/data/products'
 
 describe('getVariantGroups', () => {
@@ -52,6 +52,51 @@ describe('getMissingRequiredGroups', () => {
 
   it('treats undefined groups as no groups', () => {
     expect(getMissingRequiredGroups(undefined, [])).toEqual([])
+  })
+})
+
+describe('getPreselectedVariants', () => {
+  it('returns preselected option per group with its priceAdjustment', () => {
+    const groups: VariantGroup[] = [
+      {
+        name: 'COLOR BASIC',
+        required: true,
+        displayType: 'imageSquares',
+        options: [{ value: '111', preselected: true, image: 'https://x/1.jpeg' }, { value: '113' }],
+      },
+      {
+        name: 'BASE',
+        required: true,
+        options: [
+          { value: 'BASE XT/', priceAdjustment: -42.5 },
+          { value: 'BASE XC', preselected: true },
+        ],
+      },
+    ]
+    expect(getPreselectedVariants(groups)).toEqual([
+      { groupName: 'COLOR BASIC', value: '111', priceAdjustment: undefined },
+      { groupName: 'BASE', value: 'BASE XC', priceAdjustment: undefined },
+    ])
+  })
+
+  it('skips groups without a preselected option', () => {
+    const groups: VariantGroup[] = [
+      { name: 'Izmērs', required: false, options: [{ value: 'M' }, { value: 'L' }] },
+    ]
+    expect(getPreselectedVariants(groups)).toEqual([])
+  })
+
+  it('returns empty array for undefined groups', () => {
+    expect(getPreselectedVariants(undefined)).toEqual([])
+  })
+
+  it('carries priceAdjustment of the preselected option', () => {
+    const groups: VariantGroup[] = [
+      { name: 'BASE', required: true, options: [{ value: 'BASE XM', priceAdjustment: 46.04, preselected: true }] },
+    ]
+    expect(getPreselectedVariants(groups)).toEqual([
+      { groupName: 'BASE', value: 'BASE XM', priceAdjustment: 46.04 },
+    ])
   })
 })
 

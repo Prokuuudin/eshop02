@@ -26,3 +26,15 @@ export function getMissingRequiredGroups(
 export function sumPriceAdjustment(selected: SelectedVariant[]): number {
   return selected.reduce((sum, v) => sum + (v.priceAdjustment ?? 0), 0)
 }
+
+export function getPreselectedVariants(groups: VariantGroup[] | undefined): SelectedVariant[] {
+  if (!groups) return []
+  const result: SelectedVariant[] = []
+  for (const group of groups) {
+    const option = group.options.find((o) => o.preselected)
+    if (option) {
+      result.push({ groupName: group.name, value: option.value, priceAdjustment: option.priceAdjustment })
+    }
+  }
+  return result
+}

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json()) as { email?: string; cardNumber?: string }
-    const email = body.email?.trim().toLowerCase()
+    const email = body.email?.trim()
     const cardNumber = body.cardNumber?.trim()
     if (!email || !cardNumber) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
@@ -20,7 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+    // Case-insensitive: User.email хранится как есть (mixed case), уникальный индекс case-sensitive
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true },
+    })
     if (!user) return NextResponse.json({ error: 'user_not_found' }, { status: 404 })
 
     try {

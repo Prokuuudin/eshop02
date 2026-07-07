@@ -41,8 +41,10 @@ export async function GET(req: NextRequest) {
     const found = await findValid(req.nextUrl.searchParams.get('token'))
     if (!found.ok) return found.res
     const inv = found.invitations[found.index]
+    // Ищем по id: email в инвайте принудительно lowercased, а User.email
+    // хранится как есть (case-sensitive unique) — поиск по email ломается
     const user = await prisma.user.findUnique({
-      where: { email: inv.email },
+      where: { id: inv.userId },
       select: { name: true },
     })
     return NextResponse.json({ ok: true, email: inv.email, name: user?.name ?? '', cardNumber: inv.cardNumber })
@@ -64,7 +66,8 @@ export async function POST(req: NextRequest) {
     if (!found.ok) return found.res
     const inv = found.invitations[found.index]
 
-    const user = await prisma.user.findUnique({ where: { email: inv.email } })
+    // По id, не по email: инвайт хранит lowercased email, в User.email может быть верхний регистр
+    const user = await prisma.user.findUnique({ where: { id: inv.userId } })
     if (!user) {
       return NextResponse.json({ ok: false, error: 'user_not_found' }, { status: 404 })
     }

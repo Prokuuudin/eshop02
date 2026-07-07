@@ -98,7 +98,11 @@ export async function POST(req: NextRequest) {
 
     let processed = 0
     for (const u of users) {
-      if (!isEligibleRulesRecipient(u)) continue
+      if (!isEligibleRulesRecipient(u)) {
+        // Неподходящие строки пропускаются навсегда — курсор двигаем и здесь
+        state.cursor = u.id
+        continue
+      }
       const { subject, html } = buildRulesEmail(
         'ru',
         { name: u.name ?? '', siteUrl },
@@ -112,9 +116,11 @@ export async function POST(req: NextRequest) {
         state.errorCount++
       }
       processed++
+      // Курсор двигаем на каждом получателе: обрыв середины батча не перешлёт уже отправленное
+      state.cursor = u.id
     }
 
-    state.cursor = users.length > 0 ? users[users.length - 1].id : state.cursor
+    // Курсор уже продвинут внутри цикла (при пустом батче остаётся прежним)
     state.finished = users.length < CAMPAIGN_BATCH_SIZE
     state.lastRunAt = new Date().toISOString()
     state.runningSince = null

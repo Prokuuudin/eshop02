@@ -10,7 +10,6 @@ export default function FAQSection() {
   const col1 = [
     { id: 'faq-1', question: t('faq.site.q1'), answer: t('faq.site.a1') },
     { id: 'faq-2', question: t('faq.site.q2'), answer: t('faq.site.a2') },
-    { id: 'faq-3', question: t('faq.site.q3'), answer: t('faq.site.a3') },
     { id: 'faq-4', question: t('faq.site.q4'), answer: t('faq.site.a4') },
     { id: 'faq-5', question: t('faq.site.q5'), answer: t('faq.site.a5') },
     { id: 'faq-6', question: t('faq.site.q6'), answer: t('faq.site.a6') },
@@ -19,7 +18,6 @@ export default function FAQSection() {
   const col2 = [
     { id: 'faq-7',  question: t('faq.site.q7'),  answer: t('faq.site.a7')  },
     { id: 'faq-8',  question: t('faq.site.q8'),  answer: t('faq.site.a8')  },
-    { id: 'faq-9',  question: t('faq.site.q9'),  answer: t('faq.site.a9')  },
     { id: 'faq-10', question: t('faq.site.q10'), answer: t('faq.site.a10') },
     { id: 'faq-11', question: t('faq.site.q11'), answer: t('faq.site.a11') },
     { id: 'faq-12', question: t('faq.site.q12'), answer: t('faq.site.a12') },

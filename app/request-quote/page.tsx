@@ -159,7 +159,7 @@ export default function RequestQuotePage() {
                   min={1}
                   value={item.quantity}
                   onChange={(e) => updateRow(index, { quantity: Number(e.target.value) })}
-                  className="rounded border border-border bg-background px-3 py-2 text-sm"
+                  className="rounded border border-border bg-background px-3 py-2 text-base md:text-sm"
                   placeholder="Кол-во"
                 />
 

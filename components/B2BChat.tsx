@@ -141,7 +141,7 @@ export default function B2BChat() {
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="flex-1 rounded border border-border bg-background px-2 py-1.5 text-xs"
+              className="flex-1 rounded border border-border bg-background px-2 py-1.5 text-base md:text-xs"
               placeholder="Сообщение менеджеру"
             />
             <Button size="sm" type="submit" disabled={sending || !text.trim()}>

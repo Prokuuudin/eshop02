@@ -114,7 +114,7 @@ export default function HeaderSearch() {
       <div className="relative flex-1">
         <input
           id={inputId}
-          className="w-full rounded-md border border-border bg-card text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-border bg-card text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-300 px-3 py-2 text-base md:text-sm"
           placeholder={t('catalog.searchPlaceholder')}
           value={query}
           role="combobox"

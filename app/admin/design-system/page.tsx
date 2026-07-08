@@ -106,6 +106,9 @@ export default function DesignSystemPage() {
             <div className="flex flex-wrap gap-4">
               <Token name="primary" bg="bg-primary" text="links, focus" />
               <Token name="primary/5" bg="bg-primary/5" text="hero bg" border="border-border" />
+              <Token name="brand #EAAC63" bg="bg-[#EAAC63]" text="header, home bg" />
+              <Token name="indigo-600" bg="bg-indigo-600" text="CTA «В корзину»" />
+              <Token name="pink-600" bg="bg-pink-600" text="CTA «В избранное»" />
               <Token name="amber-500" bg="bg-amber-500" text="bonus" />
               <Token name="amber-50" bg="bg-amber-50" text="bonus bg" border="border-border" />
               <Token name="green-600" bg="bg-green-600" text="success" />
@@ -129,7 +132,7 @@ export default function DesignSystemPage() {
 
         {/* ── 2. Typography ─────────────────────────────────────────── */}
         <Section title="2 · Typography">
-          <p className="text-sm text-muted-foreground">Шрифт: <span className="font-mono">Inter</span> · Система: Tailwind type scale.</p>
+          <p className="text-sm text-muted-foreground">Шрифт: системный стек (<span className="font-mono">ui-sans-serif / system-ui</span>, переменная <span className="font-mono">--font-inter</span>) · Система: Tailwind type scale.</p>
 
           <Card>
             <CardContent className="pt-4 px-5 pb-5">
@@ -454,7 +457,7 @@ export default function DesignSystemPage() {
 
         {/* ── Footer ────────────────────────────────────────────────── */}
         <div className="text-xs text-gray-400 dark:text-gray-600 pb-6">
-          Eshop Design System · Tailwind CSS + Shadcn/ui · Inter · generated from live components
+          Eshop Design System · Tailwind CSS + Shadcn/ui · system-ui · generated from live components
         </div>
 
       </main>

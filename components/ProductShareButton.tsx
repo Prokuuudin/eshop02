@@ -9,6 +9,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
 import { useToast } from '@/lib/toast-context';
 import { buildShareLinks } from '@/lib/share-links';
@@ -44,9 +45,16 @@ export default function ProductShareButton({ productTitle }: ProductShareButtonP
         };
 
         return (
-            <Button variant="ghost" size="icon" aria-label={shareLabel} onClick={handleNativeShare}>
-                <Share2 className="h-4 w-4" />
-            </Button>
+            <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label={shareLabel} onClick={handleNativeShare}>
+                            <Share2 className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{shareLabel}</TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         );
     }
 
@@ -62,38 +70,45 @@ export default function ProductShareButton({ productTitle }: ProductShareButtonP
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label={shareLabel}>
-                    <Share2 className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                    <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer">
-                        📘 Facebook
-                    </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <a href={shareLinks.x} target="_blank" rel="noopener noreferrer">
-                        𝕏 X
-                    </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <a href={shareLinks.telegram} target="_blank" rel="noopener noreferrer">
-                        💬 Telegram
-                    </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer">
-                        🟢 WhatsApp
-                    </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleCopyLink}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    {t('product.share.copyLink', 'Copy link')}
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <TooltipProvider delayDuration={150}>
+            <DropdownMenu>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label={shareLabel}>
+                                <Share2 className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>{shareLabel}</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer">
+                            📘 Facebook
+                        </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <a href={shareLinks.x} target="_blank" rel="noopener noreferrer">
+                            𝕏 X
+                        </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <a href={shareLinks.telegram} target="_blank" rel="noopener noreferrer">
+                            💬 Telegram
+                        </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer">
+                            🟢 WhatsApp
+                        </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleCopyLink}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        {t('product.share.copyLink', 'Copy link')}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </TooltipProvider>
     );
 }

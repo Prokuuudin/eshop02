@@ -22,7 +22,7 @@ New `components/ProductShareButton.tsx` (`'use client'`):
    - Each network link opens in a new tab (`target="_blank" rel="noopener noreferrer"`), rendered as `DropdownMenuItem` with a small `lucide-react` glyph + text label (labels are fine inside the dropdown; only the trigger button is icon-only).
    - Facebook/X/Telegram icons: reuse the same emoji glyphs already used in `BlogPostContent.tsx` (📘/𝕏/💬) for visual consistency with the blog's share block; WhatsApp gets 💬-style native emoji (📱 or the WhatsApp emoji) — final glyph picked during implementation to match existing style.
 
-The branch between "native share" vs "dropdown" is decided once on mount via `useState(() => typeof navigator !== 'undefined' && !!navigator.share)` so SSR doesn't flash the wrong control (server renders the dropdown-trigger markup either way; the click handler differs).
+The branch between "native share" vs "dropdown" renders two **different element trees**, not one tree with a conditional handler — mixing them under one `DropdownMenuTrigger` risks Radix's own pointerdown-to-open handling firing before a click-time capability check can intercept it. Instead: state defaults to `false` (`useState(false)`, matching what the server always sees), and a `useEffect(() => setSupportsNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function'), [])` flips it after mount on capable browsers. First client render always matches the server-rendered dropdown-button markup (no hydration mismatch); browsers with Web Share API swap to the plain native-share button on the next tick.
 
 ## Integration point
 
@@ -51,8 +51,9 @@ The button renders regardless of auth state (even over the "Войдите, чт
 ## Translations
 
 Add to `data/translations.ts` (ru/en/lv, matching existing `blog.share*` key style):
-- `product.share.label` — "Поделиться" / "Share" / "Dalīties"
-- `product.share.copied` — "Ссылка скопирована" / "Link copied" / "Saite nokopēta"
+- `product.share.label` — "Поделиться" / "Share" / "Dalīties" (button `aria-label`)
+- `product.share.copyLink` — "Копировать ссылку" / "Copy link" / "Kopēt saiti" (dropdown item text)
+- `product.share.copied` — "Ссылка скопирована" / "Link copied" / "Saite nokopēta" (toast after copy)
 
 ## Out of scope
 - No share counters/analytics.

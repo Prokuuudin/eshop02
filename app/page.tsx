@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
     return (
-        <div className="bg-[#EAAC63] dark:bg-background">
+        <div className="bg-white dark:bg-background">
             <Hero />
             <Benefits />
             <BestsellersSection />

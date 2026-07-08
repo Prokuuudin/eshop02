@@ -178,6 +178,7 @@ html {
 
 :root {
     --header-offset: 150px;
+    --font-inter: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
 html,

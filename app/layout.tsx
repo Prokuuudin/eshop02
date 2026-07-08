@@ -2,7 +2,6 @@ import '../styles/globals.css'
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
 import ThemeInitScript from '../components/ThemeInitScript'
-import { Inter } from 'next/font/google'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import AppBreadcrumbs from '../components/AppBreadcrumbs'
@@ -10,8 +9,6 @@ import { Providers } from './providers'
 import RouteUiEffects from '../components/RouteUiEffects'
 import AuthHydrator from '../components/auth/AuthHydrator'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
-
-const inter = Inter({ subsets: ['latin', 'cyrillic'], display: 'swap', variable: '--font-inter' })
 
 const metadataBaseUrl = getSiteUrl()
 
@@ -66,7 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <html lang="en">
-      <body className={inter.variable}>
+      <body>
         <ThemeInitScript />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />

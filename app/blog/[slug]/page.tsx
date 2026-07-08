@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const language: Language = 'en';
     if (!post) {
         return {
-            title: 'Article not found | BeautyShop',
+            title: 'Article not found | Hairshop-Pro',
             description: 'Requested article was not found',
             robots: {
                 index: false,
@@ -45,10 +45,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const path = `/blog/${localizedPost.slug}`;
 
     return {
-        title: `${localizedPost.title} | BeautyShop`,
+        title: `${localizedPost.title} | Hairshop-Pro`,
         description: localizedPost.excerpt,
         openGraph: {
-            title: `${localizedPost.title} | BeautyShop`,
+            title: `${localizedPost.title} | Hairshop-Pro`,
             description: localizedPost.excerpt,
             images: [{ url: localizedPost.image, alt: localizedPost.title }],
             url: path,

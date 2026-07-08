@@ -25,9 +25,11 @@ export default function ProductShareButton({ productTitle }: ProductShareButtonP
     // trees below (native-share button vs. dropdown) avoid ever fighting
     // Radix's own pointerdown-to-open handling on the trigger.
     const [supportsNativeShare, setSupportsNativeShare] = React.useState(false);
+    const [pageUrl, setPageUrl] = React.useState('');
 
     React.useEffect(() => {
         setSupportsNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+        setPageUrl(window.location.href);
     }, []);
 
     const shareLabel = t('product.share.label', 'Share');
@@ -48,12 +50,11 @@ export default function ProductShareButton({ productTitle }: ProductShareButtonP
         );
     }
 
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    const shareLinks = buildShareLinks(url, productTitle);
+    const shareLinks = buildShareLinks(pageUrl, productTitle);
 
     const handleCopyLink = async () => {
         try {
-            await navigator.clipboard.writeText(url);
+            await navigator.clipboard.writeText(pageUrl);
             showToast(t('product.share.copied', 'Link copied'), 'success');
         } catch {
             // clipboard blocked (insecure context/permissions) — network buttons above still work

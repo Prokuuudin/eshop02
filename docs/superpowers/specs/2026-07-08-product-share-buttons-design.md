@@ -1,7 +1,7 @@
 # Product page share button — design
 
 ## Goal
-Add a share control to the right of the rating row on the product page (`app/product/[id]/page.tsx` → `ProductInfo` → `ProductRating`), letting a visitor share the product link via native OS share sheet (mobile) or a network dropdown (desktop).
+Add a share control to the right of the price block on the product page (`app/product/[id]/page.tsx` → `ProductInfo` → `ProductPrices`), letting a visitor share the product link via native OS share sheet (mobile) or a network dropdown (desktop).
 
 ## Component
 
@@ -9,7 +9,7 @@ New `components/ProductShareButton.tsx` (`'use client'`):
 
 - Icon-only button, `lucide-react` `Share2` icon, same visual weight as other icon buttons in the product info column (ghost/outline, `h-8 w-8`).
 - `aria-label` from translation key `product.share.label`.
-- Props: `productUrl: string`, `productTitle: string`.
+- Props: `productTitle: string`. `productUrl` is derived internally from `window.location.href`, not passed in.
 
 ### Click behavior
 1. If `typeof navigator !== 'undefined' && navigator.share` exists (mobile / Web Share API support): call `navigator.share({ title: productTitle, url: productUrl })` directly on click, wrapped in `try/catch` — swallow `AbortError` (user cancelled), no toast on success (OS sheet is itself the confirmation).
@@ -26,17 +26,27 @@ The branch between "native share" vs "dropdown" is decided once on mount via `us
 
 ## Integration point
 
-`components/ProductRating.tsx` currently renders nothing when `ratingCount === 0` (conditionally skipped in `ProductInfo.tsx:47`). Per requirement, the share button must always be visible regardless of rating presence, so:
+`components/ProductPrices.tsx` already receives `productTitle` (the full localized title, same string passed to `ProductStock` for its notify-me flow) — reuse it, no new props on `ProductPrices`. The button needs the current page URL, sourced client-side via `window.location.href` (read once via `useState(() => typeof window !== 'undefined' ? window.location.href : '')`) inside `ProductShareButton` itself — avoids threading `getSiteUrl()`/`productUrl` down from the server component and always reflects the actual URL the visitor is on.
 
-- `ProductInfo.tsx` renders a new wrapper row unconditionally:
-  ```tsx
-  <div className="flex items-center justify-between gap-3 mt-4">
-      {ratingCount > 0 && <ProductRating rating={product.rating} count={ratingCount} />}
-      <ProductShareButton productUrl={productUrl} productTitle={stripBrandPrefix(localizedTitle, product.brand)} />
-  </div>
-  ```
-  (`ProductRating`'s own `mt-4` margin moves to the wrapper so spacing stays identical when the rating is present, and the button still sits at the row's right edge via `justify-between` when the rating is absent.)
-- `ProductInfo` needs the current page URL. `ProductPageContent.tsx` (client) does not currently receive `siteUrl`/`productUrl` as a prop — simplest correct source in a client component is `window.location.href`, read once via `useState(() => typeof window !== 'undefined' ? window.location.href : '')`. This avoids threading `getSiteUrl()` down from the server component and always reflects the actual URL the visitor is on (including query params, which is fine for sharing).
+`ProductPrice` returns a `Fragment` of stacked sibling `div`s (old price / price / savings line, or the login placeholder). Wrap it in its own `div` before making it a flex sibling of the share button — otherwise its fragment children would become flex items themselves and lose their vertical stacking:
+
+```tsx
+export const ProductPrices: React.FC<ProductPricesProps> = ({
+    price, oldPrice, priceLocale, stock, productId, productTitle,
+}) => (
+    <div className="product-detail__prices mt-6">
+        <div className="flex items-start justify-between gap-3">
+            <div>
+                <ProductPrice price={price} oldPrice={oldPrice} priceLocale={priceLocale} />
+            </div>
+            <ProductShareButton productTitle={productTitle} />
+        </div>
+        <ProductStock stock={stock} productId={productId} productTitle={productTitle} />
+    </div>
+);
+```
+
+The button renders regardless of auth state (even over the "Войдите, чтобы увидеть цену" placeholder) — sharing the product doesn't require seeing the price.
 
 ## Translations
 

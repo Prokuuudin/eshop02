@@ -14,9 +14,9 @@ export type CategoryCardData = {
 export const CATEGORY_CARDS: CategoryCardData[] = [
   { id: 'hair', titleKey: 'categories.haircare', href: '/catalog?cat=hair', image: '/categories/hair.jpg' },
   { id: 'nails', titleKey: 'categories.nails', href: '/catalog?cat=nails', image: '/categories/nails.jpg' },
-  { id: 'face', titleKey: 'categories.skincare', href: '/catalog?cat=face', image: '/categories/face.jpg' },
-  { id: 'body', titleKey: 'categories.bodycare', href: '/catalog?cat=body', image: 'https://hairshop.lv/content/images/thumbs/0028476_sanctuary-spa-lily-rose-collection-body-lotion-250ml-kermena-losjons-250ml-loson-dl-tela-250ml-kehak_400.jpeg' },
-  { id: 'equipment', titleKey: 'categories.equipment', href: '/catalog?cat=equipment', image: '/categories/equipment.jpg' }
+  { id: 'face', titleKey: 'categories.skincare', href: '/catalog?cat=face', image: '/categories/skin.jpg' },
+  { id: 'body', titleKey: 'categories.bodycare', href: '/catalog?cat=body', image: '/categories/body.jpg' },
+  { id: 'equipment', titleKey: 'categories.equipment', href: '/catalog?cat=equipment', image: '/categories/instruments.jpg' }
 ]
 
 export const SUBCATEGORIES_BY_ID: Record<string, Subcategory[]> = {

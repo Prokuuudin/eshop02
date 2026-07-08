@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
@@ -5,6 +7,7 @@ const nextConfig = {
     serverExternalPackages: ['ws', '@neondatabase/serverless'],
     // experimental: {},
     images: {
+        qualities: [75, 90],
         // Лого брендов — локальные SVG (/public/brands-distribution и др.); sandbox-CSP отключает скрипты внутри SVG
         dangerouslyAllowSVG: true,
         contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -25,6 +28,13 @@ const nextConfig = {
         // Prisma 7 generated client uses .js extensions in ESM imports — resolve to .ts
         config.resolve.extensionAlias = {
             '.js': ['.ts', '.tsx', '.js', '.jsx'],
+        };
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            '@radix-ui/react-collapsible': path.resolve(
+                __dirname,
+                'node_modules/@radix-ui/react-collapsible'
+            ),
         };
 
         return config;

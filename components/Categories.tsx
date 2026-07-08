@@ -23,13 +23,14 @@ export default function Categories() {
     if (!isHydrated || !isAuthenticated) return null;
     const sectionClassName = 'categories py-8 relative z-30 overflow-visible';
     const gridClassName =
-        'categories__grid grid grid-cols-2 sm:grid-cols-5 gap-4 overflow-visible';
+        'categories__grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 overflow-visible';
     const itemWithDropdownClassName =
-        'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-card hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible aspect-square flex flex-col';
-    const imageWrapClassName = 'categories__image relative aspect-square w-full';
+        'categories__item group relative z-40 hover:z-50 rounded-lg border border-border bg-card hover:shadow-lg transition-transform transform hover:-translate-y-1 overflow-visible flex flex-col';
+    const orphanClassName = 'col-span-2 w-1/2 mx-auto sm:col-span-1 sm:w-auto sm:mx-0';
+    const imageWrapClassName = 'categories__image relative aspect-square w-full shrink-0';
     const imageClassName = 'object-cover grayscale group-hover:scale-105 transition-transform';
     const metaClassName =
-        'categories__meta p-2 sm:p-3 text-center text-sm sm:text-base text-foreground leading-tight';
+        'categories__meta flex-1 flex items-center justify-center p-2 sm:p-3 text-center text-sm sm:text-base text-foreground leading-tight';
     const dropdownPanelClassName =
         'w-[min(260px,calc(100vw-2rem))] rounded-lg border border-border bg-card shadow-lg overflow-hidden';
     const dropdownItemClassName =
@@ -52,12 +53,17 @@ export default function Categories() {
                 </div>
                 <TooltipProvider delayDuration={120}>
                     <div className={gridClassName}>
-                        {categories.map((c) => {
+                        {categories.map((c, index) => {
                             const submenuItems = c.subcategories ?? [];
+                            const isOrphan =
+                                categories.length % 2 === 1 && index === categories.length - 1;
+                            const itemClassName = isOrphan
+                                ? `${itemWithDropdownClassName} ${orphanClassName}`
+                                : itemWithDropdownClassName;
 
                             if (submenuItems.length > 0) {
                                 return (
-                                    <div key={c.id} className={itemWithDropdownClassName}>
+                                    <div key={c.id} className={itemClassName}>
                                         <DropdownMenu modal={false}>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -81,6 +87,7 @@ export default function Categories() {
                                                                     fill
                                                                     className={imageClassName}
                                                                     sizes="(max-width: 640px) 50vw, 20vw"
+                                                                    quality={90}
                                                                 />
                                                             </div>
                                                             <div className={metaClassName}>
@@ -137,7 +144,7 @@ export default function Categories() {
                             }
 
                             return (
-                                <div key={c.id} className={itemWithDropdownClassName}>
+                                <div key={c.id} className={itemClassName}>
                                     <Link
                                         href={c.href}
                                         className="block w-full text-left rounded-lg overflow-hidden min-h-[44px]"
@@ -154,6 +161,7 @@ export default function Categories() {
                                                 fill
                                                 className={imageClassName}
                                                 sizes="(max-width: 640px) 50vw, 20vw"
+                                                quality={90}
                                             />
                                         </div>
                                         <div className={metaClassName}>

@@ -1,4 +1,3 @@
-import { ProductFeatures } from '@/components/ProductFeatures';
 import React, { useMemo, useState } from 'react';
 import { ProductBrand } from '@/components/ProductBrand';
 import { ProductTitle } from '@/components/ProductTitle';
@@ -19,7 +18,6 @@ interface ProductInfoProps {
     displayPrice: number;
     displayOldPrice?: number;
     priceLocale: string;
-    productFeatures: string[];
     minOrderQuantity: number;
 }
 
@@ -30,7 +28,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     displayPrice,
     displayOldPrice,
     priceLocale,
-    productFeatures,
     minOrderQuantity,
 }) => {
     const variantGroups = useMemo(() => getVariantGroups(product), [product]);
@@ -63,7 +60,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 productId={product.id}
                 productTitle={localizedTitle}
             />
-            <ProductFeatures features={productFeatures} />
             <ProductActions
                 product={product}
                 minOrderQuantity={minOrderQuantity}

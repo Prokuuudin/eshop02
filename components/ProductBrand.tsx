@@ -15,9 +15,10 @@ export const ProductBrand: React.FC<ProductBrandProps> = ({ brand }) => {
             b.name.toLowerCase() === brand.toLowerCase() ||
             b.id.toLowerCase() === brand.toLowerCase()
     );
+    const hasRealLogo = brandObj?.logo && brandObj.logo !== '/brands/new-brand.svg';
     return (
         <div className="product-detail__brand flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            {brandObj && brandObj.logo && brandObj.allowLogo && (
+            {brandObj && hasRealLogo && brandObj.allowLogo && (
                 <Image
                     src={brandObj.logo}
                     alt={brandObj.name}

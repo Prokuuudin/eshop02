@@ -2,6 +2,7 @@ import React from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductImageDisclaimer } from '@/components/ProductImageDisclaimer';
 import { ProductDescription } from '@/components/ProductDescription';
+import { ProductFeatures } from '@/components/ProductFeatures';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
 import TechnicalSpecs from '@/components/TechnicalSpecs';
@@ -15,6 +16,7 @@ interface ProductGalleryBlockProps {
     demoVideos: any[];
     title: string;
     productDescription: string;
+    productFeatures: string[];
     productSpecVolume: string;
     productSpecType: string;
     productSpecCountry: string;
@@ -29,6 +31,7 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     demoVideos,
     title,
     productDescription,
+    productFeatures,
     productSpecVolume,
     productSpecType,
     productSpecCountry,
@@ -41,6 +44,7 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
             <ProductGallery images={images} demoVideos={demoVideos} title={title} />
             <ProductImageDisclaimer />
             <ProductDescription description={productDescription} productId={product.id} />
+            <ProductFeatures features={productFeatures} />
             <ProductSpecs
                 volume={productSpecVolume}
                 type={productSpecType}

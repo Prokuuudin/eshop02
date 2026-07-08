@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProductPrice } from '@/components/ProductPrice';
 import { ProductStock } from '@/components/ProductStock';
+import ProductShareButton from '@/components/ProductShareButton';
 
 interface ProductPricesProps {
     price: number;
@@ -21,11 +22,16 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
 }) => {
     return (
         <div className="product-detail__prices mt-6">
-            <ProductPrice
-                price={price}
-                oldPrice={oldPrice}
-                priceLocale={priceLocale}
-            />
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <ProductPrice
+                        price={price}
+                        oldPrice={oldPrice}
+                        priceLocale={priceLocale}
+                    />
+                </div>
+                <ProductShareButton productTitle={productTitle} />
+            </div>
             <ProductStock stock={stock} productId={productId} productTitle={productTitle} />
         </div>
     );

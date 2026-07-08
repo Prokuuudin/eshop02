@@ -5,6 +5,9 @@ const nextConfig = {
     serverExternalPackages: ['ws', '@neondatabase/serverless'],
     // experimental: {},
     images: {
+        // Лого брендов — локальные SVG (/public/brands-distribution и др.); sandbox-CSP отключает скрипты внутри SVG
+        dangerouslyAllowSVG: true,
+        contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
         remotePatterns: [
             {
                 protocol: 'https',

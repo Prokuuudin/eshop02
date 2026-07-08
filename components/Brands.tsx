@@ -109,7 +109,7 @@ export default function Brands() {
                         <Link
                           key={brand.id}
                           href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                          className="brands__brand-link inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-primary hover:bg-primary/5 hover:text-primary sm:text-base"
+                          className="brands__brand-link inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
                           title={brand.name}
                         >
                           {toBrandTitleCase(brand.name)}

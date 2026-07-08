@@ -16,6 +16,12 @@ const LETTER_PALETTE = [
   'bg-primary/5', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
 ];
 
+function toBrandTitleCase(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/(^|[\s\-.'])([a-zа-яё])/gi, (_m, sep, chr) => sep + chr.toUpperCase());
+}
+
 export default function Brands() {
   const { t, language } = useTranslation();
   const { resolveImageSrc } = useSiteContent();
@@ -93,20 +99,20 @@ export default function Brands() {
               <div className="brands__list-clip relative">
                 <div
                   ref={listRef}
-                  className={`brands__list flex flex-wrap gap-x-8 gap-y-2 ${showAll ? '' : 'overflow-hidden'}`}
+                  className={`brands__list flex flex-wrap gap-x-6 gap-y-3 ${showAll ? '' : 'overflow-hidden'}`}
                   style={showAll ? undefined : { maxHeight: COLLAPSED_MAX_HEIGHT }}
                 >
                   {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
-                    <div key={letter} className="brands__letter-group flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className={`brands__letter inline-flex h-8 w-8 items-center justify-center rounded-md text-lg font-bold text-gray-800 ${LETTER_PALETTE[index % LETTER_PALETTE.length]}`}>{letter}</span>
+                    <div key={letter} className="brands__letter-group flex flex-wrap items-center gap-x-2 gap-y-2">
+                      <span className={`brands__letter inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-lg font-bold text-gray-800 ${LETTER_PALETTE[index % LETTER_PALETTE.length]}`}>{letter}</span>
                       {letterBrands.map((brand) => (
                         <Link
                           key={brand.id}
                           href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                          className="brands__brand-link text-sm font-medium text-gray-700 transition-colors duration-200 hover:text-primary hover:underline sm:text-base"
+                          className="brands__brand-link inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-primary hover:bg-primary/5 hover:text-primary sm:text-base"
                           title={brand.name}
                         >
-                          {brand.name}
+                          {toBrandTitleCase(brand.name)}
                         </Link>
                       ))}
                     </div>

@@ -15,6 +15,7 @@ export default function Hero() {
         alt={t('hero.alt')}
         fill
         priority
+        unoptimized
         sizes="100vw"
         className="hero__bg object-cover object-[80%_center] lg:object-center -z-10"
       />

@@ -49,39 +49,41 @@ export default function Newsletter() {
   return (
     <section className="newsletter py-8">
       <div className="w-full px-4">
-        <div className="newsletter__inner bg-white rounded-lg p-6 border flex flex-col gap-4">
-          <div className="newsletter__info">
+        <div className="newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6">
+          <div className="newsletter__info md:flex-1">
             <h3 className="newsletter__title text-lg font-semibold text-gray-900">{t('newsletter.title')}</h3>
             <p className="newsletter__desc text-sm text-gray-600">{t('newsletter.subtitle')}</p>
           </div>
 
-          <form onSubmit={onSubmit} className="newsletter__form flex flex-col gap-3">
-            <div className="flex flex-col md:flex-row gap-2">
-              <input
-                className="newsletter__input rounded-md border px-3 py-2 flex-1"
-                placeholder={t('newsletter.placeholder')}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-label={t('newsletter.emailAria')}
-              />
-              <Button type="submit">{t('newsletter.subscribe')}</Button>
-            </div>
+          <div className="newsletter__action md:flex-1">
+            <form onSubmit={onSubmit} className="newsletter__form flex flex-col gap-3">
+              <div className="flex flex-col md:flex-row gap-2">
+                <input
+                  className="newsletter__input rounded-md border px-3 py-2 flex-1"
+                  placeholder={t('newsletter.placeholder')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  aria-label={t('newsletter.emailAria')}
+                />
+                <Button type="submit">{t('newsletter.subscribe')}</Button>
+              </div>
 
-            <div className="newsletter__consent flex items-start gap-2">
-              <Checkbox
-                id="newsletter-consent"
-                checked={consent}
-                onCheckedChange={setConsent}
-              />
-              <label htmlFor="newsletter-consent" className="newsletter__consent-label text-sm text-gray-600">
-                {t('newsletter.consentPrefix')}
-                <Link href="/privacy" className="underline">{t('newsletter.consentLinkLabel')}</Link>
-              </label>
-            </div>
-          </form>
+              <div className="newsletter__consent flex items-start gap-2">
+                <Checkbox
+                  id="newsletter-consent"
+                  checked={consent}
+                  onCheckedChange={setConsent}
+                />
+                <label htmlFor="newsletter-consent" className="newsletter__consent-label text-sm text-gray-600">
+                  {t('newsletter.consentPrefix')}
+                  <Link href="/privacy" className="underline">{t('newsletter.consentLinkLabel')}</Link>
+                </label>
+              </div>
+            </form>
 
-          {error && <div className="newsletter__error text-red-600 text-sm">{error}</div>}
-          {success && <div className="newsletter__success text-green-600 text-sm">{t('newsletter.subscribed')}</div>}
+            {error && <div className="newsletter__error text-red-600 text-sm mt-2">{error}</div>}
+            {success && <div className="newsletter__success text-green-600 text-sm mt-2">{t('newsletter.subscribed')}</div>}
+          </div>
         </div>
       </div>
     </section>

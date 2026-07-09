@@ -219,10 +219,12 @@ export default function AppBreadcrumbs() {
         });
     }, [brands, language, pathname, t, productCache, blogPostCache]);
 
+    const isHome = pathname === '/';
+
     return (
         <Breadcrumb
             aria-label={t('breadcrumbs.aria')}
-            className="mb-4 border-b border-gray-200 pb-2 dark:border-gray-800"
+            className={`border-b border-gray-200 pb-2 dark:border-gray-800 ${isHome ? '' : 'mb-4'}`}
         >
             <BreadcrumbList>
                 <BreadcrumbItem>

@@ -411,7 +411,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'newsletter.title': 'Подпишись на свои будущие скидки!',
     'newsletter.subtitle': 'Получайте эксклюзивные скидки и выгодные предложения первыми...',
     'newsletter.placeholder': 'Ваш email',
-    'newsletter.subscribe': 'Подтверждаю',
+    'newsletter.subscribe': 'Подписаться',
     'newsletter.subscribed': 'Спасибо за подписку!',
     'newsletter.consentPrefix': 'Я даю согласие на обработку моих данных в соответствии с ',
     'newsletter.consentLinkLabel': 'Политикой конфиденциальности',

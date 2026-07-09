@@ -174,7 +174,16 @@
       "Bash(sed -i 's#localhost:3000#localhost:3005#' scripts/_tmp_screenshot-tablet.mjs scripts/_tmp_screenshot-categories.mjs)",
       "Bash(taskkill //F //PID 5336)",
       "Bash(rm -f scripts/_tmp_screenshot-categories.mjs scripts/_tmp_screenshot-tablet.mjs)",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(curl -s \"http://localhost:3000/api/products?limit=1\")",
+      "Bash(node \"C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Desktop-eshop02/a0f91b47-3795-4d55-9e0f-7140d92902df/scratchpad/verify-share-button.mjs\")",
+      "Bash(cp \"C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Desktop-eshop02/a0f91b47-3795-4d55-9e0f-7140d92902df/scratchpad/verify-share-button.mjs\" scripts/_tmp_verify-share.mjs)",
+      "Bash(node scripts/_tmp_verify-share.mjs)",
+      "Bash(cd \"c:/Users/User/Desktop/eshop02\" && git show stash@{0}:.claude/settings.local.json > /tmp/stash-settings.json 2>/dev/null && diff /tmp/stash-settings.json .claude/settings.local.json)",
+      "Bash(git apply *)",
+      "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\(typeof m.Share2, typeof m.Copy\\)\")",
+      "Bash(git status *)",
+      "Bash(git fetch *)"
     ],
     "additionalDirectories": [
       "\\tmp"

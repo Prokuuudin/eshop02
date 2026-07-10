@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useOrders } from '@/lib/orders-store';
 import { readUsers, type User } from '@/lib/auth';
-import { useAccessRequestStore } from '@/lib/access-request-store';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -162,12 +161,18 @@ function KpiCard({
 
 export default function AdminAccountDashboard({ user }: { user: User }) {
     const orders = useOrders((s) => s.orders);
-    const { getPendingRequests } = useAccessRequestStore();
     const [lowStockCount, setLowStockCount] = useState<number | null>(null);
     const [totalCustomers, setTotalCustomers] = useState<number>(0);
     const [newCustomers7d, setNewCustomers7d] = useState<number>(0);
+    const [pendingRequestCount, setPendingRequestCount] = useState<number>(0);
 
     useEffect(() => {
+        // Заявки на карту — из Neon: клиенты подают их со своих браузеров,
+        // в localStorage админа их нет
+        fetch('/api/admin/access-requests?status=pending')
+            .then((r) => r.json())
+            .then((json: { total?: number }) => setPendingRequestCount(json.total ?? 0))
+            .catch(() => {});
         fetch('/api/admin/products')
             .then((r) => r.json())
             .then((products: { stock: number }[]) => {
@@ -208,8 +213,6 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
             newBuyers7d,
         };
     }, [orders]);
-
-    const pendingRequests = getPendingRequests();
 
     const now = new Date();
     const hour = now.getHours();
@@ -266,20 +269,20 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
             </div>
 
             {/* Pending requests banner */}
-            {pendingRequests.length > 0 && (
+            {pendingRequestCount > 0 && (
                 <Link
-                    href="/admin/access-requests"
+                    href="/admin/client-barcodes"
                     className="flex items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30"
                 >
                     <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-white text-lg font-bold dark:bg-amber-600">
-                            {pendingRequests.length}
+                            {pendingRequestCount}
                         </span>
                         <div>
                             <p className="font-semibold text-amber-900 dark:text-amber-200">
-                                {pendingRequests.length === 1
+                                {pendingRequestCount === 1
                                     ? 'Заявка на карту клиента ждёт одобрения'
-                                    : `${pendingRequests.length} заявки на карту клиента ждут одобрения`}
+                                    : `${pendingRequestCount} заявки на карту клиента ждут одобрения`}
                             </p>
                             <p className="text-xs text-amber-700 dark:text-amber-400">Нажмите, чтобы перейти к заявкам</p>
                         </div>

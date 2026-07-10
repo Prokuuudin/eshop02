@@ -11,7 +11,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test e2e/critical-flows.spec.ts e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts e2e/customer-activation.spec.ts e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium"
+    "test:e2e:smoke": "playwright test e2e/critical-flows.spec.ts e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

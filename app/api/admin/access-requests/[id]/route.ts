@@ -50,11 +50,13 @@ export async function PATCH(
       },
     }
 
-    // Одобрение заявки мастера (no-card): выданная карта должна попасть в Neon,
-    // иначе клиент не появится в списке держателей на /admin/invitations.
-    // Создаём «спящий» аккаунт из данных заявки (паттерн import-client-cards).
-    if (body.status === 'approved' && existing.requestType === 'no-card') {
-      const cardNumber = (body.cardNumber ?? '').trim()
+    // Одобрение заявки на карту: карта должна попасть в Neon, иначе клиент
+    // не появится в списке держателей на /admin/invitations. Создаём «спящий»
+    // аккаунт из данных заявки (паттерн import-client-cards). Одна карта =
+    // один аккаунт: для no-card номер выдаёт админ (body), для card-заявки
+    // номер уже в самой заявке.
+    if (body.status === 'approved') {
+      const cardNumber = (body.cardNumber ?? existing.cardNumber ?? '').trim()
       if (!CARD_RE.test(cardNumber)) {
         return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
       }

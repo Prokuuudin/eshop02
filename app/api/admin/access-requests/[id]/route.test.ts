@@ -122,14 +122,31 @@ describe('PATCH /api/admin/access-requests/[id] — approve no-card', () => {
   })
 })
 
-describe('PATCH /api/admin/access-requests/[id] — card-type approve (прежнее поведение)', () => {
-  it('только статус, юзер не создаётся', async () => {
+describe('PATCH /api/admin/access-requests/[id] — card-type approve', () => {
+  // Одна карта = один аккаунт: заявка с существующей картой при одобрении
+  // тоже создаёт держателя, карта берётся из самой заявки
+  it('создаёт держателя с картой из заявки (cardNumber в body не нужен)', async () => {
     vi.mocked(prisma.accessRequest.findUnique as any).mockResolvedValue(CARD_REQUEST)
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
 
-    const res = await PATCH(makeRequest({ status: 'approved', approvedTeamRole: 'viewer' }), params('req2'))
+    const res = await PATCH(makeRequest({ status: 'approved' }), params('req2'))
 
     expect(res.status).toBe(200)
-    expect(vi.mocked(prisma.user.create)).not.toHaveBeenCalled()
-    expect(vi.mocked(prisma.accessRequest.update)).toHaveBeenCalled()
+    const createArgs = vi.mocked(prisma.user.create).mock.calls[0][0] as any
+    expect(createArgs.data.cardNumber).toBe('1001')
+    expect(createArgs.data.email).toBe('master@inbox.lv')
+  })
+
+  it('карта заявки занята другим юзером → 409', async () => {
+    vi.mocked(prisma.accessRequest.findUnique as any).mockResolvedValue(CARD_REQUEST)
+    vi.mocked(prisma.user.findFirst as any).mockImplementation(async ({ where }: any) => {
+      if (where?.cardNumber) return { id: 'other' }
+      return null
+    })
+
+    const res = await PATCH(makeRequest({ status: 'approved' }), params('req2'))
+
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('card_taken')
   })
 })

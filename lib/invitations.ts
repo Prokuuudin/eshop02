@@ -9,8 +9,16 @@ export const CAMPAIGN_KV_KEY = 'card-rules-campaign'
 export const INVITE_TTL_DAYS = 7
 export const CAMPAIGN_BATCH_SIZE = 50
 export const CAMPAIGN_LOCK_MS = 120_000
+// Инвайты шлются порциями: каждый POST должен уложиться в maxDuration=60s
+// serverless-функции с запасом (SMTP-коннект ~1-2s на письмо без пула)
+export const INVITE_BATCH_SIZE = 20
 
 export type InviteLang = 'ru' | 'en' | 'lv'
+
+/** Язык рассылки: дефолт латышский — основная аудитория магазина. */
+export function resolveInviteLang(input: string | undefined): InviteLang {
+  return (['ru', 'en', 'lv'] as const).includes(input as InviteLang) ? (input as InviteLang) : 'lv'
+}
 
 export type ProInvitation = {
   userId: string
@@ -70,6 +78,28 @@ export async function writeCampaign(db: Db, state: CampaignState): Promise<void>
     create: { key: CAMPAIGN_KV_KEY, value },
     update: { value },
   })
+}
+
+/** Повторная отправка заменяет старую запись по email. Не мутирует вход. */
+export function upsertInvitationRecord(
+  invitations: ProInvitation[],
+  record: ProInvitation
+): ProInvitation[] {
+  const idx = invitations.findIndex((i) => i.email === record.email)
+  if (idx < 0) return [...invitations, record]
+  const next = [...invitations]
+  next[idx] = record
+  return next
+}
+
+/** Помечает записи с данными токенами как error (письмо не ушло). Не мутирует вход. */
+export function markInvitationErrors(
+  invitations: ProInvitation[],
+  failedTokens: string[]
+): ProInvitation[] {
+  if (failedTokens.length === 0) return invitations
+  const failed = new Set(failedTokens)
+  return invitations.map((i) => (failed.has(i.token) ? { ...i, status: 'error' as const } : i))
 }
 
 /** Статус с учётом протухания: accepted/error финальны, sent может стать expired. */

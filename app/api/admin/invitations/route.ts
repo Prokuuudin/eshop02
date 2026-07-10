@@ -8,13 +8,17 @@ import {
   writeInvitations,
   deriveStatus,
   newInviteToken,
+  resolveInviteLang,
+  upsertInvitationRecord,
+  markInvitationErrors,
   INVITE_TTL_DAYS,
+  INVITE_BATCH_SIZE,
   type ProInvitation,
-  type InviteLang,
 } from '@/lib/invitations'
 import { buildInviteEmail } from '@/lib/invitation-emails'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 function baseUrl(req: NextRequest): string {
   const host = req.headers.get('host') ?? 'localhost:3000'
@@ -63,20 +67,25 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: отправить приглашения выбранным держателям карт
+// POST: отправить приглашения выбранным держателям карт.
+// Не больше INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
+// порциями. Токены сохраняются в БД ДО отправки писем: обрыв посреди порции
+// не оставит клиентам мёртвых ссылок (худший случай — статус sent без письма,
+// лечится повторной отправкой).
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 
   try {
-    const body = (await req.json()) as { userIds?: string[]; language?: InviteLang }
+    const body = (await req.json()) as { userIds?: string[]; language?: string }
     const userIds = body.userIds ?? []
     if (!Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json({ error: 'no_user_ids' }, { status: 400 })
     }
-    const language: InviteLang = (['ru', 'en', 'lv'] as const).includes(body.language as InviteLang)
-      ? (body.language as InviteLang)
-      : 'ru'
+    if (userIds.length > INVITE_BATCH_SIZE) {
+      return NextResponse.json({ error: 'too_many', max: INVITE_BATCH_SIZE }, { status: 400 })
+    }
+    const language = resolveInviteLang(body.language)
 
     const users = await prisma.user.findMany({
       where: { id: { in: userIds }, cardNumber: { not: null } },
@@ -86,47 +95,64 @@ export async function POST(req: NextRequest) {
     const templates = await getTemplates()
     const tpl = templates.find((t) => t.id === `pro-invite-${language}`)
     const base = baseUrl(req)
-    const invitations = await readInvitations(prisma)
-    const results: Array<{ userId: string; email: string; status: 'sent' | 'error'; inviteUrl: string }> = []
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-    for (const u of users) {
-      const token = newInviteToken()
-      const now = new Date()
-      const inviteUrl = inviteUrlFor(base, token)
+    const records: ProInvitation[] = users.map((u) => ({
+      userId: u.id,
+      email: u.email.toLowerCase(),
+      cardNumber: u.cardNumber!,
+      token: newInviteToken(),
+      sentAt: now.toISOString(),
+      expiresAt,
+      acceptedAt: null,
+      status: 'sent',
+      language,
+    }))
+
+    // 1. Токены в БД до писем; serializable — параллельные отправки не теряют записи
+    await prisma.$transaction(
+      async (tx) => {
+        let invitations = await readInvitations(tx)
+        for (const r of records) invitations = upsertInvitationRecord(invitations, r)
+        await writeInvitations(tx, invitations)
+      },
+      { isolationLevel: 'Serializable' }
+    )
+
+    // 2. Отправка писем
+    const failedTokens: string[] = []
+    const results: Array<{ userId: string; email: string; status: 'sent' | 'error'; inviteUrl: string }> = []
+    for (const r of records) {
+      const user = users.find((u) => u.id === r.userId)!
+      const inviteUrl = inviteUrlFor(base, r.token)
       const { subject, html } = buildInviteEmail(
         language,
-        { name: u.name ?? '', cardNumber: u.cardNumber!, inviteUrl },
+        { name: user.name ?? '', cardNumber: r.cardNumber, inviteUrl },
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
-
       let status: 'sent' | 'error' = 'sent'
       try {
-        await sendEmail(u.email, subject, html)
+        await sendEmail(user.email, subject, html)
       } catch (err) {
-        console.error('[admin/invitations POST] sendEmail failed for', u.email, err)
+        console.error('[admin/invitations POST] sendEmail failed for', user.email, err)
         status = 'error'
+        failedTokens.push(r.token)
       }
-
-      const record: ProInvitation = {
-        userId: u.id,
-        email: u.email.toLowerCase(),
-        cardNumber: u.cardNumber!,
-        token,
-        sentAt: now.toISOString(),
-        expiresAt: new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
-        acceptedAt: null,
-        status,
-        language,
-      }
-      // Повторная отправка заменяет старую запись по email
-      const idx = invitations.findIndex((i) => i.email === record.email)
-      if (idx >= 0) invitations[idx] = record
-      else invitations.push(record)
-
-      results.push({ userId: u.id, email: u.email, status, inviteUrl })
+      results.push({ userId: r.userId, email: user.email, status, inviteUrl })
     }
 
-    await writeInvitations(prisma, invitations)
+    // 3. Неушедшие письма помечаем error — их токены гасятся (findValid отвергает error)
+    if (failedTokens.length > 0) {
+      await prisma.$transaction(
+        async (tx) => {
+          const invitations = await readInvitations(tx)
+          await writeInvitations(tx, markInvitationErrors(invitations, failedTokens))
+        },
+        { isolationLevel: 'Serializable' }
+      )
+    }
+
     return NextResponse.json({ results })
   } catch (e) {
     console.error('[admin/invitations POST]', e)

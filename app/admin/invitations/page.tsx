@@ -38,9 +38,10 @@ export default function AdminInvitationsPage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [formError, setFormError] = useState('');
-    const [inviteLang, setInviteLang] = useState<InviteLang>('ru');
+    const [inviteLang, setInviteLang] = useState<InviteLang>('lv');
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
     const [bulkBusy, setBulkBusy] = useState(false);
+    const bulkStopRequested = useRef(false);
 
     // Форма назначения карты
     const [cardEmail, setCardEmail] = useState('');
@@ -109,14 +110,47 @@ export default function AdminInvitationsPage() {
         }
     };
 
+    // Сервер принимает максимум INVITE_BATCH_SIZE id за запрос (lib/invitations.ts)
+    const INVITE_BATCH = 20;
+
     const handleInviteAll = async () => {
         const ids = holders.filter((h) => h.status === 'none' || h.status === 'expired' || h.status === 'error').map((h) => h.userId);
         if (ids.length === 0) return;
         setBulkBusy(true);
+        bulkStopRequested.current = false;
+        setFormError('');
+        let sent = 0;
+        let failed = 0;
         try {
-            await sendInvites(ids);
+            for (let i = 0; i < ids.length; i += INVITE_BATCH) {
+                if (bulkStopRequested.current) break;
+                const res = await fetch('/api/admin/invitations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userIds: ids.slice(i, i + INVITE_BATCH), language: inviteLang }),
+                });
+                if (!res.ok) {
+                    setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
+                    break;
+                }
+                const json = await res.json();
+                const batchSent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
+                sent += batchSent;
+                failed += (json.results ?? []).length - batchSent;
+                setMessage(
+                    l(`Отправлено ${sent} из ${ids.length}${failed ? `, ошибок: ${failed}` : ''}…`,
+                      `Sent ${sent} of ${ids.length}${failed ? `, errors: ${failed}` : ''}…`,
+                      `Nosūtīts ${sent} no ${ids.length}${failed ? `, kļūdas: ${failed}` : ''}…`)
+                );
+            }
+            setMessage(
+                l(`Готово. Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`,
+                  `Done. Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`,
+                  `Gatavs. Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`)
+            );
         } finally {
             setBulkBusy(false);
+            await loadHolders();
         }
     };
 
@@ -247,11 +281,15 @@ export default function AdminInvitationsPage() {
                                     <SelectItem value="lv">Latviešu</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button onClick={handleInviteAll} disabled={bulkBusy || uninvitedCount === 0}>
-                                {bulkBusy
-                                    ? l('Отправка…', 'Sending…', 'Sūta…')
-                                    : l(`Пригласить всех (${uninvitedCount})`, `Invite all (${uninvitedCount})`, `Ielūgt visus (${uninvitedCount})`)}
-                            </Button>
+                            {bulkBusy ? (
+                                <Button variant="outline" onClick={() => { bulkStopRequested.current = true; }}>
+                                    {l('Остановить после порции', 'Stop after batch', 'Apturēt pēc partijas')}
+                                </Button>
+                            ) : (
+                                <Button onClick={handleInviteAll} disabled={uninvitedCount === 0}>
+                                    {l(`Пригласить всех (${uninvitedCount})`, `Invite all (${uninvitedCount})`, `Ielūgt visus (${uninvitedCount})`)}
+                                </Button>
+                            )}
                         </div>
                     </div>
 

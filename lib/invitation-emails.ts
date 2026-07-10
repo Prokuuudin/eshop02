@@ -16,32 +16,54 @@ function escapeHtml(str: string): string {
 
 type Tpl = { subject: string; body: string }
 
-const INVITE_CONTENT: Record<InviteLang, { subject: string; title: string; body1: string; body2: string; button: string; expiry: string }> = {
-  ru: {
-    subject: 'Приглашение на новый сайт для профессионалов',
-    title: 'Добро пожаловать!',
-    body1: 'Вы — держатель карты клиента №{{card_number}}. Мы открыли новый сайт для профессионалов и приглашаем вас.',
-    body2: 'Ваш аккаунт уже создан. Нажмите кнопку, задайте пароль — и все возможности сайта будут доступны.',
-    button: 'Активировать аккаунт',
-    expiry: 'Ссылка действительна 7 дней.',
-  },
-  en: {
-    subject: 'Invitation to our new professional store',
-    title: 'Welcome!',
-    body1: 'You hold client card No. {{card_number}}. We have launched a new site for professionals and invite you to join.',
-    body2: 'Your account is already created. Click the button, set a password — and everything is ready.',
-    button: 'Activate account',
-    expiry: 'The link is valid for 7 days.',
-  },
-  lv: {
-    subject: 'Ielūgums uz jauno profesionāļu veikalu',
-    title: 'Laipni lūdzam!',
-    body1: 'Jums ir klienta karte Nr. {{card_number}}. Esam atvēruši jaunu vietni profesionāļiem un aicinām jūs pievienoties.',
-    body2: 'Jūsu konts jau ir izveidots. Nospiediet pogu, iestatiet paroli — un viss ir gatavs.',
-    button: 'Aktivizēt kontu',
-    expiry: 'Saite ir derīga 7 dienas.',
-  },
+/** Языковой вариант шаблона приоритетнее базового трёхъязычного pro-invite. */
+export function pickInviteTemplate<T extends { id: string }>(
+  templates: T[],
+  lang: InviteLang
+): T | undefined {
+  return (
+    templates.find((t) => t.id === `pro-invite-${lang}`) ??
+    templates.find((t) => t.id === 'pro-invite')
+  )
 }
+
+// Письмо-инвайт трёхъязычное (LV/RU/EN) — аудитория смешанная, язык получателя
+// неизвестен. Каждый блок с пошаговой инструкцией.
+const INVITE_SUBJECT =
+  'Klienta karte — aktivizējiet kontu · Карта клиента — активируйте аккаунт · Activate your account'
+
+const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
+  {
+    intro: '<strong>LV</strong> — Jums ir klienta karte Nr. <strong>{{card_number}}</strong>. Esam atvēruši jaunu interneta veikalu profesionāļiem, un jūsu konts tajā jau ir izveidots. Kā sākt:',
+    steps: [
+      'Nospiediet pogu “Aktivizēt kontu”.',
+      'Izveidojiet paroli (vismaz 8 simboli).',
+      'Ielogojieties ar savu e-pastu un jauno paroli.',
+    ],
+  },
+  {
+    intro: '<strong>RU</strong> — У вас есть карта клиента № <strong>{{card_number}}</strong>. Мы открыли новый интернет-магазин для профессионалов, и ваш аккаунт в нём уже создан. Как начать:',
+    steps: [
+      'Нажмите кнопку «Активировать аккаунт».',
+      'Придумайте пароль (не менее 8 символов).',
+      'Войдите на сайт со своим e-mail и новым паролем.',
+    ],
+  },
+  {
+    intro: '<strong>EN</strong> — You hold client card No. <strong>{{card_number}}</strong>. We have launched a new online store for professionals, and your account is already set up. How to start:',
+    steps: [
+      'Click the “Activate account” button.',
+      'Create a password (at least 8 characters).',
+      'Log in with your email and your new password.',
+    ],
+  },
+]
+
+const INVITE_BUTTON = 'Aktivizēt kontu · Активировать аккаунт · Activate account'
+const INVITE_LINK_FALLBACK =
+  'Ja poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:'
+const INVITE_EXPIRY =
+  'Saite ir derīga 7 dienas · Ссылка действительна 7 дней · The link is valid for 7 days.'
 
 const RULES_CONTENT: Record<InviteLang, { subject: string; title: string; body1: string; body2: string; button: string }> = {
   ru: {
@@ -81,7 +103,7 @@ function wrap(title: string, paragraphs: string[], buttonText: string, buttonUrl
 }
 
 export function buildInviteEmail(
-  lang: InviteLang,
+  _lang: InviteLang,
   vars: { name: string; cardNumber: string; inviteUrl: string },
   tpl?: Tpl
 ): { subject: string; html: string } {
@@ -93,16 +115,24 @@ export function buildInviteEmail(
   if (tpl) {
     return { subject: interpolate(tpl.subject, safe), html: interpolate(tpl.body, safe) }
   }
-  const c = INVITE_CONTENT[lang]
-  const greeting = safe.name ? `${safe.name}, ` : ''
-  const html = wrap(
-    c.title,
-    [greeting + interpolate(c.body1, safe), c.body2],
-    c.button,
-    vars.inviteUrl,
-    c.expiry
+  const blocks = INVITE_BLOCKS.map(
+    (b) =>
+      `<p>${interpolate(b.intro, safe)}</p>
+    <ol style="margin:4px 0 16px;padding-left:20px">${b.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
   )
-  return { subject: c.subject, html }
+  const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+    <h2 style="color:#4f46e5">Laipni lūdzam! · Добро пожаловать! · Welcome!</h2>
+    ${safe.name ? `<p>${safe.name}</p>` : ''}
+    ${blocks.join('\n    ')}
+    <p>
+      <a href="${vars.inviteUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
+        ${INVITE_BUTTON}
+      </a>
+    </p>
+    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${vars.inviteUrl}">${vars.inviteUrl}</a></p>
+    <p style="color:#6b7280;font-size:13px">${INVITE_EXPIRY}</p>
+  </div>`
+  return { subject: INVITE_SUBJECT, html }
 }
 
 export function buildRulesEmail(

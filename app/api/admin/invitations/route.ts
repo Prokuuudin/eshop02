@@ -15,7 +15,7 @@ import {
   INVITE_BATCH_SIZE,
   type ProInvitation,
 } from '@/lib/invitations'
-import { buildInviteEmail } from '@/lib/invitation-emails'
+import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -93,7 +93,8 @@ export async function POST(req: NextRequest) {
     })
 
     const templates = await getTemplates()
-    const tpl = templates.find((t) => t.id === `pro-invite-${language}`)
+    // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override
+    const tpl = pickInviteTemplate(templates, language)
     const base = baseUrl(req)
     const now = new Date()
     const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()

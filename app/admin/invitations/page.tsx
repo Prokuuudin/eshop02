@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AdminGate from '@/components/admin/AdminGate';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/lib/use-translation';
 
 type Holder = {
@@ -27,8 +26,6 @@ type CampaignState = {
     runningSince: string | null;
 };
 
-type InviteLang = 'ru' | 'en' | 'lv';
-
 export default function AdminInvitationsPage() {
     const { language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
@@ -38,7 +35,6 @@ export default function AdminInvitationsPage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [formError, setFormError] = useState('');
-    const [inviteLang, setInviteLang] = useState<InviteLang>('lv');
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
     const [bulkBusy, setBulkBusy] = useState(false);
     const bulkStopRequested = useRef(false);
@@ -81,10 +77,11 @@ export default function AdminInvitationsPage() {
     const sendInvites = async (userIds: string[]) => {
         setFormError('');
         setMessage('');
+        // Письмо трёхъязычное (LV+RU+EN) — язык не передаём
         const res = await fetch('/api/admin/invitations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userIds, language: inviteLang }),
+            body: JSON.stringify({ userIds }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -127,7 +124,7 @@ export default function AdminInvitationsPage() {
                 const res = await fetch('/api/admin/invitations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userIds: ids.slice(i, i + INVITE_BATCH), language: inviteLang }),
+                    body: JSON.stringify({ userIds: ids.slice(i, i + INVITE_BATCH) }),
                 });
                 if (!res.ok) {
                     setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
@@ -271,16 +268,7 @@ export default function AdminInvitationsPage() {
                             <span className="text-gray-400 dark:text-gray-500 font-normal text-base">{holders.length}</span>
                         </h2>
                         <div className="flex items-center gap-2">
-                            <Select value={inviteLang} onValueChange={(v) => setInviteLang(v as InviteLang)}>
-                                <SelectTrigger className="w-32 rounded-md border border-border bg-card px-3 py-2 text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ru">Русский</SelectItem>
-                                    <SelectItem value="en">English</SelectItem>
-                                    <SelectItem value="lv">Latviešu</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <span className="text-sm text-muted-foreground">LV+RU+EN</span>
                             {bulkBusy ? (
                                 <Button variant="outline" onClick={() => { bulkStopRequested.current = true; }}>
                                     {l('Остановить после порции', 'Stop after batch', 'Apturēt pēc partijas')}

@@ -1,16 +1,13 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCompanyStore, type CompanyProfile } from '@/lib/company-store';
-import { useAccessRequestStore } from '@/lib/access-request-store';
 import {
-    approveNoCardRequest,
     getCurrentUser,
     listCompanyUsers,
-    rejectAccessRequest,
     updateUserTeamRole,
     type TeamRole,
 } from '@/lib/auth';
@@ -35,6 +32,20 @@ const generateShortCardNumber = (companies: CompanyProfile[]): string => {
     return String(candidate);
 };
 
+// Заявка мастера из Neon (GET /api/admin/access-requests); certificateData
+// (картинка) на сервер не передаётся — есть только certificateName
+type NoCardRequest = {
+    id: string;
+    email: string;
+    name: string | null;
+    phone: string | null;
+    requestType: string;
+    certificateName: string | null;
+    message: string | null;
+    language: string | null;
+    requestedAt: string;
+};
+
 export default function AdminClientBarcodesPage() {
     const { t, language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
@@ -54,9 +65,22 @@ export default function AdminClientBarcodesPage() {
     const [search, setSearch] = useState('');
 
     const { getCompanies } = useCompanyStore();
-    const { getNoCardPendingRequests } = useAccessRequestStore();
     const companies = getCompanies();
-    const noCardRequests = getNoCardPendingRequests();
+
+    // Заявки мастеров — из Neon, не из localStorage: клиент подаёт заявку со
+    // своего браузера, локальный store админа её не видит
+    const [noCardRequests, setNoCardRequests] = useState<NoCardRequest[]>([]);
+    const loadNoCardRequests = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/access-requests?status=pending');
+            if (!res.ok) return;
+            const json = await res.json();
+            setNoCardRequests(
+                ((json.requests ?? []) as NoCardRequest[]).filter((r) => r.requestType === 'no-card')
+            );
+        } catch { /* сеть — оставляем прежний список */ }
+    }, []);
+    useEffect(() => { void loadNoCardRequests(); }, [loadNoCardRequests]);
 
     const filteredCompanies = search.trim()
         ? (() => {
@@ -106,54 +130,75 @@ export default function AdminClientBarcodesPage() {
             setFormError('Номер карты должен содержать от 4 до 6 цифр.');
             return;
         }
-        const reviewer = getCurrentUser();
-        const result = approveNoCardRequest(requestId, draft.companyName, draft.cardNumber, reviewer);
-        if (!result.success) {
-            setFormError(result.error || 'Не удалось одобрить заявку');
-            setMessage('');
-            return;
-        }
-        setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
         setEmailBusy((prev) => ({ ...prev, [requestId]: true }));
         try {
-            await fetch('/api/admin/card-request', {
-                method: 'POST',
+            // Сервер создаёт спящий аккаунт с картой — клиент сразу попадает
+            // в список держателей на /admin/invitations
+            const res = await fetch(`/api/admin/access-requests/${encodeURIComponent(requestId)}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'approve', email, name, cardNumber: result.cardNumber, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                body: JSON.stringify({ status: 'approved', cardNumber: digits, companyName: draft.companyName }),
             });
-            setMessage(`Карта выдана: ${result.cardNumber}. Письмо отправлено на ${email}.`);
-        } catch {
-            setMessage(`Карта выдана: ${result.cardNumber}. Не удалось отправить письмо.`);
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                setFormError(
+                    json.error === 'card_taken'
+                        ? `Номер ${digits} уже занят — укажите другой.`
+                        : json.error === 'user_has_card'
+                        ? `У клиента уже есть карта №${json.cardNumber}.`
+                        : 'Не удалось одобрить заявку'
+                );
+                setMessage('');
+                return;
+            }
+            setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+            try {
+                await fetch('/api/admin/card-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approve', email, name, cardNumber: digits, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                });
+                setMessage(`Карта выдана: ${digits}. Письмо отправлено на ${email}.`);
+            } catch {
+                setMessage(`Карта выдана: ${digits}. Не удалось отправить письмо.`);
+            }
+            setFormError('');
         } finally {
             setEmailBusy((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+            await loadNoCardRequests();
         }
-        setFormError('');
     };
 
     const handleRejectNoCardRequest = async (requestId: string, email: string, name: string) => {
-        const reviewer = getCurrentUser();
-        const result = rejectAccessRequest(requestId, reviewer, 'Отклонено администратором');
-        if (!result.success) {
-            setFormError(result.error || 'Не удалось отклонить заявку');
-            setMessage('');
-            return;
-        }
         const note = rejectNotes[requestId]?.trim() || undefined;
         setEmailBusy((prev) => ({ ...prev, [requestId]: true }));
         try {
-            await fetch('/api/admin/card-request', {
-                method: 'POST',
+            const res = await fetch(`/api/admin/access-requests/${encodeURIComponent(requestId)}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'reject', email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                body: JSON.stringify({ status: 'rejected', reviewNote: note ?? 'Отклонено администратором' }),
             });
-            setMessage(`Заявка отклонена. Уведомление отправлено на ${email}.`);
-        } catch {
-            setMessage('Заявка отклонена. Не удалось отправить уведомление.');
+            if (!res.ok) {
+                setFormError('Не удалось отклонить заявку');
+                setMessage('');
+                return;
+            }
+            try {
+                await fetch('/api/admin/card-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reject', email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                });
+                setMessage(`Заявка отклонена. Уведомление отправлено на ${email}.`);
+            } catch {
+                setMessage('Заявка отклонена. Не удалось отправить уведомление.');
+            }
+            setFormError('');
         } finally {
             setEmailBusy((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
             setRejectNotes((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+            await loadNoCardRequests();
         }
-        setFormError('');
     };
 
     const resolveMemberRoleDraft = (userId: string, fallbackRole: TeamRole): TeamRole =>
@@ -254,15 +299,10 @@ export default function AdminClientBarcodesPage() {
                                                     {new Date(req.requestedAt).toLocaleString('ru-RU')}
                                                 </p>
                                             </div>
-                                            {req.certificateData && (
-                                                <a
-                                                    href={req.certificateData}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
-                                                >
-                                                    📄 {req.certificateName || 'Сертификат'}
-                                                </a>
+                                            {req.certificateName && (
+                                                <span className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 shrink-0">
+                                                    📄 {req.certificateName}
+                                                </span>
                                             )}
                                         </div>
 

@@ -22,7 +22,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, password, companyId, companyName, cardNumber } = body
-    if (!email || !password || !companyId || !companyName || !cardNumber) {
+    const isNoCard = body.requestType === 'no-card'
+    // Заявка мастера (no-card) подаётся без компании и карты — карту выдаёт
+    // админ при одобрении; для card-заявок компания и карта обязательны
+    if (!email || !password || (!isNoCard && (!companyId || !companyName || !cardNumber))) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
 
@@ -43,9 +46,9 @@ export async function POST(req: NextRequest) {
         passwordHash,
         name: body.name ?? null,
         phone: body.phone ?? null,
-        companyId,
-        companyName,
-        cardNumber,
+        companyId: companyId ?? '',
+        companyName: companyName ?? '',
+        cardNumber: cardNumber ?? '',
         requestType: body.requestType ?? 'card',
         certificateName: body.certificateName ?? null,
         message: body.message ?? null,

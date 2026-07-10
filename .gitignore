@@ -17,3 +17,6 @@ tsconfig.tsbuildinfo
 
 .vercel
 .env*
+
+# Выгрузки с персональными данными клиентов — не коммитить
+*.xlsx

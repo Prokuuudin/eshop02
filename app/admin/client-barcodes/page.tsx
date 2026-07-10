@@ -300,9 +300,14 @@ export default function AdminClientBarcodesPage() {
                                                 </p>
                                             </div>
                                             {req.certificateName && (
-                                                <span className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 shrink-0">
+                                                <a
+                                                    href={`/api/admin/access-requests/${encodeURIComponent(req.id)}/certificate`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                                >
                                                     📄 {req.certificateName}
-                                                </span>
+                                                </a>
                                             )}
                                         </div>
 

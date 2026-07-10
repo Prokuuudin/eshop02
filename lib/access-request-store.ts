@@ -74,7 +74,8 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
           requests: [createdRequest, ...state.requests]
         }))
 
-        // Sync to DB — password is hashed server-side; certificateData (image) excluded (too large)
+        // Sync to DB — password is hashed server-side; certificateData сжат
+        // на клиенте и хранится в KV на время рассмотрения заявки
         if (typeof window !== 'undefined') {
           fetch('/api/access-requests', {
             method: 'POST',
@@ -89,6 +90,7 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
               cardNumber: request.cardNumber,
               requestType: request.requestType,
               certificateName: request.certificateName,
+              certificateData: request.certificateData,
               message: request.message,
               language: request.language,
             }),

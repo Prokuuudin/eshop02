@@ -6,18 +6,11 @@ import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import { useTranslation } from '@/lib/use-translation';
 import { submitNoCardRequest } from '@/lib/auth';
+import { prepareCertificateDataUrl } from '@/lib/compress-image';
 
 type Props = {
     onClose?: () => void;
 };
-
-const readFileAsBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error('file_read_error'));
-        reader.readAsDataURL(file);
-    });
 
 export default function RegisterNoCardForm({ onClose }: Props) {
     const { t, language } = useTranslation();
@@ -44,7 +37,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
         setError('');
 
         try {
-            const certificateData = await readFileAsBase64(certificate);
+            // Фото ужимается на клиенте — сервер принимает до ~1.5 МБ
+            const certificateData = await prepareCertificateDataUrl(certificate);
 
             const result = submitNoCardRequest({
                 name: name.trim(),
@@ -68,8 +62,12 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             setCertificate(null);
             setFileKey((k) => k + 1);
             setMessage('');
-        } catch {
-            setError(t('common.error', 'Произошла ошибка при отправке заявки'));
+        } catch (err) {
+            setError(
+                (err as Error).message === 'file_too_large'
+                    ? t('auth.certificateTooLarge', 'Файл слишком большой. Приложите фото или PDF до 1,5 МБ.')
+                    : t('common.error', 'Произошла ошибка при отправке заявки')
+            );
         } finally {
             setSubmitting(false);
         }

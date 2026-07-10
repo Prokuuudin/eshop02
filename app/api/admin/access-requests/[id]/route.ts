@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { deleteCertificate } from '@/lib/certificate-store'
 
 export const runtime = 'nodejs'
 
@@ -101,6 +102,8 @@ export async function PATCH(
             },
           })
         }
+        // Решение принято — временный сертификат больше не нужен
+        await deleteCertificate(tx, id)
         return tx.accessRequest.update(requestUpdate)
       })
 
@@ -108,6 +111,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.accessRequest.update(requestUpdate)
+    await deleteCertificate(prisma, id)
     return NextResponse.json({ request: updated })
   } catch (e) {
     console.error('[admin/access-requests/:id PATCH]', e)

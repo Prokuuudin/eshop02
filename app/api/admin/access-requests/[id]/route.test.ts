@@ -5,6 +5,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     accessRequest: { findUnique: vi.fn(), update: vi.fn() },
     user: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    keyValueSetting: { deleteMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }))
@@ -119,6 +120,25 @@ describe('PATCH /api/admin/access-requests/[id] — approve no-card', () => {
     expect(res.status).toBe(200)
     expect(vi.mocked(prisma.user.create)).not.toHaveBeenCalled()
     expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled()
+  })
+
+  it('решение удаляет сертификат из KV: approve', async () => {
+    vi.mocked(prisma.accessRequest.findUnique as any).mockResolvedValue(NO_CARD_REQUEST)
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
+
+    await PATCH(makeRequest({ status: 'approved', cardNumber: '77001' }), params('req1'))
+
+    const delArgs = vi.mocked(prisma.keyValueSetting.deleteMany).mock.calls[0][0] as any
+    expect(delArgs.where.key).toBe('access-request-cert-req1')
+  })
+
+  it('решение удаляет сертификат из KV: reject', async () => {
+    vi.mocked(prisma.accessRequest.findUnique as any).mockResolvedValue(NO_CARD_REQUEST)
+
+    await PATCH(makeRequest({ status: 'rejected' }), params('req1'))
+
+    const delArgs = vi.mocked(prisma.keyValueSetting.deleteMany).mock.calls[0][0] as any
+    expect(delArgs.where.key).toBe('access-request-cert-req1')
   })
 })
 

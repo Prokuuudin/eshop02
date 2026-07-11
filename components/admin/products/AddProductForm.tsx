@@ -108,8 +108,14 @@ const emptyDefaults: AddProductFormValues = {
     feature4Lv: '',
 
     specVolume: '',
+    specVolumeEn: '',
+    specVolumeLv: '',
     specType: '',
+    specTypeEn: '',
+    specTypeLv: '',
     specCountry: '',
+    specCountryEn: '',
+    specCountryLv: '',
 };
 
 interface AddProductFormProps {

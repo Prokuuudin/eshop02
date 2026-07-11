@@ -121,6 +121,25 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         <Input placeholder="e.g. Suitable for all skin types" {...register('feature4En')} />
                     </div>
                 </div>
+
+                <h3 className="add-product__section-subtitle mt-4">Short specs (EN)</h3>
+                <p className="text-xs text-gray-500 mb-2">
+                    Shown in the specs block on the product page; empty field falls back to the RU value
+                </p>
+                <div className="add-product__fields-grid">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Volume (EN)</label>
+                        <Input placeholder="e.g. 250 ml" {...register('specVolumeEn')} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Type (EN)</label>
+                        <Input placeholder="e.g. Professional" {...register('specTypeEn')} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Country (EN)</label>
+                        <Input placeholder="e.g. Germany" {...register('specCountryEn')} />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -160,6 +179,25 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                 <div>
                     <label className="block text-sm font-medium mb-1">Feature 4 (LV)</label>
                     <Input placeholder="piem. Piemērots visiem ādas tipiem" {...register('feature4Lv')} />
+                </div>
+            </div>
+
+            <h3 className="add-product__section-subtitle mt-4">Īsās specifikācijas (LV)</h3>
+            <p className="text-xs text-gray-500 mb-2">
+                Rāda specifikāciju blokā produkta lapā; tukšs lauks — RU vērtība
+            </p>
+            <div className="add-product__fields-grid">
+                <div>
+                    <label className="block text-sm font-medium mb-1">Tilpums (LV)</label>
+                    <Input placeholder="piem. 250 ml" {...register('specVolumeLv')} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Tips (LV)</label>
+                    <Input placeholder="piem. Profesionāls" {...register('specTypeLv')} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Valsts (LV)</label>
+                    <Input placeholder="piem. Vācija" {...register('specCountryLv')} />
                 </div>
             </div>
         </div>

@@ -126,10 +126,18 @@ export const addProductSchema = z.object({
   feature4En: z.string().optional(),
   feature4Lv: z.string().optional(),
 
-  // Краткие характеристики (объём, тип, страна)
+  // Краткие характеристики (объём, тип, страна). RU — реальные колонки;
+  // EN/LV-переводы хранятся в technicalSpecs.__specVolumeEn/Lv и т.д.
+  // (резервные __-ключи, как у __descriptionEn), см. lib/product-form-mapping.ts
   specVolume: z.string().optional(),
+  specVolumeEn: z.string().optional(),
+  specVolumeLv: z.string().optional(),
   specType: z.string().optional(),
+  specTypeEn: z.string().optional(),
+  specTypeLv: z.string().optional(),
   specCountry: z.string().optional(),
+  specCountryEn: z.string().optional(),
+  specCountryLv: z.string().optional(),
 });
 
 export type AddProductFormValues = z.infer<typeof addProductSchema>;

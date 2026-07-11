@@ -58,7 +58,17 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
             Object.entries(product.technicalSpecs ?? {}).filter(
                 ([key]) =>
                     key.startsWith('__') &&
-                    !['__variantGroupsJson', '__descriptionEn', '__descriptionLv'].includes(key)
+                    ![
+                        '__variantGroupsJson',
+                        '__descriptionEn',
+                        '__descriptionLv',
+                        '__specVolumeEn',
+                        '__specVolumeLv',
+                        '__specTypeEn',
+                        '__specTypeLv',
+                        '__specCountryEn',
+                        '__specCountryLv',
+                    ].includes(key)
             )
         ),
         variantGroups: getVariantGroups(product) ?? [],
@@ -97,8 +107,14 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         feature4Lv: product.feature4Lv ?? '',
 
         specVolume: product.specVolume ?? '',
+        specVolumeEn: product.technicalSpecs?.__specVolumeEn ?? '',
+        specVolumeLv: product.technicalSpecs?.__specVolumeLv ?? '',
         specType: product.specType ?? '',
+        specTypeEn: product.technicalSpecs?.__specTypeEn ?? '',
+        specTypeLv: product.technicalSpecs?.__specTypeLv ?? '',
         specCountry: product.specCountry ?? '',
+        specCountryEn: product.technicalSpecs?.__specCountryEn ?? '',
+        specCountryLv: product.technicalSpecs?.__specCountryLv ?? '',
     };
 }
 
@@ -123,6 +139,17 @@ export function mapFormValuesToProductPatch(
     }
     if (values.descriptionLv?.trim()) {
         techSpecs['__descriptionLv'] = values.descriptionLv;
+    }
+    const specI18n: Array<[string, string | undefined]> = [
+        ['__specVolumeEn', values.specVolumeEn],
+        ['__specVolumeLv', values.specVolumeLv],
+        ['__specTypeEn', values.specTypeEn],
+        ['__specTypeLv', values.specTypeLv],
+        ['__specCountryEn', values.specCountryEn],
+        ['__specCountryLv', values.specCountryLv],
+    ];
+    for (const [key, value] of specI18n) {
+        if (value?.trim()) techSpecs[key] = value.trim();
     }
     // Состав пишется последним — выигрывает у вручную добавленной строки с тем же ключом;
     // пустое поле = состав удалён из товара

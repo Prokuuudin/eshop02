@@ -12,7 +12,8 @@ export const addProductSchema = z.object({
   // Классификация
   brand: z.string().min(1, 'Бренд обязателен'),
   category: z.string().min(1, 'Категория обязательна'),
-  status: z.enum(['active', 'hidden', 'draft']),
+  // Видимость на витрине: active/hidden ↔ Product.isActive (см. lib/product-form-mapping.ts)
+  status: z.enum(['active', 'hidden']),
 
   // Названия (мультиязычные)
   title: z.string().min(1, 'Название RU обязательно'),

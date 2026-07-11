@@ -2,19 +2,21 @@
 
 import React from 'react'
 import { Product } from '@/data/products'
+import { useTranslation } from '@/lib/use-translation'
 
 type CertificatesProps = {
   product: Product
 }
 
 export default function Certificates({ product }: CertificatesProps) {
+  const { t } = useTranslation()
   if (!product.certificates || product.certificates.length === 0) {
     return null
   }
 
   return (
     <div className="rounded-lg border border-border p-6">
-      <h3 className="text-lg font-bold text-foreground mb-4">Сертификаты и документация</h3>
+      <h3 className="text-lg font-bold text-foreground mb-4">{t('product.certificates')}</h3>
       
       <div className="space-y-2">
         {product.certificates.map((url, idx) => {

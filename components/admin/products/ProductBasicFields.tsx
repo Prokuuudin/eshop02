@@ -93,6 +93,26 @@ const ProductBasicFields: React.FC = () => {
                         {...register('barcode')}
                     />
                 </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1" htmlFor="add-product-status">
+                        Видимость на витрине
+                    </label>
+                    <Controller
+                        name="status"
+                        control={control}
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger id="add-product-status">
+                                    <SelectValue placeholder="Выберите видимость" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">Активен — виден в каталоге</SelectItem>
+                                    <SelectItem value="hidden">Скрыт — не показывается покупателям</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
             </div>
         </div>
     );

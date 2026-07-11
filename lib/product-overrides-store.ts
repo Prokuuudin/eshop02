@@ -37,6 +37,7 @@ export function mapDbToProduct(p: PrismaProduct): Product {
     badges: p.badges as BadgeType[],
     category: p.category as CategoryType,
     stock: p.stock,
+    isActive: p.isActive,
     barcode: p.barcode ?? undefined,
     purpose: p.purpose ?? undefined,
     purposeEn: p.purposeEn ?? undefined,
@@ -140,6 +141,7 @@ function mapProductToDbCreate(p: Product, isCustom = false): any {
     specCountry: p.specCountry ?? null,
     isCustom,
     isDeleted: false,
+    isActive: p.isActive ?? true,
   }
 }
 
@@ -176,6 +178,15 @@ export async function getDbProductsPaginated(opts: {
 
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
   return getDbProducts()
+})
+
+// Для админки: без фильтра isActive, иначе скрытые товары нельзя ни увидеть, ни включить обратно.
+export const getAdminProducts = cache(async (): Promise<Product[]> => {
+  const rows = await prisma.product.findMany({
+    where: { isDeleted: false },
+    orderBy: { createdAt: 'desc' },
+  })
+  return rows.map(mapDbToProduct)
 })
 
 export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {
@@ -239,6 +250,7 @@ export const upsertProductOverride = async (
     rating: 'rating', ratingCount: 'ratingCount', reviewCount: 'reviewCount',
     image: 'image', images: 'images', metaTitle: 'metaTitle', metaDescription: 'metaDescription',
     ogImage: 'ogImage', ogAlt: 'ogAlt', badges: 'badges', category: 'category', stock: 'stock',
+    isActive: 'isActive',
     barcode: 'barcode', purpose: 'purpose', purposeEn: 'purposeEn', purposeLv: 'purposeLv',
     relatedProductIds: 'relatedProductIds', oftenBoughtTogether: 'oftenBoughtTogether',
     minOrderQuantities: 'minOrderQuantities', technicalSpecs: 'technicalSpecs',
@@ -262,15 +274,15 @@ export const upsertProductOverride = async (
     await prisma.product.update({ where: { id: productId }, data: dbData })
   }
 
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const resetProductOverride = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
-  const mergedProducts = await getMergedProducts()
-  if (!mergedProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
-  return { success: true, products: mergedProducts }
+  const adminProducts = await getAdminProducts()
+  if (!adminProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
+  return { success: true, products: adminProducts }
 }
 
 export const createProduct = async (
@@ -292,7 +304,7 @@ export const createProduct = async (
 
   await prisma.product.create({ data: mapProductToDbCreate(normalizedProduct, true) })
 
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const deleteCustomProduct = async (
@@ -306,7 +318,7 @@ export const deleteCustomProduct = async (
 
   await prisma.product.delete({ where: { id: nextId } })
 
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const deleteProductAny = async (
@@ -336,7 +348,7 @@ export const deleteProductAny = async (
     await prisma.product.update({ where: { id: nextId }, data: { isDeleted: true } })
   }
 
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const restoreDeletedProduct = async (
@@ -367,7 +379,7 @@ export const restoreDeletedProduct = async (
   const nextArchive = archive.filter((e) => e.id !== nextId)
   await writeDeletedProductsArchive(nextArchive)
 
-  return { success: true, products: await getMergedProducts() }
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const purgeDeletedProductArchive = async (

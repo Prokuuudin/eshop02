@@ -3,6 +3,15 @@ import type { AddProductFormValues } from '@/components/admin/products/productFo
 import { getVariantGroups } from '@/lib/product-variants';
 import { getProductIngredients, isIngredientKey } from '@/lib/product-ingredients';
 
+// Форма редактирует один минимум заказа; на странице действует минимум из значений записи
+// (см. getMinimumOrderQuantity). При сохранении значение уходит в minOrderQuantities.default.
+const minOrderFromQuantities = (quantities: Record<string, number> | undefined): number => {
+    const values = Object.values(quantities ?? {}).filter(
+        (v): v is number => typeof v === 'number' && v >= 1
+    );
+    return values.length > 0 ? Math.min(...values) : 1;
+};
+
 export function mapProductToFormValues(product: Product): AddProductFormValues {
     return {
         id: product.id,
@@ -10,7 +19,7 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         barcode: product.barcode ?? '',
         brand: product.brand,
         category: product.category,
-        status: 'active',
+        status: product.isActive === false ? 'hidden' : 'active',
 
         title: product.title,
         titleEn: product.titleEn ?? '',
@@ -33,7 +42,7 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         bulkPricingTiers: product.bulkPricingTiers ?? [],
 
         stock: product.stock,
-        minOrder: 1,
+        minOrder: minOrderFromQuantities(product.minOrderQuantities),
         unitOfMeasure: product.unitOfMeasure ?? '',
         packagingSize: product.packagingSize,
 
@@ -128,6 +137,11 @@ export function mapFormValuesToProductPatch(
         barcode: values.barcode || undefined,
         brand: values.brand,
         category: values.category as Product['category'],
+        isActive: values.status !== 'hidden',
+        // {} (а не undefined): undefined-ключи теряются при JSON-передаче в API,
+        // и сброшенный минимум иначе невозможно было бы очистить в БД
+        minOrderQuantities:
+            values.minOrder > 1 ? { default: values.minOrder } : {},
         title: values.title,
         titleEn: values.titleEn || undefined,
         titleLv: values.titleLv || undefined,
@@ -162,7 +176,10 @@ export function mapFormValuesToProductPatch(
             cleanArray(values.oftenBoughtTogether).length > 0
                 ? cleanArray(values.oftenBoughtTogether)
                 : undefined,
-        demoVideo: values.demoVideo.length > 0 ? values.demoVideo : undefined,
+        // Всегда массив (не undefined) — иначе удаление последнего видео не доехало бы до БД
+        demoVideo: values.demoVideo
+            .filter((v) => v.src.trim())
+            .map((v) => ({ src: v.src.trim(), ...(v.poster?.trim() ? { poster: v.poster.trim() } : {}) })),
         metaTitle: values.metaTitle || undefined,
         metaDescription: values.metaDescription || undefined,
         ogImage: values.ogImage || undefined,

@@ -48,6 +48,15 @@ export function useProductLocalization(product: Product) {
     return fromI18n !== `${productBaseKey}.spec.country` ? fromI18n : '';
   })();
 
+  const productPurpose =
+    (language === 'en'
+      ? product.purposeEn
+      : language === 'lv'
+      ? product.purposeLv
+      : undefined) ||
+    product.purpose ||
+    '';
+
   const productFeatures = [1, 2, 3, 4]
     .map((index) => {
       const featureKey = `feature${index}` as keyof Product;
@@ -70,6 +79,7 @@ export function useProductLocalization(product: Product) {
     productSpecVolume,
     productSpecType,
     productSpecCountry,
+    productPurpose,
     productFeatures,
   };
 }

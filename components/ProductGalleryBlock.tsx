@@ -5,6 +5,7 @@ import { ProductDescription } from '@/components/ProductDescription';
 import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
 import TechnicalSpecs from '@/components/TechnicalSpecs';
+import Certificates from '@/components/Certificates';
 
 import type { BrandManufacturerInfo } from '@/lib/brands-config';
 import type { Product } from '@/data/products';
@@ -20,6 +21,7 @@ interface ProductGalleryBlockProps {
     productSpecVolume: string;
     productSpecType: string;
     productSpecCountry: string;
+    productPurpose?: string;
     language: string;
     manufacturer?: BrandManufacturerInfo;
     distributor?: BrandManufacturerInfo;
@@ -35,10 +37,31 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     productSpecVolume,
     productSpecType,
     productSpecCountry,
+    productPurpose,
     language,
     manufacturer,
     distributor,
 }) => {
+    // Поля товара приоритетнее данных бренда из brands-config: если админ заполнил
+    // производителя/дистрибьютора в карточке товара, показываем их.
+    const lang = (['ru', 'en', 'lv'].includes(language) ? language : 'ru') as 'ru' | 'en' | 'lv';
+    const productManufacturer: BrandManufacturerInfo | undefined =
+        product.manufacturerName || product.manufacturerAddress || product.manufacturerEmail
+            ? {
+                  name: product.manufacturerName ?? '',
+                  address: product.manufacturerAddress ?? '',
+                  email: product.manufacturerEmail,
+              }
+            : undefined;
+    const productDistributor: BrandManufacturerInfo | undefined =
+        product.distributorName?.[lang] || product.distributorAddress?.[lang] || product.distributorEmail
+            ? {
+                  name: product.distributorName?.[lang] ?? '',
+                  address: product.distributorAddress?.[lang] ?? '',
+                  email: product.distributorEmail,
+              }
+            : undefined;
+
     return (
         <div className="flex flex-col gap-4">
             <ProductGallery images={images} demoVideos={demoVideos} title={title} />
@@ -53,13 +76,17 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 volume={productSpecVolume}
                 type={productSpecType}
                 country={productSpecCountry}
+                purpose={productPurpose}
+                unitOfMeasure={product.unitOfMeasure}
+                packagingSize={product.packagingSize}
             />
             <ManufacturerDistributorInfo
-                manufacturer={manufacturer}
-                distributor={distributor}
+                manufacturer={productManufacturer ?? manufacturer}
+                distributor={productDistributor ?? distributor}
                 language={language}
             />
             <TechnicalSpecs product={product} />
+            <Certificates product={product} />
         </div>
     );
 };

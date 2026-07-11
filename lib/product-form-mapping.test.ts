@@ -126,6 +126,71 @@ describe('description translations round-trip through technicalSpecs', () => {
   })
 })
 
+describe('visibility (status ↔ isActive)', () => {
+  it('maps isActive=false to status "hidden" and back', () => {
+    const values = mapProductToFormValues({ ...baseProduct, isActive: false })
+    expect(values.status).toBe('hidden')
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.isActive).toBe(false)
+  })
+
+  it('defaults to "active" when isActive is unset and writes true', () => {
+    const values = mapProductToFormValues(baseProduct)
+    expect(values.status).toBe('active')
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.isActive).toBe(true)
+  })
+})
+
+describe('minOrder ↔ minOrderQuantities', () => {
+  it('loads the minimum of existing quantities into the form', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      minOrderQuantities: { retail: 5, wholesale: 10 },
+    })
+    expect(values.minOrder).toBe(5)
+  })
+
+  it('writes minOrder > 1 as the default quantity', () => {
+    const values = mapProductToFormValues(baseProduct)
+    values.minOrder = 6
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.minOrderQuantities).toEqual({ default: 6 })
+  })
+
+  it('clears quantities with an empty record when minOrder is 1', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      minOrderQuantities: { default: 4 },
+    })
+    values.minOrder = 1
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.minOrderQuantities).toEqual({})
+  })
+})
+
+describe('demoVideo', () => {
+  it('drops rows without src and strips empty posters', () => {
+    const values = mapProductToFormValues(baseProduct)
+    values.demoVideo = [
+      { src: ' https://cdn/x.mp4 ', poster: '' },
+      { src: '', poster: 'https://cdn/p.jpg' },
+    ]
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.demoVideo).toEqual([{ src: 'https://cdn/x.mp4' }])
+  })
+
+  it('sends an empty array so clearing the last video reaches the DB', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      demoVideo: [{ src: 'https://cdn/x.mp4' }],
+    })
+    values.demoVideo = []
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.demoVideo).toEqual([])
+  })
+})
+
 describe('ingredients round-trip through technicalSpecs', () => {
   it('extracts the ingredient key into the form field and hides it from spec rows', () => {
     const values = mapProductToFormValues({

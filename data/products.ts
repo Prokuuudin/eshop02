@@ -45,6 +45,9 @@ export interface Product {
   badges?: BadgeType[]
   category: CategoryType
   stock: number
+  // Видимость на витрине (колонка Neon, default true). Витрина фильтрует isActive=true
+  // на уровне SQL; в объекте поле нужно админке для тумблера «активен/скрыт».
+  isActive?: boolean
   purpose?: string
   purposeEn?: string
   purposeLv?: string

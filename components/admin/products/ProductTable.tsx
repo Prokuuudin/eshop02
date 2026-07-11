@@ -92,6 +92,11 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 <td className="p-3 align-middle max-w-xs font-medium text-foreground">
                                     <span className="truncate block">{product.title}</span>
                                     <span className="text-xs text-gray-400 dark:text-gray-500">{product.brand}</span>
+                                    {product.isActive === false && (
+                                        <span className="inline-block mt-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                            Скрыт
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="p-3 align-middle">
                                     <span className="block text-xs text-muted-foreground font-mono">{product.id}</span>

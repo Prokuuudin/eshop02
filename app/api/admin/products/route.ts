@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { createProduct, deleteProductAny, getMergedProducts, resetProductOverride, upsertProductOverride } from '@/lib/product-overrides-store'
+import { createProduct, deleteProductAny, getAdminProducts, resetProductOverride, upsertProductOverride } from '@/lib/product-overrides-store'
 import type { Product } from '@/data/products'
 
 export const runtime = 'nodejs'
@@ -11,7 +11,7 @@ export async function GET() {
   if (__gate instanceof NextResponse) return __gate
 
   try {
-    const products = await getMergedProducts()
+    const products = await getAdminProducts()
     return successResponse({ products })
   } catch (error) {
     console.error('Admin products GET error:', error)

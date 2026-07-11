@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getMergedProducts } from '@/lib/product-overrides-store';
+import { getAdminProducts } from '@/lib/product-overrides-store';
 import { mapProductToFormValues } from '@/lib/product-form-mapping';
 import ProductEditPageContent from './ProductEditPageContent';
 
@@ -11,7 +11,7 @@ export const revalidate = 0;
 
 export default async function ProductEditPage({ params }: PageProps) {
     const { id } = await params;
-    const products = await getMergedProducts();
+    const products = await getAdminProducts();
     const product = products.find((p) => p.id === id);
 
     if (!product) return notFound();

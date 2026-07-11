@@ -15,6 +15,10 @@ const ProductManufacturerFields: React.FC<ProductManufacturerFieldsProps> = ({ l
     return (
         <div className="add-product__section add-product__section--manufacturer">
             <h2 className="add-product__section-title">Производитель и дистрибьютор</h2>
+            <p className="text-xs text-gray-500 mb-2">
+                Необязательно: если оставить пустым, на странице товара показываются данные бренда
+                из конфигурации брендов; заполненные здесь поля их переопределяют.
+            </p>
             <div className="add-product__fields-grid">
                 <div>
                     <label className="block text-sm font-medium mb-1">Производитель — название</label>

@@ -9,6 +9,7 @@ import { AddProductFormValues } from './productFormSchema';
 const ProductGalleryFields: React.FC = () => {
     const { register, control, formState: { errors } } = useFormContext<AddProductFormValues>();
     const { fields, append, remove } = useFieldArray({ control, name: 'images' as never });
+    const videos = useFieldArray({ control, name: 'demoVideo' });
 
     return (
         <div className="add-product__section add-product__section--gallery">
@@ -49,6 +50,38 @@ const ProductGalleryFields: React.FC = () => {
                             onClick={() => append('' as never)}
                         >
                             + Добавить изображение
+                        </Button>
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-2">Демо-видео</label>
+                    <p className="text-xs text-gray-500 mb-2">
+                        Показываются в галерее на странице товара (mp4/webm или ссылка на видео)
+                    </p>
+                    <div className="flex flex-col gap-2">
+                        {videos.fields.map((field, index) => (
+                            <div key={field.id} className="flex gap-2">
+                                <Input
+                                    placeholder="URL видео (src)"
+                                    {...register(`demoVideo.${index}.src` as const)}
+                                />
+                                <Input
+                                    placeholder="URL постера (необязательно)"
+                                    {...register(`demoVideo.${index}.poster` as const)}
+                                />
+                                <Button type="button" variant="destructive" size="sm" onClick={() => videos.remove(index)}>
+                                    ✕
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-1 self-start"
+                            onClick={() => videos.append({ src: '', poster: '' })}
+                        >
+                            + Добавить видео
                         </Button>
                     </div>
                 </div>

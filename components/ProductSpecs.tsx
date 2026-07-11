@@ -5,16 +5,32 @@ interface ProductSpecsProps {
     volume: string;
     type: string;
     country: string;
+    purpose?: string;
+    unitOfMeasure?: string;
+    packagingSize?: number;
 }
 
-export const ProductSpecs: React.FC<ProductSpecsProps> = ({ volume, type, country }) => {
+export const ProductSpecs: React.FC<ProductSpecsProps> = ({
+    volume,
+    type,
+    country,
+    purpose,
+    unitOfMeasure,
+    packagingSize,
+}) => {
     const { t } = useTranslation();
 
     // Показываем только реально заполненные характеристики; без данных — блока нет.
     const rows = [
+        { label: t('product.purpose'), value: purpose ?? '' },
         { label: t('product.spec.volume'), value: volume },
         { label: t('product.spec.type'), value: type },
         { label: t('product.spec.country'), value: country },
+        { label: t('product.spec.unit'), value: unitOfMeasure ?? '' },
+        {
+            label: t('product.spec.packaging'),
+            value: packagingSize && packagingSize > 0 ? `${packagingSize} ${t('product.pcs')}` : '',
+        },
     ].filter((row) => row.value.trim() !== '');
 
     if (rows.length === 0) {

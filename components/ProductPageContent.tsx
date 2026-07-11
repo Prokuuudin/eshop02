@@ -36,6 +36,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
         productSpecVolume,
         productSpecType,
         productSpecCountry,
+        productPurpose,
         productFeatures,
     } = useProductLocalization(product);
     const priceLocale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
@@ -86,6 +87,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                         productSpecVolume={productSpecVolume}
                         productSpecType={productSpecType}
                         productSpecCountry={productSpecCountry}
+                        productPurpose={productPurpose}
                         language={language}
                         manufacturer={manufacturer}
                         distributor={distributor}

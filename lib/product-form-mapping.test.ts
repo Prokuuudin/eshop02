@@ -125,3 +125,42 @@ describe('description translations round-trip through technicalSpecs', () => {
     expect(patch.technicalSpecs).toBeUndefined()
   })
 })
+
+describe('ingredients round-trip through technicalSpecs', () => {
+  it('extracts the ingredient key into the form field and hides it from spec rows', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { 'Объём': '50 мл', INGREDIENTS: 'Aqua;Glycerin' },
+    })
+    expect(values.ingredients).toBe('Aqua;Glycerin')
+    expect(values.ingredientsKey).toBe('INGREDIENTS')
+    expect(values.technicalSpecs).toEqual([{ key: 'Объём', value: '50 мл' }])
+  })
+
+  it('preserves the original ingredient label key on save', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { 'Sastāvs': 'Aqua;Parfum' },
+    })
+    values.ingredients = 'Aqua;Parfum;Glycerin'
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toEqual({ 'Sastāvs': 'Aqua;Parfum;Glycerin' })
+  })
+
+  it('writes new ingredients under INGREDIENTS when the product had none', () => {
+    const values = mapProductToFormValues({ ...baseProduct })
+    values.ingredients = 'Aqua'
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toEqual({ INGREDIENTS: 'Aqua' })
+  })
+
+  it('drops the ingredient key when the admin empties the field', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { INGREDIENTS: 'Aqua' },
+    })
+    values.ingredients = ''
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toBeUndefined()
+  })
+})

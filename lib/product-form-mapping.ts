@@ -1,6 +1,7 @@
 import type { Product } from '@/data/products';
 import type { AddProductFormValues } from '@/components/admin/products/productFormSchema';
 import { getVariantGroups } from '@/lib/product-variants';
+import { getProductIngredients, isIngredientKey } from '@/lib/product-ingredients';
 
 export function mapProductToFormValues(product: Product): AddProductFormValues {
     return {
@@ -18,6 +19,11 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         description: product.description ?? '',
         descriptionEn: product.technicalSpecs?.__descriptionEn ?? '',
         descriptionLv: product.technicalSpecs?.__descriptionLv ?? '',
+        ingredients: getProductIngredients(product),
+        ingredientsKey:
+            Object.keys(product.technicalSpecs ?? {}).find(
+                (key) => !key.startsWith('__') && isIngredientKey(key)
+            ) ?? 'INGREDIENTS',
         purpose: product.purpose ?? '',
         purposeEn: product.purposeEn ?? '',
         purposeLv: product.purposeLv ?? '',
@@ -37,7 +43,7 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         badges: product.badges ?? [],
 
         technicalSpecs: Object.entries(product.technicalSpecs ?? {})
-            .filter(([key]) => !key.startsWith('__'))
+            .filter(([key]) => !key.startsWith('__') && !isIngredientKey(key))
             .map(([key, value]) => ({ key, value })),
         reservedTechSpecs: Object.fromEntries(
             Object.entries(product.technicalSpecs ?? {}).filter(
@@ -108,6 +114,11 @@ export function mapFormValuesToProductPatch(
     }
     if (values.descriptionLv?.trim()) {
         techSpecs['__descriptionLv'] = values.descriptionLv;
+    }
+    // Состав пишется последним — выигрывает у вручную добавленной строки с тем же ключом;
+    // пустое поле = состав удалён из товара
+    if (values.ingredients?.trim()) {
+        techSpecs[values.ingredientsKey?.trim() || 'INGREDIENTS'] = values.ingredients.trim();
     }
 
     const cleanArray = (arr: string[]) => arr.filter(Boolean);

@@ -51,6 +51,8 @@ const emptyDefaults: AddProductFormValues = {
     description: '',
     descriptionEn: '',
     descriptionLv: '',
+    ingredients: '',
+    ingredientsKey: 'INGREDIENTS',
     purpose: '',
     purposeEn: '',
     purposeLv: '',

@@ -30,6 +30,16 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         <label className="block text-sm font-medium mb-1">Полное описание</label>
                         <Textarea placeholder="Полное описание товара" {...register('description')} />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Состав (INCI)</label>
+                        <p className="text-xs text-gray-500 mb-1">
+                            Один на все языки — таб «Состав» на странице товара; пустое поле = таб скрыт
+                        </p>
+                        <Textarea
+                            placeholder="Aqua;Glycerin;Parfum;..."
+                            {...register('ingredients')}
+                        />
+                    </div>
                 </div>
 
                 <h3 className="add-product__section-subtitle mt-4">Характеристики-карточки (feature1–4)</h3>

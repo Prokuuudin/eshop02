@@ -24,6 +24,11 @@ export const addProductSchema = z.object({
   description: z.string().optional(),
   descriptionEn: z.string().optional(),
   descriptionLv: z.string().optional(),
+  // Состав (INCI, один на все языки) — хранится в technicalSpecs под ключом-лейблом
+  // ("INGREDIENTS"/"Sastāvs"/...), в форме отдельное поле; ingredientsKey сохраняет
+  // исходный ключ при round-trip, см. lib/product-form-mapping.ts
+  ingredients: z.string().optional(),
+  ingredientsKey: z.string().optional(),
   purpose: z.string().optional(),
   purposeEn: z.string().optional(),
   purposeLv: z.string().optional(),

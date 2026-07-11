@@ -61,15 +61,6 @@ export function useProductLocalization(product: Product) {
   const productApplication = localizedReserved('__application');
   const productWarnings = localizedReserved('__warnings');
 
-  const productPurpose =
-    (language === 'en'
-      ? product.purposeEn
-      : language === 'lv'
-      ? product.purposeLv
-      : undefined) ||
-    product.purpose ||
-    '';
-
   const productFeatures = [1, 2, 3, 4]
     .map((index) => {
       const featureKey = `feature${index}` as keyof Product;
@@ -92,7 +83,6 @@ export function useProductLocalization(product: Product) {
     productSpecVolume,
     productSpecType,
     productSpecCountry,
-    productPurpose,
     productApplication,
     productWarnings,
     productFeatures,

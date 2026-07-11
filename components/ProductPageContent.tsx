@@ -36,7 +36,6 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
         productSpecVolume,
         productSpecType,
         productSpecCountry,
-        productPurpose,
         productApplication,
         productWarnings,
         productFeatures,
@@ -89,7 +88,6 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                         productSpecVolume={productSpecVolume}
                         productSpecType={productSpecType}
                         productSpecCountry={productSpecCountry}
-                        productPurpose={productPurpose}
                         productApplication={productApplication}
                         productWarnings={productWarnings}
                         language={language}

@@ -23,12 +23,8 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         <Input placeholder="Название товара" {...register('title')} />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Назначение / краткое описание</label>
-                        <Textarea placeholder="Для чего товар, кратко" {...register('purpose')} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Полное описание</label>
-                        <Textarea placeholder="Полное описание товара" {...register('description')} />
+                        <label className="block text-sm font-medium mb-1">Описание</label>
+                        <Textarea placeholder="Описание товара" {...register('description')} />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1">Состав (INCI)</label>
@@ -113,12 +109,8 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         <Input placeholder="Product title" {...register('titleEn')} />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Purpose / short description</label>
-                        <Textarea placeholder="What the product is for" {...register('purposeEn')} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Full description</label>
-                        <Textarea placeholder="Full product description" {...register('descriptionEn')} />
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <Textarea placeholder="Product description" {...register('descriptionEn')} />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1">Application (EN)</label>
@@ -181,12 +173,8 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                     <Input placeholder="Produkta nosaukums" {...register('titleLv')} />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1">Mērķis / īss apraksts</label>
-                    <Textarea placeholder="Kam produkts paredzēts" {...register('purposeLv')} />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1">Pilns apraksts</label>
-                    <Textarea placeholder="Pilns produkta apraksts" {...register('descriptionLv')} />
+                    <label className="block text-sm font-medium mb-1">Apraksts</label>
+                    <Textarea placeholder="Produkta apraksts" {...register('descriptionLv')} />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1">Pielietojums (LV)</label>

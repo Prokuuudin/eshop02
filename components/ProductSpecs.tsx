@@ -5,7 +5,6 @@ interface ProductSpecsProps {
     volume: string;
     type: string;
     country: string;
-    purpose?: string;
     unitOfMeasure?: string;
     packagingSize?: number;
 }
@@ -14,7 +13,6 @@ export const ProductSpecs: React.FC<ProductSpecsProps> = ({
     volume,
     type,
     country,
-    purpose,
     unitOfMeasure,
     packagingSize,
 }) => {
@@ -22,7 +20,6 @@ export const ProductSpecs: React.FC<ProductSpecsProps> = ({
 
     // Показываем только реально заполненные характеристики; без данных — блока нет.
     const rows = [
-        { label: t('product.purpose'), value: purpose ?? '' },
         { label: t('product.spec.volume'), value: volume },
         { label: t('product.spec.type'), value: type },
         { label: t('product.spec.country'), value: country },

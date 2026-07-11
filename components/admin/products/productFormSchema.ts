@@ -38,9 +38,6 @@ export const addProductSchema = z.object({
   warnings: z.string().optional(),
   warningsEn: z.string().optional(),
   warningsLv: z.string().optional(),
-  purpose: z.string().optional(),
-  purposeEn: z.string().optional(),
-  purposeLv: z.string().optional(),
 
   // Цена
   price: z.number().min(0, 'Цена обязательна'),

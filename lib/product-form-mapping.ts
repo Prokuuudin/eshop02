@@ -39,9 +39,6 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         warnings: product.technicalSpecs?.__warnings ?? '',
         warningsEn: product.technicalSpecs?.__warningsEn ?? '',
         warningsLv: product.technicalSpecs?.__warningsLv ?? '',
-        purpose: product.purpose ?? '',
-        purposeEn: product.purposeEn ?? '',
-        purposeLv: product.purposeLv ?? '',
 
         price: product.price,
         oldPrice: product.oldPrice ?? 0,
@@ -191,9 +188,6 @@ export function mapFormValuesToProductPatch(
         titleEn: values.titleEn || undefined,
         titleLv: values.titleLv || undefined,
         description: values.description || undefined,
-        purpose: values.purpose || undefined,
-        purposeEn: values.purposeEn || undefined,
-        purposeLv: values.purposeLv || undefined,
         price: values.price,
         oldPrice: values.oldPrice || undefined,
         bulkPricingTiers:

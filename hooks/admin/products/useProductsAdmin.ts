@@ -71,7 +71,6 @@ export function useProductsAdmin() {
         product.title,
         product.brand,
         product.category,
-        product.purpose,
         ...Object.values(
           Object.fromEntries(
             Object.entries(product.technicalSpecs || {}).filter(([key]) => key !== '__variantGroupsJson')

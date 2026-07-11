@@ -14,7 +14,6 @@ import ProductListRow from './ProductListRow'
 type ProductsFilters = {
   group: string
   onSale: boolean
-  purposes: string[]
   brands: string[]
   minPrice: string
   maxPrice: string
@@ -43,7 +42,6 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
   const [filters, setFilters] = React.useState<ProductsFilters>({
     group: initialFilters?.group ?? '',
     onSale: initialFilters?.onSale ?? false,
-    purposes: initialFilters?.purposes ?? [],
     brands: initialFilters?.brands ?? [],
     minPrice: initialFilters?.minPrice ?? '',
     maxPrice: initialFilters?.maxPrice ?? '',
@@ -163,11 +161,10 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
     searchMatchedProducts.filter(p => {
       const groupOk = !filters.group || p.category === filters.group;
       const onSaleOk = !filters.onSale || isProductOnSale(p);
-      const purposesOk = !filters.purposes || filters.purposes.length === 0 || filters.purposes.includes(p.purpose ?? '');
       const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));
       const minOk = !filters.minPrice || p.price >= Number(filters.minPrice);
       const maxOk = !filters.maxPrice || p.price <= Number(filters.maxPrice);
-      return groupOk && onSaleOk && purposesOk && brandOk && minOk && maxOk;
+      return groupOk && onSaleOk && brandOk && minOk && maxOk;
     }), filters.order
   );
 
@@ -211,7 +208,7 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
               <button
                 type="button"
                 onClick={() => handleViewMode('grid')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span>{t('catalog.viewGrid')}</span>
@@ -219,7 +216,7 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
               <button
                 type="button"
                 onClick={() => handleViewMode('list')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <List className="w-4 h-4" />
                 <span>{t('catalog.viewList')}</span>

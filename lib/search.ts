@@ -22,14 +22,14 @@ function tokenize(value: string): string[] {
 }
 
 function getProductSearchText(product: Product): string {
-  return normalizeSearchValue(`${product.title} ${product.brand} ${product.purpose ?? ''}`)
+  return normalizeSearchValue(`${product.title} ${product.brand}`)
 }
 
 function getVocabulary(products: Product[]): string[] {
   const words = new Set<string>()
 
   products.forEach((product) => {
-    tokenize(`${product.title} ${product.brand} ${product.purpose ?? ''}`).forEach((token) => {
+    tokenize(`${product.title} ${product.brand}`).forEach((token) => {
       if (token.length >= 3) {
         words.add(token)
       }

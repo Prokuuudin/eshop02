@@ -63,7 +63,7 @@ const REQUIRED_COLS = ['id', 'title', 'brand', 'price', 'stock', 'category']
 const ALL_COLS = [
   ...REQUIRED_COLS,
   'titleEn', 'titleLv', 'sku', 'oldPrice', 'rating', 'ratingCount', 'image', 'badges',
-  'description', 'purpose', 'specVolume', 'specType', 'specCountry',
+  'description', 'specVolume', 'specType', 'specCountry',
   'feature1', 'feature1En', 'feature1Lv',
   'feature2', 'feature2En', 'feature2Lv',
   'feature3', 'feature3En', 'feature3Lv',

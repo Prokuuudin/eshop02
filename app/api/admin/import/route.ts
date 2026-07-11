@@ -72,7 +72,6 @@ function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; er
     description: str(row.description),
     titleEn: str(row.titleEn),
     titleLv: str(row.titleLv),
-    purpose: str(row.purpose),
     specVolume: str(row.specVolume),
     specType: str(row.specType),
     specCountry: str(row.specCountry),

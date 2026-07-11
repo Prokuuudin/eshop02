@@ -10,7 +10,7 @@ const COLUMNS: (keyof Product)[] = [
   'id', 'title', 'titleEn', 'titleLv',
   'brand', 'price', 'oldPrice', 'stock', 'category',
   'sku', 'rating', 'ratingCount', 'image',
-  'badges', 'description', 'purpose',
+  'badges', 'description',
   'specVolume', 'specType', 'specCountry',
   'feature1', 'feature1En', 'feature1Lv',
   'feature2', 'feature2En', 'feature2Lv',

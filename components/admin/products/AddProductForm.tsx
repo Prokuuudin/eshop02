@@ -59,9 +59,6 @@ const emptyDefaults: AddProductFormValues = {
     warnings: '',
     warningsEn: '',
     warningsLv: '',
-    purpose: '',
-    purposeEn: '',
-    purposeLv: '',
 
     price: 0,
     oldPrice: 0,

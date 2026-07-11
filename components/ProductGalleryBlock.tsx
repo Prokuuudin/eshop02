@@ -21,7 +21,6 @@ interface ProductGalleryBlockProps {
     productSpecVolume: string;
     productSpecType: string;
     productSpecCountry: string;
-    productPurpose?: string;
     productApplication?: string;
     productWarnings?: string;
     language: string;
@@ -39,7 +38,6 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     productSpecVolume,
     productSpecType,
     productSpecCountry,
-    productPurpose,
     productApplication,
     productWarnings,
     language,
@@ -82,7 +80,6 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 volume={productSpecVolume}
                 type={productSpecType}
                 country={productSpecCountry}
-                purpose={productPurpose}
                 unitOfMeasure={product.unitOfMeasure}
                 packagingSize={product.packagingSize}
             />

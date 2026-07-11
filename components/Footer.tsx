@@ -14,7 +14,13 @@ export default function Footer() {
       .then((r) => r.json())
       .then((d) => {
         const banner = d.banners?.[0]
-        if (banner?.title) setPromo({ title: banner.title, link: banner.link || '/catalog' })
+        if (!banner?.title) return
+        // href idёт из БД — пускаем только внутренние пути, чтобы javascript:/data: не попали в <a>
+        const link =
+          typeof banner.link === 'string' && banner.link.startsWith('/') && !banner.link.startsWith('//')
+            ? banner.link
+            : '/catalog'
+        setPromo({ title: banner.title, link })
       })
       .catch(() => {})
   }, [])

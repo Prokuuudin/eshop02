@@ -1,11 +1,20 @@
 import React from 'react';
 import Image from 'next/image';
 import VideoPlayer from '@/components/ui/video-player';
+import { useImageZoom } from '@/hooks/useImageZoom';
+import {
+    ProductImageLightbox,
+    ProductZoomLens,
+    ProductZoomPane,
+} from '@/components/ProductImageZoom';
 
 interface ProductGalleryProps {
     images: string[];
+    /** Опциональные hi-res версии для зума, индексы совпадают с images */
+    hiResImages?: string[];
     demoVideos?: { src: string; poster?: string }[];
     title: string;
+    zoomFactor?: number;
 }
 
 // Видео из nopCommerce-миграции — это embed-URL (Facebook/YouTube/Vimeo), их
@@ -15,26 +24,49 @@ const isEmbedUrl = (src: string): boolean =>
 
 export const ProductGallery: React.FC<ProductGalleryProps> = ({
     images,
+    hiResImages,
     demoVideos = [],
     title,
+    zoomFactor = 2.5,
 }) => {
     const [activeImage, setActiveImage] = React.useState(0);
     const [activeVideo, setActiveVideo] = React.useState(0);
 
+    const activeSrc = images[activeImage];
+    const zoom = useImageZoom({
+        src: activeSrc ?? '',
+        hiResSrc: hiResImages?.[activeImage],
+        zoomFactor,
+        // p-2 на <Image> ниже — при изменении отступа синхронизировать
+        imagePadding: 8,
+        disabled: !activeSrc,
+    });
+
     return (
         <div className="product-detail__image">
             {/* Галерея изображений */}
-            <div className="relative mx-auto w-full sm:w-1/2 aspect-square bg-white rounded-lg overflow-hidden flex items-center justify-center">
-                {images.length > 0 && (
-                    <Image
-                        key={images[activeImage]}
-                        src={images[activeImage]}
-                        alt={title}
-                        fill
-                        className="object-contain p-2"
-                        sizes="(max-width: 640px) 100vw, 50vw"
-                    />
-                )}
+            <div className="product-detail__zoom-root relative mx-auto w-full sm:w-1/2">
+                <div
+                    {...zoom.containerProps}
+                    className={`relative aspect-square bg-white rounded-lg overflow-hidden flex items-center justify-center ${
+                        zoom.visible ? 'cursor-none' : ''
+                    }`}
+                >
+                    {images.length > 0 && (
+                        <Image
+                            key={activeSrc}
+                            src={activeSrc}
+                            alt={title}
+                            fill
+                            className="object-contain p-2"
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            onLoad={zoom.onImageLoad}
+                        />
+                    )}
+                    {zoom.mounted && <ProductZoomLens zoom={zoom} />}
+                </div>
+                {zoom.mounted && <ProductZoomPane zoom={zoom} />}
+                <ProductImageLightbox zoom={zoom} title={title} />
             </div>
             {images.length > 1 && (
                 <div className="product-detail__thumbs mt-3 overflow-x-auto">

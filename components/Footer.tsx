@@ -15,7 +15,7 @@ export default function Footer() {
       .then((d) => {
         const banner = d.banners?.[0]
         if (!banner?.title) return
-        // href idёт из БД — пускаем только внутренние пути, чтобы javascript:/data: не попали в <a>
+        // href идёт из БД — пускаем только внутренние пути, чтобы javascript:/data: не попали в <a>
         const link =
           typeof banner.link === 'string' && banner.link.startsWith('/') && !banner.link.startsWith('//')
             ? banner.link

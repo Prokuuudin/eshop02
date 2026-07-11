@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Product } from '@/data/products'
+import { isIngredientKey } from '@/lib/product-ingredients'
 
 type TechnicalSpecsProps = {
   product: Product
@@ -10,7 +11,10 @@ type TechnicalSpecsProps = {
 export default function TechnicalSpecs({ product }: TechnicalSpecsProps) {
   // __-prefixed keys are internal (e.g. __variantGroupsJson holds raw JSON for the
   // color/size picker) — not meant for display in this key:value list.
-  const specs = Object.entries(product.technicalSpecs ?? {}).filter(([key]) => !key.startsWith('__'))
+  // Ingredient keys are shown in the "Состав" tab of ProductDescription instead.
+  const specs = Object.entries(product.technicalSpecs ?? {}).filter(
+    ([key]) => !key.startsWith('__') && !isIngredientKey(key)
+  )
   if (specs.length === 0) {
     return null
   }

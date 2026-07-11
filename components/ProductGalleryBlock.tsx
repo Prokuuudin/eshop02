@@ -8,6 +8,7 @@ import TechnicalSpecs from '@/components/TechnicalSpecs';
 
 import type { BrandManufacturerInfo } from '@/lib/brands-config';
 import type { Product } from '@/data/products';
+import { getProductIngredients } from '@/lib/product-ingredients';
 
 interface ProductGalleryBlockProps {
     product: Product;
@@ -42,7 +43,12 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
         <div className="flex flex-col gap-4">
             <ProductGallery images={images} demoVideos={demoVideos} title={title} />
             <ProductImageDisclaimer />
-            <ProductDescription description={productDescription} features={productFeatures} productId={product.id} />
+            <ProductDescription
+                description={productDescription}
+                features={productFeatures}
+                ingredients={getProductIngredients(product)}
+                productId={product.id}
+            />
             <ProductSpecs
                 volume={productSpecVolume}
                 type={productSpecType}

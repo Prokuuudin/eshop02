@@ -46,6 +46,8 @@ export interface UseImageZoomResult {
     };
     /** Вешается на onLoad превью-<Image> — без natural-размеров letterbox не посчитать */
     onImageLoad: React.ReactEventHandler<HTMLImageElement>;
+    /** onError картинок панели/lightbox: hi-res может не существовать на сервере */
+    onPaneImgError: React.ReactEventHandler<HTMLImageElement>;
     lensRef: React.RefObject<HTMLDivElement>;
     paneRef: React.RefObject<HTMLDivElement>;
     paneImgRef: React.RefObject<HTMLImageElement>;
@@ -78,6 +80,7 @@ export function useImageZoom({
     const [visible, setVisible] = React.useState(false);
     const [lightboxOpen, setLightboxOpen] = React.useState(false);
     const [sidePaneFits, setSidePaneFits] = React.useState(false);
+    const [hiResFailed, setHiResFailed] = React.useState(false);
 
     const frame = React.useCallback(() => {
         rafRef.current = null;
@@ -127,7 +130,8 @@ export function useImageZoom({
     React.useEffect(() => {
         naturalRef.current = null;
         setVisible(false);
-    }, [src]);
+        setHiResFailed(false);
+    }, [src, hiResSrc]);
 
     React.useEffect(
         () => () => {
@@ -213,12 +217,16 @@ export function useImageZoom({
         if (pointerInsideRef.current) schedule();
     };
 
+    const onPaneImgError: React.ReactEventHandler<HTMLImageElement> = () => {
+        setHiResFailed(true);
+    };
+
     return {
         mounted,
         visible,
         zoomFactor,
         effectivePaneMode: paneMode === 'side' && sidePaneFits ? 'side' : 'inline',
-        paneSrc: hiResSrc || src,
+        paneSrc: hiResSrc && !hiResFailed ? hiResSrc : src,
         lightboxOpen,
         setLightboxOpen,
         containerProps: {
@@ -231,6 +239,7 @@ export function useImageZoom({
             onClick,
         },
         onImageLoad,
+        onPaneImgError,
         lensRef,
         paneRef,
         paneImgRef,

@@ -2,6 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import VideoPlayer from '@/components/ui/video-player';
 import { useImageZoom } from '@/hooks/useImageZoom';
+import { deriveHiResSrc } from '@/lib/image-hires';
 import {
     ProductImageLightbox,
     ProductZoomLens,
@@ -35,7 +36,8 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
     const activeSrc = images[activeImage];
     const zoom = useImageZoom({
         src: activeSrc ?? '',
-        hiResSrc: hiResImages?.[activeImage],
+        // явный hi-res приоритетнее; иначе пробуем оригинал nopCommerce без _400
+        hiResSrc: hiResImages?.[activeImage] ?? (activeSrc ? deriveHiResSrc(activeSrc) : undefined),
         zoomFactor,
         // p-2 на <Image> ниже — при изменении отступа синхронизировать
         imagePadding: 8,

@@ -47,6 +47,7 @@ export const ProductZoomPane: React.FC<ZoomPartProps> = ({ zoom }) => (
             alt=""
             draggable={false}
             className="block max-w-none select-none"
+            onError={zoom.onPaneImgError}
         />
     </div>
 );
@@ -98,6 +99,7 @@ export const ProductImageLightbox: React.FC<ZoomPartProps & { title: string }> =
                         className="max-w-none"
                         style={{ width: `${zoom.zoomFactor * 100}%` }}
                         onLoad={centerScroll}
+                        onError={zoom.onPaneImgError}
                     />
                 </div>
             </DialogContent>

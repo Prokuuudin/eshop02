@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
@@ -415,7 +415,7 @@ export default function AdminOrdersPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/admin/orders/new">
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">+ Создать заказ</Button>
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">+ Создать заказ</Button>
           </Link>
           <Button variant="outline" size="sm" onClick={exportOrdersCSV} className="hidden sm:inline-flex gap-1.5">
             <Download className="h-3.5 w-3.5" />
@@ -801,7 +801,7 @@ export default function AdminOrdersPage() {
                           type="button"
                           disabled={editSaving || editItems.length === 0}
                           onClick={() => saveEdit(order)}
-                          className="rounded-lg bg-primary hover:bg-primary/90 text-white px-4 py-2 text-sm font-medium disabled:opacity-40 transition-colors"
+                          className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-40 transition-colors"
                         >
                           {editSaving ? 'Сохранение...' : 'Сохранить изменения'}
                         </button>
@@ -944,7 +944,7 @@ export default function AdminOrdersPage() {
                           key={s}
                           size="sm"
                           variant={status === s ? 'default' : 'outline'}
-                          className={status === s ? 'bg-primary hover:bg-primary/90 text-white' : ''}
+                          className={status === s ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
                           onClick={() => {
                             const prev = getOrderStatus(order.id)
                             setOrderStatus(order.id, s)
@@ -1029,7 +1029,7 @@ export default function AdminOrdersPage() {
                   size="sm"
                   className={[
                     'hidden sm:inline-flex',
-                    pg === page ? 'bg-primary text-white' : '',
+                    pg === page ? 'bg-primary text-primary-foreground' : '',
                   ].join(' ')}
                   onClick={() => setPage(pg)}
                 >

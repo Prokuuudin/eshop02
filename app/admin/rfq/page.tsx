@@ -189,7 +189,7 @@ export default function AdminRFQPage() {
             className={[
               'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
               statusFilter === tab.value
-                ? 'bg-primary border-primary text-white'
+                ? 'bg-primary border-primary text-primary-foreground'
                 : 'border-border bg-card text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600',
             ].join(' ')}
           >

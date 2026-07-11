@@ -273,7 +273,7 @@ export default function SalesBreakdownPage() {
                   onClick={() => setMetric(m)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     metric === m
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
@@ -290,7 +290,7 @@ export default function SalesBreakdownPage() {
                   onClick={() => setPeriod(opt.value)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     period === opt.value
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >

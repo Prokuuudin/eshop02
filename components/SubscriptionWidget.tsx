@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, ShoppingBag } from 'lucide-react'
@@ -146,7 +146,7 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
           <button
             className={`subscription-widget__tab flex-1 py-2 px-3 transition-colors font-medium border-l border-border ${
               mode === 'subscribe'
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
             onClick={() => setMode('subscribe')}

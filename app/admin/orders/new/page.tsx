@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -701,7 +701,7 @@ export default function NewOrderPage() {
               </div>
 
               <Button
-                className="w-full bg-primary hover:bg-primary/90 text-white"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 disabled={submitting || items.length === 0}
                 onClick={handleSubmit}
               >

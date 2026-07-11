@@ -287,7 +287,7 @@ export default function EmailTemplatesPage() {
                                                     type="button"
                                                     onClick={sendTest}
                                                     disabled={testSending || !testEmail}
-                                                    className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-40 whitespace-nowrap"
+                                                    className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 whitespace-nowrap"
                                                 >
                                                     {testSending ? 'Отправка...' : 'Отправить'}
                                                 </button>

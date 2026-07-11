@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
@@ -453,7 +453,7 @@ export default function AdminReviewsPage() {
                         size="sm"
                         disabled={replySavingId === review.id || !(replyDrafts[review.id] ?? '').trim()}
                         onClick={() => void saveReply(review.id)}
-                        className="bg-primary hover:bg-primary/90 text-white"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         {replySavingId === review.id ? l('Сохранение...', 'Saving...', 'Saglaba...') : l('Сохранить ответ', 'Save reply', 'Saglabat atbildi')}
                       </Button>

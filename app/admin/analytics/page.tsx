@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -313,7 +313,7 @@ function CohortSection() {
               className={[
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 (m === 'pct') === showPct
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800',
               ].join(' ')}
             >

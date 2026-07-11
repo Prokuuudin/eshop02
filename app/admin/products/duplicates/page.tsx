@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -153,7 +153,7 @@ export default function DuplicatesPage() {
                     className={[
                       'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
                       filter === tab.value
-                        ? 'bg-primary border-primary text-white'
+                        ? 'bg-primary border-primary text-primary-foreground'
                         : 'border-border bg-card text-muted-foreground hover:border-gray-300',
                     ].join(' ')}
                   >

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { User2, Mail, Phone, PartyPopper, ArrowRight } from 'lucide-react';
@@ -58,14 +58,14 @@ export default function WelcomeModal({ user }: { user: User }) {
         <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
             <div className="w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden">
                 {/* Шапка */}
-                <div className="bg-primary px-6 py-5 text-white">
+                <div className="bg-primary px-6 py-5 text-primary-foreground">
                     <div className="flex items-center gap-3 mb-1">
-                        <PartyPopper className="h-6 w-6 text-white/70" />
+                        <PartyPopper className="h-6 w-6 text-primary-foreground/70" />
                         <h2 className="text-lg font-bold">
                             Добро пожаловать{user.name ? `, ${user.name}` : ''}!
                         </h2>
                     </div>
-                    <p className="text-white/70 text-sm">
+                    <p className="text-primary-foreground/70 text-sm">
                         Вы успешно зарегистрированы. Кабинет готов к работе.
                     </p>
                 </div>

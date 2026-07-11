@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -389,7 +389,7 @@ export default function AdminMediaPage() {
                         {/* Usage badge */}
                         {usedIn?.length && (
                           <div className="absolute top-1.5 right-1.5 z-10">
-                            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
                               {usedIn.length}
                             </span>
                           </div>

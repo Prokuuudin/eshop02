@@ -375,7 +375,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 selectedItemIds.length > 0 &&
                                 isCheckoutAllowedForRole
                             }
-                            className="w-full bg-primary hover:bg-primary/90 text-white"
+                            className="w-full"
                             label={t('cart.checkout')}
                             href={checkoutHref}
                             onNavigate={onClose}

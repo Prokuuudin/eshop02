@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
@@ -519,7 +519,7 @@ export default function AdminReturnsPage() {
                           key={s}
                           size="sm"
                           variant={ret.status === s ? 'default' : 'outline'}
-                          className={ret.status === s ? 'bg-primary hover:bg-primary/90 text-white' : ''}
+                          className={ret.status === s ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
                           onClick={() => {
                             setReturnStatus(ret.id, s, resolutionDraft[ret.id])
                             logAdminAction('return.status_changed', {

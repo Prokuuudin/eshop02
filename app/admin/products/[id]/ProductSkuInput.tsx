@@ -43,7 +43,7 @@ export default function ProductSkuInput({ productId, initialSku }: ProductSkuInp
                 disabled={saving}
             />
             <button
-                className="px-3 py-1 rounded bg-primary text-white text-xs font-medium hover:bg-primary/90 transition disabled:opacity-50"
+                className="px-3 py-1 rounded bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition disabled:opacity-50"
                 onClick={handleSave}
                 disabled={saving}
                 type="button"

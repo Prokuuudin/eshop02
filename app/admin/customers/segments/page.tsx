@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -210,7 +210,7 @@ export default function AdminCustomerSegmentsPage() {
                     onClick={() => { setActiveTab(tab); setBResult(null) }}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
                       activeTab === tab
-                        ? 'bg-primary text-white border-primary'
+                        ? 'bg-primary text-primary-foreground border-primary'
                         : 'bg-card text-gray-700 dark:text-gray-300 border-border hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
@@ -281,7 +281,7 @@ export default function AdminCustomerSegmentsPage() {
                               key={t}
                               type="button"
                               onClick={() => setBTab(t)}
-                              className={`px-3 py-1 transition-colors ${bTab === t ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                              className={`px-3 py-1 transition-colors ${bTab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                             >
                               {t === 'edit' ? 'Редактор' : 'Превью'}
                             </button>
@@ -329,7 +329,7 @@ export default function AdminCustomerSegmentsPage() {
                         trigger={
                           <Button
                             disabled={!canSend}
-                            className="bg-primary hover:bg-primary/90 text-white"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             {sendButtonLabel}
                           </Button>

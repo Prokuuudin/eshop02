@@ -80,7 +80,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
                 onClick={() => setLang(l)}
                 className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   lang === l
-                    ? 'bg-primary text-white border-primary'
+                    ? 'bg-primary text-primary-foreground border-primary'
                     : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
@@ -111,7 +111,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
             Предпросмотр
           </Button>
           <Button
-            className="flex-1 bg-primary hover:bg-primary/90 text-white"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={handleSend}
             disabled={sending || sent || !email.trim()}
           >

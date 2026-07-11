@@ -23,7 +23,7 @@ const AccountProfileSummary: React.FC<AccountProfileSummaryProps> = ({ user, t, 
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-5 flex items-center gap-4">
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm overflow-hidden">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm overflow-hidden">
                     {user.avatarUrl ? (
                         <Image
                             src={user.avatarUrl}

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/lib/orders-store'
@@ -345,7 +345,7 @@ export default function AdminPage() {
                   className={[
                     'px-3 py-1 text-sm rounded-md transition-colors',
                     chartPeriod === p
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700',
                   ].join(' ')}
                 >

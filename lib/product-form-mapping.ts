@@ -33,6 +33,12 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
             Object.keys(product.technicalSpecs ?? {}).find(
                 (key) => !key.startsWith('__') && isIngredientKey(key)
             ) ?? 'INGREDIENTS',
+        application: product.technicalSpecs?.__application ?? '',
+        applicationEn: product.technicalSpecs?.__applicationEn ?? '',
+        applicationLv: product.technicalSpecs?.__applicationLv ?? '',
+        warnings: product.technicalSpecs?.__warnings ?? '',
+        warningsEn: product.technicalSpecs?.__warningsEn ?? '',
+        warningsLv: product.technicalSpecs?.__warningsLv ?? '',
         purpose: product.purpose ?? '',
         purposeEn: product.purposeEn ?? '',
         purposeLv: product.purposeLv ?? '',
@@ -68,6 +74,12 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
                         '__specTypeLv',
                         '__specCountryEn',
                         '__specCountryLv',
+                        '__application',
+                        '__applicationEn',
+                        '__applicationLv',
+                        '__warnings',
+                        '__warningsEn',
+                        '__warningsLv',
                     ].includes(key)
             )
         ),
@@ -140,15 +152,21 @@ export function mapFormValuesToProductPatch(
     if (values.descriptionLv?.trim()) {
         techSpecs['__descriptionLv'] = values.descriptionLv;
     }
-    const specI18n: Array<[string, string | undefined]> = [
+    const reservedI18n: Array<[string, string | undefined]> = [
         ['__specVolumeEn', values.specVolumeEn],
         ['__specVolumeLv', values.specVolumeLv],
         ['__specTypeEn', values.specTypeEn],
         ['__specTypeLv', values.specTypeLv],
         ['__specCountryEn', values.specCountryEn],
         ['__specCountryLv', values.specCountryLv],
+        ['__application', values.application],
+        ['__applicationEn', values.applicationEn],
+        ['__applicationLv', values.applicationLv],
+        ['__warnings', values.warnings],
+        ['__warningsEn', values.warningsEn],
+        ['__warningsLv', values.warningsLv],
     ];
-    for (const [key, value] of specI18n) {
+    for (const [key, value] of reservedI18n) {
         if (value?.trim()) techSpecs[key] = value.trim();
     }
     // Состав пишется последним — выигрывает у вручную добавленной строки с тем же ключом;

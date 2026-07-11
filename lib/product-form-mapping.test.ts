@@ -231,6 +231,47 @@ describe('spec translations round-trip through technicalSpecs', () => {
   })
 })
 
+describe('application/warnings round-trip through technicalSpecs', () => {
+  it('extracts __application/__warnings (+translations) into form fields', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: {
+        __application: 'Нанести на волосы',
+        __applicationEn: 'Apply to hair',
+        __warnings: 'Избегать попадания в глаза',
+        __futureReserved: 'x',
+      },
+    })
+    expect(values.application).toBe('Нанести на волосы')
+    expect(values.applicationEn).toBe('Apply to hair')
+    expect(values.warnings).toBe('Избегать попадания в глаза')
+    expect(values.reservedTechSpecs).toEqual({ __futureReserved: 'x' })
+  })
+
+  it('writes edited application/warnings back into the patch', () => {
+    const values = mapProductToFormValues({ ...baseProduct, technicalSpecs: { 'Тип': 'крем' } })
+    values.application = 'Нанести, смыть через 5 минут'
+    values.warningsLv = 'Tikai ārīgai lietošanai'
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toEqual({
+      'Тип': 'крем',
+      __application: 'Нанести, смыть через 5 минут',
+      __warningsLv: 'Tikai ārīgai lietošanai',
+    })
+  })
+
+  it('drops the keys when the admin empties the fields', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      technicalSpecs: { __application: 'x', __warnings: 'y' },
+    })
+    values.application = ''
+    values.warnings = ''
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.technicalSpecs).toBeUndefined()
+  })
+})
+
 describe('ingredients round-trip through technicalSpecs', () => {
   it('extracts the ingredient key into the form field and hides it from spec rows', () => {
     const values = mapProductToFormValues({

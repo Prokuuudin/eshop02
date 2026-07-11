@@ -22,6 +22,8 @@ interface ProductGalleryBlockProps {
     productSpecType: string;
     productSpecCountry: string;
     productPurpose?: string;
+    productApplication?: string;
+    productWarnings?: string;
     language: string;
     manufacturer?: BrandManufacturerInfo;
     distributor?: BrandManufacturerInfo;
@@ -38,6 +40,8 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     productSpecType,
     productSpecCountry,
     productPurpose,
+    productApplication,
+    productWarnings,
     language,
     manufacturer,
     distributor,
@@ -70,6 +74,8 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 description={productDescription}
                 features={productFeatures}
                 ingredients={getProductIngredients(product)}
+                application={productApplication}
+                warnings={productWarnings}
                 productId={product.id}
             />
             <ProductSpecs

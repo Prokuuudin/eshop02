@@ -30,6 +30,14 @@ export const addProductSchema = z.object({
   // исходный ключ при round-trip, см. lib/product-form-mapping.ts
   ingredients: z.string().optional(),
   ingredientsKey: z.string().optional(),
+  // Применение и предостережения (табы на странице товара) — колонок в БД нет,
+  // хранятся в technicalSpecs.__application/__warnings (+ *En/*Lv переводы)
+  application: z.string().optional(),
+  applicationEn: z.string().optional(),
+  applicationLv: z.string().optional(),
+  warnings: z.string().optional(),
+  warningsEn: z.string().optional(),
+  warningsLv: z.string().optional(),
   purpose: z.string().optional(),
   purposeEn: z.string().optional(),
   purposeLv: z.string().optional(),

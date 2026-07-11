@@ -49,6 +49,18 @@ export function useProductLocalization(product: Product) {
   const productSpecType = localizedSpec(product.specType, '__specType', 'type');
   const productSpecCountry = localizedSpec(product.specCountry, '__specCountry', 'country');
 
+  // Применение и предостережения колонок в БД не имеют — весь контент живёт в
+  // резервных __-ключах technicalSpecs: RU в базовом ключе, переводы в *En/*Lv.
+  const localizedReserved = (base: string): string => {
+    const specs = product.technicalSpecs ?? {};
+    const translated =
+      language === 'en' ? specs[`${base}En`] : language === 'lv' ? specs[`${base}Lv`] : undefined;
+    return translated || specs[base] || '';
+  };
+
+  const productApplication = localizedReserved('__application');
+  const productWarnings = localizedReserved('__warnings');
+
   const productPurpose =
     (language === 'en'
       ? product.purposeEn
@@ -81,6 +93,8 @@ export function useProductLocalization(product: Product) {
     productSpecType,
     productSpecCountry,
     productPurpose,
+    productApplication,
+    productWarnings,
     productFeatures,
   };
 }

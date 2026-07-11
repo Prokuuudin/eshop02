@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import type { Product } from '@/data/products';
@@ -55,13 +55,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
 
     return (
         <article className="admin-product-card flex flex-col rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            {/* Изображение */}
-            <div className="admin-product-card__image relative h-40 bg-muted flex items-center justify-center overflow-hidden">
+            {/* Packshot целиком на белой подложке, как в витринной карточке:
+                исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
+            <div className="admin-product-card__image relative h-40 bg-white flex items-center justify-center overflow-hidden">
                 {imageUrl ? (
                     <img
                         src={imageUrl}
                         alt={product.title}
-                        className="object-cover w-full h-full"
+                        className="object-contain w-full h-full p-2"
                     />
                 ) : (
                     <span className="text-xs text-gray-400 dark:text-gray-500">Нет фото</span>
@@ -124,7 +125,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     type="button"
                     onClick={handleSaveStock}
                     disabled={saving}
-                    className="text-xs px-2 py-0.5 rounded bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
+                    className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
                 >
                     {saving ? '...' : 'Сохр.'}
                 </button>

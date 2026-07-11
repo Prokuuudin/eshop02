@@ -57,7 +57,8 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                     </svg>
                 </button>
             </div>
-            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group">
+            {/* Packshot целиком на белой подложке — как в витринной карточке */}
+            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group bg-white">
                 <div className="relative w-full h-48">
                     {image && image.trim() ? (
                         <Image
@@ -65,7 +66,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                             alt={title}
                             fill
                             sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-cover group-hover:scale-105 transition-transform"
+                            className="object-contain p-2 group-hover:scale-105 transition-transform"
                             loading="lazy"
                         />
                     ) : (

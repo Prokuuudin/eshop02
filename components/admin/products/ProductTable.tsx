@@ -82,9 +82,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 className={`${idx % 2 === 0 ? 'bg-card' : 'bg-muted'} ${isSaving ? 'opacity-60' : ''}`}
                             >
                                 <td className="p-3 align-middle">
-                                    <div className="w-12 h-12 rounded overflow-hidden bg-secondary flex items-center justify-center shrink-0">
+                                    <div className="w-12 h-12 rounded overflow-hidden bg-white flex items-center justify-center shrink-0">
                                         {product.image
-                                            ? <img src={product.image} alt={product.title} className="object-cover w-full h-full" />
+                                            ? <img src={product.image} alt={product.title} className="object-contain w-full h-full" />
                                             : <span className="text-xs text-gray-400">—</span>
                                         }
                                     </div>

@@ -400,9 +400,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'categories.miscSub.hairAccessories': 'Аксессуары для волос',
     'categories.miscSub.disinfection': 'Дезинфекция',
 
-    // Промо
-    'promo.title': 'Весенние скидки — до 30% на избранные бренды',
-
     // Скидки на главной
     'sale.title': 'Актуальные скидки!',
     'sale.subtitle': 'Уже сейчас закупайся по супер ценам',
@@ -1792,10 +1789,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'benefits.returnPolicyDesc': 'Вернуть товар можно в течение 30 дней',
     'benefits.securePayment': 'Безопасные платежи',
     'benefits.securePaymentDesc': 'Защита данных на 100%',
-
-    // Promo
-    // 'promo.title', 'promo.discount', 'promo.shopNow' duplicates removed (see above for originals)
-    'promo.code': 'Код: WELCOME20',
 
     // Brands
     // 'brands.title', 'brands.viewAll' duplicates removed (see above for originals)
@@ -3580,10 +3573,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'benefits.returnPolicyDesc': 'Return items within 30 days',
     'benefits.securePayment': 'Secure Payments',
     'benefits.securePaymentDesc': '100% data protection',
-
-    // Promo
-    'promo.title': 'Special Offer',
-    'promo.code': 'Code: WELCOME20',
 
     // Brands
     'brands.title': 'Popular Brands',
@@ -5379,10 +5368,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'benefits.returnPolicyDesc': 'Atgriežiet produktus 30 dienu laikā',
     'benefits.securePayment': 'Draudzīgi maksājumi',
     'benefits.securePaymentDesc': '100% datu aizsardzība',
-
-    // Promo
-    'promo.title': 'Īpašs piedāvājums',
-    'promo.code': 'Kods: WELCOME20',
 
     // Brands
     'brands.title': 'Populāras zīmoles',

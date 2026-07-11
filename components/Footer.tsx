@@ -3,8 +3,21 @@ import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 
+type FooterPromo = { title: string; link: string }
+
 export default function Footer() {
   const { t } = useTranslation()
+  const [promo, setPromo] = React.useState<FooterPromo | null>(null)
+
+  React.useEffect(() => {
+    fetch('/api/banners?type=sale')
+      .then((r) => r.json())
+      .then((d) => {
+        const banner = d.banners?.[0]
+        if (banner?.title) setPromo({ title: banner.title, link: banner.link || '/catalog' })
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <footer className="footer bg-slate-50 dark:bg-gray-900 border-t border-border text-gray-800 dark:text-gray-300">
@@ -15,7 +28,9 @@ export default function Footer() {
             <ul className="footer__list space-y-2">
               <li className="footer__item"><Link href="/catalog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.catalog')}</Link></li>
               <li className="footer__item"><Link href="/#brands" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.brands')}</Link></li>
-              <li className="footer__item"><Link href="/catalog" className="hover:underline text-gray-800 dark:text-gray-300">{t('promo.title')}</Link></li>
+              {promo && (
+                <li className="footer__item"><Link href={promo.link} className="hover:underline text-gray-800 dark:text-gray-300">{promo.title}</Link></li>
+              )}
               <li className="footer__item"><Link href="/delivery-payment" className="hover:underline text-gray-800 dark:text-gray-300">{t('deliveryPayment.title')}</Link></li>
               <li className="footer__item"><Link href="/blog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.blog')}</Link></li>
             </ul>

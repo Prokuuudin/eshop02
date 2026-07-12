@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const headersList = await headers();
     const language = resolveLanguageFromHeader(headersList.get('accept-language'));
     const t = translations[language];
-    const pageTitle = 'Eshop - Professional Cosmetics';
+    const pageTitle = 'Hairshop-Pro - Professional Hair Instruments and Cosmetics';
     const pageDescription =
         t['meta.homeDescription'] ?? 'Online store of professional cosmetics and equipment';
 
@@ -53,13 +53,13 @@ export default async function Home() {
             <Brands />
             <SaleSection />
             <Newsletter />
-            <BonusSection />
-            <FAQSection />
             <ProductRequestSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />
                 <HomeClient />
             </main>
+            <BonusSection />
+            <FAQSection />
         </div>
     );
 }

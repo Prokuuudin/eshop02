@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { stores } from '@/data/stores'
 
 export const runtime = 'nodejs'
 
@@ -46,7 +47,13 @@ function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void> {
+const DELIVERY_LABELS_RU: Record<string, string> = {
+  courier: 'Курьер',
+  pickup: 'Самовывоз',
+  post: 'Пакоматы Omniva',
+}
+
+async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLabel?: string): Promise<void> {
   const adminEmail = process.env.CONTACT_TO
   if (!adminEmail) return
 
@@ -81,7 +88,8 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder): Promise<void
     <tr><td style="padding:4px 8px;color:#6b7280">Email</td><td style="padding:4px 8px">${escHtml(order.email ?? '')}</td></tr>
     <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${escHtml(order.phone ?? '—')}</td></tr>
     <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${escHtml(order.address ?? '')}, ${escHtml(order.city ?? '')}${order.postalCode ? ', ' + escHtml(order.postalCode) : ''}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${escHtml(order.deliveryMethod ?? '—')}</td></tr>
+    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${escHtml(DELIVERY_LABELS_RU[order.deliveryMethod] ?? order.deliveryMethod ?? '—')}</td></tr>
+    ${pickupStoreLabel ? `<tr><td style="padding:4px 8px;color:#6b7280">Магазин</td><td style="padding:4px 8px">${escHtml(pickupStoreLabel)}</td></tr>` : ''}
     <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${escHtml(order.paymentMethod ?? '—')}</td></tr>
   </table>
 
@@ -145,8 +153,20 @@ export async function POST(req: NextRequest) {
     // and accepting a client id would let anyone overwrite a foreign order.
     const { id: ignoredClientId, ...orderFields } = order
     void ignoredClientId
+
+    // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
+    // становится адрес выбранного магазина (клиентский адрес для pickup не нужен).
+    const pickupStore =
+      order.deliveryMethod === 'pickup'
+        ? stores.find((s) => s.id === order.pickupStoreId)
+        : undefined
+    const pickupAddressPatch = pickupStore
+      ? { address: `${pickupStore.name.ru} — ${pickupStore.address.ru}`, city: pickupStore.city.ru }
+      : {}
+
     const normalizedOrder: Omit<ServerOrder, 'id'> = {
       ...orderFields,
+      ...pickupAddressPatch,
       items: correctedItems,
       subtotal: pricing.subtotal,
       discount: pricing.discount,
@@ -165,7 +185,10 @@ export async function POST(req: NextRequest) {
     const created = await createServerOrder(normalizedOrder)
 
     sendOrderConfirmationEmail(created).catch(console.error)
-    sendAdminOrderNotificationEmail(created).catch(console.error)
+    sendAdminOrderNotificationEmail(
+      created,
+      pickupStore ? `${pickupStore.name.ru} — ${pickupStore.address.ru}` : undefined
+    ).catch(console.error)
 
     return NextResponse.json({ success: true, orderId: created.id })
   } catch (error) {

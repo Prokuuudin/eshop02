@@ -1,6 +1,7 @@
 export const stores = [
   {
     id: 'riga-office',
+    city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига Офис', en: 'Riga Office', lv: 'Rīgas birojs' },
     address: {
       ru: 'ул. Ренцену 10a, Рига, LV-1073, Латвия',
@@ -16,6 +17,7 @@ export const stores = [
   },
   {
     id: 'imanta',
+    city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига (Иманта)', en: 'Riga (Imanta)', lv: 'Rīga (Imanta)' },
     address: {
       ru: 'Аннинмуйжас булварис 82, Рига, LV-1029, Латвия',
@@ -31,6 +33,7 @@ export const stores = [
   },
   {
     id: 'plavnieki',
+    city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига (Плявниеки)', en: 'Riga (Plavnieki)', lv: 'Rīga (Pļavnieki)' },
     address: {
       ru: 'ул. Бралю Каудзишу 13, Рига, LV-1082, Латвия',
@@ -46,6 +49,7 @@ export const stores = [
   },
   {
     id: 'daugavpils',
+    city: { ru: "Даугавпилс", en: "Daugavpils", lv: "Daugavpils" },
     name: { ru: 'Даугавпилс', en: 'Daugavpils', lv: 'Daugavpils' },
     address: {
       ru: 'ул. Виестура 68-2, Даугавпилс, LV-5401, Латвия',
@@ -61,6 +65,7 @@ export const stores = [
   },
   {
     id: 'liepaja',
+    city: { ru: "Лиепая", en: "Liepaja", lv: "Liepāja" },
     name: { ru: 'Лиепая', en: 'Liepaja', lv: 'Liepāja' },
     address: {
       ru: 'ул. Грауду 43N, Лиепая, LV-3401, Латвия',
@@ -76,6 +81,7 @@ export const stores = [
   },
   {
     id: 'valmiera',
+    city: { ru: "Валмиера", en: "Valmiera", lv: "Valmiera" },
     name: { ru: 'Валмиера', en: 'Valmiera', lv: 'Valmiera' },
     address: {
       ru: 'ул. Стацияс 17, Валмиера, LV-4201, Латвия',
@@ -91,6 +97,7 @@ export const stores = [
   },
   {
     id: 'rezekne',
+    city: { ru: "Резекне", en: "Rezekne", lv: "Rēzekne" },
     name: { ru: 'Резекне', en: 'Rezekne', lv: 'Rēzekne' },
     address: {
       ru: 'аллея Атбривоšanas 128, Резекне, LV-4601, Латвия',
@@ -106,6 +113,7 @@ export const stores = [
   },
   {
     id: 'jelgava',
+    city: { ru: "Елгава", en: "Jelgava", lv: "Jelgava" },
     name: { ru: 'Елгава', en: 'Jelgava', lv: 'Jelgava' },
     address: {
       ru: 'ул. Катољу 1A, Елгава, LV-3001, Латвия',

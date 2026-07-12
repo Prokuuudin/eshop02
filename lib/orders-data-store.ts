@@ -24,6 +24,9 @@ export type ServerOrder = {
   tax: number
   delivery: number
   deliveryMethod: string
+  /** Магазин самовывоза (id из data/stores.ts). В БД отдельной колонки нет:
+   *  при pickup адрес магазина записывается в address/city (см. /api/orders POST). */
+  pickupStoreId?: string
   paymentMethod: string
   promoCode?: string
   discount: number

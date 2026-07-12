@@ -12,6 +12,15 @@ import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import CheckoutGuardButton from '@/components/CheckoutGuardButton';
 import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
+import { calcDeliveryFee } from '@/lib/delivery';
+import { DeliveryMethod } from '@/lib/orders-store';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser } from '@/lib/auth';
@@ -39,6 +48,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const [mounted, setMounted] = React.useState(false);
     const [templateOpen, setTemplateOpen] = React.useState(false);
+    const [deliveryMethod, setDeliveryMethod] = React.useState<DeliveryMethod>('courier');
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
@@ -80,14 +90,27 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     );
     // Catalog prices already include VAT — tax is informational, not added to the total.
     const tax = extractVat(subtotal);
-    const delivery = subtotal > 0 ? 10 : 0; // фиксированная доставка в евро
+    const delivery = subtotal > 0 ? calcDeliveryFee(deliveryMethod, subtotal) : 0;
     const finalTotal = subtotal + delivery;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const selectedIdsParam = selectedItemIds.join(',');
     const checkoutHref =
         selectedItemIds.length > 0
-            ? `/checkout?items=${encodeURIComponent(selectedIdsParam)}`
-            : '/checkout';
+            ? `/checkout?items=${encodeURIComponent(selectedIdsParam)}&delivery=${deliveryMethod}`
+            : `/checkout?delivery=${deliveryMethod}`;
+
+    const DELIVERY_METHODS: DeliveryMethod[] = ['courier', 'pickup', 'post'];
+    const deliveryLabelKey: Record<DeliveryMethod, string> = {
+        courier: 'checkout.delivery.courier',
+        pickup: 'checkout.delivery.pickup',
+        post: 'checkout.delivery.omniva',
+    };
+    const feeLabel = (method: DeliveryMethod): string => {
+        const fee = calcDeliveryFee(method, subtotal);
+        // Самовывоз всегда 0,00 € — показываем цену, не «Бесплатно» (как на чекауте)
+        if (method !== 'pickup' && fee === 0) return t('checkout.delivery.free');
+        return formatCurrency(fee);
+    };
 
     const toggleSelected = (lineKey: string): void => {
         setSelectionTouched(true);
@@ -328,9 +351,34 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 <span>{t('cart.tax')}</span>
                                 <span>{formatCurrency(tax)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span>{t('cart.shipping')}</span>
-                                <span>{formatCurrency(delivery)}</span>
+                            <div className="cart-drawer__delivery flex items-center justify-between gap-2">
+                                <Select
+                                    value={deliveryMethod}
+                                    onValueChange={(value) =>
+                                        setDeliveryMethod(value as DeliveryMethod)
+                                    }
+                                >
+                                    <SelectTrigger
+                                        className="h-8 flex-1 rounded border border-border bg-card px-2 text-xs"
+                                        aria-label={t('cart.shipping')}
+                                    >
+                                        {/* children переопределяют текст выбранного пункта:
+                                            в триггере только метод, цена — справа в строке */}
+                                        <SelectValue>{t(deliveryLabelKey[deliveryMethod])}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DELIVERY_METHODS.map((method) => (
+                                            <SelectItem key={method} value={method} className="text-xs">
+                                                {t(deliveryLabelKey[method])} — {feeLabel(method)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <span className="shrink-0">
+                                    {deliveryMethod !== 'pickup' && delivery === 0 && subtotal > 0
+                                        ? t('checkout.delivery.free')
+                                        : formatCurrency(delivery)}
+                                </span>
                             </div>
                         </div>
 

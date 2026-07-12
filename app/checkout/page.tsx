@@ -106,6 +106,14 @@ export default function CheckoutPage() {
         [checkoutItems]
     );
 
+    // Метод доставки, выбранный в корзине/дровере, приходит query-параметром
+    React.useEffect(() => {
+        const method = searchParams.get('delivery');
+        if (method === 'courier' || method === 'pickup' || method === 'post') {
+            setDeliveryMethod(method);
+        }
+    }, [searchParams]);
+
     React.useEffect(() => {
         const firstName = searchParams.get('firstName');
         const lastName = searchParams.get('lastName');

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
+import { COMPANY } from '@/data/company';
 
 /**
  * Компонент PaymentInfo объединяет информацию о способах и процессе оплаты.
@@ -33,7 +34,7 @@ export const PaymentInfo = () => {
                             Оплата наличными осуществляется при получении заказа в офисе
                             интернет-магазина:
                             <br />
-                            Rencēnu iела 10A, Rīga, LV-1073
+                            Rencēnu iela 10A, Rīga, LV-1073
                         </div>
                     </li>
                     <li>
@@ -48,18 +49,19 @@ export const PaymentInfo = () => {
                         <div className="payment-info__bank mt-2 p-3 bg-slate-100 dark:bg-gray-700 rounded">
                             <div className="font-bold">Реквизиты для оплаты</div>
                             <div>
-                                <b>SIA Miks Plus</b>
+                                <b>{COMPANY.name}</b>
                             </div>
-                            <div>Rencēnu 10A, Rīga, Latvija, LV-1029</div>
-                            <div>PVN Nr.: LV4010335137</div>
+                            <div>{COMPANY.legalAddress}</div>
+                            <div>Reģ. Nr.: {COMPANY.regNumber}</div>
+                            <div>PVN maksātāja Nr.: {COMPANY.vatNumber}</div>
                             <div>
-                                <b>Банк:</b> AS Swedbank
-                            </div>
-                            <div>
-                                <b>SWIFT:</b> HABALV22
+                                <b>Banka:</b> {COMPANY.bankName}
                             </div>
                             <div>
-                                <b>Счёт:</b> LV66HABA0551036604107
+                                <b>Konts (IBAN):</b> {COMPANY.bankAccount}
+                            </div>
+                            <div>
+                                <b>S.W.I.F.T.:</b> {COMPANY.swift}
                             </div>
                         </div>
                     </li>

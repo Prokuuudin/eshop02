@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 import { sanitizeStoredLink } from '@/lib/safe-link'
+import { COMPANY_CONTACT_LINES } from '@/data/company'
 
 type FooterPromo = { title: string; link: string }
 
@@ -42,13 +43,9 @@ export default function Footer() {
           <div className="footer__section footer__contacts min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h4 className="footer__title font-semibold mb-3 text-foreground">{t('footer.contact')}</h4>
             <address className="not-italic text-sm text-gray-800 dark:text-gray-300 space-y-1">
-              <div className="footer__contact-item">{t('footer.legalAddressLabel')}: {t('contact.street')}, {t('contact.city')}, {t('contact.country')}, {t('contact.postalCode')}</div>
-              <div className="footer__contact-item">{t('footer.vatLabel')}: LV 40103351370</div>
-              <div className="footer__contact-item">AS Swedbank, SWIFT: HABALV22</div>
-              <div className="footer__contact-item">{t('footer.bankAccountLabel')}: LV66HABA0551036604107</div>
-              <div className="footer__contact-item">{t('footer.officeAddressLabel')}: {t('contact.country')}, {t('contact.city')}, {t('contact.street')}</div>
-              <div className="footer__contact-item">{t('footer.phoneLabel')}: +37127067730</div>
-              <div className="footer__contact-item">{t('footer.emailLabel')}: Info@HairShop.lv</div>
+              {COMPANY_CONTACT_LINES.map(({ label, value }) => (
+                <div key={label} className="footer__contact-item">{label}: {value}</div>
+              ))}
             </address>
           </div>
 

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { getSiteUrl } from '@/lib/site-url'
 import { useTranslation } from '@/lib/use-translation'
+import { COMPANY, COMPANY_CONTACT_LINES } from '@/data/company'
 
 type TurnstileApi = {
   render: (container: HTMLElement, options: {
@@ -121,21 +122,23 @@ export default function ContactPage() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: 'HairShop',
+    legalName: COMPANY.name,
     url: `${siteUrl}/contact`,
     image: `${siteUrl}/logo.png`,
-    telephone: '+37127067730',
-    email: 'Info@HairShop.lv',
+    telephone: COMPANY.phone,
+    email: COMPANY.email,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Rencēnu 10A',
+      streetAddress: 'Rencēnu iela 10A',
       addressLocality: 'Rīga',
       postalCode: 'LV-1073',
       addressCountry: 'Latvija'
     },
-    vatID: 'LV 40103351370',
-    bankAccount: 'LV66HABA0551036604107',
-    bankName: 'AS Swedbank',
-    swift: 'HABALV22',
+    taxID: COMPANY.regNumber,
+    vatID: COMPANY.vatNumber,
+    bankAccount: COMPANY.bankAccount,
+    bankName: COMPANY.bankName,
+    swift: COMPANY.swift,
     openingHoursSpecification: [
       {
         '@type': 'OpeningHoursSpecification',
@@ -231,32 +234,12 @@ export default function ContactPage() {
             <div>
               <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.info')}</h2>
               <div className="space-y-4">
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.legalAddressLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.street')}, {t('contact.city')}, {t('contact.country')}, {t('contact.postalCode')}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.vatLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.vatValue')}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.bankLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.bankValue')}</p>
-                  <p className="font-semibold text-foreground">{t('contact.bankAccountLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.bankAccountValue')}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.officeAddressLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.country')}, {t('contact.city')}, {t('contact.street')}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.phoneLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.phoneValue')}</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{t('contact.emailLabel')}:</p>
-                  <p className="text-muted-foreground">{t('contact.emailValue')}</p>
-                </div>
+                {COMPANY_CONTACT_LINES.map(({ label, value }) => (
+                  <div key={label}>
+                    <p className="font-semibold text-foreground">{label}:</p>
+                    <p className="text-muted-foreground">{value}</p>
+                  </div>
+                ))}
               </div>
             </div>
 

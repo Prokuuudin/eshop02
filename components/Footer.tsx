@@ -2,6 +2,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
+import { sanitizeStoredLink } from '@/lib/safe-link'
 
 type FooterPromo = { title: string; link: string }
 
@@ -15,12 +16,7 @@ export default function Footer() {
       .then((d) => {
         const banner = d.banners?.[0]
         if (!banner?.title) return
-        // href идёт из БД — пускаем только внутренние пути, чтобы javascript:/data: не попали в <a>
-        const link =
-          typeof banner.link === 'string' && banner.link.startsWith('/') && !banner.link.startsWith('//')
-            ? banner.link
-            : '/catalog'
-        setPromo({ title: banner.title, link })
+        setPromo({ title: banner.title, link: sanitizeStoredLink(banner.link) || '/catalog' })
       })
       .catch(() => {})
   }, [])

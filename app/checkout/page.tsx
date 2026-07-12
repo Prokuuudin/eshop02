@@ -114,6 +114,16 @@ export default function CheckoutPage() {
         }
     }, [searchParams]);
 
+    // Оплата при получении возможна только в офисе — несовместима с доставкой.
+    const cashUnavailable = deliveryMethod !== 'pickup';
+    React.useEffect(() => {
+        if (cashUnavailable) {
+            setFormData((prev) =>
+                prev.paymentMethod === 'cash' ? { ...prev, paymentMethod: 'card' } : prev
+            );
+        }
+    }, [cashUnavailable]);
+
     React.useEffect(() => {
         const firstName = searchParams.get('firstName');
         const lastName = searchParams.get('lastName');
@@ -237,6 +247,12 @@ export default function CheckoutPage() {
         if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
         if (deliveryMethod === 'pickup' && !pickupStoreId) {
             newErrors.pickupStore = t('checkout.errors.pickupStore');
+        }
+        // Страховка от рассинхрона UI: наличные без самовывоза не пропускаем.
+        if (formData.paymentMethod === 'cash' && deliveryMethod !== 'pickup') {
+            showToast(t('checkout.payment.cashNote'), 'error');
+            setIsSubmitting(false);
+            return;
         }
         if (!termsAccepted) {
             newErrors.terms = t('checkout.errors.terms');
@@ -797,29 +813,37 @@ export default function CheckoutPage() {
                             }}
                             className="space-y-3"
                         >
-                            {(['card', 'bank', 'cash'] as const).map((method) => (
-                                <label
-                                    key={method}
-                                    className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
-                                    htmlFor={`payment-${method}`}
-                                >
-                                    <RadioGroupItem
-                                        id={`payment-${method}`}
-                                        value={method}
-                                        className="mr-3"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-medium">
-                                            {t(`checkout.payment.${method}`)}
-                                        </div>
-                                        {method === 'cash' && (
-                                            <div className="text-sm text-muted-foreground">
-                                                {t('checkout.payment.cashNote')}
+                            {(['card', 'bank', 'cash'] as const).map((method) => {
+                                const disabled = method === 'cash' && cashUnavailable;
+                                return (
+                                    <label
+                                        key={method}
+                                        className={`flex items-center p-3 border rounded border-border ${
+                                            disabled
+                                                ? 'cursor-not-allowed opacity-50'
+                                                : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'
+                                        }`}
+                                        htmlFor={`payment-${method}`}
+                                    >
+                                        <RadioGroupItem
+                                            id={`payment-${method}`}
+                                            value={method}
+                                            className="mr-3"
+                                            disabled={disabled}
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-medium">
+                                                {t(`checkout.payment.${method}`)}
                                             </div>
-                                        )}
-                                    </div>
-                                </label>
-                            ))}
+                                            {method === 'cash' && (
+                                                <div className="text-sm text-muted-foreground">
+                                                    {t('checkout.payment.cashNote')}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </label>
+                                );
+                            })}
                         </RadioGroup>
                     </div>
 

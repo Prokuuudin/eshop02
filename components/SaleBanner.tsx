@@ -2,6 +2,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/lib/use-translation';
+import { resolveLocaleText } from '@/lib/locale-text';
 
 export type PromoBanner = {
     id: string;
@@ -22,7 +24,11 @@ const CTA_VARIANT = {
 } as const;
 
 export default function SaleBanner({ banner }: { banner: PromoBanner }) {
+    const { language } = useTranslation();
     const isLight = banner.textColor === 'light';
+    const title = resolveLocaleText(banner.title, language);
+    const subtitle = resolveLocaleText(banner.subtitle, language);
+    const ctaLabel = resolveLocaleText(banner.ctaLabel, language);
 
     const card = (
         <div
@@ -55,27 +61,27 @@ export default function SaleBanner({ banner }: { banner: PromoBanner }) {
                             isLight ? 'text-white' : 'text-gray-900'
                         }`}
                     >
-                        {banner.title}
+                        {title}
                     </h3>
-                    {banner.subtitle && (
+                    {subtitle && (
                         <p
                             className={`sale-banner__subtitle mt-1 text-sm sm:text-base ${
                                 isLight ? 'text-white/85' : 'text-gray-700'
                             }`}
                         >
-                            {banner.subtitle}
+                            {subtitle}
                         </p>
                     )}
                 </div>
 
-                {banner.ctaLabel && banner.link && (
+                {ctaLabel && banner.link && (
                     <Button
                         asChild
                         size="lg"
                         variant={CTA_VARIANT[banner.ctaStyle] ?? 'default'}
                         className="sale-banner__cta w-full lg:w-auto"
                     >
-                        <Link href={banner.link}>{banner.ctaLabel}</Link>
+                        <Link href={banner.link}>{ctaLabel}</Link>
                     </Button>
                 )}
             </div>

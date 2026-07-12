@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 import { sanitizeStoredLink } from '@/lib/safe-link'
 import { COMPANY_CONTACT_LINES } from '@/data/company'
+import { resolveLocaleText } from '@/lib/locale-text'
 
 type FooterPromo = { title: string; link: string }
 
 export default function Footer() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [promo, setPromo] = React.useState<FooterPromo | null>(null)
 
   React.useEffect(() => {
@@ -22,6 +23,8 @@ export default function Footer() {
       .catch(() => {})
   }, [])
 
+  const promoTitle = promo ? resolveLocaleText(promo.title, language) : ''
+
   return (
     <footer className="footer bg-slate-50 dark:bg-gray-900 border-t border-border text-gray-800 dark:text-gray-300">
       <div className="max-w-7xl mx-auto w-full px-4 py-10">
@@ -32,7 +35,7 @@ export default function Footer() {
               <li className="footer__item"><Link href="/catalog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.catalog')}</Link></li>
               <li className="footer__item"><Link href="/#brands" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.brands')}</Link></li>
               {promo && (
-                <li className="footer__item"><Link href={promo.link} className="hover:underline text-gray-800 dark:text-gray-300">{promo.title}</Link></li>
+                <li className="footer__item"><Link href={promo.link} className="hover:underline text-gray-800 dark:text-gray-300">{promoTitle}</Link></li>
               )}
               <li className="footer__item"><Link href="/delivery-payment" className="hover:underline text-gray-800 dark:text-gray-300">{t('deliveryPayment.title')}</Link></li>
               <li className="footer__item"><Link href="/blog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.blog')}</Link></li>

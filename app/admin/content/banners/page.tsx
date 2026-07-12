@@ -8,6 +8,43 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { parseLocaleText, encodeLocaleText, resolveLocaleText, type LocaleText } from '@/lib/locale-text'
+
+const LOCALE_FIELD_LABELS: Record<'ru' | 'en' | 'lv', string> = { ru: 'RU', en: 'EN', lv: 'LV' }
+
+function toLocaleForm(raw: string): LocaleText {
+  const parsed = parseLocaleText(raw)
+  if (parsed) return parsed
+  return raw ? { ru: raw } : {}
+}
+
+function LocaleTextField({
+  label,
+  value,
+  onChange,
+  placeholder
+}: {
+  label: string
+  value: LocaleText
+  onChange: (next: LocaleText) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="space-y-1 sm:col-span-2">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {(Object.keys(LOCALE_FIELD_LABELS) as Array<'ru' | 'en' | 'lv'>).map((lang) => (
+          <Input
+            key={lang}
+            value={value[lang] ?? ''}
+            onChange={(e) => onChange({ ...value, [lang]: e.target.value })}
+            placeholder={`${LOCALE_FIELD_LABELS[lang]}${placeholder ? ` — ${placeholder}` : ''}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -173,7 +210,7 @@ export default function AdminBannersPage() {
   // ── Banner CRUD ───────────────────────────────────────────────────────────────
 
   const onSaveBanner = async () => {
-    if (!bannerForm.title.trim()) { showMsg('Укажите заголовок баннера.', true); return }
+    if (!resolveLocaleText(bannerForm.title, 'ru').trim()) { showMsg('Укажите заголовок баннера.', true); return }
     setSaving(true)
     try {
       if (editingBannerId) {
@@ -490,23 +527,19 @@ export default function AdminBannersPage() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Заголовок *</label>
-                      <Input
-                        value={bannerForm.title}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, title: e.target.value }))}
-                        placeholder="Заголовок баннера"
-                      />
-                    </div>
+                    <LocaleTextField
+                      label="Заголовок * (RU / EN / LV)"
+                      value={toLocaleForm(bannerForm.title)}
+                      onChange={(next) => setBannerForm((f) => ({ ...f, title: encodeLocaleText(next) }))}
+                      placeholder="Заголовок баннера"
+                    />
 
-                    <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-muted-foreground">Подзаголовок</label>
-                      <Input
-                        value={bannerForm.subtitle}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, subtitle: e.target.value }))}
-                        placeholder="Короткий текст под заголовком"
-                      />
-                    </div>
+                    <LocaleTextField
+                      label="Подзаголовок (RU / EN / LV)"
+                      value={toLocaleForm(bannerForm.subtitle)}
+                      onChange={(next) => setBannerForm((f) => ({ ...f, subtitle: encodeLocaleText(next) }))}
+                      placeholder="Короткий текст под заголовком"
+                    />
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Изображение (src)</label>
@@ -546,14 +579,12 @@ export default function AdminBannersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Текст кнопки CTA</label>
-                      <Input
-                        value={bannerForm.ctaLabel}
-                        onChange={(e) => setBannerForm((f) => ({ ...f, ctaLabel: e.target.value }))}
-                        placeholder="Смотреть каталог"
-                      />
-                    </div>
+                    <LocaleTextField
+                      label="Текст кнопки CTA (RU / EN / LV)"
+                      value={toLocaleForm(bannerForm.ctaLabel)}
+                      onChange={(next) => setBannerForm((f) => ({ ...f, ctaLabel: encodeLocaleText(next) }))}
+                      placeholder="Смотреть каталог"
+                    />
 
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Стиль кнопки</label>
@@ -641,7 +672,10 @@ export default function AdminBannersPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {banners.map((banner, idx) => (
+                  {banners.map((banner, idx) => {
+                    const previewTitle = resolveLocaleText(banner.title, 'ru')
+                    const previewSubtitle = resolveLocaleText(banner.subtitle, 'ru')
+                    return (
                     <div
                       key={banner.id}
                       className={`rounded-lg border bg-card p-4 flex gap-3 items-start transition-opacity ${
@@ -654,7 +688,7 @@ export default function AdminBannersPage() {
                       {banner.image ? (
                         <img
                           src={banner.image}
-                          alt={banner.title}
+                          alt={previewTitle}
                           className="h-16 w-24 rounded object-cover bg-muted flex-shrink-0"
                         />
                       ) : (
@@ -670,7 +704,7 @@ export default function AdminBannersPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-foreground truncate">
-                            {banner.title}
+                            {previewTitle}
                           </span>
                           <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                             {BANNER_TYPE_LABELS[banner.type]}
@@ -683,8 +717,8 @@ export default function AdminBannersPage() {
                             {banner.active ? 'Активен' : 'Скрыт'}
                           </span>
                         </div>
-                        {banner.subtitle && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{banner.subtitle}</p>
+                        {previewSubtitle && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{previewSubtitle}</p>
                         )}
                         {banner.link && (
                           <p className="text-xs text-primary mt-0.5 truncate">{banner.link}</p>
@@ -729,7 +763,8 @@ export default function AdminBannersPage() {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </TabsContent>

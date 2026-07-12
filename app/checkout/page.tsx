@@ -114,8 +114,9 @@ export default function CheckoutPage() {
         }
     }, [searchParams]);
 
-    // Оплата при получении возможна только в офисе — несовместима с доставкой.
-    const cashUnavailable = deliveryMethod !== 'pickup';
+    // Оплата при получении возможна только в офисе (Rencēnu 10A) —
+    // требуется самовывоз именно из «Рига Офис».
+    const cashUnavailable = deliveryMethod !== 'pickup' || pickupStoreId !== 'riga-office';
     React.useEffect(() => {
         if (cashUnavailable) {
             setFormData((prev) =>
@@ -248,8 +249,8 @@ export default function CheckoutPage() {
         if (deliveryMethod === 'pickup' && !pickupStoreId) {
             newErrors.pickupStore = t('checkout.errors.pickupStore');
         }
-        // Страховка от рассинхрона UI: наличные без самовывоза не пропускаем.
-        if (formData.paymentMethod === 'cash' && deliveryMethod !== 'pickup') {
+        // Страховка от рассинхрона UI: наличные только при самовывозе из офиса.
+        if (formData.paymentMethod === 'cash' && cashUnavailable) {
             showToast(t('checkout.payment.cashNote'), 'error');
             setIsSubmitting(false);
             return;

@@ -234,9 +234,9 @@ export default function ContactPage() {
             <div>
               <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.info')}</h2>
               <div className="space-y-4">
-                {COMPANY_CONTACT_LINES.map(({ label, value }) => (
-                  <div key={label}>
-                    <p className="font-semibold text-foreground">{label}:</p>
+                {COMPANY_CONTACT_LINES.map(({ labelKey, value }) => (
+                  <div key={labelKey}>
+                    <p className="font-semibold text-foreground">{t(labelKey)}:</p>
                     <p className="text-muted-foreground">{value}</p>
                   </div>
                 ))}

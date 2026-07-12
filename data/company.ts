@@ -1,4 +1,4 @@
-// Rekvizīti — единый источник. Всегда отображаются на латышском, независимо от языка интерфейса.
+// Rekvizīti — единый источник. Значения всегда на латышском, лейблы — через переводы (labelKey).
 export const COMPANY = {
   name: 'SIA Miks Plus',
   legalAddress: 'Rencēnu iela 10A, Rīga, Latvija, LV-1073',
@@ -12,14 +12,14 @@ export const COMPANY = {
   email: 'Info@HairShop.lv',
 } as const
 
-export const COMPANY_CONTACT_LINES: ReadonlyArray<{ label: string; value: string }> = [
-  { label: 'Juridiskā adrese', value: COMPANY.legalAddress },
-  { label: 'Reģ. Nr.', value: COMPANY.regNumber },
-  { label: 'PVN maksātāja Nr.', value: COMPANY.vatNumber },
-  { label: 'Banka', value: COMPANY.bankName },
-  { label: 'Konts (IBAN)', value: COMPANY.bankAccount },
-  { label: 'S.W.I.F.T.', value: COMPANY.swift },
-  { label: 'Ofiss', value: COMPANY.officeAddress },
-  { label: 'Tālrunis', value: COMPANY.phone },
-  { label: 'E-pasts', value: COMPANY.email },
+export const COMPANY_CONTACT_LINES: ReadonlyArray<{ labelKey: string; value: string }> = [
+  { labelKey: 'contact.legalAddressLabel', value: COMPANY.legalAddress },
+  { labelKey: 'contact.regNumberLabel', value: COMPANY.regNumber },
+  { labelKey: 'contact.vatLabel', value: COMPANY.vatNumber },
+  { labelKey: 'contact.bankLabel', value: COMPANY.bankName },
+  { labelKey: 'contact.bankAccountLabel', value: COMPANY.bankAccount },
+  { labelKey: 'contact.swiftLabel', value: COMPANY.swift },
+  { labelKey: 'contact.officeAddressLabel', value: COMPANY.officeAddress },
+  { labelKey: 'contact.phoneLabel', value: COMPANY.phone },
+  { labelKey: 'contact.emailLabel', value: COMPANY.email },
 ]

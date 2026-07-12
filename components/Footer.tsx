@@ -43,8 +43,8 @@ export default function Footer() {
           <div className="footer__section footer__contacts min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h4 className="footer__title font-semibold mb-3 text-foreground">{t('footer.contact')}</h4>
             <address className="not-italic text-sm text-gray-800 dark:text-gray-300 space-y-1">
-              {COMPANY_CONTACT_LINES.map(({ label, value }) => (
-                <div key={label} className="footer__contact-item">{label}: {value}</div>
+              {COMPANY_CONTACT_LINES.map(({ labelKey, value }) => (
+                <div key={labelKey} className="footer__contact-item">{t(labelKey)}: {value}</div>
               ))}
             </address>
           </div>

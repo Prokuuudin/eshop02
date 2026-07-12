@@ -293,16 +293,16 @@ export default function DeliveryPaymentPage() {
                                                     <b>{COMPANY.name}</b>
                                                 </div>
                                                 <div>{COMPANY.legalAddress}</div>
-                                                <div>Reģ. Nr.: {COMPANY.regNumber}</div>
-                                                <div>PVN maksātāja Nr.: {COMPANY.vatNumber}</div>
+                                                <div>{t('contact.regNumberLabel')}: {COMPANY.regNumber}</div>
+                                                <div>{t('contact.vatLabel')}: {COMPANY.vatNumber}</div>
                                                 <div>
-                                                    <b>Banka:</b> {COMPANY.bankName}
+                                                    <b>{t('contact.bankLabel')}:</b> {COMPANY.bankName}
                                                 </div>
                                                 <div>
-                                                    <b>Konts (IBAN):</b> {COMPANY.bankAccount}
+                                                    <b>{t('contact.bankAccountLabel')}:</b> {COMPANY.bankAccount}
                                                 </div>
                                                 <div>
-                                                    <b>S.W.I.F.T.:</b> {COMPANY.swift}
+                                                    <b>{t('contact.swiftLabel')}:</b> {COMPANY.swift}
                                                 </div>
                                             </div>
                                         </li>

@@ -7,7 +7,7 @@ import { COMPANY } from '@/data/company';
  * Использует БЭМ-нейминг и utility-классы для адаптивной и чистой верстки.
  */
 export const PaymentInfo = () => {
-    useTranslation();
+    const { t } = useTranslation();
     return (
         <section className="payment-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">
             <h2 className="payment-info__title text-2xl font-semibold mb-4 text-foreground">
@@ -52,16 +52,16 @@ export const PaymentInfo = () => {
                                 <b>{COMPANY.name}</b>
                             </div>
                             <div>{COMPANY.legalAddress}</div>
-                            <div>Reģ. Nr.: {COMPANY.regNumber}</div>
-                            <div>PVN maksātāja Nr.: {COMPANY.vatNumber}</div>
+                            <div>{t('contact.regNumberLabel')}: {COMPANY.regNumber}</div>
+                            <div>{t('contact.vatLabel')}: {COMPANY.vatNumber}</div>
                             <div>
-                                <b>Banka:</b> {COMPANY.bankName}
+                                <b>{t('contact.bankLabel')}:</b> {COMPANY.bankName}
                             </div>
                             <div>
-                                <b>Konts (IBAN):</b> {COMPANY.bankAccount}
+                                <b>{t('contact.bankAccountLabel')}:</b> {COMPANY.bankAccount}
                             </div>
                             <div>
-                                <b>S.W.I.F.T.:</b> {COMPANY.swift}
+                                <b>{t('contact.swiftLabel')}:</b> {COMPANY.swift}
                             </div>
                         </div>
                     </li>

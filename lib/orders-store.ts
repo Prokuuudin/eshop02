@@ -13,6 +13,8 @@ export interface Order {
   tax: number
   delivery: number
   deliveryMethod: DeliveryMethod
+  /** Магазин самовывоза (id из data/stores.ts); только при deliveryMethod='pickup'. */
+  pickupStoreId?: string
   paymentMethod: string
   promoCode?: string
   discount: number

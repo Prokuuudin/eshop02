@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { stores } from '@/data/stores';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import PhoneInput from '@/components/ui/phone-input';
 import { useCart } from '@/lib/cart-store';
@@ -61,6 +69,7 @@ export default function CheckoutPage() {
         paymentMethod: 'card',
     });
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('courier');
+    const [pickupStoreId, setPickupStoreId] = useState('');
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
     const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
@@ -218,6 +227,9 @@ export default function CheckoutPage() {
         if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
         if (!formData.address.trim()) newErrors.address = t('checkout.errors.address');
         if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
+        if (deliveryMethod === 'pickup' && !pickupStoreId) {
+            newErrors.pickupStore = t('checkout.errors.pickupStore');
+        }
         if (!termsAccepted) {
             newErrors.terms = t('checkout.errors.terms');
             showToast(t('checkout.errors.terms'), 'error');
@@ -267,6 +279,7 @@ export default function CheckoutPage() {
             tax: taxAmount,
             delivery: deliveryFee,
             deliveryMethod,
+            pickupStoreId: deliveryMethod === 'pickup' ? pickupStoreId : undefined,
             promoCode: appliedPromo,
             discount,
             total: finalGrandTotal,
@@ -669,25 +682,83 @@ export default function CheckoutPage() {
                             className="space-y-3"
                         >
                             {DELIVERY_OPTIONS.map((option) => (
-                                <label
-                                    key={option.id}
-                                    className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
-                                    htmlFor={`delivery-${option.id}`}
-                                >
-                                    <RadioGroupItem
-                                        id={`delivery-${option.id}`}
-                                        value={option.id}
-                                        className="mr-3"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-medium">{t(option.labelKey)}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
-                                                ? t('checkout.delivery.free')
-                                                : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
+                                <React.Fragment key={option.id}>
+                                    <label
+                                        className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
+                                        htmlFor={`delivery-${option.id}`}
+                                    >
+                                        <RadioGroupItem
+                                            id={`delivery-${option.id}`}
+                                            value={option.id}
+                                            className="mr-3"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-medium">{t(option.labelKey)}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {/* Самовывоз всегда 0,00 € — показываем цену, не «Бесплатно» */}
+                                                {option.id === 'pickup'
+                                                    ? formatCurrency(0)
+                                                    : calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
+                                                        ? t('checkout.delivery.free')
+                                                        : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
+                                            </div>
                                         </div>
-                                    </div>
-                                </label>
+                                    </label>
+                                    {option.id === 'pickup' && deliveryMethod === 'pickup' && (
+                                        <div className="checkout__pickup-store ml-8">
+                                            <label
+                                                className="block text-sm font-medium mb-1 text-foreground"
+                                                htmlFor="pickup-store"
+                                            >
+                                                {t('checkout.pickup.chooseStore')}{' '}
+                                                <span className="text-red-600">*</span>
+                                            </label>
+                                            <Select
+                                                value={pickupStoreId || undefined}
+                                                onValueChange={(value) => {
+                                                    setPickupStoreId(value);
+                                                    if (errors.pickupStore) {
+                                                        setErrors((prev) => {
+                                                            const newErrors = { ...prev };
+                                                            delete newErrors.pickupStore;
+                                                            return newErrors;
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger
+                                                    id="pickup-store"
+                                                    className={`w-full rounded border bg-card px-3 py-2 text-sm ${
+                                                        errors.pickupStore
+                                                            ? 'border-red-500'
+                                                            : 'border-border'
+                                                    }`}
+                                                    aria-invalid={!!errors.pickupStore}
+                                                >
+                                                    <SelectValue
+                                                        placeholder={t('checkout.pickup.storePlaceholder')}
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {stores.map((store) => {
+                                                        const lang = language as 'ru' | 'en' | 'lv';
+                                                        return (
+                                                            <SelectItem key={store.id} value={store.id}>
+                                                                {store.name[lang] ?? store.name.ru} —{' '}
+                                                                {store.address[lang] ?? store.address.ru}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.pickupStore && (
+                                                <p className="text-red-600 text-xs mt-1">
+                                                    {errors.pickupStore}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </React.Fragment>
                             ))}
                         </RadioGroup>
                     </div>
@@ -903,9 +974,11 @@ export default function CheckoutPage() {
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.delivery')}</span>
                                 <span className="font-medium text-foreground">
-                                    {deliveryFee === 0
-                                        ? t('checkout.delivery.free')
-                                        : formatCurrency(deliveryFee)}
+                                    {deliveryMethod === 'pickup'
+                                        ? formatCurrency(0)
+                                        : deliveryFee === 0
+                                            ? t('checkout.delivery.free')
+                                            : formatCurrency(deliveryFee)}
                                 </span>
                             </div>
                         </div>

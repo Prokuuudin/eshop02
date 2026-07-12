@@ -107,9 +107,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     };
     const feeLabel = (method: DeliveryMethod): string => {
         const fee = calcDeliveryFee(method, subtotal);
-        // Самовывоз всегда 0,00 € — показываем цену, не «Бесплатно» (как на чекауте)
-        if (method !== 'pickup' && fee === 0) return t('checkout.delivery.free');
-        return formatCurrency(fee);
+        return fee === 0 ? t('checkout.delivery.free') : formatCurrency(fee);
     };
 
     const toggleSelected = (lineKey: string): void => {
@@ -376,7 +374,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     </SelectContent>
                                 </Select>
                                 <span className="shrink-0">
-                                    {deliveryMethod !== 'pickup' && delivery === 0 && subtotal > 0
+                                    {delivery === 0 && subtotal > 0
                                         ? t('checkout.delivery.free')
                                         : formatCurrency(delivery)}
                                 </span>

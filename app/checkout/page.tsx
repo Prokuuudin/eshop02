@@ -712,12 +712,9 @@ export default function CheckoutPage() {
                                         <div className="flex-1">
                                             <div className="font-medium">{t(option.labelKey)}</div>
                                             <div className="text-sm text-muted-foreground">
-                                                {/* Самовывоз всегда 0,00 € — показываем цену, не «Бесплатно» */}
-                                                {option.id === 'pickup'
-                                                    ? formatCurrency(0)
-                                                    : calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
-                                                        ? t('checkout.delivery.free')
-                                                        : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
+                                                {calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
+                                                    ? t('checkout.delivery.free')
+                                                    : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
                                             </div>
                                         </div>
                                     </label>
@@ -995,11 +992,9 @@ export default function CheckoutPage() {
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.delivery')}</span>
                                 <span className="font-medium text-foreground">
-                                    {deliveryMethod === 'pickup'
-                                        ? formatCurrency(0)
-                                        : deliveryFee === 0
-                                            ? t('checkout.delivery.free')
-                                            : formatCurrency(deliveryFee)}
+                                    {deliveryFee === 0
+                                        ? t('checkout.delivery.free')
+                                        : formatCurrency(deliveryFee)}
                                 </span>
                             </div>
                         </div>

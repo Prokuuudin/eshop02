@@ -800,27 +800,22 @@ export default function CheckoutPage() {
                             }}
                             className="space-y-3"
                         >
-                            <label
-                                className="flex items-center text-foreground"
-                                htmlFor="payment-card"
-                            >
-                                <RadioGroupItem id="payment-card" value="card" className="mr-3" />
-                                <span>{t('checkout.payment.card')}</span>
-                            </label>
-                            <label
-                                className="flex items-center text-foreground"
-                                htmlFor="payment-bank"
-                            >
-                                <RadioGroupItem id="payment-bank" value="bank" className="mr-3" />
-                                <span>{t('checkout.payment.bank')}</span>
-                            </label>
-                            <label
-                                className="flex items-center text-foreground"
-                                htmlFor="payment-cash"
-                            >
-                                <RadioGroupItem id="payment-cash" value="cash" className="mr-3" />
-                                <span>{t('checkout.payment.cash')}</span>
-                            </label>
+                            {(['card', 'bank', 'cash'] as const).map((method) => (
+                                <label
+                                    key={method}
+                                    className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
+                                    htmlFor={`payment-${method}`}
+                                >
+                                    <RadioGroupItem
+                                        id={`payment-${method}`}
+                                        value={method}
+                                        className="mr-3"
+                                    />
+                                    <span className="font-medium">
+                                        {t(`checkout.payment.${method}`)}
+                                    </span>
+                                </label>
+                            ))}
                         </RadioGroup>
                     </div>
 

@@ -41,5 +41,7 @@ export const validatePromoCode = (code: string, orderAmount: number): PromoCode 
 }
 
 export const calculateDiscount = (amount: number, discount: number): number => {
-  return Math.round((amount * discount) / 100)
+  // Round to the nearest cent, not the nearest euro — amount is a euro float
+  // (e.g. 52.5), so integer rounding here silently drops up to €0.50 of discount.
+  return Math.round((amount * discount) / 100 * 100) / 100
 }

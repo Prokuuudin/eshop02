@@ -71,9 +71,14 @@ describe('calculateDiscount', () => {
     expect(calculateDiscount(2000, 20)).toBe(400)
   })
 
-  it('rounds the discount to nearest integer', () => {
-    // 333 * 10 / 100 = 33.3 → rounds to 33
-    expect(calculateDiscount(333, 10)).toBe(33)
+  it('rounds the discount to nearest cent', () => {
+    // 333 * 10 / 100 = 33.3, already at cent precision
+    expect(calculateDiscount(333, 10)).toBe(33.3)
+  })
+
+  it('rounds fractional cents to the nearest cent', () => {
+    // 52.5 * 10 / 100 = 5.25 — must not collapse to nearest whole euro (5)
+    expect(calculateDiscount(52.5, 10)).toBe(5.25)
   })
 
   it('returns 0 for 0% discount', () => {

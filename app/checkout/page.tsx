@@ -681,9 +681,18 @@ export default function CheckoutPage() {
 
                     {/* Delivery options */}
                     <div className="checkout__section bg-card rounded-lg border border-border p-6">
-                        <h2 className="checkout__section-title font-bold text-lg mb-4">
-                            {t('checkout.delivery.method')}
-                        </h2>
+                        <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
+                            <h2 className="checkout__section-title font-bold text-lg">
+                                {t('checkout.delivery.method')}
+                            </h2>
+                            <Link
+                                href="/delivery-payment"
+                                target="_blank"
+                                className="checkout__section-info text-sm text-primary underline hover:no-underline"
+                            >
+                                {t('checkout.delivery.moreInfo')}
+                            </Link>
+                        </div>
                         <RadioGroup
                             value={deliveryMethod}
                             onValueChange={(value) => setDeliveryMethod(value as DeliveryMethod)}
@@ -772,9 +781,18 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="checkout__section bg-card rounded-lg border border-border p-6">
-                        <h2 className="checkout__section-title font-bold text-lg mb-4">
-                            {t('checkout.payment.title')}
-                        </h2>
+                        <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
+                            <h2 className="checkout__section-title font-bold text-lg">
+                                {t('checkout.payment.title')}
+                            </h2>
+                            <Link
+                                href="/delivery-payment"
+                                target="_blank"
+                                className="checkout__section-info text-sm text-primary underline hover:no-underline"
+                            >
+                                {t('checkout.payment.moreInfo')}
+                            </Link>
+                        </div>
                         <RadioGroup
                             value={formData.paymentMethod}
                             onValueChange={(value) => {

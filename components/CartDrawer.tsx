@@ -352,6 +352,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                 <span>{formatCurrency(tax)}</span>
                             </div>
                             <div className="cart-drawer__delivery flex items-center justify-between gap-2">
+                                <span className="shrink-0">{t('cart.shipping')}</span>
                                 <Select
                                     value={deliveryMethod}
                                     onValueChange={(value) =>

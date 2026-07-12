@@ -359,3 +359,44 @@ body[data-scroll-locked][data-scroll-locked] {
   z-index: 9999;
   animation: confettiBurst 0.65s ease-out forwards;
 }
+
+/* ── Условия предоставления услуг: вёрстка nopCommerce-HTML ───────────── */
+.terms-page__content {
+  line-height: 1.65;
+}
+
+.terms-page__content h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.terms-page__content p {
+  margin: 0 0 0.875rem;
+}
+
+.terms-page__content ol,
+.terms-page__content ul {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0 0 0.875rem;
+}
+
+.terms-page__content ul {
+  list-style: disc;
+}
+
+.terms-page__content li {
+  margin: 0.25rem 0;
+}
+
+/* нумерованные заголовки разделов в исходнике оформлены как <ol start=N> */
+.terms-page__content ol + ol > li > strong {
+  font-size: 1.0625rem;
+}
+
+.terms-page__content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}

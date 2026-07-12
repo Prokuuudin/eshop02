@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import PhoneInput from '@/components/ui/phone-input';
 import { useCart } from '@/lib/cart-store';
@@ -64,6 +65,7 @@ export default function CheckoutPage() {
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
     const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
     const [bonusApplied, setBonusApplied] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -216,6 +218,10 @@ export default function CheckoutPage() {
         if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
         if (!formData.address.trim()) newErrors.address = t('checkout.errors.address');
         if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
+        if (!termsAccepted) {
+            newErrors.terms = t('checkout.errors.terms');
+            showToast(t('checkout.errors.terms'), 'error');
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -907,6 +913,46 @@ export default function CheckoutPage() {
                         <div className="text-lg font-bold flex justify-between">
                             <span>{t('checkout.summary.total')}</span>
                             <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
+                        </div>
+
+                        {/* Согласие с условиями предоставления услуг */}
+                        <div className="checkout__terms mt-4 pt-4 border-t border-border">
+                            <div className="flex items-start gap-2">
+                                <Checkbox
+                                    id="checkout-terms"
+                                    checked={termsAccepted}
+                                    onCheckedChange={(checked) => {
+                                        setTermsAccepted(checked);
+                                        if (checked && errors.terms) {
+                                            setErrors((prev) => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors.terms;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
+                                    aria-required="true"
+                                    aria-invalid={!!errors.terms}
+                                    className="mt-0.5"
+                                />
+                                <label
+                                    htmlFor="checkout-terms"
+                                    className="checkout__terms-label text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                >
+                                    {t('checkout.terms.prefix')}{' '}
+                                    <Link
+                                        href="/terms"
+                                        target="_blank"
+                                        className="text-primary underline hover:no-underline"
+                                    >
+                                        {t('checkout.terms.link')}
+                                    </Link>
+                                    {t('checkout.terms.suffix')}
+                                </label>
+                            </div>
+                            {errors.terms && (
+                                <p className="text-red-600 text-xs mt-1">{errors.terms}</p>
+                            )}
                         </div>
 
                         {!wholesaleGuard.isMinimumReached && (

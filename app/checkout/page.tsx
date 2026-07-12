@@ -808,9 +808,16 @@ export default function CheckoutPage() {
                                         value={method}
                                         className="mr-3"
                                     />
-                                    <span className="font-medium">
-                                        {t(`checkout.payment.${method}`)}
-                                    </span>
+                                    <div className="flex-1">
+                                        <div className="font-medium">
+                                            {t(`checkout.payment.${method}`)}
+                                        </div>
+                                        {method === 'cash' && (
+                                            <div className="text-sm text-muted-foreground">
+                                                {t('checkout.payment.cashNote')}
+                                            </div>
+                                        )}
+                                    </div>
                                 </label>
                             ))}
                         </RadioGroup>

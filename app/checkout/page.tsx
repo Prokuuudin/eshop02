@@ -1004,7 +1004,15 @@ export default function CheckoutPage() {
                             </div>
                             {discount > 0 && (
                                 <div className="flex justify-between text-green-600">
-                                    <span>{t('checkout.summary.discount')}</span>
+                                    <span>
+                                        {t('checkout.summary.discount').replace(/:\s*$/, '')}
+                                        {appliedPromo && (
+                                            <span className="text-muted-foreground">
+                                                {' '}({appliedPromo} −{appliedPromoDiscountPct}%)
+                                            </span>
+                                        )}
+                                        :
+                                    </span>
                                     <span className="font-medium">−{formatCurrency(discount)}</span>
                                 </div>
                             )}

@@ -548,7 +548,18 @@ export default function OrderPage({ params }: PageProps) {
                                 </div>
                                 {order.discount > 0 && (
                                     <div className="flex justify-between text-green-600 dark:text-green-300">
-                                        <span>{t('checkout.summary.discount')}:</span>
+                                        <span>
+                                            {t('checkout.summary.discount').replace(/:\s*$/, '')}
+                                            {order.promoCode && (
+                                                <span className="text-muted-foreground">
+                                                    {' '}({order.promoCode}
+                                                    {order.subtotal > 0 &&
+                                                        ` −${Math.round((order.discount / order.subtotal) * 100)}%`}
+                                                    )
+                                                </span>
+                                            )}
+                                            :
+                                        </span>
                                         <span className="font-medium">
                                             -{formatCurrency(order.discount)}
                                         </span>

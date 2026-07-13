@@ -9,6 +9,8 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
+import { buildInvoiceHtml } from '@/lib/invoice-template';
+import { useToast } from '@/lib/toast-context';
 
 type PageProps = {
     params: Promise<{
@@ -29,6 +31,8 @@ export default function OrderPage({ params }: PageProps) {
     const order = serverOrder ?? localOrder;
     const locale = getLocaleFromLanguage(language);
     const [paymentCheckPending, setPaymentCheckPending] = React.useState(false);
+    const [retryingPayment, setRetryingPayment] = React.useState(false);
+    const { showToast } = useToast();
 
     React.useEffect(() => {
         if (serverOrderResolved) return;
@@ -325,6 +329,57 @@ export default function OrderPage({ params }: PageProps) {
 
     const currentStatusIndex = statusOrder[status] ?? 0;
 
+    const handleRetryPayment = async (): Promise<void> => {
+        setRetryingPayment(true);
+        try {
+            const response = await fetch('/api/payments/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    email: order.email,
+                    grandTotal: order.total,
+                    items: order.items.map((item) => ({
+                        id: item.id,
+                        title: item.title,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                }),
+            });
+
+            if (!response.ok) {
+                showToast('Не удалось начать оплату. Попробуйте снова.', 'error');
+                setRetryingPayment(false);
+                return;
+            }
+
+            const payload = (await response.json()) as { url?: string };
+            if (!payload.url) {
+                showToast('Платёжная сессия не была создана. Попробуйте снова.', 'error');
+                setRetryingPayment(false);
+                return;
+            }
+
+            window.location.href = payload.url;
+        } catch {
+            showToast('Ошибка сети. Попробуйте снова.', 'error');
+            setRetryingPayment(false);
+        }
+    };
+
+    const handleDownloadInvoice = (): void => {
+        const lang = (['ru', 'en', 'lv'].includes(language) ? language : 'ru') as 'ru' | 'en' | 'lv';
+        const html = buildInvoiceHtml(order, lang);
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${order.id}.html`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    };
+
     return (
         <main className="w-full px-4 py-12">
             <div className="max-w-4xl mx-auto">
@@ -475,6 +530,16 @@ export default function OrderPage({ params }: PageProps) {
                                             : getPaymentStatusLabel(order.paymentStatus)}
                                     </span>
                                 </div>
+                                {order.paymentStatus === 'failed' && order.paymentProvider === 'stripe' && (
+                                    <Button
+                                        className="mt-3 w-full"
+                                        size="sm"
+                                        disabled={retryingPayment}
+                                        onClick={handleRetryPayment}
+                                    >
+                                        {retryingPayment ? t('order.paymentStatus.checking') : t('order.retryPayment')}
+                                    </Button>
+                                )}
                             </div>
                         </div>
 
@@ -618,7 +683,7 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             <div className="space-y-2">
-                                <Button className="w-full">{t('order.downloadInvoice')}</Button>
+                                <Button className="w-full" onClick={handleDownloadInvoice}>{t('order.downloadInvoice')}</Button>
                                 <Link href="/catalog" className="block">
                                     <Button variant="outline" className="w-full">
                                         {t('order.continueShopping')}

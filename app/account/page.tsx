@@ -31,6 +31,8 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useSavedAddresses } from '@/lib/saved-addresses-store';
 import { getCurrentUser, writeCurrentUser } from '@/lib/auth';
 import { getLocaleFromLanguage } from '@/lib/utils';
+import { useCart } from '@/lib/cart-store';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import type { User } from '@/lib/auth';
@@ -42,6 +44,8 @@ export default function AccountPage(): React.ReactElement {
     const companyStore = useCompanyStore();
     const [loading, setLoading] = useState(true);
     const ordersStore = useOrders();
+    const { replaceWithItems } = useCart();
+    const router = useRouter();
     const { getOrderStatus } = useAdminStore();
     const { getByEmail, replaceForEmail } = useSavedAddresses();
     const allOrders = ordersStore.orders;
@@ -179,9 +183,7 @@ export default function AccountPage(): React.ReactElement {
                                 activeOrdersCount={orders.activeOrdersCount}
                                 completedOrdersCount={orders.completedOrdersCount}
                                 handleRepeatOrder={(orderId) =>
-                                    orders.handleRepeatOrder(orderId, userOrders, () => {}, {
-                                        push: () => {},
-                                    })
+                                    orders.handleRepeatOrder(orderId, userOrders, replaceWithItems, router)
                                 }
                                 getDeliveryLabel={(method) => orders.getDeliveryLabel(method, t)}
                             />

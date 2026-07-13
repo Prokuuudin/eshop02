@@ -44,7 +44,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     sameAs: [
-      `${siteUrl}/about`,
       `${siteUrl}/contact`
     ]
   }

@@ -55,7 +55,7 @@ export default function Footer() {
           <div className="footer__section footer__policy min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h4 className="footer__title font-semibold mb-3 text-foreground">{t('footer.privacy')}</h4>
             <ul className="footer__policy-list space-y-2 text-sm">
-              <li className="footer__policy-item"><Link href="/privacy" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.privacy')}</Link></li>
+              <li className="footer__policy-item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.privacy')}</Link></li>
               <li className="footer__policy-item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.terms')}</Link></li>
             </ul>
           </div>

@@ -16,7 +16,6 @@ export async function PUT(request: NextRequest) {
     revalidatePath('/')
     revalidatePath('/blog')
     revalidatePath('/catalog')
-    revalidatePath('/about')
 
     return NextResponse.json(saved)
   } catch {

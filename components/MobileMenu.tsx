@@ -112,11 +112,6 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
             </Link>
           </li>
           <li className="header__menu-item">
-            <Link href="/about" onClick={onClose} className={menuLinkClass}>
-              {t('nav.about')}
-            </Link>
-          </li>
-          <li className="header__menu-item">
             <Link href="/contact" onClick={onClose} className={menuLinkClass}>
               {t('nav.contact')}
             </Link>

@@ -344,7 +344,7 @@ export default function PriceGroupsPage() {
                                 Укажите индивидуальную цену для отдельных товаров.
                             </p>
                         </div>
-                        <div className="max-h-[480px] overflow-y-auto">
+                        <div className="max-h-[480px] overflow-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                                     <tr>

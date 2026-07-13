@@ -418,7 +418,7 @@ export default function AdminMediaPage() {
                 </div>
               ) : (
                 /* List view */
-                <div className="rounded-xl border border-border overflow-hidden">
+                <div className="rounded-xl border border-border overflow-x-auto">
                   <table className="min-w-full text-sm bg-card">
                     <thead className="bg-muted">
                       <tr>

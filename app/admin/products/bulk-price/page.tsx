@@ -230,7 +230,7 @@ export default function BulkPricePage() {
                     </span>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                     {loading ? (
                         <div className="py-16 text-center text-sm text-gray-400">Загрузка...</div>
                     ) : (

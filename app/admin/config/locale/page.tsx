@@ -1,34 +1,27 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  useLocaleSettingsStore,
-  CURRENCY_SYMBOLS,
   TIMEZONES,
-  type SupportedLanguage,
-  type SupportedCurrency,
+  DEFAULT_LOCALE_CONFIG,
+  type LocaleConfig,
   type DateFormatOption,
   type PriceFormatOption,
   type SupportedTimezone,
-} from '@/lib/locale-settings-store'
+} from '@/lib/locale-config'
+import type { Language } from '@/data/translations'
 
 const SELECT_CLASS =
   'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
 
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
+const LANGUAGE_LABELS: Record<Language, string> = {
   ru: 'Русский',
   en: 'English',
   lv: 'Latviešu',
-}
-
-const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
-  EUR: 'EUR — Евро (€)',
-  USD: 'USD — Доллар США ($)',
-  RUB: 'RUB — Российский рубль (₽)',
 }
 
 const DATE_FORMAT_LABELS: Record<DateFormatOption, string> = {
@@ -49,55 +42,61 @@ const PRICE_FORMAT_LABELS: Record<PriceFormatOption, string> = {
   symbol_after: 'Символ после числа (100.00 €)',
 }
 
-function formatPricePreview(symbol: string, format: PriceFormatOption): string {
-  return format === 'symbol_before' ? `${symbol} 1 234.56` : `1 234.56 ${symbol}`
+function formatPricePreview(format: PriceFormatOption): string {
+  return format === 'symbol_before' ? '€ 1 234.56' : '1 234.56 €'
 }
 
 export default function AdminLocalePage() {
-  const store = useLocaleSettingsStore()
+  const [config, setConfig] = useState<LocaleConfig>(DEFAULT_LOCALE_CONFIG)
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState<string>('')
 
-  const [language, setLanguage] = React.useState<SupportedLanguage>(store.language)
-  const [currency, setCurrency] = React.useState<SupportedCurrency>(store.currency)
-  const [timezone, setTimezone] = React.useState<SupportedTimezone>(store.timezone)
-  const [dateFormat, setDateFormat] = React.useState<DateFormatOption>(store.dateFormat)
-  const [priceFormat, setPriceFormat] = React.useState<PriceFormatOption>(store.priceFormat)
-  const [message, setMessage] = React.useState<string>('')
+  // Load the admin-authoritative config directly — don't seed from a
+  // possibly-stale client cache (same reasoning as app/admin/bonus/page.tsx).
+  useEffect(() => {
+    fetch('/api/admin/locale-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: LocaleConfig | null) => { if (data) setConfig(data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
-  const currencySymbol = CURRENCY_SYMBOLS[currency]
-  const pricePreview = formatPricePreview(currencySymbol, priceFormat)
+  const pricePreview = formatPricePreview(config.priceFormat)
 
-  const handleSave = () => {
-    store.setLanguage(language)
-    store.setCurrency(currency)
-    store.setTimezone(timezone)
-    store.setDateFormat(dateFormat)
-    store.setPriceFormat(priceFormat)
-    setMessage('Настройки сохранены')
+  const persist = (next: LocaleConfig, successMessage: string): void => {
+    setConfig(next)
+    fetch('/api/admin/locale-config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    }).catch(() => {})
+    setMessage(successMessage)
     setTimeout(() => setMessage(''), 3000)
   }
 
-  const handleReset = () => {
-    store.reset()
-    setLanguage('ru')
-    setCurrency('EUR')
-    setTimezone('Europe/Riga')
-    setDateFormat('DD.MM.YYYY')
-    setPriceFormat('symbol_before')
-    setMessage('Настройки сброшены к умолчанию')
-    setTimeout(() => setMessage(''), 3000)
+  const handleSave = (): void => persist(config, 'Настройки сохранены')
+  const handleReset = (): void => persist(DEFAULT_LOCALE_CONFIG, 'Настройки сброшены к умолчанию')
+
+  if (loading) {
+    return (
+      <AdminGate>
+        <main className="w-full py-4">
+          <p className="text-sm text-muted-foreground">Загрузка...</p>
+        </main>
+      </AdminGate>
+    )
   }
 
   return (
     <AdminGate>
       <main className="w-full py-4 space-y-6">
-        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Локализация
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Настройте язык, валюту, форматы даты и цены.
+              Настройте язык по умолчанию, формат даты, часовой пояс и формат цены.
             </p>
           </div>
           <Link href="/admin">
@@ -105,7 +104,6 @@ export default function AdminLocalePage() {
           </Link>
         </div>
 
-        {/* Message */}
         {message && (
           <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
             {message}
@@ -113,7 +111,6 @@ export default function AdminLocalePage() {
         )}
 
         <div className="space-y-4">
-          {/* Language */}
           <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Язык интерфейса</h2>
@@ -126,12 +123,15 @@ export default function AdminLocalePage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Язык по умолчанию
               </label>
-              <Select value={language} onValueChange={(v) => setLanguage(v as SupportedLanguage)}>
+              <Select
+                value={config.defaultLanguage}
+                onValueChange={(v) => setConfig((c) => ({ ...c, defaultLanguage: v as Language }))}
+              >
                 <SelectTrigger className={SELECT_CLASS}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['ru', 'en', 'lv'] as SupportedLanguage[]).map((lang) => (
+                  {(['ru', 'en', 'lv'] as Language[]).map((lang) => (
                     <SelectItem key={lang} value={lang}>
                       {LANGUAGE_LABELS[lang]}
                     </SelectItem>
@@ -141,51 +141,25 @@ export default function AdminLocalePage() {
             </div>
           </section>
 
-          {/* Currency */}
           <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Валюта</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Основная валюта магазина. Символ подставляется автоматически.
+                Магазин работает только в евро — конвертация в другие валюты не поддерживается.
               </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Валюта
-                </label>
-                <Select value={currency} onValueChange={(v) => setCurrency(v as SupportedCurrency)}>
-                  <SelectTrigger className={SELECT_CLASS}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(['EUR', 'USD', 'RUB'] as SupportedCurrency[]).map((cur) => (
-                      <SelectItem key={cur} value={cur}>
-                        {CURRENCY_LABELS[cur]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Символ (определяется автоматически)
-                </label>
-                <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                  {currencySymbol}
-                </div>
+            <div className="max-w-xs">
+              <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                EUR — Евро (€)
               </div>
             </div>
           </section>
 
-          {/* Date and time */}
           <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Дата и время</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Форматы отображения дат и часовой пояс магазина.
+                Формат даты применяется на всём сайте и в письмах. Часовой пояс — только для писем и уведомлений (клиентские страницы всегда показывают время браузера посетителя).
               </p>
             </div>
 
@@ -194,7 +168,10 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Формат даты
                 </label>
-                <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as DateFormatOption)}>
+                <Select
+                  value={config.dateFormat}
+                  onValueChange={(v) => setConfig((c) => ({ ...c, dateFormat: v as DateFormatOption }))}
+                >
                   <SelectTrigger className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
@@ -210,9 +187,12 @@ export default function AdminLocalePage() {
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Часовой пояс
+                  Часовой пояс (для писем)
                 </label>
-                <Select value={timezone} onValueChange={(v) => setTimezone(v as SupportedTimezone)}>
+                <Select
+                  value={config.timezone}
+                  onValueChange={(v) => setConfig((c) => ({ ...c, timezone: v as SupportedTimezone }))}
+                >
                   <SelectTrigger className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
@@ -228,7 +208,6 @@ export default function AdminLocalePage() {
             </div>
           </section>
 
-          {/* Price format */}
           <section className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div>
               <h2 className="text-lg font-semibold text-foreground">Формат цены</h2>
@@ -242,7 +221,10 @@ export default function AdminLocalePage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Расположение символа
                 </label>
-                <Select value={priceFormat} onValueChange={(v) => setPriceFormat(v as PriceFormatOption)}>
+                <Select
+                  value={config.priceFormat}
+                  onValueChange={(v) => setConfig((c) => ({ ...c, priceFormat: v as PriceFormatOption }))}
+                >
                   <SelectTrigger className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
@@ -268,7 +250,6 @@ export default function AdminLocalePage() {
           </section>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-3 justify-end">
           <Button variant="outline" onClick={handleReset}>
             Сбросить к умолчанию

@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart-store'
 import { seedTestAccounts } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAdminStore } from '@/lib/admin-store'
+import { setLocaleFormatConfig } from '@/lib/utils'
 import FlyToCart from '@/components/FlyToCart'
 import CookieConsent from '@/components/CookieConsent'
 
@@ -39,6 +40,19 @@ function BonusConfigSync(): null {
     fetch('/api/bonus-config')
       .then((r) => r.json())
       .then((config) => useAdminStore.getState().setBonusProgram(config))
+      .catch(() => {})
+  }, [])
+  return null
+}
+
+// Date/price format + default-language settings are admin-configured (KV-backed) —
+// hydrate the real value once app-wide so formatDate/formatEuro (lib/utils.ts)
+// reflect it everywhere without threading a config prop through every call site.
+function LocaleConfigSync(): null {
+  useEffect(() => {
+    fetch('/api/locale-config')
+      .then((r) => r.json())
+      .then((config) => setLocaleFormatConfig(config))
       .catch(() => {})
   }, [])
   return null
@@ -123,6 +137,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
         <SeedAccounts />
         <AuthStoreProvider />
         <BonusConfigSync />
+        <LocaleConfigSync />
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />

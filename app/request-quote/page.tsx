@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { type Product } from '@/data/products'
 import { getCurrentUser } from '@/lib/auth'
-import { useRFQStore } from '@/lib/rfq-store'
+import { useRFQStore, mapServerRfq } from '@/lib/rfq-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ type DraftItem = {
 export default function RequestQuotePage() {
   const user = getCurrentUser()
   const { showToast } = useToast()
-  const { createRequest, getByCompany, setStatus } = useRFQStore()
+  const { createRequest, getByCompany, setStatus, setRequests } = useRFQStore()
   const [products, setProducts] = useState<Product[]>([])
   const [productsLoading, setProductsLoading] = useState(true)
 
@@ -28,6 +28,15 @@ export default function RequestQuotePage() {
 
   const companyId = user?.companyId
   const rfqList = useMemo(() => (companyId ? getByCompany(companyId) : []), [companyId, getByCompany])
+
+  React.useEffect(() => {
+    fetch('/api/rfq')
+      .then((r) => r.json())
+      .then(({ requests: dbRequests }) => {
+        if (Array.isArray(dbRequests)) setRequests(dbRequests.map(mapServerRfq))
+      })
+      .catch(() => {})
+  }, [setRequests])
 
   React.useEffect(() => {
     const loadProducts = async () => {

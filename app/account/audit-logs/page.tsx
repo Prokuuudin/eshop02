@@ -11,7 +11,7 @@ import { useTranslation } from '@/lib/use-translation'
 export default function AuditLogsPage() {
   const router = useRouter()
   const [user, setUser] = useState(getCurrentUser())
-  const { getCompany } = useCompanyStore()
+  const { getCompany, syncFromDb } = useCompanyStore()
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -22,6 +22,11 @@ export default function AuditLogsPage() {
     }
     setUser(currentUser)
   }, [router])
+
+  useEffect(() => {
+    void syncFromDb()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!user?.companyId) {
     return (

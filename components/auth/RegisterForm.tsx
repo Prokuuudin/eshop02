@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
-import { useCompanyStore } from '@/lib/company-store';
-import { registerCardUser, FIRST_LOGIN_PASSWORD } from '@/lib/auth';
+import { registerCardUser, FIRST_LOGIN_PASSWORD, type RegisterCardErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/lib/use-translation';
@@ -22,7 +21,15 @@ export default function RegisterForm({ onClose }: Props) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
+        card_not_found: t('auth.cardNotFound'),
+        card_already_registered: t('auth.cardAlreadyRegistered'),
+        too_many_attempts: t('auth.tooManyAttempts'),
+        network_error: t('auth.registrationError'),
+        server_error: t('auth.registrationError'),
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
@@ -42,23 +49,15 @@ export default function RegisterForm({ onClose }: Props) {
             return;
         }
 
-        const company = useCompanyStore.getState().getCompanyByCardNumber(trimmedCard);
-        if (!company) {
-            setError(t('auth.cardNotFound'));
-            return;
-        }
-
         setLoading(true);
-        const result = registerCardUser({
+        const result = await registerCardUser({
             cardNumber: trimmedCard,
             name: name.trim() || undefined,
-            companyId: company.companyId,
-            companyName: company.companyName,
         });
         setLoading(false);
 
         if (!result.success) {
-            setError(result.error ?? t('auth.registrationError'));
+            setError(result.errorCode ? ERROR_MESSAGES[result.errorCode] : t('auth.registrationError'));
             return;
         }
 

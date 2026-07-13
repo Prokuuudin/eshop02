@@ -7,6 +7,7 @@ import { useWishlist } from '@/lib/wishlist-store'
 import { useCart } from '@/lib/cart-store'
 import { seedTestAccounts } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
+import { useAdminStore } from '@/lib/admin-store'
 import FlyToCart from '@/components/FlyToCart'
 import CookieConsent from '@/components/CookieConsent'
 
@@ -26,6 +27,19 @@ function AuthStoreProvider(): null {
     refresh()
     window.addEventListener('eshop-user-changed', refresh as EventListener)
     return () => window.removeEventListener('eshop-user-changed', refresh as EventListener)
+  }, [])
+  return null
+}
+
+// Bonus program config (rate/caps) is admin-configured but read by every guest and
+// customer page (checkout, product, account) — hydrate the real value once app-wide
+// instead of trusting whatever default is cached in this browser's localStorage.
+function BonusConfigSync(): null {
+  useEffect(() => {
+    fetch('/api/bonus-config')
+      .then((r) => r.json())
+      .then((config) => useAdminStore.getState().setBonusProgram(config))
+      .catch(() => {})
   }, [])
   return null
 }
@@ -108,6 +122,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
       <ToastProvider>
         <SeedAccounts />
         <AuthStoreProvider />
+        <BonusConfigSync />
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />

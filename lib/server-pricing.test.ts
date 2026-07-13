@@ -5,6 +5,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     product: { findMany: vi.fn() },
     promoCode: { findFirst: vi.fn() },
+    keyValueSetting: { findUnique: vi.fn() },
   },
 }))
 
@@ -287,5 +288,95 @@ describe('recomputeOrderPricing', () => {
     expect(r.delivery).toBe(0)
     expect(r.tax).toBe(156.2) // VAT extracted for display: (1000-100) - 900/1.21
     expect(r.total).toBe(900) // tax already included, not added
+  })
+})
+
+describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSetting)', () => {
+  const mockBonusConfig = (value: Record<string, unknown> | null) => {
+    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(value ? { value } : null)
+  }
+
+  it('disables earning and spending entirely when the admin turns the program off', async () => {
+    mockBonusConfig({ enabled: false })
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 10 },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      bonusSpent: 9999,
+      userBonusBalance: 9999,
+    })
+
+    expect(r.bonusSpent).toBe(0)
+    expect(r.bonusEarned).toBe(0)
+  })
+
+  it('caps bonus spend at the admin-configured max-spend-percent, not 100%', async () => {
+    mockBonusConfig({ enabled: true, maxSpendPercent: 20 })
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      bonusSpent: 999999,
+      userBonusBalance: 999999,
+    })
+
+    expect(r.bonusSpent).toBe(2000) // 20% of €100 = €20 = 2000 points
+  })
+
+  it('withholds earning below the admin-configured minimum order amount', async () => {
+    mockBonusConfig({ enabled: true, minOrderForEarn: 500 })
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 10 },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      userBonusBalance: null,
+    })
+
+    expect(r.bonusEarned).toBe(0)
+  })
+
+  it('caps bonusEarned at the admin-configured max-earn-per-order', async () => {
+    mockBonusConfig({ enabled: true, maxEarnPerOrder: 50 })
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 1000 },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      userBonusBalance: null,
+    })
+
+    expect(r.bonusEarned).toBe(50)
+  })
+
+  it('blocks redemption when the balance is under the admin-configured minimum to spend', async () => {
+    mockBonusConfig({ enabled: true, minPointsToSpend: 500 })
+    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+      { id: 'p1', price: 100, bulkPricingTiers: null },
+    ])
+    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'p1', quantity: 1 }],
+      deliveryMethod: 'pickup',
+      bonusSpent: 100,
+      userBonusBalance: 100,
+    })
+
+    expect(r.bonusSpent).toBe(0)
   })
 })

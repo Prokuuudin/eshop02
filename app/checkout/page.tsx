@@ -54,7 +54,12 @@ export default function CheckoutPage() {
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
-    const { getCompany } = useCompanyStore();
+    const { getCompany, syncFromDb } = useCompanyStore();
+
+    React.useEffect(() => {
+        void syncFromDb();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
@@ -320,8 +325,10 @@ export default function CheckoutPage() {
         };
 
         // Persist server-side first: the server generates the unique order id and
-        // payment webhooks update canonical status there.
-        let orderId = `local-${Date.now()}`;
+        // payment webhooks update canonical status there. If this fails, the order
+        // exists nowhere (no DB row, no confirmation email, no admin notification) —
+        // checkout must stop here rather than fake a success screen.
+        let orderId: string;
         try {
             const response = await fetch('/api/orders', {
                 method: 'POST',
@@ -335,12 +342,29 @@ export default function CheckoutPage() {
                     },
                 }),
             });
-            if (response.ok) {
-                const payload = (await response.json()) as { orderId?: string };
-                if (payload.orderId) orderId = String(payload.orderId);
+            if (!response.ok) {
+                const errorPayload = await response
+                    .json()
+                    .catch(() => null) as { error?: string; items?: string[] } | null;
+                const message =
+                    errorPayload?.error === 'insufficient_stock'
+                        ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
+                        : 'Не удалось оформить заказ. Попробуйте ещё раз.';
+                showToast(message, 'error');
+                setIsSubmitting(false);
+                return;
             }
+            const payload = (await response.json()) as { orderId?: string };
+            if (!payload.orderId) {
+                showToast('Не удалось оформить заказ. Попробуйте ещё раз.', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+            orderId = String(payload.orderId);
         } catch {
-            // Checkout should still proceed even if server order persistence is temporarily unavailable.
+            showToast('Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.', 'error');
+            setIsSubmitting(false);
+            return;
         }
 
         const order = { id: orderId, ...orderData };

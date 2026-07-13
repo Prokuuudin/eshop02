@@ -9,7 +9,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { canAccessOrder, createServerOrder, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createServerOrder, InsufficientStockError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
@@ -38,7 +38,7 @@ function makeTx() {
     order: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
     },
-    product: { updateMany: vi.fn() },
+    product: { updateMany: vi.fn(async () => ({ count: 1 })) },
     promoCode: { updateMany: vi.fn() },
     user: { findUnique: vi.fn(), update: vi.fn() },
   }
@@ -94,6 +94,17 @@ describe('createServerOrder — server-side id generation', () => {
 
     await expect(createServerOrder(ORDER)).rejects.toThrow('db down')
     expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects the whole order when an item has insufficient stock, instead of silently creating it', async () => {
+    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    // updateMany's where clause (stock >= quantity) matched 0 rows — out of stock/missing product.
+    tx.product.updateMany.mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+
+    await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
+    await expect(createServerOrder(ORDER)).rejects.toMatchObject({ items: ['p1'] })
   })
 })
 

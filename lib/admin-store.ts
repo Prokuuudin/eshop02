@@ -18,6 +18,7 @@ type AdminStore = {
   setOrderNote: (orderId: string, note: string) => void
   getOrderNote: (orderId: string) => string
   updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => void
+  setBonusProgram: (config: BonusProgramConfig) => void
   setCardOrder: (order: string[]) => void
   resetCardOrder: () => void
   loadOrderMeta: (orderIds: string[]) => Promise<void>
@@ -94,8 +95,9 @@ export const useAdminStore = create<AdminStore>()(
       },
 
       updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => {
-        set((state) => ({
-          bonusProgram: {
+        let saved: BonusProgramConfig = get().bonusProgram
+        set((state) => {
+          saved = {
             enabled: nextConfig.enabled ?? state.bonusProgram.enabled,
             earnRatePercent: clampFloat(nextConfig.earnRatePercent ?? state.bonusProgram.earnRatePercent, 0, 100),
             maxSpendPercent: clamp(nextConfig.maxSpendPercent ?? state.bonusProgram.maxSpendPercent, 0, 100),
@@ -104,8 +106,18 @@ export const useAdminStore = create<AdminStore>()(
             minPointsToSpend: clamp(nextConfig.minPointsToSpend ?? state.bonusProgram.minPointsToSpend, 0, 1_000_000),
             maxEarnPerOrder: clamp(nextConfig.maxEarnPerOrder ?? state.bonusProgram.maxEarnPerOrder, 0, 1_000_000),
           }
-        }))
-      }
+          return { bonusProgram: saved }
+        })
+        if (typeof window !== 'undefined') {
+          fetch('/api/admin/bonus-config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saved),
+          }).catch(() => {})
+        }
+      },
+
+      setBonusProgram: (config: BonusProgramConfig) => set({ bonusProgram: config }),
     }),
     {
       name: 'admin-store',

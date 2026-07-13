@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { BadgeAlert, Building2, CircleDollarSign, CreditCard, FileSpreadsheet, ReceiptText, RotateCcw, ShieldHalf, Wallet } from 'lucide-react'
 import { useInvoicesStore } from '@/lib/invoices-store'
 import { useCompanyStore } from '@/lib/company-store'
@@ -20,7 +20,13 @@ export default function InvoicesPage() {
   const { t, language } = useTranslation()
   const currentUser = getCurrentUser()
   const { getInvoicesByCompany, recordPayment } = useInvoicesStore()
-  const { getCompany } = useCompanyStore()
+  const { getCompany, syncFromDb } = useCompanyStore()
+
+  useEffect(() => {
+    void syncFromDb()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isSeedingDemo, setIsSeedingDemo] = useState(false)
   const [isResettingDemo, setIsResettingDemo] = useState(false)

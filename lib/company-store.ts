@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type TeamMemberRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 
@@ -77,51 +76,6 @@ function apiDelete(url: string) {
 
 const normalizeCardNumber = (cardNumber: string | undefined): string => (cardNumber ?? '').replace(/\s+/g, '').toUpperCase()
 
-const DEFAULT_COMPANIES: CompanyProfile[] = [
-  {
-    companyId: 'company_miks_plus',
-    companyName: 'SIA MIKS PLUS',
-    cardNumber: '1234',
-    taxId: 'LV40003123456',
-    registrationNumber: '40103123456',
-    city: 'Riga',
-    country: 'Latvia',
-    paymentTermDays: 30,
-    usedCredit: 0,
-    approvalWorkflowEnabled: false,
-    teamMembers: [],
-    createdAt: new Date('2025-01-15T09:00:00.000Z')
-  },
-  {
-    companyId: 'company_beauty_supply',
-    companyName: 'Beauty Supply Pro',
-    cardNumber: '2345',
-    taxId: 'LV50004567891',
-    registrationNumber: '50004567891',
-    city: 'Daugavpils',
-    country: 'Latvia',
-    paymentTermDays: 60,
-    usedCredit: 0,
-    approvalWorkflowEnabled: true,
-    teamMembers: [],
-    createdAt: new Date('2025-02-03T10:30:00.000Z')
-  },
-  {
-    companyId: 'company_salon_group',
-    companyName: 'Baltic Salon Group',
-    cardNumber: '3456',
-    taxId: 'LV40107890123',
-    registrationNumber: '40107890123',
-    city: 'Jurmala',
-    country: 'Latvia',
-    paymentTermDays: 0,
-    usedCredit: 0,
-    approvalWorkflowEnabled: false,
-    teamMembers: [],
-    createdAt: new Date('2025-03-12T08:15:00.000Z')
-  }
-]
-
 const toHydratedTeamMember = (member: TeamMember): TeamMember => ({
   ...member,
   addedAt: member.addedAt instanceof Date ? member.addedAt : new Date(member.addedAt)
@@ -134,25 +88,9 @@ const toHydratedCompany = (company: CompanyProfile): CompanyProfile => ({
   teamMembers: (company.teamMembers ?? []).map(toHydratedTeamMember)
 })
 
-const createDefaultCompaniesMap = (): Map<string, CompanyProfile> => {
-  return new Map(DEFAULT_COMPANIES.map((company) => [company.companyId, toHydratedCompany(company)]))
-}
-
-const mergeCompanies = (persistedCompanies: Array<[string, CompanyProfile]> | undefined): Map<string, CompanyProfile> => {
-  const companies = createDefaultCompaniesMap()
-
-  for (const entry of persistedCompanies ?? []) {
-    const [companyId, company] = entry
-    companies.set(companyId, toHydratedCompany(company))
-  }
-
-  return companies
-}
-
 export const useCompanyStore = create<CompanyStore>()(
-  persist(
     (set, get) => ({
-      companies: createDefaultCompaniesMap(),
+      companies: new Map<string, CompanyProfile>(),
 
       getCompanies: () => {
         return Array.from(get().companies.values()).sort((a, b) => a.companyName.localeCompare(b.companyName))
@@ -346,18 +284,5 @@ export const useCompanyStore = create<CompanyStore>()(
           })
         } catch { /* ignore */ }
       },
-    }),
-    {
-      name: 'company-store',
-      partialize: (state) => ({
-        companies: Array.from(state.companies.entries()),
-        currentCompanyId: state.currentCompanyId
-      }),
-      merge: (persistedState: any, currentState) => ({
-        ...currentState,
-        companies: mergeCompanies(persistedState?.companies),
-        currentCompanyId: persistedState.currentCompanyId
-      })
-    }
-  )
+    })
 )

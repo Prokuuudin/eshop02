@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { type Product } from '@/data/products'
-import { useRFQStore, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
+import { useRFQStore, mapServerRfq, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -105,7 +105,7 @@ export default function AdminRFQPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [statusFilter, setStatusFilter] = useState<RFQStatus | 'all'>('all')
 
-  const { getAll, setQuote, setStatus, addNote } = useRFQStore()
+  const { getAll, setQuote, setStatus, addNote, setRequests } = useRFQStore()
   const requests = useMemo(() => getAll(), [getAll])
 
   React.useEffect(() => {
@@ -114,6 +114,15 @@ export default function AdminRFQPage() {
       .then((p: { data?: { products?: Product[] } }) => setLoadedProducts(p.data?.products ?? []))
       .catch(() => setLoadedProducts([]))
   }, [])
+
+  React.useEffect(() => {
+    fetch('/api/rfq?take=200')
+      .then((r) => r.json())
+      .then(({ requests: dbRequests }) => {
+        if (Array.isArray(dbRequests)) setRequests(dbRequests.map(mapServerRfq))
+      })
+      .catch(() => {})
+  }, [setRequests])
 
   const products = loadedProducts
 

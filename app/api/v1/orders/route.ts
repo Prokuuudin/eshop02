@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
-import { createOrUpdateServerOrder, type ServerOrder } from '@/lib/orders-data-store'
+import { createOrUpdateServerOrder, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 
 export const runtime = 'nodejs'
 
@@ -177,6 +177,9 @@ export async function POST(req: NextRequest) {
       201
     )
   } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      return errorResponse(`Insufficient stock for: ${error.items.join(', ')}`, 409)
+    }
     console.error('[v1/orders POST]', error)
     return errorResponse('Internal server error', 500)
   }

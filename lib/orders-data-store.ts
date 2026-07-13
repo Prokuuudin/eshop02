@@ -48,6 +48,17 @@ export type ServerOrder = {
   companyId?: string
 }
 
+/** Thrown when one or more order items exceed the product's current stock. */
+export class InsufficientStockError extends Error {
+  readonly items: string[]
+
+  constructor(items: string[]) {
+    super(`Insufficient stock for: ${items.join(', ')}`)
+    this.name = 'InsufficientStockError'
+    this.items = items
+  }
+}
+
 // Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
 // Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
 export function canAccessOrder(
@@ -128,14 +139,22 @@ const createOrderWithSideEffects = async (id: string, order: Omit<ServerOrder, '
   return prisma.$transaction(async (tx) => {
     const created = await tx.order.create({ data: { id, ...data } })
 
-    // Decrement stock for each item — best effort, ignore missing products
+    // Decrement stock for each item. updateMany's where clause (isDeleted: false,
+    // stock >= quantity) is the actual guard — if it matches 0 rows the product is
+    // missing, deleted, or doesn't have enough stock. That must fail the whole
+    // order, not silently create it with unaccounted-for items.
+    const outOfStockIds: string[] = []
     for (const item of order.items) {
       if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
-        await tx.product.updateMany({
+        const result = await tx.product.updateMany({
           where: { id: item.id, isDeleted: false, stock: { gte: item.quantity } },
           data: { stock: { decrement: item.quantity } },
         })
+        if (result.count === 0) outOfStockIds.push(item.id)
       }
+    }
+    if (outOfStockIds.length > 0) {
+      throw new InsufficientStockError(outOfStockIds)
     }
 
     // Increment promo usedCount so maxUses limit is enforced

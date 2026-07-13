@@ -247,52 +247,54 @@ export const updateUserTeamRole = (
 const TEST_ADMIN_ID = 'seed_admin_001'
 const TEST_USER_ID = 'seed_user_001'
 
-export const registerCardUser = (data: {
+export type RegisterCardErrorCode =
+  | 'card_not_found'
+  | 'card_already_registered'
+  | 'too_many_attempts'
+  | 'network_error'
+  | 'server_error'
+
+/**
+ * Registers a B2B customer against a real company card number. Validates the
+ * card and creates the account server-side (Prisma + session cookie) via
+ * /api/auth/register-card — never locally. A local-only account would look
+ * logged in but be invisible to every server-authoritative endpoint (orders,
+ * bonus, addresses), so this must round-trip the server like loginUserAuto.
+ */
+export const registerCardUser = async (data: {
   cardNumber: string
   name?: string
-  companyId: string
-  companyName: string
-}): { success: boolean; error?: string } => {
-  const users = readUsers()
+}): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
   const normalizedCard = normalizeCard(data.cardNumber)
 
-  if (users.some((u) => u.cardNumber && normalizeCard(u.cardNumber) === normalizedCard)) {
-    return { success: false, error: 'Аккаунт с этой картой уже зарегистрирован' }
+  let res: Response
+  try {
+    res = await fetch('/api/auth/register-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cardNumber: normalizedCard, name: data.name }),
+    })
+  } catch {
+    return { success: false, errorCode: 'network_error' }
   }
 
-  const companyStore = useCompanyStore.getState()
-  const company = companyStore.getCompany(data.companyId)
+  if (res.status === 404) return { success: false, errorCode: 'card_not_found' }
+  if (res.status === 409) return { success: false, errorCode: 'card_already_registered' }
+  if (res.status === 429) return { success: false, errorCode: 'too_many_attempts' }
+  if (!res.ok) return { success: false, errorCode: 'server_error' }
 
-  // Генерируем внутренний email — клиенту он не показывается
-  const internalEmail = `card.${normalizedCard.toLowerCase()}@client.local`
+  const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } }
+  if (!payload.user) return { success: false, errorCode: 'server_error' }
 
-  const user: User = normalizeUser({
-    id: `u_${Date.now()}`,
-    email: internalEmail,
-    password: FIRST_LOGIN_PASSWORD,
-    name: data.name,
-    cardNumber: normalizedCard,
-    platformRole: 'customer',
-    companyId: data.companyId,
-    companyName: company?.companyName ?? data.companyName,
-    teamRole: 'buyer',
-    approvalRequired: company?.approvalWorkflowEnabled ?? false,
-    auditLoggingEnabled: true,
-    mustChangePassword: true,
-    isNewUser: true,
-  })
+  const verifiedUser = normalizeUser({ ...payload.user, password: '', isNewUser: true })
+  const users = readUsers().filter((u) => u.id !== verifiedUser.id)
+  writeUsers([...users, verifiedUser])
+  writeCurrentUser(verifiedUser)
 
-  writeUsers([...users, user])
+  if (verifiedUser.companyId) {
+    useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId)
+  }
 
-  companyStore.addTeamMember(data.companyId, {
-    userId: user.id,
-    email: user.email,
-    role: 'buyer',
-    name: data.name || normalizedCard,
-    addedAt: new Date(),
-  })
-
-  writeCurrentUser(user)
   notifyAuthChanged()
   return { success: true }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerOrder, type ServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -192,6 +192,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, orderId: created.id })
   } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      return NextResponse.json(
+        { error: 'insufficient_stock', items: error.items },
+        { status: 409 }
+      )
+    }
     console.error('Orders API POST error:', error)
     return NextResponse.json({ error: 'Failed to persist order' }, { status: 500 })
   }

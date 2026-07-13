@@ -11,7 +11,7 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { getCurrentUser, loginUserAuto } from './auth'
+import { getCurrentUser, loginUserAuto, registerCardUser } from './auth'
 
 function makeLocalStorageMock() {
   const store = new Map<string, string>()
@@ -91,6 +91,69 @@ describe('loginUserAuto — server-authoritative login', () => {
 
     await loginUserAuto('buyer@example.com', 'x')
 
+    expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
+  })
+})
+
+describe('registerCardUser — server-authoritative card registration', () => {
+  it('never creates a local account without a successful server round-trip', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 404 } as Response)
+
+    const res = await registerCardUser({ cardNumber: '9999' })
+
+    expect(res.success).toBe(false)
+    expect(res.errorCode).toBe('card_not_found')
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('surfaces "already registered" distinctly from "not found"', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 409 } as Response)
+
+    const res = await registerCardUser({ cardNumber: '1234' })
+
+    expect(res.errorCode).toBe('card_already_registered')
+  })
+
+  it('surfaces rate limiting distinctly', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 429 } as Response)
+
+    const res = await registerCardUser({ cardNumber: '1234' })
+
+    expect(res.errorCode).toBe('too_many_attempts')
+  })
+
+  it('fails closed when the server is unreachable', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('network down'))
+
+    const res = await registerCardUser({ cardNumber: '1234' })
+
+    expect(res.success).toBe(false)
+    expect(res.errorCode).toBe('network_error')
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('on success, mirrors the server-created account locally and sets the current company', async () => {
+    const serverUser = {
+      id: 'u_real_123',
+      email: 'card.1234@client.local',
+      companyId: 'company_1',
+      companyName: 'SIA MIKS PLUS',
+      teamRole: 'buyer',
+      bonusPoints: 350,
+    }
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ user: serverUser }),
+    } as unknown as Response)
+
+    const res = await registerCardUser({ cardNumber: '1234', name: 'Ivan' })
+
+    expect(res.success).toBe(true)
+    const stored = getCurrentUser()
+    expect(stored?.id).toBe('u_real_123')
+    expect(stored?.companyId).toBe('company_1')
+    expect(stored?.password).toBe('')
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
   })
 })

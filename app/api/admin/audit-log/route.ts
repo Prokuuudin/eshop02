@@ -95,3 +95,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getServerUser()
+    if (!user || user.platformRole !== 'admin') {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    }
+
+    const { searchParams } = req.nextUrl
+    const olderThanDays = Math.max(1, parseInt(searchParams.get('olderThanDays') || '90', 10) || 90)
+    const cutoff = new Date(Date.now() - olderThanDays * 86400_000)
+
+    const { count } = await prisma.auditLog.deleteMany({ where: { at: { lt: cutoff } } })
+
+    return NextResponse.json({ ok: true, deleted: count })
+  } catch (e) {
+    console.error('[audit-log DELETE]', e)
+    return NextResponse.json({ error: 'server_error' }, { status: 500 })
+  }
+}

@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'refunded' | 'completed'
 
@@ -45,114 +44,110 @@ export interface ReturnRequest {
   resolvedAt?: Date
 }
 
-const DEMO_RETURNS: ReturnRequest[] = [
-  {
-    id: 'RET-001-DEMO',
-    orderId: 'ORD-1778951045449-KH6Q8U4GA',
-    createdAt: new Date('2026-05-18T10:22:00.000Z'),
-    status: 'pending',
-    reason: 'damaged',
-    comment: 'Фен пришёл с трещиной на корпусе, упаковка была вскрыта',
-    items: [{ productId: 'p8', title: 'Профессиональный фен SalonDry 2200W', quantity: 1, price: 7200, image: '/products/p8.jpg' }],
-    refundAmount: 7200,
-    firstName: 'Aleksandrs',
-    lastName: 'Prokudins',
-    email: 'prokuuudin@gmail.com',
-    phone: '29711575',
-  },
-  {
-    id: 'RET-002-DEMO',
-    orderId: 'ORD-1778839321340-HKFPNLBT7',
-    createdAt: new Date('2026-05-17T14:05:00.000Z'),
-    status: 'approved',
-    reason: 'wrong_item',
-    comment: 'Заказывал шампунь 500ml, прислали 300ml',
-    items: [{ productId: 'p2', title: 'Шампунь Professional Shine 300ml', quantity: 3, price: 1200, image: '/products/p2.jpg' }],
-    refundAmount: 3600,
-    firstName: 'Aleksandrs',
-    lastName: 'Prokudins',
-    email: 'prokuuudin@gmail.com',
-    phone: '29711575',
-    resolution: 'Подтверждено — отправлен неверный артикул. Одобрен полный возврат.',
-    resolvedAt: new Date('2026-05-17T16:30:00.000Z'),
-  },
-  {
-    id: 'RET-003-DEMO',
-    orderId: 'ORD-1778757870292-YABL7QJO4',
-    createdAt: new Date('2026-05-16T09:44:00.000Z'),
-    status: 'refunded',
-    reason: 'changed_mind',
-    items: [
-      { productId: 'p1', title: 'Крем для лица Revitaluxe 50ml', quantity: 1, price: 2500, image: '/products/p1.jpg' },
-      { productId: 'p5', title: 'Крем для тела SilkTouch 200ml', quantity: 1, price: 1500, image: '/products/p5.jpg' },
-    ],
-    refundAmount: 4000,
-    firstName: 'Aleksandrs',
-    lastName: 'Prokudins',
-    email: 'prokuuudin@gmail.com',
-    phone: '29711575',
-    resolution: 'Товар получен в нераспечатанном виде. Возврат средств выполнен.',
-    resolvedAt: new Date('2026-05-17T11:00:00.000Z'),
-  },
-]
-
 type ReturnsStore = {
   returns: ReturnRequest[]
   addReturn: (r: ReturnRequest) => void
   setReturnStatus: (id: string, status: ReturnStatus, resolution?: string) => void
   getReturn: (id: string) => ReturnRequest | undefined
+  setReturns: (returns: ReturnRequest[]) => void
 }
 
-export const useReturnsStore = create<ReturnsStore>()(
-  persist(
-    (set, get) => ({
-      returns: DEMO_RETURNS,
+export const useReturnsStore = create<ReturnsStore>()((set, get) => ({
+  returns: [],
 
-      addReturn: (r) => {
-        set((state) => ({ returns: [r, ...state.returns] }))
-        if (typeof window !== 'undefined') {
-          fetch('/api/returns', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // id is generated server-side — do not send it
-            body: JSON.stringify({
-              orderId: r.orderId,
-              reason: r.reason,
-              comment: r.comment,
-              items: r.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-              firstName: r.firstName,
-              lastName: r.lastName,
-              phone: r.phone,
-            }),
-          }).catch(() => {})
-        }
-      },
+  addReturn: (r) => {
+    set((state) => ({ returns: [r, ...state.returns] }))
+    if (typeof window !== 'undefined') {
+      fetch('/api/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // id is generated server-side — do not send it
+        body: JSON.stringify({
+          orderId: r.orderId,
+          reason: r.reason,
+          comment: r.comment,
+          items: r.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          firstName: r.firstName,
+          lastName: r.lastName,
+          phone: r.phone,
+        }),
+      }).catch(() => {})
+    }
+  },
 
-      setReturnStatus: (id, status, resolution) => {
-        set((state) => ({
-          returns: state.returns.map((r) =>
-            r.id === id
-              ? {
-                  ...r,
-                  status,
-                  ...(resolution !== undefined ? { resolution } : {}),
-                  ...(status !== 'pending' ? { resolvedAt: new Date() } : {}),
-                }
-              : r
-          ),
-        }))
-        if (typeof window !== 'undefined') {
-          const resolvedAt = status !== 'pending' ? new Date().toISOString() : null
-          fetch(`/api/returns/${encodeURIComponent(id)}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, ...(resolution !== undefined ? { resolution } : {}), ...(resolvedAt ? { resolvedAt } : {}) }),
-          }).catch(() => {})
-        }
-      },
+  setReturnStatus: (id, status, resolution) => {
+    set((state) => ({
+      returns: state.returns.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status,
+              ...(resolution !== undefined ? { resolution } : {}),
+              ...(status !== 'pending' ? { resolvedAt: new Date() } : {}),
+            }
+          : r
+      ),
+    }))
+    if (typeof window !== 'undefined') {
+      const resolvedAt = status !== 'pending' ? new Date().toISOString() : null
+      fetch(`/api/returns/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, ...(resolution !== undefined ? { resolution } : {}), ...(resolvedAt ? { resolvedAt } : {}) }),
+      }).catch(() => {})
+    }
+  },
 
-      getReturn: (id) => get().returns.find((r) => r.id === id),
-    }),
-    { name: 'returns-store' }
-  )
-)
+  getReturn: (id) => get().returns.find((r) => r.id === id),
+
+  setReturns: (returns) => set({ returns }),
+}))
+
+/** Raw shape returned by GET /api/returns and /api/returns/:id (dates as ISO strings). */
+type ServerReturnRow = {
+  id: string
+  orderId: string
+  createdAt: string
+  status: string
+  reason: string
+  comment?: string | null
+  items: unknown
+  refundAmount: number
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  resolution?: string | null
+  resolvedAt?: string | null
+}
+
+/**
+ * Maps a DB row to the store's shape. The server only persists {productId, quantity}
+ * per item (see /api/returns POST) — title/price/image are best-effort display fallbacks,
+ * not authoritative order data.
+ */
+export function mapServerReturn(row: ServerReturnRow): ReturnRequest {
+  const rawItems = Array.isArray(row.items) ? (row.items as Array<Record<string, unknown>>) : []
+  return {
+    id: row.id,
+    orderId: row.orderId,
+    createdAt: new Date(row.createdAt),
+    status: row.status as ReturnStatus,
+    reason: row.reason as ReturnReason,
+    comment: row.comment ?? undefined,
+    items: rawItems.map((i) => ({
+      productId: String(i.productId ?? ''),
+      title: typeof i.title === 'string' ? i.title : String(i.productId ?? ''),
+      quantity: typeof i.quantity === 'number' ? i.quantity : 0,
+      price: typeof i.price === 'number' ? i.price : 0,
+      image: typeof i.image === 'string' ? i.image : undefined,
+    })),
+    refundAmount: row.refundAmount,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+    resolution: row.resolution ?? undefined,
+    resolvedAt: row.resolvedAt ? new Date(row.resolvedAt) : undefined,
+  }
+}

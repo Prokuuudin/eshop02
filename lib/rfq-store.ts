@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected'
 
@@ -70,10 +69,10 @@ type RFQStore = {
   setQuote: (id: string, quote: Omit<RFQQuote, 'createdAt'>) => void
   setStatus: (id: string, status: RFQStatus, note?: string) => void
   addNote: (id: string, note: string) => void
+  setRequests: (requests: RFQRequest[]) => void
 }
 
 export const useRFQStore = create<RFQStore>()(
-  persist(
     (set, get) => ({
       requests: new Map(),
 
@@ -221,19 +220,55 @@ export const useRFQStore = create<RFQStore>()(
           return { requests: next }
         })
       },
-    }),
-    {
-      name: 'rfq-store',
-      partialize: (state) => ({
-        requests: Array.from(state.requests.entries()),
-      }),
-      merge: (persistedState: unknown, currentState) => {
-        const ps = persistedState as { requests?: [string, RFQRequest][] } | null
-        return {
-          ...currentState,
-          requests: new Map(ps?.requests ?? []),
-        }
+
+      setRequests: (requests) => {
+        set({ requests: new Map(requests.map((r) => [r.id, r])) })
       },
-    }
-  )
+    })
 )
+
+/** Raw shape returned by GET/PATCH /api/rfq (dates as ISO strings, quote/timeline as JSON). */
+type ServerRfqRow = {
+  id: string
+  companyId: string
+  items: unknown
+  notes: string
+  status: string
+  quote?: unknown
+  timeline?: unknown
+  createdAt: string
+  updatedAt: string
+  createdByUserId?: string | null
+}
+
+export function mapServerRfq(row: ServerRfqRow): RFQRequest {
+  const quote = row.quote as { validUntil: string; totalPrice: number; terms: string; createdAt: string } | null | undefined
+  const timeline = Array.isArray(row.timeline) ? (row.timeline as Array<Record<string, unknown>>) : []
+
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    items: Array.isArray(row.items) ? (row.items as RFQItem[]) : [],
+    notes: row.notes ?? '',
+    status: row.status as RFQStatus,
+    quote: quote
+      ? {
+          validUntil: new Date(quote.validUntil),
+          totalPrice: quote.totalPrice,
+          terms: quote.terms,
+          createdAt: new Date(quote.createdAt),
+        }
+      : undefined,
+    timeline: timeline.map((e) => ({
+      at: new Date(e.at as string),
+      type: e.type as RFQTimelineEvent['type'],
+      note: e.note as string | undefined,
+      quotePrice: e.quotePrice as number | undefined,
+      quoteTerms: e.quoteTerms as string | undefined,
+      quoteValidUntil: e.quoteValidUntil ? new Date(e.quoteValidUntil as string) : undefined,
+    })),
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
+    createdByUserId: row.createdByUserId ?? undefined,
+  }
+}

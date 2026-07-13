@@ -34,6 +34,16 @@ export default function AdminBonusPage() {
     setUsers(readUsers().filter((u) => u.platformRole !== 'admin'))
   }, [])
 
+  // Load the admin-authoritative config directly — the shared useAdminStore value may
+  // still be the pre-hydration default when this page mounts, and editing must start
+  // from the real saved settings, not a stale local guess.
+  useEffect(() => {
+    fetch('/api/admin/bonus-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((config) => { if (config) setDraft(config) })
+      .catch(() => {})
+  }, [])
+
   const saveSettings = () => {
     updateBonusProgram(draft)
     setSaved(true)

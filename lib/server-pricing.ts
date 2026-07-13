@@ -5,6 +5,7 @@ import { calculateDiscount } from '@/lib/promo-codes'
 import { extractVat } from '@/lib/tax'
 import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
 import { calcDeliveryFee } from '@/lib/delivery'
+import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
@@ -136,22 +137,40 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
   const tax = extractVat(subtotal - discount)
   const grandTotal = subtotal - discount + delivery
 
-  // Bonus can only be spent by an authenticated user, capped by real balance and the order total.
-  // bonusSpent is in points (1 point = BONUS_POINT_VALUE_EUR); the discount is its euro value.
-  const balance = typeof input.userBonusBalance === 'number' ? Math.max(0, input.userBonusBalance) : 0
-  const requested = Math.max(0, Math.round(Number(input.bonusSpent) || 0))
-  const bonusSpent = Math.min(requested, balance, eurosToPoints(Math.max(0, grandTotal)))
+  // Admin-configured bonus program (rate/caps) — the only authoritative source;
+  // never trust a client-supplied config.
+  const bonusConfig = await getBonusProgramConfig()
+
+  let bonusSpent = 0
+
+  if (bonusConfig.enabled) {
+    // Bonus can only be spent by an authenticated user, capped by: real balance,
+    // the admin's max-spend-percent of the order, the minimum redemption threshold,
+    // and the order total itself.
+    const balance = typeof input.userBonusBalance === 'number' ? Math.max(0, input.userBonusBalance) : 0
+    const requested = Math.max(0, Math.round(Number(input.bonusSpent) || 0))
+    const maxSpendByPercent = eurosToPoints((grandTotal * bonusConfig.maxSpendPercent) / 100)
+    bonusSpent =
+      balance >= bonusConfig.minPointsToSpend
+        ? Math.min(requested, balance, maxSpendByPercent, eurosToPoints(Math.max(0, grandTotal)))
+        : 0
+  }
 
   const total = Math.max(0, Math.round((grandTotal - pointsToEuros(bonusSpent)) * 100) / 100)
 
-  // Points earned: catalog bonusRate per unit when set, otherwise the program percent of the
-  // item subtotal (same calcOrderBonus as cart/checkout display). Scaled down proportionally
-  // when the customer pays part of the order with points (bonusToEarn * total / grandTotal).
-  const bonusEarnedBase = calcOrderBonus(items)
-  const bonusEarned =
-    bonusSpent > 0 && grandTotal > 0
-      ? Math.max(0, Math.round((bonusEarnedBase * total) / grandTotal))
-      : bonusEarnedBase
+  // Points earned: catalog bonusRate per unit when set, otherwise the admin-configured rate
+  // percent of the item subtotal, capped per order, gated by the minimum order amount. Scaled
+  // down proportionally when the customer pays part of the order with points.
+  let bonusEarned = 0
+  if (bonusConfig.enabled && grandTotal >= bonusConfig.minOrderForEarn) {
+    const bonusEarnedBase = calcOrderBonus(items, bonusConfig.earnRatePercent)
+    const scaledEarned =
+      bonusSpent > 0 && grandTotal > 0
+        ? Math.max(0, Math.round((bonusEarnedBase * total) / grandTotal))
+        : bonusEarnedBase
+    bonusEarned =
+      bonusConfig.maxEarnPerOrder > 0 ? Math.min(scaledEarned, bonusConfig.maxEarnPerOrder) : scaledEarned
+  }
 
   return {
     items,

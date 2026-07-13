@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,10 +69,10 @@ type AdminLogStore = {
     }
   ) => void
   clear: (olderThanDays: number) => void
+  setEntries: (entries: AdminLogEntry[]) => void
 }
 
 export const useAdminLogStore = create<AdminLogStore>()(
-  persist(
     (set) => ({
       entries: [],
 
@@ -132,13 +131,45 @@ export const useAdminLogStore = create<AdminLogStore>()(
         set((state) => ({
           entries: state.entries.filter((e) => new Date(e.at).getTime() >= cutoff),
         }))
+        if (typeof window !== 'undefined') {
+          fetch(`/api/admin/audit-log?olderThanDays=${olderThanDays}`, { method: 'DELETE' }).catch(() => {})
+        }
       },
-    }),
-    {
-      name: 'admin-action-log',
-    }
-  )
+
+      setEntries: (entries) => set({ entries }),
+    })
 )
+
+/** Raw shape returned by GET /api/admin/audit-log (at as ISO string). */
+type ServerLogRow = {
+  id: string
+  at: string
+  adminEmail: string
+  adminName?: string | null
+  action: string
+  entityType: string
+  entityId: string
+  entityTitle?: string | null
+  before?: unknown
+  after?: unknown
+  details?: string | null
+}
+
+export function mapServerLogEntry(row: ServerLogRow): AdminLogEntry {
+  return {
+    id: row.id,
+    at: new Date(row.at),
+    adminEmail: row.adminEmail,
+    adminName: row.adminName ?? undefined,
+    action: row.action as AdminLogAction,
+    entityType: row.entityType,
+    entityId: row.entityId,
+    entityTitle: row.entityTitle ?? undefined,
+    before: (row.before as Record<string, unknown> | null) ?? undefined,
+    after: (row.after as Record<string, unknown> | null) ?? undefined,
+    details: row.details ?? undefined,
+  }
+}
 
 // ─── Standalone helper (usable outside React) ─────────────────────────────────
 

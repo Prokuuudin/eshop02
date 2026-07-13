@@ -26,8 +26,13 @@ type DbUser = {
 
 export default function AdminAccountsPage() {
   const { t, language } = useTranslation()
-  const { getCompanies } = useCompanyStore()
+  const { getCompanies, syncFromDb } = useCompanyStore()
   const companies = getCompanies()
+
+  useEffect(() => {
+    void syncFromDb()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [memberRolesDraft, setMemberRolesDraft] = useState<Record<string, TeamRole>>({})
   const [roleUpdateInProgress, setRoleUpdateInProgress] = useState<string | null>(null)
   const [message, setMessage] = useState('')

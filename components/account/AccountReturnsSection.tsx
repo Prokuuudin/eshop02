@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RotateCcw, ChevronRight, Package } from 'lucide-react';
-import { useReturnsStore, RETURN_REASON_LABELS, ReturnStatus } from '@/lib/returns-store';
+import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, ReturnStatus } from '@/lib/returns-store';
 import { getCurrentUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 
@@ -18,11 +18,21 @@ const STATUS_CONFIG: Record<ReturnStatus, { label: string; classes: string }> = 
 export const AccountReturnsSection: React.FC = () => {
     const { t } = useTranslation();
     const returns = useReturnsStore((s) => s.returns);
+    const setReturns = useReturnsStore((s) => s.setReturns);
     const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
         setUserEmail(getCurrentUser()?.email ?? null);
     }, []);
+
+    useEffect(() => {
+        fetch('/api/returns')
+            .then((r) => r.json())
+            .then(({ returns: dbReturns }) => {
+                if (Array.isArray(dbReturns)) setReturns(dbReturns.map(mapServerReturn));
+            })
+            .catch(() => {});
+    }, [setReturns]);
 
     const userReturns = userEmail
         ? returns.filter((r) => r.email.toLowerCase() === userEmail.toLowerCase())

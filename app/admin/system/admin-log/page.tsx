@@ -1,12 +1,12 @@
 ﻿'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAdminLogStore, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
+import { useAdminLogStore, mapServerLogEntry, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,16 @@ const PAGE_SIZE = 50
 export default function AdminLogPage() {
   const entries = useAdminLogStore((s) => s.entries)
   const clear = useAdminLogStore((s) => s.clear)
+  const setEntries = useAdminLogStore((s) => s.setEntries)
+
+  useEffect(() => {
+    fetch('/api/admin/audit-log?take=200')
+      .then((r) => r.json())
+      .then(({ entries: dbEntries }) => {
+        if (Array.isArray(dbEntries)) setEntries(dbEntries.map(mapServerLogEntry))
+      })
+      .catch(() => {})
+  }, [setEntries])
 
   const [search, setSearch] = useState('')
   const [actionFilter, setActionFilter] = useState<AdminLogAction | ''>('')

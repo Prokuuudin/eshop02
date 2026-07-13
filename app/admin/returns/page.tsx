@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { useReturnsStore, type ReturnStatus, type ReturnReason, type ReturnItem, RETURN_REASON_LABELS } from '@/lib/returns-store'
+import { useReturnsStore, mapServerReturn, type ReturnStatus, type ReturnReason, type ReturnItem, RETURN_REASON_LABELS } from '@/lib/returns-store'
 import { useOrders } from '@/lib/orders-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -35,8 +35,17 @@ function generateReturnId() {
 }
 
 export default function AdminReturnsPage() {
-  const { returns, addReturn, setReturnStatus } = useReturnsStore()
+  const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore()
   const { orders, getOrder } = useOrders()
+
+  useEffect(() => {
+    fetch('/api/returns?take=200')
+      .then((r) => r.json())
+      .then(({ returns: dbReturns }) => {
+        if (Array.isArray(dbReturns)) setReturns(dbReturns.map(mapServerReturn))
+      })
+      .catch(() => {})
+  }, [setReturns])
   const { language } = useTranslation()
   const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US'
 

@@ -196,7 +196,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         <ProductFormModeContext.Provider value={{ isEdit }}>
             <FormProvider {...methods}>
                 <form
-                    className="add-product add-product__layout grid grid-cols-1 md:grid-cols-2 gap-8"
+                    className="add-product add-product__layout"
                     onSubmit={handleSubmit(onSubmit)}
                     autoComplete="off"
                 >

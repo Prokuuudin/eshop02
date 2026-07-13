@@ -10,6 +10,7 @@ import {
     FolderTree,
     HandHelping,
     Megaphone,
+    Menu,
     Settings,
     ShoppingCart,
     Users,
@@ -123,6 +124,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
 
 const NAV_LABELS = {
     ru: {
+        menu: 'Меню',
         catalog: 'Каталог',
         'catalog.products': 'Карточки товаров',
         'catalog.categories': 'Категории',
@@ -171,6 +173,7 @@ const NAV_LABELS = {
         'help.support': 'Поддержка',
     },
     en: {
+        menu: 'Menu',
         catalog: 'Catalog',
         'catalog.products': 'Product cards',
         'catalog.categories': 'Categories',
@@ -219,6 +222,7 @@ const NAV_LABELS = {
         'help.support': 'Support',
     },
     lv: {
+        menu: 'Izvēlne',
         catalog: 'Katalogs',
         'catalog.products': 'Produktu kartites',
         'catalog.categories': 'Kategorijas',
@@ -282,7 +286,50 @@ export default function AdminHeaderNav() {
 
     return (
         <div className="mx-auto w-fit max-w-full rounded-2xl bg-white/95 p-2 shadow-sm dark:bg-gray-900/95">
-            <div className="flex items-center justify-center gap-2 overflow-x-auto">
+            {/* Mobile: one menu listing every section, instead of a horizontally-scrolling row of tiny dropdowns */}
+            <div className="md:hidden">
+                <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                        >
+                            <Menu className="h-4 w-4" />
+                            {tr('menu')}
+                            <ChevronDown className="h-4 w-4 opacity-70" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="max-h-[70vh] min-w-[260px] overflow-y-auto">
+                        {NAV_SECTIONS.map((section, index) => (
+                            <div key={section.title}>
+                                {index > 0 && <div className="my-1 h-px bg-border" />}
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                    {tr(section.title)}
+                                </div>
+                                {section.items.map((item) => {
+                                    const active = isActive(pathname, item.href);
+                                    return (
+                                        <DropdownMenuItem
+                                            key={`mobile-${section.title}-${item.title}`}
+                                            asChild
+                                            className={`h-11 ${
+                                                active
+                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                                    : ''
+                                            }`}
+                                        >
+                                            <Link href={item.href}>{tr(item.title)}</Link>
+                                        </DropdownMenuItem>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            {/* Desktop: per-section dropdowns in a row */}
+            <div className="hidden md:flex items-center justify-center gap-2 overflow-x-auto">
                 {NAV_SECTIONS.map((section) => {
                     const Icon = section.icon;
                     const sectionActive = section.items.some((item) =>

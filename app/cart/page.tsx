@@ -184,44 +184,46 @@ export default function CartPage() {
                             return (
                                 <div
                                     key={item.lineKey}
-                                    className="cart__item p-4 bg-card rounded-lg border border-border flex gap-4"
+                                    className="cart__item p-4 bg-card rounded-lg border border-border flex flex-col sm:flex-row gap-4"
                                 >
-                                    <div className="cart__item-checkbox pt-1">
-                                        <Checkbox
-                                            checked={isSelected}
-                                            onCheckedChange={() => toggleSelected(item.lineKey)}
-                                            className="select-none"
-                                            aria-label={`${t(
-                                                'cart.selectForCheckout'
-                                            )}: ${localizedTitle}`}
-                                        />
-                                    </div>
-
-                                    <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">
-                                        <Image
-                                            src={item.image || '/placeholder.png'}
-                                            alt={localizedTitle}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-
-                                    <div className="cart__item-info flex-1">
-                                        <Link
-                                            href={`/product/${item.id}`}
-                                            className="cart__item-title font-medium hover:text-primary"
-                                        >
-                                            {localizedTitle}
-                                        </Link>
-                                        <div className="cart__item-brand text-sm text-muted-foreground mt-1">
-                                            {item.brand}
+                                    <div className="flex gap-4 min-w-0">
+                                        <div className="cart__item-checkbox pt-1">
+                                            <Checkbox
+                                                checked={isSelected}
+                                                onCheckedChange={() => toggleSelected(item.lineKey)}
+                                                className="select-none"
+                                                aria-label={`${t(
+                                                    'cart.selectForCheckout'
+                                                )}: ${localizedTitle}`}
+                                            />
                                         </div>
-                                        <div className="cart__item-unitprice text-primary font-bold mt-2">
-                                            {formatCurrency(unitPrice)}
+
+                                        <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">
+                                            <Image
+                                                src={item.image || '/placeholder.png'}
+                                                alt={localizedTitle}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+
+                                        <div className="cart__item-info flex-1 min-w-0">
+                                            <Link
+                                                href={`/product/${item.id}`}
+                                                className="cart__item-title font-medium hover:text-primary"
+                                            >
+                                                {localizedTitle}
+                                            </Link>
+                                            <div className="cart__item-brand text-sm text-muted-foreground mt-1">
+                                                {item.brand}
+                                            </div>
+                                            <div className="cart__item-unitprice text-primary font-bold mt-2">
+                                                {formatCurrency(unitPrice)}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="cart__item-controls flex flex-col items-end justify-between">
+                                    <div className="cart__item-controls flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2">
                                         <ConfirmActionDialog
                                             title={t('confirm.title')}
                                             description={t('confirm.removeCartItem')}
@@ -247,7 +249,7 @@ export default function CartPage() {
                                                         minQuantity
                                                     )
                                                 }
-                                                className="cart__item-qty-btn px-2 py-1"
+                                                className="cart__item-qty-btn w-11 h-11 flex items-center justify-center"
                                             >
                                                 −
                                             </button>
@@ -258,7 +260,7 @@ export default function CartPage() {
                                                 onClick={() =>
                                                     updateQuantity(item.lineKey, item.quantity + 1)
                                                 }
-                                                className="cart__item-qty-btn px-2 py-1"
+                                                className="cart__item-qty-btn w-11 h-11 flex items-center justify-center"
                                             >
                                                 +
                                             </button>

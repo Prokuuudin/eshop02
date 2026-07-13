@@ -180,7 +180,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1"
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-3"
                         aria-label={t('cart.closeAria')}
                     >
                         <svg
@@ -279,7 +279,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                             minQuantity
                                                         )
                                                     }
-                                                    className="w-6 h-6 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-8 h-8 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     −
                                                 </button>
@@ -290,7 +290,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                     onClick={() =>
                                                         updateQuantity(item.lineKey, item.quantity + 1)
                                                     }
-                                                    className="w-6 h-6 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-8 h-8 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     +
                                                 </button>

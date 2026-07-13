@@ -51,7 +51,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
               Eshop
             </Link>
           </div>
-          <Button aria-label={t('mobileMenu.closeAria')} onClick={onClose} className="header__menu-close">
+          <Button aria-label={t('mobileMenu.closeAria')} onClick={onClose} size="icon" className="header__menu-close">
             ✕
           </Button>
         </div>

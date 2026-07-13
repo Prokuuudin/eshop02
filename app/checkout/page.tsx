@@ -574,7 +574,7 @@ export default function CheckoutPage() {
                             {t('checkout.delivery.title')}
                         </h2>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.firstName')}{' '}
@@ -681,7 +681,7 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-foreground">
                                     {t('checkout.city')} <span className="text-red-600">*</span>

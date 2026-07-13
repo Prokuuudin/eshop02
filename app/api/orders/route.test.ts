@@ -8,12 +8,16 @@ vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
 }))
+vi.mock('@/lib/locale-config-server-store', () => ({
+  getLocaleConfig: vi.fn(),
+}))
 
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
 import { createServerOrder } from '@/lib/orders-data-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { POST } from './route'
 
 const VALID_ORDER = {
@@ -70,6 +74,12 @@ describe('POST /api/orders — admin notification', () => {
       promoApplied: false,
     })
     vi.mocked(sendEmail).mockResolvedValue(undefined)
+    vi.mocked(getLocaleConfig).mockResolvedValue({
+      defaultLanguage: 'ru',
+      dateFormat: 'DD.MM.YYYY',
+      timezone: 'Europe/Riga',
+      priceFormat: 'symbol_before',
+    })
     process.env.CONTACT_TO = 'admin@shop.com'
   })
 
@@ -108,5 +118,22 @@ describe('POST /api/orders — admin notification', () => {
     await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.length).toBeGreaterThanOrEqual(1))
     const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
     expect(adminCall).toBeUndefined()
+  })
+
+  it('formats the admin email date using the configured pattern and timezone', async () => {
+    vi.mocked(getLocaleConfig).mockResolvedValue({
+      defaultLanguage: 'ru',
+      dateFormat: 'YYYY-MM-DD',
+      timezone: 'Europe/Riga',
+      priceFormat: 'symbol_before',
+    })
+
+    await POST(makeRequest({ ...VALID_ORDER, createdAt: '2026-06-16T10:00:00.000Z' }))
+    await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.length).toBeGreaterThanOrEqual(1))
+
+    const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
+    const [, , html] = adminCall!
+    // 10:00 UTC is safely within 2026-06-16 in Europe/Riga regardless of DST offset.
+    expect(html).toContain('2026-06-16')
   })
 })

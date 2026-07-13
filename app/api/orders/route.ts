@@ -5,6 +5,8 @@ import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
+import { getLocaleConfig } from '@/lib/locale-config-server-store'
+import { formatDateWithPattern } from '@/lib/date-format'
 
 export const runtime = 'nodejs'
 
@@ -57,8 +59,18 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLa
   const adminEmail = process.env.CONTACT_TO
   if (!adminEmail) return
 
-  // Admin notification is intentionally in Russian regardless of order.language
-  const date = new Date(order.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Riga' })
+  // Admin notification is intentionally in Russian regardless of order.language.
+  // Date/time use the admin-configured business timezone + date pattern, not the
+  // Node process's own timezone (which varies by hosting region).
+  const localeConfig = await getLocaleConfig()
+  const orderDate = new Date(order.createdAt)
+  const dateStr = formatDateWithPattern(orderDate, localeConfig.dateFormat, localeConfig.timezone)
+  const timeStr = orderDate.toLocaleTimeString('en-GB', {
+    timeZone: localeConfig.timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const date = `${dateStr} ${timeStr}`
   const items = Array.isArray(order.items) ? order.items : []
 
   const itemRows = items

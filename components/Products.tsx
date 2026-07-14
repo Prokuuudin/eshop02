@@ -8,8 +8,9 @@ import { useTranslation } from '@/lib/use-translation'
 import { brandSlug } from '@/lib/brand-slug'
 
 import ProductFilter from './ProductFilter'
-import { LayoutGrid, List } from 'lucide-react'
+import { LayoutGrid, List, X } from 'lucide-react'
 import ProductListRow from './ProductListRow'
+import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 
 type ProductsFilters = {
   group: string
@@ -23,13 +24,14 @@ type ProductsFilters = {
 type ProductsProps = {
   initialFilters?: Partial<ProductsFilters>
   initialSearch?: string
+  initialSubcat?: string
 }
 
 const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
-export default function Products({ initialFilters, initialSearch = '' }: ProductsProps) {
+export default function Products({ initialFilters, initialSearch = '', initialSubcat = '' }: ProductsProps) {
   const { t, language } = useTranslation();
   const [products, setProducts] = React.useState<Product[]>([])
   const [productsLoading, setProductsLoading] = React.useState(true)
@@ -120,7 +122,24 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
   }, [filters.brands, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
+  // Сабкатегория активна, пока юзер не сменил категорию в сайдбаре —
+  // иначе чужой subcat из URL обнулил бы выдачу другой категории.
+  const activeSubcat = initialSubcat && filters.group === (initialFilters?.group ?? '')
+    ? initialSubcat
+    : ''
+  const subcatItem = activeSubcat
+    ? Object.values(SUBCATEGORIES_BY_ID).flat().find((item) => item.slug === activeSubcat)
+    : undefined
+
+  const clearSubcat = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('subcat')
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
+
   const searchMatchedProducts = products.filter((product) => {
+    if (activeSubcat && product.subcategory !== activeSubcat) return false;
     const localizedTitle = (
       (language === 'en' && product.titleEn)
         ? product.titleEn
@@ -180,7 +199,7 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
 
   React.useEffect(() => {
     setVisibleCount(12);
-  }, [filters, normalizedSearch]);
+  }, [filters, normalizedSearch, activeSubcat]);
 
   React.useEffect(() => {
     if (!loaderRef.current) return;
@@ -201,7 +220,20 @@ export default function Products({ initialFilters, initialSearch = '' }: Product
     <section className="products py-8">
       <div className="w-full px-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="products__title text-2xl font-semibold text-foreground">{t('nav.catalog', 'Catalog')}</h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="products__title text-2xl font-semibold text-foreground">{t('nav.catalog', 'Catalog')}</h2>
+            {activeSubcat && (
+              <button
+                type="button"
+                onClick={clearSubcat}
+                className="products__subcat-chip inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-sm font-medium hover:bg-primary/20 transition-colors"
+                aria-label={t('common.reset', 'Reset')}
+              >
+                <span>{subcatItem ? t(subcatItem.key, activeSubcat) : activeSubcat}</span>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground hidden sm:inline">{t('catalog.viewLabel')}</span>
             <div className="flex items-center gap-1">

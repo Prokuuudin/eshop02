@@ -97,6 +97,7 @@ export default async function CatalogPage({ searchParams }: PageProps) {
       <main>
         <Products
           initialSearch={rawSearch}
+          initialSubcat={params.subcat?.trim() || ''}
           initialFilters={{
             group: category,
             brands,

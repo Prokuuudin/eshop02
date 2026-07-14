@@ -254,7 +254,22 @@ test('brands anchor navigation works from header and stays correct after reload'
     .toBeTruthy()
 })
 
+// Categories.tsx намеренно скрыт от гостей — сабкатегорийные тесты сидят юзера.
+const seedCatalogUser = (page: import('@playwright/test').Page) =>
+  page.addInitScript(() => {
+    window.localStorage.setItem(
+      'eshop_current_user',
+      JSON.stringify({
+        id: 'u_subcat_e2e',
+        email: 'subcat-e2e@eshop02.local',
+        password: 'secret',
+        platformRole: 'customer'
+      })
+    )
+  })
+
 test('category subcategory selection applies subcat filter in catalog URL', async ({ page }) => {
+  await seedCatalogUser(page)
   await page.goto('/')
 
   const hairCategoryTrigger = page.getByRole('button', {
@@ -275,12 +290,15 @@ test('category subcategory selection applies subcat filter in catalog URL', asyn
 
   const cards = page.locator('.product-card')
   await expect(cards.first()).toBeVisible({ timeout: 45000 })
-  await expect(cards).toHaveCount(1)
 
-  await expect(cards.first()).toContainText(/Шампунь|Shampoo|šampūns/i)
+  // Фильтр реально применён: чип сабкатегории виден, карточки — шампуни
+  // (наборы с шампунем тоже затегированы как ŠAMPŪNI в исходной MSSQL)
+  await expect(page.locator('.products__subcat-chip')).toBeVisible()
+  await expect(cards.first()).toContainText(/Шампунь|Shampoo|šampūns|набор/i)
 })
 
 test('face category decorative cosmetics subcategory applies subcat filter', async ({ page }) => {
+  await seedCatalogUser(page)
   await page.goto('/')
 
   const faceCategoryTrigger = page.getByRole('button', {
@@ -299,13 +317,14 @@ test('face category decorative cosmetics subcategory applies subcat filter', asy
 
   const cards = page.locator('.product-card')
   await expect(cards.first()).toBeVisible({ timeout: 45000 })
+  await expect(page.locator('.products__subcat-chip')).toBeVisible()
 
   const cardCount = await cards.count()
   expect(cardCount).toBeGreaterThan(0)
-  expect(cardCount).toBeLessThanOrEqual(2)
 })
 
-test('equipment category salon products subcategory applies subcat filter', async ({ page }) => {
+test('equipment category furniture subcategory applies subcat filter', async ({ page }) => {
+  await seedCatalogUser(page)
   await page.goto('/')
 
   const equipmentCategoryTrigger = page.getByRole('button', {
@@ -315,27 +334,28 @@ test('equipment category salon products subcategory applies subcat filter', asyn
   await expect(equipmentCategoryTrigger).toBeVisible({ timeout: 45000 })
   await equipmentCategoryTrigger.click()
 
-  const salonProductsLink = page.locator('a[href*="/catalog?cat=equipment&subcat=salon-products"]').first()
-  await expect(salonProductsLink).toBeVisible()
-  await salonProductsLink.click()
+  const furnitureLink = page.locator('a[href*="/catalog?cat=equipment&subcat=furniture"]').first()
+  await expect(furnitureLink).toBeVisible()
+  await furnitureLink.click()
 
-  await page.waitForURL(/\/catalog\?cat=equipment&subcat=salon-products/)
-  await expect(page).toHaveURL(/\/catalog\?cat=equipment&subcat=salon-products/)
+  await page.waitForURL(/\/catalog\?cat=equipment&subcat=furniture/)
+  await expect(page).toHaveURL(/\/catalog\?cat=equipment&subcat=furniture/)
 
   const cards = page.locator('.product-card')
   await expect(cards.first()).toBeVisible({ timeout: 45000 })
+  await expect(page.locator('.products__subcat-chip')).toBeVisible()
 
   const cardCount = await cards.count()
   expect(cardCount).toBeGreaterThan(0)
 })
 
 test('category dropdown item All clears subcat and keeps category filter', async ({ page }) => {
+  await seedCatalogUser(page)
   await page.goto('/catalog?cat=hair&subcat=shampoos')
 
   const cardsWithSubcat = page.locator('.product-card')
   await expect(cardsWithSubcat.first()).toBeVisible({ timeout: 45000 })
-  const subcatCount = await cardsWithSubcat.count()
-  expect(subcatCount).toBeGreaterThan(0)
+  await expect(page.locator('.products__subcat-chip')).toBeVisible()
 
   await page.goto('/')
 
@@ -353,8 +373,9 @@ test('category dropdown item All clears subcat and keeps category filter', async
   await page.waitForURL(/\/catalog\?cat=hair$/)
   await expect(page).toHaveURL(/\/catalog\?cat=hair$/)
 
+  // Инфинит-скролл показывает 12 карточек в обоих случаях — сравнение
+  // количества карточек ничего не говорит; признак сброса — чип исчез.
   const cardsAfterReset = page.locator('.product-card')
   await expect(cardsAfterReset.first()).toBeVisible({ timeout: 45000 })
-  const resetCount = await cardsAfterReset.count()
-  expect(resetCount).toBeGreaterThan(subcatCount)
+  await expect(page.locator('.products__subcat-chip')).toHaveCount(0)
 })

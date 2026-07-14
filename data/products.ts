@@ -91,6 +91,9 @@ export interface Product {
   specVolume?: string
   specType?: string
   specCountry?: string
+  // Слаг сабкатегории витрины (data/categories.ts). Не колонка БД — приклеивается
+  // сервером из data/product-subcategories.json (см. scripts/generate-product-subcategories.ts)
+  subcategory?: string
 }
 
 export const isProductOnSale = (product: Product): boolean => {

@@ -3,6 +3,9 @@ import { type Product, type BadgeType, type CategoryType } from '@/data/products
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import type { Product as PrismaProduct } from '@/generated/prisma/client'
+import productSubcategories from '@/data/product-subcategories.json'
+
+const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>
 export type ArchivedProductRecord = {
@@ -36,6 +39,7 @@ export function mapDbToProduct(p: PrismaProduct): Product {
     ogAlt: p.ogAlt ?? undefined,
     badges: p.badges as BadgeType[],
     category: p.category as CategoryType,
+    subcategory: SUBCATEGORY_BY_PRODUCT_ID[p.id],
     stock: p.stock,
     isActive: p.isActive,
     barcode: p.barcode ?? undefined,

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
-
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads')
 
 // SVG intentionally excluded: it can carry inline <script>, enabling stored XSS when served same-origin.
 const ALLOWED_MIME = new Set([
@@ -34,17 +31,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'file_too_large' }, { status: 400 })
     }
 
-    const uploadsResolved = path.resolve(UPLOADS_DIR)
-    const targetPath = path.resolve(path.join(UPLOADS_DIR, name))
-    if (!targetPath.startsWith(uploadsResolved + path.sep)) {
-      return NextResponse.json({ error: 'invalid_path' }, { status: 400 })
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    try {
+      // Update in place — keeping the same name so all references stay valid
+      await prisma.mediaAsset.update({
+        where: { name },
+        data: { data: bytes, mimeType: file.type, size: file.size }
+      })
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'P2025') {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 })
+      }
+      throw e
     }
 
-    // Overwrite — keeping same filename so all references stay valid
-    const buf = Buffer.from(await file.arrayBuffer())
-    await fs.writeFile(targetPath, buf)
-
-    return NextResponse.json({ ok: true, path: `/uploads/${name}` })
+    return NextResponse.json({ ok: true, path: `/api/media/${name}` })
   } catch {
     return NextResponse.json({ error: 'replace_failed' }, { status: 500 })
   }

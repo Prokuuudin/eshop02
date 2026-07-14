@@ -23,7 +23,7 @@ const CTA_VARIANT = {
     outline: 'outline'
 } as const;
 
-export default function SaleBanner({ banner }: { banner: PromoBanner }) {
+export default function SaleBanner({ banner, contentClassName = '' }: { banner: PromoBanner; contentClassName?: string }) {
     const { language } = useTranslation();
     const isLight = banner.textColor === 'light';
     const title = resolveLocaleText(banner.title, language);
@@ -54,7 +54,7 @@ export default function SaleBanner({ banner }: { banner: PromoBanner }) {
                 </>
             )}
 
-            <div className="sale-banner__content relative flex flex-col gap-4 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
+            <div className={`sale-banner__content relative flex flex-col gap-4 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between ${contentClassName}`}>
                 <div className="sale-banner__text max-w-3xl">
                     <h3
                         className={`sale-banner__title text-xl font-bold sm:text-2xl ${

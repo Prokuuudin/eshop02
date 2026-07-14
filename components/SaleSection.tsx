@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
@@ -46,8 +47,16 @@ export default function SaleSection() {
                     <div id="sale-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
                 {banner && (
-                    <div className="sale-section__banner mb-4">
-                        <SaleBanner banner={banner} />
+                    <div className="sale-section__banner relative mb-4 md:mt-16">
+                        <Image
+                            src="/girl1.png"
+                            alt=""
+                            aria-hidden="true"
+                            width={483}
+                            height={176}
+                            className="sale-section__girl pointer-events-none select-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none md:block"
+                        />
+                        <SaleBanner banner={banner} contentClassName="md:pl-40" />
                     </div>
                 )}
                 {products.length > 0 && (

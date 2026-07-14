@@ -249,7 +249,7 @@ export default function AdminMediaPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Медиа-библиотека</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">public/uploads/</code>
+              Хранилище в базе данных
               {' '}· {files.length} файлов · {imgCount} изображений · {fmtBytes(totalSize)}
             </p>
           </div>

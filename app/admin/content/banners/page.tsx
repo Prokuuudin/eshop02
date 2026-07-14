@@ -546,7 +546,7 @@ export default function AdminBannersPage() {
                       <Input
                         value={bannerForm.image}
                         onChange={(e) => setBannerForm((f) => ({ ...f, image: e.target.value }))}
-                        placeholder="/uploads/banner.jpg"
+                        placeholder="/api/media/banner.jpg"
                       />
                     </div>
 

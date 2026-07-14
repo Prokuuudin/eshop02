@@ -14,23 +14,23 @@ export default function Benefits() {
             text: t('benefits.deliveryFree', 'Бесплатная доставка от 100 €'),
         },
         {
-            icon: '/icons/support.svg',
+            icon: '/icons/consulting.svg',
             text: t('benefits.consultationMain', 'Профессиональные консультации'),
         },
         {
-            icon: '/icons/quality.svg',
+            icon: '/icons/orders.svg',
             text: t('benefits.processingFast', 'Быстрая обработка заказов'),
         },
         {
-            icon: '/icons/quality.svg',
+            icon: '/icons/goods.svg',
             text: t('benefits.inStock', 'Более 10 000 товаров на складе'),
         },
         {
-            icon: '/icons/original.svg',
+            icon: '/icons/originals.svg',
             text: t('benefits.brands100', '100+ оригинальных брендов'),
         },
         {
-            icon: '/icons/quality.svg',
+            icon: '/icons/bonuses.svg',
             text: t('benefits.bonusPoints', 'Бонусные баллы за каждую покупку'),
         },
     ];

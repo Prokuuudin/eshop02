@@ -5,11 +5,11 @@ import { useTranslation } from '@/lib/use-translation';
 
 const ITEMS = [
     { id: 'b1', key: 'benefits.deliveryFree', icon: '/icons/delivery.svg' },
-    { id: 'b2', key: 'benefits.consultationMain', icon: '/icons/support.svg' },
-    { id: 'b3', key: 'benefits.processingFast', icon: '/icons/quality.svg' },
-    { id: 'b4', key: 'benefits.inStock', icon: '/icons/quality.svg' },
-    { id: 'b5', key: 'benefits.brands100', icon: '/icons/original.svg' },
-    { id: 'b6', key: 'benefits.bonusPoints', icon: '/icons/quality.svg' },
+    { id: 'b2', key: 'benefits.consultationMain', icon: '/icons/consulting.svg' },
+    { id: 'b3', key: 'benefits.processingFast', icon: '/icons/orders.svg' },
+    { id: 'b4', key: 'benefits.inStock', icon: '/icons/goods.svg' },
+    { id: 'b5', key: 'benefits.brands100', icon: '/icons/originals.svg' },
+    { id: 'b6', key: 'benefits.bonusPoints', icon: '/icons/bonuses.svg' },
 ];
 
 export default function BenefitsList({

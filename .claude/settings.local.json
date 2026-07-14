@@ -183,7 +183,9 @@
       "Bash(git apply *)",
       "Bash(node -e \"const m = require\\('lucide-react'\\); console.log\\(typeof m.Share2, typeof m.Copy\\)\")",
       "Bash(git status *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "PowerShell(cat \"$\\(git rev-parse --show-toplevel\\)/.superpowers/sdd/progress.md\")",
+      "Bash(cd \"/c/Users/User/Desktop/eshop02\" && npx vitest run lib/content-registry.test.ts 2>&1 | tail -5)"
     ],
     "additionalDirectories": [
       "\\tmp"

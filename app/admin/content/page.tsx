@@ -385,8 +385,8 @@ export default function AdminContentPage() {
                   Заменяйте изображения, подменяя исходный src на новый путь или URL.
                 </p>
 
-                <Input value={imageFrom} onChange={(e) => setImageFrom(e.target.value)} placeholder="Исходный src, например /icons/original.svg" />
-                <Input value={imageTo} onChange={(e) => setImageTo(e.target.value)} placeholder="Новый src, например /uploads/new-icon.svg" />
+                <Input value={imageFrom} onChange={(e) => setImageFrom(e.target.value)} placeholder="Исходный src, например /icons/originals.svg" />
+                <Input value={imageTo} onChange={(e) => setImageTo(e.target.value)} placeholder="Новый src, например /api/media/new-icon.png" />
 
                 {(imageFrom.trim() || imageTo.trim()) && (
                   <div className="space-y-2 rounded-md border border-border p-3">

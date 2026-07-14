@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 import { useSiteContent } from '@/lib/use-site-content';
 
@@ -43,13 +42,20 @@ export default function Benefits() {
                             key={idx}
                             className="benefits__item p-4 bg-card rounded-lg border border-border shadow-sm flex items-center gap-4"
                         >
-                            <div className="benefits__icon w-10 h-10 shrink-0">
-                                <Image
-                                    src={resolveImageSrc(item.icon)}
-                                    alt=""
-                                    width={40}
-                                    height={40}
-                                    className="object-contain"
+                            <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-[#0088C4] dark:bg-white flex items-center justify-center">
+                                <span
+                                    aria-hidden
+                                    className="benefits__icon-glyph block w-6 h-6 bg-white dark:bg-[#0088C4]"
+                                    style={{
+                                        WebkitMaskImage: `url(${resolveImageSrc(item.icon)})`,
+                                        maskImage: `url(${resolveImageSrc(item.icon)})`,
+                                        WebkitMaskRepeat: 'no-repeat',
+                                        maskRepeat: 'no-repeat',
+                                        WebkitMaskPosition: 'center',
+                                        maskPosition: 'center',
+                                        WebkitMaskSize: 'contain',
+                                        maskSize: 'contain',
+                                    }}
                                 />
                             </div>
                             <h3 className="benefits__item-title font-medium text-foreground text-base">

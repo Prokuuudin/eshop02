@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Script from 'next/script'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,7 +114,15 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
       )}
       <div className={embedded ? 'product-request__container' : 'product-request__container max-w-6xl mx-auto px-4'}>
-        <div className="product-request__banner rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="product-request__banner relative rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:mt-16 md:px-10 md:pl-36 flex flex-col md:flex-row items-center justify-between gap-4">
+          <Image
+            src="/girl2.png"
+            alt=""
+            aria-hidden="true"
+            width={240}
+            height={160}
+            className="product-request__girl pointer-events-none select-none absolute bottom-0 -left-16 hidden h-40 w-auto max-w-none md:block"
+          />
           <h2 className="product-request__title text-lg md:text-xl font-bold uppercase tracking-wide text-white text-center md:text-left">
             {t('home.productRequest.title')}{' '}
             <span className="product-request__title-accent text-amber-300">

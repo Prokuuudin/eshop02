@@ -16,7 +16,9 @@
 import { readFileSync } from 'fs'
 import { config } from 'dotenv'
 config({ path: '.env.local' })
-import { Pool } from 'pg'
+// WebSocket driver (port 443), not 'pg' — TCP 5432 is blocked by the VPN,
+// same reason the app runs on adapter-neon. Same Pool API.
+import { Pool } from '@neondatabase/serverless'
 
 type Bucket = 'hair' | 'nails' | 'face' | 'body' | 'equipment'
 
@@ -97,10 +99,46 @@ for (const name of FACE) TAG_TO_BUCKET.set(name.toUpperCase(), 'face')
 for (const name of BODY) TAG_TO_BUCKET.set(name.toUpperCase(), 'body')
 for (const name of EQUIPMENT) TAG_TO_BUCKET.set(name.toUpperCase(), 'equipment')
 
+// MSSQL taxonomy leaves (non-brand). When a product carries one of these,
+// it outweighs any brand-as-signal tag: a CHILDS FARM (face brand) shampoo
+// must land in hair, not face. Discovered in the 2026-07-15 audit — brand
+// tags were silently overriding functional ones for 68 products.
+const FUNCTIONAL_TAGS = new Set<string>([
+  'ŠAMPŪNI', 'VEIDOŠANAS LĪDZEKĻI', 'KONDICIONIERI', 'KONDICIONERI', 'KONDICIONIERIS',
+  'MATU PAPILDKOPŠANA', 'MATU MASKAS', 'MASKAS', 'MATU KRĀSOŠANAI UN BALINĀŠANAI',
+  'MATU KRĀSOŠANA UN BALINĀŠANA', 'MATU KOPŠANAI UN BALINĀŠANAI', 'BARBERSHOP KOSMĒTIKA',
+  'MATU KOSMĒTIKA', 'MATU VEIDOŠANA', 'MATIEM', 'SHAMPOO', 'CONDITIONER', 'HAIR MASKS',
+  'NAGU ĀRSTĒŠANA', 'NAGU KOPŠANA', 'NAGU LAKAS', 'GĒLA LAKAS',
+  'GĒLA TEHNOLOĢIJAS PALĪGLĪDZEKĻI', 'UV ŽELEJAS', 'MANIKĪRA UN PEDIKĪRA PIEDERUMI',
+  'MANIKĪRA UN PEDIKĪRA KNAIBLES', 'MANIKĪRA UN PEDIKĪRA VĪLES', 'MANIKĪRA ŠĶĒRES',
+  'MANIKĪRA PIEDERUMI', 'PUŠERI', 'NAGIEM',
+  'SEJAI', 'DEKORATĪVĀ KOSMĒTIKA', 'DEKORATĪVA KOSMĒTIKA',
+  'MAKE-UP AKSESUĀRI', 'SKROPSTU TUŠA', 'SKROPSTU UN UZACU KOPŠANA', 'LŪPĀM',
+  'GRIMA PAMATS', 'PŪDERI', 'KOREKTORI', 'MAKE UP BLENDER',
+  'KĀJĀM', 'ROKĀM', 'SIEVIEŠU SMARŽAS', 'VĪRIEŠU SMARŽAS', 'ĶERMEŅA KOSMĒTIKA',
+  'ĶERMEŅA KOSMETIKA', 'VAKSĀCIJA', 'EĻĻAS', 'ĶERMENIM', 'SOLĀRIJU KOSMĒTIKA',
+  'DEPILĀCIJAS PAPĪRS',
+  'INSTRUMENTI', 'ĶEMMES UN MATU SUKAS', 'MATU GRIEŽAMĀ MAŠĪNA', 'MATU GRIEŽAMĀS MAŠĪNAS',
+  'STYLING TOOLS', 'AKSESUĀRI MATIEM', 'FĒNI', 'MATU SUKAS', 'MATU ĶEMMES',
+  'ELEKTROPRECES', 'MĒBELES', 'AKSESUĀRI', 'DEZINFEKCIJA', 'PALĪGMATERIĀLI', 'CIMDI',
+  'VIENREIZĒJIE APMETŅI UN APKAKLĪTES', 'FOLIJA', 'FLIZELĪNS', 'APMETŅI UN PRIEKŠAUTI',
+  'BARBERSHOP  AKSESUĀRI', 'MATU VEIDOTĀJI',
+])
+
 // Conflict priority when a product's tags resolve to more than one bucket
 // (e.g. shampoo + men's perfume on the same product) — matches the order
-// proven in the 2026-06-28 fix.
+// proven in the 2026-06-28 fix. Applied within each tag class separately:
+// functional tags first, brand tags only when no functional tag matched.
 const PRIORITY: Bucket[] = ['body', 'face', 'nails', 'equipment', 'hair']
+
+// Cosmetics that fell through to the equipment fallback because their only
+// tag is unmapped (e.g. STAPIZ 5L salon shampoos tagged 'Profesionāļiem').
+const HAIR_COSMETIC_TITLE = /шампун|кондиционер|маск[аи] для волос|бальзам|сыворотк|лосьон для волос/i
+
+// JAMES READ: the whole self-tan line carries SEJAI in MSSQL, but half the
+// SKUs are body products — trust the title over the coarse tag.
+const JAMES_READ_BODY = (title: string): boolean =>
+  /JAMES READ/i.test(title) && !/FACE|FACIAL/i.test(title)
 
 function loadJsonLenient(path: string): unknown {
   let raw = readFileSync(path, 'utf8')
@@ -114,16 +152,24 @@ function loadJsonLenient(path: string): unknown {
   return JSON.parse(out)
 }
 
-function resolveBucket(tagNames: string[]): Bucket {
-  const matched = new Set<Bucket>()
+function resolveBucket(tagNames: string[], title: string): Bucket {
+  const matchedFunctional = new Set<Bucket>()
+  const matchedBrand = new Set<Bucket>()
   for (const name of tagNames) {
-    const bucket = TAG_TO_BUCKET.get(name.trim().toUpperCase())
-    if (bucket) matched.add(bucket)
+    const normalized = name.trim().toUpperCase()
+    const bucket = TAG_TO_BUCKET.get(normalized)
+    if (!bucket) continue
+    if (FUNCTIONAL_TAGS.has(normalized)) matchedFunctional.add(bucket)
+    else matchedBrand.add(bucket)
   }
+  const matched = matchedFunctional.size > 0 ? matchedFunctional : matchedBrand
   for (const bucket of PRIORITY) {
-    if (matched.has(bucket)) return bucket
+    if (matched.has(bucket)) {
+      if (bucket === 'face' && JAMES_READ_BODY(title)) return 'body'
+      return bucket
+    }
   }
-  return 'equipment'
+  return HAIR_COSMETIC_TITLE.test(title) ? 'hair' : 'equipment'
 }
 
 async function main() {
@@ -154,8 +200,8 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
   const client = await pool.connect()
   try {
-    const current = await client.query<{ id: string; category: string }>(
-      'SELECT id, category FROM "Product" WHERE "isDeleted" = false'
+    const current = await client.query<{ id: string; category: string; title: string }>(
+      'SELECT id, category, title FROM "Product" WHERE "isDeleted" = false'
     )
     console.log(`Live products in DB: ${current.rows.length}`)
 
@@ -165,18 +211,25 @@ async function main() {
     const beforeCounts: Record<string, number> = {}
     let matchedFromMap = 0
     let untouched = 0
+    const drift: { id: string; from: string; to: Bucket; title: string }[] = []
 
     for (const product of current.rows) {
       beforeCounts[product.category] = (beforeCounts[product.category] ?? 0) + 1
       const tags = tagsByProductId.get(product.id)
 
+      let next: Bucket | null = null
       if (tags) {
-        nextByBucket[resolveBucket(tags)].push(product.id)
+        next = resolveBucket(tags, product.title)
         matchedFromMap++
       } else if (product.category === 'new') {
-        nextByBucket.equipment.push(product.id)
+        next = HAIR_COSMETIC_TITLE.test(product.title) ? 'hair' : 'equipment'
       } else {
         untouched++
+      }
+
+      if (next) {
+        nextByBucket[next].push(product.id)
+        if (next !== product.category) drift.push({ id: product.id, from: product.category, to: next, title: product.title })
       }
     }
 
@@ -187,6 +240,9 @@ async function main() {
     )
     console.log(`Matched via MSSQL tag map: ${matchedFromMap}`)
     console.log(`Left untouched (no tag data, category already valid, not 'new'): ${untouched}`)
+    console.log(`Drift (planned differs from current DB category): ${drift.length}`)
+    for (const d of drift.slice(0, 30)) console.log(`  [${d.from} -> ${d.to}] ${d.title}`)
+    if (drift.length > 30) console.log(`  ... and ${drift.length - 30} more`)
 
     if (!apply) {
       console.log('\nDry run only — pass --apply to write these changes to the database.')

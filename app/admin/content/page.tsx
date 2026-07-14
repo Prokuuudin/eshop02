@@ -51,7 +51,13 @@ function TextEntryRow({
   const [busy, setBusy] = React.useState(false)
   const dirty = value !== currentValue
 
-  // Language switches remount rows via key={...} in the parent, so no resync effect is needed.
+  // Language switches remount rows via key={...} in the parent. This effect covers the
+  // remaining path: a global «Сбросить все» clears the override without remounting the row,
+  // and the stale local value would otherwise re-enable «Сохранить» with the cleared text.
+  React.useEffect(() => {
+    setValue(currentValue)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentValue])
 
   const save = async () => {
     setBusy(true)

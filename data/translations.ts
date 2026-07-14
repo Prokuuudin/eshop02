@@ -110,6 +110,7 @@ export const translations: Record<Language, Record<string, string>> = {
         // Delivery & Payment page custom steps and help (RU)
         // Product sort select
         'catalog.filters.orderBy': 'Упорядочить по',
+        'catalog.filters.subcategory': 'Подкатегория',
         'catalog.filters.orderBy.default': 'По умолчанию',
         'catalog.filters.orderBy.priceAsc': 'Сначала дешёвые',
         'catalog.filters.orderBy.priceDesc': 'Сначала дорогие',
@@ -1914,6 +1915,7 @@ export const translations: Record<Language, Record<string, string>> = {
         // Delivery & Payment page custom steps and help (EN)
         // Product sort select
         'catalog.filters.orderBy': 'Order by',
+        'catalog.filters.subcategory': 'Subcategory',
         'catalog.filters.orderBy.default': 'Default',
         'catalog.filters.orderBy.priceAsc': 'Cheapest first',
         'catalog.filters.orderBy.priceDesc': 'Most expensive first',
@@ -3717,6 +3719,7 @@ export const translations: Record<Language, Record<string, string>> = {
         // Delivery & Payment page custom steps and help (LV)
         // Product sort select
         'catalog.filters.orderBy': 'Kārtot pēc',
+        'catalog.filters.subcategory': 'Apakškategorija',
         'catalog.filters.orderBy.default': 'Noklusējuma',
         'catalog.filters.orderBy.priceAsc': 'Sākumā lētākie',
         'catalog.filters.orderBy.priceDesc': 'Sākumā dārgākie',

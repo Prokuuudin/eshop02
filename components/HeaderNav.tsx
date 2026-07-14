@@ -7,6 +7,9 @@ import {
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from './ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 
@@ -48,15 +51,42 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
                             <DropdownMenuItem asChild key="all">
                                 <Link href="/catalog">{t('categories.all')}</Link>
                             </DropdownMenuItem>
-                            {categories.map((cat) => (
-                                <DropdownMenuItem asChild key={cat.id}>
-                                    <Link href={cat.href}>
-                                        {cat.titleKey
-                                            ? t(cat.titleKey, cat.labels[language])
-                                            : cat.labels[language]}
-                                    </Link>
-                                </DropdownMenuItem>
-                            ))}
+                            {categories.map((cat) => {
+                                const catLabel = cat.titleKey
+                                    ? t(cat.titleKey, cat.labels[language])
+                                    : cat.labels[language];
+                                const subcategories = cat.subcategories ?? [];
+
+                                if (subcategories.length === 0) {
+                                    return (
+                                        <DropdownMenuItem asChild key={cat.id}>
+                                            <Link href={cat.href}>{catLabel}</Link>
+                                        </DropdownMenuItem>
+                                    );
+                                }
+
+                                return (
+                                    <DropdownMenuSub key={cat.id}>
+                                        <DropdownMenuSubTrigger>{catLabel}</DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem asChild key={`${cat.id}-all`}>
+                                                <Link href={cat.href}>{t('categories.all')}</Link>
+                                            </DropdownMenuItem>
+                                            {subcategories.map((sub) => (
+                                                <DropdownMenuItem asChild key={`${cat.id}-${sub.slug}`}>
+                                                    <Link
+                                                        href={`/catalog?cat=${cat.id}&subcat=${encodeURIComponent(sub.slug)}`}
+                                                    >
+                                                        {sub.key
+                                                            ? t(sub.key, sub.labels[language])
+                                                            : sub.labels[language]}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                );
+                            })}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </li>

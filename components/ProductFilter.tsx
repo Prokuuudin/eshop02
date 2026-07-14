@@ -30,6 +30,7 @@ const getBrandName = (brandId: string, brands: Array<{ id: string; name: string 
 
 type ProductFiltersState = {
   group: string
+  subcat: string
   onSale: boolean
   brands: string[]
   minPrice: string
@@ -46,13 +47,13 @@ type ProductFilterProps = {
 export default function ProductFilter({ onFilter, initialFilters = {}, products }: ProductFilterProps) {
       const handleBrandChange = (brandId: string) => {
         if (brands.includes(brandId)) {
-          onFilter({ group, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order });
+          onFilter({ group, subcat, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order });
           return
         }
-        onFilter({ group, onSale, brands: [...brands, brandId], minPrice, maxPrice, order });
+        onFilter({ group, subcat, onSale, brands: [...brands, brandId], minPrice, maxPrice, order });
       }
       const handleReset = () => {
-        onFilter({ group: '', onSale: false, brands: [], minPrice: '', maxPrice: '', order: '' });
+        onFilter({ group: '', subcat: '', onSale: false, brands: [], minPrice: '', maxPrice: '', order: '' });
       };
     const sourceProducts = products ?? [];
     const priceRange = React.useMemo(() => {
@@ -69,6 +70,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }, [sourceProducts, configuredBrands, language]);
   // Controlled filter values from props
   const group = initialFilters.group ?? '';
+  const subcat = initialFilters.subcat ?? '';
   const onSale = initialFilters.onSale ?? false;
   const brands = initialFilters.brands ?? [];
   const minPrice = initialFilters.minPrice ?? '';
@@ -83,8 +85,23 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
     return item.titleKey ? t(item.titleKey, item.labels[language]) : item.labels[language]
   }
 
+  // Сабкатегории текущей категории (конфиг с сервера уже без пустых)
+  const groupSubcategories = React.useMemo(() => {
+    if (!group) return []
+    return categories.find((entry) => entry.id === group)?.subcategories ?? []
+  }, [categories, group])
+
+  const getSubcatLabel = (slug: string): string => {
+    if (!slug) return ''
+    const item = groupSubcategories.find((entry) => entry.slug === slug)
+      ?? categories.flatMap((entry) => entry.subcategories).find((entry) => entry.slug === slug)
+    if (!item) return slug
+    return item.key ? t(item.key, item.labels[language]) : item.labels[language]
+  }
+
   const matchesFilters = (product: Product, current: ProductFiltersState): boolean => {
     const matchCategory = !current.group || product.category === current.group
+    const matchSubcat = !current.subcat || product.subcategory === current.subcat
     const matchOnSale = !current.onSale || isProductOnSale(product)
     const matchBrand = current.brands.length === 0 || current.brands.includes(brandSlug(product.brand))
     const minValue = current.minPrice ? Number(current.minPrice) : null
@@ -92,12 +109,13 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
     const matchMinPrice = minValue === null || product.price >= minValue
     const matchMaxPrice = maxValue === null || product.price <= maxValue
 
-    return matchCategory && matchOnSale && matchBrand && matchMinPrice && matchMaxPrice
+    return matchCategory && matchSubcat && matchOnSale && matchBrand && matchMinPrice && matchMaxPrice
   }
 
   const getCountByFilters = (override: Partial<ProductFiltersState>): number => {
     const nextFilters: ProductFiltersState = {
       group: Object.prototype.hasOwnProperty.call(override, 'group') ? (override.group ?? '') : group,
+      subcat: Object.prototype.hasOwnProperty.call(override, 'subcat') ? (override.subcat ?? '') : subcat,
       onSale: Object.prototype.hasOwnProperty.call(override, 'onSale') ? (override.onSale ?? false) : onSale,
       brands: Object.prototype.hasOwnProperty.call(override, 'brands') ? (override.brands ?? []) : brands,
       minPrice: Object.prototype.hasOwnProperty.call(override, 'minPrice') ? (override.minPrice ?? '') : minPrice,
@@ -113,21 +131,28 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
     activeFilters.push({
       id: 'group',
       label: getGroupLabel(group),
-      onRemove: () => onFilter({ group: '', onSale, brands, minPrice, maxPrice, order })
+      onRemove: () => onFilter({ group: '', subcat: '', onSale, brands, minPrice, maxPrice, order })
+    });
+  }
+  if (subcat) {
+    activeFilters.push({
+      id: 'subcat',
+      label: getSubcatLabel(subcat),
+      onRemove: () => onFilter({ group, subcat: '', onSale, brands, minPrice, maxPrice, order })
     });
   }
   if (onSale) {
     activeFilters.push({
       id: 'onSale',
       label: t('categories.onSale'),
-      onRemove: () => onFilter({ group, onSale: false, brands, minPrice, maxPrice, order })
+      onRemove: () => onFilter({ group, subcat, onSale: false, brands, minPrice, maxPrice, order })
     });
   }
   brands.forEach((brandId) => {
     activeFilters.push({
       id: `brand-${brandId}`,
       label: `${t('product.brand')}: ${getBrandName(brandId, configuredBrands)}`,
-      onRemove: () => onFilter({ group, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order })
+      onRemove: () => onFilter({ group, subcat, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order })
     });
   });
   if (minPrice || maxPrice) {
@@ -139,7 +164,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
     activeFilters.push({
       id: 'price',
       label: `${t('product.price')}: ${priceLabel}`,
-      onRemove: () => onFilter({ group, onSale, brands, minPrice: '', maxPrice: '', order })
+      onRemove: () => onFilter({ group, subcat, onSale, brands, minPrice: '', maxPrice: '', order })
     });
   }
 
@@ -147,7 +172,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
     <div className="bg-card rounded-lg border border-border shadow p-4 mb-6 space-y-4">
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('catalog.filters.orderBy', 'Упорядочить по')}</label>
-        <Select value={order || 'default'} onValueChange={(value) => onFilter({ group, onSale, brands, minPrice, maxPrice, order: value === 'default' ? '' : value })}>
+        <Select value={order || 'default'} onValueChange={(value) => onFilter({ group, subcat, onSale, brands, minPrice, maxPrice, order: value === 'default' ? '' : value })}>
           <SelectTrigger className="w-full bg-card text-foreground border-border">
             <SelectValue placeholder={t('catalog.filters.orderBy.default', 'По умолчанию')} />
           </SelectTrigger>
@@ -162,26 +187,46 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       </div>
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('categories.title')}</label>
-        <Select value={group || 'all'} onValueChange={(value) => onFilter({ group: value === 'all' ? '' : value, onSale, brands, minPrice, maxPrice, order })}>
+        <Select value={group || 'all'} onValueChange={(value) => onFilter({ group: value === 'all' ? '' : value, subcat: '', onSale, brands, minPrice, maxPrice, order })}>
           <SelectTrigger className="w-full bg-card text-foreground border-border">
             <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ group: '' })})`} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ group: '' })})</SelectItem>
+            <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ group: '', subcat: '' })})</SelectItem>
             {categories.map((g) => (
               <SelectItem key={g.id} value={g.id}>
-                {g.titleKey ? t(g.titleKey, g.labels[language]) : g.labels[language]} ({getCountByFilters({ group: g.id })})
+                {g.titleKey ? t(g.titleKey, g.labels[language]) : g.labels[language]} ({getCountByFilters({ group: g.id, subcat: '' })})
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+      {group && groupSubcategories.length > 0 && (
+        <div className="product-filter__subcat">
+          <label className="block text-sm mb-1 text-foreground">
+            {t('catalog.filters.subcategory', 'Подкатегория')}
+          </label>
+          <Select value={subcat || 'all'} onValueChange={(value) => onFilter({ group, subcat: value === 'all' ? '' : value, onSale, brands, minPrice, maxPrice, order })}>
+            <SelectTrigger className="w-full bg-card text-foreground border-border">
+              <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ subcat: '' })})`} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ subcat: '' })})</SelectItem>
+              {groupSubcategories.map((sub) => (
+                <SelectItem key={sub.slug} value={sub.slug}>
+                  {sub.key ? t(sub.key, sub.labels[language]) : sub.labels[language]} ({getCountByFilters({ subcat: sub.slug })})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div>
         <Checkbox
           className="w-full"
           label={`${t('categories.onSale')} (${getCountByFilters({ onSale: true })})`}
           checked={onSale}
-          onCheckedChange={(checked) => onFilter({ group, onSale: checked, brands, minPrice, maxPrice, order })}
+          onCheckedChange={(checked) => onFilter({ group, subcat, onSale: checked, brands, minPrice, maxPrice, order })}
         />
       </div>
       <div className="product-filter__brand">
@@ -225,8 +270,8 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>
         <div className="flex gap-2">
-          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, onSale, brands, minPrice: e.target.value, maxPrice, order })} />
-          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, onSale, brands, minPrice, maxPrice: e.target.value, order })} />
+          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice: e.target.value, maxPrice, order })} />
+          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice, maxPrice: e.target.value, order })} />
         </div>
       </div>
       {activeFilters.length > 0 && (

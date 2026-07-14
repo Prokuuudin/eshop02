@@ -14,6 +14,7 @@ import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 
 type ProductsFilters = {
   group: string
+  subcat: string
   onSale: boolean
   brands: string[]
   minPrice: string
@@ -43,6 +44,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   // Single source of truth for filters
   const [filters, setFilters] = React.useState<ProductsFilters>({
     group: initialFilters?.group ?? '',
+    subcat: initialSubcat,
     onSale: initialFilters?.onSale ?? false,
     brands: initialFilters?.brands ?? [],
     minPrice: initialFilters?.minPrice ?? '',
@@ -66,6 +68,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
       // Only update if initialFilters changed (e.g. navigation)
       if (
         prev.group !== (initialFilters?.group ?? '') ||
+        prev.subcat !== initialSubcat ||
         prev.brands.join('|') !== (initialFilters?.brands ?? []).join('|') ||
         prev.minPrice !== (initialFilters?.minPrice ?? '') ||
         prev.maxPrice !== (initialFilters?.maxPrice ?? '')
@@ -73,6 +76,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
         return {
           ...prev,
           group: initialFilters?.group ?? '',
+          subcat: initialSubcat,
           brands: initialFilters?.brands ?? [],
           minPrice: initialFilters?.minPrice ?? '',
           maxPrice: initialFilters?.maxPrice ?? ''
@@ -80,7 +84,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
       }
       return prev;
     });
-  }, [initialFilters?.group, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
+  }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
 
   React.useEffect(() => {
     const loadProducts = async () => {
@@ -114,32 +118,37 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     // Keep backward compatibility but normalize URL to the new plural param.
     params.delete('brand')
 
+    // cat/subcat живут в URL: иначе router.replace после смены категории в
+    // сайдбаре откатил бы выбор через navigation-sync (initialFilters из URL).
+    if (filters.group) {
+      params.set('cat', filters.group)
+    } else {
+      params.delete('cat')
+    }
+    if (filters.subcat) {
+      params.set('subcat', filters.subcat)
+    } else {
+      params.delete('subcat')
+    }
+
     const nextQuery = params.toString()
     const currentQuery = searchParams.toString()
     if (nextQuery === currentQuery || (!nextQuery && !currentQuery)) return
 
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false })
-  }, [filters.brands, pathname, router, searchParams])
+  }, [filters.brands, filters.group, filters.subcat, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
-  // Сабкатегория активна, пока юзер не сменил категорию в сайдбаре —
-  // иначе чужой subcat из URL обнулил бы выдачу другой категории.
-  const activeSubcat = initialSubcat && filters.group === (initialFilters?.group ?? '')
-    ? initialSubcat
-    : ''
+  const activeSubcat = filters.subcat
   const subcatItem = activeSubcat
     ? Object.values(SUBCATEGORIES_BY_ID).flat().find((item) => item.slug === activeSubcat)
     : undefined
 
   const clearSubcat = () => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('subcat')
-    const query = params.toString()
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    setFilters((prev) => ({ ...prev, subcat: '' }))
   }
 
   const searchMatchedProducts = products.filter((product) => {
-    if (activeSubcat && product.subcategory !== activeSubcat) return false;
     const localizedTitle = (
       (language === 'en' && product.titleEn)
         ? product.titleEn
@@ -179,11 +188,12 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   const filtered = sortProducts(
     searchMatchedProducts.filter(p => {
       const groupOk = !filters.group || p.category === filters.group;
+      const subcatOk = !filters.subcat || p.subcategory === filters.subcat;
       const onSaleOk = !filters.onSale || isProductOnSale(p);
       const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));
       const minOk = !filters.minPrice || p.price >= Number(filters.minPrice);
       const maxOk = !filters.maxPrice || p.price <= Number(filters.maxPrice);
-      return groupOk && onSaleOk && brandOk && minOk && maxOk;
+      return groupOk && subcatOk && onSaleOk && brandOk && minOk && maxOk;
     }), filters.order
   );
 
@@ -199,7 +209,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
   React.useEffect(() => {
     setVisibleCount(12);
-  }, [filters, normalizedSearch, activeSubcat]);
+  }, [filters, normalizedSearch]);
 
   React.useEffect(() => {
     if (!loaderRef.current) return;

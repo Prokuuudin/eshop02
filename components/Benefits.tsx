@@ -45,7 +45,7 @@ export default function Benefits() {
                             <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-[#0088C4] dark:bg-white flex items-center justify-center">
                                 <span
                                     aria-hidden
-                                    className="benefits__icon-glyph block w-6 h-6 bg-white dark:bg-[#0088C4]"
+                                    className="benefits__icon-glyph block w-8 h-8 bg-white dark:bg-[#0088C4]"
                                     style={{
                                         WebkitMaskImage: `url(${resolveImageSrc(item.icon)})`,
                                         maskImage: `url(${resolveImageSrc(item.icon)})`,

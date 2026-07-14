@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from "@/lib/server-auth"
-import { promises as fs } from 'fs'
+import { requireAdmin } from '@/lib/server-auth'
+import { prisma } from '@/lib/prisma'
 import path from 'path'
 
 export const runtime = 'nodejs'
@@ -15,9 +15,9 @@ const ALLOWED_IMAGE_MIME = new Set([
 ])
 
 function normalizeFileBaseName(name: string): string {
-  const ext = path.extname(name).toLowerCase()
-  const base = path.basename(name, ext)
-    .toLowerCase()
+  const nameLower = name.toLowerCase()
+  const ext = path.extname(nameLower).toLowerCase()
+  const base = path.basename(nameLower, ext)
     .replace(/[^a-z0-9-_]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
@@ -48,19 +48,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'file_too_large' }, { status: 400 })
     }
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.mkdir(uploadsDir, { recursive: true })
-
     const fileName = normalizeFileBaseName(file.name)
-    const now = Date.now()
-    const finalName = `${now}-${fileName}`
-    const finalPath = path.join(uploadsDir, finalName)
+    const finalName = `${Date.now()}-${fileName}`
+    const bytes = new Uint8Array(await file.arrayBuffer())
 
-    const arrayBuffer = await file.arrayBuffer()
-    await fs.writeFile(finalPath, Buffer.from(arrayBuffer))
+    await prisma.mediaAsset.create({
+      data: {
+        name: finalName,
+        mimeType: file.type,
+        size: file.size,
+        data: bytes
+      }
+    })
 
     return NextResponse.json({
-      path: `/uploads/${finalName}`,
+      path: `/api/media/${finalName}`,
       originalName: file.name,
       size: file.size,
       mimeType: file.type

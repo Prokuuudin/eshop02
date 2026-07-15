@@ -17,6 +17,7 @@ import {
   SUBSCRIPTION_DISCOUNTS,
 } from '@/lib/subscription-store'
 import { getCurrentUser } from '@/lib/auth'
+import { useAuthStore } from '@/lib/auth-store'
 import { useTranslation } from '@/lib/use-translation'
 import { useToast } from '@/lib/toast-context'
 import { formatEuro } from '@/lib/utils'
@@ -33,6 +34,8 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
   const { t } = useTranslation()
   const { showToast } = useToast()
   const { subscribe, getActiveForProduct, cancel } = useSubscriptionStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
 
   const [mode, setMode] = useState<'once' | 'subscribe'>('once')
   const [interval, setInterval] = useState<SubscriptionInterval>('monthly')
@@ -95,6 +98,8 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
     })
   }, [existingSub])
 
+  // Виджет показывает цены со скидкой — гостям (как и все цены) не рендерится вовсе.
+  if (!isHydrated || !isAuthenticated) return null
   if (product.stock === 0) return null
 
   if (existingSub) {

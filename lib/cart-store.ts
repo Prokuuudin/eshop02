@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { SelectedVariant } from '@/data/products'
 import { sumPriceAdjustment } from '@/lib/product-variants'
+import { getCurrentUser } from '@/lib/auth'
 
 export type { SelectedVariant }
 
@@ -78,6 +79,9 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => {
+        // Корзина только для авторизованных: UI-гейты это уже обеспечивают,
+        // здесь — последний рубеж для любых обходных путей (консоль, старый код).
+        if (typeof window === 'undefined' || !getCurrentUser()) return
         const lineKey = buildLineKey(product.id, selectedVariants)
         const priceAdjustment = sumPriceAdjustment(selectedVariants ?? [])
         const variantLabel = selectedVariants?.length

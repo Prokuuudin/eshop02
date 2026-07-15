@@ -18,6 +18,46 @@ const getIdsForScope = (idsByScope: WishlistIdsByScope, scope: string): string[]
 const resolveProductsFromCache = (ids: string[], cache: Record<string, Product>): Product[] =>
   ids.map((id) => cache[id]).filter((p): p is Product => !!p)
 
+type PersistedWishlistState = {
+  currentScope?: string
+  idsByScope: WishlistIdsByScope
+  productCache: Record<string, Product>
+  items?: Product[]
+}
+
+// Дo-v5 миграции: приводим любую старую форму хранилища к scoped-форме с кэшем товаров.
+const migrateToScopedShape = (persisted: unknown, version: number): PersistedWishlistState => {
+  const state = (persisted as Record<string, unknown> | null) ?? {}
+  const idsByScope: WishlistIdsByScope = {}
+  const productCache: Record<string, Product> = {}
+
+  if (version >= 4 && state.idsByScope && typeof state.idsByScope === 'object') {
+    // Already new format with cache
+    const cache = (state.productCache as Record<string, Product> | undefined) ?? {}
+    return { ...state, idsByScope: state.idsByScope as WishlistIdsByScope, productCache: cache }
+  }
+
+  if (state.idsByScope && typeof state.idsByScope === 'object') {
+    // v3: had idsByScope but no productCache
+    return { ...state, idsByScope: state.idsByScope as WishlistIdsByScope, productCache }
+  }
+
+  if (state.itemsByScope && typeof state.itemsByScope === 'object') {
+    for (const [scope, products] of Object.entries(state.itemsByScope as Record<string, unknown[]>)) {
+      const scopeProducts = products as { id?: string }[]
+      idsByScope[scope] = scopeProducts.map((p) => p?.id).filter((id): id is string => typeof id === 'string')
+      scopeProducts.forEach((p) => { if (p?.id) productCache[p.id] = p as Product })
+    }
+  } else if (Array.isArray(state.items)) {
+    const items = state.items as { id?: string }[]
+    idsByScope[GUEST_WISHLIST_SCOPE] = items.map((p) => p?.id).filter((id): id is string => typeof id === 'string')
+    items.forEach((p) => { if (p?.id) productCache[p.id] = p as Product })
+  }
+
+  const currentScope = (state.currentScope as string) ?? GUEST_WISHLIST_SCOPE
+  return { currentScope, idsByScope, productCache }
+}
+
 type WishlistStore = {
   currentScope: string
   idsByScope: WishlistIdsByScope
@@ -47,6 +87,8 @@ export const useWishlist = create<WishlistStore>()(
         })
       },
       addItem: (product) => {
+        // Вишлист только для авторизованных: гостевой scope больше не пополняется.
+        if (resolveWishlistScope() === GUEST_WISHLIST_SCOPE) return
         set((state) => {
           const scope = resolveWishlistScope()
           const ids = getIdsForScope(state.idsByScope, scope)
@@ -92,6 +134,7 @@ export const useWishlist = create<WishlistStore>()(
         }
       },
       toggleItem: (product) => {
+        if (resolveWishlistScope() === GUEST_WISHLIST_SCOPE) return false
         const exists = get().items.some((item) => item.id === product.id)
         if (exists) { get().removeItem(product.id); return false }
         get().addItem(product); return true
@@ -111,42 +154,18 @@ export const useWishlist = create<WishlistStore>()(
     }),
     {
       name: 'wishlist-store',
-      version: 4,
+      version: 5,
       onRehydrateStorage: () => (state) => { state?.syncWishlistScope() },
       migrate: (persisted: unknown, version: number) => {
-        const state = (persisted as Record<string, unknown> | null) ?? {}
-        const idsByScope: WishlistIdsByScope = {}
-        const productCache: Record<string, Product> = {}
-
-        if (version >= 4 && state.idsByScope && typeof state.idsByScope === 'object') {
-          // Already new format with cache
-          const cache = (state.productCache as Record<string, Product> | undefined) ?? {}
-          return { ...state, idsByScope: state.idsByScope as WishlistIdsByScope, productCache: cache }
-        }
-
-        if (state.idsByScope && typeof state.idsByScope === 'object') {
-          // v3: had idsByScope but no productCache
-          return { ...state, idsByScope: state.idsByScope as WishlistIdsByScope, productCache }
-        }
-
-        if (state.itemsByScope && typeof state.itemsByScope === 'object') {
-          for (const [scope, products] of Object.entries(state.itemsByScope as Record<string, unknown[]>)) {
-            const scopeProducts = products as { id?: string }[]
-            idsByScope[scope] = scopeProducts.map((p) => p?.id).filter((id): id is string => typeof id === 'string')
-            scopeProducts.forEach((p) => { if (p?.id) productCache[p.id] = p as Product })
-          }
-        } else if (Array.isArray(state.items)) {
-          const items = state.items as { id?: string }[]
-          idsByScope[GUEST_WISHLIST_SCOPE] = items.map((p) => p?.id).filter((id): id is string => typeof id === 'string')
-          items.forEach((p) => { if (p?.id) productCache[p.id] = p as Product })
-        }
-
-        const currentScope = (state.currentScope as string) ?? GUEST_WISHLIST_SCOPE
+        const migrated = migrateToScopedShape(persisted, version)
+        // v5: вишлист только для авторизованных — выкидываем легаси-данные гостевого scope.
+        const idsByScope = { ...migrated.idsByScope }
+        delete idsByScope[GUEST_WISHLIST_SCOPE]
+        const currentScope = migrated.currentScope ?? GUEST_WISHLIST_SCOPE
         return {
-          currentScope,
+          ...migrated,
           idsByScope,
-          productCache,
-          items: resolveProductsFromCache(getIdsForScope(idsByScope, currentScope), productCache),
+          items: resolveProductsFromCache(getIdsForScope(idsByScope, currentScope), migrated.productCache),
         }
       },
     }

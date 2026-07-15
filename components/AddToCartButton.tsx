@@ -171,7 +171,8 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
         </Tooltip>
       </TooltipProvider>
 
-      {sortedTiers.length > 0 && !isOutOfStock && (
+      {/* Прогресс к оптовой цене показывает цены — гостям, как и остальные цены, не виден. */}
+      {isAuthenticated && sortedTiers.length > 0 && !isOutOfStock && (
         <div className="add-to-cart__bulk-progress w-full">
           {nextTier ? (
             <>

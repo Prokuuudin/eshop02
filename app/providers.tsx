@@ -83,6 +83,8 @@ function CartUserSync(): null {
     if (!initialized.current) {
       initialized.current = true
       prevUserId.current = userId
+      // Гость не может иметь корзину — выкидываем остатки, добавленные до auth-гейтов.
+      if (userId === null) clearCart()
       return
     }
     if (userId !== prevUserId.current) {

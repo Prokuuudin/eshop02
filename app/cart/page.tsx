@@ -215,21 +215,32 @@ export default function CartPage() {
                                     </div>
 
                                     <div className="cart__item-controls flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2">
-                                        <ConfirmActionDialog
-                                            title={t('confirm.title')}
-                                            description={t('confirm.removeCartItem')}
-                                            confirmLabel={t('cart.remove')}
-                                            cancelLabel={t('common.cancel')}
-                                            onConfirm={() => {
-                                                removeItem(item.lineKey);
-                                                showToast(t('toast.removedFromCart'), 'info');
-                                            }}
-                                            trigger={
-                                                <button className="cart__item-remove text-red-600 text-sm">
-                                                    {t('cart.remove')}
-                                                </button>
-                                            }
-                                        />
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span className="inline-flex">
+                                                        <ConfirmActionDialog
+                                                            title={t('confirm.title')}
+                                                            description={t('confirm.removeCartItem')}
+                                                            confirmLabel={t('cart.remove')}
+                                                            cancelLabel={t('common.cancel')}
+                                                            onConfirm={() => {
+                                                                removeItem(item.lineKey);
+                                                                showToast(t('toast.removedFromCart'), 'info');
+                                                            }}
+                                                            trigger={
+                                                                <button className="cart__item-remove text-red-600 text-sm">
+                                                                    {t('cart.remove')}
+                                                                </button>
+                                                            }
+                                                        />
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">
+                                                    {t('cart.removeFromCart')}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
 
                                         <div className="cart__item-qty flex items-center border border-border rounded">
                                             <button

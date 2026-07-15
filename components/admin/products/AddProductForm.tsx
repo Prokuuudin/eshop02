@@ -65,8 +65,6 @@ const emptyDefaults: AddProductFormValues = {
 
     stock: 0,
     minOrder: 1,
-    unitOfMeasure: '',
-    packagingSize: undefined,
 
     image: '',
     images: [],
@@ -108,16 +106,6 @@ const emptyDefaults: AddProductFormValues = {
     feature4: '',
     feature4En: '',
     feature4Lv: '',
-
-    specVolume: '',
-    specVolumeEn: '',
-    specVolumeLv: '',
-    specType: '',
-    specTypeEn: '',
-    specTypeLv: '',
-    specCountry: '',
-    specCountryEn: '',
-    specCountryLv: '',
 };
 
 interface AddProductFormProps {

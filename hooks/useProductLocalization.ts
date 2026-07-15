@@ -27,28 +27,6 @@ export function useProductLocalization(product: Product) {
     return fromI18n !== `${productBaseKey}.description` ? fromI18n : '';
   })();
 
-  // Пустая строка = данных нет, строка в блоке «Характеристики» не рендерится.
-  // Никаких выдуманных дефолтов ('50-300ml' / 'Швейцария' и т.п.) — только
-  // реальное поле из БД или точечный i18n-ключ товара.
-  // EN/LV-переводы кратких характеристик живут в technicalSpecs.__spec*En/Lv
-  // (резервные ключи, как __descriptionEn); пустой перевод — фолбэк на RU-колонку.
-  const localizedSpec = (ruValue: string | undefined, reservedBase: string, i18nSuffix: string): string => {
-    const reserved =
-      language === 'en'
-        ? product.technicalSpecs?.[`${reservedBase}En`]
-        : language === 'lv'
-        ? product.technicalSpecs?.[`${reservedBase}Lv`]
-        : undefined;
-    if (reserved) return reserved;
-    if (ruValue) return ruValue;
-    const fromI18n = t(`${productBaseKey}.spec.${i18nSuffix}`);
-    return fromI18n !== `${productBaseKey}.spec.${i18nSuffix}` ? fromI18n : '';
-  };
-
-  const productSpecVolume = localizedSpec(product.specVolume, '__specVolume', 'volume');
-  const productSpecType = localizedSpec(product.specType, '__specType', 'type');
-  const productSpecCountry = localizedSpec(product.specCountry, '__specCountry', 'country');
-
   // Применение и предостережения колонок в БД не имеют — весь контент живёт в
   // резервных __-ключах technicalSpecs: RU в базовом ключе, переводы в *En/*Lv.
   const localizedReserved = (base: string): string => {
@@ -80,9 +58,6 @@ export function useProductLocalization(product: Product) {
     language,
     localizedTitle,
     productDescription,
-    productSpecVolume,
-    productSpecType,
-    productSpecCountry,
     productApplication,
     productWarnings,
     productFeatures,

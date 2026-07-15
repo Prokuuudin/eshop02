@@ -6,46 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductFormValues } from './productFormSchema';
 
+// Свободный список «Характеристики (ключ — значение)» здесь больше не редактируется:
+// на странице товара блок убран, а сами данные technicalSpecs по-прежнему хранятся
+// и проходят насквозь через reservedTechSpecs (см. lib/product-form-mapping.ts) —
+// ничего не теряется, просто нет формы для правки. compatibleEquipment остаётся:
+// отдаётся во внешний /api/v1/products.
 const ProductTechSpecsFields: React.FC = () => {
-    const { control, register } = useFormContext<AddProductFormValues>();
-    const { fields, append, remove } = useFieldArray({ control, name: 'technicalSpecs' });
+    const { register, control } = useFormContext<AddProductFormValues>();
     const equip = useFieldArray({ control, name: 'compatibleEquipment' as never });
 
     return (
         <div className="add-product__section add-product__section--techspecs">
-            <h2 className="add-product__section-title">Технические характеристики</h2>
+            <h2 className="add-product__section-title">Совместимое оборудование</h2>
             <div className="add-product__fields-grid">
                 <div>
-                    <label className="block text-sm font-medium mb-2">Характеристики (ключ — значение)</label>
-                    <div className="flex flex-col gap-2">
-                        {fields.map((field, idx) => (
-                            <div key={field.id} className="flex gap-2">
-                                <Input
-                                    placeholder="Параметр (напр.: Объём)"
-                                    {...register(`technicalSpecs.${idx}.key`)}
-                                />
-                                <Input
-                                    placeholder="Значение (напр.: 250 мл)"
-                                    {...register(`technicalSpecs.${idx}.value`)}
-                                />
-                                <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
-                                    ✕
-                                </Button>
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="self-start mt-1"
-                            onClick={() => append({ key: '', value: '' })}
-                        >
-                            + Добавить характеристику
-                        </Button>
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-2">Совместимое оборудование</label>
                     <div className="flex flex-col gap-2">
                         {(equip.fields as { id: string }[]).map((field, idx) => (
                             <div key={field.id} className="flex gap-2">

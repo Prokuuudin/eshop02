@@ -218,43 +218,27 @@ describe('related products and bought-together lists', () => {
   })
 })
 
-describe('spec translations round-trip through technicalSpecs', () => {
-  it('extracts __spec*En/Lv into form fields and keeps them out of reservedTechSpecs', () => {
+describe('spec translations: no dedicated fields, round-trip untouched via reservedTechSpecs', () => {
+  it('passes __spec*En/Lv through reservedTechSpecs since there is no admin UI for them anymore', () => {
     const values = mapProductToFormValues({
       ...baseProduct,
-      specVolume: '250 мл',
       technicalSpecs: {
         __specVolumeEn: '250 ml',
         __specTypeLv: 'Profesionāls',
         __futureReserved: 'x',
       },
     })
-    expect(values.specVolume).toBe('250 мл')
-    expect(values.specVolumeEn).toBe('250 ml')
-    expect(values.specTypeLv).toBe('Profesionāls')
-    expect(values.reservedTechSpecs).toEqual({ __futureReserved: 'x' })
-  })
-
-  it('writes edited spec translations back into the patch', () => {
-    const values = mapProductToFormValues({ ...baseProduct, technicalSpecs: { 'Тип': 'крем' } })
-    values.specVolumeEn = '250 ml'
-    values.specCountryLv = 'Vācija'
+    expect(values.reservedTechSpecs).toEqual({
+      __specVolumeEn: '250 ml',
+      __specTypeLv: 'Profesionāls',
+      __futureReserved: 'x',
+    })
     const patch = mapFormValuesToProductPatch(values)
     expect(patch.technicalSpecs).toEqual({
-      'Тип': 'крем',
       __specVolumeEn: '250 ml',
-      __specCountryLv: 'Vācija',
+      __specTypeLv: 'Profesionāls',
+      __futureReserved: 'x',
     })
-  })
-
-  it('drops __spec* keys when the admin empties the fields', () => {
-    const values = mapProductToFormValues({
-      ...baseProduct,
-      technicalSpecs: { __specVolumeEn: '250 ml' },
-    })
-    values.specVolumeEn = ''
-    const patch = mapFormValuesToProductPatch(values)
-    expect(patch.technicalSpecs).toBeUndefined()
   })
 })
 

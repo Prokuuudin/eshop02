@@ -26,18 +26,6 @@ const ProductInventoryFields: React.FC = () => {
                         {...register('minOrder', { valueAsNumber: true })}
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1">Единица измерения</label>
-                    <Input placeholder="шт, л, кг и т.д." {...register('unitOfMeasure')} />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1">Размер упаковки (шт в упаковке)</label>
-                    <Input
-                        placeholder="Например: 12"
-                        type="number"
-                        {...register('packagingSize', { valueAsNumber: true })}
-                    />
-                </div>
             </div>
         </div>
     );

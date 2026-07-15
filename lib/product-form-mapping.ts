@@ -46,8 +46,6 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
 
         stock: product.stock,
         minOrder: minOrderFromQuantities(product.minOrderQuantities),
-        unitOfMeasure: product.unitOfMeasure ?? '',
-        packagingSize: product.packagingSize,
 
         image: product.image ?? '',
         images: product.images ?? [],
@@ -65,12 +63,6 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
                         '__variantGroupsJson',
                         '__descriptionEn',
                         '__descriptionLv',
-                        '__specVolumeEn',
-                        '__specVolumeLv',
-                        '__specTypeEn',
-                        '__specTypeLv',
-                        '__specCountryEn',
-                        '__specCountryLv',
                         '__application',
                         '__applicationEn',
                         '__applicationLv',
@@ -114,16 +106,6 @@ export function mapProductToFormValues(product: Product): AddProductFormValues {
         feature4: product.feature4 ?? '',
         feature4En: product.feature4En ?? '',
         feature4Lv: product.feature4Lv ?? '',
-
-        specVolume: product.specVolume ?? '',
-        specVolumeEn: product.technicalSpecs?.__specVolumeEn ?? '',
-        specVolumeLv: product.technicalSpecs?.__specVolumeLv ?? '',
-        specType: product.specType ?? '',
-        specTypeEn: product.technicalSpecs?.__specTypeEn ?? '',
-        specTypeLv: product.technicalSpecs?.__specTypeLv ?? '',
-        specCountry: product.specCountry ?? '',
-        specCountryEn: product.technicalSpecs?.__specCountryEn ?? '',
-        specCountryLv: product.technicalSpecs?.__specCountryLv ?? '',
     };
 }
 
@@ -150,12 +132,6 @@ export function mapFormValuesToProductPatch(
         techSpecs['__descriptionLv'] = values.descriptionLv;
     }
     const reservedI18n: Array<[string, string | undefined]> = [
-        ['__specVolumeEn', values.specVolumeEn],
-        ['__specVolumeLv', values.specVolumeLv],
-        ['__specTypeEn', values.specTypeEn],
-        ['__specTypeLv', values.specTypeLv],
-        ['__specCountryEn', values.specCountryEn],
-        ['__specCountryLv', values.specCountryLv],
         ['__application', values.application],
         ['__applicationEn', values.applicationEn],
         ['__applicationLv', values.applicationLv],
@@ -193,8 +169,6 @@ export function mapFormValuesToProductPatch(
         bulkPricingTiers:
             values.bulkPricingTiers.length > 0 ? values.bulkPricingTiers : undefined,
         stock: values.stock,
-        unitOfMeasure: values.unitOfMeasure || undefined,
-        packagingSize: values.packagingSize || undefined,
         image: values.image || undefined,
         images: cleanArray(values.images).length > 0 ? cleanArray(values.images) : undefined,
         badges: values.badges.length > 0 ? values.badges : undefined,
@@ -246,10 +220,6 @@ export function mapFormValuesToProductPatch(
         feature4: values.feature4 || undefined,
         feature4En: values.feature4En || undefined,
         feature4Lv: values.feature4Lv || undefined,
-
-        specVolume: values.specVolume || undefined,
-        specType: values.specType || undefined,
-        specCountry: values.specCountry || undefined,
     };
 }
 

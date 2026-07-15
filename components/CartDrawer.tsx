@@ -43,7 +43,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const router = useRouter();
     const { items, removeItem, updateQuantity } = useCart();
     const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
-    const [selectionTouched, setSelectionTouched] = React.useState(false);
+    const knownLineKeysRef = React.useRef<Set<string>>(new Set());
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const [mounted, setMounted] = React.useState(false);
@@ -52,28 +52,19 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
+    // New lines are selected by default; a line the user unchecked stays
+    // unchecked until it leaves the cart (its key drops out of the known set).
     React.useEffect(() => {
+        const currentKeys = items.map((item) => item.lineKey);
+        const known = knownLineKeysRef.current;
+        const newKeys = currentKeys.filter((key) => !known.has(key));
+        knownLineKeysRef.current = new Set(currentKeys);
         setSelectedItemIds((prev) => {
-            if (prev.length === 0 && !selectionTouched) {
-                return items.map((item) => item.lineKey);
-            }
-
-            const currentIds = new Set(items.map((item) => item.lineKey));
-            const next = prev.filter((id) => currentIds.has(id));
-
-            if (next.length === 0 && items.length > 0 && !selectionTouched) {
-                return items.map((item) => item.lineKey);
-            }
-
-            return next;
+            const currentSet = new Set(currentKeys);
+            const next = prev.filter((id) => currentSet.has(id));
+            return newKeys.length > 0 ? [...next, ...newKeys] : next;
         });
-    }, [items, selectionTouched]);
-
-    React.useEffect(() => {
-        if (items.length === 0) {
-            setSelectionTouched(false);
-        }
-    }, [items.length]);
+    }, [items]);
 
     const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
     const bonusToEarn = calcOrderBonus(
@@ -111,7 +102,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     };
 
     const toggleSelected = (lineKey: string): void => {
-        setSelectionTouched(true);
         setSelectedItemIds((prev) =>
             prev.includes(lineKey) ? prev.filter((id) => id !== lineKey) : [...prev, lineKey]
         );
@@ -212,7 +202,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setSelectionTouched(true);
                                     setSelectedItemIds(items.map((item) => item.lineKey));
                                 }}
                                 className="text-primary hover:underline"
@@ -222,7 +211,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setSelectionTouched(true);
                                     setSelectedItemIds([]);
                                 }}
                                 className="text-primary hover:underline"

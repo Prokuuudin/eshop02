@@ -1,32 +1,24 @@
 import { test, expect, type Page } from '@playwright/test'
 import { BRANDS } from '../data/brands'
 
-const seedCartWithOneItem = async (page: Page): Promise<void> => {
-  await page.addInitScript(() => {
-    const cartState = {
-      state: {
-        items: [
-          {
-            id: 'p1',
-            title: 'Крем для лица Revitaluxe 50ml',
-            brand: 'Revitaluxe',
-            price: 2500,
-            oldPrice: 3200,
-            rating: 4.7,
-            image: '/products/p1.jpg',
-            badges: ['sale', 'bestseller'],
-            category: 'face',
-            stock: 15,
-            purpose: 'Для увлажнения',
-            quantity: 1
-          }
-        ]
-      },
-      version: 0
-    }
+// Сидим корзину РЕАЛЬНЫМ товаром из Neon: демо-товары (p1-p16) удалены из БД,
+// а POST /api/orders проверяет сток на сервере и отвечает 409 на неизвестный id.
+const seedCartWithOneItem = async (page: Page): Promise<{ title: string }> => {
+  const response = await page.request.get('/api/products?category=hair')
+  const payload = (await response.json()) as { data?: { products?: Array<Record<string, unknown>> } }
+  const products = payload.data?.products ?? []
+  const product = products.find((p) => (p.stock as number) > 0 && (p.price as number) >= 20) ?? products[0]
+  if (!product) throw new Error('seedCartWithOneItem: no products returned by /api/products')
 
-    window.localStorage.setItem('cart-store', JSON.stringify(cartState))
-  })
+  const cartItem = { ...product, quantity: 1, lineKey: product.id }
+  await page.addInitScript((item) => {
+    window.localStorage.setItem(
+      'cart-store',
+      JSON.stringify({ state: { items: [item] }, version: 0 })
+    )
+  }, cartItem)
+
+  return { title: String(product.title) }
 }
 
 test('cart drawer opens and closes on outside click', async ({ page }) => {
@@ -41,7 +33,8 @@ test('cart drawer opens and closes on outside click', async ({ page }) => {
 })
 
 test('confirm dialog appears before removing item from cart drawer', async ({ page }) => {
-  await seedCartWithOneItem(page)
+  const { title } = await seedCartWithOneItem(page)
+  const titleFragment = title.trim().slice(0, 15)
   await page.goto('/')
 
   await page.locator('button.header__cart').click()
@@ -54,12 +47,12 @@ test('confirm dialog appears before removing item from cart drawer', async ({ pa
   await expect(dialog).toBeVisible()
 
   await dialog.getByRole('button').filter({ hasText: /Отмена|Cancel|Atcelt/i }).click()
-  await expect(drawer).toContainText('Revitaluxe')
+  await expect(drawer).toContainText(titleFragment)
 
   await drawer.getByRole('button').filter({ hasText: /Удалить|Remove|Noņemt/i }).first().click()
   await dialog.getByRole('button').filter({ hasText: /Удалить|Remove|Dzēst|Noņemt/i }).first().click()
 
-  await expect(drawer).not.toContainText('Revitaluxe')
+  await expect(drawer).not.toContainText(titleFragment)
 })
 
 test('checkout submit redirects to order details page', async ({ page }) => {
@@ -84,12 +77,19 @@ test('checkout submit redirects to order details page', async ({ page }) => {
   await checkoutForm.locator('input[name="firstName"]').fill('Ivan')
   await checkoutForm.locator('input[name="lastName"]').fill('Petrov')
   await checkoutForm.locator('input[name="email"]').fill('ivan.petrov@example.com')
-  await checkoutForm.locator('input[name="phone"]').fill('+37120000000')
+  // Телефон — react-phone-number-input, у поля нет name="phone"
+  await checkoutForm.locator('.phone-input input').fill('+37120000000')
   await checkoutForm.locator('input[name="address"]').fill('Brivibas iela 1')
   await checkoutForm.locator('input[name="city"]').fill('Riga')
   await checkoutForm.locator('input[name="postalCode"]').fill('LV-1010')
 
   await checkoutForm.locator('#payment-bank').click()
+
+  const cookieAccept = page.getByRole('button', { name: /Принять все|Accept all|Pieņemt visu/i })
+  if (await cookieAccept.isVisible().catch(() => false)) await cookieAccept.click()
+
+  // Чекбокс согласия с условиями (07-12) живёт в сайдбаре, вне формы
+  await page.locator('#checkout-terms').click()
 
   await checkoutForm.locator('button[type="submit"]').first().click()
   await page.waitForURL(/\/order\//, { timeout: 60000 })
@@ -157,12 +157,19 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
   await checkoutForm.locator('input[name="firstName"]').fill('Ivan')
   await checkoutForm.locator('input[name="lastName"]').fill('Petrov')
   await checkoutForm.locator('input[name="email"]').fill('ivan.petrov@example.com')
-  await checkoutForm.locator('input[name="phone"]').fill('+37120000000')
+  // Телефон — react-phone-number-input, у поля нет name="phone"
+  await checkoutForm.locator('.phone-input input').fill('+37120000000')
   await checkoutForm.locator('input[name="address"]').fill('Brivibas iela 1')
   await checkoutForm.locator('input[name="city"]').fill('Riga')
   await checkoutForm.locator('input[name="postalCode"]').fill('LV-1010')
 
   await checkoutForm.locator('#payment-card').click()
+
+  const cookieAccept = page.getByRole('button', { name: /Принять все|Accept all|Pieņemt visu/i })
+  if (await cookieAccept.isVisible().catch(() => false)) await cookieAccept.click()
+
+  // Чекбокс согласия с условиями (07-12) живёт в сайдбаре, вне формы
+  await page.locator('#checkout-terms').click()
 
   await checkoutForm.locator('button[type="submit"]').first().click()
 
@@ -174,25 +181,21 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
 test('brand card link opens catalog filtered by selected brand', async ({ page }) => {
   await page.goto('/')
 
+  // После редизайна брендов (f07aec9) карточка — прямая ссылка на каталог,
+  // диалога больше нет.
   const firstBrandCard = page.locator('.brands__item').first()
   await expect(firstBrandCard).toBeVisible({ timeout: 45000 })
 
-  await firstBrandCard.click()
-
-  const dialog = page.getByRole('dialog')
-  await expect(dialog).toBeVisible()
-
-  const catalogLink = dialog.locator('a[href^="/catalog?brand="]').first()
-  await expect(catalogLink).toBeVisible()
-  const targetHref = await catalogLink.getAttribute('href')
-  expect(targetHref).toBeTruthy()
+  const targetHref = await firstBrandCard.getAttribute('href')
+  expect(targetHref).toMatch(/^\/catalog\?brand=/)
   const brandId = new URL(targetHref ?? '', 'http://127.0.0.1').searchParams.get('brand')
   expect(brandId?.trim().length).toBeGreaterThan(0)
 
   await page.goto(targetHref ?? '/catalog')
 
-  await page.waitForURL(/\/catalog\?brand=/, { timeout: 60000 })
-  await expect(page).toHaveURL(new RegExp(`/catalog\\?brand=${brandId}`))
+  // Каталог нормализует brand= в brands= (router.replace) — принимаем обе формы
+  await page.waitForURL(/\/catalog\?brands?=/, { timeout: 60000 })
+  await expect(page).toHaveURL(new RegExp(`/catalog\\?brands?=${brandId}`))
   await expect(page.getByRole('main').first()).toBeVisible({ timeout: 45000 })
 })
 

@@ -4,6 +4,7 @@ import { useTranslation } from '@/lib/use-translation'
 import Link from 'next/link'
 import { Button } from './ui/button'
 import { useAuthStore } from '@/lib/auth-store'
+import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog'
 import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
@@ -14,17 +15,11 @@ type Props = {
   onClose: () => void
 }
 
-const CATEGORIES = [
-  { id: 'hair', labelKey: 'categories.haircare', fallback: 'Hair care' },
-  { id: 'nails', labelKey: 'categories.nails', fallback: 'Nails' },
-  { id: 'face', labelKey: 'categories.skincare', fallback: 'Skincare' },
-  { id: 'body', labelKey: 'categories.bodycare', fallback: 'Body care' },
-  { id: 'equipment', labelKey: 'categories.equipment', fallback: 'Accessories & Tools' }
-]
-
 export default function MobileMenu({ isOpen, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { categories } = useCategoriesConfig();
   const [expandCategories, setExpandCategories] = useState(false);
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const user = useAuthStore((s) => s.user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -80,13 +75,56 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
             </button>
             {expandCategories && (
               <ul className="ml-4 mt-2 space-y-2 border-l border-border pl-3">
-                {CATEGORIES.map((cat) => (
-                  <li key={cat.id}>
-                    <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className="inline-flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/80/15 dark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
-                      {t(cat.labelKey)}
-                    </Link>
-                  </li>
-                ))}
+                {categories.map((cat) => {
+                  const catLabel = cat.titleKey ? t(cat.titleKey, cat.labels[language]) : cat.labels[language];
+                  const subcategories = cat.subcategories ?? [];
+                  const subLinkClass = 'inline-flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/80/15 dark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60';
+
+                  if (subcategories.length === 0) {
+                    return (
+                      <li key={cat.id}>
+                        <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className={subLinkClass}>
+                          {catLabel}
+                        </Link>
+                      </li>
+                    );
+                  }
+
+                  const expanded = expandedCategoryId === cat.id;
+                  return (
+                    <li key={cat.id}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCategoryId(expanded ? null : cat.id)}
+                        className="w-full text-left flex items-center justify-between rounded-md px-2 py-1 text-sm transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/80/15 dark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                        aria-expanded={expanded}
+                      >
+                        <span>{catLabel}</span>
+                        <span className={`transform transition-transform ${expanded ? 'rotate-180' : ''}`}>▼</span>
+                      </button>
+                      {expanded && (
+                        <ul className="ml-3 mt-1 space-y-1 border-l border-border pl-3">
+                          <li>
+                            <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className={subLinkClass}>
+                              {t('categories.all')}
+                            </Link>
+                          </li>
+                          {subcategories.map((sub) => (
+                            <li key={sub.slug}>
+                              <Link
+                                href={`/catalog?cat=${cat.id}&subcat=${encodeURIComponent(sub.slug)}`}
+                                onClick={onClose}
+                                className={subLinkClass}
+                              >
+                                {sub.key ? t(sub.key, sub.labels[language]) : sub.labels[language]}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </li>

@@ -263,32 +263,34 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                     +
                                                 </button>
                                             </div>
-                                            <ConfirmActionDialog
-                                                title={t('confirm.title')}
-                                                description={t('confirm.removeCartItem')}
-                                                confirmLabel={t('cart.remove')}
-                                                cancelLabel={t('common.cancel')}
-                                                onConfirm={() => {
-                                                    removeItem(item.lineKey);
-                                                    showToast(t('toast.removedFromCart'), 'info');
-                                                }}
-                                                trigger={
-                                                    <button className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium">
-                                                        {t('cart.remove')}
-                                                    </button>
-                                                }
-                                            />
+                                            <div className="flex items-center gap-3">
+                                                <p className="cart-drawer__item-price text-sm font-semibold text-foreground">
+                                                    {formatCurrency(
+                                                        calculatePrice(item, item.quantity) * item.quantity
+                                                    )}
+                                                </p>
+                                                <ConfirmActionDialog
+                                                    title={t('confirm.title')}
+                                                    description={t('confirm.removeCartItem')}
+                                                    confirmLabel={t('cart.remove')}
+                                                    cancelLabel={t('common.cancel')}
+                                                    onConfirm={() => {
+                                                        removeItem(item.lineKey);
+                                                        showToast(t('toast.removedFromCart'), 'info');
+                                                    }}
+                                                    trigger={
+                                                        <button className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium">
+                                                            {t('cart.remove')}
+                                                        </button>
+                                                    }
+                                                />
+                                            </div>
                                         </div>
                                         {minQuantity > 1 && (
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 {t('common.min')} {minQuantity} {t('product.pcs')}
                                             </p>
                                         )}
-                                        <p className="text-sm font-semibold mt-1 text-foreground">
-                                            {formatCurrency(
-                                                calculatePrice(item, item.quantity) * item.quantity
-                                            )}
-                                        </p>
                                     </div>
                                 </div>
                             );

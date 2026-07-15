@@ -22,7 +22,9 @@ test('demo B2B invoices flow loads dashboard and resets back to fallback', async
 
   await page.reload()
 
-  await expect(page.getByText('Beauty Supply Pro', { exact: true })).toBeVisible()
+  // Имя компании больше не выводится на странице счетов — признак demo-режима
+  // теперь баннер
+  await expect(page.getByText('Demo B2B режим активен')).toBeVisible()
   await expect(page.getByText(/INV-2026-001000/i)).toBeVisible()
   await expect(page.getByText(/INV-2026-001001/i)).toBeVisible()
   await expect(page.getByText(/INV-2026-001002/i)).toBeVisible()

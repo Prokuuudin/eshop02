@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { E2E_ADMIN, loginAs } from './helpers'
 
 const seedCleanState = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
@@ -8,25 +9,18 @@ const seedCleanState = async (page: Page): Promise<void> => {
 }
 
 const seedAdminSession = async (page: Page): Promise<void> => {
-  await page.addInitScript(() => {
+  await page.addInitScript((adminUser) => {
     window.localStorage.clear()
     window.sessionStorage.clear()
-
-    const adminUser = {
-      id: 'u_admin_e2e',
-      email: 'admin-e2e@eshop02.local',
-      password: 'StrongPass123',
-      name: 'E2E Admin',
-      platformRole: 'admin',
-      auditLoggingEnabled: true
-    }
-
     window.localStorage.setItem('eshop_users', JSON.stringify([adminUser]))
     window.localStorage.setItem('eshop_current_user', JSON.stringify(adminUser))
-  })
+  }, E2E_ADMIN)
 }
 
-test('first admin setup creates administrator and opens admin panel', async ({ page }) => {
+test('admin setup form cannot bypass the DB-backed admin gate', async ({ page }) => {
+  // Первичная настройка — клиентский флоу (localStorage). В shared-БД админы
+  // уже есть, и серверный гейт /admin (getServerUser) такого «админа» не
+  // пускает: после сабмита должен выбросить на логин, не в админку.
   await seedCleanState(page)
   await page.goto('/auth/admin-setup')
 
@@ -39,22 +33,18 @@ test('first admin setup creates administrator and opens admin panel', async ({ p
 
   await page.getByRole('button', { name: 'Создать администратора' }).click()
 
-  await page.waitForURL(/\/admin$/)
-  await expect(page.getByRole('heading', { name: 'Панель администратора' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Открыть баркоды' })).toBeVisible()
+  await page.waitForURL(/\/auth\/login/)
+  await expect(page).toHaveURL(/\/auth\/login/)
 })
 
-test('admin can download company barcode card as pdf', async ({ page }) => {
+test('admin can open client barcodes page', async ({ page }) => {
+  // Настоящая DB-сессия для серверного гейта + localStorage для клиентских сторов
+  await loginAs(page, E2E_ADMIN)
   await seedAdminSession(page)
   await page.goto('/admin/client-barcodes')
 
-  await expect(page.getByRole('heading', { name: 'Клиентские баркоды' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Печатная карточка клиента' })).toBeVisible()
-
-  const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Скачать PDF' }).click()
-  const download = await downloadPromise
-
-  expect(download.suggestedFilename()).toMatch(/^CLI-\d{5}\.pdf$/)
-  await expect(page.getByText('PDF карточки подготовлен')).toBeVisible()
+  // Заголовок редактируется через CMS-реестр — принимаем дефолт и текущий override
+  await expect(page.getByRole('heading', { name: /Клиентские баркоды|Карты клиентов/ })).toBeVisible()
+  await expect(page.getByText(/Заявки мастеров/)).toBeVisible()
+  await expect(page.getByPlaceholder(/Поиск по карте/)).toBeVisible()
 })

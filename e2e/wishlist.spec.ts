@@ -1,18 +1,37 @@
 import { test, expect, type Page } from '@playwright/test'
+import { fetchRealProduct, titlePattern } from './helpers'
 
-const seedCleanState = async (page: Page): Promise<void> => {
+// Избранное auth-gated: гостю клик по сердечку открывает AuthGateDialog
+// (модал прячет хедер через aria-hidden) — тест работает залогиненным.
+const seedAuthedState = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
     window.localStorage.clear()
     window.sessionStorage.clear()
+    window.localStorage.setItem(
+      'eshop_current_user',
+      JSON.stringify({
+        id: 'u_wishlist_e2e',
+        email: 'wishlist-e2e@eshop02.local',
+        password: 'secret',
+        platformRole: 'customer'
+      })
+    )
   })
 }
 
 test('wishlist add, header badge, and remove flow works', async ({ page }) => {
   test.setTimeout(60000)
-  await seedCleanState(page)
-  await page.goto('/product/p1')
+  await seedAuthedState(page)
+  // Живой товар вместо удалённого из БД p1
+  const product = await fetchRealProduct(page)
+  // H1 страницы товара показывает тайтл без бренд-префикса (бренд — отдельной строкой)
+  const brand = String(product.brand ?? '').trim()
+  const titleWithoutBrand = product.title.trim().toLowerCase().startsWith(brand.toLowerCase()) && brand
+    ? product.title.trim().slice(brand.length).trim()
+    : product.title
+  await page.goto(`/product/${product.id}`)
 
-  await expect(page.getByRole('heading', { name: /Крем для лица Revitaluxe 50ml/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: titlePattern(titleWithoutBrand) })).toBeVisible({ timeout: 30000 })
 
   const addButton = page.locator('button[title="Добавить в избранное"], button[title="Add to wishlist"], button[title="Pievienot favorītiem"]').first()
   await expect(addButton).toBeVisible()
@@ -27,7 +46,8 @@ test('wishlist add, header badge, and remove flow works', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /Избранное|Wishlist|Favorīti/i })).toBeVisible()
   await expect(page.getByText(/1 товаров в избранном|1 items in wishlist|1 preces favorītos/i)).toBeVisible()
-  await expect(page.getByRole('link', { name: /Крем для лица Revitaluxe 50ml/i }).first()).toBeVisible()
+  // Карточка избранного тоже показывает тайтл без бренд-префикса
+  await expect(page.getByRole('link', { name: titlePattern(titleWithoutBrand) }).first()).toBeVisible()
 
   const removeButton = page.locator('button[title="Удалить из избранного"], button[title="Remove from wishlist"], button[title="Noņemt no favorītiem"]').first()
   await expect(removeButton).toBeVisible()

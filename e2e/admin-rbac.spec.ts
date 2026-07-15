@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { E2E_ADMIN, E2E_MANAGER, fetchRealProduct, loginAs } from './helpers'
 
 test.setTimeout(120_000)
 
@@ -36,59 +37,30 @@ const seedSession = async (page: Page, users: SeedUser[], currentUserId: string)
 }
 
 test('manager can access partial admin dashboard and RFQ only', async ({ page }) => {
-  await seedSession(
-    page,
-    [
-      {
-        id: 'u_manager_e2e',
-        email: 'manager-e2e@eshop02.local',
-        password: 'StrongPass123',
-        name: 'E2E Manager',
-        platformRole: 'customer',
-        teamRole: 'manager',
-        companyId: 'company_miks_plus',
-        companyName: 'SIA MIKS PLUS',
-        approvalRequired: false,
-        auditLoggingEnabled: true
-      }
-    ],
-    'u_manager_e2e'
-  )
+  // Серверный гейт /admin (layout, DB-сессия) + localStorage для клиентских сторов
+  await loginAs(page, E2E_MANAGER)
+  await seedSession(page, [E2E_MANAGER], E2E_MANAGER.id)
 
   await page.goto('/admin')
 
   await expect(page.getByRole('heading', { name: 'Панель администратора' })).toBeVisible()
   await expect(page.getByText('Частичный доступ менеджера')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Открыть RFQ панель' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Открыть баркоды' })).toHaveCount(0)
+  // Плитки дэшборда — ссылки со стрелкой, не кнопки
+  await expect(page.getByRole('link', { name: /Открыть RFQ панель/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Открыть баркоды/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Открыть баркоды/ })).toHaveCount(0)
 
   await page.goto('/admin/rfq')
   await expect(page.getByRole('heading', { name: 'RFQ заявки' })).toBeVisible()
 })
 
 test('manager is forbidden from full-access admin pages', async ({ page }) => {
-  await seedSession(
-    page,
-    [
-      {
-        id: 'u_manager_blocked_e2e',
-        email: 'manager-blocked-e2e@eshop02.local',
-        password: 'StrongPass123',
-        name: 'Blocked Manager',
-        platformRole: 'customer',
-        teamRole: 'manager',
-        companyId: 'company_miks_plus',
-        companyName: 'SIA MIKS PLUS',
-        approvalRequired: false,
-        auditLoggingEnabled: true
-      }
-    ],
-    'u_manager_blocked_e2e'
-  )
+  await loginAs(page, E2E_MANAGER)
+  await seedSession(page, [E2E_MANAGER], E2E_MANAGER.id)
 
   await page.goto('/admin/accounts', { waitUntil: 'domcontentloaded' })
 
-  await expect(page.getByRole('heading', { name: 'Доступ запрещён' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Доступ запрещ[её]н/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Перейти в аккаунт' })).toBeVisible()
 })
 
@@ -112,28 +84,14 @@ test('manager cannot place orders from cart or checkout', async ({ page }) => {
     'u_manager_checkout_e2e'
   )
 
-  await page.addInitScript(() => {
-    const cartState = {
-      state: {
-        items: [
-          {
-            id: 'p1',
-            title: 'Крем для лица Revitaluxe 50ml',
-            brand: 'sanctuaryspa',
-            price: 2500,
-            rating: 4.7,
-            image: '/products/p1.jpg',
-            category: 'face',
-            stock: 3,
-            quantity: 1
-          }
-        ]
-      },
-      version: 0
-    }
-
-    window.localStorage.setItem('cart-store', JSON.stringify(cartState))
-  })
+  // Живой товар вместо удалённого из БД p1
+  const product = await fetchRealProduct(page)
+  await page.addInitScript((item) => {
+    window.localStorage.setItem(
+      'cart-store',
+      JSON.stringify({ state: { items: [item] }, version: 0 })
+    )
+  }, { ...product, quantity: 1, lineKey: product.id })
 
   await page.goto('/cart')
 
@@ -171,51 +129,31 @@ test('manager sees admin navigation link in user menu', async ({ page }) => {
   await expect(page.getByRole('link', { name: /Админ-панель|Admin Panel|Administrācijas panelis/i })).toBeVisible()
 })
 
-test('admin can change existing account team role', async ({ page }) => {
-  await seedSession(
-    page,
-    [
-      {
-        id: 'u_admin_rbac_e2e',
-        email: 'admin-rbac-e2e@eshop02.local',
-        password: 'StrongPass123',
-        name: 'RBAC Admin',
-        platformRole: 'admin',
-        auditLoggingEnabled: true
-      },
-      {
-        id: 'u_buyer_target_e2e',
-        email: 'buyer-target-e2e@eshop02.local',
-        password: 'StrongPass123',
-        name: 'Buyer Target',
-        platformRole: 'customer',
-        teamRole: 'buyer',
-        companyId: 'company_miks_plus',
-        companyName: 'SIA MIKS PLUS',
-        approvalRequired: true,
-        auditLoggingEnabled: true
-      }
-    ],
-    'u_admin_rbac_e2e'
-  )
+test('admin can change user platform role in DB accounts table', async ({ page }) => {
+  // Страница аккаунтов теперь DB-backed: таблица юзеров из Neon + смена
+  // platformRole через API. Старая localStorage-секция «Аккаунты компании
+  // и роли» осталась, но требует компании в DB-сторе — company_miks_plus
+  // там нет, так что тестируем поддерживаемый DB-флоу.
+  await loginAs(page, E2E_ADMIN)
+  await seedSession(page, [E2E_ADMIN], E2E_ADMIN.id)
 
   await page.goto('/admin/accounts', { waitUntil: 'domcontentloaded' })
 
   await expect(page.getByRole('heading', { name: 'Управление аккаунтами' })).toBeVisible()
-  await expect(page.getByText('buyer-target-e2e@eshop02.local')).toBeVisible()
 
-  const companyAccountsSection = page.locator('div').filter({ hasText: 'Аккаунты компании и роли' }).first()
-  await companyAccountsSection.locator('select').first().selectOption('manager')
-  await companyAccountsSection.getByRole('button', { name: 'Сменить роль' }).first().click()
+  // Ищем фикстурного менеджера в DB-таблице
+  await page.getByPlaceholder(/Email, имя, карта/).fill(E2E_MANAGER.email)
+  const row = page.locator('tr', { hasText: E2E_MANAGER.email })
+  await expect(row).toBeVisible({ timeout: 15000 })
 
-  await expect(page.getByText('Роль пользователя обновлена')).toBeVisible()
+  // customer -> b2b (globalSetup сбрасывает роль фикстуры перед каждым прогоном)
+  await row.getByRole('combobox').click()
+  await page.getByRole('option', { name: 'b2b' }).click()
 
-  const usersState = await page.evaluate(() => {
-    const rawUsers = window.localStorage.getItem('eshop_users')
-    return rawUsers ? (JSON.parse(rawUsers) as Array<{ id: string; teamRole?: string; approvalRequired?: boolean }>) : []
-  })
+  await expect(page.getByText(/Роль обновлена|Роль пользователя обновлена/)).toBeVisible()
 
-  const updatedUser = usersState.find((user) => user.id === 'u_buyer_target_e2e')
-  expect(updatedUser?.teamRole).toBe('manager')
-  expect(updatedUser?.approvalRequired).toBe(false)
+  // Возвращаем customer, чтобы не оставлять фикстуру в изменённом состоянии
+  await row.getByRole('combobox').click()
+  await page.getByRole('option', { name: 'customer' }).click()
+  await expect(row.getByRole('combobox')).toContainText('customer')
 })

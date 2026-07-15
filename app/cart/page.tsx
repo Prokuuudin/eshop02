@@ -9,6 +9,12 @@ import { extractVat } from '@/lib/tax';
 import { Button } from '@/components/ui/button';
 import BenefitsList from '@/components/BenefitsList';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
@@ -156,14 +162,31 @@ export default function CartPage() {
                                 >
                                     <div className="flex gap-4 min-w-0">
                                         <div className="cart__item-checkbox pt-1">
-                                            <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => toggleSelected(item.lineKey)}
-                                                className="select-none"
-                                                aria-label={`${t(
-                                                    'cart.selectForCheckout'
-                                                )}: ${localizedTitle}`}
-                                            />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    {/* Не asChild на самом Checkbox: Tooltip.Trigger перетирает
+                                                        его data-state и ломает стили checked-состояния. */}
+                                                    <TooltipTrigger asChild>
+                                                        <span className="inline-flex">
+                                                            <Checkbox
+                                                                checked={isSelected}
+                                                                onCheckedChange={() => toggleSelected(item.lineKey)}
+                                                                className="select-none"
+                                                                aria-label={`${t(
+                                                                    'cart.selectForCheckout'
+                                                                )}: ${localizedTitle}`}
+                                                            />
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top">
+                                                        {t(
+                                                            isSelected
+                                                                ? 'cart.excludeFromCheckout'
+                                                                : 'cart.includeInCheckout'
+                                                        )}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         </div>
 
                                         <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">

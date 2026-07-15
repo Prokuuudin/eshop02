@@ -7,6 +7,10 @@ import { translations, type Language } from '@/data/translations';
 import { getMergedProducts } from '@/lib/product-overrides-store';
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 import { brandSlug } from '@/lib/brand-slug';
+import { buildProductIndex, pickRelated, pickBoughtTogether } from '@/lib/related-products';
+import copurchaseData from '@/data/product-bought-together.json';
+
+const COPURCHASE = copurchaseData as Record<string, string[]>;
 
 type PageProps = {
     params: Promise<{
@@ -135,15 +139,9 @@ export default async function ProductPage({ params }: PageProps) {
         ],
     };
 
-    const relatedProducts = product.relatedProductIds
-        ? mergedProducts.filter((p) => product.relatedProductIds?.includes(p.id)).slice(0, 4)
-        : mergedProducts
-              .filter((p) => p.brand === product.brand && p.id !== product.id)
-              .slice(0, 4);
-
-    const oftenBoughtTogether = product.oftenBoughtTogether
-        ? mergedProducts.filter((p) => product.oftenBoughtTogether?.includes(p.id)).slice(0, 4)
-        : [];
+    const productIndex = buildProductIndex(mergedProducts);
+    const relatedProducts = pickRelated(product, mergedProducts, productIndex);
+    const oftenBoughtTogether = pickBoughtTogether(product, productIndex, COPURCHASE);
 
     const breadcrumbSchema = {
         '@context': 'https://schema.org',

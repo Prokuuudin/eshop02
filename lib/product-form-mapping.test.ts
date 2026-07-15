@@ -191,6 +191,33 @@ describe('demoVideo', () => {
   })
 })
 
+describe('related products and bought-together lists', () => {
+  it('round-trips ids and drops blank entries', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      relatedProductIds: ['13128', '13132'],
+      oftenBoughtTogether: ['13126'],
+    })
+    values.relatedProductIds = ['13128', ' ', '13132']
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.relatedProductIds).toEqual(['13128', '13132'])
+    expect(patch.oftenBoughtTogether).toEqual(['13126'])
+  })
+
+  it('sends empty arrays so clearing the lists reaches the DB and re-enables auto-fill', () => {
+    const values = mapProductToFormValues({
+      ...baseProduct,
+      relatedProductIds: ['13128'],
+      oftenBoughtTogether: ['13126'],
+    })
+    values.relatedProductIds = []
+    values.oftenBoughtTogether = []
+    const patch = mapFormValuesToProductPatch(values)
+    expect(patch.relatedProductIds).toEqual([])
+    expect(patch.oftenBoughtTogether).toEqual([])
+  })
+})
+
 describe('spec translations round-trip through technicalSpecs', () => {
   it('extracts __spec*En/Lv into form fields and keeps them out of reservedTechSpecs', () => {
     const values = mapProductToFormValues({

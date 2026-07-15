@@ -22,8 +22,7 @@ import ProductTechSpecsFields from './ProductTechSpecsFields';
 import ProductVariantGroupsFields from './ProductVariantGroupsFields';
 import ProductCertificatesFields from './ProductCertificatesFields';
 import ProductBulkPricingFields from './ProductBulkPricingFields';
-import ProductRelatedFields from './ProductRelatedFields';
-import ProductBoughtTogetherFields from './ProductBoughtTogetherFields';
+import ProductPicker from './ProductPicker';
 import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 
@@ -228,8 +227,16 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductVariantGroupsFields />
                             <ProductCertificatesFields />
                             <ProductBulkPricingFields />
-                            <ProductRelatedFields />
-                            <ProductBoughtTogetherFields />
+                            <ProductPicker
+                                name="relatedProductIds"
+                                title="Похожие товары"
+                                hint="Показываются в блоке «Похожие товары». Если список пуст — блок заполняется автоматически товарами того же бренда и категории."
+                            />
+                            <ProductPicker
+                                name="oftenBoughtTogether"
+                                title="Часто покупают вместе"
+                                hint="Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов."
+                            />
                             <ProductManufacturerFields language={language} />
                             <ProductSeoFields />
                         </div>

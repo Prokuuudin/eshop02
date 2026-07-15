@@ -172,7 +172,7 @@ export function mapFormValuesToProductPatch(
         techSpecs[values.ingredientsKey?.trim() || 'INGREDIENTS'] = values.ingredients.trim();
     }
 
-    const cleanArray = (arr: string[]) => arr.filter(Boolean);
+    const cleanArray = (arr: string[]) => arr.map((s) => s.trim()).filter(Boolean);
 
     return {
         sku: values.sku || undefined,
@@ -207,14 +207,10 @@ export function mapFormValuesToProductPatch(
             cleanArray(values.certificates).length > 0
                 ? cleanArray(values.certificates)
                 : undefined,
-        relatedProductIds:
-            cleanArray(values.relatedProductIds).length > 0
-                ? cleanArray(values.relatedProductIds)
-                : undefined,
-        oftenBoughtTogether:
-            cleanArray(values.oftenBoughtTogether).length > 0
-                ? cleanArray(values.oftenBoughtTogether)
-                : undefined,
+        // Всегда массив (не undefined) — иначе удаление последней ссылки не доехало бы до БД,
+        // а пустой список включает автоподбор блока на странице товара
+        relatedProductIds: cleanArray(values.relatedProductIds),
+        oftenBoughtTogether: cleanArray(values.oftenBoughtTogether),
         // Всегда массив (не undefined) — иначе удаление последнего видео не доехало бы до БД
         demoVideo: values.demoVideo
             .filter((v) => v.src.trim())

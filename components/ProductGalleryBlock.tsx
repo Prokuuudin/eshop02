@@ -2,9 +2,7 @@ import React from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductImageDisclaimer } from '@/components/ProductImageDisclaimer';
 import { ProductDescription } from '@/components/ProductDescription';
-import { ProductSpecs } from '@/components/ProductSpecs';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
-import TechnicalSpecs from '@/components/TechnicalSpecs';
 import Certificates from '@/components/Certificates';
 
 import type { BrandManufacturerInfo } from '@/lib/brands-config';
@@ -18,9 +16,6 @@ interface ProductGalleryBlockProps {
     title: string;
     productDescription: string;
     productFeatures: string[];
-    productSpecVolume: string;
-    productSpecType: string;
-    productSpecCountry: string;
     productApplication?: string;
     productWarnings?: string;
     language: string;
@@ -35,9 +30,6 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     title,
     productDescription,
     productFeatures,
-    productSpecVolume,
-    productSpecType,
-    productSpecCountry,
     productApplication,
     productWarnings,
     language,
@@ -76,19 +68,11 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
                 warnings={productWarnings}
                 productId={product.id}
             />
-            <ProductSpecs
-                volume={productSpecVolume}
-                type={productSpecType}
-                country={productSpecCountry}
-                unitOfMeasure={product.unitOfMeasure}
-                packagingSize={product.packagingSize}
-            />
             <ManufacturerDistributorInfo
                 manufacturer={productManufacturer ?? manufacturer}
                 distributor={productDistributor ?? distributor}
                 language={language}
             />
-            <TechnicalSpecs product={product} />
             <Certificates product={product} />
         </div>
     );

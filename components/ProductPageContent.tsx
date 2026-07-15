@@ -113,12 +113,10 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                 <ProductRelatedList
                     title={t('product.relatedProducts')}
                     products={relatedProducts}
-                    variant="list"
                 />
                 <ProductRelatedList
                     title={t('product.oftenBoughtTogether')}
                     products={oftenBoughtTogether}
-                    variant="list"
                 />
                 <ProductRequestSection embedded />
                 <ProductRelatedList

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-store';
+import { useCartSelection, isLineSelected } from '@/lib/cart-selection-store';
 import { extractVat } from '@/lib/tax';
 import { Checkbox } from '@/components/ui/checkbox';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
@@ -42,8 +43,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const { showToast } = useToast();
     const router = useRouter();
     const { items, removeItem, updateQuantity } = useCart();
-    const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
-    const knownLineKeysRef = React.useRef<Set<string>>(new Set());
+    const deselectedLineKeys = useCartSelection((s) => s.deselectedLineKeys);
+    const { toggle: toggleSelected, selectAll, unselectAll } = useCartSelection();
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const [mounted, setMounted] = React.useState(false);
@@ -52,21 +53,8 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
-    // New lines are selected by default; a line the user unchecked stays
-    // unchecked until it leaves the cart (its key drops out of the known set).
-    React.useEffect(() => {
-        const currentKeys = items.map((item) => item.lineKey);
-        const known = knownLineKeysRef.current;
-        const newKeys = currentKeys.filter((key) => !known.has(key));
-        knownLineKeysRef.current = new Set(currentKeys);
-        setSelectedItemIds((prev) => {
-            const currentSet = new Set(currentKeys);
-            const next = prev.filter((id) => currentSet.has(id));
-            return newKeys.length > 0 ? [...next, ...newKeys] : next;
-        });
-    }, [items]);
-
-    const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
+    const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
+    const selectedItemIds = selectedItems.map((item) => item.lineKey);
     const bonusToEarn = calcOrderBonus(
         selectedItems.map((item) => ({
             price: calculatePrice(item, item.quantity),
@@ -99,12 +87,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const feeLabel = (method: DeliveryMethod): string => {
         const fee = calcDeliveryFee(method, subtotal);
         return fee === 0 ? t('checkout.delivery.free') : formatCurrency(fee);
-    };
-
-    const toggleSelected = (lineKey: string): void => {
-        setSelectedItemIds((prev) =>
-            prev.includes(lineKey) ? prev.filter((id) => id !== lineKey) : [...prev, lineKey]
-        );
     };
 
     React.useEffect(() => {
@@ -201,9 +183,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             </span>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setSelectedItemIds(items.map((item) => item.lineKey));
-                                }}
+                                onClick={selectAll}
                                 className="text-primary hover:underline"
                             >
                                 {t('cart.selectAll')}
@@ -211,7 +191,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setSelectedItemIds([]);
+                                    unselectAll(items.map((item) => item.lineKey));
                                 }}
                                 className="text-primary hover:underline"
                             >

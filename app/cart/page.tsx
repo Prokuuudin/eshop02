@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-store';
+import { useCartSelection, isLineSelected } from '@/lib/cart-selection-store';
 import { extractVat } from '@/lib/tax';
 import { Button } from '@/components/ui/button';
 import BenefitsList from '@/components/BenefitsList';
@@ -31,8 +32,8 @@ export default function CartPage() {
     const { showToast } = useToast();
     const router = useRouter();
     const { items, removeItem, updateQuantity, clearCart } = useCart();
-    const [selectedItemIds, setSelectedItemIds] = React.useState<string[]>([]);
-    const knownLineKeysRef = React.useRef<Set<string>>(new Set());
+    const deselectedLineKeys = useCartSelection((s) => s.deselectedLineKeys);
+    const { toggle: toggleSelected, selectAll, unselectAll } = useCartSelection();
     const [templateOpen, setTemplateOpen] = React.useState(false);
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
@@ -45,31 +46,11 @@ export default function CartPage() {
     }, []);
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
-    // New lines are selected by default; a line the user unchecked stays
-    // unchecked until it leaves the cart (its key drops out of the known set).
-    React.useEffect(() => {
-        const currentKeys = items.map((item) => item.lineKey);
-        const known = knownLineKeysRef.current;
-        const newKeys = currentKeys.filter((key) => !known.has(key));
-        knownLineKeysRef.current = new Set(currentKeys);
-        setSelectedItemIds((prev) => {
-            const currentSet = new Set(currentKeys);
-            const next = prev.filter((id) => currentSet.has(id));
-            return newKeys.length > 0 ? [...next, ...newKeys] : next;
-        });
-    }, [items]);
-
     const handleDecrease = (lineKey: string, quantity: number, minQuantity: number): void => {
         if (quantity <= minQuantity) {
             return;
         }
         updateQuantity(lineKey, quantity - 1);
-    };
-
-    const toggleSelected = (lineKey: string): void => {
-        setSelectedItemIds((prev) =>
-            prev.includes(lineKey) ? prev.filter((id) => id !== lineKey) : [...prev, lineKey]
-        );
     };
 
     if (items.length === 0) {
@@ -89,7 +70,8 @@ export default function CartPage() {
         );
     }
 
-    const selectedItems = items.filter((item) => selectedItemIds.includes(item.lineKey));
+    const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
+    const selectedItemIds = selectedItems.map((item) => item.lineKey);
     const subtotal = selectedItems.reduce(
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
@@ -127,9 +109,7 @@ export default function CartPage() {
                 </span>
                 <button
                     type="button"
-                    onClick={() => {
-                        setSelectedItemIds(items.map((item) => item.lineKey));
-                    }}
+                    onClick={selectAll}
                     className="cart__select-all text-primary hover:underline"
                 >
                     {t('cart.selectAll')}
@@ -137,7 +117,7 @@ export default function CartPage() {
                 <button
                     type="button"
                     onClick={() => {
-                        setSelectedItemIds([]);
+                        unselectAll(items.map((item) => item.lineKey));
                     }}
                     className="cart__unselect-all text-primary hover:underline"
                 >

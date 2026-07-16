@@ -35,12 +35,12 @@ export default function Benefits() {
     ];
     return (
         <section className="benefits py-8">
-            <div className="mx-auto w-full max-w-[1200px] px-4">
+            <div className="w-full px-4">
                 <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-stretch">
                     {BENEFITS.map((item, idx) => (
                         <article
                             key={idx}
-                            className="benefits__item p-4 bg-card rounded-lg border border-border shadow-sm flex items-center gap-4"
+                            className="benefits__item p-3 bg-card rounded-lg border border-border shadow-sm flex items-center gap-3"
                         >
                             <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-[#0088C4] dark:bg-white flex items-center justify-center">
                                 <span
@@ -58,7 +58,7 @@ export default function Benefits() {
                                     }}
                                 />
                             </div>
-                            <h3 className="benefits__item-title font-medium text-foreground text-base">
+                            <h3 className="benefits__item-title font-medium text-foreground text-base leading-tight">
                                 {item.text}
                             </h3>
                         </article>

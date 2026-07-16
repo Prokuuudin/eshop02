@@ -11,7 +11,7 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { getCurrentUser, loginUserAuto, registerCardUser } from './auth'
+import { getCurrentUser, loginUserAuto, logout, registerCardUser } from './auth'
 
 function makeLocalStorageMock() {
   const store = new Map<string, string>()
@@ -155,5 +155,24 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(stored?.companyId).toBe('company_1')
     expect(stored?.password).toBe('')
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
+  })
+})
+
+describe('logout — must clear the server session, not just localStorage', () => {
+  it('calls POST /api/auth/logout so the server-side session cookie is invalidated', () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, status: 200 } as Response)
+
+    logout()
+
+    expect(fetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('still clears the local user even if the server call fails', () => {
+    localStorage.setItem('eshop_current_user', JSON.stringify({ id: 'u1', email: 'a@b.com' }))
+    vi.mocked(fetch).mockRejectedValue(new Error('network down'))
+
+    logout()
+
+    expect(getCurrentUser()).toBeNull()
   })
 })

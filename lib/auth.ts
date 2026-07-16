@@ -128,6 +128,9 @@ export const registerAdminUser = (email: string, password: string, name?: string
 // Одна карта = один аккаунт; сценария «сотрудник в команду по карте» нет.
 
 export const logout = (): void => {
+  void fetch('/api/auth/logout', { method: 'POST' }).catch(() => {
+    // Best-effort: local state clears regardless, same as before this call existed.
+  })
   localStorage.removeItem(CURRENT_KEY)
   notifyAuthChanged()
 }

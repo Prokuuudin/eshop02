@@ -65,7 +65,7 @@ export default function Brands() {
 
   return (
     <section className="brands py-6 sm:py-8" id="brands">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
 
         <div className="mb-4 sm:mb-5">
           <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.popular')}</h2>

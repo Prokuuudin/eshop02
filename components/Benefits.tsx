@@ -35,7 +35,7 @@ export default function Benefits() {
     ];
     return (
         <section className="benefits py-8">
-            <div className="w-full px-4">
+            <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="benefits__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-stretch">
                     {BENEFITS.map((item, idx) => (
                         <article

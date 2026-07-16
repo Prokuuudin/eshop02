@@ -113,7 +113,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
       {turnstile.enabled && (
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
       )}
-      <div className={embedded ? 'product-request__container' : 'product-request__container max-w-6xl mx-auto px-4'}>
+      <div className={embedded ? 'product-request__container' : 'product-request__container max-w-[1200px] mx-auto px-4'}>
         <div className="product-request__banner relative rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:mt-16 md:px-10 md:pl-36 flex flex-col md:flex-row items-center justify-between gap-4">
           <Image
             src="/girl2.png"

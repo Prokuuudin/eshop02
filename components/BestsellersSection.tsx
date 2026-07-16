@@ -20,7 +20,7 @@ export default function BestsellersSection() {
 
     return (
         <section className="bestsellers py-8">
-            <div className="w-full px-4">
+            <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <h2 className="text-2xl font-semibold text-foreground">

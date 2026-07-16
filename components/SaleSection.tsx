@@ -27,7 +27,7 @@ export default function SaleSection() {
 
     return (
         <section className="sale-section py-8">
-            <div className="w-full px-4">
+            <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <div>

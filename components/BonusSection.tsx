@@ -42,7 +42,7 @@ export default function BonusSection() {
 
     return (
         <section className="bonus-section py-12 px-4">
-            <div className="bonus-section__inner max-w-5xl mx-auto">
+            <div className="bonus-section__inner max-w-[1200px] mx-auto">
 
                 {/* Header */}
                 <div className="bonus-section__header text-center mb-10">

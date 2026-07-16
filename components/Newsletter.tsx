@@ -48,7 +48,7 @@ export default function Newsletter() {
 
   return (
     <section className="newsletter py-8">
-      <div className="w-full px-4">
+      <div className="mx-auto w-full max-w-[1200px] px-4">
         <div className="newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6">
           <div className="newsletter__info md:flex-1">
             <h3 className="newsletter__title text-lg font-semibold text-gray-900">{t('newsletter.title')}</h3>

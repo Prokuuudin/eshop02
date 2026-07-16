@@ -40,7 +40,7 @@ export default function Benefits() {
                     {BENEFITS.map((item, idx) => (
                         <article
                             key={idx}
-                            className="benefits__item p-3 bg-card rounded-lg border border-border shadow-sm flex items-center gap-3"
+                            className="benefits__item p-4 bg-card rounded-lg border border-border shadow-sm flex items-center gap-4"
                         >
                             <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-[#0088C4] dark:bg-white flex items-center justify-center">
                                 <span

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { formatEuro } from '@/lib/utils';
 
 type PriceGroup = {
     id: string;
@@ -141,7 +142,7 @@ export default function PriceGroupsPage() {
             .then(([pgData, prods]) => {
                 setGroups(pgData.groups ?? []);
                 setOverrides(pgData.overrides ?? []);
-                setProducts(Array.isArray(prods) ? prods : []);
+                setProducts(Array.isArray(prods?.data?.products) ? prods.data.products : []);
             })
             .finally(() => setLoading(false));
     };
@@ -384,15 +385,15 @@ export default function PriceGroupsPage() {
                                                     <div className="text-xs text-gray-400">{p.brand}</div>
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right text-muted-foreground">
-                                                    {p.price.toLocaleString('ru-RU')} ₽
+                                                    {formatEuro(p.price, 'ru-RU')}
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400">
-                                                    {groupPrice.toLocaleString('ru-RU')} ₽
+                                                    {formatEuro(groupPrice, 'ru-RU')}
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right">
                                                     {ov ? (
                                                         <span className="font-semibold text-violet-600 dark:text-violet-400">
-                                                            {ov.price.toLocaleString('ru-RU')} ₽
+                                                            {formatEuro(ov.price, 'ru-RU')}
                                                         </span>
                                                     ) : (
                                                         <span className="text-gray-300 dark:text-gray-600">—</span>

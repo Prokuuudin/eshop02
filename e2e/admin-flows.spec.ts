@@ -81,3 +81,27 @@ test('admin products page fetches the list once and does not get stuck on empty 
   // Цикл рефетча даёт на порядок больше запросов.
   expect(productListRequests.length).toBeLessThanOrEqual(4)
 })
+
+test('price groups show amounts in euros, not rubles', async ({ page }) => {
+  // Регрессия 1: цены в таблице групп рендерились через .toLocaleString('ru-RU') + '₽' —
+  // похоже на скопированный шаблон, магазин латвийский, весь остальной админ — €.
+  // Регрессия 2 (вскрылась при написании этого теста): страница ждала от
+  // /api/admin/products голый массив, а он отдаёт {success, data: {products}} —
+  // список товаров для индивидуальных цен был всегда пуст.
+  // Используем существующую сидовую группу "Розница", а не создаём свою — создание
+  // через общий KV в Neon давало гонки между параллельными прогонами теста.
+  await loginAs(page, E2E_ADMIN)
+  await seedAdminSession(page)
+
+  await page.goto('/admin/marketing/price-groups')
+
+  const groupCard = page.getByText('Розница', { exact: true })
+  await expect(groupCard).toBeVisible({ timeout: 20000 })
+  await groupCard.click()
+
+  const priceTable = page.locator('table').filter({ hasText: 'Базовая' })
+  await expect(priceTable.locator('tbody tr').first()).toBeVisible({ timeout: 10000 })
+
+  await expect(priceTable.getByText('₽')).toHaveCount(0)
+  await expect(priceTable.locator('tbody tr').first()).toContainText('€')
+})

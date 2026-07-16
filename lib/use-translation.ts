@@ -33,15 +33,18 @@ export function useTranslation(): TranslationHelper {
     return unsubscribe
   }, [])
 
-  const t = (key: string, defaultValue?: string, params?: TranslationParams): string => {
-    const override = overrides.text[language]?.[key]
-    if (typeof override === 'string' && override.length > 0) {
-      return interpolate(override, params)
-    }
-    const value = translations[language][key]
-    const resolved = typeof value === 'string' ? value : defaultValue || key
-    return interpolate(resolved, params)
-  }
+  const t = React.useCallback(
+    (key: string, defaultValue?: string, params?: TranslationParams): string => {
+      const override = overrides.text[language]?.[key]
+      if (typeof override === 'string' && override.length > 0) {
+        return interpolate(override, params)
+      }
+      const value = translations[language][key]
+      const resolved = typeof value === 'string' ? value : defaultValue || key
+      return interpolate(resolved, params)
+    },
+    [overrides, language]
+  )
 
   return { t, language }
 }

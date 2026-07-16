@@ -48,3 +48,36 @@ test('admin can open client barcodes page', async ({ page }) => {
   await expect(page.getByText(/Заявки мастеров/)).toBeVisible()
   await expect(page.getByPlaceholder(/Поиск по карте/)).toBeVisible()
 })
+
+test('admin products page fetches the list once and does not get stuck on empty state', async ({ page }) => {
+  // Регрессия, два наложенных бага:
+  // 1) useProductsAdmin.loadProducts был в useCallback([t]), а t() из useTranslation
+  //    не мемоизировался — новая identity на каждый ре-рендер.
+  // 2) lib/site-content-store.ts loadSiteContentOverrides() не дедуплицировал
+  //    параллельные вызовы — каждый смонтированный useTranslation()/useSiteContent()
+  //    на странице (их десятки) гонял свой fetch('/api/content') и звал
+  //    notifySiteContentChanged() по резолву, каскадно меняя overrides у всех.
+  // Вместе это заваливало /api/admin/products повторными запросами (18-20+ за
+  // секунды), пока список товаров надолго показывал "Нет результатов поиска".
+  await loginAs(page, E2E_ADMIN)
+  await seedAdminSession(page)
+
+  const productListRequests: string[] = []
+  page.on('request', (req) => {
+    if (req.method() === 'GET' && new URL(req.url()).pathname === '/api/admin/products') {
+      productListRequests.push(req.url())
+    }
+  })
+
+  await page.goto('/admin/products')
+
+  // Первый визит на роут в dev-режиме компилируется on-demand — таймаут щедрый
+  // не из-за бага, а из-за компиляции; регрессия проверяется числом запросов ниже.
+  await expect(page.getByText('Редактировать').first()).toBeVisible({ timeout: 20000 })
+  await expect(page.getByText('Нет результатов поиска')).not.toBeVisible()
+
+  // Потолок 4 = React StrictMode дважды монтирует эффекты в dev (×2), помноженное
+  // на один законный переход overrides "дефолт → загружено с сервера" (×2).
+  // Цикл рефетча даёт на порядок больше запросов.
+  expect(productListRequests.length).toBeLessThanOrEqual(4)
+})

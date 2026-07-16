@@ -12,6 +12,7 @@ const EMPTY_OVERRIDES: SiteContentOverrides = {
 
 let overridesCache: SiteContentOverrides = cloneOverrides(EMPTY_OVERRIDES)
 let hasLoadedFromApi = false
+let inFlightLoad: Promise<SiteContentOverrides> | null = null
 
 function cloneOverrides(overrides: SiteContentOverrides): SiteContentOverrides {
   return {
@@ -37,28 +38,39 @@ export async function loadSiteContentOverrides(force = false): Promise<SiteConte
   if (typeof window === 'undefined') return cloneOverrides(overridesCache)
   if (hasLoadedFromApi && !force) return cloneOverrides(overridesCache)
 
-  try {
-    const response = await fetch('/api/content', { cache: 'no-store' })
-    if (!response.ok) {
-      throw new Error('failed_to_load_site_content')
+  // Every mounted useTranslation()/useSiteContent() consumer calls this on mount.
+  // Without dedup, each one races its own fetch + notify, and every extra
+  // notify recreates `overrides` (and anything memoized on it) for all consumers.
+  if (inFlightLoad) return inFlightLoad
+
+  inFlightLoad = (async () => {
+    try {
+      const response = await fetch('/api/content', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('failed_to_load_site_content')
+      }
+
+      const data = (await response.json()) as Partial<SiteContentOverrides>
+      overridesCache = {
+        text: {
+          ru: { ...(data.text?.ru ?? {}) },
+          en: { ...(data.text?.en ?? {}) },
+          lv: { ...(data.text?.lv ?? {}) }
+        },
+        images: { ...(data.images ?? {}) }
+      }
+      hasLoadedFromApi = true
+      notifySiteContentChanged()
+    } catch {
+      // Keep last known cache on read failures.
+    } finally {
+      inFlightLoad = null
     }
 
-    const data = (await response.json()) as Partial<SiteContentOverrides>
-    overridesCache = {
-      text: {
-        ru: { ...(data.text?.ru ?? {}) },
-        en: { ...(data.text?.en ?? {}) },
-        lv: { ...(data.text?.lv ?? {}) }
-      },
-      images: { ...(data.images ?? {}) }
-    }
-    hasLoadedFromApi = true
-    notifySiteContentChanged()
-  } catch {
-    // Keep last known cache on read failures.
-  }
+    return cloneOverrides(overridesCache)
+  })()
 
-  return cloneOverrides(overridesCache)
+  return inFlightLoad
 }
 
 export async function saveSiteContentOverrides(overrides: SiteContentOverrides): Promise<void> {

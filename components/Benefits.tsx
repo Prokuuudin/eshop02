@@ -58,7 +58,7 @@ export default function Benefits() {
                                     }}
                                 />
                             </div>
-                            <h3 className="benefits__item-title font-medium text-foreground text-base leading-tight">
+                            <h3 className="benefits__item-title font-medium text-foreground text-sm leading-tight">
                                 {item.text}
                             </h3>
                         </article>

@@ -28,7 +28,7 @@ export default function Stores() {
                                 className="mb-2 rounded w-full h-40 object-cover"
                             />
                             <h3 className="text-lg font-bold mb-1">{store.name[language]}</h3>
-                            <p className="text-sm text-gray-600 mb-1">{store.address[language]}</p>
+                            <p className="text-sm text-gray-600 mb-1">{store.address.lv}</p>
                             <p className="text-sm text-gray-600 mb-1">
                                 {t('stores.phone') ?? 'Телефон'}: {store.phone}
                             </p>

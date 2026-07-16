@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { useTranslation } from '@/lib/use-translation'
 
@@ -45,7 +46,14 @@ export default function FAQSection() {
               {col2.map((item) => (
                 <AccordionItem key={item.id} value={item.id} className="border-b last:border-b-0">
                   <AccordionTrigger className="text-foreground">{item.question}</AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
+                  <AccordionContent className="text-muted-foreground">
+                    {item.answer}
+                    {item.id === 'faq-8' && (
+                      <Link href="/return-policy" className="block mt-2 text-primary underline underline-offset-2">
+                        {t('faq.site.q8')}
+                      </Link>
+                    )}
+                  </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>

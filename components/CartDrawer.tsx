@@ -324,7 +324,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         )}
 
                         {/* Разбивка */}
-                        <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="space-y-1 text-sm text-foreground">
                             <div className="flex items-center justify-between">
                                 <span>{t('cart.subtotalExclVat')}</span>
                                 <span className="text-sm font-medium text-foreground tabular-nums">
@@ -339,7 +339,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             </div>
                             <div className="cart-drawer__delivery flex justify-between gap-2">
                                 <span className="shrink-0">{t('cart.shipping')}</span>
-                                <span className="text-right italic">
+                                <span className="text-right text-xs italic text-muted-foreground">
                                     {t('cart.deliveryAtCheckout')}
                                 </span>
                             </div>

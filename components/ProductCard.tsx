@@ -40,7 +40,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-[390px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
+            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-0 flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group transition-shadow lg:hover:z-20 lg:hover:shadow-xl lg:focus-within:z-20"
         >
             <div className="absolute right-3 top-2 z-10">
                 <WishlistButton product={product} />
@@ -159,7 +159,9 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
+                {/* На десктопе блок действий не занимает места в карточке: по ховеру/фокусу
+                    выезжает абсолютом ниже её нижней границы как продолжение карточки. */}
+                <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:absolute lg:top-full lg:-inset-x-px lg:mt-0 lg:w-auto lg:bg-card lg:border lg:border-t-0 lg:border-border lg:rounded-b-xl lg:px-3 lg:pb-3 lg:shadow-xl lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
                     {isOutOfStock ? (
                         <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
                     ) : (

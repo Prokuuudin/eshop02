@@ -45,8 +45,8 @@ export default function BestsellersSlider({ arrowsContainerId, products }: { arr
           modules={[Navigation, Pagination]}
           onSwiper={swiper => (swiperRef.current = swiper)}
           pagination={{ clickable: true }}
-          spaceBetween={24}
-          slidesPerView={4}
+          spaceBetween={16}
+          slidesPerView={5}
           breakpoints={{
             0: {
               slidesPerView: 1,
@@ -57,12 +57,12 @@ export default function BestsellersSlider({ arrowsContainerId, products }: { arr
               spaceBetween: 16,
             },
             1024: {
-              slidesPerView: 3,
-              spaceBetween: 20,
+              slidesPerView: 4,
+              spaceBetween: 16,
             },
             1280: {
-              slidesPerView: 4,
-              spaceBetween: 24,
+              slidesPerView: 5,
+              spaceBetween: 16,
             },
           }}
           loop={true}

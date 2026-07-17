@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { BadgeAlert, Building2, CircleDollarSign, CreditCard, FileSpreadsheet, ReceiptText, RotateCcw, ShieldHalf, Wallet } from 'lucide-react'
-import { useInvoicesStore } from '@/lib/invoices-store'
+import { useInvoicesStore, hydrateInvoicesFromServer } from '@/lib/invoices-store'
 import { useCompanyStore } from '@/lib/company-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 import { getCurrentUser } from '@/lib/auth'
@@ -37,6 +37,10 @@ export default function InvoicesPage() {
   const isDemoSession = isDemoB2BUser(currentUser)
   const company = companyId ? getCompany(companyId) : null
   const invoices = companyId ? getInvoicesByCompany(companyId) : []
+
+  useEffect(() => {
+    if (companyId) void hydrateInvoicesFromServer(companyId)
+  }, [companyId])
 
   // Calculate statistics before branching so hook order stays stable.
   const stats = useMemo(() => {

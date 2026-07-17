@@ -55,6 +55,7 @@ type InvoiceStore = {
   getInvoice: (invoiceId: string) => Invoice | undefined
   getInvoicesByCompany: (companyId: string) => Invoice[]
   getInvoicesByOrder: (orderId: string) => Invoice | undefined
+  setInvoicesForCompany: (companyId: string, invoices: Invoice[]) => void
   updateInvoice: (invoiceId: string, updates: Partial<Invoice>) => void
   updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => void
   
@@ -135,7 +136,20 @@ export const useInvoicesStore = create<InvoiceStore>()(
         const invoices = Array.from(get().invoices.values())
         return invoices.find(inv => inv.orderId === orderId)
       },
-      
+
+      setInvoicesForCompany: (companyId, invoices) => {
+        set(state => {
+          const newInvoices = new Map(state.invoices)
+          for (const [id, inv] of newInvoices) {
+            if (inv.companyId === companyId) newInvoices.delete(id)
+          }
+          for (const inv of invoices) {
+            newInvoices.set(inv.id, toHydratedInvoice(inv))
+          }
+          return { invoices: newInvoices }
+        })
+      },
+
       updateInvoice: (invoiceId, updates) => {
         set(state => {
           const invoice = state.invoices.get(invoiceId)
@@ -241,3 +255,16 @@ export const useInvoicesStore = create<InvoiceStore>()(
     }
   )
 )
+
+export async function hydrateInvoicesFromServer(companyId: string): Promise<void> {
+  try {
+    const res = await fetch(`/api/invoices?companyId=${encodeURIComponent(companyId)}`)
+    if (!res.ok) return
+    const data = (await res.json()) as { invoices?: Invoice[] }
+    if (Array.isArray(data.invoices)) {
+      useInvoicesStore.getState().setInvoicesForCompany(companyId, data.invoices)
+    }
+  } catch {
+    // Keep whatever's already in the local store on failure.
+  }
+}

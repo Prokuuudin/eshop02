@@ -46,7 +46,7 @@ export interface ReturnRequest {
 
 type ReturnsStore = {
   returns: ReturnRequest[]
-  addReturn: (r: ReturnRequest) => void
+  addReturn: (r: ReturnRequest) => Promise<{ ok: boolean; error?: string }>
   setReturnStatus: (id: string, status: ReturnStatus, resolution?: string) => void
   getReturn: (id: string) => ReturnRequest | undefined
   setReturns: (returns: ReturnRequest[]) => void
@@ -55,10 +55,11 @@ type ReturnsStore = {
 export const useReturnsStore = create<ReturnsStore>()((set, get) => ({
   returns: [],
 
-  addReturn: (r) => {
-    set((state) => ({ returns: [r, ...state.returns] }))
-    if (typeof window !== 'undefined') {
-      fetch('/api/returns', {
+  addReturn: async (r) => {
+    const previous = get().returns
+    set({ returns: [r, ...previous] })
+    try {
+      const res = await fetch('/api/returns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // id is generated server-side — do not send it
@@ -71,7 +72,24 @@ export const useReturnsStore = create<ReturnsStore>()((set, get) => ({
           lastName: r.lastName,
           phone: r.phone,
         }),
-      }).catch(() => {})
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        set({ returns: previous })
+        return { ok: false, error: body?.error }
+      }
+      // Swap the optimistic entry's temp id for the server-assigned one so
+      // admin PATCHes and detail lookups hit the real record.
+      const body = (await res.json().catch(() => null)) as { returnId?: string } | null
+      if (body?.returnId) {
+        set((state) => ({
+          returns: state.returns.map((item) => (item.id === r.id ? { ...item, id: body.returnId! } : item)),
+        }))
+      }
+      return { ok: true }
+    } catch {
+      set({ returns: previous })
+      return { ok: false }
     }
   },
 

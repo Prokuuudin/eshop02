@@ -11,6 +11,7 @@ import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { buildInvoiceHtml } from '@/lib/invoice-template';
 import { useToast } from '@/lib/toast-context';
+import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 
 type PageProps = {
     params: Promise<{
@@ -32,6 +33,7 @@ export default function OrderPage({ params }: PageProps) {
     const locale = getLocaleFromLanguage(language);
     const [paymentCheckPending, setPaymentCheckPending] = React.useState(false);
     const [retryingPayment, setRetryingPayment] = React.useState(false);
+    const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const { showToast } = useToast();
 
     React.useEffect(() => {
@@ -684,6 +686,15 @@ export default function OrderPage({ params }: PageProps) {
 
                             <div className="space-y-2">
                                 <Button className="w-full" onClick={handleDownloadInvoice}>{t('order.downloadInvoice')}</Button>
+                                {order.paymentStatus === 'paid' && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => setReturnDialogOpen(true)}
+                                    >
+                                        {t('returns.requestButton', 'Запросить возврат')}
+                                    </Button>
+                                )}
                                 <Link href="/catalog" className="block">
                                     <Button variant="outline" className="w-full">
                                         {t('order.continueShopping')}
@@ -705,6 +716,12 @@ export default function OrderPage({ params }: PageProps) {
                     </p>
                 </div>
             </div>
+
+            <ReturnRequestDialog
+                order={order}
+                open={returnDialogOpen}
+                onOpenChange={setReturnDialogOpen}
+            />
         </main>
     );
 }

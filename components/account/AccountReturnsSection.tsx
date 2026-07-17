@@ -84,7 +84,7 @@ export const AccountReturnsSection: React.FC = () => {
                                     {RETURN_REASON_LABELS[ret.reason]}
                                 </p>
                                 <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                                    {ret.items.length} {t('account.returns.items', 'поз.')} · {(ret.refundAmount / 100).toFixed(2)} € ·{' '}
+                                    {ret.items.length} {t('account.returns.items', 'поз.')} · {ret.refundAmount.toFixed(2)} € ·{' '}
                                     {date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                 </p>
                                 {ret.resolution && (

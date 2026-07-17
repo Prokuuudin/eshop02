@@ -157,13 +157,13 @@ export default function AdminReturnsPage() {
     setFormItems((prev) => prev.map((item, i) => (i === idx ? { ...item, quantity: qty } : item)))
   }
 
-  const submitReturn = () => {
+  const submitReturn = async () => {
     if (!formFirstName || !formEmail || !formRefund) {
       setFormError('Заполните обязательные поля: имя, email, сумма возврата')
       return
     }
     const activeItems = formItems.filter((i) => i.quantity > 0)
-    addReturn({
+    const result = await addReturn({
       id: generateReturnId(),
       orderId: formOrderId.trim() || '—',
       createdAt: new Date(),
@@ -177,6 +177,10 @@ export default function AdminReturnsPage() {
       email: formEmail,
       phone: formPhone,
     })
+    if (!result.ok) {
+      setFormError(result.error ? `Сервер отклонил заявку: ${result.error}` : 'Не удалось сохранить заявку. Попробуйте ещё раз.')
+      return
+    }
     setShowCreate(false)
     setFormOrderId('')
     setFoundOrder(undefined)
@@ -192,9 +196,9 @@ export default function AdminReturnsPage() {
 
   return (
     <main className="w-full py-4 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-foreground">Возвраты и отмены</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowCreate((v) => !v)}>
             {showCreate ? 'Отмена' : '+ Новый возврат'}
           </Button>

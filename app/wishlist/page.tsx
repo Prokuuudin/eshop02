@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
@@ -7,7 +8,7 @@ import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useTranslation } from '@/lib/use-translation';
 import BenefitsList from '@/components/BenefitsList';
 import { useToast } from '@/lib/toast-context';
-import { useWishlist } from '@/lib/wishlist-store';
+import { useWishlist, hydrateWishlistFromServer } from '@/lib/wishlist-store';
 
 export default function WishlistPage() {
     const { t } = useTranslation();
@@ -15,6 +16,10 @@ export default function WishlistPage() {
     const items = useWishlist((state) => state.items);
     const clearWishlist = useWishlist((state) => state.clearWishlist);
     const itemsLabel = t('wishlist.items', '{count} items in wishlist', { count: items.length });
+
+    useEffect(() => {
+        void hydrateWishlistFromServer();
+    }, []);
 
     if (items.length === 0) {
         return (

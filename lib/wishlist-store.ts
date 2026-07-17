@@ -69,6 +69,7 @@ type WishlistStore = {
   toggleItem: (product: Product) => boolean
   clearWishlist: () => void
   isInWishlist: (productId: string) => boolean
+  replaceForCurrentScope: (products: Product[]) => void
 }
 
 export const useWishlist = create<WishlistStore>()(
@@ -151,6 +152,21 @@ export const useWishlist = create<WishlistStore>()(
         }
       },
       isInWishlist: (productId) => get().items.some((item) => item.id === productId),
+      replaceForCurrentScope: (products) => {
+        const scope = resolveWishlistScope()
+        if (scope === GUEST_WISHLIST_SCOPE) return
+        set((state) => {
+          const ids = products.map((p) => p.id)
+          const nextCache = { ...state.productCache }
+          products.forEach((p) => { nextCache[p.id] = p })
+          return {
+            idsByScope: { ...state.idsByScope, [scope]: ids },
+            productCache: nextCache,
+            currentScope: scope,
+            items: resolveProductsFromCache(ids, nextCache),
+          }
+        })
+      },
     }),
     {
       name: 'wishlist-store',
@@ -171,3 +187,26 @@ export const useWishlist = create<WishlistStore>()(
     }
   )
 )
+
+export async function hydrateWishlistFromServer(): Promise<void> {
+  if (resolveWishlistScope() === GUEST_WISHLIST_SCOPE) return
+  try {
+    const res = await fetch('/api/wishlist')
+    if (!res.ok) return
+    const data = (await res.json()) as { productIds?: string[] }
+    const ids = Array.isArray(data.productIds) ? data.productIds : []
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/products/${id}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+      )
+    )
+    const products = results
+      .map((r) => (r as { product?: Product } | null)?.product)
+      .filter((p): p is Product => !!p)
+    useWishlist.getState().replaceForCurrentScope(products)
+  } catch {
+    // Keep whatever's already in the local store on failure.
+  }
+}

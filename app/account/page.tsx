@@ -29,6 +29,7 @@ import type { Order } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 
 import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
+import { hydrateWishlistFromServer } from '@/lib/wishlist-store';
 import { getCurrentUser, writeCurrentUser } from '@/lib/auth';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useCart } from '@/lib/cart-store';
@@ -91,6 +92,9 @@ export default function AccountPage(): React.ReactElement {
     useEffect(() => {
         if (user?.email) void hydrateSavedAddressesFromServer(user.email, replaceForEmail);
     }, [user?.email, replaceForEmail]);
+    useEffect(() => {
+        if (user?.id) void hydrateWishlistFromServer();
+    }, [user?.id]);
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
     useSubscriptionReminders(user?.id ?? null);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');

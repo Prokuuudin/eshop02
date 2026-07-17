@@ -28,7 +28,7 @@ import { useOrders } from '@/lib/orders-store';
 import type { Order } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 
-import { useSavedAddresses } from '@/lib/saved-addresses-store';
+import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
 import { getCurrentUser, writeCurrentUser } from '@/lib/auth';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useCart } from '@/lib/cart-store';
@@ -88,6 +88,9 @@ export default function AccountPage(): React.ReactElement {
     const totalBonusSpent = userOrders.reduce((sum, o) => sum + (o.bonusSpent ?? 0), 0);
     const isAdmin = user?.platformRole === 'admin';
     const savedAddresses = user?.email ? getByEmail(user.email) : [];
+    useEffect(() => {
+        if (user?.email) void hydrateSavedAddressesFromServer(user.email, replaceForEmail);
+    }, [user?.email, replaceForEmail]);
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
     useSubscriptionReminders(user?.id ?? null);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');

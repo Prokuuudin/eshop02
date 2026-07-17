@@ -20,7 +20,7 @@ function buildCheckoutUrl(a: SavedAddress): string {
     if (a.postalCode) p.set('postalCode', a.postalCode);
     return `/checkout?${p.toString()}`;
 }
-import { useSavedAddresses } from '@/lib/saved-addresses-store';
+import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
 import { useAccountAddresses } from '@/hooks/useAccountAddresses';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 
@@ -28,13 +28,17 @@ export default function AccountAddressesPage() {
     const { t } = useLocaleHelpers();
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
-    const { getByEmail, upsertForEmail, deleteForEmail } = useSavedAddresses();
+    const { getByEmail, upsertForEmail, deleteForEmail, replaceForEmail } = useSavedAddresses();
 
     useEffect(() => {
         const u = getCurrentUser();
         if (!u) { router.replace('/auth/login'); return; }
         setUser(u);
     }, [router]);
+
+    useEffect(() => {
+        if (user?.email) void hydrateSavedAddressesFromServer(user.email, replaceForEmail);
+    }, [user?.email, replaceForEmail]);
 
     const addresses = useAccountAddresses(user, t, getByEmail, upsertForEmail);
 

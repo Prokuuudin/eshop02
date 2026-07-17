@@ -20,6 +20,20 @@ type SavedAddressesStore = {
   deleteForEmail: (email: string, addressId: string) => void
 }
 
+export async function hydrateSavedAddressesFromServer(
+  email: string,
+  replaceForEmail: (email: string, addresses: SavedAddress[]) => void
+): Promise<void> {
+  try {
+    const res = await fetch('/api/user/addresses')
+    if (!res.ok) return
+    const data = (await res.json()) as { addresses?: SavedAddress[] }
+    if (Array.isArray(data.addresses)) replaceForEmail(email, data.addresses)
+  } catch {
+    // Keep whatever's already in the local store on failure.
+  }
+}
+
 export const useSavedAddresses = create<SavedAddressesStore>()(
   persist(
     (set, get) => ({

@@ -325,13 +325,17 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                         {/* Разбивка */}
                         <div className="space-y-1 text-xs text-muted-foreground">
-                            <div className="flex justify-between">
+                            <div className="flex items-center justify-between">
                                 <span>{t('cart.subtotalExclVat')}</span>
-                                <span>{formatCurrency(netSubtotal)}</span>
+                                <span className="text-sm font-medium text-foreground tabular-nums">
+                                    {formatCurrency(netSubtotal)}
+                                </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex items-center justify-between">
                                 <span>{t('cart.tax')}</span>
-                                <span>{formatCurrency(tax)}</span>
+                                <span className="text-sm font-medium text-foreground tabular-nums">
+                                    {formatCurrency(tax)}
+                                </span>
                             </div>
                             <div className="cart-drawer__delivery flex justify-between gap-2">
                                 <span className="shrink-0">{t('cart.shipping')}</span>
@@ -341,9 +345,9 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             </div>
                         </div>
 
-                        <div className="border-t border-border pt-2 flex justify-between font-semibold text-sm text-foreground">
+                        <div className="border-t border-border pt-2 flex items-center justify-between font-semibold text-sm text-foreground">
                             <span>{t('cart.total')}</span>
-                            <span>{formatCurrency(finalTotal)}</span>
+                            <span className="text-base tabular-nums">{formatCurrency(finalTotal)}</span>
                         </div>
 
                         {/* Бонусный блок */}

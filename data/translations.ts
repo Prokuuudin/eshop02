@@ -500,7 +500,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'faq.site.q11': 'Помогаете ли вы с подбором ассортимента для салона?',
     'faq.site.a11': 'Да. Наши специалисты помогут подобрать линейку продуктов под профиль вашего салона или студии. Свяжитесь с нами для бесплатной консультации по ассортименту.',
     'faq.site.q12': 'Доступны ли профессиональные консультации по продуктам?',
-    'faq.site.a12': 'Да. Мы предоставляем профессиональные консультации по применению и совместимости продуктов. Консультации доступны по телефону, в чате на сайте или при личном обращении.',
+    'faq.site.a12': 'Да. Мы предоставляем профессиональные консультации по применению и совместимости продуктов. Консультации доступны по телефону, в почтовой переписке или при личном обращении в один из наших магазинов.',
 
     // Ошибки и уведомления
     'form.required': 'Поле обязательно',
@@ -2830,7 +2830,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'faq.site.q11': 'Do you help with assortment selection for a salon?',
     'faq.site.a11': 'Yes. Our specialists can help you build a product lineup tailored to your salon or studio profile. Contact us for a free assortment consultation.',
     'faq.site.q12': 'Are professional product consultations available?',
-    'faq.site.a12': 'Yes. We provide professional guidance on product application and compatibility. Consultations are available by phone, chat, or in person.',
+    'faq.site.a12': 'Yes. We provide professional guidance on product application and compatibility. Consultations are available by phone, by email, or in person at one of our stores.',
 
     // Blog
     'blog.featured': 'Featured',
@@ -4620,7 +4620,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'faq.site.q11': 'Vai jūs palīdzat ar sortimenta izvēli salonam?',
     'faq.site.a11': 'Jā. Mūsu speciālisti palīdzēs izveidot produktu klāstu, kas atbilst jūsu salona vai studijas profilam. Sazinieties ar mums bezmaksas sortimenta konsultācijai.',
     'faq.site.q12': 'Vai ir pieejamas profesionālas konsultācijas par produktiem?',
-    'faq.site.a12': 'Jā. Mēs sniedzam profesionālas konsultācijas par produktu lietošanu un saderību. Konsultācijas pieejamas pa tālruni, čatā vietnē vai klātienē.',
+    'faq.site.a12': 'Jā. Mēs sniedzam profesionālas konsultācijas par produktu lietošanu un saderību. Konsultācijas pieejamas pa tālruni, e-pasta sarakstē vai klātienē kādā no mūsu veikaliem.',
 
     // Blog
     'blog.featured': 'Izlase',

@@ -53,6 +53,11 @@ export default function FAQSection() {
                         {t('faq.site.q8')}
                       </Link>
                     )}
+                    {item.id === 'faq-12' && (
+                      <Link href="/stores" className="block mt-2 text-primary underline underline-offset-2">
+                        {t('stores.title')}
+                      </Link>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               ))}

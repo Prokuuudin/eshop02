@@ -57,6 +57,11 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                     </svg>
                 </button>
             </div>
+            {brand && (
+                <div className="product-card__brand absolute left-3 top-3 z-10 max-w-[70%] truncate text-xs text-muted-foreground">
+                    {brand}
+                </div>
+            )}
             {/* Packshot целиком на белой подложке — как в витринной карточке */}
             <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group bg-white">
                 <div className="relative w-full h-48">
@@ -82,8 +87,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 </div>
             </div>
             <div className="product-card__body mt-3 flex-1 flex flex-col min-w-0">
-                <div className="product-card__brand text-xs text-muted-foreground">{brand}</div>
-                <div className="product-card__title text-sm font-medium mt-1">{title}</div>
+                <div className="product-card__title text-sm font-medium">{title}</div>
                 {sku && (
                     <p className="text-xs text-muted-foreground mt-1 font-mono">SKU: {sku}</p>
                 )}

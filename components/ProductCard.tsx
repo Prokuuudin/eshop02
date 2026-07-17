@@ -46,6 +46,12 @@ export default function ProductCard({ product }: Props) {
                 <WishlistButton product={product} />
             </div>
 
+            {product.brand && (
+                <div className="product-card__brand absolute left-3 top-2 z-10 max-w-[70%] truncate text-xs text-muted-foreground">
+                    {product.brand}
+                </div>
+            )}
+
             {/* Packshot целиком, на белой подложке (как на hairshop.lv): исходники —
                 фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative bg-white">
@@ -75,14 +81,11 @@ export default function ProductCard({ product }: Props) {
             </div>
 
             <div className="product-card__body mt-2 flex-1 flex flex-col min-w-0">
-                <div className="product-card__brand text-xs text-muted-foreground">
-                    {product.brand}
-                </div>
                 {/* Stretched link: the whole card is one keyboard-focusable link to the product
                     (after:inset-0 overlay). Interactive children (wishlist, cart) sit above it via z-10. */}
                 <Link
                     href={`/product/${product.id}`}
-                    className="product-card__title text-sm font-medium mt-1 hover:text-primary focus:outline-none after:absolute after:inset-0 after:content-['']"
+                    className="product-card__title text-sm font-medium hover:text-primary focus:outline-none after:absolute after:inset-0 after:content-['']"
                 >
                     {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>

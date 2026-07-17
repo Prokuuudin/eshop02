@@ -40,7 +40,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-[390px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
+            className="product-card px-3 py-2 h-full min-h-[310px] sm:min-h-[340px] lg:min-h-[360px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
         >
             <div className="absolute right-3 top-2 z-10">
                 <WishlistButton product={product} />
@@ -49,7 +49,7 @@ export default function ProductCard({ product }: Props) {
             {/* Packshot целиком, на белой подложке (как на hairshop.lv): исходники —
                 фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative bg-white">
-                <div className="relative w-full h-48">
+                <div className="relative w-full h-40">
                     {product.image && product.image.trim() ? (
                         <Image
                             src={product.image}

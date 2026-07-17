@@ -87,12 +87,6 @@ export default function ProductCard({ product }: Props) {
                     {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>
 
-                {product.sku && (
-                    <p className="text-xs text-muted-foreground mt-1 font-mono">
-                        SKU: {product.sku}
-                    </p>
-                )}
-
                 <div className="product-card__meta mt-auto pt-1 flex items-center justify-between gap-3">
                     <div>
                         {!isHydrated ? (

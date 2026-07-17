@@ -92,6 +92,10 @@
 /* Keep bestseller cards equal to the tallest slide content */
 .bestsellers-swiper .swiper-wrapper {
     align-items: stretch;
+    /* Выше пагинации Swiper (z-index: 10), иначе точки и нижний контент
+       рисуются поверх ховер-флайаута карточки. */
+    position: relative;
+    z-index: 20;
 }
 
 .bestsellers-swiper .swiper-slide {
@@ -106,10 +110,12 @@
 
 /* Флайаут «В корзину» выезжает ниже карточки, а overflow:hidden у Swiper
    клипует и по вертикали. Паддинг даёт место, отрицательный маргин
-   возвращает внешнюю высоту секции. */
-.bestsellers-swiper {
-    padding-bottom: 60px;
-    margin-bottom: -60px;
+   возвращает внешнюю высоту секции. Только desktop — ниже lg блок в потоке. */
+@media (min-width: 1024px) {
+    .bestsellers-swiper {
+        padding-bottom: 60px;
+        margin-bottom: -60px;
+    }
 }
 @tailwind base;
 @tailwind components;

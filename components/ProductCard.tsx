@@ -46,8 +46,8 @@ export default function ProductCard({ product }: Props) {
                 <WishlistButton product={product} />
             </div>
 
+            {/* Цвет фиксированный, не токен: лейбл лежит на белой подложке пакшота в обеих темах. */}
             {product.brand && (
-                {/* Цвет фиксированный, не токен: лейбл лежит на белой подложке пакшота в обеих темах. */}
                 <div className="product-card__brand absolute left-3 top-2 z-10 max-w-[70%] truncate text-xs font-semibold uppercase tracking-wide text-gray-800">
                     {product.brand}
                 </div>

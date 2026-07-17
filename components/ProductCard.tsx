@@ -40,7 +40,7 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-0 flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group transition-shadow lg:hover:z-20 lg:hover:shadow-xl lg:focus-within:z-20"
+            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-0 flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group transition-shadow lg:hover:z-20 lg:hover:shadow-xl lg:hover:rounded-b-none lg:hover:border-b-transparent lg:focus-within:z-20 lg:focus-within:rounded-b-none lg:focus-within:border-b-transparent"
         >
             <div className="absolute right-3 top-2 z-10">
                 <WishlistButton product={product} />

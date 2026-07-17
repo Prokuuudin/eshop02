@@ -42,16 +42,15 @@ export default function ProductCard({ product }: Props) {
         <Card
             className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-0 flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group transition-shadow lg:hover:z-20 lg:hover:shadow-xl lg:hover:rounded-b-none lg:hover:border-b-transparent lg:focus-within:z-20 lg:focus-within:rounded-b-none lg:focus-within:border-b-transparent"
         >
-            <div className="absolute right-3 top-2 z-10">
-                <WishlistButton product={product} />
-            </div>
-
-            {/* Цвет фиксированный, не токен: лейбл лежит на белой подложке пакшота в обеих темах. */}
-            {product.brand && (
-                <div className="product-card__brand absolute left-3 top-2 z-10 max-w-[70%] truncate text-xs font-semibold uppercase tracking-wide text-gray-800">
+            {/* Хедер карточки: бренд слева, вишлист справа. z-10 — поверх stretched link. */}
+            <div className="product-card__header flex items-center justify-between gap-2 mb-1 min-w-0">
+                <div className="product-card__brand flex-1 truncate text-xs font-semibold uppercase tracking-wide text-foreground">
                     {product.brand}
                 </div>
-            )}
+                <div className="relative z-10 shrink-0">
+                    <WishlistButton product={product} />
+                </div>
+            </div>
 
             {/* Packshot целиком, на белой подложке (как на hairshop.lv): исходники —
                 фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}

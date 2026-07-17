@@ -42,7 +42,10 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
 
     return (
         <Card className="product-card p-3 h-full min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground">
-            <div className="absolute right-3 top-3 z-10">
+            <div className="product-card__header flex items-center justify-between gap-2 mb-1 min-w-0">
+                <div className="product-card__brand flex-1 truncate text-xs font-semibold uppercase tracking-wide text-foreground">
+                    {brand}
+                </div>
                 <button
                     type="button"
                     aria-label="Добавить в избранное"
@@ -57,11 +60,6 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                     </svg>
                 </button>
             </div>
-            {brand && (
-                <div className="product-card__brand absolute left-3 top-3 z-10 max-w-[70%] truncate text-xs font-semibold uppercase tracking-wide text-gray-800">
-                    {brand}
-                </div>
-            )}
             {/* Packshot целиком на белой подложке — как в витринной карточке */}
             <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group bg-white">
                 <div className="relative w-full h-48">

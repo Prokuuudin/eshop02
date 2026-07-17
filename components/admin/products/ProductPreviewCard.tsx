@@ -58,7 +58,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 </button>
             </div>
             {brand && (
-                <div className="product-card__brand absolute left-3 top-3 z-10 max-w-[70%] truncate text-xs text-muted-foreground">
+                <div className="product-card__brand absolute left-3 top-3 z-10 max-w-[70%] truncate text-xs font-semibold uppercase tracking-wide text-gray-800">
                     {brand}
                 </div>
             )}

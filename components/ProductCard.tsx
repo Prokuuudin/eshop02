@@ -47,7 +47,8 @@ export default function ProductCard({ product }: Props) {
             </div>
 
             {product.brand && (
-                <div className="product-card__brand absolute left-3 top-2 z-10 max-w-[70%] truncate text-xs text-muted-foreground">
+                {/* Цвет фиксированный, не токен: лейбл лежит на белой подложке пакшота в обеих темах. */}
+                <div className="product-card__brand absolute left-3 top-2 z-10 max-w-[70%] truncate text-xs font-semibold uppercase tracking-wide text-gray-800">
                     {product.brand}
                 </div>
             )}

@@ -37,16 +37,16 @@ type CompanyStore = {
   // Company management
   getCompanies: () => CompanyProfile[]
   createCompany: (profile: Omit<CompanyProfile, 'teamMembers' | 'usedCredit' | 'createdAt'>) => void
-  upsertCompany: (profile: Omit<CompanyProfile, 'teamMembers' | 'usedCredit' | 'createdAt'>) => void
+  upsertCompany: (profile: Omit<CompanyProfile, 'teamMembers' | 'usedCredit' | 'createdAt'>, opts?: { localOnly?: boolean }) => void
   deleteCompany: (companyId: string) => void
   getCompany: (companyId: string) => CompanyProfile | undefined
   getCompanyByCardNumber: (cardNumber: string) => CompanyProfile | undefined
-  updateCompany: (companyId: string, updates: Partial<CompanyProfile>) => void
+  updateCompany: (companyId: string, updates: Partial<CompanyProfile>, opts?: { localOnly?: boolean }) => void
   setCurrentCompany: (companyId: string) => void
   getCurrentCompany: () => CompanyProfile | undefined
 
   // Team management
-  addTeamMember: (companyId: string, member: TeamMember) => void
+  addTeamMember: (companyId: string, member: TeamMember, opts?: { localOnly?: boolean }) => void
   removeTeamMember: (companyId: string, userId: string) => void
   updateTeamMemberRole: (companyId: string, userId: string, role: TeamMemberRole) => void
   getTeamMember: (companyId: string, userId: string) => TeamMember | undefined
@@ -111,7 +111,7 @@ export const useCompanyStore = create<CompanyStore>()(
         apiPost('/api/companies', profile)
       },
 
-      upsertCompany: (profile) => {
+      upsertCompany: (profile, opts) => {
         set(state => {
           const existing = state.companies.get(profile.companyId)
           const nextCompany: CompanyProfile = {
@@ -125,6 +125,7 @@ export const useCompanyStore = create<CompanyStore>()(
           newCompanies.set(profile.companyId, nextCompany)
           return { companies: newCompanies }
         })
+        if (opts?.localOnly) return
         // Try PATCH first, fall back to POST on 404
         if (typeof window !== 'undefined') {
           fetch(`/api/companies/${profile.companyId}`, {
@@ -160,7 +161,7 @@ export const useCompanyStore = create<CompanyStore>()(
         )
       },
       
-      updateCompany: (companyId, updates) => {
+      updateCompany: (companyId, updates, opts) => {
         set(state => {
           const company = state.companies.get(companyId)
           if (!company) return state
@@ -168,6 +169,7 @@ export const useCompanyStore = create<CompanyStore>()(
           newCompanies.set(companyId, { ...company, ...updates })
           return { companies: newCompanies }
         })
+        if (opts?.localOnly) return
         apiPatch(`/api/companies/${companyId}`, updates)
       },
       
@@ -181,7 +183,7 @@ export const useCompanyStore = create<CompanyStore>()(
         return state.companies.get(state.currentCompanyId)
       },
       
-      addTeamMember: (companyId, member) => {
+      addTeamMember: (companyId, member, opts) => {
         set(state => {
           const company = state.companies.get(companyId)
           if (!company) return state
@@ -191,6 +193,7 @@ export const useCompanyStore = create<CompanyStore>()(
           newCompanies.set(companyId, { ...company, teamMembers: [...company.teamMembers, member] })
           return { companies: newCompanies }
         })
+        if (opts?.localOnly) return
         apiPost(`/api/companies/${companyId}/members`, member)
       },
 

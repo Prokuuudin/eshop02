@@ -51,16 +51,16 @@ type InvoiceStore = {
   invoiceNumberCounter: number
   
   // Invoice CRUD
-  createInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'remainingAmount' | 'paymentRecords'>) => string // Returns invoice ID
+  createInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'remainingAmount' | 'paymentRecords'>, opts?: { localOnly?: boolean }) => string // Returns invoice ID
   getInvoice: (invoiceId: string) => Invoice | undefined
   getInvoicesByCompany: (companyId: string) => Invoice[]
   getInvoicesByOrder: (orderId: string) => Invoice | undefined
   setInvoicesForCompany: (companyId: string, invoices: Invoice[]) => void
   updateInvoice: (invoiceId: string, updates: Partial<Invoice>) => void
-  updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => void
-  
+  updateInvoiceStatus: (invoiceId: string, status: InvoiceStatus, opts?: { localOnly?: boolean }) => void
+
   // Payment management
-  recordPayment: (invoiceId: string, payment: Omit<PaymentRecord, 'id' | 'date'>) => void
+  recordPayment: (invoiceId: string, payment: Omit<PaymentRecord, 'id' | 'date'>, opts?: { localOnly?: boolean }) => void
   getPaymentRecords: (invoiceId: string) => PaymentRecord[]
   
   // Query helpers
@@ -92,7 +92,7 @@ export const useInvoicesStore = create<InvoiceStore>()(
       invoices: new Map(),
       invoiceNumberCounter: 1000,
       
-      createInvoice: (invoice) => {
+      createInvoice: (invoice, opts) => {
         const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const invoiceNumber = get().getGeneratedInvoiceNumber()
 
@@ -114,11 +114,13 @@ export const useInvoicesStore = create<InvoiceStore>()(
           }
         })
 
-        fetch('/api/invoices', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newInvoice),
-        }).catch(() => {})
+        if (!opts?.localOnly) {
+          fetch('/api/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newInvoice),
+          }).catch(() => {})
+        }
 
         return invoiceId
       },
@@ -161,7 +163,9 @@ export const useInvoicesStore = create<InvoiceStore>()(
         })
       },
       
-      updateInvoiceStatus: (invoiceId, status) => {
+      // opts is accepted for symmetry with the demo seeder; this action never
+      // syncs to the server on its own.
+      updateInvoiceStatus: (invoiceId, status, _opts) => {
         set(state => {
           const invoice = state.invoices.get(invoiceId)
           if (!invoice) return state
@@ -176,7 +180,7 @@ export const useInvoicesStore = create<InvoiceStore>()(
         })
       },
       
-      recordPayment: (invoiceId, payment) => {
+      recordPayment: (invoiceId, payment, opts) => {
         set(state => {
           const invoice = state.invoices.get(invoiceId)
           if (!invoice) return state
@@ -204,11 +208,13 @@ export const useInvoicesStore = create<InvoiceStore>()(
           return { invoices: newInvoices }
         })
 
-        fetch(`/api/invoices/${invoiceId}/payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payment),
-        }).catch(() => {})
+        if (!opts?.localOnly) {
+          fetch(`/api/invoices/${invoiceId}/payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payment),
+          }).catch(() => {})
+        }
       },
       
       getPaymentRecords: (invoiceId) => {

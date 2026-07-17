@@ -156,6 +156,8 @@ export const seedDemoB2BData = (): User => {
     storePreviousCurrentUser(currentUser)
   }
 
+  // localOnly везде: общая Neon-БД — копия живого магазина, демо-компания и
+  // фейковые счета не должны туда синкаться (см. lib/demo-b2b-local-only.test.ts).
   companyStore.upsertCompany({
     companyId: DEMO_COMPANY_ID,
     companyName: 'Beauty Supply Pro',
@@ -166,7 +168,7 @@ export const seedDemoB2BData = (): User => {
     paymentTermDays: 60,
     creditLimit: 90000,
     approvalWorkflowEnabled: true
-  })
+  }, { localOnly: true })
 
   if (!companyStore.getTeamMember(DEMO_COMPANY_ID, DEMO_USER.id)) {
     companyStore.addTeamMember(DEMO_COMPANY_ID, {
@@ -176,7 +178,7 @@ export const seedDemoB2BData = (): User => {
       name: DEMO_USER.name || DEMO_USER.email,
       addedAt: new Date('2026-01-10T09:00:00.000Z'),
       addedBy: DEMO_USER.id
-    })
+    }, { localOnly: true })
   }
 
   const users = readUsers()
@@ -204,7 +206,7 @@ export const seedDemoB2BData = (): User => {
       dueDate: invoiceSeed.dueDate,
       notes: invoiceSeed.notes,
       items: invoiceSeed.items
-    })
+    }, { localOnly: true })
 
     if (invoiceSeed.payment) {
       invoicesStore.recordPayment(invoiceId, {
@@ -212,11 +214,11 @@ export const seedDemoB2BData = (): User => {
         method: invoiceSeed.payment.method,
         reference: invoiceSeed.payment.reference,
         recordedBy: DEMO_USER.id
-      })
+      }, { localOnly: true })
     }
 
     if (invoiceSeed.status === 'overdue') {
-      invoicesStore.updateInvoiceStatus(invoiceId, 'overdue')
+      invoicesStore.updateInvoiceStatus(invoiceId, 'overdue', { localOnly: true })
     }
   }
 
@@ -228,7 +230,7 @@ export const seedDemoB2BData = (): User => {
   companyStore.updateCompany(DEMO_COMPANY_ID, {
     usedCredit,
     creditLimit: 90000
-  })
+  }, { localOnly: true })
 
   window.dispatchEvent(new CustomEvent('eshop-user-changed'))
 

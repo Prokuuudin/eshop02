@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 import { Product, SelectedVariant } from '@/data/products'
 import { Button } from './ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 import { useCart } from '@/lib/cart-store'
 import { useToast } from '@/lib/toast-context'
 import { useAuthStore } from '@/lib/auth-store'
@@ -131,46 +130,6 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
         </div>
       )}
 
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-              <div className="flex items-center border border-border rounded-full bg-card px-1 py-0.5 shadow-sm w-auto">
-                <button
-                  onClick={() => setQuantity(Math.max(minOrderQuantity, quantity - 1))}
-                  className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"
-                  disabled={isOutOfStock}
-                  tabIndex={-1}
-                  aria-label={t('product.decreaseQuantityAria')}
-                >
-                  −
-                </button>
-                <input
-                  id="qty"
-                  type="number"
-                  min={minOrderQuantity}
-                  max={maxQuantity}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(minOrderQuantity, Math.min(maxQuantity, parseInt(e.target.value) || minOrderQuantity)))}
-                  className="w-10 h-7 mx-1 text-center bg-transparent text-base font-semibold outline-none border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  disabled={isOutOfStock}
-                />
-                <button
-                  onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
-                  className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50"
-                  disabled={isOutOfStock || quantity >= maxQuantity}
-                  tabIndex={-1}
-                  aria-label={t('product.increaseQuantityAria')}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top">{t('product.changeQuantity')}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
       {/* Прогресс к оптовой цене показывает цены — гостям, как и остальные цены, не виден. */}
       {isAuthenticated && sortedTiers.length > 0 && !isOutOfStock && (
         <div className="add-to-cart__bulk-progress w-full">
@@ -206,16 +165,46 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
         <p className="text-xs text-gray-500">{t('product.minimumOrder')}: {minOrderQuantity} {t('product.pieces')}</p>
       )}
 
-      <Button
-        ref={buttonRef}
-        onClick={handleAdd}
-        disabled={isOutOfStock || !isHydrated || missingRequired.length > 0}
-        className={`w-full add-to-cart__button ${
-          added ? 'bg-green-600 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'
-        } ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+      {/* Единый контрол: − и + по краям меняют количество, центр добавляет в
+          корзину; выбранное число — в скобках в подписи. Вложенные кнопки в
+          <button> невалидны, поэтому контейнер — div, стилизованный под кнопку. */}
+      <div
+        className={`add-to-cart__combo flex items-stretch w-full h-9 rounded-md overflow-hidden text-white text-sm font-medium shadow divide-x divide-white/20 transition-colors ${
+          added ? 'bg-green-600' : 'bg-indigo-600'
+        } ${isOutOfStock ? 'opacity-50' : ''}`}
       >
-        {added ? `✓ ${t('product.addedToCart')}` : t('product.addToCart')}
-      </Button>
+        <button
+          type="button"
+          onClick={() => setQuantity(Math.max(minOrderQuantity, quantity - 1))}
+          disabled={isOutOfStock || quantity <= minOrderQuantity}
+          className="add-to-cart__minus w-9 shrink-0 flex items-center justify-center text-lg hover:bg-black/15 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+          tabIndex={-1}
+          aria-label={t('product.decreaseQuantityAria')}
+        >
+          −
+        </button>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={handleAdd}
+          disabled={isOutOfStock || !isHydrated || missingRequired.length > 0}
+          className="add-to-cart__button flex-1 min-w-0 px-1 flex items-center justify-center hover:bg-black/10 disabled:cursor-not-allowed transition-colors"
+        >
+          <span className="truncate">
+            {added ? `✓ ${t('product.addedToCart')}` : `${t('product.addToCart')} (${quantity})`}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+          disabled={isOutOfStock || quantity >= maxQuantity}
+          className="add-to-cart__plus w-9 shrink-0 flex items-center justify-center text-lg hover:bg-black/15 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+          tabIndex={-1}
+          aria-label={t('product.increaseQuantityAria')}
+        >
+          +
+        </button>
+      </div>
       <AuthGateDialog open={authGateOpen} onOpenChange={setAuthGateOpen} />
     </div>
   )

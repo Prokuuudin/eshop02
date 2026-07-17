@@ -110,17 +110,14 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                     )}
                 </div>
                 <div className="product-card__actions mt-auto w-full space-y-2">
-                    <div className="add-to-cart space-y-3 w-full">
-                        <div className="add-to-cart__quantity flex justify-center items-center gap-2 w-full min-w-0">
-                            <div className="flex items-center border border-border rounded-full bg-card px-1 py-0.5 shadow-sm w-auto">
-                                <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Уменьшить количество">−</button>
-                                <input id="qty-preview" type="number" min={1} value={quantity} readOnly className="w-10 h-7 mx-1 text-center bg-transparent text-base font-semibold outline-none border-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" disabled />
-                                <button className="w-7 h-7 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition disabled:opacity-50" disabled tabIndex={-1} aria-label="Увеличить количество">+</button>
-                            </div>
+                    <div className="add-to-cart space-y-2 w-full">
+                        <div className="add-to-cart__combo flex items-stretch w-full h-9 rounded-md overflow-hidden text-white text-sm font-medium shadow divide-x divide-white/20 bg-indigo-600 opacity-60">
+                            <button className="add-to-cart__minus w-9 shrink-0 flex items-center justify-center text-lg cursor-not-allowed" disabled tabIndex={-1} aria-label="Уменьшить количество">−</button>
+                            <button className="add-to-cart__button flex-1 min-w-0 px-1 flex items-center justify-center cursor-not-allowed" disabled tabIndex={-1}>
+                                <span className="truncate">В корзину ({quantity})</span>
+                            </button>
+                            <button className="add-to-cart__plus w-9 shrink-0 flex items-center justify-center text-lg cursor-not-allowed" disabled tabIndex={-1} aria-label="Увеличить количество">+</button>
                         </div>
-                        <button className="w-full add-to-cart__button bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-md transition opacity-60 cursor-not-allowed" disabled tabIndex={-1}>
-                            В корзину
-                        </button>
                     </div>
                 </div>
             </div>

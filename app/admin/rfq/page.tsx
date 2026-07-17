@@ -6,6 +6,7 @@ import { type Product } from '@/data/products'
 import { useRFQStore, mapServerRfq, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/lib/toast-context'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,7 @@ export default function AdminRFQPage() {
 
   const { getAll, setQuote, setStatus, addNote, setRequests } = useRFQStore()
   const requests = useMemo(() => getAll(), [getAll])
+  const { showToast } = useToast()
 
   React.useEffect(() => {
     fetch('/api/products', { cache: 'no-store' })
@@ -146,24 +148,37 @@ export default function AdminRFQPage() {
     })
   }
 
-  const sendQuote = (rfqId: string) => {
+  const sendQuote = async (rfqId: string) => {
     const price = parseFloat(quotePrice[rfqId] ?? '')
     const terms = (quoteTerms[rfqId] ?? '').trim()
     const days = parseInt(quoteValidDays[rfqId] ?? '7', 10)
     if (!price || price <= 0 || !terms) return
     const validUntil = new Date()
     validUntil.setDate(validUntil.getDate() + Math.max(1, days || 7))
-    setQuote(rfqId, { totalPrice: price, terms, validUntil })
+    const ok = await setQuote(rfqId, { totalPrice: price, terms, validUntil })
+    if (!ok) {
+      showToast('Не удалось отправить котировку. Попробуйте ещё раз.', 'error')
+      return
+    }
     setQuotePrice((p) => { const n = { ...p }; delete n[rfqId]; return n })
     setQuoteTerms((p) => { const n = { ...p }; delete n[rfqId]; return n })
     setQuoteValidDays((p) => { const n = { ...p }; delete n[rfqId]; return n })
   }
 
-  const submitNote = (rfqId: string) => {
+  const submitNote = async (rfqId: string) => {
     const note = (noteDraft[rfqId] ?? '').trim()
     if (!note) return
-    addNote(rfqId, note)
+    const ok = await addNote(rfqId, note)
+    if (!ok) {
+      showToast('Не удалось сохранить заметку. Попробуйте ещё раз.', 'error')
+      return
+    }
     setNoteDraft((p) => { const n = { ...p }; delete n[rfqId]; return n })
+  }
+
+  const markStatus = async (rfqId: string, status: RFQStatus) => {
+    const ok = await setStatus(rfqId, status)
+    if (!ok) showToast('Не удалось обновить статус. Попробуйте ещё раз.', 'error')
   }
 
   const STATUS_TABS: { value: RFQStatus | 'all'; label: string }[] = [
@@ -345,7 +360,7 @@ export default function AdminRFQPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setStatus(rfq.id, 'accepted')}
+                              onClick={() => markStatus(rfq.id, 'accepted')}
                               className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20"
                             >
                               Отметить как принята
@@ -353,7 +368,7 @@ export default function AdminRFQPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setStatus(rfq.id, 'rejected')}
+                              onClick={() => markStatus(rfq.id, 'rejected')}
                               className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                             >
                               Отметить как отклонена

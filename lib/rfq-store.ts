@@ -62,13 +62,13 @@ function ensureTimeline(r: RFQRequest): RFQRequest {
 
 type RFQStore = {
   requests: Map<string, RFQRequest>
-  createRequest: (input: Omit<RFQRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'timeline'>) => string
+  createRequest: (input: Omit<RFQRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'timeline'>) => Promise<{ id: string; ok: boolean }>
   getRequest: (id: string) => RFQRequest | undefined
   getByCompany: (companyId: string) => RFQRequest[]
   getAll: () => RFQRequest[]
-  setQuote: (id: string, quote: Omit<RFQQuote, 'createdAt'>) => void
-  setStatus: (id: string, status: RFQStatus, note?: string) => void
-  addNote: (id: string, note: string) => void
+  setQuote: (id: string, quote: Omit<RFQQuote, 'createdAt'>) => Promise<boolean>
+  setStatus: (id: string, status: RFQStatus, note?: string) => Promise<boolean>
+  addNote: (id: string, note: string) => Promise<boolean>
   setRequests: (requests: RFQRequest[]) => void
 }
 
@@ -76,7 +76,7 @@ export const useRFQStore = create<RFQStore>()(
     (set, get) => ({
       requests: new Map(),
 
-      createRequest: (input) => {
+      createRequest: async (input) => {
         const id = `rfq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
         const now = new Date()
         const request: RFQRequest = {
@@ -87,13 +87,14 @@ export const useRFQStore = create<RFQStore>()(
           createdAt: now,
           updatedAt: now,
         }
+        const previous = get().requests
         set((state) => {
           const next = new Map(state.requests)
           next.set(id, request)
           return { requests: next }
         })
-        if (typeof window !== 'undefined') {
-          fetch('/api/rfq', {
+        try {
+          const res = await fetch('/api/rfq', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -103,9 +104,13 @@ export const useRFQStore = create<RFQStore>()(
               notes: input.notes,
               timeline: [{ at: now.toISOString(), type: 'created' }],
             }),
-          }).catch(() => {})
+          })
+          if (!res.ok) throw new Error(`create rfq failed: ${res.status}`)
+          return { id, ok: true }
+        } catch {
+          set({ requests: previous })
+          return { id, ok: false }
         }
-        return id
       },
 
       getRequest: (id) => {
@@ -126,99 +131,111 @@ export const useRFQStore = create<RFQStore>()(
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       },
 
-      setQuote: (id, quote) => {
-        set((state) => {
-          const existing = state.requests.get(id)
-          if (!existing) return state
-          const now = new Date()
-          const event: RFQTimelineEvent = {
-            at: now,
-            type: 'quote_sent',
-            quotePrice: quote.totalPrice,
-            quoteTerms: quote.terms,
-            quoteValidUntil: quote.validUntil,
-          }
-          const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
-          const next = new Map(state.requests)
-          next.set(id, {
-            ...existing,
-            status: 'quoted',
-            quote: { ...quote, createdAt: now },
-            timeline: updatedTimeline,
-            updatedAt: now,
-          })
-          if (typeof window !== 'undefined') {
-            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'quoted',
-                quote: { ...quote, validUntil: quote.validUntil instanceof Date ? quote.validUntil.toISOString() : quote.validUntil, createdAt: now.toISOString() },
-                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-              }),
-            }).catch(() => {})
-          }
-          return { requests: next }
+      setQuote: async (id, quote) => {
+        const previous = get().requests
+        const existing = previous.get(id)
+        if (!existing) return false
+        const now = new Date()
+        const event: RFQTimelineEvent = {
+          at: now,
+          type: 'quote_sent',
+          quotePrice: quote.totalPrice,
+          quoteTerms: quote.terms,
+          quoteValidUntil: quote.validUntil,
+        }
+        const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
+        const next = new Map(previous)
+        next.set(id, {
+          ...existing,
+          status: 'quoted',
+          quote: { ...quote, createdAt: now },
+          timeline: updatedTimeline,
+          updatedAt: now,
         })
+        set({ requests: next })
+        try {
+          const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'quoted',
+              quote: { ...quote, validUntil: quote.validUntil instanceof Date ? quote.validUntil.toISOString() : quote.validUntil, createdAt: now.toISOString() },
+              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+            }),
+          })
+          if (!res.ok) throw new Error(`set quote failed: ${res.status}`)
+          return true
+        } catch {
+          set({ requests: previous })
+          return false
+        }
       },
 
-      setStatus: (id, status, note) => {
-        set((state) => {
-          const existing = state.requests.get(id)
-          if (!existing) return state
-          const now = new Date()
-          const event: RFQTimelineEvent = {
-            at: now,
-            type: status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'note',
-            ...(note ? { note } : {}),
-          }
-          const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
-          const next = new Map(state.requests)
-          next.set(id, {
-            ...existing,
-            status,
-            timeline: updatedTimeline,
-            updatedAt: now,
-          })
-          if (typeof window !== 'undefined') {
-            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status,
-                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-              }),
-            }).catch(() => {})
-          }
-          return { requests: next }
+      setStatus: async (id, status, note) => {
+        const previous = get().requests
+        const existing = previous.get(id)
+        if (!existing) return false
+        const now = new Date()
+        const event: RFQTimelineEvent = {
+          at: now,
+          type: status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'note',
+          ...(note ? { note } : {}),
+        }
+        const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
+        const next = new Map(previous)
+        next.set(id, {
+          ...existing,
+          status,
+          timeline: updatedTimeline,
+          updatedAt: now,
         })
+        set({ requests: next })
+        try {
+          const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status,
+              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+            }),
+          })
+          if (!res.ok) throw new Error(`set status failed: ${res.status}`)
+          return true
+        } catch {
+          set({ requests: previous })
+          return false
+        }
       },
 
-      addNote: (id, note) => {
-        set((state) => {
-          const existing = state.requests.get(id)
-          if (!existing || !note.trim()) return state
-          const now = new Date()
-          const event: RFQTimelineEvent = { at: now, type: 'note', note: note.trim() }
-          const updatedTimeline = [...(existing.timeline ?? []), event]
-          const next = new Map(state.requests)
-          next.set(id, {
-            ...existing,
-            timeline: updatedTimeline,
-            updatedAt: now,
-          })
-          if (typeof window !== 'undefined') {
-            fetch(`/api/rfq/${encodeURIComponent(id)}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                notes: note.trim(),
-                timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-              }),
-            }).catch(() => {})
-          }
-          return { requests: next }
+      addNote: async (id, note) => {
+        const previous = get().requests
+        const existing = previous.get(id)
+        if (!existing || !note.trim()) return false
+        const now = new Date()
+        const event: RFQTimelineEvent = { at: now, type: 'note', note: note.trim() }
+        const updatedTimeline = [...(existing.timeline ?? []), event]
+        const next = new Map(previous)
+        next.set(id, {
+          ...existing,
+          timeline: updatedTimeline,
+          updatedAt: now,
         })
+        set({ requests: next })
+        try {
+          const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              notes: note.trim(),
+              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
+            }),
+          })
+          if (!res.ok) throw new Error(`add note failed: ${res.status}`)
+          return true
+        } catch {
+          set({ requests: previous })
+          return false
+        }
       },
 
       setRequests: (requests) => {

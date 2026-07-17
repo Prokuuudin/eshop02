@@ -72,7 +72,7 @@ export default function RequestQuotePage() {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!companyId) {
       showToast('RFQ доступен только для B2B-аккаунтов', 'error')
@@ -88,12 +88,17 @@ export default function RequestQuotePage() {
       return
     }
 
-    const rfqId = createRequest({
+    const { id: rfqId, ok } = await createRequest({
       companyId,
       items: normalized,
       notes: notes.trim(),
       createdByUserId: user?.id
     })
+
+    if (!ok) {
+      showToast('Не удалось отправить запрос. Попробуйте ещё раз.', 'error')
+      return
+    }
 
     if (user?.companyId) {
       logAuditAction(user.companyId, user.id, 'rfq_created', { rfqId, items: normalized.length })
@@ -104,14 +109,14 @@ export default function RequestQuotePage() {
     setNotes('')
   }
 
-  const acceptQuote = (rfqId: string) => {
-    setStatus(rfqId, 'accepted')
-    showToast('Предложение принято', 'success')
+  const acceptQuote = async (rfqId: string) => {
+    const ok = await setStatus(rfqId, 'accepted')
+    showToast(ok ? 'Предложение принято' : 'Не удалось принять предложение. Попробуйте ещё раз.', ok ? 'success' : 'error')
   }
 
-  const rejectQuote = (rfqId: string) => {
-    setStatus(rfqId, 'rejected')
-    showToast('Предложение отклонено', 'info')
+  const rejectQuote = async (rfqId: string) => {
+    const ok = await setStatus(rfqId, 'rejected')
+    showToast(ok ? 'Предложение отклонено' : 'Не удалось отклонить предложение. Попробуйте ещё раз.', ok ? 'info' : 'error')
   }
 
   if (!companyId) {

@@ -40,9 +40,9 @@ export default function ProductCard({ product }: Props) {
 
     return (
         <Card
-            className="product-card p-3 h-full min-h-[380px] sm:min-h-[420px] lg:min-h-[450px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
+            className="product-card px-3 py-2 h-full min-h-[340px] sm:min-h-[370px] lg:min-h-[390px] flex flex-col relative cursor-pointer min-w-0 bg-card border border-border text-foreground focus-within:ring-2 focus-within:ring-ring group"
         >
-            <div className="absolute right-3 top-3 z-10">
+            <div className="absolute right-3 top-2 z-10">
                 <WishlistButton product={product} />
             </div>
 
@@ -74,7 +74,7 @@ export default function ProductCard({ product }: Props) {
                 </div>
             </div>
 
-            <div className="product-card__body mt-3 flex-1 flex flex-col min-w-0">
+            <div className="product-card__body mt-2 flex-1 flex flex-col min-w-0">
                 <div className="product-card__brand text-xs text-muted-foreground">
                     {product.brand}
                 </div>
@@ -93,7 +93,7 @@ export default function ProductCard({ product }: Props) {
                     </p>
                 )}
 
-                <div className="product-card__meta mt-auto pt-2 flex items-center justify-between gap-3">
+                <div className="product-card__meta mt-auto pt-1 flex items-center justify-between gap-3">
                     <div>
                         {!isHydrated ? (
                             // Neutral placeholder until auth is known — avoids the login/price flash.
@@ -136,7 +136,7 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__badges mt-2 flex flex-wrap gap-2 mb-3 max-w-full overflow-hidden">
+                <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 mb-2 max-w-full overflow-hidden">
                     {product.badges?.includes('sale') && (
                         <Badge className="bg-red-600 text-white max-w-[90%] truncate">
                             {t('product.sale')}
@@ -159,7 +159,7 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__actions relative z-10 mt-2 w-full space-y-2">
+                <div className="product-card__actions relative z-10 mt-1 w-full space-y-2">
                     {isOutOfStock ? (
                         <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
                     ) : (

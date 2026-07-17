@@ -60,7 +60,7 @@ export default function BestsellersSlider({ arrowsContainerId, products }: { arr
               slidesPerView: 4,
               spaceBetween: 16,
             },
-            1280: {
+            1200: {
               slidesPerView: 5,
               spaceBetween: 16,
             },

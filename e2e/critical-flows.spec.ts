@@ -178,6 +178,38 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
   await expect(page.getByText(/Проверяем оплату|Ожидает подтверждения|Оплачено/)).toBeVisible({ timeout: 15000 })
 })
 
+test('review form shows an error when the server rejects the submission', async ({ page }) => {
+  // Регрессия: catch в handleSubmit только сбрасывал submitted — при 500 форма
+  // молча оставалась на экране без какого-либо фидбека пользователю.
+  const response = await page.request.get('/api/products?category=hair')
+  const payload = (await response.json()) as { data?: { products?: Array<{ id: string }> } }
+  const productId = payload.data?.products?.[0]?.id
+  expect(productId).toBeTruthy()
+
+  await page.route('**/api/reviews', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'internal' }),
+    })
+  })
+
+  await page.goto(`/product/${productId}`)
+  await page.getByRole('button', { name: /Написать рецензию/ }).click({ timeout: 30000 })
+  await page.getByPlaceholder(/Кратко о вашем опыте/).fill('E2E error-path test')
+  await page.getByPlaceholder(/Поделитесь подробнее/).fill('Проверка отображения ошибки при отказе сервера.')
+  await page.getByRole('button', { name: /^Отправить$/ }).click()
+
+  // Ошибка показана, форма не закрылась, «спасибо» не появилось.
+  await expect(page.getByText(/Не удалось отправить отзыв/)).toBeVisible({ timeout: 10000 })
+  await expect(page.getByPlaceholder(/Кратко о вашем опыте/)).toHaveValue('E2E error-path test')
+  await expect(page.getByText(/Спасибо! Отзыв появится/)).not.toBeVisible()
+})
+
 test('brand card link opens catalog filtered by selected brand', async ({ page }) => {
   await page.goto('/')
 

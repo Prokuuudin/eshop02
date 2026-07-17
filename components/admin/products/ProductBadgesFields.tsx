@@ -18,7 +18,7 @@ const ProductBadgesFields: React.FC = () => {
     return (
         <div className="add-product__section add-product__section--badges">
             <h2 className="add-product__section-title">Бейджи</h2>
-            <div className="add-product__fields-grid flex gap-4">
+            <div className="flex gap-4">
                 <Controller
                     name="badges"
                     control={control}

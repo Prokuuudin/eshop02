@@ -209,14 +209,14 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
         </Dialog>
 
         {/* Social media links */}
-        <div className="header__menu-social mt-6 flex justify-center gap-4">
-          <Link href="https://instagram.com/" target="_blank" rel="noopener" aria-label={t('footer.instagram')} className="hover:text-pink-600">
+        <div className="header__menu-social mt-6 flex justify-center gap-2">
+          <Link href="https://instagram.com/" target="_blank" rel="noopener" aria-label={t('footer.instagram')} className="p-3 hover:text-pink-600">
             <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor"/></svg>
           </Link>
-          <Link href="https://facebook.com/" target="_blank" rel="noopener" aria-label={t('footer.facebook')} className="hover:text-blue-600">
+          <Link href="https://facebook.com/" target="_blank" rel="noopener" aria-label={t('footer.facebook')} className="p-3 hover:text-blue-600">
             <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><path d="M15 8h-2a1 1 0 0 0-1 1v2h3l-.5 2H12v6h-2v-6H8v-2h2V9a3 3 0 0 1 3-3h2v2z" fill="currentColor"/></svg>
           </Link>
-          <Link href="https://youtube.com/" target="_blank" rel="noopener" aria-label={t('footer.youtube')} className="hover:text-red-600">
+          <Link href="https://youtube.com/" target="_blank" rel="noopener" aria-label={t('footer.youtube')} className="p-3 hover:text-red-600">
             <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>
           </Link>
         </div>

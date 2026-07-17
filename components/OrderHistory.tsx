@@ -63,7 +63,7 @@ export default function OrderHistory({
       </div>
 
       <div className="mt-6 pt-4 border-t border-border">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <p className="text-xs text-muted-foreground">{t('account.orderHistory.totalMonths')}</p>
             <p className="text-lg font-bold text-foreground">{monthlyData.length}</p>

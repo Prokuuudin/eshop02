@@ -39,6 +39,8 @@ export default function Reviews({ productId }: ReviewsProps) {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ author: "", rating: 5, title: "", text: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [productReviews, setProductReviews] = useState<ReviewItem[]>([]);
   const [stats, setStats] = useState<ReviewStats>({
     averageRating: 0,
@@ -106,6 +108,9 @@ export default function Reviews({ productId }: ReviewsProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(false);
     void (async () => {
       try {
         const response = await fetch('/api/reviews', {
@@ -132,6 +137,9 @@ export default function Reviews({ productId }: ReviewsProps) {
         }, 4000);
       } catch {
         setSubmitted(false);
+        setSubmitError(true);
+      } finally {
+        setSubmitting(false);
       }
     })();
   };
@@ -250,8 +258,13 @@ export default function Reviews({ productId }: ReviewsProps) {
                   required
                 />
               </div>
+              {submitError && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {t("reviews.submitError", "Не удалось отправить отзыв. Попробуйте ещё раз.")}
+                </p>
+              )}
               <div className="flex gap-2">
-                <Button type="submit">{t("reviews.send")}</Button>
+                <Button type="submit" disabled={submitting}>{t("reviews.send")}</Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   {t("reviews.cancel")}
                 </Button>

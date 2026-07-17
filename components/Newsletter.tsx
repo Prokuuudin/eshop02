@@ -76,7 +76,7 @@ export default function Newsletter() {
                 />
                 <label htmlFor="newsletter-consent" className="newsletter__consent-label text-sm text-gray-600">
                   {t('newsletter.consentPrefix')}
-                  <Link href="/privacy" className="underline">{t('newsletter.consentLinkLabel')}</Link>
+                  <Link href="/terms" className="underline">{t('newsletter.consentLinkLabel')}</Link>
                 </label>
               </div>
             </form>

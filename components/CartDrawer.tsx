@@ -270,7 +270,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                             minQuantity
                                                         )
                                                     }
-                                                    className="w-8 h-8 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-11 h-11 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     −
                                                 </button>
@@ -281,7 +281,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                     onClick={() =>
                                                         updateQuantity(item.lineKey, item.quantity + 1)
                                                     }
-                                                    className="w-8 h-8 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-11 h-11 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     +
                                                 </button>

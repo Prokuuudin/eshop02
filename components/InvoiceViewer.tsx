@@ -72,7 +72,7 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
         {/* Content */}
         <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           {/* Dates and Status */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <p className="text-sm text-muted-foreground">{t('account.invoiceViewer.issuedAt')}</p>
               <p className="font-semibold text-foreground">

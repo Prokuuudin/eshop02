@@ -196,7 +196,7 @@ export default function StockAlertsPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/20">
                         <p className="text-xs text-red-600 dark:text-red-400">Нет в наличии</p>
                         <p className="mt-1 text-3xl font-bold text-red-700 dark:text-red-300">{outCount}</p>

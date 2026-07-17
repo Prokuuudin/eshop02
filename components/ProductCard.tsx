@@ -100,14 +100,16 @@ export default function ProductCard({ product }: Props) {
                             <div className="h-7 w-20 rounded bg-muted animate-pulse" />
                         ) : isAuthenticated ? (
                             <>
-                                <div className="product-card__price text-lg font-semibold">
-                                    {formatEuro(displayPrice, 'en-US')}
-                                </div>
-                                {displayOldPrice && (
-                                    <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
-                                        {formatEuro(displayOldPrice, 'en-US')}
+                                <div className="flex items-baseline gap-2">
+                                    <div className="product-card__price text-lg font-semibold">
+                                        {formatEuro(displayPrice, 'en-US')}
                                     </div>
-                                )}
+                                    {displayOldPrice && (
+                                        <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
+                                            {formatEuro(displayOldPrice, 'en-US')}
+                                        </div>
+                                    )}
+                                </div>
                                 {firstTier && firstTierPrice !== null && (
                                     <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
                                         {t('product.bulkTierPrice', undefined, {

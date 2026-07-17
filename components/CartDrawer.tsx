@@ -342,7 +342,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         </div>
 
                         <div className="border-t border-border pt-2 flex justify-between font-semibold text-sm text-foreground">
-                            <span className="uppercase">{t('cart.total')}</span>
+                            <span>{t('cart.total')}</span>
                             <span>{formatCurrency(finalTotal)}</span>
                         </div>
 

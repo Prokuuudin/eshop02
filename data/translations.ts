@@ -851,7 +851,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Cart & Checkout
     'cart.empty': 'Ваша корзина пуста',
     'cart.subtotal': 'Сумма',
-    'cart.total': 'Всего',
+    'cart.total': 'Итого',
     // --- CHECKOUT PAGE ---
     'checkout.title': 'Оформление заказа',
     'checkout.empty': 'Корзина пуста. Добавьте товары перед оформлением.',

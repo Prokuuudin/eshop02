@@ -109,25 +109,17 @@
 }
 
 /* Флайаут «В корзину» выезжает ниже карточки, а overflow:hidden у Swiper
-   клипует и по вертикали. Паддинг даёт место, отрицательный маргин
-   возвращает внешнюю высоту секции. Только desktop — ниже lg блок в потоке. */
+   клипует и по вертикали. Поэтому: overflow visible, а горизонтальный клип
+   (соседние слайды в loop-режиме) делает clip-path — по бокам режет по
+   границе контейнера, вниз даёт 200px под флайаут, вверх 24px под тень.
+   z-40 — поверх Categories (relative z-30, позже в DOM), ниже z-header (100).
+   Только desktop — ниже lg блок действий в потоке. */
 @media (min-width: 1024px) {
-    .bestsellers-swiper {
-        padding-bottom: 60px;
-        margin-bottom: -60px;
-        /* Поверх следующей секции (Categories стоит на relative z-30 и позже
-           в DOM — при равном z рисовалась бы сверху), чтобы флайаут не уходил
-           под неё; ниже z-header (100). pointer-events выключены на контейнере:
-           его нижний паддинг перекрывает следующую секцию и не должен глотать
-           её клики. */
+    .swiper.bestsellers-swiper {
+        overflow: visible;
+        clip-path: inset(-24px 0 -200px 0);
         position: relative;
         z-index: 40;
-        pointer-events: none;
-    }
-
-    .bestsellers-swiper .swiper-wrapper,
-    .bestsellers-swiper .swiper-pagination {
-        pointer-events: auto;
     }
 }
 @tailwind base;

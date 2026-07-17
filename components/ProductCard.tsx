@@ -159,7 +159,7 @@ export default function ProductCard({ product }: Props) {
                     )}
                 </div>
 
-                <div className="product-card__actions relative z-10 mt-1 w-full space-y-2">
+                <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
                     {isOutOfStock ? (
                         <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
                     ) : (

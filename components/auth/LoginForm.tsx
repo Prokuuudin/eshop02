@@ -59,10 +59,11 @@ export default function LoginForm({
             )}
             {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
             <div>
-                <label className="block mb-1 text-sm text-foreground">
+                <label htmlFor="login-identifier" className="block mb-1 text-sm text-foreground">
                     {t('auth.clientCardNumber', 'Номер карты')}
                 </label>
                 <Input
+                    id="login-identifier"
                     type="text"
                     className="bg-card text-foreground border-border"
                     value={identifier}
@@ -73,11 +74,12 @@ export default function LoginForm({
                 />
             </div>
             <div>
-                <label className="block mb-1 text-sm text-foreground">
+                <label htmlFor="login-password" className="block mb-1 text-sm text-foreground">
                     {t('auth.password')}
                 </label>
                 <div className="relative flex items-center">
                     <Input
+                        id="login-password"
                         type={showPassword ? 'text' : 'password'}
                         className="bg-card text-foreground border-border pr-10"
                         value={password}

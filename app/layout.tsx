@@ -61,16 +61,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <html lang="en">
+    // Default (server) render language; I18nProvider updates document.documentElement.lang
+    // to the visitor's saved language after hydration.
+    <html lang="ru">
       <body>
         <ThemeInitScript />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
+        >
+          Пропустить к содержимому / Skip to content
+        </a>
         <Providers>
           <RouteUiEffects />
           <AuthHydrator />
           <Header />
-          <main className="w-full pb-6">
+          <main id="main-content" className="w-full pb-6">
             <div className="mx-auto mt-2 w-full max-w-7xl px-4">
               <AppBreadcrumbs />
             </div>

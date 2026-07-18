@@ -49,10 +49,11 @@ export default function ForgotPasswordForm() {
       <p className="text-sm text-muted-foreground">{t('auth.resetPasswordHint')}</p>
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
       <div>
-        <label className="block mb-1 text-sm text-foreground">
+        <label htmlFor="forgot-email" className="block mb-1 text-sm text-foreground">
           {t('auth.email')}
         </label>
         <Input
+          id="forgot-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

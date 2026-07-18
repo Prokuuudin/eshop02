@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { hashPassword } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
+
+const MIN_PASSWORD_LENGTH = 6
 
 type ResetRecord = { token: string; email: string; expiresAt: string }
 type ResetData = { resets: ResetRecord[] }
@@ -42,18 +45,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ ok: true, email: record.email })
 }
 
-// POST { token } — использовать токен, получить email (одноразово)
+// POST { token, password } — использовать токен и задать новый пароль в БД (одноразово).
+// Пароль пишется server-side (bcrypt): раньше страница сброса меняла только localStorage,
+// и настоящий passwordHash в БД не обновлялся — сброс фактически не работал.
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let token: string
+  let password: string
   try {
-    const body = (await request.json()) as { token?: string }
+    const body = (await request.json()) as { token?: string; password?: string }
     token = (body.token ?? '').trim()
+    password = typeof body.password === 'string' ? body.password : ''
   } catch {
     return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 })
   }
 
   if (!token) {
     return NextResponse.json({ ok: false, error: 'missing_token' }, { status: 400 })
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
   }
 
   const data = await read()
@@ -66,6 +76,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const { email } = data.resets[idx]
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+  if (user) {
+    const passwordHash = await hashPassword(password)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    })
+  }
+
+  // Consume the token only after the password is set.
   data.resets.splice(idx, 1)
   await write(data)
 

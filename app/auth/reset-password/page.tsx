@@ -60,10 +60,12 @@ export default function ResetPasswordPage() {
     setSubmitting(true)
 
     try {
+      // Password is set server-side (bcrypt hash in DB) — the token and the new password go
+      // together so the real credential actually changes.
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, password }),
       })
       const json = (await res.json()) as { ok: boolean; email?: string; error?: string }
 
@@ -71,16 +73,19 @@ export default function ResetPasswordPage() {
         setErrorMsg(
           json.error === 'token_expired'
             ? 'Ссылка устарела. Запросите сброс пароля заново.'
-            : 'Ссылка недействительна или уже была использована.'
+            : json.error === 'password_too_short'
+              ? 'Пароль должен быть не менее 6 символов.'
+              : 'Ссылка недействительна или уже была использована.'
         )
         setSubmitting(false)
         return
       }
 
+      // Keep any local mirror consistent; the DB is the source of truth from here.
       const users = readUsers()
       const idx = users.findIndex((u) => u.email.toLowerCase() === json.email!.toLowerCase())
       if (idx !== -1) {
-        users[idx] = { ...users[idx], password, mustChangePassword: false }
+        users[idx] = { ...users[idx], password: '', mustChangePassword: false }
         writeUsers(users)
       }
 

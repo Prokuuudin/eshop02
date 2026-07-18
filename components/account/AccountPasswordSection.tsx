@@ -36,17 +36,15 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
         setOpen(false);
     };
 
-    const handleSave = () => {
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
         setError(null);
         const user = getCurrentUser();
         if (!user) return;
 
         if (!current) {
             setError(t('account.password.errorCurrentRequired'));
-            return;
-        }
-        if (user.password !== current) {
-            setError(t('account.password.errorCurrentWrong'));
             return;
         }
         if (next.length < 6) {
@@ -58,12 +56,44 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
             return;
         }
 
+        // Password is server-authoritative (bcrypt hash in DB). The old localStorage-only
+        // check compared against a blanked password and always failed after a server login.
+        setSaving(true);
+        let res: Response;
+        try {
+            res = await fetch('/api/user/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: current, newPassword: next }),
+            });
+        } catch {
+            setSaving(false);
+            setError(t('account.password.errorServer', 'Не удалось сменить пароль. Попробуйте позже.'));
+            return;
+        }
+        setSaving(false);
+
+        if (res.status === 401) {
+            setError(t('account.password.errorCurrentWrong'));
+            return;
+        }
+        if (res.status === 400) {
+            setError(t('account.password.errorTooShort'));
+            return;
+        }
+        if (!res.ok) {
+            setError(t('account.password.errorServer', 'Не удалось сменить пароль. Попробуйте позже.'));
+            return;
+        }
+
+        // Keep the local mirror consistent: password is never the local source of truth again.
         const users = readUsers();
         const idx = users.findIndex((u) => u.id === user.id);
-        if (idx === -1) return;
-        users[idx] = { ...users[idx], password: next };
-        writeUsers(users);
-        writeCurrentUser(users[idx]);
+        if (idx !== -1) {
+            users[idx] = { ...users[idx], password: '', mustChangePassword: false };
+            writeUsers(users);
+            writeCurrentUser(users[idx]);
+        }
 
         setSuccess(true);
         reset();
@@ -160,7 +190,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                     value={confirm}
                                     onChange={(e) => setConfirm(e.target.value)}
                                     autoComplete="new-password"
-                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
                                 />
                             </div>
 
@@ -169,10 +199,10 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                             )}
 
                             <div className="flex gap-2 pt-1">
-                                <Button size="sm" variant="outline" onClick={handleCancel}>
+                                <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
                                     {t('common.cancel')}
                                 </Button>
-                                <Button size="sm" onClick={handleSave}>
+                                <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
                                     {t('common.save')}
                                 </Button>
                             </div>

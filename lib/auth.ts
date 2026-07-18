@@ -314,18 +314,41 @@ export const clearNewUserFlag = (): void => {
   notifyAuthChanged()
 }
 
-export const forceChangePassword = (newPassword: string): { success: boolean; error?: string } => {
+// Forced first-login password change. Writes the new password to the DB (bcrypt) via the
+// session — the old version mutated only localStorage, so the real hash never changed and the
+// user was locked to the default password on their next login.
+export const forceChangePassword = async (
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> => {
   const user = getCurrentUser()
   if (!user) return { success: false, error: 'Не авторизован' }
   if (newPassword.length < 6) {
     return { success: false, error: 'Пароль должен быть не менее 6 символов' }
   }
+
+  let res: Response
+  try {
+    res = await fetch('/api/user/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword }),
+    })
+  } catch {
+    return { success: false, error: 'Сервер недоступен. Попробуйте позже.' }
+  }
+  if (!res.ok) {
+    return { success: false, error: 'Не удалось сменить пароль. Попробуйте позже.' }
+  }
+
   const users = readUsers()
   const idx = users.findIndex((u) => u.id === user.id)
-  if (idx === -1) return { success: false, error: 'Пользователь не найден' }
-  users[idx] = { ...users[idx], password: newPassword, mustChangePassword: false }
-  writeUsers(users)
-  writeCurrentUser(users[idx])
+  if (idx !== -1) {
+    users[idx] = { ...users[idx], password: '', mustChangePassword: false }
+    writeUsers(users)
+    writeCurrentUser(users[idx])
+  } else {
+    writeCurrentUser({ ...user, password: '', mustChangePassword: false })
+  }
   notifyAuthChanged()
   return { success: true }
 }

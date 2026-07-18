@@ -13,7 +13,7 @@ export default function ForceChangePasswordModal() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setError('');
         if (next.length < 6) {
             setError('Пароль должен быть не менее 6 символов.');
@@ -24,7 +24,7 @@ export default function ForceChangePasswordModal() {
             return;
         }
         setLoading(true);
-        const result = forceChangePassword(next);
+        const result = await forceChangePassword(next);
         setLoading(false);
         if (!result.success) {
             setError(result.error ?? 'Ошибка. Попробуйте ещё раз.');
@@ -91,7 +91,7 @@ export default function ForceChangePasswordModal() {
                                 placeholder="Повторите новый пароль"
                                 className="pr-10 bg-card"
                                 autoComplete="new-password"
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
                             />
                             <button
                                 type="button"
@@ -111,7 +111,7 @@ export default function ForceChangePasswordModal() {
 
                 <Button
                     className="w-full"
-                    onClick={handleSave}
+                    onClick={() => void handleSave()}
                     disabled={loading}
                 >
                     {loading ? 'Сохраняем…' : 'Сохранить пароль'}

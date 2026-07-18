@@ -1,9 +1,13 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import type { Product } from '../data/products';
-import BestsellersSlider from './BestsellersSlider';
 import { useTranslation } from '@/lib/use-translation';
+
+// Swiper is heavy (~130 KB) and this section renders below the fold after a client
+// fetch — defer its bundle out of the initial homepage JS.
+const BestsellersSlider = dynamic(() => import('./BestsellersSlider'), { ssr: false });
 
 export default function BestsellersSection() {
     const { t } = useTranslation();

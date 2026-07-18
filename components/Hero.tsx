@@ -7,15 +7,18 @@ import { useSiteContent } from '@/lib/use-site-content'
 export default function Hero() {
   const { t } = useTranslation()
   const { resolveImageSrc } = useSiteContent()
+  const heroSrc = resolveImageSrc('/hero.jpg')
 
   return (
     <section id="home" className="hero relative isolate rounded-xl overflow-hidden aspect-[4/5] sm:aspect-[16/9] lg:aspect-[3393/1080] lg:max-h-[560px]">
       <Image
-        src={resolveImageSrc('/hero.jpg')}
+        src={heroSrc}
         alt={t('hero.alt')}
         fill
         priority
-        unoptimized
+        // Optimise the LCP image (resize + modern format); only skip for inline data URIs,
+        // which the image optimiser cannot process.
+        unoptimized={heroSrc.startsWith('data:')}
         sizes="100vw"
         className="hero__bg object-cover object-[80%_center] lg:object-center -z-10"
       />

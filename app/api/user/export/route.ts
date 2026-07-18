@@ -10,12 +10,7 @@ export async function GET() {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-    const data = await exportUserData({
-      id: user.id,
-      email: user.email,
-      name: user.name ?? null,
-      companyId: user.companyId ?? null,
-    })
+    const data = await exportUserData({ id: user.id, email: user.email })
 
     return new NextResponse(JSON.stringify(data, null, 2), {
       status: 200,

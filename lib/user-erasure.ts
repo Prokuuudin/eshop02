@@ -29,13 +29,19 @@ export type UserExport = {
 export async function exportUserData(params: {
   id: string
   email: string
-  name?: string | null
-  companyId?: string | null
 }): Promise<UserExport> {
-  const { id, email, name, companyId } = params
+  const { id, email } = params
   const emailLower = email.toLowerCase()
 
-  const [profile, orders, reviews, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices] =
+  // Orders first — invoices are scoped through them so a company member's personal
+  // export never dumps company-wide invoices (Invoice has no per-user key of its own).
+  const orders = await prisma.order.findMany({
+    where: { OR: [{ userId: id }, { email: emailLower }] },
+    orderBy: { createdAt: 'desc' },
+  })
+  const orderIds = orders.map((o) => o.id)
+
+  const [profile, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id },
@@ -45,13 +51,11 @@ export async function exportUserData(params: {
           bonusPoints: true, createdAt: true,
         },
       }),
-      prisma.order.findMany({ where: { OR: [{ userId: id }, { email: emailLower }] }, orderBy: { createdAt: 'desc' } }),
-      name ? prisma.review.findMany({ where: { author: name } }) : Promise.resolve([]),
       prisma.savedAddress.findMany({ where: { email: emailLower } }),
       prisma.productSubscription.findMany({ where: { OR: [{ userId: id }, { userEmail: emailLower }] } }),
       prisma.stockNotification.findMany({ where: { OR: [{ userId: id }, { email: emailLower }] } }),
       prisma.returnRequest.findMany({ where: { email: emailLower } }),
-      companyId ? prisma.invoice.findMany({ where: { companyId } }) : Promise.resolve([]),
+      orderIds.length ? prisma.invoice.findMany({ where: { orderId: { in: orderIds } } }) : Promise.resolve([]),
     ])
 
   return {
@@ -59,7 +63,10 @@ export async function exportUserData(params: {
     profile: (profile ?? {}) as Record<string, unknown>,
     orders,
     invoices,
-    reviews,
+    // Reviews are intentionally omitted: the schema has no userId FK on Review, and
+    // matching by the mutable `author` display name would return third parties' reviews
+    // (over-disclosure). Review erasure is handled manually until a userId FK is added.
+    reviews: [],
     savedAddresses,
     subscriptions,
     stockNotifications,
@@ -71,9 +78,8 @@ export async function exportUserData(params: {
 export async function anonymizeUser(params: {
   id: string
   email: string
-  name?: string | null
 }): Promise<void> {
-  const { id, email, name } = params
+  const { id, email } = params
   const emailLower = email.toLowerCase()
   const scrubbedEmail = anonEmail(id)
   // A valid bcrypt hash of a random secret nobody knows — login can never succeed again,
@@ -95,10 +101,9 @@ export async function anonymizeUser(params: {
       data: { firstName: 'Deleted', lastName: 'User', email: scrubbedEmail, phone: '' },
     })
 
-    // Reviews are public content — keep the text, drop the name (best-effort match by author).
-    if (name) {
-      await tx.review.updateMany({ where: { author: name }, data: { author: 'Аноним' } })
-    }
+    // Reviews are deliberately NOT touched here: Review has no userId FK, and a sweep by
+    // the mutable `author` display name would overwrite every same-named user's reviews
+    // (cross-account data loss). Review erasure is handled manually until a FK exists.
 
     // Pure-PII / intent records: remove entirely.
     await tx.savedAddress.deleteMany({ where: { email: emailLower } })

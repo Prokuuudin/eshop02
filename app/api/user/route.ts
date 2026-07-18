@@ -21,7 +21,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'admin_cannot_self_delete' }, { status: 403 })
     }
 
-    await anonymizeUser({ id: user.id, email: user.email, name: user.name ?? null })
+    await anonymizeUser({ id: user.id, email: user.email })
 
     const res = NextResponse.json({ ok: true })
     // Clear the session cookie immediately (the DB session rows are already gone).

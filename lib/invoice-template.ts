@@ -3,8 +3,6 @@ import { translations } from '@/data/translations'
 import { displayOrderTax } from '@/lib/tax'
 import { COMPANY } from '@/data/company'
 
-type Lang = 'ru' | 'en' | 'lv'
-
 const esc = (s: unknown): string =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -13,78 +11,42 @@ const esc = (s: unknown): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
-const LABELS: Record<Lang, Record<string, string>> = {
-  ru: {
-    invoice: 'СЧЁТ',
-    number: 'Номер счёта',
-    date: 'Дата',
-    seller: 'Продавец',
-    buyer: 'Покупатель',
-    product: 'Товар',
-    qty: 'Кол-во',
-    price: 'Цена',
-    amount: 'Сумма',
-    subtotal: 'Подитог',
-    delivery: 'Доставка',
-    discount: 'Скидка',
-    tax: 'НДС (21%)',
-    total: 'ИТОГО',
-    phone: 'Тел.',
-    sku: 'Арт.',
-    thankyou: 'Спасибо за заказ!',
-  },
-  en: {
-    invoice: 'INVOICE',
-    number: 'Invoice No.',
-    date: 'Date',
-    seller: 'Seller',
-    buyer: 'Buyer',
-    product: 'Product',
-    qty: 'Qty',
-    price: 'Price',
-    amount: 'Amount',
-    subtotal: 'Subtotal',
-    delivery: 'Delivery',
-    discount: 'Discount',
-    tax: 'VAT (21%)',
-    total: 'TOTAL',
-    phone: 'Phone',
-    sku: 'SKU',
-    thankyou: 'Thank you for your order!',
-  },
-  lv: {
-    invoice: 'RĒĶINS',
-    number: 'Rēķina Nr.',
-    date: 'Datums',
-    seller: 'Pārdevējs',
-    buyer: 'Pircējs',
-    product: 'Prece',
-    qty: 'Daudzums',
-    price: 'Cena',
-    amount: 'Summa',
-    subtotal: 'Starpsumma',
-    delivery: 'Piegāde',
-    discount: 'Atlaide',
-    tax: 'PVN (21%)',
-    total: 'KOPĀ',
-    phone: 'Tālr.',
-    sku: 'Art.',
-    thankyou: 'Paldies par pasūtījumu!',
-  },
-}
+// Инвойс — юридический документ, всегда на латышском независимо от языка UI.
+const L = {
+  invoice: 'RĒĶINS',
+  number: 'Rēķina Nr.',
+  date: 'Datums',
+  seller: 'Pārdevējs',
+  buyer: 'Pircējs',
+  product: 'Prece',
+  qty: 'Daudzums',
+  price: 'Cena',
+  amount: 'Summa',
+  subtotal: 'Starpsumma',
+  delivery: 'Piegāde',
+  discount: 'Atlaide',
+  tax: 'PVN (21%)',
+  total: 'KOPĀ',
+  phone: 'Tālr.',
+  sku: 'Art.',
+  thankyou: 'Paldies par pasūtījumu!',
+} as const
 
 function eur(cents: number): string {
   return (cents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
 }
 
-export function buildInvoiceHtml(order: Order, lang: Lang): string {
-  const L = LABELS[lang]
-  const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
+/**
+ * lvTitles: карта productId → латышское название (Product.titleLv).
+ * item.title — снимок в языке корзины на момент заказа, поэтому без карты
+ * название может остаться нелатышским; передавайте её везде, где есть доступ к товарам.
+ */
+export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>): string {
+  const date = new Date(order.createdAt).toLocaleDateString('lv-LV')
 
   const itemRows = order.items
     .map((item) => {
-      const titleKey = `products.${item.id}.title`
-      const localTitle = translations[lang][titleKey] ?? item.title
+      const localTitle = lvTitles?.[item.id] || translations.lv[`products.${item.id}.title`] || item.title
       const unitPrice = eur(item.price)
       const lineTotal = eur(item.price * item.quantity)
       const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${esc(item.sku)}</small>` : ''
@@ -105,7 +67,7 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
   const taxAmount = displayOrderTax(order)
 
   return `<!DOCTYPE html>
-<html lang="${lang}">
+<html lang="lv">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -186,4 +148,24 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
 <div class="footer">${L.thankyou}</div>
 </body>
 </html>`
+}
+
+/** Клиентский помощник: тянет латышские названия товаров заказа с /api/products/[id]. */
+export async function fetchLvTitles(items: Order['items']): Promise<Record<string, string>> {
+  const ids = Array.from(new Set(items.map((i) => i.id)))
+  const map: Record<string, string> = {}
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(id)}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const lv = data?.product?.titleLv
+        if (typeof lv === 'string' && lv.trim()) map[id] = lv
+      } catch {
+        // нет сети/товара — останется снимок item.title
+      }
+    })
+  )
+  return map
 }

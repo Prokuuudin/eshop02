@@ -9,7 +9,7 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
-import { buildInvoiceHtml } from '@/lib/invoice-template';
+import { buildInvoiceHtml, fetchLvTitles } from '@/lib/invoice-template';
 import { useToast } from '@/lib/toast-context';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 
@@ -370,9 +370,9 @@ export default function OrderPage({ params }: PageProps) {
         }
     };
 
-    const handleDownloadInvoice = (): void => {
-        const lang = (['ru', 'en', 'lv'].includes(language) ? language : 'ru') as 'ru' | 'en' | 'lv';
-        const html = buildInvoiceHtml(order, lang);
+    const handleDownloadInvoice = async (): Promise<void> => {
+        const lvTitles = await fetchLvTitles(order.items);
+        const html = buildInvoiceHtml(order, lvTitles);
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

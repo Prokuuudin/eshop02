@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -25,7 +25,9 @@
       ]
     },
     "incremental": true,
-    "types": ["vitest/globals"],
+    "types": [
+      "vitest/globals"
+    ],
     "plugins": [
       {
         "name": "next"

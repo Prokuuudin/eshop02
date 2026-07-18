@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountProfileCard from '@/components/account/AccountProfileCard';
 import { AccountPasswordSection } from '@/components/account/AccountPasswordSection';
+import { AccountDataSection } from '@/components/account/AccountDataSection';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { useAccountProfile } from '@/hooks/useAccountProfile';
 import { getCurrentUser, readUsers, writeUsers, writeCurrentUser } from '@/lib/auth';
@@ -92,6 +93,10 @@ export default function AccountProfilePage(): React.ReactElement {
                     <div className="lg:col-span-1 flex flex-col [&>*]:flex-1">
                         <AccountPasswordSection defaultOpen />
                     </div>
+                </div>
+
+                <div className="mt-6">
+                    <AccountDataSection />
                 </div>
             </div>
         </main>

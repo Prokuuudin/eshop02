@@ -9,7 +9,7 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
-import { buildInvoiceHtml, fetchLvTitles } from '@/lib/invoice-template';
+import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
 import { useToast } from '@/lib/toast-context';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 
@@ -370,14 +370,14 @@ export default function OrderPage({ params }: PageProps) {
         }
     };
 
-    const handleDownloadInvoice = async (): Promise<void> => {
-        const lvTitles = await fetchLvTitles(order.items);
-        const html = buildInvoiceHtml(order, lvTitles);
+    const handleDownloadInvoice = async (invoiceLang: InvoiceLang): Promise<void> => {
+        const titles = await fetchInvoiceTitles(order.items, invoiceLang);
+        const html = buildInvoiceHtml(order, titles, invoiceLang);
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `invoice-${order.id}.html`;
+        a.download = `invoice-${order.id}${invoiceLang === 'en' ? '-en' : ''}.html`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     };
@@ -685,7 +685,8 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             <div className="space-y-2">
-                                <Button className="w-full" onClick={handleDownloadInvoice}>{t('order.downloadInvoice')}</Button>
+                                <Button className="w-full" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
+                                <Button variant="outline" className="w-full" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
                                 {order.paymentStatus === 'paid' && (
                                     <Button
                                         variant="outline"

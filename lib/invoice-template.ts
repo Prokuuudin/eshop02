@@ -4,6 +4,10 @@ import { displayOrderTax } from '@/lib/tax'
 import { COMPANY } from '@/data/company'
 import { stores } from '@/data/stores'
 
+/** Инвойс по умолчанию латышский; по запросу покупателя — английский.
+ *  Адреса (продавца и магазина самовывоза) всегда латышские в обоих вариантах. */
+export type InvoiceLang = 'lv' | 'en'
+
 const esc = (s: unknown): string =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -12,26 +16,46 @@ const esc = (s: unknown): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
-// Инвойс — юридический документ, всегда на латышском независимо от языка UI.
-const L = {
-  invoice: 'RĒĶINS',
-  number: 'Rēķina Nr.',
-  date: 'Datums',
-  seller: 'Pārdevējs',
-  buyer: 'Pircējs',
-  product: 'Prece',
-  qty: 'Daudzums',
-  price: 'Cena',
-  amount: 'Summa',
-  subtotal: 'Starpsumma',
-  delivery: 'Piegāde',
-  discount: 'Atlaide',
-  tax: 'PVN (21%)',
-  total: 'KOPĀ',
-  phone: 'Tālr.',
-  sku: 'Art.',
-  thankyou: 'Paldies par pasūtījumu!',
-} as const
+const LABELS: Record<InvoiceLang, Record<string, string>> = {
+  lv: {
+    invoice: 'RĒĶINS',
+    number: 'Rēķina Nr.',
+    date: 'Datums',
+    seller: 'Pārdevējs',
+    buyer: 'Pircējs',
+    product: 'Prece',
+    qty: 'Daudzums',
+    price: 'Cena',
+    amount: 'Summa',
+    subtotal: 'Starpsumma',
+    delivery: 'Piegāde',
+    discount: 'Atlaide',
+    tax: 'PVN (21%)',
+    total: 'KOPĀ',
+    phone: 'Tālr.',
+    sku: 'Art.',
+    thankyou: 'Paldies par pasūtījumu!',
+  },
+  en: {
+    invoice: 'INVOICE',
+    number: 'Invoice No.',
+    date: 'Date',
+    seller: 'Seller',
+    buyer: 'Buyer',
+    product: 'Product',
+    qty: 'Qty',
+    price: 'Price',
+    amount: 'Amount',
+    subtotal: 'Subtotal',
+    delivery: 'Delivery',
+    discount: 'Discount',
+    tax: 'VAT (21%)',
+    total: 'TOTAL',
+    phone: 'Phone',
+    sku: 'SKU',
+    thankyou: 'Thank you for your order!',
+  },
+}
 
 function eur(cents: number): string {
   return (cents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
@@ -42,6 +66,7 @@ function eur(cents: number): string {
  * оформления (в старых заказах — русский). Резолвим магазин по pickupStoreId,
  * а для старых снимков — по уникальному индексу LV-xxxx внутри строки,
  * и подставляем латышские название и адрес из data/stores.ts.
+ * Адрес магазина остаётся латышским и в английском инвойсе.
  */
 function lvDeliveryAddress(order: Order): { address: string; city: string } | null {
   if (order.deliveryMethod !== 'pickup') return null
@@ -56,19 +81,24 @@ function lvDeliveryAddress(order: Order): { address: string; city: string } | nu
 }
 
 /**
- * lvTitles: карта productId → латышское название (Product.titleLv).
+ * titles: карта productId → название на языке инвойса (Product.titleLv/titleEn).
  * item.title — снимок в языке корзины на момент заказа, поэтому без карты
- * название может остаться нелатышским; передавайте её везде, где есть доступ к товарам.
+ * название может остаться не на языке инвойса; передавайте её везде, где есть доступ к товарам.
  */
-export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>): string {
-  const date = new Date(order.createdAt).toLocaleDateString('lv-LV')
+export function buildInvoiceHtml(
+  order: Order,
+  titles?: Record<string, string>,
+  lang: InvoiceLang = 'lv'
+): string {
+  const L = LABELS[lang]
+  const date = new Date(order.createdAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'lv-LV')
   const pickup = lvDeliveryAddress(order)
   const buyerAddress = pickup?.address ?? order.address
   const buyerCity = pickup?.city ?? order.city
 
   const itemRows = order.items
     .map((item) => {
-      const localTitle = lvTitles?.[item.id] || translations.lv[`products.${item.id}.title`] || item.title
+      const localTitle = titles?.[item.id] || translations[lang][`products.${item.id}.title`] || item.title
       const unitPrice = eur(item.price)
       const lineTotal = eur(item.price * item.quantity)
       const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${esc(item.sku)}</small>` : ''
@@ -89,7 +119,7 @@ export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>
   const taxAmount = displayOrderTax(order)
 
   return `<!DOCTYPE html>
-<html lang="lv">
+<html lang="${lang}">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -172,8 +202,12 @@ export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>
 </html>`
 }
 
-/** Клиентский помощник: тянет латышские названия товаров заказа с /api/products/[id]. */
-export async function fetchLvTitles(items: Order['items']): Promise<Record<string, string>> {
+/** Клиентский помощник: тянет названия товаров заказа на языке инвойса
+ *  с /api/products/[id]; для английского фолбэк — латышское название. */
+export async function fetchInvoiceTitles(
+  items: Order['items'],
+  lang: InvoiceLang = 'lv'
+): Promise<Record<string, string>> {
   const ids = Array.from(new Set(items.map((i) => i.id)))
   const map: Record<string, string> = {}
   await Promise.all(
@@ -182,8 +216,9 @@ export async function fetchLvTitles(items: Order['items']): Promise<Record<strin
         const res = await fetch(`/api/products/${encodeURIComponent(id)}`)
         if (!res.ok) return
         const data = await res.json()
-        const lv = data?.product?.titleLv
-        if (typeof lv === 'string' && lv.trim()) map[id] = lv
+        const p = data?.product
+        const title = lang === 'en' ? p?.titleEn || p?.titleLv : p?.titleLv
+        if (typeof title === 'string' && title.trim()) map[id] = title
       } catch {
         // нет сети/товара — останется снимок item.title
       }

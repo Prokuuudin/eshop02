@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { buildInvoiceHtml } from '@/lib/invoice-template'
+import { buildInvoiceHtml, type InvoiceLang } from '@/lib/invoice-template'
 import { sendEmail } from '@/lib/mailer'
 import { getServerOrderById } from '@/lib/orders-data-store'
 import { getMergedProducts } from '@/lib/product-overrides-store'
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  let body: { orderId: string; email: string }
+  let body: { orderId: string; email: string; language?: string }
   try {
     body = await request.json()
   } catch {
@@ -35,6 +35,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, code: 'missing_fields' }, { status: 422 })
   }
 
+  // Инвойс по умолчанию латышский; английский — по запросу покупателя
+  if (body.language !== undefined && !['lv', 'en'].includes(body.language)) {
+    return NextResponse.json({ ok: false, code: 'invalid_language' }, { status: 422 })
+  }
+  const lang: InvoiceLang = body.language === 'en' ? 'en' : 'lv'
+
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ ok: false, code: 'invalid_email' }, { status: 422 })
   }
@@ -45,16 +51,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, code: 'order_not_found' }, { status: 404 })
   }
 
-  // Инвойс всегда на латышском: названия товаров берём из Product.titleLv
+  // Названия товаров на языке инвойса; для EN фолбэк — латышское название
   const orderItemIds = new Set(order.items.map((i) => i.id))
   const products = await getMergedProducts()
-  const lvTitles: Record<string, string> = {}
+  const titles: Record<string, string> = {}
   for (const p of products) {
-    if (orderItemIds.has(p.id) && p.titleLv) lvTitles[p.id] = p.titleLv
+    if (!orderItemIds.has(p.id)) continue
+    const title = lang === 'en' ? p.titleEn || p.titleLv : p.titleLv
+    if (title) titles[p.id] = title
   }
 
-  const subject = `Rēķins pasūtījumam #${order.id}`
-  const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], lvTitles)
+  const subject = lang === 'en' ? `Invoice for order #${order.id}` : `Rēķins pasūtījumam #${order.id}`
+  const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang)
 
   try {
     await sendEmail(email, subject, html)

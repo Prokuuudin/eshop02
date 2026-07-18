@@ -88,4 +88,31 @@ describe('buildInvoiceHtml', () => {
     expect(html).toContain('Brīvības iela 1')
     expect(html).toContain('LV-1010')
   })
+
+  it('renders English labels and titles when lang=en', () => {
+    const html = buildInvoiceHtml(
+      order,
+      { '12483': 'KALLOS KJMN ARGAN shampoo for coloured hair 5000ml' },
+      'en'
+    )
+    expect(html).toContain('<html lang="en">')
+    expect(html).toContain('INVOICE')
+    expect(html).toContain('VAT (21%)')
+    expect(html).toContain('shampoo for coloured hair')
+    expect(html).not.toContain('шампунь')
+    expect(html).not.toContain('RĒĶINS')
+  })
+
+  it('keeps seller and pickup addresses Latvian in the English invoice', () => {
+    const pickupOrder = {
+      ...order,
+      deliveryMethod: 'pickup',
+      pickupStoreId: 'riga-office',
+      address: 'что-то устаревшее',
+      city: 'Рига',
+    } as unknown as Order
+    const html = buildInvoiceHtml(pickupOrder, undefined, 'en')
+    expect(html).toContain('Rencēnu iela 10A, Rīga, Latvija, LV-1073')
+    expect(html).toContain('Rīgas birojs — Rencēnu iela 10a, Rīga, LV-1073, Latvija')
+  })
 })

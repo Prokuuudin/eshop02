@@ -1,11 +1,12 @@
+// Адреса магазинов всегда на латышском во всех языках интерфейса (требование заказчика).
 export const stores = [
   {
     id: 'riga-office',
     city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига Офис', en: 'Riga Office', lv: 'Rīgas birojs' },
     address: {
-      ru: 'ул. Ренцену 10a, Рига, LV-1073, Латвия',
-      en: '10a Rencenu St., Riga, LV-1073, Latvia',
+      ru: 'Rencēnu iela 10a, Rīga, LV-1073, Latvija',
+      en: 'Rencēnu iela 10a, Rīga, LV-1073, Latvija',
       lv: 'Rencēnu iela 10a, Rīga, LV-1073, Latvija',
     },
     phone: '+37127067730',
@@ -20,8 +21,8 @@ export const stores = [
     city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига (Иманта)', en: 'Riga (Imanta)', lv: 'Rīga (Imanta)' },
     address: {
-      ru: 'Аннинмуйжас булварис 82, Рига, LV-1029, Латвия',
-      en: '82 Anninmuizas Blvd., Riga, LV-1029, Latvia',
+      ru: 'Anniņmuižas bulvāris 82, Rīga, LV-1029, Latvija',
+      en: 'Anniņmuižas bulvāris 82, Rīga, LV-1029, Latvija',
       lv: 'Anniņmuižas bulvāris 82, Rīga, LV-1029, Latvija',
     },
     phone: '+37122015204',
@@ -36,8 +37,8 @@ export const stores = [
     city: { ru: "Рига", en: "Riga", lv: "Rīga" },
     name: { ru: 'Рига (Плявниеки)', en: 'Riga (Plavnieki)', lv: 'Rīga (Pļavnieki)' },
     address: {
-      ru: 'ул. Бралю Каудзишу 13, Рига, LV-1082, Латвия',
-      en: '13 Bralu Kaudzisu St., Riga, LV-1082, Latvia',
+      ru: 'Brāļu Kaudzīšu iela 13, Rīga, LV-1082, Latvija',
+      en: 'Brāļu Kaudzīšu iela 13, Rīga, LV-1082, Latvija',
       lv: 'Brāļu Kaudzīšu iela 13, Rīga, LV-1082, Latvija',
     },
     phone: '+37127091811',
@@ -52,8 +53,8 @@ export const stores = [
     city: { ru: "Даугавпилс", en: "Daugavpils", lv: "Daugavpils" },
     name: { ru: 'Даугавпилс', en: 'Daugavpils', lv: 'Daugavpils' },
     address: {
-      ru: 'ул. Виестура 68-2, Даугавпилс, LV-5401, Латвия',
-      en: '68-2 Viestura St., Daugavpils, LV-5401, Latvia',
+      ru: 'Viestura iela 68-2, Daugavpils, LV-5401, Latvija',
+      en: 'Viestura iela 68-2, Daugavpils, LV-5401, Latvija',
       lv: 'Viestura iela 68-2, Daugavpils, LV-5401, Latvija',
     },
     phone: '+37125151630',
@@ -68,8 +69,8 @@ export const stores = [
     city: { ru: "Лиепая", en: "Liepaja", lv: "Liepāja" },
     name: { ru: 'Лиепая', en: 'Liepaja', lv: 'Liepāja' },
     address: {
-      ru: 'ул. Грауду 43N, Лиепая, LV-3401, Латвия',
-      en: '43N Graudu St., Liepaja, LV-3401, Latvia',
+      ru: 'Graudu iela 43N, Liepāja, LV-3401, Latvija',
+      en: 'Graudu iela 43N, Liepāja, LV-3401, Latvija',
       lv: 'Graudu iela 43N, Liepāja, LV-3401, Latvija',
     },
     phone: '+37120043999',
@@ -84,8 +85,8 @@ export const stores = [
     city: { ru: "Валмиера", en: "Valmiera", lv: "Valmiera" },
     name: { ru: 'Валмиера', en: 'Valmiera', lv: 'Valmiera' },
     address: {
-      ru: 'ул. Стацияс 17, Валмиера, LV-4201, Латвия',
-      en: '17 Stacijas St., Valmiera, LV-4201, Latvia',
+      ru: 'Stacijas iela 17, Valmiera, LV-4201, Latvija',
+      en: 'Stacijas iela 17, Valmiera, LV-4201, Latvija',
       lv: 'Stacijas iela 17, Valmiera, LV-4201, Latvija',
     },
     phone: '+37125151629',
@@ -100,8 +101,8 @@ export const stores = [
     city: { ru: "Резекне", en: "Rezekne", lv: "Rēzekne" },
     name: { ru: 'Резекне', en: 'Rezekne', lv: 'Rēzekne' },
     address: {
-      ru: 'аллея Атбривоšanas 128, Резекне, LV-4601, Латвия',
-      en: '128 Atbrivosanas Ave., Rezekne, LV-4601, Latvia',
+      ru: 'Atbrīvošanas aleja 128, Rēzekne, LV-4601, Latvija',
+      en: 'Atbrīvošanas aleja 128, Rēzekne, LV-4601, Latvija',
       lv: 'Atbrīvošanas aleja 128, Rēzekne, LV-4601, Latvija',
     },
     phone: '+37120125353',
@@ -116,9 +117,9 @@ export const stores = [
     city: { ru: "Елгава", en: "Jelgava", lv: "Jelgava" },
     name: { ru: 'Елгава', en: 'Jelgava', lv: 'Jelgava' },
     address: {
-      ru: 'ул. Катољу 1A, Елгава, LV-3001, Латвия',
-      en: '1A Katolu St., Jelgava, LV-3001, Latvia',
-      lv: 'Katoļu iela 1A, Jelgava, LV-3001',
+      ru: 'Katoļu iela 1A, Jelgava, LV-3001, Latvija',
+      en: 'Katoļu iela 1A, Jelgava, LV-3001, Latvija',
+      lv: 'Katoļu iela 1A, Jelgava, LV-3001, Latvija',
     },
     phone: '+37120125353',
     hours: {

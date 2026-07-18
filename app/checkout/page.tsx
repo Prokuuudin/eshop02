@@ -800,7 +800,7 @@ export default function CheckoutPage() {
                                                         return (
                                                             <SelectItem key={store.id} value={store.id}>
                                                                 {store.name[lang] ?? store.name.ru} —{' '}
-                                                                {store.address[lang] ?? store.address.ru}
+                                                                {store.address.lv}
                                                             </SelectItem>
                                                         );
                                                     })}

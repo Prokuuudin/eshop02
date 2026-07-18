@@ -56,13 +56,13 @@ export const DeliveryInfo = () => {
                                                 магазинов:
                                             </div>
                                             <ul className="list-disc pl-6">
-                                                <li>Рига — Brāļu Kaudzīšu iела 13</li>
-                                                <li>Рига — Anniņmuižas булvāрис 82</li>
-                                                <li>Даугавпилс — Viestура iела 68</li>
-                                                <li>Лиепая — Graudu iела 43N</li>
-                                                <li>Валмиера — Stacijas iела 17</li>
-                                                <li>Резекне — Atbrīвоšanas aleja 128</li>
-                                                <li>Елгава — Katoļu iела 1A</li>
+                                                <li>Рига — Brāļu Kaudzīšu iela 13</li>
+                                                <li>Рига — Anniņmuižas bulvāris 82</li>
+                                                <li>Даугавпилс — Viestura iela 68-2</li>
+                                                <li>Лиепая — Graudu iela 43N</li>
+                                                <li>Валмиера — Stacijas iela 17</li>
+                                                <li>Резекне — Atbrīvošanas aleja 128</li>
+                                                <li>Елгава — Katoļu iela 1A</li>
                                             </ul>
                                         </div>
                                     </li>
@@ -85,7 +85,7 @@ export const DeliveryInfo = () => {
                                         <div className="text-sm mt-1">
                                             Вы можете бесплатно получить заказ в офисе:
                                             <br />
-                                            Rencēnu iела 10A, Rīga, LV-1073
+                                            Rencēnu iela 10A, Rīga, LV-1073
                                         </div>
                                     </li>
                                 </ul>

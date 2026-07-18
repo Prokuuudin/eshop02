@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
         ? stores.find((s) => s.id === order.pickupStoreId)
         : undefined
     const pickupAddressPatch = pickupStore
-      ? { address: `${pickupStore.name.ru} — ${pickupStore.address.ru}`, city: pickupStore.city.ru }
+      ? { address: `${pickupStore.name.lv} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
       : {}
 
     const normalizedOrder: Omit<ServerOrder, 'id'> = {
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
     sendOrderConfirmationEmail(created).catch(console.error)
     sendAdminOrderNotificationEmail(
       created,
-      pickupStore ? `${pickupStore.name.ru} — ${pickupStore.address.ru}` : undefined
+      pickupStore ? `${pickupStore.name.lv} — ${pickupStore.address.lv}` : undefined
     ).catch(console.error)
 
     return NextResponse.json({ success: true, orderId: created.id })

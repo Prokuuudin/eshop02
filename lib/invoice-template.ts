@@ -1,6 +1,7 @@
 import { Order } from '@/lib/orders-store'
 import { translations } from '@/data/translations'
 import { displayOrderTax } from '@/lib/tax'
+import { COMPANY } from '@/data/company'
 
 type Lang = 'ru' | 'en' | 'lv'
 
@@ -133,8 +134,17 @@ export function buildInvoiceHtml(order: Order, lang: Lang): string {
       </div>
     </td>
     <td style="text-align:right">
-      <strong style="font-size:16px">Eshop</strong><br/>
-      <span class="meta">info@eshop.lv<br/>eshop.lv</span>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#888;margin-bottom:4px">${L.seller}</div>
+      <strong style="font-size:16px">${COMPANY.name}</strong><br/>
+      <span class="meta">
+        ${COMPANY.legalAddress}<br/>
+        Reģ. Nr. ${COMPANY.regNumber}<br/>
+        PVN Nr. ${COMPANY.vatNumber}<br/>
+        ${COMPANY.bankName}, ${COMPANY.swift}<br/>
+        ${COMPANY.bankAccount}<br/>
+        ${L.phone}: ${COMPANY.phone}<br/>
+        ${COMPANY.email}
+      </span>
     </td>
   </tr>
   <tr>

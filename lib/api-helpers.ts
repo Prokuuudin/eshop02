@@ -16,30 +16,43 @@ type AuthResult =
 // Demo key for the B2B webhooks playground — only honoured outside production.
 const DEMO_API_KEY = 'b2b-demo-api-key-12345'
 
-/** Valid API keys, configured via the V1_API_KEYS env var (comma-separated). */
-function getConfiguredApiKeys(): string[] {
-  const keys = (process.env.V1_API_KEYS ?? '')
+type ApiKeyEntry = { key: string; companyId?: string }
+
+/**
+ * Valid API keys, configured via the V1_API_KEYS env var (comma-separated).
+ * Each entry is either a bare `key` or `key:companyId`. A key bound to a company
+ * may act ONLY for that company — the client-supplied `x-company-id` header can
+ * no longer widen its scope. Bare keys remain unscoped (single trusted integrator).
+ */
+function getConfiguredApiKeys(): ApiKeyEntry[] {
+  const entries = (process.env.V1_API_KEYS ?? '')
     .split(',')
-    .map((k) => k.trim())
-    .filter((k) => k.length >= 16)
+    .map((raw) => raw.trim())
+    .filter(Boolean)
+    .map((raw): ApiKeyEntry => {
+      const sep = raw.indexOf(':')
+      if (sep === -1) return { key: raw }
+      return { key: raw.slice(0, sep).trim(), companyId: raw.slice(sep + 1).trim() || undefined }
+    })
+    .filter((e) => e.key.length >= 16)
 
   // In dev/preview the hardcoded demo key keeps the integrations demo working.
   // In production, only explicitly configured keys are accepted (fail closed).
   if (process.env.NODE_ENV !== 'production') {
-    keys.push(DEMO_API_KEY)
+    entries.push({ key: DEMO_API_KEY })
   }
-  return keys
+  return entries
 }
 
-/** Constant-time membership check so we don't leak key length/prefix via timing. */
-function isValidApiKey(candidate: string): boolean {
-  const keys = getConfiguredApiKeys()
+/** Constant-time lookup so we don't leak key contents via timing; returns the matched entry. */
+function matchApiKey(candidate: string): ApiKeyEntry | null {
+  const entries = getConfiguredApiKeys()
   const candidateBuf = Buffer.from(candidate)
-  let matched = false
-  for (const key of keys) {
-    const keyBuf = Buffer.from(key)
+  let matched: ApiKeyEntry | null = null
+  for (const entry of entries) {
+    const keyBuf = Buffer.from(entry.key)
     if (keyBuf.length === candidateBuf.length && timingSafeEqual(keyBuf, candidateBuf)) {
-      matched = true
+      matched = entry
     }
   }
   return matched
@@ -55,7 +68,8 @@ export async function authenticateRequest(req: NextRequest) {
   const apiKey = req.headers.get('x-api-key')
 
   if (apiKey) {
-    if (!isValidApiKey(apiKey)) {
+    const entry = matchApiKey(apiKey)
+    if (!entry) {
       return {
         authenticated: false,
         error: 'Invalid API key',
@@ -63,13 +77,24 @@ export async function authenticateRequest(req: NextRequest) {
       } as AuthResult
     }
 
-    const companyId = req.headers.get('x-company-id') || undefined
+    const headerCompany = req.headers.get('x-company-id') || undefined
+
+    // A company-bound key is locked to its own company: reject any attempt to
+    // scope it elsewhere via the header (cross-tenant read/write). A bare key
+    // keeps header-driven scope for the single trusted integrator use case.
+    if (entry.companyId && headerCompany && headerCompany !== entry.companyId) {
+      return {
+        authenticated: false,
+        error: 'Company scope not permitted for this API key',
+        status: 403,
+      } as AuthResult
+    }
 
     return {
       authenticated: true,
       user: {
         id: `api_${apiKey.substring(0, 8)}`,
-        companyId,
+        companyId: entry.companyId ?? headerCompany,
         apiAccess: true,
       },
     } as AuthResult

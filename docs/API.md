@@ -28,6 +28,13 @@ curl -H "x-api-key: your-api-key-here" \
   https://api.example.com/api/v1/invoices
 ```
 
+> **Tenant isolation.** Configure keys in `V1_API_KEYS` (comma-separated). Bind a key
+> to a single company with `key:companyId` (e.g. `abcd…:company_123`). A company-bound
+> key may act **only** for that company — a mismatching `x-company-id` header is rejected
+> with `403`. Use bare, unbound keys only for a single trusted first-party integrator;
+> never hand the same key to multiple companies, or one could read another's data by
+> changing the header.
+
 ### Session Authentication
 
 Existing session users with `distributor` or `enterprise` role can access APIs directly.

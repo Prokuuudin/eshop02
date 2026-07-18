@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 
@@ -88,9 +89,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   data.resets.push({ token, email, expiresAt })
   await write(data)
 
-  const host = request.headers.get('host') ?? 'localhost:3000'
-  const proto = host.startsWith('localhost') ? 'http' : 'https'
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? `${proto}://${host}`
+  // Never derive the reset base URL from the client-controlled Host header —
+  // a poisoned Host would send the victim a reset link (with token) to an attacker
+  // domain. getSiteUrl() resolves from trusted env only (NEXT_PUBLIC_SITE_URL / VERCEL_URL).
+  const baseUrl = getSiteUrl()
   const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`
 
   // Try DB template: password-reset-{lang} then password-reset

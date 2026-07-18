@@ -158,7 +158,9 @@ export default function InvoicesPage() {
   }
 
   const handleRecordPayment = (invoiceId: string, payment: any) => {
-    recordPayment(invoiceId, payment)
+    // Real payment recording is admin-only on the server; this path only drives the
+    // local demo showcase, so keep it local-only and never round-trip to the API.
+    recordPayment(invoiceId, payment, { localOnly: true })
     
     // Log the payment
     if (currentUser?.companyId) {
@@ -325,7 +327,9 @@ export default function InvoicesPage() {
         <InvoiceViewer
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
-          onRecordPayment={handleRecordPayment}
+          // Payment recording is a privileged (admin/integration) action — surface it only
+          // in the local demo. Real customers view invoices read-only; the API rejects them.
+          onRecordPayment={isDemoSession ? handleRecordPayment : undefined}
         />
       )}
     </main>

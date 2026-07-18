@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getInvoiceById, updateInvoiceInDb } from '@/lib/invoices-data-store'
 import { getServerUser } from '@/lib/server-auth'
 
-// Fields a non-admin may update on their own invoice
-const ALLOWED_UPDATE_FIELDS = new Set(['notes', 'status'])
+// Fields a non-admin may update on their own invoice. `status` is deliberately
+// excluded — a buyer must not be able to set their own invoice to `paid`/`cancelled`.
+const ALLOWED_UPDATE_FIELDS = new Set(['notes'])
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

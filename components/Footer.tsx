@@ -12,6 +12,10 @@ export default function Footer() {
   const { t, language } = useTranslation()
   const [promo, setPromo] = React.useState<FooterPromo | null>(null)
 
+  const cookieLabel = language === 'ru' ? 'Файлы cookie' : language === 'en' ? 'Cookies' : 'Sīkdatnes'
+  const cookieSettingsLabel =
+    language === 'ru' ? 'Настройки cookie' : language === 'en' ? 'Cookie settings' : 'Sīkdatņu iestatījumi'
+
   React.useEffect(() => {
     fetch('/api/banners?type=sale')
       .then((r) => r.json())
@@ -55,8 +59,18 @@ export default function Footer() {
           <div className="footer__section footer__policy min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h4 className="footer__title font-semibold mb-3 text-foreground">{t('footer.privacy')}</h4>
             <ul className="footer__policy-list space-y-2 text-sm">
-              <li className="footer__policy-item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.privacy')}</Link></li>
+              <li className="footer__policy-item"><Link href="/privacy" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.privacy')}</Link></li>
               <li className="footer__policy-item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.terms')}</Link></li>
+              <li className="footer__policy-item"><Link href="/cookies" className="hover:underline text-gray-800 dark:text-gray-300">{cookieLabel}</Link></li>
+              <li className="footer__policy-item">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('eshop-open-cookie-settings'))}
+                  className="hover:underline text-gray-800 dark:text-gray-300"
+                >
+                  {cookieSettingsLabel}
+                </button>
+              </li>
             </ul>
           </div>
         </div>

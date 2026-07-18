@@ -46,12 +46,28 @@ export default function CookieConsent() {
   const [marketing, setMarketing] = useState(false)
 
   useEffect(() => {
-    if (getCookieConsent()) return
-    const timer = setTimeout(() => {
+    if (!getCookieConsent()) {
+      const timer = setTimeout(() => {
+        setVisible(true)
+        requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)))
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  // Let the footer "Cookie settings" link reopen the panel so consent can be
+  // reviewed or withdrawn at any time (GDPR Art. 7(3)). Pre-fill from the saved choice.
+  useEffect(() => {
+    const reopen = (): void => {
+      const saved = getCookieConsent()
+      setAnalytics(saved?.analytics ?? false)
+      setMarketing(saved?.marketing ?? false)
       setVisible(true)
       requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)))
-    }, 800)
-    return () => clearTimeout(timer)
+      setConfigOpen(true)
+    }
+    window.addEventListener('eshop-open-cookie-settings', reopen)
+    return () => window.removeEventListener('eshop-open-cookie-settings', reopen)
   }, [])
 
   const dismiss = () => {

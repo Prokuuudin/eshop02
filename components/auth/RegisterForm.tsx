@@ -76,10 +76,11 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Имя */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
+                <label htmlFor="register-name" className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.name', 'Имя')}
                 </label>
                 <Input
+                    id="register-name"
                     className="register-form__input bg-card text-foreground border-border"
                     type="text"
                     value={name}
@@ -90,10 +91,11 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Номер карты */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
+                <label htmlFor="register-card" className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.clientCardNumber', 'Номер карты клиента')}
                 </label>
                 <Input
+                    id="register-card"
                     className="register-form__input bg-card text-foreground border-border"
                     type="text"
                     value={cardNumber}
@@ -107,11 +109,12 @@ export default function RegisterForm({ onClose }: Props) {
 
             {/* Пароль */}
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
+                <label htmlFor="register-password" className="register-form__label block mb-1 text-sm text-foreground">
                     {t('auth.password', 'Пароль')}
                 </label>
                 <div className="register-form__password-wrapper relative flex items-center">
                     <Input
+                        id="register-password"
                         className="register-form__input bg-card text-foreground border-border pr-10"
                         type={showPassword ? 'text' : 'password'}
                         value={password}

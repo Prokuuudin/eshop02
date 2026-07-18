@@ -165,10 +165,11 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                 >
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-name" className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 {t('account.name')}
                             </label>
                             <Input
+                                id="profile-name"
                                 ref={nameRef}
                                 className={`account-profile__input ${
                                     profileErrors.name
@@ -185,10 +186,11 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-email" className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 Email
                             </label>
                             <Input
+                                id="profile-email"
                                 className="account-profile__input bg-muted text-muted-foreground cursor-not-allowed"
                                 value={user.email}
                                 readOnly
@@ -214,10 +216,11 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-company" className="account-profile__label block text-xs text-muted-foreground mb-1">
                                 {t('account.company')}
                             </label>
                             <Input
+                                id="profile-company"
                                 ref={companyRef}
                                 className="account-profile__input"
                                 value={profileDraft.companyName}

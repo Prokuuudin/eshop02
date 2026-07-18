@@ -11,6 +11,7 @@ import { useAdminStore } from '@/lib/admin-store'
 import { setLocaleFormatConfig } from '@/lib/utils'
 import FlyToCart from '@/components/FlyToCart'
 import CookieConsent from '@/components/CookieConsent'
+import TelemetryReporter from '@/components/TelemetryReporter'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -143,6 +144,7 @@ export function Providers({ children }: { children: React.ReactNode }): React.Re
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />
+        <TelemetryReporter />
         <FlyToCart />
         <CookieConsent />
         {children}

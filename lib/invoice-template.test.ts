@@ -56,4 +56,36 @@ describe('buildInvoiceHtml', () => {
     const html = buildInvoiceHtml(order)
     expect(html).toContain('шампунь')
   })
+
+  it('replaces a legacy Russian pickup-store snapshot with the Latvian store address', () => {
+    const pickupOrder = {
+      ...order,
+      deliveryMethod: 'pickup',
+      address: 'Рига (Иманта) — Аннинмуйжас булварис 82, Рига, LV-1029, Латвия',
+      city: 'Рига',
+      postalCode: undefined,
+    } as unknown as Order
+    const html = buildInvoiceHtml(pickupOrder)
+    expect(html).toContain('Rīga (Imanta) — Anniņmuižas bulvāris 82, Rīga, LV-1029, Latvija')
+    expect(html).not.toContain('Аннинмуйжас')
+    expect(html).not.toContain('>Рига')
+  })
+
+  it('resolves the pickup store by pickupStoreId when present', () => {
+    const pickupOrder = {
+      ...order,
+      deliveryMethod: 'pickup',
+      pickupStoreId: 'riga-office',
+      address: 'что-то устаревшее',
+      city: 'Рига',
+    } as unknown as Order
+    const html = buildInvoiceHtml(pickupOrder)
+    expect(html).toContain('Rīgas birojs — Rencēnu iela 10a, Rīga, LV-1073, Latvija')
+  })
+
+  it('keeps the customer-entered address for courier orders', () => {
+    const html = buildInvoiceHtml(order)
+    expect(html).toContain('Brīvības iela 1')
+    expect(html).toContain('LV-1010')
+  })
 })

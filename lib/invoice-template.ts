@@ -2,6 +2,7 @@ import { Order } from '@/lib/orders-store'
 import { translations } from '@/data/translations'
 import { displayOrderTax } from '@/lib/tax'
 import { COMPANY } from '@/data/company'
+import { stores } from '@/data/stores'
 
 const esc = (s: unknown): string =>
   String(s ?? '')
@@ -37,12 +38,33 @@ function eur(cents: number): string {
 }
 
 /**
+ * Для pickup-заказов в address/city лежит снимок адреса магазина на языке
+ * оформления (в старых заказах — русский). Резолвим магазин по pickupStoreId,
+ * а для старых снимков — по уникальному индексу LV-xxxx внутри строки,
+ * и подставляем латышские название и адрес из data/stores.ts.
+ */
+function lvDeliveryAddress(order: Order): { address: string; city: string } | null {
+  if (order.deliveryMethod !== 'pickup') return null
+  const store = order.pickupStoreId
+    ? stores.find((s) => s.id === order.pickupStoreId)
+    : stores.find((s) => {
+        const postal = String(order.address ?? '').match(/LV-\d{4}/)
+        return postal !== null && s.address.lv.includes(postal[0])
+      })
+  if (!store) return null
+  return { address: `${store.name.lv} — ${store.address.lv}`, city: store.city.lv }
+}
+
+/**
  * lvTitles: карта productId → латышское название (Product.titleLv).
  * item.title — снимок в языке корзины на момент заказа, поэтому без карты
  * название может остаться нелатышским; передавайте её везде, где есть доступ к товарам.
  */
 export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>): string {
   const date = new Date(order.createdAt).toLocaleDateString('lv-LV')
+  const pickup = lvDeliveryAddress(order)
+  const buyerAddress = pickup?.address ?? order.address
+  const buyerCity = pickup?.city ?? order.city
 
   const itemRows = order.items
     .map((item) => {
@@ -116,7 +138,7 @@ export function buildInvoiceHtml(order: Order, lvTitles?: Record<string, string>
         <strong>${esc(order.firstName)} ${esc(order.lastName)}</strong><br/>
         ${esc(order.email)}<br/>
         ${L.phone}: ${esc(order.phone)}<br/>
-        ${order.address ? esc(order.address) + ', ' : ''}${esc(order.city)}${order.postalCode ? ' ' + esc(order.postalCode) : ''}
+        ${buyerAddress ? esc(buyerAddress) + ', ' : ''}${esc(buyerCity)}${!pickup && order.postalCode ? ' ' + esc(order.postalCode) : ''}
       </div>
     </td>
     <td></td>

@@ -6,7 +6,6 @@ import Categories from '../components/Categories';
 import Benefits from '../components/Benefits';
 import BonusSection from '../components/BonusSection';
 import SaleSection from '../components/SaleSection';
-import Newsletter from '../components/Newsletter';
 import Brands from '../components/Brands';
 import FAQSection from '../components/FAQSection';
 import ProductRequestSection from '../components/ProductRequestSection';
@@ -52,7 +51,6 @@ export default async function Home() {
             <Categories />
             <Brands />
             <SaleSection />
-            <Newsletter />
             <ProductRequestSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />

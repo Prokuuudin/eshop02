@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
+import Newsletter from './Newsletter';
 import SaleBanner, { type PromoBanner } from './SaleBanner';
 import { useTranslation } from '@/lib/use-translation';
 
@@ -23,7 +24,15 @@ export default function SaleSection() {
             .catch(() => {});
     }, []);
 
-    if (!products.length && !banner) return null;
+    if (!products.length && !banner) {
+        return (
+            <section className="sale-section py-8">
+                <div className="mx-auto w-full max-w-[1200px] px-4">
+                    <Newsletter compact />
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="sale-section py-8">
@@ -59,8 +68,17 @@ export default function SaleSection() {
                         <SaleBanner banner={banner} contentClassName="md:pl-40" />
                     </div>
                 )}
+                <div className="sale-section__newsletter mb-6">
+                    <Newsletter compact />
+                </div>
                 {products.length > 0 && (
-                    <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                    <>
+                        <h3 className="sale-section__products-title text-xl font-semibold text-foreground mb-4">
+                            {t('sale.allProducts')}{' '}
+                            <span className="text-muted-foreground font-normal">({products.length})</span>
+                        </h3>
+                        <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                    </>
                 )}
             </div>
         </section>

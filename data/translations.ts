@@ -405,6 +405,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Скидки на главной
     'sale.title': 'Актуальные скидки!',
     'sale.subtitle': 'Уже сейчас закупайся по супер ценам',
+    'sale.allProducts': 'Все товары на акции',
 
     // Newsletter
     'newsletter.title': 'Подпишись на свои будущие скидки!',
@@ -3574,6 +3575,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Sale highlights
     'sale.title': 'Current Deals!',
     'sale.subtitle': 'Shop now at special prices',
+    'sale.allProducts': 'All sale products',
 
     // Benefits
     'benefits.title': 'Why choose us',
@@ -5378,6 +5380,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Sale highlights
     'sale.title': 'Aktuālās atlaides!',
     'sale.subtitle': 'Iepērcies tagad par īpašām cenām',
+    'sale.allProducts': 'Visas akcijas preces',
 
     // Benefits
     'benefits.title': 'Kāpēc izvēlas mūs',

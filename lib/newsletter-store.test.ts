@@ -9,9 +9,37 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { subscribeToNewsletter } from '@/lib/newsletter-store'
+import {
+  subscribeToNewsletter,
+  marketingUnsubToken,
+  verifyMarketingUnsubToken,
+  marketingUnsubUrl,
+} from '@/lib/newsletter-store'
 
 beforeEach(() => vi.clearAllMocks())
+
+describe('marketing unsubscribe token', () => {
+  it('verifies its own token and is case-insensitive on email', () => {
+    const t = marketingUnsubToken('User@Test.com')
+    expect(verifyMarketingUnsubToken('user@test.com', t)).toBe(true)
+    expect(verifyMarketingUnsubToken('USER@TEST.COM', t)).toBe(true)
+  })
+
+  it('rejects a forged or mismatched token', () => {
+    expect(verifyMarketingUnsubToken('user@test.com', 'deadbeef')).toBe(false)
+    expect(verifyMarketingUnsubToken('user@test.com', marketingUnsubToken('other@test.com'))).toBe(false)
+  })
+
+  it('builds an unsubscribe URL with a matching token and lowercased email', () => {
+    const url = marketingUnsubUrl('User@Test.com', 'https://shop.example')
+    const parsed = new URL(url)
+    expect(parsed.pathname).toBe('/api/newsletter/unsubscribe')
+    const email = parsed.searchParams.get('email') ?? ''
+    const token = parsed.searchParams.get('token') ?? ''
+    expect(email).toBe('user@test.com')
+    expect(verifyMarketingUnsubToken(email, token)).toBe(true)
+  })
+})
 
 describe('subscribeToNewsletter', () => {
   it('calls upsert with lowercased email in key', async () => {

@@ -107,7 +107,7 @@ export default function CookieConsent() {
               size="sm"
               variant="ghost"
               onClick={necessaryOnly}
-              className="text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+              className="border border-white/60 text-white hover:bg-white/15 hover:text-white"
             >
               {t('cookie.banner.necessaryOnly')}
             </Button>

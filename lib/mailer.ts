@@ -13,7 +13,24 @@ function createTransport() {
   })
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+type SendEmailOptions = {
+  /** Absolute URL that unsubscribes the recipient. Adds RFC 8058 one-click headers
+   *  so mail clients can surface a native "Unsubscribe" control for marketing mail. */
+  listUnsubscribeUrl?: string
+}
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  options: SendEmailOptions = {}
+): Promise<void> {
+  const headers: Record<string, string> = {}
+  if (options.listUnsubscribeUrl) {
+    headers['List-Unsubscribe'] = `<${options.listUnsubscribeUrl}>`
+    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
+  }
+
   const transport = createTransport()
   if (!transport) {
     console.log('[mailer] SMTP_HOST not set — printing email to console')
@@ -25,5 +42,6 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     to,
     subject,
     html,
+    headers: Object.keys(headers).length ? headers : undefined,
   })
 }

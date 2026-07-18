@@ -29,8 +29,9 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
 
     const saveProfile = async () => {
         if (!profileDraft) return;
-        const emailOptional = isInternalEmail(user?.email || '');
-        const errors = validateProfile(profileDraft, t, emailOptional);
+        // Email is read-only in the form (the server has no verified email-change flow and
+        // rejects any change), so it never enters the draft as editable — validate without it.
+        const errors = validateProfile(profileDraft, t, true);
         if (Object.keys(errors).length > 0) {
             setProfileErrors(errors);
             return;
@@ -41,10 +42,10 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         const updatedUser = {
             ...users[idx],
             name: profileDraft.name,
-            email: profileDraft.email.trim() || users[idx].email,
+            // email intentionally NOT changed — keep the server-authoritative value so order
+            // history (matched by email) stays in sync with the DB.
             phone: profileDraft.phone,
             companyName: profileDraft.companyName,
-            password: profileDraft.password ? profileDraft.password : users[idx].password,
             avatarUrl: profileDraft.avatarUrl || users[idx].avatarUrl || '',
         };
         users[idx] = updatedUser;
@@ -54,23 +55,17 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         setProfileDraft(null);
         setProfileErrors({});
 
-        // Await DB sync so email update lands before reload — fire-then-reload pattern
-        // was broken: reload() cancelled the in-flight fetch before it reached the server
+        // Only safe personal fields — never email or cardNumber (both server-rejected/ignored).
         try {
-            const res = await fetch('/api/user/profile', {
+            await fetch('/api/user/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: updatedUser.name,
-                    email: updatedUser.email,
                     phone: updatedUser.phone,
                     avatarUrl: updatedUser.avatarUrl,
-                    cardNumber: updatedUser.cardNumber,
                 }),
             });
-            if (res.status === 409) {
-                console.warn('[profile] email already in use in DB, skipping DB update');
-            }
         } catch {
             // localStorage already saved — non-critical if DB sync fails
         }

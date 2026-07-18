@@ -25,13 +25,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Only safe personal fields — never email, platformRole, companyId, approvalRequired etc.
+    // cardNumber is deliberately NOT accepted here: it is a login identifier assigned at
+    // registration (checked for uniqueness in auth/register-card). Letting a client set an
+    // arbitrary card here would collide with a real customer's card / corrupt data.
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         name: body.name !== undefined ? (body.name ?? null) : undefined,
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
-        cardNumber: body.cardNumber !== undefined ? (String(body.cardNumber).trim() || null) : undefined,
       },
     })
 

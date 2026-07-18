@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Activity, ChartNoAxesColumn, CircleDollarSign, Package, ShoppingBag, TrendingUp } from 'lucide-react'
 import { getCurrentUser } from '@/lib/auth'
 import { getUserPurchaseAnalytics } from '@/lib/analytics-service'
+import { useOrders, type Order } from '@/lib/orders-store'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 import AccountPageHero from '@/components/account/AccountPageHero'
@@ -15,7 +16,26 @@ export default function AnalyticsPage() {
   const { language, t } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const currentUser = getCurrentUser()
-  const analytics = getUserPurchaseAnalytics(currentUser?.email)
+
+  // Order history lives in the DB. Load it here too — this page must not depend on the user
+  // having visited /account first (which is the only other place that hydrates the store).
+  const orders = useOrders((s) => s.orders)
+  const upsertOrder = useOrders((s) => s.upsertOrder)
+  useEffect(() => {
+    fetch('/api/orders/my')
+      .then((r) => r.json())
+      .then(({ orders: dbOrders }) => {
+        if (Array.isArray(dbOrders)) dbOrders.forEach((o: Order) => upsertOrder(o))
+      })
+      .catch(() => {})
+  }, [upsertOrder])
+
+  const analytics = useMemo(
+    () => getUserPurchaseAnalytics(currentUser?.email),
+    // Recompute whenever the store changes; getUserPurchaseAnalytics reads it internally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, currentUser?.email]
+  )
 
   const summaryCards = [
     {

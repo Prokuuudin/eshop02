@@ -3,20 +3,39 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RotateCcw, ChevronRight, Package } from 'lucide-react';
-import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, ReturnStatus } from '@/lib/returns-store';
+import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, type ReturnReason, ReturnStatus } from '@/lib/returns-store';
 import { getCurrentUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
+import { getLocaleFromLanguage } from '@/lib/utils';
 
-const STATUS_CONFIG: Record<ReturnStatus, { label: string; classes: string }> = {
-    pending:   { label: 'На рассмотрении', classes: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300' },
-    approved:  { label: 'Одобрен',         classes: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
-    rejected:  { label: 'Отклонён',        classes: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
-    refunded:  { label: 'Возврат выполнен',classes: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' },
-    completed: { label: 'Завершён',        classes: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+const STATUS_CLASSES: Record<ReturnStatus, string> = {
+    pending:   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+    approved:  'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    rejected:  'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    refunded:  'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+};
+
+const STATUS_KEY: Record<ReturnStatus, string> = {
+    pending:   'account.returns.statusPending',
+    approved:  'account.returns.statusApproved',
+    rejected:  'account.returns.statusRejected',
+    refunded:  'account.returns.statusRefunded',
+    completed: 'account.returns.statusCompleted',
+};
+
+const REASON_KEY: Record<ReturnReason, string> = {
+    defective:        'account.returns.reasonDefective',
+    wrong_item:       'account.returns.reasonWrongItem',
+    changed_mind:     'account.returns.reasonChangedMind',
+    not_as_described: 'account.returns.reasonNotAsDescribed',
+    damaged:          'account.returns.reasonDamaged',
+    other:            'account.returns.reasonOther',
 };
 
 export const AccountReturnsSection: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
+    const locale = getLocaleFromLanguage(language);
     const returns = useReturnsStore((s) => s.returns);
     const setReturns = useReturnsStore((s) => s.setReturns);
     const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -64,7 +83,6 @@ export const AccountReturnsSection: React.FC = () => {
 
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {userReturns.slice(0, 3).map((ret) => {
-                    const cfg = STATUS_CONFIG[ret.status];
                     const date = new Date(ret.createdAt);
                     return (
                         <div key={ret.id} className="flex items-start gap-4 px-5 py-4">
@@ -76,16 +94,16 @@ export const AccountReturnsSection: React.FC = () => {
                                     <p className="text-xs font-mono text-muted-foreground">
                                         #{ret.id}
                                     </p>
-                                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cfg.classes}`}>
-                                        {cfg.label}
+                                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[ret.status]}`}>
+                                        {t(STATUS_KEY[ret.status])}
                                     </span>
                                 </div>
                                 <p className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                    {RETURN_REASON_LABELS[ret.reason]}
+                                    {t(REASON_KEY[ret.reason], RETURN_REASON_LABELS[ret.reason])}
                                 </p>
                                 <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                                     {ret.items.length} {t('account.returns.items', 'поз.')} · {ret.refundAmount.toFixed(2)} € ·{' '}
-                                    {date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                    {date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                 </p>
                                 {ret.resolution && (
                                     <p className="mt-1 text-xs text-muted-foreground italic line-clamp-1">

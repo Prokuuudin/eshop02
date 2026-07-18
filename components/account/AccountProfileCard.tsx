@@ -31,7 +31,6 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     tl,
 }) => {
     const nameRef = useRef<HTMLInputElement>(null);
-    const emailRef = useRef<HTMLInputElement>(null);
     const phoneWrapperRef = useRef<HTMLDivElement>(null);
     const companyRef = useRef<HTMLInputElement>(null);
     const didFocusRef = useRef(false);
@@ -44,9 +43,9 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         if (didFocusRef.current || !profileDraft) return;
         didFocusRef.current = true;
 
+        // Email is read-only, so it is not a focus target.
         const candidates: Array<{ empty: boolean; focus: () => void }> = [
             { empty: !profileDraft.name?.trim(),        focus: () => nameRef.current?.focus() },
-            { empty: !profileDraft.email?.trim(),       focus: () => emailRef.current?.focus() },
             { empty: !profileDraft.phone?.trim(),       focus: () => phoneWrapperRef.current?.querySelector<HTMLInputElement>('input')?.focus() },
             { empty: !profileDraft.companyName?.trim(), focus: () => companyRef.current?.focus() },
         ];
@@ -190,20 +189,12 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 Email
                             </label>
                             <Input
-                                ref={emailRef}
-                                className={`account-profile__input ${
-                                    profileErrors.email
-                                        ? 'account-profile__input--error border-red-500'
-                                        : ''
-                                }`}
-                                value={profileDraft.email}
-                                onChange={(e) => onChange('email', e.target.value)}
+                                className="account-profile__input bg-muted text-muted-foreground cursor-not-allowed"
+                                value={user.email}
+                                readOnly
+                                disabled
+                                title={t('account.emailReadonlyHint', 'Email нельзя изменить здесь — обратитесь в поддержку')}
                             />
-                            {profileErrors.email && (
-                                <p className="account-profile__error text-red-600 text-xs">
-                                    {profileErrors.email}
-                                </p>
-                            )}
                         </div>
                         <div className="account-profile__field">
                             <label className="account-profile__label block text-xs text-muted-foreground mb-1">

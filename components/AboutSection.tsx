@@ -1,12 +1,11 @@
-"use client"
-
 import { Button } from './ui/button';
-
 import React from 'react';
-import { useTranslation } from '@/lib/use-translation';
+import Link from 'next/link';
+import type { Language } from '@/data/translations';
+import { getServerContent } from '@/lib/server-translation';
 
-export default function AboutSection() {
-  const { t } = useTranslation();
+export default async function AboutSection({ language }: { language: Language }): Promise<JSX.Element> {
+  const { t } = await getServerContent(language);
   return (
     <section className="max-w-[1200px] mx-auto w-full px-4 py-10 mb-10">
       <h1 className="text-4xl font-bold mb-6 text-foreground">{t('about.title')}</h1>
@@ -22,11 +21,11 @@ export default function AboutSection() {
           <p className="text-gray-700 dark:text-gray-300 mb-6">
             {t('about.storesInfo')}
           </p>
-          <a href="/stores">
+          <Link href={language === 'ru' ? '/stores' : `/${language}/stores`}>
             <Button variant="default" size="lg">
               {t('about.storesButton')}
             </Button>
-          </a>
+          </Link>
         </div>
         <div>
           <h2 className="text-2xl font-bold mb-3 text-foreground">{t('about.why.title')}</h2>

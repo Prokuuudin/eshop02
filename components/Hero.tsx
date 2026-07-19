@@ -1,12 +1,9 @@
-'use client'
-
 import Image from 'next/image'
-import { useTranslation } from '@/lib/use-translation'
-import { useSiteContent } from '@/lib/use-site-content'
+import type { Language } from '@/data/translations'
+import { getServerContent } from '@/lib/server-translation'
 
-export default function Hero() {
-  const { t } = useTranslation()
-  const { resolveImageSrc } = useSiteContent()
+export default async function Hero({ language }: { language: Language }): Promise<JSX.Element> {
+  const { t, resolveImageSrc } = await getServerContent(language)
   const heroSrc = resolveImageSrc('/hero.jpg')
 
   return (

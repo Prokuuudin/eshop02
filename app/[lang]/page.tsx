@@ -10,8 +10,8 @@ import FAQSection from '@/components/FAQSection';
 import ProductRequestSection from '@/components/ProductRequestSection';
 import { translations } from '@/data/translations';
 import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
-import HomeClient from '@/components/HomeClient';
 import HomeRetailBanner from '@/components/HomeRetailBanner';
+import AboutSection from '@/components/AboutSection';
 
 type PageProps = { params: Promise<{ lang: string }> };
 
@@ -34,11 +34,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
-export default async function Home() {
+export default async function Home({ params }: PageProps): Promise<JSX.Element> {
+    const language = resolveLanguage((await params).lang);
     return (
         <div className="bg-white dark:bg-background">
-            <Hero />
-            <Benefits />
+            <Hero language={language} />
+            <Benefits language={language} />
             <BestsellersSection />
             <Categories />
             <Brands />
@@ -46,10 +47,10 @@ export default async function Home() {
             <ProductRequestSection />
             <main className="w-full py-6">
                 <HomeRetailBanner />
-                <HomeClient />
+                <AboutSection language={language} />
             </main>
             <BonusSection />
-            <FAQSection />
+            <FAQSection language={language} />
         </div>
     );
 }

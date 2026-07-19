@@ -1,13 +1,10 @@
-'use client';
-
 import React from 'react';
-
-import { useTranslation } from '@/lib/use-translation';
 import { getPrivacyContent } from '@/data/privacy-content';
+import { resolveLanguage } from '@/lib/i18n-routing';
 
-export default function PrivacyPage(): React.ReactElement {
-    const { language } = useTranslation();
-    const content = getPrivacyContent(language as string);
+export default async function PrivacyPage({ params }: { params: Promise<{ lang: string }> }): Promise<React.ReactElement> {
+    const language = resolveLanguage((await params).lang);
+    const content = getPrivacyContent(language);
 
     return (
         <main className="legal-page max-w-4xl mx-auto py-10 px-4 text-foreground">

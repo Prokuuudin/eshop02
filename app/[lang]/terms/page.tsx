@@ -1,13 +1,10 @@
-'use client';
-
 import React from 'react';
-
-import { useTranslation } from '@/lib/use-translation';
 import { getTermsContent } from '@/data/terms-content';
+import { resolveLanguage } from '@/lib/i18n-routing';
 
-export default function TermsPage(): React.ReactElement {
-    const { language } = useTranslation();
-    const content = getTermsContent(language as string);
+export default async function TermsPage({ params }: { params: Promise<{ lang: string }> }): Promise<React.ReactElement> {
+    const language = resolveLanguage((await params).lang);
+    const content = getTermsContent(language);
 
     return (
         <main className="terms-page max-w-4xl mx-auto py-10 px-4 text-foreground">

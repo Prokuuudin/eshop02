@@ -1,12 +1,10 @@
-'use client';
 import React from 'react';
-import { useTranslation } from '@/lib/use-translation';
-import { useSiteContent } from '@/lib/use-site-content';
+import type { Language } from '@/data/translations';
+import { getServerContent } from '@/lib/server-translation';
 
-export default function Benefits() {
+export default async function Benefits({ language }: { language: Language }): Promise<JSX.Element> {
     // Секция бенефитов с фиксированным содержанием на русском
-    const { t } = useTranslation();
-    const { resolveImageSrc } = useSiteContent();
+    const { t, resolveImageSrc } = await getServerContent(language);
     const BENEFITS = [
         {
             icon: '/icons/delivery.svg',

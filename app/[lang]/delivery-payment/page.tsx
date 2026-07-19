@@ -1,10 +1,8 @@
-'use client';
-
 import React from 'react';
-
-import { useTranslation } from '@/lib/use-translation';
 import { getSiteUrl } from '@/lib/site-url';
 import { COMPANY } from '@/data/company';
+import { resolveLanguage, localizePath } from '@/lib/i18n-routing';
+import { getServerContent } from '@/lib/server-translation';
 
 import {
     Accordion,
@@ -13,8 +11,9 @@ import {
     AccordionContent,
 } from '@/components/ui/accordion';
 
-export default function DeliveryPaymentPage() {
-    const { t } = useTranslation();
+export default async function DeliveryPaymentPage({ params }: { params: Promise<{ lang: string }> }): Promise<JSX.Element> {
+    const language = resolveLanguage((await params).lang);
+    const { t } = await getServerContent(language);
     const siteUrl = getSiteUrl();
 
     const faqSchema = {
@@ -46,7 +45,7 @@ export default function DeliveryPaymentPage() {
                 },
             },
         ],
-        url: `${siteUrl}/delivery-payment`,
+        url: `${siteUrl}${localizePath('/delivery-payment', language)}`,
     };
 
     return (

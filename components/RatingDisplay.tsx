@@ -1,4 +1,3 @@
-'use client'
 import React from 'react'
 
 type RatingDisplayProps = {
@@ -7,7 +6,7 @@ type RatingDisplayProps = {
   showLabel?: boolean
 }
 
-export default function RatingDisplay({ rating, count, showLabel = true }: RatingDisplayProps) {
+export default function RatingDisplay({ rating, count, showLabel = true }: RatingDisplayProps): JSX.Element {
   const filledStars = Math.round(rating)
 
   return (

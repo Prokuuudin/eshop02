@@ -1,13 +1,10 @@
-'use client';
-
 import React from 'react';
-
-import { useTranslation } from '@/lib/use-translation';
 import { getCookieContent } from '@/data/cookie-content';
+import { resolveLanguage } from '@/lib/i18n-routing';
 
-export default function CookiesPage(): React.ReactElement {
-    const { language } = useTranslation();
-    const content = getCookieContent(language as string);
+export default async function CookiesPage({ params }: { params: Promise<{ lang: string }> }): Promise<React.ReactElement> {
+    const language = resolveLanguage((await params).lang);
+    const content = getCookieContent(language);
 
     return (
         <main className="legal-page max-w-4xl mx-auto py-10 px-4 text-foreground">

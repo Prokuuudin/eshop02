@@ -1,5 +1,126 @@
 # Full SEO Audit Report — HairShop.lv (eshop02)
 
+## Актуализация после коммита `f6df953`
+
+**Дата актуализации:** 2026-07-19
+
+**Коммит:** `f6df953 feat: localize routes and decompose checkout admin pages`
+
+**Статус:** изменения находятся в `origin/main`
+**Обновлённая оценка SEO:** **60 / 100** (исходная оценка от 2026-06-02: 40 / 100)
+
+### Обновление: сокращение клиентского слоя
+
+После отдельного прохода по границам React Server Components число файлов с директивой `use client` снижено с **204 до 191** (−13 файлов, −6,4%). Подсчёт выполнен по `app`, `components`, `hooks` и `lib` для файлов `.ts`/`.tsx`.
+
+- Главная страница и её SEO-критичные секции `Hero`, `AboutSection`, `Benefits` и `FAQSection` переведены в RSC.
+- Страницы магазинов, доставки и оплаты, privacy, terms, cookies и return policy теперь рендерят основной контент на сервере.
+- Удалён клиентский агрегатор `HomeClient` и динамическая загрузка `AboutSection` с `ssr: false`.
+- Переводы и CMS-overrides для серверных секций читает единый memoized server-only resolver; повторные секции одного рендера не дублируют загрузку данных.
+- Интерактивность сохранена как небольшие islands: shadcn Accordion остаётся клиентским, а окружающий текст и schema формируются сервером.
+- С `MetricCard` и `RatingDisplay` снята лишняя собственная client boundary. При импорте из клиентских экранов они по-прежнему корректно входят в соответствующий client graph.
+
+БЭМ-структура существующих блоков и shadcn-компоненты сохранены. Оставшиеся крупные кандидаты следующего этапа: серверная начальная загрузка списков заказов account/admin и декомпозиция `ProductPageContent` на серверную товарную часть и клиентские gallery/cart islands. Механически снимать `use client` с форм, dialogs, Zustand consumers и event-driven таблиц нельзя: это не уменьшит реальный client graph и нарушит интерактивность.
+
+> Эта секция является актуальным состоянием аудита. Разделы ниже сохранены как исходный baseline от 2026-06-02 и могут содержать старые пути `app/...`, утверждения об отсутствии hreflang и прежние количественные оценки sitemap.
+
+### Обновлённые оценки
+
+| Категория | Было | Стало | Изменение |
+|---|---:|---:|---|
+| Technical SEO | 47 | 78 | Локализованные URL, hreflang, sitemap, robots и корректные 404 |
+| Content Quality | 35 | 38 | Структурных изменений контента в коммите почти нет |
+| On-Page SEO | 37 | 55 | Добавлены локализованные layouts и metadata для публичных разделов |
+| Schema / Structured Data | 42 | 50 | URL стали языково согласованными; бренд и полнота schema ещё требуют работы |
+| Performance (CWV, оценочно) | 55 | 58 | Декомпозиция улучшила поддерживаемость, но client footprint существенно не измерялся |
+| AI Search Readiness | 31 | 43 | Языковые версии теперь доступны по стабильным URL; entity consistency не завершена |
+| Images | 25 | 28 | Коммит почти не затрагивал изображения |
+| Поддерживаемость UI | 45 | 58 | Начата feature-декомпозиция checkout и крупнейших admin pages |
+
+### Что исправлено в `f6df953`
+
+- Все пользовательские страницы перенесены под единое дерево `app/[lang]/...` для `ru`, `en` и `lv`.
+- Русский язык использует единственный канонический URL без `/ru`; `/ru/*` перенаправляется с кодом 308.
+- Английские и латышские версии доступны по стабильным путям `/en/*` и `/lv/*`.
+- Добавлена централизованная маршрутизация в `lib/i18n-routing.ts` и middleware.
+- Удалено недетерминированное определение языка по `Accept-Language` для индексируемых URL; выбор пользователя сохраняется cookie.
+- `sitemap.xml` теперь включает статические страницы, продукты, публикации блога и бренды для всех языков.
+- Каждая запись sitemap содержит `ru`, `en`, `lv` и `x-default` alternates.
+- `robots.txt` содержит ссылку на sitemap и закрывает приватные области во всех языковых вариантах.
+- Добавлены локализованные metadata layouts для contact, delivery/payment, blog, cart, checkout, stores и юридических страниц.
+- Добавлен catch-all, возвращающий настоящий HTTP 404 для неизвестных локализованных маршрутов.
+- Базовый layout выставляет `<html lang>` из сегмента URL.
+- Выполнена первая стадия декомпозиции checkout/admin с сохранением БЭМ и shadcn:
+  - `app/[lang]/checkout/CheckoutFormSections.tsx`;
+  - `app/[lang]/admin/orders/order-config.ts`;
+  - `app/[lang]/admin/content/banners/banner-model.ts`;
+  - `app/[lang]/admin/content/banners/LocaleTextField.tsx`.
+
+### Результаты проверки после коммита
+
+| Проверка | Результат |
+|---|---|
+| TypeScript (`tsc --noEmit`) | Успешно |
+| Unit tests | 63 файла, 523 теста — все прошли |
+| Production build | Успешно, 556 статических страниц |
+| Offline production dependency audit | 0 известных уязвимостей |
+| ESLint всего проекта | Не проходит: 2 ошибки и 766 предупреждений на момент аудита |
+| ESLint новых feature-модулей | 0 ошибок |
+
+### Закрытые пункты исходного аудита
+
+| Исходный пункт | Статус после `f6df953` |
+|---|---|
+| Sitemap покрывает только 20 URL | **Закрыто:** добавлены товары, бренды, блог и языковые версии |
+| Нет hreflang | **Закрыто:** alternates добавлены в metadata и sitemap |
+| `lang="en"` захардкожен | **Закрыто:** язык берётся из `[lang]` |
+| `/contact` и `/stores` без metadata | **Закрыто:** добавлены локализованные layouts |
+| В robots нет Sitemap | **Закрыто** |
+| Неизвестный localized URL может стать soft 404 | **Закрыто:** catch-all вызывает `notFound()` до streaming body |
+| Страницы разбросаны между root и языковыми деревьями | **Закрыто:** используется единое `[lang]`-дерево |
+| Checkout/admin pages монолитны | **Частично закрыто:** вынесены первые UI/model/config-модули; крупные секции ещё остаются |
+
+### Актуальные критические и высокие приоритеты
+
+1. **Исправить Stripe payment integrity.** Checkout должен строить Stripe line items только из сохранённого серверного заказа; webhook обязан сверять сумму, валюту и `payment_status` перед переводом всего заказа в `paid`.
+2. **Закрыть SSRF в B2B webhooks.** Запретить private/loopback/link-local IP, разрешать только HTTPS, ограничить redirects и добавить timeout.
+3. **Добавить production security headers.** Сейчас `next.config.js` не задаёт CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy` и `Permissions-Policy` для production.
+4. **Убрать `Float` из денежных полей Prisma.** Использовать integer cents или `Decimal` для цен, налогов, скидок, платежей и возвратов.
+5. **Исправить бренд и root metadata.** В `app/[lang]/layout.tsx` всё ещё встречается `Eshop`; требуется единый HairShop.lv, реальный Organization/LocalBusiness и OG fallback.
+6. **Настроить production domain.** `NEXT_PUBLIC_SITE_URL` должен быть обязательным; fallback `https://example.com` нельзя считать допустимым production-значением.
+7. **Исправить sitemap lastModified.** Статические страницы и товары всё ещё получают текущую дату вместо реальной даты изменения.
+8. **Завершить декомпозицию UI.** Вынести summary/delivery/payment из checkout, filters/table/editor из admin orders и CRUD forms/lists из banners в отдельные БЭМ-компоненты на shadcn.
+9. **Выровнять toolchain и сделать lint зелёным.** Next 16 используется вместе с устаревшими ESLint/`eslint-config-next`; устранить 2 ошибки, hook warnings, `any` и сырые `<img>`.
+10. **Добавить PR CI.** Обязательные typecheck, unit tests, lint, build и безопасные E2E с отдельной тестовой БД.
+
+### Новая ближайшая дорожная карта
+
+#### P0 — до production deployment
+
+- Stripe: серверный источник состава и суммы заказа, webhook reconciliation и idempotency.
+- SSRF-защита webhook endpoints и криптографические webhook secrets.
+- Production security headers.
+- Обязательный production `NEXT_PUBLIC_SITE_URL` и единый бренд HairShop.lv.
+
+#### P1 — следующий спринт
+
+- Миграция денежных полей `Float` на cents/Decimal.
+- Завершение декомпозиции checkout/admin с БЭМ и shadcn.
+- Исправление lint и синхронизация Next/React/TypeScript/ESLint toolchain.
+- Реальные `lastModified`, OG images и расширенный Product schema.
+- PR CI и Stripe/webhook integration tests.
+
+#### P2 — последующие улучшения
+
+- Расширение товарных описаний и E-E-A-T контента.
+- Image sitemap, WebP/AVIF стратегия и оптимизация above-the-fold изображений.
+- A11y-тесты через axe, visual regression и CWV budgets.
+- Дальнейшее сокращение client components и legacy localStorage auth.
+
+---
+
+## Исходный аудит от 2026-06-02 (исторический baseline)
+
 **Date:** 2026-06-02  
 **URL:** http://localhost:3000 (Next.js dev server)  
 **Business type:** E-commerce — Professional Cosmetics B2B + B2C  

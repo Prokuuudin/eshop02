@@ -1,5 +1,3 @@
-'use client'
-
 import React from 'react'
 import { Card } from '@/components/ui/card'
 
@@ -20,7 +18,7 @@ export default function MetricCard({
   icon,
   trend,
   helpText
-}: MetricCardProps) {
+}: MetricCardProps): JSX.Element {
   return (
     <Card className="p-6 bg-card border border-border">
       <div className="flex items-start justify-between">

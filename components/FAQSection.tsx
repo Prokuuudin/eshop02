@@ -1,12 +1,12 @@
-'use client'
-
 import React from 'react'
 import Link from 'next/link'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { useTranslation } from '@/lib/use-translation'
+import type { Language } from '@/data/translations'
+import { getServerContent } from '@/lib/server-translation'
+import { localizePath } from '@/lib/i18n-routing'
 
-export default function FAQSection() {
-  const { t } = useTranslation()
+export default async function FAQSection({ language }: { language: Language }): Promise<JSX.Element> {
+  const { t } = await getServerContent(language)
 
   const col1 = [
     { id: 'faq-1', question: t('faq.site.q1'), answer: t('faq.site.a1') },
@@ -49,12 +49,12 @@ export default function FAQSection() {
                   <AccordionContent className="text-muted-foreground">
                     {item.answer}
                     {item.id === 'faq-8' && (
-                      <Link href="/return-policy" className="block mt-2 text-primary underline underline-offset-2">
+                      <Link href={localizePath('/return-policy', language)} className="block mt-2 text-primary underline underline-offset-2">
                         {t('faq.site.q8')}
                       </Link>
                     )}
                     {item.id === 'faq-12' && (
-                      <Link href="/stores" className="block mt-2 text-primary underline underline-offset-2">
+                      <Link href={localizePath('/stores', language)} className="block mt-2 text-primary underline underline-offset-2">
                         {t('stores.title')}
                       </Link>
                     )}

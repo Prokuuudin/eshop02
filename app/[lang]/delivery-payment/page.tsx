@@ -11,7 +11,7 @@ import {
     AccordionContent,
 } from '@/components/ui/accordion';
 
-export default async function DeliveryPaymentPage({ params }: { params: Promise<{ lang: string }> }): Promise<JSX.Element> {
+export default async function DeliveryPaymentPage({ params }: { params: Promise<{ lang: string }> }): Promise<React.JSX.Element> {
     const language = resolveLanguage((await params).lang);
     const { t } = await getServerContent(language);
     const siteUrl = getSiteUrl();

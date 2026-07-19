@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
+import type { ChangeEvent, Dispatch, JSX, SetStateAction } from 'react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import PhoneInput from '@/components/ui/phone-input'

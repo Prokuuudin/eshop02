@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { isStripeEventProcessed, saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
-import { updateServerOrderPayment } from '@/lib/orders-data-store'
+import { createStripeClient } from '@/lib/stripe-client'
+import { applyStripePaymentEvent } from '@/lib/stripe-payment-store'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Stripe secrets are not configured' }, { status: 500 })
     }
 
-    const stripe = new Stripe(secretKey)
+    const stripe = createStripeClient(secretKey)
     const signature = req.headers.get('stripe-signature')
 
     if (!signature) {
@@ -24,17 +24,12 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text()
     const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
 
-    const alreadyProcessed = await isStripeEventProcessed(event.id)
-    if (alreadyProcessed) {
-      return NextResponse.json({ received: true, idempotent: true })
-    }
-
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
       const orderId = session.metadata?.orderId
 
       if (orderId) {
-        await saveOrderPaymentStatus({
+        const applied = await applyStripePaymentEvent({
           orderId,
           paymentStatus: 'paid',
           sessionId: session.id,
@@ -43,11 +38,7 @@ export async function POST(req: NextRequest) {
           eventId: event.id
         })
 
-        await updateServerOrderPayment(orderId, {
-          paymentStatus: 'paid',
-          paymentProvider: 'stripe',
-          paymentSessionId: session.id
-        })
+        if (!applied) return NextResponse.json({ received: true, idempotent: true })
       }
     }
 
@@ -56,7 +47,7 @@ export async function POST(req: NextRequest) {
       const orderId = session.metadata?.orderId
 
       if (orderId) {
-        await saveOrderPaymentStatus({
+        const applied = await applyStripePaymentEvent({
           orderId,
           paymentStatus: 'failed',
           sessionId: session.id,
@@ -65,11 +56,7 @@ export async function POST(req: NextRequest) {
           eventId: event.id
         })
 
-        await updateServerOrderPayment(orderId, {
-          paymentStatus: 'failed',
-          paymentProvider: 'stripe',
-          paymentSessionId: session.id
-        })
+        if (!applied) return NextResponse.json({ received: true, idempotent: true })
       }
     }
 

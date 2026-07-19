@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { JSX } from 'react';
 import Hero from '@/components/Hero';
 import BestsellersSection from '@/components/BestsellersSection';
 import Categories from '@/components/Categories';

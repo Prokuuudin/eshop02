@@ -19,9 +19,10 @@ type StripePaymentStore = {
 }
 
 const KV_KEY = 'stripe-payments'
+type PaymentStoreClient = Pick<Prisma.TransactionClient, 'keyValueSetting'>
 
-const readStore = async (): Promise<StripePaymentStore> => {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+const readStore = async (client: PaymentStoreClient = prisma): Promise<StripePaymentStore> => {
+  const row = await client.keyValueSetting.findUnique({ where: { key: KV_KEY } })
   if (!row) return { orders: {}, processedEventIds: [] }
   const parsed = row.value as StripePaymentStore
   return {
@@ -30,8 +31,8 @@ const readStore = async (): Promise<StripePaymentStore> => {
   }
 }
 
-const writeStore = async (store: StripePaymentStore): Promise<void> => {
-  await prisma.keyValueSetting.upsert({
+const writeStore = async (store: StripePaymentStore, client: PaymentStoreClient = prisma): Promise<void> => {
+  await client.keyValueSetting.upsert({
     where: { key: KV_KEY },
     create: { key: KV_KEY, value: store as unknown as Prisma.InputJsonValue },
     update: { value: store as unknown as Prisma.InputJsonValue },
@@ -83,3 +84,48 @@ export const isStripeEventProcessed = async (eventId: string): Promise<boolean> 
   const store = await readStore()
   return store.processedEventIds.includes(eventId)
 }
+
+/**
+ * Atomically records a Stripe event and applies its canonical order payment state.
+ * The transaction-scoped advisory lock serializes concurrent deliveries because the
+ * legacy payment ledger is stored in a single JSON row rather than event rows.
+ */
+export const applyStripePaymentEvent = async (input: {
+  eventId: string
+  orderId: string
+  paymentStatus: StripePaymentStatus
+  sessionId: string
+  paymentIntentId?: string
+  customerEmail?: string
+}): Promise<boolean> => prisma.$transaction(async (tx) => {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${KV_KEY}))`
+
+  const store = await readStore(tx)
+  if (store.processedEventIds.includes(input.eventId)) return false
+
+  const nextRecord: StripeOrderPayment = {
+    orderId: input.orderId,
+    paymentStatus: input.paymentStatus,
+    sessionId: input.sessionId,
+    paymentIntentId: input.paymentIntentId,
+    customerEmail: input.customerEmail,
+    lastEventId: input.eventId,
+    updatedAt: new Date().toISOString(),
+  }
+  store.orders[input.orderId] = { ...store.orders[input.orderId], ...nextRecord }
+  store.processedEventIds.push(input.eventId)
+  if (store.processedEventIds.length > 2000) {
+    store.processedEventIds = store.processedEventIds.slice(-2000)
+  }
+
+  await writeStore(store, tx)
+  await tx.order.updateMany({
+    where: { id: input.orderId },
+    data: {
+      paymentStatus: input.paymentStatus,
+      paymentProvider: 'stripe',
+      paymentSessionId: input.sessionId,
+    },
+  })
+  return true
+})

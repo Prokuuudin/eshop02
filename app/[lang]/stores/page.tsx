@@ -1,4 +1,5 @@
 import Stores from '@/components/Stores';
+import type { JSX } from 'react';
 import { resolveLanguage } from '@/lib/i18n-routing';
 
 export default async function StoresPage({ params }: { params: Promise<{ lang: string }> }): Promise<JSX.Element> {

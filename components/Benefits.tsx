@@ -2,7 +2,7 @@ import React from 'react';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 
-export default async function Benefits({ language }: { language: Language }): Promise<JSX.Element> {
+export default async function Benefits({ language }: { language: Language }): Promise<React.JSX.Element> {
     // Секция бенефитов с фиксированным содержанием на русском
     const { t, resolveImageSrc } = await getServerContent(language);
     const BENEFITS = [

@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import type { JSX } from 'react'
 import type { Language } from '@/data/translations'
 import { getServerContent } from '@/lib/server-translation'
 

@@ -4,7 +4,7 @@ import { stores } from '@/data/stores';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 
-export default async function Stores({ language }: { language: Language }): Promise<JSX.Element> {
+export default async function Stores({ language }: { language: Language }): Promise<React.JSX.Element> {
     const { t } = await getServerContent(language);
     // Используем только импортируемый stores
 

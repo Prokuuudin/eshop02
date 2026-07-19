@@ -28,7 +28,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     const cacheItems = useCallback((items: AdminProductSearchItem[]) => {
         setInfoById((prev) => {

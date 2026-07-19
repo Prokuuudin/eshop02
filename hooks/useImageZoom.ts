@@ -48,9 +48,9 @@ export interface UseImageZoomResult {
     onImageLoad: React.ReactEventHandler<HTMLImageElement>;
     /** onError картинок панели/lightbox: hi-res может не существовать на сервере */
     onPaneImgError: React.ReactEventHandler<HTMLImageElement>;
-    lensRef: React.RefObject<HTMLDivElement>;
-    paneRef: React.RefObject<HTMLDivElement>;
-    paneImgRef: React.RefObject<HTMLImageElement>;
+    lensRef: React.RefObject<HTMLDivElement | null>;
+    paneRef: React.RefObject<HTMLDivElement | null>;
+    paneImgRef: React.RefObject<HTMLImageElement | null>;
 }
 
 // Ниже lg боковой панели не хватает места (контейнер sm:w-1/2 в колонке грида) —

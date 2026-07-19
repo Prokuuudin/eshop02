@@ -5,7 +5,7 @@ import type { Language } from '@/data/translations'
 import { getServerContent } from '@/lib/server-translation'
 import { localizePath } from '@/lib/i18n-routing'
 
-export default async function FAQSection({ language }: { language: Language }): Promise<JSX.Element> {
+export default async function FAQSection({ language }: { language: Language }): Promise<React.JSX.Element> {
   const { t } = await getServerContent(language)
 
   const col1 = [

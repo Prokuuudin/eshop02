@@ -6,7 +6,7 @@ type RatingDisplayProps = {
   showLabel?: boolean
 }
 
-export default function RatingDisplay({ rating, count, showLabel = true }: RatingDisplayProps): JSX.Element {
+export default function RatingDisplay({ rating, count, showLabel = true }: RatingDisplayProps): React.JSX.Element {
   const filledStars = Math.round(rating)
 
   return (

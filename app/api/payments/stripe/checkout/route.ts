@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import { createStripeClient } from '@/lib/stripe-client'
 import { saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
 import { resolveLineItems } from '@/lib/server-pricing'
 import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'STRIPE_SECRET_KEY is not configured' }, { status: 500 })
     }
 
-    const stripe = new Stripe(secretKey)
+    const stripe = createStripeClient(secretKey)
     const body = await req.json()
 
     const { orderId, email, items, grandTotal } = body as {

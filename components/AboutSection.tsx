@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 
-export default async function AboutSection({ language }: { language: Language }): Promise<JSX.Element> {
+export default async function AboutSection({ language }: { language: Language }): Promise<React.JSX.Element> {
   const { t } = await getServerContent(language);
   return (
     <section className="max-w-[1200px] mx-auto w-full px-4 py-10 mb-10">

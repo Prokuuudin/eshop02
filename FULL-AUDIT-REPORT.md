@@ -22,6 +22,31 @@
 
 БЭМ-структура существующих блоков и shadcn-компоненты сохранены. Оставшиеся крупные кандидаты следующего этапа: серверная начальная загрузка списков заказов account/admin и декомпозиция `ProductPageContent` на серверную товарную часть и клиентские gallery/cart islands. Механически снимать `use client` с форм, dialogs, Zustand consumers и event-driven таблиц нельзя: это не уменьшит реальный client graph и нарушит интерактивность.
 
+### Обновление: toolchain и integration-тесты
+
+Матрица frontend toolchain приведена к согласованным версиям:
+
+- Next.js и `eslint-config-next`: **16.2.10**;
+- React и React DOM: **19.2.7**;
+- TypeScript: **5.9.3**;
+- ESLint: **9.39.5**, typescript-eslint: **8.64.0**;
+- React types: **19.2.x**.
+- Node runtime закреплён через `engines` и `.nvmrc`: **22.13.1+**.
+
+Legacy `.eslintrc.js` и `.eslintignore` заменены на ESLint 9 flat config `eslint.config.mjs`. Полный lint теперь завершается успешно: **0 ошибок**, при этом **865 предупреждений** сохранены как измеримый migration backlog (`any`, return types, React 19 compiler diagnostics и legacy CommonJS configs). Новые строгие React rules не отключены, а переведены в warning до поэтапного исправления существующих экранов.
+
+Добавлен отдельный `npm run test:integration`, изолированный от быстрого unit suite. Он покрывает:
+
+- построение Stripe Checkout из авторитетных серверных цен, а не клиентского `grandTotal`;
+- переход completed webhook в `paid` и повторную доставку того же event;
+- две конкурентные доставки одного Stripe event — side effects применяются ровно один раз;
+- атомарное списание остатков при создании заказа;
+- rollback заказа и уже выполненных списаний, если последующего товара недостаточно.
+
+Stripe event ledger, payment state и canonical order status теперь обновляются в одной Prisma-транзакции под PostgreSQL advisory lock. Это устраняет гонку прежнего JSON read-modify-write при параллельных webhook deliveries.
+
+Результаты проверок после обновления: TypeScript — успешно; unit — **63 файла / 523 теста**; integration — **3 файла / 5 тестов**; production build — успешно, **556 страниц**.
+
 > Эта секция является актуальным состоянием аудита. Разделы ниже сохранены как исходный baseline от 2026-06-02 и могут содержать старые пути `app/...`, утверждения об отсутствии hreflang и прежние количественные оценки sitemap.
 
 ### Обновлённые оценки

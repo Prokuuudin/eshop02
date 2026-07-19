@@ -1,6 +1,7 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
+import type { JSX } from 'react'
 import type { LocaleText } from '@/lib/locale-text'
 
 const LOCALE_FIELD_LABELS = { ru: 'RU', en: 'EN', lv: 'LV' } as const

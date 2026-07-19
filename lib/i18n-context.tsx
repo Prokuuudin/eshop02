@@ -9,8 +9,16 @@ export function useTranslation() {
   return { t };
 }
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Language } from '@/data/translations'
+import {
+  DEFAULT_LANGUAGE,
+  LANGUAGE_COOKIE,
+  isLanguage,
+  localizePath,
+  stripLangPrefix,
+} from '@/lib/i18n-routing'
 
 interface I18nContextType {
   language: Language
@@ -20,42 +28,79 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
 const LANGUAGE_KEY = 'eshop_language'
-const DEFAULT_LANGUAGE: Language = 'ru'
 
-export function I18nProvider({ children }: { children: ReactNode }): ReactNode {
-  const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE)
+function readLanguageCookie(): Language | null {
+  const match = document.cookie.match(/(?:^|;\s*)eshop_language=(ru|en|lv)(?:;|$)/)
+  return match ? (match[1] as Language) : null
+}
 
-  // Load language from localStorage on mount. If there's no saved preference
-  // yet, use the admin-configured default instead of a hardcoded fallback —
-  // only first-time visitors pay this extra round-trip. Children always render
-  // (with the default language on the server) so SSR/prerender HTML is not empty;
-  // the saved preference is applied after hydration.
+function writeLanguageCookie(language: Language): void {
+  // Functional cookie (explicit user language choice) — read by the middleware
+  // to keep visitors on their language when they follow unprefixed links.
+  document.cookie = `${LANGUAGE_COOKIE}=${language}; path=/; max-age=31536000; samesite=lax`
+}
+
+/** Current unprefixed path + query + hash, for language-switch navigation. */
+function currentUnprefixedLocation(): string {
+  const { path } = stripLangPrefix(window.location.pathname)
+  return `${path}${window.location.search}${window.location.hash}`
+}
+
+export function I18nProvider({
+  children,
+  initialLanguage,
+}: {
+  children: ReactNode
+  initialLanguage?: Language
+}): ReactNode {
+  // The language is defined by the URL segment (app/[lang]) — no client state.
+  // Navigating to another language remounts nothing; the layout re-renders with
+  // the new param and this provider receives the new value.
+  const language: Language = isLanguage(initialLanguage) ? initialLanguage : DEFAULT_LANGUAGE
+  const router = useRouter()
+
+  // Keep the cookie/localStorage in sync with an explicitly visited language URL,
+  // and migrate legacy visitors whose choice only lives in localStorage (the
+  // middleware cannot see localStorage, so without the cookie they would be
+  // stuck on the default language).
   useEffect(() => {
-    const savedLanguage = localStorage.getItem(LANGUAGE_KEY) as Language | null
-    if (savedLanguage && ['ru', 'en', 'lv'].includes(savedLanguage)) {
-      setLanguageState(savedLanguage)
+    const cookieLang = readLanguageCookie()
+
+    if (language !== DEFAULT_LANGUAGE) {
+      // On /en/* or /lv/* the URL is the explicit choice — persist it.
+      if (cookieLang !== language) writeLanguageCookie(language)
+      localStorage.setItem(LANGUAGE_KEY, language)
       return
     }
 
+    if (cookieLang) return
+
+    const saved = localStorage.getItem(LANGUAGE_KEY)
+    if (saved === 'en' || saved === 'lv') {
+      writeLanguageCookie(saved)
+      router.replace(localizePath(currentUnprefixedLocation(), saved))
+      return
+    }
+    if (saved === 'ru') return
+
+    // First-time visitor: honor the admin-configured default language.
     fetch('/api/locale-config')
       .then((r) => (r.ok ? r.json() : null))
       .then((config) => {
-        if (config?.defaultLanguage && ['ru', 'en', 'lv'].includes(config.defaultLanguage)) {
-          setLanguageState(config.defaultLanguage)
+        const configured = config?.defaultLanguage
+        if (isLanguage(configured) && configured !== DEFAULT_LANGUAGE && !readLanguageCookie()) {
+          writeLanguageCookie(configured)
+          router.replace(localizePath(currentUnprefixedLocation(), configured))
         }
       })
       .catch(() => {})
-  }, [])
-
-  // Keep the document language in sync for assistive tech and SEO (the store is
-  // trilingual but <html lang> was hardcoded).
-  useEffect(() => {
-    document.documentElement.lang = language
-  }, [language])
+  }, [language, router])
 
   const setLanguage = (newLanguage: Language): void => {
-    setLanguageState(newLanguage)
+    if (newLanguage === language) return
+    writeLanguageCookie(newLanguage)
     localStorage.setItem(LANGUAGE_KEY, newLanguage)
+    router.push(localizePath(currentUnprefixedLocation(), newLanguage))
   }
 
   return (
@@ -63,6 +108,15 @@ export function I18nProvider({ children }: { children: ReactNode }): ReactNode {
       {children}
     </I18nContext.Provider>
   )
+}
+
+/**
+ * Pathname without the /en | /lv language prefix — for route checks and
+ * breadcrumbs that reason about the logical (unprefixed) route.
+ */
+export function useUnprefixedPathname(): string {
+  const pathname = usePathname()
+  return stripLangPrefix(pathname).path
 }
 
 export function useI18n(): I18nContextType {

@@ -1,6 +1,17 @@
 import type { MetadataRoute } from 'next'
 import { getSiteUrl } from '@/lib/site-url'
 
+// Private sections exist at the unprefixed (ru) URL and under /en/, /lv/.
+const PRIVATE_PATHS = [
+  '/admin',
+  '/account',
+  '/auth',
+  '/cart',
+  '/checkout',
+  '/wishlist',
+  '/order'
+]
+
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = getSiteUrl()
 
@@ -9,15 +20,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/admin',
-          '/account',
-          '/auth',
-          '/cart',
-          '/checkout',
-          '/wishlist',
-          '/order'
-        ]
+        disallow: PRIVATE_PATHS.flatMap((path) => [path, `/en${path}`, `/lv${path}`])
       }
     ],
     sitemap: `${siteUrl}/sitemap.xml`

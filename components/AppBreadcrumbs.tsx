@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useUnprefixedPathname } from '@/lib/i18n-context';
 
 import {
     Breadcrumb,
@@ -149,7 +149,7 @@ function getBlogPostTitle(
 }
 
 export default function AppBreadcrumbs() {
-    const pathname = usePathname();
+    const pathname = useUnprefixedPathname();
     const { t, language } = useTranslation();
     const { brands } = useBrandsConfig();
     const [productCache, setProductCache] = useState<Record<string, Product>>({});

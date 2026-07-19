@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { useUnprefixedPathname } from '@/lib/i18n-context'
 import MobileMenu from './MobileMenu'
 import CartDrawer from './CartDrawer'
 import HeaderNav from './HeaderNav'
@@ -13,7 +13,7 @@ import AdminHeaderNav from './admin/AdminHeaderNav'
 import { Menu } from 'lucide-react'
 
 export default function Header() {
-  const pathname = usePathname()
+  const pathname = useUnprefixedPathname()
   const isAdminPage = pathname.startsWith('/admin')
 
   // Плавное уменьшение header при скролле, но без исчезновения.

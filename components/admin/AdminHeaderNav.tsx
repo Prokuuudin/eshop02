@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useUnprefixedPathname } from '@/lib/i18n-context';
 import type { LucideIcon } from 'lucide-react';
 import {
     ChevronDown,
@@ -279,7 +279,7 @@ const isActive = (pathname: string, href: string): boolean => {
 };
 
 export default function AdminHeaderNav() {
-    const pathname = usePathname();
+    const pathname = useUnprefixedPathname();
     const { language } = useTranslation();
     const labels = NAV_LABELS[language];
     const tr = (key: string) => labels[key as keyof typeof labels] ?? key;

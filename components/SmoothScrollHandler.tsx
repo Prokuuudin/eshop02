@@ -1,10 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useI18n, useUnprefixedPathname } from '@/lib/i18n-context';
+import { localizePath, stripLangPrefix } from '@/lib/i18n-routing';
 
 export default function SmoothScrollHandler(): null {
-  const pathname = usePathname();
+  const pathname = useUnprefixedPathname();
   const router = useRouter();
+  const { language } = useI18n();
   const pendingHashRef = useRef<string | null>(null);
   const scrollTokenRef = useRef(0);
 
@@ -102,7 +105,7 @@ export default function SmoothScrollHandler(): null {
         e.preventDefault();
         const hash = normalizeHash(href.slice(1));
 
-        if (window.location.pathname === '/') {
+        if (stripLangPrefix(window.location.pathname).path === '/') {
           if (window.location.hash !== hash) {
             window.history.pushState(null, '', hash);
           }
@@ -111,13 +114,13 @@ export default function SmoothScrollHandler(): null {
         }
 
         pendingHashRef.current = hash;
-        router.push('/');
+        router.push(localizePath('/', language));
       }
     };
 
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-  }, [normalizeHash, router, scheduleScrollToHash]);
+  }, [normalizeHash, router, scheduleScrollToHash, language]);
 
   // Scroll to top on every pathname change that has no hash
   useEffect(() => {

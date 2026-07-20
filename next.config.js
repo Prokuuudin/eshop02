@@ -40,13 +40,11 @@ const nextConfig = {
         return config;
     },
     async headers() {
-        if (process.env.NODE_ENV !== 'development') {
-            return [];
-        }
+        const rules = [];
 
-        // Prevent stale dev assets/chunks from being reused by browser cache.
-        return [
-            {
+        if (process.env.NODE_ENV === 'development') {
+            // Prevent stale dev assets/chunks from being reused by browser cache.
+            rules.push({
                 source: '/_next/static/:path*',
                 headers: [
                     {
@@ -62,8 +60,55 @@ const nextConfig = {
                         value: '0',
                     },
                 ],
-            },
-        ];
+            });
+        }
+
+        // Global security headers — apply everywhere (dev + prod).
+        // 'unsafe-eval' only in dev: webpack's dev devtool wraps modules in eval(). Verified via a
+        // production build (next build && next start) that eval is NOT needed outside dev.
+        const scriptSrc =
+            process.env.NODE_ENV === 'development'
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com"
+                : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com";
+
+        const csp = [
+            "default-src 'self'",
+            // 'unsafe-inline' required: Next.js App Router streams RSC payloads via inline
+            // <script>self.__next_f.push(...)</script> with no nonce/src — a stricter policy
+            // would break hydration on every page. Proper fix is a nonce-based CSP wired through
+            // middleware.ts, which is out of scope here (next.config.js only).
+            scriptSrc,
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https://hairshop.lv",
+            "font-src 'self' data:",
+            "connect-src 'self' https://challenges.cloudflare.com",
+            "frame-src https://challenges.cloudflare.com",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            'upgrade-insecure-requests',
+        ].join('; ');
+
+        rules.push({
+            source: '/:path*',
+            headers: [
+                { key: 'Content-Security-Policy', value: csp },
+                {
+                    key: 'Strict-Transport-Security',
+                    value: 'max-age=63072000; includeSubDomains; preload',
+                },
+                { key: 'X-Content-Type-Options', value: 'nosniff' },
+                { key: 'X-Frame-Options', value: 'DENY' },
+                { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+                {
+                    key: 'Permissions-Policy',
+                    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+                },
+            ],
+        });
+
+        return rules;
     },
 };
 

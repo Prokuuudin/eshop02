@@ -20,3 +20,6 @@ tsconfig.tsbuildinfo
 
 # Выгрузки с персональными данными клиентов — не коммитить
 *.xlsx
+
+# Мёртвые JSON-стораджи (реальные данные теперь в Postgres keyValueSetting) — не коммитить
+data/*.json

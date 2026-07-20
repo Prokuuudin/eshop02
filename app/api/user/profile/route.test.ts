@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { update: vi.fn() },
@@ -19,7 +20,7 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/user/profile', {
     method: 'PATCH',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', cookie: 'eshop_session=tok' },
+    headers: { 'Content-Type': 'application/json', cookie: 'eshop_session=tok', origin: 'http://localhost' },
   })
 }
 

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { guardOrigin } from '@/lib/api-guard'
 
 export async function PATCH(req: NextRequest) {
+  const blocked = guardOrigin(req)
+  if (blocked) return blocked
+
   try {
     const token = req.cookies.get(SESSION_COOKIE)?.value
     const user = await getServerUser()

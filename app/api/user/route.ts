@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { anonymizeUser } from '@/lib/user-erasure'
+import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
@@ -8,6 +9,9 @@ export const runtime = 'nodejs'
 // retained (tax/accounting) with their personal fields blanked, the account is scrubbed
 // and permanently locked, and the session is cleared.
 export async function DELETE(req: NextRequest) {
+  const blocked = guardOrigin(req)
+  if (blocked) return blocked
+
   try {
     const token = req.cookies.get(SESSION_COOKIE)?.value
     const user = await getServerUser()

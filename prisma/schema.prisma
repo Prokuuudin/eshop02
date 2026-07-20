@@ -35,11 +35,6 @@ model User {
 model Session {
   id        String   @id
   userId    String
-  // Plaintext token column — deliberately kept nullable and unused by app code going
-  // forward (see lib/server-auth.ts). Drop it via migration
-  // 20260720181500_drop_session_plaintext_token once this deploy is confirmed live,
-  // so a mid-rollout old server instance can't 500 on a dropped column it still reads.
-  token     String?  @unique
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())

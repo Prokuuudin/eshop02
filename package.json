@@ -66,6 +66,10 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "postcss": "8.5.20",
+    "@prisma/dev": "0.24.14"
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/mssql": "^12.3.0",
@@ -80,8 +84,9 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.10",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "mssql": "^12.5.5",
-    "postcss": "8.4.0",
+    "postcss": "8.5.20",
     "prettier": "2.8.8",
     "tailwindcss": "3.4.0",
     "ts-node": "^10.9.2",

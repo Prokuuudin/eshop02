@@ -1,3 +1,7 @@
+import crypto from 'crypto'
+import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@/generated/prisma/client'
+
 export type WebhookEvent =
   | 'order.created'
   | 'order.shipped'
@@ -35,67 +39,136 @@ export type WebhookDeliveryLog = {
   attempts: WebhookDeliveryAttempt[]
 }
 
-const webhookEndpoints = new Map<string, WebhookEndpoint>()
-const webhookDeliveryLogs: WebhookDeliveryLog[] = []
+const MAX_DELIVERY_LOGS_PER_COMPANY = 500
 
-export const listWebhookEndpoints = (companyId: string): WebhookEndpoint[] => {
-  return Array.from(webhookEndpoints.values())
-    .filter((item) => item.companyId === companyId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+type DbWebhookEndpoint = {
+  id: string
+  companyId: string
+  url: string
+  events: unknown
+  isActive: boolean
+  secret: string
+  createdAt: Date
 }
 
-export const getWebhookEndpoint = (id: string): WebhookEndpoint | undefined => {
-  return webhookEndpoints.get(id)
+type DbWebhookDeliveryLog = {
+  id: string
+  companyId: string
+  event: string
+  payload: unknown
+  attempts: unknown
+  createdAt: Date
 }
 
-export const createWebhookEndpoint = (input: {
+function mapEndpoint(row: DbWebhookEndpoint): WebhookEndpoint {
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    url: row.url,
+    events: Array.isArray(row.events) ? (row.events as WebhookEvent[]) : [],
+    isActive: row.isActive,
+    secret: row.secret,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+function mapDeliveryLog(row: DbWebhookDeliveryLog): WebhookDeliveryLog {
+  return {
+    id: row.id,
+    companyId: row.companyId,
+    event: row.event as WebhookEvent,
+    payload: (row.payload as Record<string, unknown>) ?? {},
+    attempts: Array.isArray(row.attempts) ? (row.attempts as WebhookDeliveryAttempt[]) : [],
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+export const listWebhookEndpoints = async (companyId: string): Promise<WebhookEndpoint[]> => {
+  const rows = await prisma.webhookEndpoint.findMany({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+  })
+  return rows.map(mapEndpoint)
+}
+
+export const getWebhookEndpoint = async (id: string): Promise<WebhookEndpoint | undefined> => {
+  const row = await prisma.webhookEndpoint.findUnique({ where: { id } })
+  return row ? mapEndpoint(row) : undefined
+}
+
+export const createWebhookEndpoint = async (input: {
   companyId: string
   url: string
   events: WebhookEvent[]
-  secret?: string
-}): WebhookEndpoint => {
-  const endpoint: WebhookEndpoint = {
-    id: `wh_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    companyId: input.companyId,
-    url: input.url,
-    events: input.events,
-    isActive: true,
-    secret: input.secret || `sec_${Math.random().toString(36).slice(2, 18)}`,
-    createdAt: new Date().toISOString()
-  }
-
-  webhookEndpoints.set(endpoint.id, endpoint)
-  return endpoint
+}): Promise<WebhookEndpoint> => {
+  const row = await prisma.webhookEndpoint.create({
+    data: {
+      id: `wh_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      companyId: input.companyId,
+      url: input.url,
+      events: input.events,
+      isActive: true,
+      secret: crypto.randomBytes(32).toString('hex'),
+    },
+  })
+  return mapEndpoint(row)
 }
 
-export const deleteWebhookEndpoint = (companyId: string, endpointId: string): boolean => {
-  const endpoint = webhookEndpoints.get(endpointId)
-  if (!endpoint || endpoint.companyId !== companyId) {
-    return false
-  }
+export const maskWebhookSecret = (secret: string): string =>
+  '•'.repeat(Math.max(secret.length - 4, 0)) + secret.slice(-4)
 
-  return webhookEndpoints.delete(endpointId)
+export const deleteWebhookEndpoint = async (companyId: string, endpointId: string): Promise<boolean> => {
+  const { count } = await prisma.webhookEndpoint.deleteMany({
+    where: { id: endpointId, companyId },
+  })
+  return count > 0
 }
 
-export const getActiveEndpointsForEvent = (companyId: string, event: WebhookEvent): WebhookEndpoint[] => {
-  return listWebhookEndpoints(companyId).filter((endpoint) => endpoint.isActive && endpoint.events.includes(event))
+export const getActiveEndpointsForEvent = async (
+  companyId: string,
+  event: WebhookEvent
+): Promise<WebhookEndpoint[]> => {
+  const endpoints = await listWebhookEndpoints(companyId)
+  return endpoints.filter((endpoint) => endpoint.isActive && endpoint.events.includes(event))
 }
 
-export const saveWebhookDeliveryLog = (log: Omit<WebhookDeliveryLog, 'id' | 'createdAt'>): WebhookDeliveryLog => {
-  const nextLog: WebhookDeliveryLog = {
-    id: `whd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: new Date().toISOString(),
-    ...log
+export const saveWebhookDeliveryLog = async (
+  log: Omit<WebhookDeliveryLog, 'id' | 'createdAt'>
+): Promise<WebhookDeliveryLog> => {
+  const row = await prisma.webhookDeliveryLog.create({
+    data: {
+      id: `whd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      companyId: log.companyId,
+      event: log.event,
+      payload: log.payload as Prisma.InputJsonValue,
+      attempts: log.attempts as unknown as Prisma.InputJsonValue,
+    },
+  })
+
+  // Keep only the most recent MAX_DELIVERY_LOGS_PER_COMPANY rows per company.
+  const excess = await prisma.webhookDeliveryLog.findMany({
+    where: { companyId: log.companyId },
+    orderBy: { createdAt: 'desc' },
+    skip: MAX_DELIVERY_LOGS_PER_COMPANY,
+    select: { id: true },
+  })
+  if (excess.length > 0) {
+    await prisma.webhookDeliveryLog.deleteMany({
+      where: { id: { in: excess.map((item) => item.id) } },
+    })
   }
 
-  webhookDeliveryLogs.unshift(nextLog)
-  if (webhookDeliveryLogs.length > 500) {
-    webhookDeliveryLogs.splice(500)
-  }
-
-  return nextLog
+  return mapDeliveryLog(row)
 }
 
-export const listWebhookDeliveryLogs = (companyId: string, limit = 100): WebhookDeliveryLog[] => {
-  return webhookDeliveryLogs.filter((item) => item.companyId === companyId).slice(0, limit)
+export const listWebhookDeliveryLogs = async (
+  companyId: string,
+  limit = 100
+): Promise<WebhookDeliveryLog[]> => {
+  const rows = await prisma.webhookDeliveryLog.findMany({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+  return rows.map(mapDeliveryLog)
 }

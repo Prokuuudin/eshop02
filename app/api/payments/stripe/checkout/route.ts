@@ -1,31 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createStripeClient } from '@/lib/stripe-client'
 import { saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
-import { resolveLineItems } from '@/lib/server-pricing'
-import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
+import { canAccessOrder, getServerOrderById, type ServerOrder } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
+import { getSiteUrl } from '@/lib/site-url'
+import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
-type CheckoutItem = {
-  id: string
-  title: string
-  quantity: number
-  price: number
-}
-
 const toCents = (amount: number) => Math.max(0, Math.round(amount * 100))
 
-const resolveBaseUrl = (req: NextRequest): string => {
-  const origin = req.headers.get('origin')
-  if (origin) return origin
+/**
+ * Build Stripe line items strictly from the order stored server-side (never from client input),
+ * scaled so their sum always equals order.total exactly in cents. Each product line uses
+ * quantity: 1 with the per-line total baked into unit_amount — that (rather than unit price *
+ * Stripe quantity) is what makes an exact-cent proration of discount/bonus/delivery possible,
+ * since Stripe's own quantity multiplier can't be scaled to an arbitrary integer-cent target.
+ */
+function buildLineItems(order: ServerOrder) {
+  const targetTotalCents = toCents(order.total)
+  const deliveryCents = Math.min(toCents(order.delivery), targetTotalCents)
+  const itemsTargetCents = targetTotalCents - deliveryCents
 
-  const host = req.headers.get('x-forwarded-host') || req.headers.get('host')
-  const protocol = req.headers.get('x-forwarded-proto') || 'http'
-  return host ? `${protocol}://${host}` : 'http://localhost:3000'
+  const rawLines = order.items
+    .filter((item) => item.quantity > 0 && item.price > 0)
+    .map((item) => ({ item, cents: toCents(item.price) * item.quantity }))
+  const rawSum = rawLines.reduce((sum, line) => sum + line.cents, 0)
+
+  let scaledLines: { item: ServerOrder['items'][number]; cents: number }[] = []
+  if (rawSum > 0 && itemsTargetCents > 0) {
+    let allocated = 0
+    scaledLines = rawLines.map((line) => {
+      const cents = Math.floor((line.cents * itemsTargetCents) / rawSum)
+      allocated += cents
+      return { item: line.item, cents }
+    })
+    let remainder = itemsTargetCents - allocated
+    const byDescendingCents = [...scaledLines].sort((a, b) => b.cents - a.cents)
+    for (let i = 0; i < byDescendingCents.length && remainder > 0; i += 1) {
+      byDescendingCents[i].cents += 1
+      remainder -= 1
+    }
+  }
+
+  const lineItems = scaledLines
+    .filter((line) => line.cents > 0)
+    .map((line) => ({
+      quantity: 1,
+      price_data: {
+        currency: 'eur',
+        unit_amount: line.cents,
+        product_data: {
+          name: line.item.quantity > 1 ? `${line.item.title} × ${line.item.quantity}` : line.item.title,
+        },
+      },
+    }))
+
+  if (deliveryCents > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: {
+        currency: 'eur',
+        unit_amount: deliveryCents,
+        product_data: { name: 'Delivery' },
+      },
+    })
+  }
+
+  return { lineItems, targetTotalCents }
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = guardOrigin(req)
+  if (blocked) return blocked
+
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY
     if (!secretKey) {
@@ -35,14 +83,9 @@ export async function POST(req: NextRequest) {
     const stripe = createStripeClient(secretKey)
     const body = await req.json()
 
-    const { orderId, email, items, grandTotal } = body as {
-      orderId?: string
-      email?: string
-      items?: CheckoutItem[]
-      grandTotal?: number
-    }
+    const { orderId, email } = body as { orderId?: string; email?: string }
 
-    if (!orderId || !Array.isArray(items) || items.length === 0 || !grandTotal) {
+    if (!orderId) {
       return NextResponse.json({ error: 'Invalid checkout payload' }, { status: 400 })
     }
 
@@ -63,36 +106,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // Authoritative pricing: resolve unit prices from the DB catalog, never trust client `price`.
-    // Stripe charges the sum of line_items, so this is the only value that determines the amount paid.
-    const resolved = await resolveLineItems(
-      items.map((item) => ({ id: item.id, quantity: item.quantity, price: item.price }))
-    )
-    const titleById = new Map(items.map((item) => [item.id, item.title]))
+    // Authoritative amount: built from the order stored server-side, never from client-supplied
+    // items/qty/total. This is the only value that determines what Stripe actually charges.
+    const { lineItems, targetTotalCents } = buildLineItems(order)
 
-    const lineItems = resolved
-      .filter((item) => item.quantity > 0 && item.price > 0)
-      .map((item) => ({
-        quantity: item.quantity,
-        price_data: {
-          currency: 'eur',
-          unit_amount: toCents(item.price),
-          product_data: { name: titleById.get(item.id) || item.id },
-        },
-      }))
-
-    if (lineItems.length === 0) {
-      return NextResponse.json({ error: 'No payable items' }, { status: 400 })
+    if (lineItems.length === 0 || targetTotalCents <= 0) {
+      return NextResponse.json({ error: 'Order requires no online payment' }, { status: 400 })
     }
 
-    const serverSubtotal = resolved.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-    const baseUrl = resolveBaseUrl(req)
+    const baseUrl = getSiteUrl()
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
-      customer_email: email,
+      customer_email: email || order.email,
       line_items: lineItems,
       metadata: {
         orderId
@@ -106,13 +133,13 @@ export async function POST(req: NextRequest) {
       paymentStatus: 'pending',
       sessionId: session.id,
       paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
-      customerEmail: email
+      customerEmail: email || order.email
     })
 
     return NextResponse.json({
       url: session.url,
       sessionId: session.id,
-      amountExpected: toCents(serverSubtotal)
+      amountExpected: targetTotalCents
     })
   } catch (error) {
     console.error('Stripe checkout session error:', error)

@@ -35,12 +35,17 @@ model User {
 model Session {
   id        String   @id
   userId    String
-  token     String   @unique
+  // Plaintext token column — deliberately kept nullable and unused by app code going
+  // forward (see lib/server-auth.ts). Drop it via migration
+  // 20260720181500_drop_session_plaintext_token once this deploy is confirmed live,
+  // so a mid-rollout old server instance can't 500 on a dropped column it still reads.
+  token     String?  @unique
+  tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
+  @@index([tokenHash])
   @@index([userId])
   @@index([expiresAt])
 }
@@ -523,4 +528,28 @@ model MediaAsset {
   data      Bytes
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WebhookEndpoint {
+  id        String   @id
+  companyId String
+  url       String
+  events    Json     @default("[]")
+  isActive  Boolean  @default(true)
+  secret    String
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+model WebhookDeliveryLog {
+  id        String   @id
+  companyId String
+  event     String
+  payload   Json
+  attempts  Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([createdAt])
 }

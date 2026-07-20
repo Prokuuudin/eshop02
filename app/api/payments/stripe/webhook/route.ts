@@ -2,8 +2,36 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createStripeClient } from '@/lib/stripe-client'
 import { applyStripePaymentEvent } from '@/lib/stripe-payment-store'
+import { getServerOrderById } from '@/lib/orders-data-store'
 
 export const runtime = 'nodejs'
+
+/**
+ * Defense against a checkout session being completed for less than the order actually costs
+ * (e.g. the order's price changed after the session link was issued, or amount tampering).
+ * Returns true only when the session paid exactly what the order requires, in EUR.
+ */
+async function sessionMatchesOrderAmount(orderId: string, session: Stripe.Checkout.Session): Promise<boolean> {
+  const order = await getServerOrderById(orderId)
+  if (!order) return false
+
+  const expectedCents = Math.round(order.total * 100)
+  const currencyOk = (session.currency ?? '').toLowerCase() === 'eur'
+  const amountOk = session.amount_total === expectedCents
+
+  if (!currencyOk || !amountOk) {
+    console.error('Stripe webhook amount mismatch — refusing to mark order paid', {
+      orderId,
+      sessionId: session.id,
+      expectedCents,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+    })
+    return false
+  }
+
+  return true
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +57,10 @@ export async function POST(req: NextRequest) {
       const orderId = session.metadata?.orderId
 
       if (orderId) {
+        if (!(await sessionMatchesOrderAmount(orderId, session))) {
+          return NextResponse.json({ received: true, amountMismatch: true })
+        }
+
         const applied = await applyStripePaymentEvent({
           orderId,
           paymentStatus: 'paid',

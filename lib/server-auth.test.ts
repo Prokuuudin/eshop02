@@ -25,7 +25,7 @@ function futureDate() {
 
 function makeSession(platformRole: string) {
   return {
-    token: 'tok',
+    tokenHash: 'hash',
     expiresAt: futureDate(),
     user: {
       id: 'u1',

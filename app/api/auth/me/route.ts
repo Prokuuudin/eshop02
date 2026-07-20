@@ -1,22 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { NextResponse } from 'next/server'
+import { getServerUser } from '@/lib/server-auth'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const token = req.cookies.get(SESSION_COOKIE)?.value
-    if (!token) return NextResponse.json({ user: null })
-
-    const session = await prisma.session.findUnique({
-      where: { token },
-      include: { user: true },
-    })
-
-    if (!session || session.expiresAt < new Date()) {
-      return NextResponse.json({ user: null })
-    }
-
-    return NextResponse.json({ user: mapDbToServerUser(session.user) })
+    const user = await getServerUser()
+    return NextResponse.json({ user })
   } catch (e) {
     console.error('[auth/me]', e)
     return NextResponse.json({ user: null })

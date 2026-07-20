@@ -1,6 +1,6 @@
 import 'server-only'
 import bcrypt from 'bcryptjs'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, createHash } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -59,6 +59,12 @@ function generateToken(): string {
   return randomBytes(32).toString('hex')
 }
 
+// The DB only ever stores this hash, never the raw token — a leaked DB row (backup, replica,
+// query log) can't be replayed as a session cookie.
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
+
 export async function createSession(userId: string): Promise<string> {
   const token = generateToken()
   const expiresAt = new Date()
@@ -68,7 +74,7 @@ export async function createSession(userId: string): Promise<string> {
     data: {
       id: `sess_${Date.now()}_${randomBytes(4).toString('hex')}`,
       userId,
-      token,
+      tokenHash: hashToken(token),
       expiresAt,
     },
   })
@@ -87,13 +93,14 @@ export async function getServerUser(): Promise<ServerUser | null> {
       cleanExpiredSessions().catch(() => {})
     }
 
+    const tokenHash = hashToken(token)
     const session = await prisma.session.findUnique({
-      where: { token },
+      where: { tokenHash },
       include: { user: true },
     })
 
     if (!session || session.expiresAt < new Date()) {
-      if (session) await prisma.session.delete({ where: { token } })
+      if (session) await prisma.session.delete({ where: { tokenHash } })
       return null
     }
 
@@ -143,7 +150,7 @@ export async function hasAdminUsersInDb(): Promise<boolean> {
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  await prisma.session.deleteMany({ where: { token } })
+  await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } })
 }
 
 export async function cleanExpiredSessions(): Promise<void> {

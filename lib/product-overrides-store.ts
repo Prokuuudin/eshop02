@@ -162,7 +162,7 @@ const getDbProducts = cache(async (): Promise<Product[]> => {
       where: { isDeleted: false, isActive: true },
       orderBy: { createdAt: 'desc' },
     }),
-    getProductOverrides(),
+    getProductOverrides().catch(() => ({})),
   ])
   return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })
@@ -190,7 +190,7 @@ export async function getDbProductsPaginated(opts: {
       take: opts.take,
     }),
     prisma.product.count({ where }),
-    getProductOverrides(),
+    getProductOverrides().catch(() => ({})),
   ])
 
   return { products: mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), total }
@@ -204,7 +204,7 @@ export const getMergedProducts = cache(async (): Promise<Product[]> => {
 export const getAdminProducts = cache(async (): Promise<Product[]> => {
   const [rows, overrides] = await Promise.all([
     prisma.product.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' } }),
-    getProductOverrides(),
+    getProductOverrides().catch(() => ({})),
   ])
   return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })

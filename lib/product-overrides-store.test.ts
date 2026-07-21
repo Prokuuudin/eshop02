@@ -149,4 +149,38 @@ describe('getAdminProducts', () => {
     expect(result[0].price).toBe(149.99)
     expect(result[0].title).toBe('Base title')
   })
+
+  it('degrades gracefully to base (un-overridden) product data when getProductOverrides() rejects', async () => {
+    // Regression for the audit finding: getDbProducts/getDbProductsPaginated/getAdminProducts all run
+    // Promise.all([prisma.product.findMany(...), getProductOverrides()]). Without a .catch() on the
+    // getProductOverrides() call, a transient KeyValueSetting read failure rejects the whole Promise.all
+    // and takes down the entire product listing (storefront, sitemap, categories, v1 API, admin panel)
+    // even though the base Product rows loaded fine.
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      {
+        id: 'p1',
+        title: 'Base title',
+        titleKey: null, titleEn: null, titleLv: null,
+        description: 'Base description', brand: 'Base brand',
+        price: 100, oldPrice: null, rating: 4, ratingCount: 0, reviewCount: 0,
+        image: null, images: [], metaTitle: null, metaDescription: null, ogImage: null, ogAlt: null,
+        badges: [], category: 'hair', stock: 10, isActive: true, barcode: null,
+        relatedProductIds: [], oftenBoughtTogether: [], minOrderQuantities: null, technicalSpecs: null,
+        bulkPricingTiers: null, demoVideo: null, distributorName: null, distributorAddress: null,
+        sku: null, unitOfMeasure: null, certificates: [], packagingSize: null, compatibleEquipment: [],
+        manufacturerName: null, manufacturerAddress: null, manufacturerEmail: null, distributorEmail: null,
+        bonusRate: null, feature1: null, feature1En: null, feature1Lv: null,
+        feature2: null, feature2En: null, feature2Lv: null, feature3: null, feature3En: null, feature3Lv: null,
+        feature4: null, feature4En: null, feature4Lv: null, specVolume: null, specType: null, specCountry: null,
+        isCustom: false, isDeleted: false, externalId: 'ext-1', lastSyncRunId: null,
+        createdAt: new Date(), updatedAt: new Date(),
+      } as never,
+    ])
+    vi.mocked(prisma.keyValueSetting.findUnique).mockRejectedValue(new Error('transient db error'))
+
+    const result = await getAdminProducts()
+    expect(result).toHaveLength(1)
+    expect(result[0].price).toBe(100)
+    expect(result[0].title).toBe('Base title')
+  })
 })

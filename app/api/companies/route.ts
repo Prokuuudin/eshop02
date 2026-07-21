@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { toNum, toNumOrNull } from '@/lib/decimal'
 
 function mapCompany(c: Awaited<ReturnType<typeof prisma.company.findMany>>[number]) {
   return {
@@ -16,8 +17,8 @@ function mapCompany(c: Awaited<ReturnType<typeof prisma.company.findMany>>[numbe
     contactEmail: c.contactEmail ?? undefined,
     accountManagerId: c.accountManagerId ?? undefined,
     paymentTermDays: c.paymentTermDays as 0 | 30 | 60 | 90,
-    creditLimit: c.creditLimit ?? undefined,
-    usedCredit: c.usedCredit,
+    creditLimit: toNumOrNull(c.creditLimit) ?? undefined,
+    usedCredit: toNum(c.usedCredit),
     approvalWorkflowEnabled: c.approvalWorkflowEnabled,
     createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt),
     teamMembers: (c as { members?: unknown[] }).members ?? [],

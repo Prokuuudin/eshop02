@@ -2,6 +2,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { Invoice as PrismaInvoice } from '@/generated/prisma/client'
 import type { Invoice, PaymentRecord } from '@/lib/invoices-store'
+import { toNum } from '@/lib/decimal'
 
 function mapDbToInvoice(row: PrismaInvoice): Invoice {
   return {
@@ -9,17 +10,17 @@ function mapDbToInvoice(row: PrismaInvoice): Invoice {
     invoiceNumber: row.invoiceNumber,
     companyId: row.companyId,
     orderId: row.orderId,
-    subtotal: row.subtotal,
+    subtotal: toNum(row.subtotal),
     taxRate: row.taxRate,
-    taxAmount: row.taxAmount,
-    total: row.total,
+    taxAmount: toNum(row.taxAmount),
+    total: toNum(row.total),
     status: row.status as Invoice['status'],
     issuedDate: row.issuedDate,
     dueDate: row.dueDate,
     paidDate: row.paidDate ?? undefined,
     paymentRecords: (row.paymentRecords as unknown as PaymentRecord[]) ?? [],
-    paidAmount: row.paidAmount,
-    remainingAmount: row.remainingAmount,
+    paidAmount: toNum(row.paidAmount),
+    remainingAmount: toNum(row.remainingAmount),
     notes: row.notes ?? undefined,
     items: row.items as Invoice['items'],
   }
@@ -97,8 +98,8 @@ export async function recordPaymentInDb(invoiceId: string, payment: Omit<Payment
 
   const existingRecords = (existing.paymentRecords as unknown as PaymentRecord[]) ?? []
   const allRecords = [...existingRecords, newRecord]
-  const paidAmount = existing.paidAmount + payment.amount
-  const remainingAmount = Math.max(0, existing.total - paidAmount)
+  const paidAmount = toNum(existing.paidAmount) + payment.amount
+  const remainingAmount = Math.max(0, toNum(existing.total) - paidAmount)
   const status = remainingAmount <= 0 ? 'paid' : existing.status
 
   const row = await prisma.invoice.update({

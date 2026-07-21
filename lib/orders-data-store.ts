@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
+import { toNum } from '@/lib/decimal'
 
 export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
@@ -76,14 +77,14 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     id: row.id,
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     items: row.items as ServerOrderItem[],
-    subtotal: row.subtotal,
-    tax: row.tax,
-    delivery: row.delivery,
+    subtotal: toNum(row.subtotal),
+    tax: toNum(row.tax),
+    delivery: toNum(row.delivery),
     deliveryMethod: row.deliveryMethod,
     paymentMethod: row.paymentMethod,
     promoCode: row.promoCode ?? undefined,
-    discount: row.discount,
-    total: row.total,
+    discount: toNum(row.discount),
+    total: toNum(row.total),
     firstName: row.firstName,
     lastName: row.lastName,
     email: row.email,

@@ -6,6 +6,7 @@ import { extractVat } from '@/lib/tax'
 import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
 import { calcDeliveryFee } from '@/lib/delivery'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
+import { toNum } from '@/lib/decimal'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
@@ -49,7 +50,7 @@ export async function getCatalogPrices(ids: string[]): Promise<Map<string, Catal
   const map = new Map<string, CatalogPrice>()
   for (const row of rows) {
     map.set(row.id, {
-      price: row.price,
+      price: toNum(row.price),
       bulkPricingTiers: sanitizeBulkTiers(row.bulkPricingTiers),
       bonusRate: typeof row.bonusRate === 'number' ? row.bonusRate : 0,
     })

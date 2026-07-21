@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import type { Product as PrismaProduct } from '@/generated/prisma/client'
 import productSubcategories from '@/data/product-subcategories.json'
+import { toNum, toNumOrNull } from '@/lib/decimal'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -26,8 +27,8 @@ export function mapDbToProduct(p: PrismaProduct): Product {
     titleLv: p.titleLv ?? undefined,
     description: p.description ?? undefined,
     brand: p.brand,
-    price: p.price,
-    oldPrice: p.oldPrice ?? undefined,
+    price: toNum(p.price),
+    oldPrice: toNumOrNull(p.oldPrice) ?? undefined,
     rating: p.rating,
     ratingCount: p.ratingCount,
     reviewCount: p.reviewCount,

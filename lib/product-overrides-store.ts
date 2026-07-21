@@ -157,13 +157,21 @@ function mapProductToDbCreate(p: Product, isCustom = false): any {
 }
 
 const getDbProducts = cache(async (): Promise<Product[]> => {
-  const rows = await prisma.product.findMany({
-    where: { isDeleted: false, isActive: true },
-    orderBy: { createdAt: 'desc' },
-  })
-  return rows.map(mapDbToProduct)
+  const [rows, overrides] = await Promise.all([
+    prisma.product.findMany({
+      where: { isDeleted: false, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    getProductOverrides(),
+  ])
+  return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })
 
+// Примечание: category-фильтр ниже сравнивается с базовым (пред-override) значением
+// Product.category на уровне SQL. Если admin когда-нибудь переопределит category
+// конкретного товара через override, для пагинированного по категории списка он
+// продолжит фильтроваться по старой базовой категории. Известное ограничение,
+// не решается здесь — переопределение category встречается на практике крайне редко.
 export async function getDbProductsPaginated(opts: {
   category?: string
   skip?: number
@@ -174,7 +182,7 @@ export async function getDbProductsPaginated(opts: {
     isActive: true,
     ...(opts.category ? { category: opts.category } : {}),
   }
-  const [rows, total] = await Promise.all([
+  const [rows, total, overrides] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -182,9 +190,10 @@ export async function getDbProductsPaginated(opts: {
       take: opts.take,
     }),
     prisma.product.count({ where }),
+    getProductOverrides(),
   ])
 
-  return { products: rows.map(mapDbToProduct), total }
+  return { products: mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), total }
 }
 
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
@@ -193,11 +202,11 @@ export const getMergedProducts = cache(async (): Promise<Product[]> => {
 
 // Для админки: без фильтра isActive, иначе скрытые товары нельзя ни увидеть, ни включить обратно.
 export const getAdminProducts = cache(async (): Promise<Product[]> => {
-  const rows = await prisma.product.findMany({
-    where: { isDeleted: false },
-    orderBy: { createdAt: 'desc' },
-  })
-  return rows.map(mapDbToProduct)
+  const [rows, overrides] = await Promise.all([
+    prisma.product.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' } }),
+    getProductOverrides(),
+  ])
+  return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })
 
 const OVERRIDES_KEY = 'product-overrides'

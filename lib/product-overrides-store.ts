@@ -200,8 +200,23 @@ export const getAdminProducts = cache(async (): Promise<Product[]> => {
   return rows.map(mapDbToProduct)
 })
 
+const OVERRIDES_KEY = 'product-overrides'
+
 export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {
-  return {}
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: OVERRIDES_KEY } })
+  if (!row) return {}
+  const parsed = row.value as unknown
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, ProductOverride>)
+    : {}
+}
+
+const writeOverridesMap = async (overrides: Record<string, ProductOverride>): Promise<void> => {
+  await prisma.keyValueSetting.upsert({
+    where: { key: OVERRIDES_KEY },
+    create: { key: OVERRIDES_KEY, value: overrides as unknown as Prisma.InputJsonValue },
+    update: { value: overrides as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord[]> => {

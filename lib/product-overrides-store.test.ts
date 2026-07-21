@@ -85,3 +85,33 @@ describe('mergeProductsWithOverrides', () => {
     expect(result.find((p) => p.id === 'p2')?.price).toBe(200)
   })
 })
+
+describe('getProductOverrides', () => {
+  it('returns {} when no override row exists yet', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    const result = await getProductOverrides()
+    expect(result).toEqual({})
+    expect(prisma.keyValueSetting.findUnique).toHaveBeenCalledWith({ where: { key: 'product-overrides' } })
+  })
+
+  it('returns the parsed map from the KeyValueSetting row', async () => {
+    const stored = { p1: { price: 149.99 }, p2: { description: 'Local text' } }
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      key: 'product-overrides',
+      value: stored,
+      updatedAt: new Date(),
+    } as never)
+    const result = await getProductOverrides()
+    expect(result).toEqual(stored)
+  })
+
+  it('defensively returns {} if the stored value is not an object', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      key: 'product-overrides',
+      value: 'not-an-object' as never,
+      updatedAt: new Date(),
+    } as never)
+    const result = await getProductOverrides()
+    expect(result).toEqual({})
+  })
+})

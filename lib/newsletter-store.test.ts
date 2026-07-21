@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -16,7 +16,12 @@ import {
   marketingUnsubUrl,
 } from '@/lib/newsletter-store'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.stubEnv('NEWSLETTER_UNSUB_SECRET', 'test-only-unsubscribe-secret')
+})
+
+afterEach(() => vi.unstubAllEnvs())
 
 describe('marketing unsubscribe token', () => {
   it('verifies its own token and is case-insensitive on email', () => {
@@ -38,6 +43,19 @@ describe('marketing unsubscribe token', () => {
     const token = parsed.searchParams.get('token') ?? ''
     expect(email).toBe('user@test.com')
     expect(verifyMarketingUnsubToken(email, token)).toBe(true)
+  })
+
+  it('fails closed in production when the dedicated secret is missing', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEWSLETTER_UNSUB_SECRET', '')
+    vi.stubEnv('SMTP_PASS', 'must-not-be-used')
+
+    expect(() => marketingUnsubToken('user@test.com')).toThrow(
+      'NEWSLETTER_UNSUB_SECRET is required in production'
+    )
+    expect(() => verifyMarketingUnsubToken('user@test.com', 'anything')).toThrow(
+      'NEWSLETTER_UNSUB_SECRET is required in production'
+    )
   })
 })
 

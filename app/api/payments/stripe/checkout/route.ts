@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createStripeClient } from '@/lib/stripe-client'
-import { saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
+import { getOrderPaymentStatus, saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
 import { canAccessOrder, getServerOrderById, type ServerOrder } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { getSiteUrl } from '@/lib/site-url'
@@ -100,10 +100,31 @@ export async function POST(req: NextRequest) {
     if (order.paymentStatus === 'paid') {
       return NextResponse.json({ error: 'Order is already paid' }, { status: 409 })
     }
+    if (order.stockReservationStatus === 'released') {
+      return NextResponse.json({ error: 'Stock reservation expired' }, { status: 409 })
+    }
     const caller = await getServerUser()
     const ownsAsGuest = !caller && !order.userId && !!email && !!order.email && email.trim().toLowerCase() === order.email.toLowerCase()
     if (!canAccessOrder(order, caller) && !ownsAsGuest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    // Keep one active Checkout Session per order. Reusing the existing URL avoids
+    // conflicting expiry webhooks and prevents customers being charged twice.
+    const existingPayment = await getOrderPaymentStatus(orderId)
+    if (existingPayment?.paymentStatus === 'paid') {
+      return NextResponse.json({ error: 'Order is already paid' }, { status: 409 })
+    }
+    if (existingPayment?.paymentStatus === 'pending' && existingPayment.sessionId) {
+      const existingSession = await stripe.checkout.sessions.retrieve(existingPayment.sessionId)
+      if (existingSession.status === 'open' && existingSession.url) {
+        return NextResponse.json({
+          url: existingSession.url,
+          sessionId: existingSession.id,
+          amountExpected: existingSession.amount_total,
+          reused: true,
+        })
+      }
     }
 
     // Authoritative amount: built from the order stored server-side, never from client-supplied
@@ -124,8 +145,13 @@ export async function POST(req: NextRequest) {
       metadata: {
         orderId
       },
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       success_url: `${baseUrl}/order/${orderId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/order/${orderId}?payment=cancelled`
+    }, {
+      // Concurrent retries observing the same previous binding resolve to one
+      // Stripe session. Once that session expires its id becomes the next key seed.
+      idempotencyKey: `order-checkout-${orderId}-${existingPayment?.sessionId ?? 'initial'}`,
     })
 
     await saveOrderPaymentStatus({
@@ -133,7 +159,8 @@ export async function POST(req: NextRequest) {
       paymentStatus: 'pending',
       sessionId: session.id,
       paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
-      customerEmail: email || order.email
+      customerEmail: email || order.email,
+      replaceSession: true,
     })
 
     return NextResponse.json({

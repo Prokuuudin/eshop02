@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -14,11 +15,30 @@ const TYPE_COLOR: Record<string, string> = {
 const ALLOWED_TYPES = ['info', 'success', 'warning', 'promo'] as const
 type AllowedType = typeof ALLOWED_TYPES[number]
 
+const EMAIL_NOTIFICATION_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
+const MAX_TITLE_LENGTH = 160
+const MAX_MESSAGE_LENGTH = 5000
+const MAX_LINK_LENGTH = 500
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getServerUser()
     if (!user) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+
+    const limit = await checkRateLimit(`notification-email:user:${user.id}`, EMAIL_NOTIFICATION_LIMIT)
+    if (limit.limited) {
+      const retryAfter = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000))
+      return NextResponse.json({ error: 'rate_limited', resetAt: limit.resetAt }, {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfter) },
+      })
+    }
+
+    const contentLength = Number(req.headers.get('content-length') ?? 0)
+    if (contentLength > 16_384) {
+      return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
     }
 
     const body = await req.json() as {
@@ -32,6 +52,12 @@ export async function POST(req: NextRequest) {
     const message = body.message?.trim() ?? ''
     if (!title || !message) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
+    }
+    if (title.length > MAX_TITLE_LENGTH || message.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
+    }
+    if (typeof body.link === 'string' && body.link.length > MAX_LINK_LENGTH) {
+      return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
     }
 
     const type: AllowedType = (ALLOWED_TYPES as readonly string[]).includes(body.type ?? '')

@@ -121,15 +121,31 @@ export const createReview = async (input: CreateReviewInput): Promise<ReviewReco
   return mapDbToReview(row)
 }
 
-export const markReviewHelpful = async (reviewId: string): Promise<boolean> => {
-  const existing = await prisma.review.findUnique({ where: { id: reviewId } })
-  if (!existing || existing.status !== 'approved') return false
+class ReviewNotFoundError extends Error {}
 
-  await prisma.review.update({
-    where: { id: reviewId },
-    data: { helpful: { increment: 1 } },
-  })
-  return true
+export type HelpfulVoteResult = 'incremented' | 'duplicate' | 'not_found'
+
+export const markReviewHelpful = async (
+  reviewId: string,
+  voterKey: string,
+): Promise<HelpfulVoteResult> => {
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.reviewHelpfulVote.create({ data: { reviewId, voterKey } })
+      const changed = await tx.review.updateMany({
+        where: { id: reviewId, status: 'approved' },
+        data: { helpful: { increment: 1 } },
+      })
+      if (changed.count !== 1) throw new ReviewNotFoundError()
+    })
+    return 'incremented'
+  } catch (error) {
+    if (error instanceof ReviewNotFoundError) return 'not_found'
+    if ((error as { code?: string })?.code === 'P2002') return 'duplicate'
+    // A missing/deleted review can surface as a foreign-key violation before updateMany.
+    if ((error as { code?: string })?.code === 'P2003') return 'not_found'
+    throw error
+  }
 }
 
 export const updateReviewStatus = async (reviewId: string, status: ReviewModerationStatus): Promise<boolean> => {

@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { calculateDiscount } from '@/lib/promo-codes'
 import { extractVat } from '@/lib/tax'
@@ -46,11 +47,13 @@ function sanitizeBulkTiers(value: unknown): BulkTier[] | undefined {
 }
 
 /** Fetch authoritative catalog prices for a set of product ids. */
-export async function getCatalogPrices(ids: string[]): Promise<Map<string, CatalogPrice>> {
+type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting'>
+
+export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): Promise<Map<string, CatalogPrice>> {
   const uniqueIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))]
   if (uniqueIds.length === 0) return new Map()
 
-  const rows = await prisma.product.findMany({
+  const rows = await db.product.findMany({
     where: { id: { in: uniqueIds }, isDeleted: false },
     select: { id: true, price: true, bulkPricingTiers: true, bonusRate: true },
   })
@@ -70,8 +73,8 @@ export async function getCatalogPrices(ids: string[]): Promise<Map<string, Catal
  * Resolve each line item's unit price from the catalog (bulk-tier aware).
  * Falls back to the sanitized client price only when the product is missing from the catalog.
  */
-export async function resolveLineItems(items: LineItemInput[]): Promise<ResolvedLineItem[]> {
-  const prices = await getCatalogPrices(items.map((i) => i.id))
+export async function resolveLineItems(items: LineItemInput[], db: PricingDb = prisma): Promise<ResolvedLineItem[]> {
+  const prices = await getCatalogPrices(items.map((i) => i.id), db)
 
   return items.map((item) => {
     const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0))
@@ -96,12 +99,13 @@ export async function resolveLineItems(items: LineItemInput[]): Promise<Resolved
 /** Validate a promo code against the DB and return its discount percentage (0 if invalid). */
 export async function getServerPromoDiscountPct(
   code: string | undefined | null,
-  subtotal: number
+  subtotal: number,
+  db: PricingDb = prisma
 ): Promise<number> {
   const trimmed = code?.toString().trim()
   if (!trimmed) return 0
 
-  const promo = await prisma.promoCode.findFirst({
+  const promo = await db.promoCode.findFirst({
     where: { code: trimmed.toUpperCase(), active: true },
   })
   if (!promo) return 0
@@ -134,11 +138,11 @@ export type RecomputedPricing = {
 }
 
 /** Recompute an order's money fields authoritatively from the catalog. */
-export async function recomputeOrderPricing(input: RecomputeInput): Promise<RecomputedPricing> {
-  const items = await resolveLineItems(input.items)
+export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb = prisma): Promise<RecomputedPricing> {
+  const items = await resolveLineItems(input.items, db)
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const discountPct = await getServerPromoDiscountPct(input.promoCode, subtotal)
+  const discountPct = await getServerPromoDiscountPct(input.promoCode, subtotal, db)
   const discount = discountPct > 0 ? calculateDiscount(subtotal, discountPct) : 0
 
   const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount)
@@ -148,7 +152,7 @@ export async function recomputeOrderPricing(input: RecomputeInput): Promise<Reco
 
   // Admin-configured bonus program (rate/caps) — the only authoritative source;
   // never trust a client-supplied config.
-  const bonusConfig = await getBonusProgramConfig()
+  const bonusConfig = await getBonusProgramConfig(db)
 
   let bonusSpent = 0
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
-import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -15,18 +15,6 @@ export async function POST(req: NextRequest) {
   try {
     if (Math.random() < 0.05) void gcRateLimitStore()
 
-    const ip = getClientIp(req)
-    const rl = await checkRateLimit(`sync:${ip}`)
-    if (rl.limited) {
-      return NextResponse.json(
-        { error: 'too_many_attempts', resetAt: rl.resetAt },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
-        }
-      )
-    }
-
     const body = await req.json()
     const { email, password } = body
 
@@ -35,6 +23,22 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase()
+    if (normalizedEmail.length > 254) {
+      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
+    }
+    const ip = getClientIp(req)
+    const limitKeys = [`sync:ip:${ip}`, `sync:email:${normalizedEmail}`]
+    const limits = await Promise.all(limitKeys.map((key) => checkRateLimit(key)))
+    const limited = limits.find((result) => result.limited)
+    if (limited) {
+      return NextResponse.json(
+        { error: 'too_many_attempts', resetAt: limited.resetAt },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.max(1, Math.ceil((limited.resetAt - Date.now()) / 1000))) },
+        }
+      )
+    }
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } })
 
     // Account must already exist — created only via /api/auth/register-card (real card)
@@ -47,13 +51,15 @@ export async function POST(req: NextRequest) {
     if (!valid) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
+    await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
     // Password verified — update only safe personal fields
+    // cardNumber is deliberately excluded: it is a login identifier assigned
+    // only by verified registration or an administrative workflow.
     await prisma.user.update({
       where: { id: existing.id },
       data: {
         name: body.name ?? undefined,
         phone: body.phone ?? undefined,
-        cardNumber: body.cardNumber?.trim() ?? undefined,
         avatarUrl: body.avatarUrl ?? undefined,
       },
     })

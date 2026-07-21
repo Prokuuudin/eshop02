@@ -7,12 +7,15 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       delete: vi.fn(),
       aggregate: vi.fn(),
     },
     product: {
       updateMany: vi.fn(),
     },
+    reviewHelpfulVote: { create: vi.fn() },
+    $transaction: vi.fn(),
   },
 }))
 
@@ -22,6 +25,7 @@ import {
   deleteReview,
   recomputeProductRating,
   updateReviewStatus,
+  markReviewHelpful,
 } from '@/lib/reviews-data-store'
 
 const dbReview = (overrides: Record<string, unknown> = {}) => ({
@@ -38,7 +42,30 @@ const dbReview = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(prisma))
+})
+
+describe('markReviewHelpful', () => {
+  it('creates one unique vote and increments an approved review atomically', async () => {
+    vi.mocked(prisma.reviewHelpfulVote.create as any).mockResolvedValue({})
+    vi.mocked(prisma.review.updateMany as any).mockResolvedValue({ count: 1 })
+
+    await expect(markReviewHelpful('rvw_1', 'user:u1')).resolves.toBe('incremented')
+    expect(prisma.reviewHelpfulVote.create).toHaveBeenCalledWith({
+      data: { reviewId: 'rvw_1', voterKey: 'user:u1' },
+    })
+    expect(prisma.review.updateMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not increment when the unique vote already exists', async () => {
+    vi.mocked(prisma.reviewHelpfulVote.create as any).mockRejectedValue({ code: 'P2002' })
+
+    await expect(markReviewHelpful('rvw_1', 'user:u1')).resolves.toBe('duplicate')
+    expect(prisma.review.updateMany).not.toHaveBeenCalled()
+  })
+})
 
 describe('createReview', () => {
   it('creates review with pending status (premoderation)', async () => {

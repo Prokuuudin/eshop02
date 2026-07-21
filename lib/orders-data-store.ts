@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
 import { toNum } from '@/lib/decimal'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 
 export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
@@ -44,6 +45,9 @@ export type ServerOrder = {
   paymentStatus?: ServerPaymentStatus
   paymentProvider?: 'stripe' | 'manual'
   paymentSessionId?: string
+  stockReservationStatus?: 'reserved' | 'committed' | 'released'
+  stockReservedUntil?: string
+  stockReleasedAt?: string
   language?: string
   userId?: string
   companyId?: string
@@ -59,6 +63,25 @@ export class InsufficientStockError extends Error {
     this.items = items
   }
 }
+
+export class InsufficientBonusPointsError extends Error {
+  constructor() {
+    super('Insufficient bonus points')
+    this.name = 'InsufficientBonusPointsError'
+  }
+}
+
+export class PromoCodeUsageLimitError extends Error {
+  constructor() {
+    super('Promo code usage limit reached')
+    this.name = 'PromoCodeUsageLimitError'
+  }
+}
+
+export type PrepareOrder = (
+  tx: ExtendedTransactionClient,
+  currentBonusBalance: number | null
+) => Promise<Omit<ServerOrder, 'id'>>
 
 // Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
 // Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
@@ -97,6 +120,9 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
     paymentProvider: (row.paymentProvider as 'stripe' | 'manual') ?? undefined,
     paymentSessionId: row.paymentSessionId ?? undefined,
+    stockReservationStatus: row.stockReservationStatus as ServerOrder['stockReservationStatus'],
+    stockReservedUntil: row.stockReservedUntil?.toISOString(),
+    stockReleasedAt: row.stockReleasedAt?.toISOString(),
     language: (row as Record<string, unknown>).language as string ?? 'ru',
     userId: row.userId ?? undefined,
     companyId: row.companyId ?? undefined,
@@ -127,6 +153,9 @@ function buildOrderData(order: Omit<ServerOrder, 'id'>) {
     paymentStatus: order.paymentStatus ?? 'unpaid',
     paymentProvider: order.paymentProvider ?? null,
     paymentSessionId: order.paymentSessionId ?? null,
+    stockReservationStatus: order.stockReservationStatus ?? 'committed',
+    stockReservedUntil: order.stockReservedUntil ? new Date(order.stockReservedUntil) : null,
+    stockReleasedAt: order.stockReleasedAt ? new Date(order.stockReleasedAt) : null,
     language: order.language ?? 'ru',
     userId: order.userId ?? null,
     companyId: order.companyId ?? null,
@@ -134,10 +163,26 @@ function buildOrderData(order: Omit<ServerOrder, 'id'>) {
 }
 
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
-const createOrderWithSideEffects = async (id: string, order: Omit<ServerOrder, 'id'>): Promise<PrismaOrder> => {
-  const data = buildOrderData(order)
-
+const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder): Promise<PrismaOrder> => {
   return prisma.$transaction(async (tx) => {
+    const currentUser = initialOrder.userId
+      ? await tx.user.findUnique({ where: { id: initialOrder.userId }, select: { bonusPoints: true } })
+      : null
+    const order = prepare ? await prepare(tx, currentUser?.bonusPoints ?? null) : initialOrder
+    const spent = Math.max(0, Math.round(order.bonusSpent ?? 0))
+
+    // The balance used for pricing and the conditional debit live in this transaction.
+    // If another checkout spends the same points first, this update matches zero rows and
+    // the entire order (including its discounted total) is rolled back.
+    if (order.userId && spent > 0) {
+      const debit = await tx.user.updateMany({
+        where: { id: order.userId, bonusPoints: { gte: spent } },
+        data: { bonusPoints: { decrement: spent } },
+      })
+      if (debit.count !== 1) throw new InsufficientBonusPointsError()
+    }
+
+    const data = buildOrderData(order)
     const created = await tx.order.create({ data: { id, ...data } })
 
     // Decrement stock for each item. updateMany's where clause (isDeleted: false,
@@ -158,28 +203,28 @@ const createOrderWithSideEffects = async (id: string, order: Omit<ServerOrder, '
       throw new InsufficientStockError(outOfStockIds)
     }
 
-    // Increment promo usedCount so maxUses limit is enforced
+    // Atomically reserve a promo use. The pricing lookup happens in this same
+    // transaction, but this conditional update is the concurrency guard: only
+    // one checkout can claim the final available use.
     if (order.promoCode) {
-      await tx.promoCode.updateMany({
-        where: { code: order.promoCode.toUpperCase(), active: true },
+      const promoUse = await tx.promoCode.updateMany({
+        where: {
+          code: order.promoCode.toUpperCase(),
+          active: true,
+          OR: [{ maxUses: null }, { usedCount: { lt: tx.promoCode.fields.maxUses } }],
+        },
         data: { usedCount: { increment: 1 } },
       })
+      if (promoUse.count !== 1) throw new PromoCodeUsageLimitError()
     }
 
-    // Apply bonus balance changes once, at creation: spent points debit, earned points credit.
-    // Values are already recomputed and capped server-side (recomputeOrderPricing).
-    const bonusDelta = (order.bonusEarned ?? 0) - (order.bonusSpent ?? 0)
-    if (order.userId && bonusDelta !== 0) {
-      const user = await tx.user.findUnique({
+    // Credit earned points separately after the guarded debit.
+    const earned = Math.max(0, Math.round(order.bonusEarned ?? 0))
+    if (order.userId && earned > 0) {
+      await tx.user.updateMany({
         where: { id: order.userId },
-        select: { bonusPoints: true },
+        data: { bonusPoints: { increment: earned } },
       })
-      if (user) {
-        await tx.user.update({
-          where: { id: order.userId },
-          data: { bonusPoints: Math.max(0, user.bonusPoints + bonusDelta) },
-        })
-      }
     }
 
     return created
@@ -204,12 +249,12 @@ const generateNextOrderId = async (): Promise<string> => {
  * per-browser counters collide across customers and would silently overwrite foreign orders.
  * A concurrent insert can win the generated id — retry with a fresh one.
  */
-export const createServerOrder = async (order: Omit<ServerOrder, 'id'>): Promise<ServerOrder> => {
+export const createServerOrder = async (order: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder): Promise<ServerOrder> => {
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt++) {
     const id = await generateNextOrderId()
     try {
-      const row = await createOrderWithSideEffects(id, order)
+      const row = await createOrderWithSideEffects(id, order, prepare)
       return mapDbToServerOrder(row)
     } catch (e) {
       if (!isUniqueConflict(e)) throw e
@@ -235,21 +280,87 @@ export const getServerOrderById = async (orderId: string): Promise<ServerOrder |
   return row ? mapDbToServerOrder(row) : null
 }
 
+type ReservationTx = ExtendedTransactionClient
+
+async function releaseReservation(
+  tx: ReservationTx,
+  order: Pick<PrismaOrder, 'id' | 'items'>,
+  extraWhere: { stockReservedUntil?: { lte: Date } } = {},
+): Promise<boolean> {
+  const released = await tx.order.updateMany({
+    where: { id: order.id, stockReservationStatus: 'reserved', ...extraWhere },
+    data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },
+  })
+  if (released.count !== 1) return false
+
+  for (const item of order.items as ServerOrderItem[]) {
+    if (item.id && Number.isInteger(item.quantity) && item.quantity > 0) {
+      await tx.product.updateMany({
+        where: { id: item.id, isDeleted: false },
+        data: { stock: { increment: item.quantity } },
+      })
+    }
+  }
+  return true
+}
+
+export async function applyOrderReservationPaymentState(
+  tx: ReservationTx,
+  orderId: string,
+  paymentStatus: ServerPaymentStatus,
+): Promise<void> {
+  if (paymentStatus === 'paid') {
+    await tx.order.updateMany({
+      where: { id: orderId, stockReservationStatus: 'reserved' },
+      data: { stockReservationStatus: 'committed', stockReservedUntil: null },
+    })
+    return
+  }
+  if (paymentStatus === 'failed') {
+    const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
+    if (order) await releaseReservation(tx, order)
+  }
+}
+
+/** Opportunistic cleanup; the conditional transition makes concurrent cleaners idempotent. */
+export async function releaseExpiredStockReservations(now = new Date()): Promise<number> {
+  const expired = await prisma.order.findMany({
+    where: { stockReservationStatus: 'reserved', stockReservedUntil: { lte: now } },
+    select: { id: true, items: true },
+    take: 50,
+  })
+  let count = 0
+  for (const order of expired) {
+    const released = await prisma.$transaction((tx) =>
+      releaseReservation(tx, order, { stockReservedUntil: { lte: now } }))
+    if (released) count += 1
+  }
+  return count
+}
+
 export const updateServerOrderPayment = async (
   orderId: string,
   updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>
 ): Promise<ServerOrder | null> => {
-  const existing = await prisma.order.findUnique({ where: { id: orderId } })
-  if (!existing) return null
-
-  const row = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      paymentStatus: updates.paymentStatus ?? undefined,
-      paymentProvider: updates.paymentProvider ?? undefined,
-      paymentSessionId: updates.paymentSessionId ?? undefined,
-    },
+  const row = await prisma.$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({ where: { id: orderId } })
+    if (!existing) return null
+    if (updates.paymentStatus) {
+      await applyOrderReservationPaymentState(tx, orderId, updates.paymentStatus)
+    }
+    // `paid` is terminal. A delayed verify/expiry request must never downgrade it.
+    if (existing.paymentStatus === 'paid' && updates.paymentStatus && updates.paymentStatus !== 'paid') {
+      return existing
+    }
+    return tx.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: updates.paymentStatus ?? undefined,
+        paymentProvider: updates.paymentProvider ?? undefined,
+        paymentSessionId: updates.paymentSessionId ?? undefined,
+      },
+    })
   })
 
-  return mapDbToServerOrder(row)
+  return row ? mapDbToServerOrder(row) : null
 }

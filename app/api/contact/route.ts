@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/mailer'
-
-type RateLimitRecord = {
-  count: number
-  resetAt: number
-}
+import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 type ContactPayload = {
   name: string
@@ -16,24 +13,11 @@ type ContactPayload = {
   turnstileToken?: string
 }
 
-type TurnstileResponse = {
-  success: boolean
-  'error-codes'?: string[]
-}
-
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 const RATE_LIMIT_MAX_REQUESTS = 5
+const CONTACT_LIMIT = { windowMs: RATE_LIMIT_WINDOW_MS, maxAttempts: RATE_LIMIT_MAX_REQUESTS }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const globalStore = globalThis as typeof globalThis & {
-  __contactRateLimitStore?: Map<string, RateLimitRecord>
-}
-
-const rateLimitStore = globalStore.__contactRateLimitStore ?? new Map<string, RateLimitRecord>()
-if (!globalStore.__contactRateLimitStore) {
-  globalStore.__contactRateLimitStore = rateLimitStore
-}
 
 export const runtime = 'nodejs'
 
@@ -54,30 +38,12 @@ function getClientIp(request: NextRequest): string {
   return request.headers.get('x-real-ip') ?? 'unknown'
 }
 
-function consumeRateLimit(ip: string): { limited: boolean; retryAfter: number } {
-  const now = Date.now()
-  const current = rateLimitStore.get(ip)
-
-  if (!current || current.resetAt <= now) {
-    rateLimitStore.set(ip, {
-      count: 1,
-      resetAt: now + RATE_LIMIT_WINDOW_MS
-    })
-
-    return { limited: false, retryAfter: 0 }
-  }
-
-  if (current.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return {
-      limited: true,
-      retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000))
-    }
-  }
-
-  current.count += 1
-  rateLimitStore.set(ip, current)
-
-  return { limited: false, retryAfter: 0 }
+function rateLimitedResponse(resetAt: number): NextResponse {
+  const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))
+  return NextResponse.json(
+    { ok: false, code: 'rate_limited', retryAfter },
+    { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+  )
 }
 
 function validatePayload(payload: ContactPayload, nowMs: number): string | null {
@@ -113,54 +79,20 @@ function validatePayload(payload: ContactPayload, nowMs: number): string | null 
   return null
 }
 
-async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY
-  if (!secret) {
-    return true
-  }
-
-  const formData = new URLSearchParams()
-  formData.set('secret', secret)
-  formData.set('response', token)
-  if (ip && ip !== 'unknown') {
-    formData.set('remoteip', ip)
-  }
-
-  try {
-    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formData.toString()
-    })
-
-    if (!response.ok) {
-      return false
-    }
-
-    const result = (await response.json()) as TurnstileResponse
-    return Boolean(result.success)
-  } catch {
-    return false
-  }
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const ip = getClientIp(request)
-  const rateLimit = consumeRateLimit(ip)
-
-  if (rateLimit.limited) {
-    return NextResponse.json(
-      { ok: false, code: 'rate_limited', retryAfter: rateLimit.retryAfter },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(rateLimit.retryAfter)
-        }
-      }
-    )
+  let captchaRequired: boolean
+  try {
+    captchaRequired = isTurnstileRequired()
+  } catch (error) {
+    if (error instanceof TurnstileConfigurationError) {
+      return NextResponse.json({ ok: false, code: 'captcha_not_configured' }, { status: 503 })
+    }
+    throw error
   }
+
+  const ip = getClientIp(request)
+  const ipLimit = await checkRateLimit(`contact:ip:${ip}`, CONTACT_LIMIT)
+  if (ipLimit.limited) return rateLimitedResponse(ipLimit.resetAt)
 
   const origin = request.headers.get('origin')
   const host = request.headers.get('host')
@@ -188,7 +120,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, code: validationError }, { status })
   }
 
-  if (process.env.TURNSTILE_SECRET_KEY) {
+  const normalizedEmail = payload.email.trim().toLowerCase()
+  const emailLimit = await checkRateLimit(`contact:email:${normalizedEmail}`, CONTACT_LIMIT)
+  if (emailLimit.limited) return rateLimitedResponse(emailLimit.resetAt)
+
+  if (captchaRequired) {
     const token = (payload.turnstileToken ?? '').trim()
     if (!token) {
       return NextResponse.json({ ok: false, code: 'captcha_required' }, { status: 400 })
@@ -210,7 +146,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           <h2 style="color:#4f46e5;margin-bottom:16px">Новое сообщение с сайта</h2>
           <table style="width:100%;border-collapse:collapse;font-size:14px">
             <tr><td style="padding:8px 12px;color:#6b7280;width:100px;vertical-align:top">Имя</td><td style="padding:8px 12px">${escapeHtml(payload.name.trim())}</td></tr>
-            <tr style="background:#f9fafb"><td style="padding:8px 12px;color:#6b7280;vertical-align:top">Email</td><td style="padding:8px 12px"><a href="mailto:${escapeHtml(payload.email.trim())}">${escapeHtml(payload.email.trim())}</a></td></tr>
+            <tr style="background:#f9fafb"><td style="padding:8px 12px;color:#6b7280;vertical-align:top">Email</td><td style="padding:8px 12px"><a href="mailto:${escapeHtml(normalizedEmail)}">${escapeHtml(normalizedEmail)}</a></td></tr>
             <tr><td style="padding:8px 12px;color:#6b7280;vertical-align:top">Тема</td><td style="padding:8px 12px">${escapeHtml(payload.subject.trim())}</td></tr>
           </table>
           <div style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:6px;font-size:14px;white-space:pre-wrap">${escapeHtml(payload.message.trim())}</div>

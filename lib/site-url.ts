@@ -1,5 +1,4 @@
 const LOCAL_DEV_URL = 'http://localhost:3000'
-const PROD_FALLBACK_URL = 'https://example.com'
 
 function normalizeUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url
@@ -21,11 +20,11 @@ export function getSiteUrl(): string {
     return normalizeUrl(withProtocol)
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    return LOCAL_DEV_URL
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXT_PUBLIC_SITE_URL or VERCEL_URL must be configured in production')
   }
 
-  return PROD_FALLBACK_URL
+  return LOCAL_DEV_URL
 }
 
 export function getMetadataBase(): URL {

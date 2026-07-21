@@ -6,6 +6,7 @@ import { getSiteUrl } from '@/lib/site-url';
 import { translations, type Language } from '@/data/translations';
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 import { DEFAULT_LANGUAGE, pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 type PageProps = { params: Promise<{ lang: string; id: string }> }
 
@@ -82,7 +83,7 @@ export default async function BrandPage({ params }: PageProps) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
       <div className="max-w-xl mx-auto py-8 px-4">
         <Link href="/" className="text-primary hover:underline">← {t['meta.backToBrands'] ?? 'Back to brands'}</Link>
         <div className="flex flex-col items-center mt-6">

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { guardCookieAuthenticatedApiMutation } from '@/lib/api-guard'
 
 // Language routing (see lib/i18n-routing.ts for the URL scheme):
 //  - /ru/*          → 308 to the unprefixed URL (single canonical for the default language)
@@ -12,6 +13,10 @@ const LANGUAGE_COOKIE = 'eshop_language'
 
 export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl
+
+  if (pathname.startsWith('/api/')) {
+    return guardCookieAuthenticatedApiMutation(request) ?? NextResponse.next()
+  }
 
   // Default language: strip the explicit /ru prefix — one canonical URL.
   if (pathname === '/ru' || pathname.startsWith('/ru/')) {
@@ -42,5 +47,5 @@ export function middleware(request: NextRequest): NextResponse {
 export const config = {
   // Everything except API routes, Next internals and static files (dot in the
   // last segment covers sitemap.xml, robots.txt, images, fonts, …).
-  matcher: ['/((?!api/|_next/|.*\\.[^/]*$).*)'],
+  matcher: ['/api/:path*', '/((?!api/|_next/|.*\\.[^/]*$).*)'],
 }

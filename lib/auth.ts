@@ -3,7 +3,7 @@ import { useAccessRequestStore } from '@/lib/access-request-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 
 export const FIRST_LOGIN_PASSWORD =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD) || 'Welcome1!'
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD) || 'Welcome1!Change'
 
 export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 export type PlatformRole = 'customer' | 'admin'
@@ -364,6 +364,7 @@ export const submitNoCardRequest = (data: {
   certificateName: string
   message?: string
   language?: 'ru' | 'en' | 'lv'
+  turnstileToken?: string
 }): { success: boolean; error?: string } => {
   const users = readUsers()
   const normalizedEmail = normalizeEmail(data.email)
@@ -389,6 +390,7 @@ export const submitNoCardRequest = (data: {
     certificateName: data.certificateName,
     message: data.message,
     language: data.language,
+    turnstileToken: data.turnstileToken,
   })
 
   return { success: true }
@@ -427,7 +429,6 @@ export const loginUserAuto = async (
         password,
         name: localUser?.name,
         phone: localUser?.phone,
-        cardNumber: localUser?.cardNumber ?? (isEmail ? undefined : normalizeCard(trimmed)),
         avatarUrl: localUser?.avatarUrl,
       }),
     })

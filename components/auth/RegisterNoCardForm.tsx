@@ -1,5 +1,6 @@
 ﻿'use client';
 import React, { useRef, useState } from 'react';
+import Script from 'next/script';
 import { Upload, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import PhoneInput from '@/components/ui/phone-input';
 import { useTranslation } from '@/lib/use-translation';
 import { submitNoCardRequest } from '@/lib/auth';
 import { prepareCertificateDataUrl } from '@/lib/compress-image';
+import { TURNSTILE_SCRIPT_SRC, useTurnstile } from '@/lib/use-turnstile';
 
 type Props = {
     onClose?: () => void;
@@ -25,6 +27,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const turnstile = useTurnstile();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,6 +51,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 certificateName: certificate.name,
                 message: message.trim() || undefined,
                 language: language as 'ru' | 'en' | 'lv',
+                turnstileToken: turnstile.token,
             });
 
             if (!result.success) {
@@ -62,6 +66,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             setCertificate(null);
             setFileKey((k) => k + 1);
             setMessage('');
+            turnstile.reset();
         } catch (err) {
             setError(
                 (err as Error).message === 'file_too_large'
@@ -96,6 +101,9 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             onSubmit={handleSubmit}
             className="register-form space-y-3 bg-card p-3 rounded-lg"
         >
+            {turnstile.enabled && (
+                <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
+            )}
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>
             )}
@@ -219,8 +227,9 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                     placeholder={t('auth.messagePlaceholder')}
                 />
             </div>
+            {turnstile.enabled && <div ref={turnstile.containerRef} className="mb-2" />}
             <div className="register-form__actions flex gap-2">
-                <Button type="submit" className="register-form__submit flex-1" disabled={submitting}>
+                <Button type="submit" className="register-form__submit flex-1" disabled={submitting || (turnstile.enabled && !turnstile.token)}>
                     {submitting
                         ? t('common.sending', 'Отправка...')
                         : t('auth.sendRequest', 'Отправить заявку')}

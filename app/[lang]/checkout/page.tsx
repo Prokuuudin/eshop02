@@ -1,5 +1,6 @@
 'use client';
 import React, { useRef, useState } from 'react';
+import Script from 'next/script';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
 import { burstConfetti } from '@/lib/confetti';
+import { TURNSTILE_SCRIPT_SRC, useTurnstile } from '@/lib/use-turnstile';
 import {
     CustomerDetailsSection,
     type CheckoutFormData,
@@ -81,6 +83,7 @@ export default function CheckoutPage() {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const turnstile = useTurnstile();
     const applyBtnRef = useRef<HTMLButtonElement>(null)
     const selectedItemIds = React.useMemo(() => {
         const raw = searchParams.get('items');
@@ -337,6 +340,7 @@ export default function CheckoutPage() {
                         ...orderData,
                         createdAt: orderData.createdAt.toISOString(),
                     },
+                    turnstileToken: turnstile.token,
                 }),
             });
             if (!response.ok) {
@@ -348,6 +352,7 @@ export default function CheckoutPage() {
                         ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
                         : 'Не удалось оформить заказ. Попробуйте ещё раз.';
                 showToast(message, 'error');
+                turnstile.reset();
                 setIsSubmitting(false);
                 return;
             }
@@ -359,6 +364,7 @@ export default function CheckoutPage() {
             }
             orderId = String(payload.orderId);
         } catch {
+            turnstile.reset();
             showToast('Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.', 'error');
             setIsSubmitting(false);
             return;
@@ -566,6 +572,9 @@ export default function CheckoutPage() {
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Форма */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
+                    {turnstile.enabled && (
+                        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
+                    )}
                     <CustomerDetailsSection
                         formData={formData}
                         setFormData={setFormData}
@@ -725,11 +734,12 @@ export default function CheckoutPage() {
                         </RadioGroup>
                     </div>
 
+                    {turnstile.enabled && <div ref={turnstile.containerRef} />}
                     <div className="flex gap-3">
                         <Button
                             type="submit"
                             className="flex-1"
-                            disabled={!wholesaleGuard.isMinimumReached || isSubmitting}
+                            disabled={!wholesaleGuard.isMinimumReached || isSubmitting || (turnstile.enabled && !turnstile.token)}
                         >
                             {t('checkout.submit')}
                         </Button>

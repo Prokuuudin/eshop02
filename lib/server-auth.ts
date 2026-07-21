@@ -5,8 +5,9 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { User as PrismaUser } from '@/generated/prisma/client'
+import { SESSION_COOKIE } from '@/lib/auth-constants'
 
-export const SESSION_COOKIE = 'eshop_session'
+export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
 
 export type ServerUser = {

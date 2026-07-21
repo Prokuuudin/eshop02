@@ -3,7 +3,19 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
-vi.mock('@/lib/orders-data-store', () => ({ createServerOrder: vi.fn() }))
+vi.mock('@/lib/orders-data-store', () => ({
+  createServerOrder: vi.fn(),
+  releaseExpiredStockReservations: vi.fn(),
+  InsufficientStockError: class InsufficientStockError extends Error {},
+  InsufficientBonusPointsError: class InsufficientBonusPointsError extends Error {},
+  PromoCodeUsageLimitError: class PromoCodeUsageLimitError extends Error {},
+}))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
+vi.mock('@/lib/turnstile-server', () => ({
+  verifyTurnstile: vi.fn(),
+  isTurnstileRequired: vi.fn(),
+  TurnstileConfigurationError: class TurnstileConfigurationError extends Error {},
+}))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
@@ -15,6 +27,9 @@ vi.mock('@/lib/locale-config-server-store', () => ({
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
 import { createServerOrder } from '@/lib/orders-data-store'
+import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
@@ -57,8 +72,8 @@ describe('POST /api/orders — admin notification', () => {
     vi.clearAllMocks()
     vi.mocked(getServerUser).mockResolvedValue(null)
     // Server assigns the canonical id — echo the payload back under a generated id
-    vi.mocked(createServerOrder).mockImplementation(async (order) => ({
-      ...(order as object),
+    vi.mocked(createServerOrder).mockImplementation(async (order, prepare) => ({
+      ...((prepare ? await prepare({} as never, null) : order) as object),
       id: '1001',
     }) as never)
     vi.mocked(getTemplates).mockResolvedValue([])
@@ -74,6 +89,10 @@ describe('POST /api/orders — admin notification', () => {
       promoApplied: false,
     })
     vi.mocked(sendEmail).mockResolvedValue(undefined)
+    vi.mocked(releaseExpiredStockReservations).mockResolvedValue(0)
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
+    vi.mocked(verifyTurnstile).mockResolvedValue(true)
+    vi.mocked(isTurnstileRequired).mockReturnValue(false)
     vi.mocked(getLocaleConfig).mockResolvedValue({
       defaultLanguage: 'ru',
       dateFormat: 'DD.MM.YYYY',
@@ -120,7 +139,7 @@ describe('POST /api/orders — admin notification', () => {
     expect(adminCall).toBeUndefined()
   })
 
-  it('formats the admin email date using the configured pattern and timezone', async () => {
+  it('ignores a client-supplied creation date in the persisted notification', async () => {
     vi.mocked(getLocaleConfig).mockResolvedValue({
       defaultLanguage: 'ru',
       dateFormat: 'YYYY-MM-DD',
@@ -133,7 +152,45 @@ describe('POST /api/orders — admin notification', () => {
 
     const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
     const [, , html] = adminCall!
-    // 10:00 UTC is safely within 2026-06-16 in Europe/Riga regardless of DST offset.
-    expect(html).toContain('2026-06-16')
+    expect(html).not.toContain('2026-06-16')
+  })
+
+  it('rate-limits a guest by IP and normalized email before reserving stock', async () => {
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
+    const res = await POST(makeRequest({ ...VALID_ORDER, email: ' Buyer@Example.com ' }))
+    expect(res.status).toBe(429)
+    expect(checkRateLimit).toHaveBeenCalledWith('order-create:email:buyer@example.com', expect.any(Object))
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('requires Turnstile for guests when it is configured', async () => {
+    vi.mocked(isTurnstileRequired).mockReturnValue(true)
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('captcha_required')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('fails closed before reserving stock when Turnstile is not configured', async () => {
+    vi.mocked(isTurnstileRequired).mockImplementation(() => { throw new TurnstileConfigurationError() })
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(503)
+    expect((await res.json()).error).toBe('captcha_not_configured')
+    expect(createServerOrder).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized contact fields and item lists before DB work', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, firstName: 'x'.repeat(101) }))
+    expect(res.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('escapes customer-controlled names in confirmation email templates', async () => {
+    await POST(makeRequest({ ...VALID_ORDER, firstName: '<img src=x onerror=alert(1)>' }))
+    await vi.waitFor(() => expect(sendEmail).toHaveBeenCalled())
+    const customerCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === VALID_ORDER.email)
+    expect(customerCall?.[2]).not.toContain('<img')
+    expect(customerCall?.[2]).toContain('&lt;img')
   })
 })

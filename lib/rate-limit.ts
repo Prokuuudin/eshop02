@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma'
 const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 const MAX_ATTEMPTS = 10
 
+export type RateLimitOptions = {
+  windowMs?: number
+  maxAttempts?: number
+}
+
 export type RateLimitResult = { limited: boolean; remaining: number; resetAt: number }
 
 /**
@@ -10,9 +15,11 @@ export type RateLimitResult = { limited: boolean; remaining: number; resetAt: nu
  * lambda instances (an in-memory Map is per-instance and effectively useless on Vercel).
  * Fails open: if the limiter DB is unavailable, requests are allowed rather than blocked.
  */
-export async function checkRateLimit(key: string): Promise<RateLimitResult> {
+export async function checkRateLimit(key: string, options: RateLimitOptions = {}): Promise<RateLimitResult> {
   const now = Date.now()
-  const resetAt = new Date(now + WINDOW_MS)
+  const windowMs = options.windowMs ?? WINDOW_MS
+  const maxAttempts = options.maxAttempts ?? MAX_ATTEMPTS
+  const resetAt = new Date(now + windowMs)
   try {
     // Atomic: start a fresh window if the previous one expired, otherwise increment.
     const rows = await prisma.$queryRaw<Array<{ count: number; resetAt: Date }>>`
@@ -26,13 +33,13 @@ export async function checkRateLimit(key: string): Promise<RateLimitResult> {
     const row = rows[0]
     const count = Number(row?.count ?? 1)
     const windowEnd = row?.resetAt ? new Date(row.resetAt).getTime() : now + WINDOW_MS
-    if (count > MAX_ATTEMPTS) {
+    if (count > maxAttempts) {
       return { limited: true, remaining: 0, resetAt: windowEnd }
     }
-    return { limited: false, remaining: Math.max(0, MAX_ATTEMPTS - count), resetAt: windowEnd }
+    return { limited: false, remaining: Math.max(0, maxAttempts - count), resetAt: windowEnd }
   } catch (e) {
     console.error('[rate-limit]', e)
-    return { limited: false, remaining: MAX_ATTEMPTS, resetAt: now + WINDOW_MS }
+    return { limited: false, remaining: maxAttempts, resetAt: now + windowMs }
   }
 }
 

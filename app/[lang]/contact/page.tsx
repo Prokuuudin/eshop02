@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getSiteUrl } from '@/lib/site-url'
 import { useTranslation } from '@/lib/use-translation'
 import { COMPANY, COMPANY_CONTACT_LINES } from '@/data/company'
+import { serializeJsonLd } from '@/lib/json-ld'
 
 type TurnstileApi = {
   render: (container: HTMLElement, options: {
@@ -223,8 +224,8 @@ export default function ContactPage() {
           onLoad={renderTurnstile}
         />
       )}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }} />
       <main className="w-full px-4 py-12">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-8 text-foreground">{t('contact.title')}</h1>

@@ -26,6 +26,7 @@ export type AccessRequest = {
   certificateName?: string
   message?: string
   language?: 'ru' | 'en' | 'lv'
+  turnstileToken?: string
 }
 
 type AccessRequestReview = {
@@ -93,6 +94,7 @@ export const useAccessRequestStore = create<AccessRequestStore>()(
               certificateData: request.certificateData,
               message: request.message,
               language: request.language,
+              turnstileToken: request.turnstileToken,
             }),
           }).catch(() => {})
         }

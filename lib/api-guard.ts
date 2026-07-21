@@ -1,5 +1,5 @@
-import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
+import { SESSION_COOKIE } from '@/lib/auth-constants'
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -34,9 +34,12 @@ function originOf(url: string): string | null {
  *   const blocked = guardOrigin(req)
  *   if (blocked) return blocked
  */
-export function guardOrigin(req: NextRequest): NextResponse | null {
+export function guardOrigin(
+  req: NextRequest,
+  options: { allowApiKey?: boolean } = {}
+): NextResponse | null {
   if (!MUTATING_METHODS.has(req.method)) return null
-  if (req.headers.get('x-api-key')) return null
+  if (options.allowApiKey && req.headers.get('x-api-key')) return null
 
   const allowedOrigin = req.nextUrl.origin
   const requestOrigin = req.headers.get('origin') ?? originOf(req.headers.get('referer') ?? '')
@@ -46,4 +49,16 @@ export function guardOrigin(req: NextRequest): NextResponse | null {
   }
 
   return null
+}
+
+/**
+ * Central CSRF policy for API middleware. Only ambient-cookie authenticated
+ * mutations need an Origin check; token/API-key/webhook calls without a session
+ * cookie are not susceptible to browser CSRF.
+ */
+export function guardCookieAuthenticatedApiMutation(req: NextRequest): NextResponse | null {
+  if (!req.nextUrl.pathname.startsWith('/api/')) return null
+  if (!MUTATING_METHODS.has(req.method)) return null
+  if (!req.cookies.get(SESSION_COOKIE)?.value) return null
+  return guardOrigin(req)
 }

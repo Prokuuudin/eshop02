@@ -5,26 +5,20 @@ import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
   readInvitations,
-  writeInvitations,
   deriveStatus,
   newInviteToken,
+  hashInviteToken,
+  replaceInvitation,
   resolveInviteLang,
-  upsertInvitationRecord,
-  markInvitationErrors,
   INVITE_TTL_DAYS,
   INVITE_BATCH_SIZE,
-  type ProInvitation,
+  type NewInvitation,
 } from '@/lib/invitations'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-function baseUrl(req: NextRequest): string {
-  const host = req.headers.get('host') ?? 'localhost:3000'
-  const proto = host.startsWith('localhost') ? 'http' : 'https'
-  return process.env.NEXT_PUBLIC_SITE_URL ?? `${proto}://${host}`
-}
 
 const inviteUrlFor = (base: string, token: string) => `${base}/auth/invite?token=${token}`
 
@@ -42,9 +36,11 @@ export async function GET(req: NextRequest) {
       }),
       readInvitations(prisma),
     ])
-    const byEmail = new Map(invitations.map((i) => [i.email, i]))
-    const base = baseUrl(req)
-
+    const byEmail = new Map<string, (typeof invitations)[number]>()
+    // readInvitations is newest-first; keep the current invitation on resends.
+    for (const invitation of invitations) {
+      if (!byEmail.has(invitation.email)) byEmail.set(invitation.email, invitation)
+    }
     return NextResponse.json({
       holders: holders.map((u) => {
         const inv = byEmail.get(u.email.toLowerCase())
@@ -57,7 +53,7 @@ export async function GET(req: NextRequest) {
           status,
           sentAt: inv?.sentAt ?? null,
           // Ссылку показываем только пока инвайт живой — админ может скопировать вручную
-          inviteUrl: inv && status === 'sent' ? inviteUrlFor(base, inv.token) : null,
+          inviteUrl: null,
         }
       }),
     })
@@ -95,28 +91,23 @@ export async function POST(req: NextRequest) {
     const templates = await getTemplates()
     // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override
     const tpl = pickInviteTemplate(templates, language)
-    const base = baseUrl(req)
+    const base = getSiteUrl()
     const now = new Date()
     const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-    const records: ProInvitation[] = users.map((u) => ({
+    const records: NewInvitation[] = users.map((u) => ({
       userId: u.id,
       email: u.email.toLowerCase(),
       cardNumber: u.cardNumber!,
       token: newInviteToken(),
-      sentAt: now.toISOString(),
       expiresAt,
-      acceptedAt: null,
-      status: 'sent',
       language,
     }))
 
     // 1. Токены в БД до писем; serializable — параллельные отправки не теряют записи
     await prisma.$transaction(
       async (tx) => {
-        let invitations = await readInvitations(tx)
-        for (const r of records) invitations = upsertInvitationRecord(invitations, r)
-        await writeInvitations(tx, invitations)
+        for (const r of records) await replaceInvitation(tx, r)
       },
       { isolationLevel: 'Serializable' }
     )
@@ -147,8 +138,10 @@ export async function POST(req: NextRequest) {
     if (failedTokens.length > 0) {
       await prisma.$transaction(
         async (tx) => {
-          const invitations = await readInvitations(tx)
-          await writeInvitations(tx, markInvitationErrors(invitations, failedTokens))
+          await tx.invitationToken.updateMany({
+            where: { tokenHash: { in: failedTokens.map(hashInviteToken) }, status: 'sent' },
+            data: { status: 'error' },
+          })
         },
         { isolationLevel: 'Serializable' }
       )

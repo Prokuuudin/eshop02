@@ -21,24 +21,30 @@ export async function POST(req: NextRequest) {
     // Occasional GC
     if (Math.random() < 0.05) void gcRateLimitStore()
 
-    const ip = getClientIp(req)
-    const rl = await checkRateLimit(`login:${ip}`)
-    if (rl.limited) {
-      return NextResponse.json(
-        { error: 'too_many_attempts', resetAt: rl.resetAt },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
-        }
-      )
-    }
-
     const { email, password } = await req.json()
     if (!email || !password) {
       return NextResponse.json({ error: 'email_password_required' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
+    const normalizedEmail = String(email).trim().toLowerCase()
+    if (normalizedEmail.length > 254) {
+      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
+    }
+    const ip = getClientIp(req)
+    const limitKeys = [`login:ip:${ip}`, `login:email:${normalizedEmail}`]
+    const limits = await Promise.all(limitKeys.map((key) => checkRateLimit(key)))
+    const limited = limits.find((result) => result.limited)
+    if (limited) {
+      return NextResponse.json(
+        { error: 'too_many_attempts', resetAt: limited.resetAt },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.max(1, Math.ceil((limited.resetAt - Date.now()) / 1000))) },
+        }
+      )
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } })
     if (!user || !user.passwordHash) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
@@ -49,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Successful login — reset attempt counter
-    await resetRateLimit(`login:${ip}`)
+    await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
 
     const token = await createSession(user.id)
 

@@ -1,30 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/generated/prisma/client'
 import { hashPassword } from '@/lib/server-auth'
+import crypto from 'crypto'
 
 export const runtime = 'nodejs'
 
-const MIN_PASSWORD_LENGTH = 6
-
-type ResetRecord = { token: string; email: string; expiresAt: string }
-type ResetData = { resets: ResetRecord[] }
-
-const KV_KEY = 'password-resets'
-
-async function read(): Promise<ResetData> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return { resets: [] }
-  return (row.value as ResetData) ?? { resets: [] }
-}
-
-async function write(data: ResetData): Promise<void> {
-  await prisma.keyValueSetting.upsert({
-    where: { key: KV_KEY },
-    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
-    update: { value: data as unknown as Prisma.InputJsonValue },
-  })
-}
+const MIN_PASSWORD_LENGTH = 12
+const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 
 // GET ?token=xxx — проверить токен (не удаляет)
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -33,8 +15,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'missing_token' }, { status: 400 })
   }
 
-  const data = await read()
-  const record = data.resets.find((r) => r.token === token)
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: tokenHash(token) },
+    include: { user: { select: { email: true } } },
+  })
   if (!record) {
     return NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 })
   }
@@ -42,7 +26,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'token_expired' }, { status: 410 })
   }
 
-  return NextResponse.json({ ok: true, email: record.email })
+  return NextResponse.json({ ok: true, email: record.user.email })
 }
 
 // POST { token, password } — использовать токен и задать новый пароль в БД (одноразово).
@@ -66,29 +50,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
   }
 
-  const data = await read()
-  const idx = data.resets.findIndex((r) => r.token === token)
-  if (idx === -1) {
+  const hash = tokenHash(token)
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hash },
+    include: { user: { select: { id: true, email: true } } },
+  })
+  if (!record) {
     return NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 })
   }
-  if (new Date(data.resets[idx].expiresAt) < new Date()) {
+  if (record.expiresAt < new Date()) {
     return NextResponse.json({ ok: false, error: 'token_expired' }, { status: 410 })
   }
 
-  const { email } = data.resets[idx]
-
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
-  if (user) {
-    const passwordHash = await hashPassword(password)
-    await prisma.user.update({
-      where: { id: user.id },
+  const passwordHash = await hashPassword(password)
+  const consumed = await prisma.$transaction(async (tx) => {
+    const deleted = await tx.passwordResetToken.deleteMany({
+      where: { tokenHash: hash, expiresAt: { gt: new Date() } },
+    })
+    if (deleted.count !== 1) return false
+    await tx.user.update({
+      where: { id: record.user.id },
       data: { passwordHash, mustChangePassword: false },
     })
-  }
+    await tx.session.deleteMany({ where: { userId: record.user.id } })
+    await tx.passwordResetToken.deleteMany({ where: { userId: record.user.id } })
+    return true
+  })
+  if (!consumed) return NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 })
 
-  // Consume the token only after the password is set.
-  data.resets.splice(idx, 1)
-  await write(data)
-
-  return NextResponse.json({ ok: true, email })
+  return NextResponse.json({ ok: true, email: record.user.email })
 }

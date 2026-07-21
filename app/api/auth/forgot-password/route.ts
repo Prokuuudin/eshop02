@@ -2,30 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/generated/prisma/client'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getSiteUrl } from '@/lib/site-url'
+import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
-type ResetRecord = { token: string; email: string; expiresAt: string }
-type ResetData = { resets: ResetRecord[] }
-
-const KV_KEY = 'password-resets'
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 
-async function read(): Promise<ResetData> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return { resets: [] }
-  return (row.value as ResetData) ?? { resets: [] }
-}
-
-async function write(data: ResetData): Promise<void> {
-  await prisma.keyValueSetting.upsert({
-    where: { key: KV_KEY },
-    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
-    update: { value: data as unknown as Prisma.InputJsonValue },
-  })
+function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown'
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {
@@ -79,15 +66,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'invalid_email' }, { status: 422 })
   }
 
-  const token = crypto.randomBytes(32).toString('hex')
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  if (Math.random() < 0.05) void gcRateLimitStore()
+  const ipLimit = await checkRateLimit(`forgot-password:ip:${getClientIp(request)}`)
+  const emailLimit = await checkRateLimit(`forgot-password:email:${email}`)
+  if (ipLimit.limited || emailLimit.limited) {
+    const resetAt = Math.max(ipLimit.resetAt, emailLimit.resetAt)
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited', resetAt },
+      { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))) } }
+    )
+  }
 
-  const data = await read()
-  data.resets = data.resets.filter(
-    (r) => r.email !== email && new Date(r.expiresAt) > new Date()
-  )
-  data.resets.push({ token, email, expiresAt })
-  await write(data)
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+  if (!user) return NextResponse.json({ ok: true })
+
+  const token = crypto.randomBytes(32).toString('hex')
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+  await prisma.$transaction(async (tx) => {
+    await tx.passwordResetToken.deleteMany({ where: { userId: user.id } })
+    await tx.passwordResetToken.create({ data: { tokenHash: tokenHash(token), userId: user.id, expiresAt } })
+  })
 
   // Never derive the reset base URL from the client-controlled Host header —
   // a poisoned Host would send the victim a reset link (with token) to an attacker

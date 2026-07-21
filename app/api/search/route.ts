@@ -1,15 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { toNum } from '@/lib/decimal'
+import { checkRateLimit } from '@/lib/rate-limit'
+
+const SEARCH_LIMIT = { windowMs: 60 * 1000, maxAttempts: 30 }
+const MAX_QUERY_LENGTH = 160
+const MAX_CATEGORY_LENGTH = 100
+
+function getClientIp(req: NextRequest): string {
+  return req.headers.get('cf-connecting-ip')?.trim()
+    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')?.trim()
+    || 'unknown'
+}
 
 export async function GET(req: NextRequest) {
   try {
     const query = req.nextUrl.searchParams.get('q')?.trim() || ''
-    const take = Math.min(parseInt(req.nextUrl.searchParams.get('take') || '20', 10), 50)
+    const rawTake = req.nextUrl.searchParams.get('take') ?? '20'
+    const take = Number(rawTake)
     const category = req.nextUrl.searchParams.get('category') || ''
 
     if (!query || query.length < 2) {
       return NextResponse.json({ products: [] })
+    }
+    if (query.length > MAX_QUERY_LENGTH) {
+      return NextResponse.json({ error: 'query_too_long', products: [] }, { status: 400 })
+    }
+    if (!Number.isInteger(take) || take < 1 || take > 50) {
+      return NextResponse.json({ error: 'invalid_take', products: [] }, { status: 400 })
+    }
+    if (category.length > MAX_CATEGORY_LENGTH) {
+      return NextResponse.json({ error: 'invalid_category', products: [] }, { status: 400 })
+    }
+
+    const limit = await checkRateLimit(`search:ip:${getClientIp(req)}`, SEARCH_LIMIT)
+    if (limit.limited) {
+      const retryAfter = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000))
+      return NextResponse.json({ error: 'rate_limited', products: [] }, {
+        status: 429, headers: { 'Retry-After': String(retryAfter) },
+      })
     }
 
     type ProductRow = {

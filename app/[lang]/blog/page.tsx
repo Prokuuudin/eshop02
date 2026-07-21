@@ -5,6 +5,7 @@ import BlogCard from '@/components/BlogCard'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
 import { getSiteUrl } from '@/lib/site-url'
+import { serializeJsonLd } from '@/lib/json-ld'
 
 export default function BlogPage() {
   const { t, language } = useTranslation()
@@ -118,8 +119,8 @@ export default function BlogPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogCollectionSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogCollectionSchema) }} />
       <main className="w-full px-4 py-8 md:py-12">
         <section className="mb-8 md:mb-12">
           <h1 className="text-2xl md:text-4xl font-bold text-foreground">

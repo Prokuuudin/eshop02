@@ -4,6 +4,7 @@ import { Prisma } from '@/generated/prisma/client'
 
 const keyFor = (email: string) => `newsletter:subscriber:${email.toLowerCase()}`
 const optOutKeyFor = (email: string) => `marketing:optout:${email.toLowerCase()}`
+const developmentUnsubSecret = crypto.randomBytes(32).toString('hex')
 
 export async function subscribeToNewsletter(email: string): Promise<void> {
   const value = { email: email.toLowerCase(), consentAt: new Date().toISOString() }
@@ -37,10 +38,17 @@ export async function isMarketingOptedOut(email: string): Promise<boolean> {
 
 // Forging this token only lets an attacker unsubscribe someone else (a fail-safe
 // direction — they stop receiving marketing), so a server-side HMAC over the email
-// is sufficient and needs no per-email storage. Falls back to SMTP_PASS so a link
-// still works before a dedicated secret is provisioned.
+// is sufficient and needs no per-email storage. Production deliberately fails
+// closed unless an independent NEWSLETTER_UNSUB_SECRET is provisioned.
 function unsubSecret(): string {
-  return process.env.NEWSLETTER_UNSUB_SECRET || process.env.SMTP_PASS || 'eshop-marketing-unsub'
+  const secret = process.env.NEWSLETTER_UNSUB_SECRET?.trim()
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEWSLETTER_UNSUB_SECRET is required in production')
+  }
+  // Local/test convenience without a public deterministic fallback. Links made
+  // with this ephemeral value intentionally stop working after a process restart.
+  return developmentUnsubSecret
 }
 
 export function marketingUnsubToken(email: string): string {

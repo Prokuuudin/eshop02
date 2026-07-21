@@ -10,6 +10,7 @@ import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 import { brandSlug } from '@/lib/brand-slug';
 import { buildProductIndex, pickRelated, pickBoughtTogether } from '@/lib/related-products';
 import copurchaseData from '@/data/product-bought-together.json';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 const COPURCHASE = copurchaseData as Record<string, string[]>;
 
@@ -158,11 +159,11 @@ export default async function ProductPage({ params }: PageProps) {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }}
             />
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
             <ProductPageContent
                 product={product}

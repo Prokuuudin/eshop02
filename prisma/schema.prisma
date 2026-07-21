@@ -26,10 +26,44 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  invitationTokens    InvitationToken[]
+  accountManagerMessages AccountManagerMessage[]
   userNotifications   UserNotification[]
 
   @@index([email])
   @@index([companyId])
+}
+
+model InvitationToken {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  email      String
+  cardNumber String
+  language   String   @default("lv")
+  status     String   @default("sent")
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Session {
@@ -152,8 +186,23 @@ model Company {
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
   members                 CompanyMember[]
+  accountManagerMessages  AccountManagerMessage[]
 
   @@index([cardNumber])
+}
+
+model AccountManagerMessage {
+  id         String   @id @default(cuid())
+  companyId  String
+  authorId   String
+  senderType String
+  text       String
+  createdAt  DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([authorId])
 }
 
 model CompanyMember {
@@ -312,6 +361,9 @@ model Order {
   paymentStatus    String   @default("unpaid")
   paymentProvider  String?
   paymentSessionId String?
+  stockReservationStatus String   @default("committed")
+  stockReservedUntil     DateTime?
+  stockReleasedAt        DateTime?
   language         String?  @default("ru")
   userId           String?
   companyId        String?
@@ -319,6 +371,7 @@ model Order {
   @@index([email])
   @@index([createdAt])
   @@index([paymentStatus])
+  @@index([stockReservationStatus, stockReservedUntil])
   @@index([userId])
   @@index([companyId])
 }
@@ -334,9 +387,22 @@ model Review {
   helpful    Int      @default(0)
   status     String   @default("approved")
   adminReply Json?
+  votes      ReviewHelpfulVote[]
 
   @@index([productId])
   @@index([productId, status])
+}
+
+model ReviewHelpfulVote {
+  id        String   @id @default(cuid())
+  reviewId  String
+  voterKey  String
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, voterKey])
+  @@index([voterKey])
+  @@index([createdAt])
 }
 
 model AccessRequest {

@@ -6,6 +6,7 @@ import BlogPostContent from '@/components/BlogPostContent';
 import { getSiteUrl } from '@/lib/site-url';
 import { getBlogPostBySlug, getBlogPosts } from '@/lib/blog-store';
 import { DEFAULT_LANGUAGE, pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 type Params = {
     lang: string;
@@ -102,7 +103,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
             <BlogPostContent post={post} relatedPosts={relatedPosts} postUrl={postUrl} />
         </>

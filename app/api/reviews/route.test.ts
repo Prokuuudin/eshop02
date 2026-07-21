@@ -7,10 +7,12 @@ vi.mock('@/lib/reviews-data-store', () => ({
   getProductPublicReviews: vi.fn(),
   getProductReviewStats: vi.fn(),
 }))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 
 import { POST } from './route'
 import { getServerUser } from '@/lib/server-auth'
 import { createReview } from '@/lib/reviews-data-store'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const makePost = (body: Record<string, unknown>): NextRequest =>
   new NextRequest('http://localhost/api/reviews', {
@@ -25,6 +27,7 @@ describe('POST /api/reviews', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createReview).mockResolvedValue(createdReview as any)
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
   })
 
   it('forces author from session for logged-in user', async () => {
@@ -50,6 +53,21 @@ describe('POST /api/reviews', () => {
 
     const res = await POST(makePost({ productId: 'p1', author: 'Гость', rating: 9, title: 'T', text: 'B' }))
 
+    expect(res.status).toBe(400)
+    expect(createReview).not.toHaveBeenCalled()
+  })
+
+  it('rate-limits review creation before the DB write', async () => {
+    vi.mocked(getServerUser).mockResolvedValue(null)
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
+    const res = await POST(makePost({ productId: 'p1', rating: 5, title: 'T', text: 'B' }))
+    expect(res.status).toBe(429)
+    expect(createReview).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized review text', async () => {
+    vi.mocked(getServerUser).mockResolvedValue(null)
+    const res = await POST(makePost({ productId: 'p1', rating: 5, title: 'T', text: 'x'.repeat(5001) }))
     expect(res.status).toBe(400)
     expect(createReview).not.toHaveBeenCalled()
   })

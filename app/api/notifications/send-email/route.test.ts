@@ -4,9 +4,11 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
 
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/notifications/send-email', {
@@ -17,7 +19,10 @@ function makeRequest(body: unknown): NextRequest {
 }
 
 describe('POST /api/notifications/send-email', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
+  })
 
   it('returns 401 when not authenticated', async () => {
     vi.mocked(getServerUser).mockResolvedValue(null)
@@ -37,6 +42,23 @@ describe('POST /api/notifications/send-email', () => {
     vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com' } as any)
     const res = await POST(makeRequest({ title: 'T', type: 'info' }))
     expect(res.status).toBe(400)
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('rate-limits by authenticated user before SMTP', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com' } as any)
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
+    const res = await POST(makeRequest({ title: 'T', message: 'M' }))
+    expect(res.status).toBe(429)
+    expect(checkRateLimit).toHaveBeenCalledWith('notification-email:user:u1', expect.any(Object))
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized title and message before SMTP', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com' } as any)
+    const res = await POST(makeRequest({ title: 'T'.repeat(161), message: 'M' }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('field_too_long')
     expect(sendEmail).not.toHaveBeenCalled()
   })
 

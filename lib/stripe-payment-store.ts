@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { applyOrderReservationPaymentState } from '@/lib/orders-data-store'
+import { canApplyStripePaymentTransition } from '@/lib/stripe-payment-state'
 
 export type StripePaymentStatus = 'pending' | 'paid' | 'failed'
 
@@ -48,6 +50,12 @@ export const getOrderPaymentStatus = async (orderId: string): Promise<StripeOrde
   return store.orders[orderId] ?? null
 }
 
+/** Resolve only checkout sessions created and recorded by this application. */
+export const getOrderPaymentBySessionId = async (sessionId: string): Promise<StripeOrderPayment | null> => {
+  const store = await readStore()
+  return Object.values(store.orders).find((payment) => payment.sessionId === sessionId) ?? null
+}
+
 export const saveOrderPaymentStatus = async (input: {
   orderId: string
   paymentStatus: StripePaymentStatus
@@ -55,8 +63,17 @@ export const saveOrderPaymentStatus = async (input: {
   paymentIntentId?: string
   customerEmail?: string
   eventId?: string
-}): Promise<StripeOrderPayment> => {
-  const store = await readStore()
+  /** Checkout verified that the previously bound session is no longer open. */
+  replaceSession?: boolean
+}): Promise<StripeOrderPayment> => prisma.$transaction(async (tx) => {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${KV_KEY}))`
+  const store = await readStore(tx)
+
+  const current = store.orders[input.orderId]
+  const canReplaceClosedSession = input.replaceSession && current?.paymentStatus !== 'paid'
+  if (!canReplaceClosedSession && !canApplyStripePaymentTransition(current, input)) {
+    return current
+  }
 
   const nextRecord: StripeOrderPayment = {
     orderId: input.orderId,
@@ -80,9 +97,9 @@ export const saveOrderPaymentStatus = async (input: {
     }
   }
 
-  await writeStore(store)
+  await writeStore(store, tx)
   return store.orders[input.orderId]
-}
+})
 
 export const isStripeEventProcessed = async (eventId: string): Promise<boolean> => {
   const store = await readStore()
@@ -107,6 +124,17 @@ export const applyStripePaymentEvent = async (input: {
   const store = await readStore(tx)
   if (store.processedEventIds.includes(input.eventId)) return false
 
+  const current = store.orders[input.orderId]
+  if (!canApplyStripePaymentTransition(current, input)) {
+    // Remember ignored events as well so Stripe retries remain cheap and idempotent.
+    store.processedEventIds.push(input.eventId)
+    if (store.processedEventIds.length > 2000) {
+      store.processedEventIds = store.processedEventIds.slice(-2000)
+    }
+    await writeStore(store, tx)
+    return false
+  }
+
   const nextRecord: StripeOrderPayment = {
     orderId: input.orderId,
     paymentStatus: input.paymentStatus,
@@ -123,8 +151,11 @@ export const applyStripePaymentEvent = async (input: {
   }
 
   await writeStore(store, tx)
+  await applyOrderReservationPaymentState(tx, input.orderId, input.paymentStatus)
   await tx.order.updateMany({
-    where: { id: input.orderId },
+    where: input.paymentStatus === 'paid'
+      ? { id: input.orderId }
+      : { id: input.orderId, paymentStatus: { not: 'paid' } },
     data: {
       paymentStatus: input.paymentStatus,
       paymentProvider: 'stripe',

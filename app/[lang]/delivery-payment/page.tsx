@@ -3,6 +3,7 @@ import { getSiteUrl } from '@/lib/site-url';
 import { COMPANY } from '@/data/company';
 import { resolveLanguage, localizePath } from '@/lib/i18n-routing';
 import { getServerContent } from '@/lib/server-translation';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 import {
     Accordion,
@@ -52,7 +53,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
             />
             <section className="max-w-6xl mx-auto py-10 px-4 text-foreground">
                 <h1 className="text-3xl font-bold mb-10 text-center text-foreground">

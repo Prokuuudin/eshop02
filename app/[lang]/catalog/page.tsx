@@ -4,6 +4,7 @@ import Products from '@/components/Products'
 import { getSiteUrl } from '@/lib/site-url'
 import { translations } from '@/data/translations'
 import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing'
+import { serializeJsonLd } from '@/lib/json-ld'
 
 export const revalidate = 3600
 
@@ -83,7 +84,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
       <main>
         <Products
           initialSearch={rawSearch}

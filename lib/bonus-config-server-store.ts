@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { DEFAULT_BONUS_PROGRAM_CONFIG, type BonusProgramConfig } from '@/lib/bonus-program'
 
@@ -24,9 +25,9 @@ function normalize(input?: Partial<BonusProgramConfig> | null): BonusProgramConf
   }
 }
 
-export async function getBonusProgramConfig(): Promise<BonusProgramConfig> {
+export async function getBonusProgramConfig(db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<BonusProgramConfig> {
   try {
-    const row = await prisma.keyValueSetting.findUnique({ where: { key: BONUS_CONFIG_KEY } })
+    const row = await db.keyValueSetting.findUnique({ where: { key: BONUS_CONFIG_KEY } })
     if (!row) return DEFAULT_BONUS_PROGRAM_CONFIG
     return normalize(row.value as Partial<BonusProgramConfig>)
   } catch {

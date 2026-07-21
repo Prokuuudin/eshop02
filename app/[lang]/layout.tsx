@@ -10,6 +10,7 @@ import RouteUiEffects from '@/components/RouteUiEffects'
 import AuthHydrator from '@/components/auth/AuthHydrator'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 import { LANGUAGES, resolveLanguage } from '@/lib/i18n-routing'
+import { serializeJsonLd } from '@/lib/json-ld'
 
 type LayoutProps = {
   children: ReactNode
@@ -76,8 +77,8 @@ export default async function RootLayout({ children, params }: LayoutProps) {
     <html lang={language}>
       <body>
         <ThemeInitScript />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }} />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"

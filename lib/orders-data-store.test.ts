@@ -9,7 +9,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { canAccessOrder, createServerOrder, InsufficientStockError, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createServerOrder, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
@@ -39,8 +39,11 @@ function makeTx() {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
     },
     product: { updateMany: vi.fn(async () => ({ count: 1 })) },
-    promoCode: { updateMany: vi.fn() },
-    user: { findUnique: vi.fn(), update: vi.fn() },
+    promoCode: {
+      fields: { maxUses: Symbol('maxUses') },
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
+    user: { findUnique: vi.fn(), updateMany: vi.fn(async () => ({ count: 1 })) },
   }
 }
 
@@ -105,6 +108,46 @@ describe('createServerOrder — server-side id generation', () => {
 
     await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
     await expect(createServerOrder(ORDER)).rejects.toMatchObject({ items: ['p1'] })
+  })
+
+  it('does not create a discounted order when the atomic bonus debit loses a race', async () => {
+    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    tx.user.findUnique.mockResolvedValue({ bonusPoints: 500 })
+    tx.user.updateMany.mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    const order = { ...ORDER, userId: 'user-1' }
+
+    await expect(createServerOrder(order, async (_tx, balance) => ({
+      ...order,
+      bonusSpent: Math.min(500, balance ?? 0),
+      total: 50,
+    }))).rejects.toThrow(InsufficientBonusPointsError)
+
+    expect(tx.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', bonusPoints: { gte: 500 } },
+      data: { bonusPoints: { decrement: 500 } },
+    })
+    expect(tx.order.create).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a discounted order when another checkout claims the final promo use', async () => {
+    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    tx.promoCode.updateMany.mockResolvedValue({ count: 0 })
+    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    const order = { ...ORDER, promoCode: 'last-one', discount: 10, total: 45 }
+
+    await expect(createServerOrder(order)).rejects.toThrow(PromoCodeUsageLimitError)
+
+    expect(tx.promoCode.updateMany).toHaveBeenCalledWith({
+      where: {
+        code: 'LAST-ONE',
+        active: true,
+        OR: [{ maxUses: null }, { usedCount: { lt: tx.promoCode.fields.maxUses } }],
+      },
+      data: { usedCount: { increment: 1 } },
+    })
   })
 })
 

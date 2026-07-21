@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = guardOrigin(req)
+  const blocked = guardOrigin(req, { allowApiKey: true })
   if (blocked) return blocked
 
   const auth = await authenticateRequest(req)
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const blocked = guardOrigin(req)
+  const blocked = guardOrigin(req, { allowApiKey: true })
   if (blocked) return blocked
 
   const auth = await authenticateRequest(req)

@@ -67,17 +67,18 @@ export async function PATCH(
     }
 
     const STOCK_RESTORE_STATUSES = new Set(['approved', 'refunded'])
-    const prevStatus = ret.status
-    const nextStatus = typeof data.status === 'string' ? data.status : prevStatus
+    const requestedStatus = typeof data.status === 'string' ? data.status : null
 
     const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.returnRequest.update({ where: { id }, data })
+      if (requestedStatus && STOCK_RESTORE_STATUSES.has(requestedStatus)) {
+        const transitioned = await tx.returnRequest.updateMany({
+          where: { id, status: { notIn: [...STOCK_RESTORE_STATUSES] } },
+          data,
+        })
+        if (transitioned.count !== 1) {
+          return tx.returnRequest.findUniqueOrThrow({ where: { id } })
+        }
 
-      // Restore stock when transitioning into approved/refunded for the first time
-      if (
-        STOCK_RESTORE_STATUSES.has(nextStatus) &&
-        !STOCK_RESTORE_STATUSES.has(prevStatus)
-      ) {
         type ReturnItem = { productId: string; quantity: number }
         const returnItems = ret.items as ReturnItem[]
         for (const item of returnItems) {
@@ -88,9 +89,10 @@ export async function PATCH(
             })
           }
         }
+        return tx.returnRequest.findUniqueOrThrow({ where: { id } })
       }
 
-      return result
+      return tx.returnRequest.update({ where: { id }, data })
     })
 
     return NextResponse.json({

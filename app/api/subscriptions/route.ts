@@ -5,6 +5,9 @@ import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
+const SUBSCRIPTION_DISCOUNTS = { monthly: 10, quarterly: 7 } as const
+type SubscriptionInterval = keyof typeof SUBSCRIPTION_DISCOUNTS
+
 export async function GET() {
   try {
     const user = await getServerUser()
@@ -48,9 +51,28 @@ export async function POST(req: NextRequest) {
       nextOrderDate?: string
     }
 
-    if (!body.productId || !body.pricePerUnit || !body.quantity || !body.interval || !body.nextOrderDate) {
+    if (!body.productId || !body.quantity || !body.interval || !body.nextOrderDate) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
+    if (!(body.interval in SUBSCRIPTION_DISCOUNTS)) {
+      return NextResponse.json({ error: 'invalid_interval' }, { status: 400 })
+    }
+    if (!Number.isInteger(body.quantity) || body.quantity < 1 || body.quantity > 100) {
+      return NextResponse.json({ error: 'invalid_quantity' }, { status: 400 })
+    }
+    const nextOrderDate = new Date(body.nextOrderDate)
+    if (Number.isNaN(nextOrderDate.getTime())) {
+      return NextResponse.json({ error: 'invalid_next_order_date' }, { status: 400 })
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: body.productId },
+      select: { id: true, title: true, image: true, price: true, isActive: true, isDeleted: true },
+    })
+    if (!product || !product.isActive || product.isDeleted) {
+      return NextResponse.json({ error: 'product_not_found' }, { status: 404 })
+    }
+    const interval = body.interval as SubscriptionInterval
 
     // Always generate id server-side — never trust client-supplied id
     const sub = await prisma.productSubscription.create({
@@ -58,15 +80,15 @@ export async function POST(req: NextRequest) {
         id: randomUUID(),
         userId: user.id,
         userEmail: user.email,
-        productId: body.productId,
-        productTitle: body.productTitle ?? '',
-        productImage: body.productImage ?? null,
-        pricePerUnit: body.pricePerUnit,
-        discountPercent: body.discountPercent ?? 0,
+        productId: product.id,
+        productTitle: product.title,
+        productImage: product.image,
+        pricePerUnit: product.price,
+        discountPercent: SUBSCRIPTION_DISCOUNTS[interval],
         quantity: body.quantity,
-        interval: body.interval,
+        interval,
         status: 'active',
-        nextOrderDate: new Date(body.nextOrderDate),
+        nextOrderDate,
       },
     })
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpProduct } from './erp-adapter'
 
 // Columns per product row in the INSERT statement.
@@ -55,7 +55,7 @@ function buildParams(products: ErpProduct[], runId: string): unknown[] {
 }
 
 export async function upsertProducts(
-  db: PrismaClient,
+  db: ExtendedPrismaClient,
   products: ErpProduct[],
   runId: string,
 ): Promise<number> {

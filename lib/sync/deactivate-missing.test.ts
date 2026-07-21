@@ -1,10 +1,10 @@
 import { deactivateMissing } from './deactivate-missing'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 
-function makeMockDb(rowCount: number): PrismaClient {
+function makeMockDb(rowCount: number): ExtendedPrismaClient {
   return {
     $executeRawUnsafe: vi.fn().mockResolvedValue(rowCount),
-  } as unknown as PrismaClient
+  } as unknown as ExtendedPrismaClient
 }
 
 describe('deactivateMissing', () => {

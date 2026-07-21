@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpAdapter } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
@@ -19,7 +19,7 @@ export interface SyncRunResult {
 
 export async function runSync(
   adapter: ErpAdapter,
-  db: PrismaClient,
+  db: ExtendedPrismaClient,
   triggeredBy: 'cron' | 'manual' | 'webhook' = 'cron',
 ): Promise<SyncRunResult> {
   const logger = new SyncLogger()

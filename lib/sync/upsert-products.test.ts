@@ -1,10 +1,10 @@
 import { upsertProducts, buildUpsertQuery, COLS_PER_ROW } from './upsert-products'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 
-function makeMockDb(): PrismaClient {
+function makeMockDb(): ExtendedPrismaClient {
   return {
     $executeRawUnsafe: vi.fn().mockResolvedValue(2),
-  } as unknown as PrismaClient
+  } as unknown as ExtendedPrismaClient
 }
 
 describe('buildUpsertQuery', () => {

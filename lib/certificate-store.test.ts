@@ -7,7 +7,7 @@ import {
   deleteCertificate,
   MAX_CERT_DATA_LENGTH,
 } from './certificate-store'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 
 const JPEG_URL = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg').toString('base64')
 
@@ -38,7 +38,7 @@ describe('parseDataUrl', () => {
 describe('save/read/delete', () => {
   it('saveCertificate кладёт данные в KV по ключу заявки', async () => {
     const upsert = vi.fn()
-    const db = { keyValueSetting: { upsert } } as unknown as PrismaClient
+    const db = { keyValueSetting: { upsert } } as unknown as ExtendedPrismaClient
     await saveCertificate(db, 'req1', { data: JPEG_URL, name: 'diploms.jpg' })
     const args = upsert.mock.calls[0][0]
     expect(args.where.key).toBe('access-request-cert-req1')
@@ -49,13 +49,13 @@ describe('save/read/delete', () => {
   it('readCertificate возвращает null если ключа нет', async () => {
     const db = {
       keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
-    } as unknown as PrismaClient
+    } as unknown as ExtendedPrismaClient
     expect(await readCertificate(db, 'req1')).toBeNull()
   })
 
   it('deleteCertificate удаляет ключ идемпотентно', async () => {
     const deleteMany = vi.fn().mockResolvedValue({ count: 0 })
-    const db = { keyValueSetting: { deleteMany } } as unknown as PrismaClient
+    const db = { keyValueSetting: { deleteMany } } as unknown as ExtendedPrismaClient
     await deleteCertificate(db, 'req1')
     expect(deleteMany.mock.calls[0][0].where.key).toBe('access-request-cert-req1')
   })

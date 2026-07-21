@@ -16,9 +16,9 @@ import { runSync } from './sync-runner'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
 import type { ErpAdapter } from './erp-adapter'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 
-function makeMockDb(): PrismaClient {
+function makeMockDb(): ExtendedPrismaClient {
   return {
     syncRun: {
       create: vi.fn().mockResolvedValue({ id: 'run-1' }),
@@ -26,7 +26,7 @@ function makeMockDb(): PrismaClient {
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn().mockResolvedValue(null),
     },
-  } as unknown as PrismaClient
+  } as unknown as ExtendedPrismaClient
 }
 
 function makeAdapter(products: object[] = [], hasMore = false): ErpAdapter {

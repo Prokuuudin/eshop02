@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
 export type StripePaymentStatus = 'pending' | 'paid' | 'failed'
@@ -19,7 +20,10 @@ type StripePaymentStore = {
 }
 
 const KV_KEY = 'stripe-payments'
-type PaymentStoreClient = Pick<Prisma.TransactionClient, 'keyValueSetting'>
+// `prisma` itself, or the `tx` handed to a `prisma.$transaction(async (tx) => ...)`
+// callback — both are shapes of the extended (money-fields-converting) client, not
+// the raw generated `Prisma.TransactionClient`.
+type PaymentStoreClient = Pick<ExtendedPrismaClient | ExtendedTransactionClient, 'keyValueSetting'>
 
 const readStore = async (client: PaymentStoreClient = prisma): Promise<StripePaymentStore> => {
   const row = await client.keyValueSetting.findUnique({ where: { key: KV_KEY } })

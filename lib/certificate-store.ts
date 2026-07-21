@@ -1,6 +1,10 @@
-import type { PrismaClient, Prisma } from '@/generated/prisma/client'
+import type { Prisma } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 
-type Db = PrismaClient | Prisma.TransactionClient
+// `prisma` itself, or the `tx` handed to a `prisma.$transaction(async (tx) => ...)`
+// callback — both are shapes of the extended (money-fields-converting) client, not
+// the raw generated `PrismaClient` / `Prisma.TransactionClient`.
+type Db = ExtendedPrismaClient | ExtendedTransactionClient
 
 // Сертификат мастера живёт в KV только пока заявка на рассмотрении:
 // подача пишет, решение (approve/reject) удаляет. Постоянного хранилища нет.

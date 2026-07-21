@@ -1,8 +1,11 @@
 import crypto from 'crypto'
-import type { PrismaClient } from '@/generated/prisma/client'
 import { Prisma } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 
-type Db = PrismaClient | Prisma.TransactionClient
+// `prisma` itself, or the `tx` handed to a `prisma.$transaction(async (tx) => ...)`
+// callback — both are shapes of the extended (money-fields-converting) client, not
+// the raw generated `PrismaClient` / `Prisma.TransactionClient`.
+type Db = ExtendedPrismaClient | ExtendedTransactionClient
 
 export const INVITES_KV_KEY = 'pro-invitations'
 export const CAMPAIGN_KV_KEY = 'card-rules-campaign'

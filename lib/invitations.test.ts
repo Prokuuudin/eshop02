@@ -9,7 +9,7 @@ import {
   INVITE_BATCH_SIZE,
   type ProInvitation,
 } from './invitations'
-import type { PrismaClient } from '@/generated/prisma/client'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
 
 const baseInv: ProInvitation = {
   userId: 'u1',
@@ -128,7 +128,7 @@ describe('readCampaign', () => {
   it('возвращает дефолтное состояние если KV пуст', async () => {
     const db = {
       keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
-    } as unknown as PrismaClient
+    } as unknown as ExtendedPrismaClient
     const state = await readCampaign(db)
     expect(state).toEqual({
       sentCount: 0, errorCount: 0, cursor: null,

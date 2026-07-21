@@ -464,44 +464,6 @@ export const loginUserAuto = async (
   return { success: true }
 }
 
-export type ActivatePayload = {
-  email: string
-  name?: string
-  cardNumber: string
-  phone?: string
-  password: string
-  companyId: string
-  companyName: string
-}
-
-export const activateRegistration = (data: ActivatePayload): { success: boolean; error?: string } => {
-  const users = readUsers()
-  if (findUserByEmail(users, data.email)) {
-    return { success: false, error: 'Пользователь с таким email уже существует' }
-  }
-
-  const companyStore = useCompanyStore.getState()
-  const company = companyStore.getCompany(data.companyId)
-
-  const user: User = normalizeUser({
-    id: `u_${Date.now()}`,
-    email: normalizeEmail(data.email),
-    password: data.password,
-    name: data.name,
-    phone: data.phone,
-    cardNumber: data.cardNumber,
-    platformRole: 'customer',
-    companyId: data.companyId,
-    companyName: company?.companyName ?? data.companyName,
-    teamRole: 'buyer',
-    approvalRequired: company?.approvalWorkflowEnabled ?? false,
-    auditLoggingEnabled: true,
-  })
-
-  writeUsers([...users, user])
-  notifyAuthChanged()
-  return { success: true }
-}
 
 export const seedTestAccounts = (): void => {
   if (typeof window === 'undefined') return

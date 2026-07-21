@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
-import { prisma } from '@/lib/prisma'
+import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { hashPassword, hashToken } from '@/lib/server-auth'
+import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
+// tokenHash/passwordHash only — the raw token lives solely in the emailed link and the
+// raw password never touches storage, so a KeyValueSetting/backup leak exposes neither.
 export type PendingRegistration = {
-  token: string
+  tokenHash: string
   email: string
   name?: string
   cardNumber: string
   phone?: string
-  password: string
+  passwordHash: string
   companyId: string
   companyName: string
   expiresAt: string
@@ -21,21 +25,47 @@ export type PendingRegistration = {
 }
 
 type PendingData = { registrations: PendingRegistration[] }
+type Tx = ExtendedTransactionClient
 
 const KV_KEY = 'pending-registrations'
 
-async function readPending(): Promise<PendingData> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
+async function readPending(tx: Tx): Promise<PendingData> {
+  const row = await tx.keyValueSetting.findUnique({ where: { key: KV_KEY } })
   if (!row) return { registrations: [] }
   return (row.value as PendingData) ?? { registrations: [] }
 }
 
-async function writePending(data: PendingData): Promise<void> {
-  await prisma.keyValueSetting.upsert({
+async function writePending(tx: Tx, data: PendingData): Promise<void> {
+  await tx.keyValueSetting.upsert({
     where: { key: KV_KEY },
     create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
     update: { value: data as unknown as Prisma.InputJsonValue },
   })
+}
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  )
+}
+
+/**
+ * KeyValueSetting holds every pending registration in one JSON row, so two concurrent
+ * signups doing read-modify-write can clobber each other. Serializable isolation makes
+ * Postgres reject the loser with P2034; retry it a few times rather than dropping a
+ * registration silently.
+ */
+async function withPendingTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await prisma.$transaction(fn, { isolationLevel: 'Serializable' })
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'P2034' && attempt < 4) continue
+      throw e
+    }
+  }
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {
@@ -78,7 +108,18 @@ const CONTENT: Record<Lang, { subject: string; title: string; greeting: string; 
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let body: Partial<PendingRegistration> & { language?: string }
+  if (Math.random() < 0.05) void gcRateLimitStore()
+
+  const ip = getClientIp(request)
+  const rl = await checkRateLimit(`register:${ip}`)
+  if (rl.limited) {
+    return NextResponse.json(
+      { ok: false, error: 'too_many_attempts', resetAt: rl.resetAt },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    )
+  }
+
+  let body: Partial<PendingRegistration> & { password?: string; language?: string }
   try {
     body = await request.json()
   } catch {
@@ -89,30 +130,48 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!email || !cardNumber || !password || !companyId || !companyName) {
     return NextResponse.json({ ok: false, error: 'missing_fields' }, { status: 400 })
   }
+  if (password.length < 8) {
+    return NextResponse.json({ ok: false, error: 'weak_password' }, { status: 400 })
+  }
+
+  const normalizedEmail = email.toLowerCase()
+
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { id: true } })
+  if (!company) {
+    return NextResponse.json({ ok: false, error: 'company_not_found' }, { status: 404 })
+  }
+  const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } })
+  if (existingUser) {
+    return NextResponse.json({ ok: false, error: 'email_taken' }, { status: 409 })
+  }
 
   const language: Lang = (['ru', 'en', 'lv'].includes(body.language ?? '') ? body.language : 'ru') as Lang
 
   const token = crypto.randomBytes(32).toString('hex')
+  const tokenHash = hashToken(token)
+  const passwordHash = await hashPassword(password)
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-  const data = await readPending()
-  // Удаляем старые заявки с тем же email
-  data.registrations = data.registrations.filter(
-    (r) => r.email.toLowerCase() !== email.toLowerCase()
-  )
-  data.registrations.push({
-    token,
-    email: email.toLowerCase(),
-    name,
-    cardNumber,
-    phone,
-    password,
-    companyId,
-    companyName,
-    expiresAt,
-    language,
+  await withPendingTransaction(async (tx) => {
+    const data = await readPending(tx)
+    // Удаляем старые заявки с тем же email
+    data.registrations = data.registrations.filter(
+      (r) => r.email.toLowerCase() !== normalizedEmail
+    )
+    data.registrations.push({
+      tokenHash,
+      email: normalizedEmail,
+      name,
+      cardNumber,
+      phone,
+      passwordHash,
+      companyId,
+      companyName,
+      expiresAt,
+      language,
+    })
+    await writePending(tx, data)
   })
-  await writePending(data)
 
   const host = request.headers.get('host') ?? 'localhost:3000'
   const proto = host.startsWith('localhost') ? 'http' : 'https'

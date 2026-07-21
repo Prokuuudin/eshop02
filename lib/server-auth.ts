@@ -61,7 +61,7 @@ function generateToken(): string {
 
 // The DB only ever stores this hash, never the raw token — a leaked DB row (backup, replica,
 // query log) can't be replayed as a session cookie.
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 

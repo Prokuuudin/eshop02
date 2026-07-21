@@ -1,7 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { activateRegistration, type ActivatePayload } from '@/lib/auth';
 import Link from 'next/link';
 
 type Status = 'loading' | 'success' | 'error';
@@ -22,22 +21,19 @@ export default function ConfirmPage() {
 
         fetch(`/api/auth/confirm?token=${encodeURIComponent(token)}`)
             .then(async (res) => {
-                const json = await res.json() as { ok: boolean; error?: string; payload?: ActivatePayload };
-                if (!json.ok || !json.payload) {
+                const json = await res.json() as { ok: boolean; error?: string };
+                if (!json.ok) {
                     const msg =
                         json.error === 'token_expired'
                             ? 'Ссылка устарела. Пожалуйста, зарегистрируйтесь заново.'
-                            : 'Ссылка недействительна или уже была использована.';
+                            : json.error === 'email_taken'
+                                ? 'Пользователь с таким email уже существует.'
+                                : 'Ссылка недействительна или уже была использована.';
                     setErrorMsg(msg);
                     setStatus('error');
                     return;
                 }
-                const result = activateRegistration(json.payload);
-                if (!result.success) {
-                    setErrorMsg(result.error ?? 'Не удалось активировать аккаунт.');
-                    setStatus('error');
-                    return;
-                }
+                // Сессия уже открыта сервером (httpOnly cookie в ответе на этот же запрос).
                 setStatus('success');
                 setTimeout(() => router.push('/auth/login?confirmed=1'), 2500);
             })

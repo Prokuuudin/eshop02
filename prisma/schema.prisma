@@ -50,17 +50,17 @@ model Invoice {
   invoiceNumber   String    @unique
   companyId       String
   orderId         String
-  subtotal        Float
+  subtotal        Decimal   @db.Decimal(12, 2)
   taxRate         Float
-  taxAmount       Float
-  total           Float
+  taxAmount       Decimal   @db.Decimal(12, 2)
+  total           Decimal   @db.Decimal(12, 2)
   status          String    @default("draft")
   issuedDate      DateTime
   dueDate         DateTime
   paidDate        DateTime?
   paymentRecords  Json      @default("[]")
-  paidAmount      Float     @default(0)
-  remainingAmount Float
+  paidAmount      Decimal   @default(0) @db.Decimal(12, 2)
+  remainingAmount Decimal   @db.Decimal(12, 2)
   notes           String?
   items           Json?
   createdAt       DateTime  @default(now())
@@ -146,8 +146,8 @@ model Company {
   contactEmail            String?
   accountManagerId        String?
   paymentTermDays         Int             @default(0)
-  creditLimit             Float?
-  usedCredit              Float           @default(0)
+  creditLimit             Decimal?        @db.Decimal(12, 2)
+  usedCredit              Decimal         @default(0) @db.Decimal(12, 2)
   approvalWorkflowEnabled Boolean         @default(false)
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
@@ -221,8 +221,8 @@ model Product {
   titleLv             String?
   description         String?
   brand               String
-  price               Float
-  oldPrice            Float?
+  price               Decimal  @db.Decimal(12, 2)
+  oldPrice            Decimal? @db.Decimal(12, 2)
   rating              Float    @default(0)
   ratingCount         Int      @default(0)
   reviewCount         Int      @default(0)
@@ -292,14 +292,14 @@ model Order {
   id               String   @id
   createdAt        DateTime
   items            Json
-  subtotal         Float
-  tax              Float
-  delivery         Float
+  subtotal         Decimal  @db.Decimal(12, 2)
+  tax              Decimal  @db.Decimal(12, 2)
+  delivery         Decimal  @db.Decimal(12, 2)
   deliveryMethod   String
   paymentMethod    String
   promoCode        String?
-  discount         Float    @default(0)
-  total            Float
+  discount         Decimal  @default(0) @db.Decimal(12, 2)
+  total            Decimal  @db.Decimal(12, 2)
   firstName        String
   lastName         String
   email            String
@@ -402,7 +402,7 @@ model ProductSubscription {
   productId       String
   productTitle    String
   productImage    String?
-  pricePerUnit    Float
+  pricePerUnit    Decimal  @db.Decimal(12, 2)
   discountPercent Float
   quantity        Int
   interval        String
@@ -426,7 +426,7 @@ model ReturnRequest {
   reason       String
   comment      String?
   items        Json
-  refundAmount Float
+  refundAmount Decimal  @db.Decimal(12, 2)
   firstName    String
   lastName     String
   email        String

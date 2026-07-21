@@ -30,6 +30,12 @@ export function convertMoneyFields(model: string, value: unknown): unknown {
   return row
 }
 
+// Blind spot: this only intercepts Prisma Client model operations (findMany, findUnique,
+// etc). It does NOT run for `$queryRaw`/`$queryRawUnsafe` — those bypass the Client's
+// model-operation layer entirely. Any raw SQL that reads a field listed in
+// MONEY_FIELDS_BY_MODEL must convert it explicitly with `toNum`/`toNumOrNull` from
+// ./decimal. See app/api/search/route.ts and lib/catalog-service.ts (searchCatalog) for
+// the existing pattern to follow/grep for.
 export const moneyFieldsExtension = Prisma.defineExtension({
   name: 'moneyFieldsToNumber',
   query: {

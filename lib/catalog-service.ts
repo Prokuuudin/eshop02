@@ -1,6 +1,7 @@
 import { getMergedProducts } from '@/lib/product-overrides-store'
 import { getDisplayPrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
+import { toNum, toNumOrNull } from '@/lib/decimal'
 
 export interface CatalogItem {
   id: string
@@ -125,6 +126,8 @@ export async function searchCatalog(query: string, items?: CatalogItem[]): Promi
 
   const { prisma } = await import('@/lib/prisma')
   type Row = { id: string; title: string; brand: string; price: number; oldPrice: number | null; image: string | null; category: string; stock: number; sku: string | null; description: string | null }
+  // $queryRawUnsafe bypasses the Prisma Client Extension in lib/prisma-money-extension.ts,
+  // so price/oldPrice (Decimal columns) are converted back to plain numbers manually below.
   const rows = await prisma.$queryRawUnsafe<Row[]>(
     `SELECT id, title, brand, price, "oldPrice", image, category, stock, sku, description
      FROM "Product"
@@ -149,8 +152,8 @@ export async function searchCatalog(query: string, items?: CatalogItem[]): Promi
     sku: row.sku ?? undefined,
     image: row.image ?? '',
     category: row.category,
-    price: row.price,
-    oldPrice: row.oldPrice ?? undefined,
+    price: toNum(row.price),
+    oldPrice: toNumOrNull(row.oldPrice) ?? undefined,
     rating: 0,
     stock: row.stock,
     description: row.description ?? undefined,

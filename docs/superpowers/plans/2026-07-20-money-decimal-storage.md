@@ -4,14 +4,14 @@
 
 **Goal:** Store the app's real money fields as Postgres `numeric(12,2)` (Prisma `Decimal`) instead of `double precision` (Prisma `Float`), while every existing consumer keeps working with plain JS `number` exactly as today.
 
-**Architecture:** Schema change (15 fields, 6 models) + a Prisma Client Extension that converts `Decimal → number` on every query result at the client boundary, so business logic (`lib/server-pricing.ts`, `lib/tax.ts`, etc.) needs zero changes. A handful of existing per-model mapper functions (`mapDbToServerOrder`, `mapDbToInvoice`, `mapCompany`, `mapDbToProduct`, `getCatalogPrices`) get an explicit `.toNumber()`-style wrap where TypeScript's static types (not runtime values) will otherwise flag a mismatch. Migration applied to the live Neon DB manually (this repo's `prisma migrate dev` is broken — see Global Constraints), with a before/after reconciliation script.
+**Architecture:** Schema change (16 fields, 6 models) + a Prisma Client Extension that converts `Decimal → number` on every query result at the client boundary, so business logic (`lib/server-pricing.ts`, `lib/tax.ts`, etc.) needs zero changes. A handful of existing per-model mapper functions (`mapDbToServerOrder`, `mapDbToInvoice`, `mapCompany`, `mapDbToProduct`, `getCatalogPrices`) get an explicit `.toNumber()`-style wrap where TypeScript's static types (not runtime values) will otherwise flag a mismatch. Migration applied to the live Neon DB manually (this repo's `prisma migrate dev` is broken — see Global Constraints), with a before/after reconciliation script.
 
 **Tech Stack:** Prisma 7.8.0 (Prisma Client Extensions, `Decimal`/decimal.js), PostgreSQL (Neon), Vitest.
 
 ## Global Constraints
 
 - Design spec: `docs/superpowers/specs/2026-07-20-money-decimal-storage-design.md` — read it before starting, every task below implements a piece of it.
-- Scope is exactly these 15 fields, no others: `Order.{subtotal,tax,delivery,discount,total}`, `Invoice.{subtotal,taxAmount,total,paidAmount,remainingAmount}`, `Company.{creditLimit,usedCredit}`, `Product.{price,oldPrice}`, `ProductSubscription.pricePerUnit`, `ReturnRequest.refundAmount`. Do not touch `Invoice.taxRate`, `PromoCode.discount`/`minOrder`, `ProductSubscription.discountPercent`, `Order.bonusSpent`/`bonusEarned`, `Product.bonusRate`/`rating` — different kind of value, out of scope.
+- Scope is exactly these 16 fields, no others: `Order.{subtotal,tax,delivery,discount,total}`, `Invoice.{subtotal,taxAmount,total,paidAmount,remainingAmount}`, `Company.{creditLimit,usedCredit}`, `Product.{price,oldPrice}`, `ProductSubscription.pricePerUnit`, `ReturnRequest.refundAmount`. Do not touch `Invoice.taxRate`, `PromoCode.discount`/`minOrder`, `ProductSubscription.discountPercent`, `Order.bonusSpent`/`bonusEarned`, `Product.bonusRate`/`rating` — different kind of value, out of scope.
 - `npx prisma migrate dev` does not work in this repo (broken shadow-DB replay from a past rollback). Use the manual workflow documented in memory `project-migration-workflow-broken`: `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` → hand-write `migration.sql` → `prisma db execute --file` → `prisma migrate resolve --applied` → `prisma generate`. `npm run build` runs `prisma migrate deploy` automatically, so any migration folder left in `prisma/migrations/` auto-applies on the next Vercel deploy — keep that in mind for sequencing (Task 8/9 below apply the migration manually before the code deploy, same order every other migration this project has used).
 - Schema, extension code, and the migration must land together — see Task 8 for why (a `Decimal`-typed schema pointed at a still-`double precision` column, or vice versa, breaks at the Postgres wire protocol, not just types).
 - Every task that touches code ends with `npm run typecheck` and the relevant test command passing before moving on.
@@ -296,14 +296,14 @@ git commit -m "feat: add Prisma extension converting money Decimal fields to num
 
 ---
 
-### Task 3: Schema change — 15 fields to `Decimal @db.Decimal(12,2)`
+### Task 3: Schema change — 16 fields to `Decimal @db.Decimal(12,2)`
 
 **Files:**
 - Modify: `prisma/schema.prisma`
 
 **Interfaces:**
 - Consumes: nothing new.
-- Produces: regenerated Prisma Client types where these 15 fields are `Prisma.Decimal` instead of `number` — this is what makes Task 4/5's typecheck errors appear.
+- Produces: regenerated Prisma Client types where these 16 fields are `Prisma.Decimal` instead of `number` — this is what makes Task 4/5's typecheck errors appear.
 
 - [ ] **Step 1: Edit `Invoice` model** — change:
 
@@ -670,7 +670,7 @@ git commit -m "chore: add pre-migration money snapshot script"
 
 **Interfaces:**
 - Consumes: `C:/Temp/money-migration-snapshot.json` from Task 6.
-- Produces: the live Neon DB with all 15 columns as `numeric(12,2)`.
+- Produces: the live Neon DB with all 16 columns as `numeric(12,2)`.
 
 - [ ] **Step 1: Generate the migration SQL from the live DB vs schema.prisma**
 
@@ -707,7 +707,7 @@ ALTER TABLE "ReturnRequest"
   ALTER COLUMN "refundAmount" TYPE numeric(12,2) USING ROUND("refundAmount"::numeric, 2);
 ```
 
-If Prisma's actual output differs in cosmetic ways (column grouping, quoting) that's fine — what matters is every one of the 15 `ALTER COLUMN` lines is present with `USING ROUND(...::numeric, 2)` (not a bare `USING "col"::numeric`, which would skip the drift cleanup described in the design doc).
+If Prisma's actual output differs in cosmetic ways (column grouping, quoting) that's fine — what matters is every one of the 16 `ALTER COLUMN` lines is present with `USING ROUND(...::numeric, 2)` (not a bare `USING "col"::numeric`, which would skip the drift cleanup described in the design doc).
 
 - [ ] **Step 2: Write the migration file**
 

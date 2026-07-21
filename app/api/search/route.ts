@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { toNum } from '@/lib/decimal'
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,7 +46,11 @@ export async function GET(req: NextRequest) {
       ...params
     )
 
-    return NextResponse.json({ products: results })
+    // $queryRawUnsafe bypasses the Prisma Client Extension in lib/prisma-money-extension.ts,
+    // so `price` (a Decimal column) needs manual conversion back to a plain number here.
+    const products = results.map((row) => ({ ...row, price: toNum(row.price) }))
+
+    return NextResponse.json({ products })
   } catch (e) {
     console.error('[api/search]', e)
     return NextResponse.json({ products: [] })

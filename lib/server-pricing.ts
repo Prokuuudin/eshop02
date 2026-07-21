@@ -10,6 +10,14 @@ import { toNum } from '@/lib/decimal'
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
+//
+// Note: money storage is Decimal/exact now, but the arithmetic in this file (and in
+// lib/tax.ts, lib/delivery.ts, lib/bonus-program.ts, lib/promo-codes.ts) is still plain
+// float math with cent-rounding applied at each step. The Decimal migration fixed
+// storage-level drift only, not calculation-level drift — see
+// docs/superpowers/specs/2026-07-20-money-decimal-storage-design.md for the full
+// reasoning. Don't assume "money is Decimal now" means all float-related money bugs
+// are gone.
 
 type BulkTier = { quantity: number; pricePerUnit: number }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { toNum } from '@/lib/decimal'
 
 export const runtime = 'nodejs'
 
@@ -49,12 +50,12 @@ export async function GET() {
         firstName: order.firstName,
         lastName: order.lastName,
         totalOrders: 1,
-        totalSpent: order.total ?? 0,
+        totalSpent: toNum(order.total ?? 0),
         lastOrderDate: orderDate,
       })
     } else {
       existing.totalOrders += 1
-      existing.totalSpent += order.total ?? 0
+      existing.totalSpent += toNum(order.total ?? 0)
       // orders are sorted desc; first occurrence is most recent
       // keep firstName/lastName from the most recent order (already set on first insert)
     }

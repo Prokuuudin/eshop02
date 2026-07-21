@@ -9,6 +9,18 @@ import { toNum, toNumOrNull } from '@/lib/decimal'
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>
+
+export function applyProductOverride(base: Product, override: ProductOverride | undefined): Product {
+  return override ? { ...base, ...override } : base
+}
+
+export function mergeProductsWithOverrides(
+  products: Product[],
+  overrides: Record<string, ProductOverride>
+): Product[] {
+  return products.map((p) => applyProductOverride(p, overrides[p.id]))
+}
+
 export type ArchivedProductRecord = {
   id: string
   product: Product

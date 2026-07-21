@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashPassword, verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
+import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
-
-// Safe fields the client may supply — never accept privileged fields from client
-const SAFE_FIELDS = ['name', 'phone', 'cardNumber', 'avatarUrl'] as const
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -31,75 +28,37 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { id, email, password } = body
+    const { email, password } = body
 
-    if (!id || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json({ error: 'id_email_password_required' }, { status: 400 })
     }
 
     const normalizedEmail = String(email).trim().toLowerCase()
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } })
 
-    let userId: string
-
-    if (existing) {
-      // User exists in DB — must verify password; never overwrite hash on mismatch
-      const valid = await verifyPassword(password, existing.passwordHash)
-      if (!valid) {
-        return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
-      }
-      // Password verified — update only safe personal fields
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: {
-          name: body.name ?? undefined,
-          phone: body.phone ?? undefined,
-          cardNumber: body.cardNumber?.trim() ?? undefined,
-          avatarUrl: body.avatarUrl ?? undefined,
-        },
-      })
-      userId = existing.id
-    } else {
-      // New user — create with fixed defaults for ALL privileged fields
-      const passwordHash = await hashPassword(password)
-      const createUser = (userId: string) =>
-        prisma.user.create({
-          data: {
-            id: userId,
-            email: normalizedEmail,
-            passwordHash,
-            name: body.name ?? null,
-            phone: body.phone ?? null,
-            cardNumber: body.cardNumber?.trim() ?? null,
-            avatarUrl: body.avatarUrl ?? null,
-            // Privileged fields always default — never from client
-            platformRole: 'customer',
-            approvalRequired: false,
-            auditLoggingEnabled: false,
-            mustChangePassword: false,
-            bonusPoints: 350,
-          },
-        })
-
-      // Local seed ids (seed_user_001 etc.) can already belong to another account in the
-      // shared DB — fall back to a generated id instead of failing with a unique conflict.
-      const requestedId = String(id)
-      const idTaken = await prisma.user.findUnique({
-        where: { id: requestedId },
-        select: { id: true },
-      })
-
-      let user
-      try {
-        user = await createUser(idTaken ? crypto.randomUUID() : requestedId)
-      } catch (e) {
-        if ((e as { code?: string })?.code !== 'P2002') throw e
-        user = await createUser(crypto.randomUUID())
-      }
-      userId = user.id
+    // Account must already exist — created only via /api/auth/register-card (real card)
+    // or an admin invite. This route logs in; it must never double as self-registration.
+    if (!existing) {
+      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
 
-    const token = await createSession(userId)
+    const valid = await verifyPassword(password, existing.passwordHash)
+    if (!valid) {
+      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
+    }
+    // Password verified — update only safe personal fields
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        name: body.name ?? undefined,
+        phone: body.phone ?? undefined,
+        cardNumber: body.cardNumber?.trim() ?? undefined,
+        avatarUrl: body.avatarUrl ?? undefined,
+      },
+    })
+
+    const token = await createSession(existing.id)
 
     const res = NextResponse.json({ ok: true })
     res.cookies.set(SESSION_COOKIE, token, {
@@ -116,5 +75,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Silence unused import warning
-void SAFE_FIELDS

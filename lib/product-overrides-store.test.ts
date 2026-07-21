@@ -184,3 +184,72 @@ describe('getAdminProducts', () => {
     expect(result[0].title).toBe('Base title')
   })
 })
+
+describe('upsertProductOverride', () => {
+  const baseDbProduct = {
+    id: 'p1', isDeleted: false, externalId: null as string | null,
+  }
+
+  it('returns an error when the product does not exist', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null)
+    const result = await upsertProductOverride('missing', { price: 10 })
+    expect(result.success).toBe(false)
+  })
+
+  it('writes the patch into the override map instead of updating the Product row', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(baseDbProduct as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await upsertProductOverride('p1', { price: 149.99, description: 'Local text' })
+
+    expect(result.success).toBe(true)
+    expect(prisma.product.update).not.toHaveBeenCalled()
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { key: 'product-overrides' },
+        update: { value: { p1: { price: 149.99, description: 'Local text' } } },
+      })
+    )
+  })
+
+  it('merges into any existing overrides for the same product without dropping other fields', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(baseDbProduct as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      key: 'product-overrides',
+      value: { p1: { description: 'Already overridden description' } },
+      updatedAt: new Date(),
+    } as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    await upsertProductOverride('p1', { price: 149.99 })
+
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: {
+          value: { p1: { description: 'Already overridden description', price: 149.99 } },
+        },
+      })
+    )
+  })
+
+  it('rejects a stock change on a synced product (externalId set)', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ ...baseDbProduct, externalId: 'ext-1' } as never)
+
+    const result = await upsertProductOverride('p1', { stock: 5 })
+
+    expect(result.success).toBe(false)
+    expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('allows a stock change on a manually created product (externalId null)', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ ...baseDbProduct, externalId: null } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await upsertProductOverride('p1', { stock: 5 })
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalled()
+  })
+})

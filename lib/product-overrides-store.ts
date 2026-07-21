@@ -274,39 +274,18 @@ export const upsertProductOverride = async (
   const dbProduct = await prisma.product.findUnique({ where: { id: productId } })
   if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
 
+  if (dbProduct.externalId !== null && 'stock' in nextValues) {
+    return {
+      success: false,
+      error: 'Остаток синхронизируемого товара нельзя менять вручную — источник истины живая БД',
+    }
+  }
+
   const normalizedPatch = normalizeProductPatch(nextValues)
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dbData: Record<string, any> = {}
-  const patchRecord = normalizedPatch as Record<string, unknown>
-  const fieldMap: Record<string, string> = {
-    title: 'title', titleKey: 'titleKey', titleEn: 'titleEn', titleLv: 'titleLv',
-    description: 'description', brand: 'brand', price: 'price', oldPrice: 'oldPrice',
-    rating: 'rating', ratingCount: 'ratingCount', reviewCount: 'reviewCount',
-    image: 'image', images: 'images', metaTitle: 'metaTitle', metaDescription: 'metaDescription',
-    ogImage: 'ogImage', ogAlt: 'ogAlt', badges: 'badges', category: 'category', stock: 'stock',
-    isActive: 'isActive',
-    barcode: 'barcode',
-    relatedProductIds: 'relatedProductIds', oftenBoughtTogether: 'oftenBoughtTogether',
-    minOrderQuantities: 'minOrderQuantities', technicalSpecs: 'technicalSpecs',
-    bulkPricingTiers: 'bulkPricingTiers', demoVideo: 'demoVideo',
-    distributorName: 'distributorName', distributorAddress: 'distributorAddress',
-    sku: 'sku', unitOfMeasure: 'unitOfMeasure', certificates: 'certificates',
-    packagingSize: 'packagingSize', compatibleEquipment: 'compatibleEquipment',
-    manufacturerName: 'manufacturerName', manufacturerAddress: 'manufacturerAddress',
-    manufacturerEmail: 'manufacturerEmail', distributorEmail: 'distributorEmail',
-    bonusRate: 'bonusRate', feature1: 'feature1', feature1En: 'feature1En', feature1Lv: 'feature1Lv',
-    feature2: 'feature2', feature2En: 'feature2En', feature2Lv: 'feature2Lv',
-    feature3: 'feature3', feature3En: 'feature3En', feature3Lv: 'feature3Lv',
-    feature4: 'feature4', feature4En: 'feature4En', feature4Lv: 'feature4Lv',
-    specVolume: 'specVolume', specType: 'specType', specCountry: 'specCountry',
-  }
-  for (const [key, dbKey] of Object.entries(fieldMap)) {
-    if (key in patchRecord) dbData[dbKey] = patchRecord[key] ?? null
-  }
-
-  if (Object.keys(dbData).length > 0) {
-    await prisma.product.update({ where: { id: productId }, data: dbData })
+  if (Object.keys(normalizedPatch).length > 0) {
+    const overrides = await getProductOverrides()
+    overrides[productId] = { ...overrides[productId], ...normalizedPatch }
+    await writeOverridesMap(overrides)
   }
 
   return { success: true, products: await getAdminProducts() }

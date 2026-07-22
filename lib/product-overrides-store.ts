@@ -9,6 +9,18 @@ import { toNum, toNumOrNull } from '@/lib/decimal'
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>
+
+export function applyProductOverride(base: Product, override: ProductOverride | undefined): Product {
+  return override ? { ...base, ...override } : base
+}
+
+export function mergeProductsWithOverrides(
+  products: Product[],
+  overrides: Record<string, ProductOverride>
+): Product[] {
+  return products.map((p) => applyProductOverride(p, overrides[p.id]))
+}
+
 export type ArchivedProductRecord = {
   id: string
   product: Product
@@ -145,13 +157,21 @@ function mapProductToDbCreate(p: Product, isCustom = false): any {
 }
 
 const getDbProducts = cache(async (): Promise<Product[]> => {
-  const rows = await prisma.product.findMany({
-    where: { isDeleted: false, isActive: true },
-    orderBy: { createdAt: 'desc' },
-  })
-  return rows.map(mapDbToProduct)
+  const [rows, overrides] = await Promise.all([
+    prisma.product.findMany({
+      where: { isDeleted: false, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    getProductOverrides().catch(() => ({})),
+  ])
+  return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })
 
+// Примечание: category-фильтр ниже сравнивается с базовым (пред-override) значением
+// Product.category на уровне SQL. Если admin когда-нибудь переопределит category
+// конкретного товара через override, для пагинированного по категории списка он
+// продолжит фильтроваться по старой базовой категории. Известное ограничение,
+// не решается здесь — переопределение category встречается на практике крайне редко.
 export async function getDbProductsPaginated(opts: {
   category?: string
   skip?: number
@@ -162,7 +182,7 @@ export async function getDbProductsPaginated(opts: {
     isActive: true,
     ...(opts.category ? { category: opts.category } : {}),
   }
-  const [rows, total] = await Promise.all([
+  const [rows, total, overrides] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -170,9 +190,10 @@ export async function getDbProductsPaginated(opts: {
       take: opts.take,
     }),
     prisma.product.count({ where }),
+    getProductOverrides().catch(() => ({})),
   ])
 
-  return { products: rows.map(mapDbToProduct), total }
+  return { products: mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), total }
 }
 
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
@@ -181,15 +202,30 @@ export const getMergedProducts = cache(async (): Promise<Product[]> => {
 
 // Для админки: без фильтра isActive, иначе скрытые товары нельзя ни увидеть, ни включить обратно.
 export const getAdminProducts = cache(async (): Promise<Product[]> => {
-  const rows = await prisma.product.findMany({
-    where: { isDeleted: false },
-    orderBy: { createdAt: 'desc' },
-  })
-  return rows.map(mapDbToProduct)
+  const [rows, overrides] = await Promise.all([
+    prisma.product.findMany({ where: { isDeleted: false }, orderBy: { createdAt: 'desc' } }),
+    getProductOverrides().catch(() => ({})),
+  ])
+  return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides)
 })
 
+const OVERRIDES_KEY = 'product-overrides'
+
 export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {
-  return {}
+  const row = await prisma.keyValueSetting.findUnique({ where: { key: OVERRIDES_KEY } })
+  if (!row) return {}
+  const parsed = row.value as unknown
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, ProductOverride>)
+    : {}
+}
+
+const writeOverridesMap = async (overrides: Record<string, ProductOverride>): Promise<void> => {
+  await prisma.keyValueSetting.upsert({
+    where: { key: OVERRIDES_KEY },
+    create: { key: OVERRIDES_KEY, value: overrides as unknown as Prisma.InputJsonValue },
+    update: { value: overrides as unknown as Prisma.InputJsonValue },
+  })
 }
 
 export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord[]> => {
@@ -219,7 +255,7 @@ const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omi
   return normalized
 }
 
-const buildOverrideFromSnapshot = (base: Product, snapshot: Product): ProductOverride => {
+const buildOverrideFromSnapshot = (base: Product, snapshot: Partial<Product>): ProductOverride => {
   const nextOverride: ProductOverride = {}
   const snapshotWithoutId = { ...snapshot, id: undefined } as Record<string, unknown>
   const baseWithoutId = { ...base, id: undefined } as Record<string, unknown>
@@ -239,38 +275,25 @@ export const upsertProductOverride = async (
   if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
 
   const normalizedPatch = normalizeProductPatch(nextValues)
+  const overrides = await getProductOverrides()
+  // Callers (the admin form) resend a near-full product snapshot on every save, not a
+  // per-field diff. Diffing against what the admin currently sees (base + existing
+  // override) before storing/guarding means: (1) resubmitting an unchanged field never
+  // freezes it as an override, and (2) the stock-guard below only fires on a genuine
+  // stock change, not merely because the form happened to include the field.
+  const currentMerged = applyProductOverride(mapDbToProduct(dbProduct), overrides[productId])
+  const changedFields = buildOverrideFromSnapshot(currentMerged, normalizedPatch)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dbData: Record<string, any> = {}
-  const patchRecord = normalizedPatch as Record<string, unknown>
-  const fieldMap: Record<string, string> = {
-    title: 'title', titleKey: 'titleKey', titleEn: 'titleEn', titleLv: 'titleLv',
-    description: 'description', brand: 'brand', price: 'price', oldPrice: 'oldPrice',
-    rating: 'rating', ratingCount: 'ratingCount', reviewCount: 'reviewCount',
-    image: 'image', images: 'images', metaTitle: 'metaTitle', metaDescription: 'metaDescription',
-    ogImage: 'ogImage', ogAlt: 'ogAlt', badges: 'badges', category: 'category', stock: 'stock',
-    isActive: 'isActive',
-    barcode: 'barcode',
-    relatedProductIds: 'relatedProductIds', oftenBoughtTogether: 'oftenBoughtTogether',
-    minOrderQuantities: 'minOrderQuantities', technicalSpecs: 'technicalSpecs',
-    bulkPricingTiers: 'bulkPricingTiers', demoVideo: 'demoVideo',
-    distributorName: 'distributorName', distributorAddress: 'distributorAddress',
-    sku: 'sku', unitOfMeasure: 'unitOfMeasure', certificates: 'certificates',
-    packagingSize: 'packagingSize', compatibleEquipment: 'compatibleEquipment',
-    manufacturerName: 'manufacturerName', manufacturerAddress: 'manufacturerAddress',
-    manufacturerEmail: 'manufacturerEmail', distributorEmail: 'distributorEmail',
-    bonusRate: 'bonusRate', feature1: 'feature1', feature1En: 'feature1En', feature1Lv: 'feature1Lv',
-    feature2: 'feature2', feature2En: 'feature2En', feature2Lv: 'feature2Lv',
-    feature3: 'feature3', feature3En: 'feature3En', feature3Lv: 'feature3Lv',
-    feature4: 'feature4', feature4En: 'feature4En', feature4Lv: 'feature4Lv',
-    specVolume: 'specVolume', specType: 'specType', specCountry: 'specCountry',
-  }
-  for (const [key, dbKey] of Object.entries(fieldMap)) {
-    if (key in patchRecord) dbData[dbKey] = patchRecord[key] ?? null
+  if (dbProduct.externalId !== null && 'stock' in changedFields) {
+    return {
+      success: false,
+      error: 'Остаток синхронизируемого товара нельзя менять вручную — источник истины живая БД',
+    }
   }
 
-  if (Object.keys(dbData).length > 0) {
-    await prisma.product.update({ where: { id: productId }, data: dbData })
+  if (Object.keys(changedFields).length > 0) {
+    overrides[productId] = { ...overrides[productId], ...changedFields }
+    await writeOverridesMap(overrides)
   }
 
   return { success: true, products: await getAdminProducts() }
@@ -279,9 +302,16 @@ export const upsertProductOverride = async (
 export const resetProductOverride = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
-  const adminProducts = await getAdminProducts()
-  if (!adminProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
-  return { success: true, products: adminProducts }
+  const dbProduct = await prisma.product.findUnique({ where: { id: productId } })
+  if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
+
+  const overrides = await getProductOverrides()
+  if (productId in overrides) {
+    delete overrides[productId]
+    await writeOverridesMap(overrides)
+  }
+
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const createProduct = async (
@@ -369,6 +399,9 @@ export const restoreDeletedProduct = async (
     if (dbProduct) {
       const baseProduct = mapDbToProduct(dbProduct)
       const overridePatch = buildOverrideFromSnapshot(baseProduct, archived.product)
+      // Stock is never restored as an override — live inventory always wins,
+      // regardless of what the archived snapshot happened to hold.
+      delete overridePatch.stock
       if (Object.keys(overridePatch).length > 0) {
         await upsertProductOverride(nextId, overridePatch)
       }

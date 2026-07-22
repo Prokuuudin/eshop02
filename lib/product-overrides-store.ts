@@ -255,7 +255,7 @@ const normalizeProductPatch = (patch: Partial<Omit<Product, 'id'>>): Partial<Omi
   return normalized
 }
 
-const buildOverrideFromSnapshot = (base: Product, snapshot: Product): ProductOverride => {
+const buildOverrideFromSnapshot = (base: Product, snapshot: Partial<Product>): ProductOverride => {
   const nextOverride: ProductOverride = {}
   const snapshotWithoutId = { ...snapshot, id: undefined } as Record<string, unknown>
   const baseWithoutId = { ...base, id: undefined } as Record<string, unknown>
@@ -274,17 +274,25 @@ export const upsertProductOverride = async (
   const dbProduct = await prisma.product.findUnique({ where: { id: productId } })
   if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
 
-  if (dbProduct.externalId !== null && 'stock' in nextValues) {
+  const normalizedPatch = normalizeProductPatch(nextValues)
+  const overrides = await getProductOverrides()
+  // Callers (the admin form) resend a near-full product snapshot on every save, not a
+  // per-field diff. Diffing against what the admin currently sees (base + existing
+  // override) before storing/guarding means: (1) resubmitting an unchanged field never
+  // freezes it as an override, and (2) the stock-guard below only fires on a genuine
+  // stock change, not merely because the form happened to include the field.
+  const currentMerged = applyProductOverride(mapDbToProduct(dbProduct), overrides[productId])
+  const changedFields = buildOverrideFromSnapshot(currentMerged, normalizedPatch)
+
+  if (dbProduct.externalId !== null && 'stock' in changedFields) {
     return {
       success: false,
       error: 'Остаток синхронизируемого товара нельзя менять вручную — источник истины живая БД',
     }
   }
 
-  const normalizedPatch = normalizeProductPatch(nextValues)
-  if (Object.keys(normalizedPatch).length > 0) {
-    const overrides = await getProductOverrides()
-    overrides[productId] = { ...overrides[productId], ...normalizedPatch }
+  if (Object.keys(changedFields).length > 0) {
+    overrides[productId] = { ...overrides[productId], ...changedFields }
     await writeOverridesMap(overrides)
   }
 

@@ -254,6 +254,67 @@ describe('upsertProductOverride', () => {
   })
 })
 
+describe('upsertProductOverride — diffing against the current merged value', () => {
+  const syncedDbProduct = { id: 'p1', isDeleted: false, externalId: 'ext-1' }
+
+  it('does not reject or store stock when the form resubmits the same stock value it was shown', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ ...syncedDbProduct, stock: 25 } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    // Full-form-style patch: stock is present, but unchanged from the live value (25).
+    const result = await upsertProductOverride('p1', { stock: 25, price: 149.99 })
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: { value: { p1: { price: 149.99 } } } })
+    )
+  })
+
+  it('still rejects when stock is genuinely different from the live value on a synced product', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ ...syncedDbProduct, stock: 25 } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const result = await upsertProductOverride('p1', { stock: 5 })
+
+    expect(result.success).toBe(false)
+    expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('does not freeze unrelated fields that the form resubmitted unchanged', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      ...syncedDbProduct, stock: 25, title: 'Base title', brand: 'Base brand',
+    } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    // Simulates a full-form save where only price actually changed.
+    const result = await upsertProductOverride('p1', {
+      title: 'Base title', brand: 'Base brand', stock: 25, price: 149.99,
+    })
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: { value: { p1: { price: 149.99 } } } })
+    )
+  })
+
+  it('re-affirming an already-overridden field with the same value is a harmless no-op write', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ ...syncedDbProduct, stock: 25 } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      key: 'product-overrides',
+      value: { p1: { price: 149.99 } },
+      updatedAt: new Date(),
+    } as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await upsertProductOverride('p1', { price: 149.99 })
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+})
+
 describe('resetProductOverride', () => {
   it('returns an error when the product does not exist', async () => {
     vi.mocked(prisma.product.findUnique).mockResolvedValue(null)

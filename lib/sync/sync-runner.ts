@@ -1,9 +1,10 @@
 import type { ExtendedPrismaClient } from '@/lib/prisma'
-import type { ErpAdapter } from './erp-adapter'
+import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
 import { withRetry } from './retry'
 import { SyncLogger } from './logger'
+import { acquireSyncLock, releaseSyncLock } from './sync-lock'
 
 const BATCH_SIZE = 200
 const STALE_THRESHOLD_MS = 30 * 60 * 1000
@@ -32,17 +33,19 @@ export async function runSync(
     data: { status: 'failed', finishedAt: new Date() },
   })
 
-  const activeRun = await db.syncRun.findFirst({ where: { status: 'running' } })
-  if (activeRun) {
-    throw new Error(`Sync already running (id: ${activeRun.id})`)
-  }
-
   const syncRun = await db.syncRun.create({ data: { status: 'running', triggeredBy } })
   const runId = syncRun.id
+
+  const acquired = await acquireSyncLock(db, runId, STALE_THRESHOLD_MS)
+  if (!acquired) {
+    await db.syncRun.update({ where: { id: runId }, data: { status: 'failed', finishedAt: new Date() } })
+    throw new Error('Sync already running')
+  }
 
   let productsSynced = 0
   let deactivated = 0
   let consecutiveFetchErrors = 0
+  const seenExternalIds = new Set<string>()
 
   try {
     let cursor: string | number | undefined = undefined
@@ -77,13 +80,27 @@ export async function runSync(
       for (let i = 0; i < products.length; i += BATCH_SIZE) {
         const batch = products.slice(i, i + BATCH_SIZE)
         const batchIndex = Math.floor(productsSynced / BATCH_SIZE)
-        const valid = batch.filter(p => p.externalId)
+        const withId = batch.filter(p => p.externalId)
 
-        if (valid.length < batch.length) {
+        if (withId.length < batch.length) {
           logger.info('Skipping products with missing externalId', {
             batchIndex,
-            skipped: batch.length - valid.length,
+            skipped: batch.length - withId.length,
           })
+        }
+
+        const valid: ErpProduct[] = []
+        const duplicateIds: string[] = []
+        for (const p of withId) {
+          if (seenExternalIds.has(p.externalId)) {
+            duplicateIds.push(p.externalId)
+            continue
+          }
+          seenExternalIds.add(p.externalId)
+          valid.push(p)
+        }
+        if (duplicateIds.length > 0) {
+          logger.recordBatchError(batchIndex, new Error('Duplicate externalId in feed'), duplicateIds)
         }
 
         if (valid.length === 0) continue
@@ -103,30 +120,37 @@ export async function runSync(
       await db.syncRun.update({ where: { id: runId }, data: { productsSynced } })
     }
 
+    const errorCount = logger.getErrorCount()
+    const errorSample = logger.getErrorSample()
+
+    if (errorCount > 0) {
+      logger.error('Sync completed with batch errors — skipping deactivation', { errorCount })
+      await db.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: 'failed',
+          finishedAt: new Date(),
+          productsSynced,
+          deactivated: 0,
+          errorCount,
+          // cast required: Prisma Json field does not accept typed arrays directly
+          ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
+        },
+      })
+      await releaseSyncLock(db, runId).catch(() => {})
+      return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
+    }
+
     deactivated = await deactivateMissing(db, runId)
     logger.info('Deactivation complete', { deactivated })
 
-    const errorSample = logger.getErrorSample()
     await db.syncRun.update({
       where: { id: runId },
-      data: {
-        status: 'completed',
-        finishedAt: new Date(),
-        productsSynced,
-        deactivated,
-        errorCount: logger.getErrorCount(),
-        // cast required: Prisma Json field does not accept typed arrays directly
-        ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
-      },
+      data: { status: 'completed', finishedAt: new Date(), productsSynced, deactivated, errorCount: 0 },
     })
 
-    return {
-      runId,
-      status: 'completed',
-      productsSynced,
-      deactivated,
-      errorCount: logger.getErrorCount(),
-    }
+    await releaseSyncLock(db, runId).catch(() => {})
+    return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0 }
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })
 
@@ -143,6 +167,8 @@ export async function runSync(
         },
       })
       .catch(() => {})
+
+    await releaseSyncLock(db, runId).catch(() => {})
 
     return {
       runId,

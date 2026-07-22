@@ -26,6 +26,8 @@ function makeMockDb(): ExtendedPrismaClient {
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn().mockResolvedValue(null),
     },
+    $queryRawUnsafe: vi.fn().mockResolvedValue([{ key: 'sync-run-lock' }]),
+    $executeRawUnsafe: vi.fn().mockResolvedValue(1),
   } as unknown as ExtendedPrismaClient
 }
 
@@ -54,7 +56,9 @@ describe('runSync', () => {
 
   it('throws when another sync is actively running', async () => {
     const db = makeMockDb()
-    ;(db.syncRun.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'existing-run' })
+    ;(db as unknown as { $queryRawUnsafe: ReturnType<typeof vi.fn> }).$queryRawUnsafe = vi
+      .fn()
+      .mockResolvedValue([])
     await expect(runSync(makeAdapter(), db)).rejects.toThrow('already running')
   })
 
@@ -102,5 +106,39 @@ describe('runSync', () => {
     expect(db.syncRun.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'failed' }) }),
     )
+  })
+
+  it('does not call deactivateMissing when a batch upsert failed', async () => {
+    const products = [
+      { externalId: 'e1', title: 'P1', price: 100, stock: 1 },
+      { externalId: 'e2', title: 'P2', price: 200, stock: 2 },
+    ]
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    await runSync(makeAdapter(products), makeMockDb())
+    expect(deactivateMissing).not.toHaveBeenCalled()
+  })
+
+  it('marks the run failed when a batch upsert failed, even though the loop completed', async () => {
+    const products = [
+      { externalId: 'e1', title: 'P1', price: 100, stock: 1 },
+    ]
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    const result = await runSync(makeAdapter(products), makeMockDb())
+    expect(result.status).toBe('failed')
+    expect(result.deactivated).toBe(0)
+  })
+
+  it('skips a repeated externalId and records it as an error', async () => {
+    const products = [
+      { externalId: 'dup', title: 'First', price: 100, stock: 1 },
+      { externalId: 'dup', title: 'Second (duplicate id)', price: 150, stock: 3 },
+      { externalId: 'unique', title: 'Fine', price: 200, stock: 2 },
+    ]
+    const result = await runSync(makeAdapter(products), makeMockDb())
+    const calledWith = (upsertProducts as ReturnType<typeof vi.fn>).mock.calls[0][1]
+    expect(calledWith).toHaveLength(2)
+    expect(calledWith.map((p: { externalId: string }) => p.externalId)).toEqual(['dup', 'unique'])
+    expect(result.status).toBe('failed')
+    expect(result.errorCount).toBeGreaterThan(0)
   })
 })

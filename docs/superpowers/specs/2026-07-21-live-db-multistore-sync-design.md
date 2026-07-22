@@ -1,7 +1,7 @@
 # ERP-синк с живой multi-store БД (hairshop_p34s) — дизайн
 
 **Дата:** 2026-07-21
-**Статус:** approved, готов к implementation plan
+**Статус:** SUPERSEDED 2026-07-22 — см. `2026-07-22-live-db-sync-design-correction.md`. Топология здесь предполагала bidirectional REST (read-pull + синхронный write-back), реальный источник — one-way ежечасный XML-экспорт, write-back невозможен в принципе. Override-layer раздел («Модель данных») остаётся в силе без изменений — читать его отсюда, остальное (Read-path/Write-back/Rollout) считать замененным.
 **Контекст:** [[project_live_db_multistore_audit_2026_07_21]] — полный аудит показал, что `lib/sync/adapters/rest-paginated.ts` (`fetchPage`) — throw-заглушка, ни разу не выполнялась против реальных данных, а весь дизайн Phase 1 ([[project_erp_sync]], `docs/superpowers/specs/2026-06-09-erp-product-sync-design.md`) сделан под допущение «один источник, один писатель, ERP always wins, голый last-write-wins upsert». Реальная топология другая: hairshop_p34s (SQL Server, nopCommerce, **native multi-store**) уже принимает синк-данные от 2 других живых магазинов в реальном времени. Этот документ проектирует интеграцию заново под эту топологию.
 
 Найденная структурная коллизия, из-за которой прямое включение старого дизайна уничтожило бы данные: `lib/product-overrides-store.ts` (`upsertProductOverride`) пишет админ-правки цены/описания прямо в колонки `Product.price`/`Product.description` — те же колонки, которые `upsert-products.ts` перезаписывал бы через `ON CONFLICT DO UPDATE SET price=EXCLUDED.price, description=EXCLUDED.description`. Одна колонка на два источника правды.

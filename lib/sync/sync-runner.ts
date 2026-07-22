@@ -137,7 +137,7 @@ export async function runSync(
           ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
         },
       })
-      await releaseSyncLock(db, runId)
+      await releaseSyncLock(db, runId).catch(() => {})
       return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
     }
 
@@ -149,7 +149,7 @@ export async function runSync(
       data: { status: 'completed', finishedAt: new Date(), productsSynced, deactivated, errorCount: 0 },
     })
 
-    await releaseSyncLock(db, runId)
+    await releaseSyncLock(db, runId).catch(() => {})
     return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0 }
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })

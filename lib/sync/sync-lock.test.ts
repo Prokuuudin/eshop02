@@ -22,6 +22,14 @@ describe('acquireSyncLock', () => {
     expect(acquired).toBe(false)
   })
 
+  it('uses an ON CONFLICT upsert guarded by the lockedUntil staleness predicate', async () => {
+    const db = makeMockDb([{ key: 'sync-run-lock' }])
+    await acquireSyncLock(db, 'run-1', 30 * 60 * 1000)
+    const call = (db.$queryRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(call[0]).toEqual(expect.stringContaining('ON CONFLICT'))
+    expect(call[0]).toEqual(expect.stringContaining(`("KeyValueSetting".value->>'lockedUntil')::timestamptz < now()`))
+  })
+
   it('passes the runId and a future lockedUntil to the CAS statement', async () => {
     const db = makeMockDb([{ key: 'sync-run-lock' }])
     await acquireSyncLock(db, 'run-42', 1000)
@@ -42,5 +50,7 @@ describe('releaseSyncLock', () => {
       'sync-run-lock',
       'run-1',
     )
+    const call = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(call[0]).toEqual(expect.stringContaining(`(value->>'runId')`))
   })
 })

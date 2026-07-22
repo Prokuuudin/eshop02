@@ -4,6 +4,7 @@ import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
 import { withRetry } from './retry'
 import { SyncLogger } from './logger'
+import { acquireSyncLock, releaseSyncLock } from './sync-lock'
 
 const BATCH_SIZE = 200
 const STALE_THRESHOLD_MS = 30 * 60 * 1000
@@ -32,13 +33,14 @@ export async function runSync(
     data: { status: 'failed', finishedAt: new Date() },
   })
 
-  const activeRun = await db.syncRun.findFirst({ where: { status: 'running' } })
-  if (activeRun) {
-    throw new Error(`Sync already running (id: ${activeRun.id})`)
-  }
-
   const syncRun = await db.syncRun.create({ data: { status: 'running', triggeredBy } })
   const runId = syncRun.id
+
+  const acquired = await acquireSyncLock(db, runId, STALE_THRESHOLD_MS)
+  if (!acquired) {
+    await db.syncRun.update({ where: { id: runId }, data: { status: 'failed', finishedAt: new Date() } })
+    throw new Error('Sync already running')
+  }
 
   let productsSynced = 0
   let deactivated = 0
@@ -135,6 +137,7 @@ export async function runSync(
           ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
         },
       })
+      await releaseSyncLock(db, runId)
       return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
     }
 
@@ -146,6 +149,7 @@ export async function runSync(
       data: { status: 'completed', finishedAt: new Date(), productsSynced, deactivated, errorCount: 0 },
     })
 
+    await releaseSyncLock(db, runId)
     return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0 }
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })
@@ -163,6 +167,8 @@ export async function runSync(
         },
       })
       .catch(() => {})
+
+    await releaseSyncLock(db, runId).catch(() => {})
 
     return {
       runId,

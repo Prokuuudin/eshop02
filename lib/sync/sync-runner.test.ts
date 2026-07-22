@@ -26,6 +26,8 @@ function makeMockDb(): ExtendedPrismaClient {
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn().mockResolvedValue(null),
     },
+    $queryRawUnsafe: vi.fn().mockResolvedValue([{ key: 'sync-run-lock' }]),
+    $executeRawUnsafe: vi.fn().mockResolvedValue(1),
   } as unknown as ExtendedPrismaClient
 }
 
@@ -54,7 +56,9 @@ describe('runSync', () => {
 
   it('throws when another sync is actively running', async () => {
     const db = makeMockDb()
-    ;(db.syncRun.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'existing-run' })
+    ;(db as unknown as { $queryRawUnsafe: ReturnType<typeof vi.fn> }).$queryRawUnsafe = vi
+      .fn()
+      .mockResolvedValue([])
     await expect(runSync(makeAdapter(), db)).rejects.toThrow('already running')
   })
 

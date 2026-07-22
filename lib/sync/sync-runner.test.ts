@@ -123,4 +123,18 @@ describe('runSync', () => {
     expect(result.status).toBe('failed')
     expect(result.deactivated).toBe(0)
   })
+
+  it('skips a repeated externalId and records it as an error', async () => {
+    const products = [
+      { externalId: 'dup', title: 'First', price: 100, stock: 1 },
+      { externalId: 'dup', title: 'Second (duplicate id)', price: 150, stock: 3 },
+      { externalId: 'unique', title: 'Fine', price: 200, stock: 2 },
+    ]
+    const result = await runSync(makeAdapter(products), makeMockDb())
+    const calledWith = (upsertProducts as ReturnType<typeof vi.fn>).mock.calls[0][1]
+    expect(calledWith).toHaveLength(2)
+    expect(calledWith.map((p: { externalId: string }) => p.externalId)).toEqual(['dup', 'unique'])
+    expect(result.status).toBe('failed')
+    expect(result.errorCount).toBeGreaterThan(0)
+  })
 })

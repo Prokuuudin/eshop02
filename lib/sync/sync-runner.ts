@@ -1,5 +1,5 @@
 import type { ExtendedPrismaClient } from '@/lib/prisma'
-import type { ErpAdapter } from './erp-adapter'
+import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
 import { withRetry } from './retry'
@@ -43,6 +43,7 @@ export async function runSync(
   let productsSynced = 0
   let deactivated = 0
   let consecutiveFetchErrors = 0
+  const seenExternalIds = new Set<string>()
 
   try {
     let cursor: string | number | undefined = undefined
@@ -77,13 +78,27 @@ export async function runSync(
       for (let i = 0; i < products.length; i += BATCH_SIZE) {
         const batch = products.slice(i, i + BATCH_SIZE)
         const batchIndex = Math.floor(productsSynced / BATCH_SIZE)
-        const valid = batch.filter(p => p.externalId)
+        const withId = batch.filter(p => p.externalId)
 
-        if (valid.length < batch.length) {
+        if (withId.length < batch.length) {
           logger.info('Skipping products with missing externalId', {
             batchIndex,
-            skipped: batch.length - valid.length,
+            skipped: batch.length - withId.length,
           })
+        }
+
+        const valid: ErpProduct[] = []
+        const duplicateIds: string[] = []
+        for (const p of withId) {
+          if (seenExternalIds.has(p.externalId)) {
+            duplicateIds.push(p.externalId)
+            continue
+          }
+          seenExternalIds.add(p.externalId)
+          valid.push(p)
+        }
+        if (duplicateIds.length > 0) {
+          logger.recordBatchError(batchIndex, new Error('Duplicate externalId in feed'), duplicateIds)
         }
 
         if (valid.length === 0) continue

@@ -103,30 +103,35 @@ export async function runSync(
       await db.syncRun.update({ where: { id: runId }, data: { productsSynced } })
     }
 
+    const errorCount = logger.getErrorCount()
+    const errorSample = logger.getErrorSample()
+
+    if (errorCount > 0) {
+      logger.error('Sync completed with batch errors — skipping deactivation', { errorCount })
+      await db.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: 'failed',
+          finishedAt: new Date(),
+          productsSynced,
+          deactivated: 0,
+          errorCount,
+          // cast required: Prisma Json field does not accept typed arrays directly
+          ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
+        },
+      })
+      return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
+    }
+
     deactivated = await deactivateMissing(db, runId)
     logger.info('Deactivation complete', { deactivated })
 
-    const errorSample = logger.getErrorSample()
     await db.syncRun.update({
       where: { id: runId },
-      data: {
-        status: 'completed',
-        finishedAt: new Date(),
-        productsSynced,
-        deactivated,
-        errorCount: logger.getErrorCount(),
-        // cast required: Prisma Json field does not accept typed arrays directly
-        ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
-      },
+      data: { status: 'completed', finishedAt: new Date(), productsSynced, deactivated, errorCount: 0 },
     })
 
-    return {
-      runId,
-      status: 'completed',
-      productsSynced,
-      deactivated,
-      errorCount: logger.getErrorCount(),
-    }
+    return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0 }
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })
 

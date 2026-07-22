@@ -103,4 +103,24 @@ describe('runSync', () => {
       expect.objectContaining({ data: expect.objectContaining({ status: 'failed' }) }),
     )
   })
+
+  it('does not call deactivateMissing when a batch upsert failed', async () => {
+    const products = [
+      { externalId: 'e1', title: 'P1', price: 100, stock: 1 },
+      { externalId: 'e2', title: 'P2', price: 200, stock: 2 },
+    ]
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    await runSync(makeAdapter(products), makeMockDb())
+    expect(deactivateMissing).not.toHaveBeenCalled()
+  })
+
+  it('marks the run failed when a batch upsert failed, even though the loop completed', async () => {
+    const products = [
+      { externalId: 'e1', title: 'P1', price: 100, stock: 1 },
+    ]
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    const result = await runSync(makeAdapter(products), makeMockDb())
+    expect(result.status).toBe('failed')
+    expect(result.deactivated).toBe(0)
+  })
 })

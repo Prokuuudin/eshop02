@@ -391,6 +391,9 @@ export const restoreDeletedProduct = async (
     if (dbProduct) {
       const baseProduct = mapDbToProduct(dbProduct)
       const overridePatch = buildOverrideFromSnapshot(baseProduct, archived.product)
+      // Stock is never restored as an override — live inventory always wins,
+      // regardless of what the archived snapshot happened to hold.
+      delete overridePatch.stock
       if (Object.keys(overridePatch).length > 0) {
         await upsertProductOverride(nextId, overridePatch)
       }

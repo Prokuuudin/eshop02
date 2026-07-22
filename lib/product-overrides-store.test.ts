@@ -289,3 +289,58 @@ describe('resetProductOverride', () => {
     expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
   })
 })
+
+describe('restoreDeletedProduct', () => {
+  it('restores a synced product without reintroducing stock as an override', async () => {
+    const archivedProduct = {
+      id: 'p1', title: 'Base title', brand: 'Base brand', price: 139.99,
+      rating: 4, category: 'hair' as const, stock: 3,
+    }
+
+    vi.mocked(prisma.keyValueSetting.findUnique as any).mockImplementation(async (args: unknown) => {
+      const key = (args as { where: { key: string } }).where.key
+      if (key === 'deleted-products-archive') {
+        return {
+          key,
+          value: [{ id: 'p1', product: archivedProduct, source: 'base', deletedAt: new Date().toISOString() }],
+          updatedAt: new Date(),
+        }
+      }
+      return null // 'product-overrides' key: no pre-existing overrides
+    })
+
+    vi.mocked(prisma.product.update).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      id: 'p1', isDeleted: false, externalId: 'ext-1',
+      title: 'Base title', brand: 'Base brand', price: 149.99, // live price has moved on since archiving
+      rating: 4, category: 'hair', stock: 25, // live stock has moved on since archiving
+      titleKey: null, titleEn: null, titleLv: null, description: null, oldPrice: null,
+      ratingCount: 0, reviewCount: 0, image: null, images: [], metaTitle: null, metaDescription: null,
+      ogImage: null, ogAlt: null, badges: [], isActive: true, barcode: null, relatedProductIds: [],
+      oftenBoughtTogether: [], minOrderQuantities: null, technicalSpecs: null, bulkPricingTiers: null,
+      demoVideo: null, distributorName: null, distributorAddress: null, sku: null, unitOfMeasure: null,
+      certificates: [], packagingSize: null, compatibleEquipment: [], manufacturerName: null,
+      manufacturerAddress: null, manufacturerEmail: null, distributorEmail: null, bonusRate: null,
+      feature1: null, feature1En: null, feature1Lv: null, feature2: null, feature2En: null, feature2Lv: null,
+      feature3: null, feature3En: null, feature3Lv: null, feature4: null, feature4En: null, feature4Lv: null,
+      specVolume: null, specType: null, specCountry: null, isCustom: false, lastSyncRunId: null,
+      createdAt: new Date(), updatedAt: new Date(),
+    } as never)
+    vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await restoreDeletedProduct('p1')
+
+    expect(result.success).toBe(true)
+
+    // buildOverrideFromSnapshot sees both price (139.99 vs 149.99) and stock (3 vs 25)
+    // differ, so the override write must have happened — find it and check its contents.
+    const upsertCalls = vi.mocked(prisma.keyValueSetting.upsert).mock.calls
+    const overridesWrite = upsertCalls.find((c) => (c[0] as { where: { key: string } }).where.key === 'product-overrides')
+    expect(overridesWrite).toBeDefined()
+
+    const written = (overridesWrite![0] as { update: { value: Record<string, ProductOverride> } }).update.value
+    expect(written.p1?.price).toBe(139.99)
+    expect(written.p1?.stock).toBeUndefined()
+  })
+})

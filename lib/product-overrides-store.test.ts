@@ -253,3 +253,39 @@ describe('upsertProductOverride', () => {
     expect(prisma.keyValueSetting.upsert).toHaveBeenCalled()
   })
 })
+
+describe('resetProductOverride', () => {
+  it('returns an error when the product does not exist', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null)
+    const result = await resetProductOverride('missing')
+    expect(result.success).toBe(false)
+  })
+
+  it('removes the product\'s override entry and persists the rest of the map', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ id: 'p1', isDeleted: false } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      key: 'product-overrides',
+      value: { p1: { price: 149.99 }, p2: { description: 'Keep me' } },
+      updatedAt: new Date(),
+    } as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await resetProductOverride('p1')
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: { value: { p2: { description: 'Keep me' } } } })
+    )
+  })
+
+  it('is a safe no-op when the product has no existing override', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ id: 'p1', isDeleted: false } as never)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await resetProductOverride('p1')
+
+    expect(result.success).toBe(true)
+    expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+})

@@ -294,9 +294,16 @@ export const upsertProductOverride = async (
 export const resetProductOverride = async (
   productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
-  const adminProducts = await getAdminProducts()
-  if (!adminProducts.some((p) => p.id === productId)) return { success: false, error: 'Товар не найден' }
-  return { success: true, products: adminProducts }
+  const dbProduct = await prisma.product.findUnique({ where: { id: productId } })
+  if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' }
+
+  const overrides = await getProductOverrides()
+  if (productId in overrides) {
+    delete overrides[productId]
+    await writeOverridesMap(overrides)
+  }
+
+  return { success: true, products: await getAdminProducts() }
 }
 
 export const createProduct = async (

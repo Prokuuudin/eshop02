@@ -100,7 +100,11 @@ export function I18nProvider({
     if (newLanguage === language) return
     writeLanguageCookie(newLanguage)
     localStorage.setItem(LANGUAGE_KEY, newLanguage)
-    router.push(localizePath(currentUnprefixedLocation(), newLanguage))
+    // A language change crosses the app/[lang] route boundary and also changes
+    // middleware behaviour through a cookie. A full navigation avoids stale
+    // RSC/router state observed on Vercel after deployments and guarantees that
+    // the server renders the destination with the newly written cookie.
+    window.location.assign(localizePath(currentUnprefixedLocation(), newLanguage))
   }
 
   return (

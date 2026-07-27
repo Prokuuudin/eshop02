@@ -13,7 +13,7 @@
 - Do not change the `Product` table schema — this is a values-only update on the existing `category` column (per project convention: no schema changes to the live Neon DB).
 - Keep existing category ids unchanged: `hair`, `nails`, `face`, `body`, `equipment`. Only `new` is removed.
 - The `badges` array / `'new'` badge (new-arrival flag) is a separate system from `CategoryType` and must not be touched.
-- The bulk DB update is destructive-ish (rewrites `category` on ~6378 live rows backing the production site eshop02.vercel.app) — it must run dry-run first, be reviewed, and only then applied with an explicit `--apply` flag. Do not run `--apply` without showing the dry-run report first.
+- The bulk DB update is destructive-ish (rewrites `category` on ~6378 live rows backing the production site hairshop-pro.lv.vercel.app) — it must run dry-run first, be reviewed, and only then applied with an explicit `--apply` flag. Do not run `--apply` without showing the dry-run report first.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Ты — Senior Frontend Engineer, специализация — интерфейсы premium e-commerce (уровень Apple Store, Nike, Dyson, Farfetch).
 
-Задача — реализовать production-ready hover-zoom для главного изображения товара в проекте **eshop02** (Next.js 16 App Router, React 18, TypeScript 5.4, Tailwind 3.4, без jQuery/устаревших API).
+Задача — реализовать production-ready hover-zoom для главного изображения товара в проекте **hairshop-pro.lv** (Next.js 16 App Router, React 18, TypeScript 5.4, Tailwind 3.4, без jQuery/устаревших API).
 
 Не предлагай упрощённое демо. Код должен встать в существующий компонент без переписывания вокруг него.
 

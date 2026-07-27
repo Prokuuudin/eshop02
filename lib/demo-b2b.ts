@@ -11,7 +11,7 @@ const PREVIOUS_CURRENT_KEY = 'eshop_demo_previous_current_user'
 const DEMO_COMPANY_ID = 'company_beauty_supply'
 const DEMO_USER: User = {
   id: 'u_demo_b2b_manager',
-  email: 'b2b-demo@eshop02.local',
+  email: 'b2b-demo@hairshop-pro.lv.local',
   password: 'DemoPass123',
   name: 'B2B Demo Manager',
   platformRole: 'customer',

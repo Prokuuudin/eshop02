@@ -70,7 +70,7 @@ test('manager cannot place orders from cart or checkout', async ({ page }) => {
     [
       {
         id: 'u_manager_checkout_e2e',
-        email: 'manager-checkout-e2e@eshop02.local',
+        email: 'manager-checkout-e2e@hairshop-pro.lv.local',
         password: 'StrongPass123',
         name: 'Manager Checkout',
         platformRole: 'customer',
@@ -109,7 +109,7 @@ test('manager sees admin navigation link in user menu', async ({ page }) => {
     [
       {
         id: 'u_manager_menu_e2e',
-        email: 'manager-menu-e2e@eshop02.local',
+        email: 'manager-menu-e2e@hairshop-pro.lv.local',
         password: 'StrongPass123',
         name: 'Manager Menu',
         platformRole: 'customer',

@@ -29,7 +29,7 @@ export default function B2BChat() {
     () => ({
       name: 'Анна Петрова',
       phone: '+7 (999) 123-45-67',
-      email: 'account.manager@eshop02.local'
+      email: 'account.manager@hairshop-pro.lv.local'
     }),
     []
   )

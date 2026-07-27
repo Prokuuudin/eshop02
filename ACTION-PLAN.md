@@ -1,4 +1,4 @@
-# SEO Action Plan — HairShop.lv (eshop02)
+# SEO Action Plan — HairShop.lv (hairshop-pro.lv)
 
 **Overall Score:** 40/100 → target 75/100 after Sprint 3  
 **Date:** 2026-06-02

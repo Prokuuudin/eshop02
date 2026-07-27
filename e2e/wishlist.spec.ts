@@ -11,7 +11,7 @@ const seedAuthedState = async (page: Page): Promise<void> => {
       'eshop_current_user',
       JSON.stringify({
         id: 'u_wishlist_e2e',
-        email: 'wishlist-e2e@eshop02.local',
+        email: 'wishlist-e2e@hairshop-pro.lv.local',
         password: 'secret',
         platformRole: 'customer'
       })

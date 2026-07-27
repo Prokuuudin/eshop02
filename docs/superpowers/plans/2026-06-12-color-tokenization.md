@@ -31,7 +31,7 @@
 
 Run:
 ```bash
-cd "c:/Users/User/Desktop/eshop02"
+cd "c:/Users/User/Desktop/hairshop-pro.lv"
 grep -rc "indigo-" app components --include=*.tsx | awk -F: '{s+=$2} END{print "indigo total:", s}'
 grep -rc "dark:bg-gray-" app components --include=*.tsx | awk -F: '{s+=$2} END{print "dark:bg-gray total:", s}'
 grep -rc "dark:text-gray-" app components --include=*.tsx | awk -F: '{s+=$2} END{print "dark:text-gray total:", s}'
@@ -247,7 +247,7 @@ console.log(`\n${APPLY ? 'APPLIED' : 'DRY RUN'} — ${totalHits} replacements ac
 
 Run:
 ```bash
-cd "c:/Users/User/Desktop/eshop02"
+cd "c:/Users/User/Desktop/hairshop-pro.lv"
 node scripts/color-codemod.mjs
 ```
 Expected: prints a list of files with hit counts, a per-pattern breakdown, and a final `DRY RUN — N replacements across M files` line with N in the hundreds. No files are modified (verify with `git status` — clean except the new script).
@@ -342,7 +342,7 @@ git commit -m "build: add Playwright color screenshot script"
 
 Run:
 ```bash
-cd "c:/Users/User/Desktop/eshop02"
+cd "c:/Users/User/Desktop/hairshop-pro.lv"
 node scripts/color-codemod.mjs --apply
 ```
 Expected: same counts as the dry run, prefixed `applied:`, ending `APPLIED — N replacements across M files`.
@@ -465,7 +465,7 @@ console.log(`Wrote report with ${rows.length} rows`)
 
 Run:
 ```bash
-cd "c:/Users/User/Desktop/eshop02"
+cd "c:/Users/User/Desktop/hairshop-pro.lv"
 node scripts/color-bg-candidates.mjs
 ```
 Expected: prints `Wrote report with N rows` and creates `docs/superpowers/reports/color-bg-candidates.md` listing background sites with suggested tokens.

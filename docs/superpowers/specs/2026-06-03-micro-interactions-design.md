@@ -7,7 +7,7 @@
 
 ## Context
 
-eshop02 — Next.js B2B/B2C e-commerce. Stack: React 18, Tailwind CSS, Zustand, shadcn/ui.  
+hairshop-pro.lv — Next.js B2B/B2C e-commerce. Stack: React 18, Tailwind CSS, Zustand, shadcn/ui.  
 All animations via Tailwind utilities + inline CSS keyframes where needed. No new animation library.
 
 ---

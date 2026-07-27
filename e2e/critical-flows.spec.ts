@@ -64,7 +64,7 @@ test('checkout submit redirects to order details page', async ({ page }) => {
       'eshop_current_user',
       JSON.stringify({
         id: 'u_retail_e2e',
-        email: 'retail-e2e@eshop02.local',
+        email: 'retail-e2e@hairshop-pro.lv.local',
         password: 'secret',
         platformRole: 'customer'
       })
@@ -105,7 +105,7 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
       'eshop_current_user',
       JSON.stringify({
         id: 'u_retail_card_e2e',
-        email: 'retail-card-e2e@eshop02.local',
+        email: 'retail-card-e2e@hairshop-pro.lv.local',
         password: 'secret',
         platformRole: 'customer'
       })
@@ -296,7 +296,7 @@ const seedCatalogUser = (page: import('@playwright/test').Page) =>
       'eshop_current_user',
       JSON.stringify({
         id: 'u_subcat_e2e',
-        email: 'subcat-e2e@eshop02.local',
+        email: 'subcat-e2e@hairshop-pro.lv.local',
         password: 'secret',
         platformRole: 'customer'
       })

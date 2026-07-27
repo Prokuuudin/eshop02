@@ -1,4 +1,4 @@
-# Eshop02 — Professional Cosmetics (Scaffold)
+# Hairshop-pro.lv — Professional Cosmetics (Scaffold)
 
 This repository contains the initial architecture and configuration for an online professional cosmetics store using Next.js (App Router), React, TypeScript, Tailwind CSS and tooling.
 

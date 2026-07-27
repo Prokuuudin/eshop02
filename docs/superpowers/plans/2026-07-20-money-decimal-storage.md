@@ -836,7 +836,7 @@ Run: `git push origin main`
 
 - [ ] **Step 2: Wait for the Vercel deploy, then confirm it's live**
 
-Poll `https://eshop02.vercel.app/api/products/bestsellers` the same way as Task 8 Step 3 (real number, not a string) — this is the "new code is live" signal for this change (there's no CSP-header-style marker like the A1 deploy check, since this change doesn't touch `next.config.js`).
+Poll `https://hairshop-pro.lv.vercel.app/api/products/bestsellers` the same way as Task 8 Step 3 (real number, not a string) — this is the "new code is live" signal for this change (there's no CSP-header-style marker like the A1 deploy check, since this change doesn't touch `next.config.js`).
 
 - [ ] **Step 3: Delete the temporary scripts and commit**
 

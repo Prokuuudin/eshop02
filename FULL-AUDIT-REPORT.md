@@ -1,4 +1,4 @@
-# Full SEO Audit Report — HairShop.lv (eshop02)
+# Full SEO Audit Report — HairShop.lv (hairshop-pro.lv)
 
 ## Актуализация после коммита `f6df953`
 

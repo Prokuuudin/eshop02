@@ -36,7 +36,7 @@ test('demo B2B invoices flow loads dashboard and resets back to fallback', async
 
   expect(afterSeed.currentUser).toContain('u_demo_b2b_manager')
   expect(afterSeed.currentUser).toContain('company_beauty_supply')
-  expect(afterSeed.users).toContain('b2b-demo@eshop02.local')
+  expect(afterSeed.users).toContain('b2b-demo@hairshop-pro.lv.local')
 
   await page.getByRole('button', { name: /Выйти из demo B2B/i }).click()
 
@@ -54,5 +54,5 @@ test('demo B2B invoices flow loads dashboard and resets back to fallback', async
   }))
 
   expect(afterReset.currentUser).toBeNull()
-  expect(afterReset.users).not.toContain('b2b-demo@eshop02.local')
+  expect(afterReset.users).not.toContain('b2b-demo@hairshop-pro.lv.local')
 })

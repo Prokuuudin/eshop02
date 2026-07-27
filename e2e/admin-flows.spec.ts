@@ -27,7 +27,7 @@ test('admin setup form cannot bypass the DB-backed admin gate', async ({ page })
   await expect(page.getByRole('heading', { name: 'Первичная настройка администратора' })).toBeVisible()
 
   await page.getByLabel(/^Имя$/).fill('Manual Admin')
-  await page.getByLabel(/^Email$/).fill('manual-admin@eshop02.local')
+  await page.getByLabel(/^Email$/).fill('manual-admin@hairshop-pro.lv.local')
   await page.getByLabel(/^Пароль$/).fill('StrongPass123')
   await page.getByLabel(/^Повторите пароль$/).fill('StrongPass123')
 

@@ -4,6 +4,11 @@
 <style type="text/css">
 	.st1{fill-rule:evenodd;clip-rule:evenodd;fill:#0088C4;}
 </style>
+<!-- Opaque white backing behind the circle: the letters below are cut out of
+     the blue disc as transparent holes, not filled white — without this, a
+     dark browser tab bar shows through the holes and "PRO" disappears. -->
+<path fill="#ffffff" d="M1551.2,101.2h-19.5c-135.7,5.2-244.1,118.1-244.1,256.7c0,141.9,113.6,256.9,253.8,256.9
+	s253.9-115,253.9-256.9C1795.3,219.4,1686.9,106.4,1551.2,101.2z"/>
 <g>
 	<path class="st1" d="M1423.5,324.9h-32.7v31.9h32.7c4.4,0,8.1-1.6,11.2-4.7s4.7-6.9,4.7-11.2c0-4.4-1.6-8.1-4.7-11.2
 		C1431.6,326.5,1427.8,324.9,1423.5,324.9z"/>

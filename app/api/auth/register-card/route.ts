@@ -3,11 +3,9 @@ import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 
 export const runtime = 'nodejs'
-
-const FIRST_LOGIN_PASSWORD =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD) || 'Welcome1!'
 
 const normalizeCard = (v: string): string => v.trim().replace(/\s+/g, '').toUpperCase()
 
@@ -20,10 +18,19 @@ function getClientIp(req: NextRequest): string {
 }
 
 /**
- * Registers a B2B customer against a real Company.cardNumber — this is the
- * only server-authoritative path for "register with company card" (RegisterForm).
- * A locally-faked account would be invisible to every other endpoint that
- * checks getServerUser(), so this must create a real User + session here.
+ * Registers/activates a cardholder against a real card number — the only
+ * server-authoritative path for "register with client card" (RegisterForm).
+ * Every cardholder shares the same onboarding password (FIRST_LOGIN_PASSWORD);
+ * its only job is to gate them into the forced "set your own password" screen
+ * (mustChangePassword). Two cardholder shapes exist and are checked in order:
+ *
+ *  1. An individual already has a User row with this cardNumber — either a
+ *     dormant ERP import (Klienti.xlsx, see scripts/import-client-cards.ts)
+ *     or a company member created by this route before. We log them in
+ *     rather than creating a duplicate; mustChangePassword tells us whether
+ *     they already picked their own password (then this card is "taken").
+ *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
+ *     team member claiming a shared company card) — create one.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -40,10 +47,35 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const cardNumber = normalizeCard(String(body.cardNumber ?? ''))
+    const password = typeof body.password === 'string' ? body.password : ''
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : undefined
 
     if (!cardNumber) {
       return NextResponse.json({ error: 'card_required' }, { status: 400 })
+    }
+
+    const cardUser = await prisma.user.findFirst({
+      where: { cardNumber: { equals: cardNumber, mode: 'insensitive' } },
+    })
+
+    if (cardUser) {
+      if (!cardUser.mustChangePassword) {
+        return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
+      }
+      if (password !== FIRST_LOGIN_PASSWORD) {
+        return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
+      }
+
+      const token = await createSession(cardUser.id)
+      const res = NextResponse.json({ user: mapDbToServerUser(cardUser) }, { status: 200 })
+      res.cookies.set(SESSION_COOKIE, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+      return res
     }
 
     const company = await prisma.company.findFirst({
@@ -52,13 +84,8 @@ export async function POST(req: NextRequest) {
     if (!company) {
       return NextResponse.json({ error: 'card_not_found' }, { status: 404 })
     }
-
-    const existingCardUser = await prisma.user.findFirst({
-      where: { cardNumber: { equals: cardNumber, mode: 'insensitive' } },
-      select: { id: true },
-    })
-    if (existingCardUser) {
-      return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
+    if (password !== FIRST_LOGIN_PASSWORD) {
+      return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
     }
 
     const email = `card.${cardNumber.toLowerCase()}@client.local`

@@ -24,6 +24,7 @@ export default function RegisterForm({ onClose }: Props) {
     const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
         card_not_found: t('auth.cardNotFound'),
         card_already_registered: t('auth.cardAlreadyRegistered'),
+        wrong_password: t('auth.wrongPassword'),
         too_many_attempts: t('auth.tooManyAttempts'),
         network_error: t('auth.registrationError'),
         server_error: t('auth.registrationError'),
@@ -52,6 +53,7 @@ export default function RegisterForm({ onClose }: Props) {
         setLoading(true);
         const result = await registerCardUser({
             cardNumber: trimmedCard,
+            password,
             name: name.trim() || undefined,
         });
         setLoading(false);

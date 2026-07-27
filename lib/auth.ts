@@ -1,9 +1,9 @@
 import { useCompanyStore } from '@/lib/company-store'
 import { useAccessRequestStore } from '@/lib/access-request-store'
 import { logAuditAction } from '@/lib/audit-log-store'
+import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 
-export const FIRST_LOGIN_PASSWORD =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD) || 'Welcome1!Change'
+export { FIRST_LOGIN_PASSWORD }
 
 export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 export type PlatformRole = 'customer' | 'admin'
@@ -253,6 +253,7 @@ const TEST_USER_ID = 'seed_user_001'
 export type RegisterCardErrorCode =
   | 'card_not_found'
   | 'card_already_registered'
+  | 'wrong_password'
   | 'too_many_attempts'
   | 'network_error'
   | 'server_error'
@@ -266,6 +267,7 @@ export type RegisterCardErrorCode =
  */
 export const registerCardUser = async (data: {
   cardNumber: string
+  password: string
   name?: string
 }): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
   const normalizedCard = normalizeCard(data.cardNumber)
@@ -275,7 +277,7 @@ export const registerCardUser = async (data: {
     res = await fetch('/api/auth/register-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardNumber: normalizedCard, name: data.name }),
+      body: JSON.stringify({ cardNumber: normalizedCard, password: data.password, name: data.name }),
     })
   } catch {
     return { success: false, errorCode: 'network_error' }
@@ -283,6 +285,7 @@ export const registerCardUser = async (data: {
 
   if (res.status === 404) return { success: false, errorCode: 'card_not_found' }
   if (res.status === 409) return { success: false, errorCode: 'card_already_registered' }
+  if (res.status === 401) return { success: false, errorCode: 'wrong_password' }
   if (res.status === 429) return { success: false, errorCode: 'too_many_attempts' }
   if (!res.ok) return { success: false, errorCode: 'server_error' }
 

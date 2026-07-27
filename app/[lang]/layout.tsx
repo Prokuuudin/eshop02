@@ -8,6 +8,7 @@ import AppBreadcrumbs from '@/components/AppBreadcrumbs'
 import { Providers } from './providers'
 import RouteUiEffects from '@/components/RouteUiEffects'
 import AuthHydrator from '@/components/auth/AuthHydrator'
+import AccountGuard from '@/components/account/AccountGuard'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 import { LANGUAGES, resolveLanguage } from '@/lib/i18n-routing'
 import { serializeJsonLd } from '@/lib/json-ld'
@@ -88,14 +89,19 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         <Providers initialLanguage={language}>
           <RouteUiEffects />
           <AuthHydrator />
-          <Header />
-          <main id="main-content" className="w-full pb-6">
-            <div className="mx-auto mt-2 w-full max-w-7xl px-4">
-              <AppBreadcrumbs />
-            </div>
-            {children}
-          </main>
-          <Footer />
+          {/* Global gate: a cardholder who hasn't set their own password yet
+              (mustChangePassword) must not be able to use any page, not just
+              /account — the shared welcome password only unlocks this modal. */}
+          <AccountGuard>
+            <Header />
+            <main id="main-content" className="w-full pb-6">
+              <div className="mx-auto mt-2 w-full max-w-7xl px-4">
+                <AppBreadcrumbs />
+              </div>
+              {children}
+            </main>
+            <Footer />
+          </AccountGuard>
         </Providers>
       </body>
     </html>

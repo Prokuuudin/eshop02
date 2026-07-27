@@ -22,6 +22,7 @@ vi.mock('@/lib/rate-limit', () => ({
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { POST } from './route'
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
@@ -39,6 +40,20 @@ const COMPANY = {
   approvalWorkflowEnabled: false,
 }
 
+const DORMANT_USER = {
+  id: 'user_dormant_1',
+  email: 'master@example.com',
+  cardNumber: '5678',
+  mustChangePassword: true,
+}
+
+const ACTIVATED_USER = {
+  id: 'user_active_1',
+  email: 'active@example.com',
+  cardNumber: '9012',
+  mustChangePassword: false,
+}
+
 function makeTx() {
   return {
     user: { create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })) },
@@ -54,32 +69,77 @@ beforeEach(() => {
 })
 
 describe('POST /api/auth/register-card', () => {
-  it('rejects a card number with no matching company', async () => {
+  it('rejects a card number with no matching company or individual cardholder', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
     vi.mocked(prisma.company.findFirst as any).mockResolvedValue(null)
 
-    const res = await POST(makeRequest({ cardNumber: '9999' }))
+    const res = await POST(makeRequest({ cardNumber: '9999', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(404)
     expect(await res.json()).toMatchObject({ error: 'card_not_found' })
   })
 
-  it('rejects a card that already has a registered user', async () => {
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue({ id: 'existing-user' })
+  it('rejects when the card belongs to an already-activated individual cardholder', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(ACTIVATED_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '1234' }))
+    const res = await POST(makeRequest({ cardNumber: '9012', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('rejects a card that already has a registered user (company path, legacy shape)', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue({ id: 'existing-user' })
+    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+
+    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
   })
 
-  it('creates a real user bound to the company and a session on success', async () => {
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+  it('logs in a dormant individual cardholder (ERP import) on the shared welcome password, without creating a new user', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(DORMANT_USER)
+
+    const res = await POST(makeRequest({ cardNumber: '5678', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ user: expect.objectContaining({ id: 'user_dormant_1' }) })
+    expect(createSession).toHaveBeenCalledWith('user_dormant_1')
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    const setCookie = res.headers.get('set-cookie')
+    expect(setCookie).toContain('eshop_session=token')
+  })
+
+  it('rejects a dormant individual cardholder who mistypes the welcome password', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(DORMANT_USER)
+
+    const res = await POST(makeRequest({ cardNumber: '5678', password: 'wrong-guess' }))
+
+    expect(res.status).toBe(401)
+    expect(await res.json()).toMatchObject({ error: 'wrong_password' })
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('rejects a brand-new company card claim with the wrong password', async () => {
     vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
+    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+
+    const res = await POST(makeRequest({ cardNumber: '1234', password: 'wrong-guess' }))
+
+    expect(res.status).toBe(401)
+    expect(await res.json()).toMatchObject({ error: 'wrong_password' })
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('creates a real user bound to the company and a session on success', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
+    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
     const tx = makeTx()
     vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
 
-    const res = await POST(makeRequest({ cardNumber: '1234', name: 'Ivan' }))
+    const res = await POST(makeRequest({ cardNumber: '1234', name: 'Ivan', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(201)
     expect(tx.user.create).toHaveBeenCalledWith(
@@ -90,6 +150,7 @@ describe('POST /api/auth/register-card', () => {
           companyName: 'SIA MIKS PLUS',
           teamRole: 'buyer',
           cardNumber: '1234',
+          mustChangePassword: true,
         }),
       })
     )
@@ -104,16 +165,17 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rejects when the card number is blank', async () => {
-    const res = await POST(makeRequest({ cardNumber: '   ' }))
+    const res = await POST(makeRequest({ cardNumber: '   ', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(400)
+    expect(prisma.user.findFirst).not.toHaveBeenCalled()
     expect(prisma.company.findFirst).not.toHaveBeenCalled()
   })
 
   it('rate-limits repeated attempts from the same IP', async () => {
     vi.mocked(checkRateLimit as any).mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
 
-    const res = await POST(makeRequest({ cardNumber: '1234' }))
+    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(429)
   })

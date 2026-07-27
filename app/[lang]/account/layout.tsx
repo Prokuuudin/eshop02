@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { translations } from '@/data/translations'
 import { resolveLanguage } from '@/lib/i18n-routing'
-import AccountGuard from '@/components/account/AccountGuard'
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const language = resolveLanguage((await params).lang);
@@ -16,5 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 export default function AccountLayout({ children }: { children: ReactNode }): ReactNode {
-  return <AccountGuard>{children}</AccountGuard>
+  // AccountGuard now lives in the root [lang] layout — the forced
+  // password-change modal must block the whole site, not just /account.
+  return <>{children}</>
 }

@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 
 export const runtime = 'nodejs'
 
 type Lang = 'ru' | 'en' | 'lv'
-
-const FIRST_LOGIN_PASSWORD =
-  process.env.NEXT_PUBLIC_FIRST_LOGIN_PASSWORD || 'Welcome1!'
 
 const OFFICE_PHONE = '+371 27067730'
 const OFFICE_EMAIL = 'office@miksplus.eu'

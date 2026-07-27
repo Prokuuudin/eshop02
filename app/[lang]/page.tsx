@@ -19,7 +19,7 @@ type PageProps = { params: Promise<{ lang: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const language = resolveLanguage((await params).lang);
     const t = translations[language];
-    const pageTitle = 'Hairshop-Pro - Professional Hair Instruments and Cosmetics';
+    const pageTitle = t['meta.homeTitle'] ?? 'Hairshop-Pro - Professional Hair Instruments and Cosmetics';
     const pageDescription =
         t['meta.homeDescription'] ?? 'Online store of professional cosmetics and equipment';
 

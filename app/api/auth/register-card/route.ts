@@ -21,6 +21,7 @@ async function notifyCardActivated(email: string | null | undefined, name: strin
 }
 
 export const runtime = 'nodejs'
+const PRIVACY_NOTICE_VERSION = '2026-07-03'
 
 const normalizeCard = (v: string): string => v.trim().replace(/\s+/g, '').toUpperCase()
 
@@ -49,6 +50,10 @@ function getClientIp(req: NextRequest): string {
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!FIRST_LOGIN_PASSWORD) {
+      console.error('[auth/register-card] FIRST_LOGIN_PASSWORD is not configured')
+      return NextResponse.json({ error: 'registration_not_configured' }, { status: 503 })
+    }
     if (Math.random() < 0.05) void gcRateLimitStore()
 
     const ip = getClientIp(req)
@@ -64,6 +69,15 @@ export async function POST(req: NextRequest) {
     const cardNumber = normalizeCard(String(body.cardNumber ?? ''))
     const password = typeof body.password === 'string' ? body.password : ''
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : undefined
+    if (body.privacyAcknowledged !== true) {
+      return NextResponse.json({ error: 'privacy_acknowledgement_required' }, { status: 400 })
+    }
+    const privacyData = {
+      privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+      privacyAcknowledgedAt: new Date(),
+      marketingConsent: body.marketingConsent === true,
+      marketingConsentAt: body.marketingConsent === true ? new Date() : null,
+    }
 
     if (!cardNumber) {
       return NextResponse.json({ error: 'card_required' }, { status: 400 })
@@ -92,6 +106,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
       }
 
+      await prisma.user.update({ where: { id: cardUser.id }, data: privacyData })
       await notifyCardActivated(cardUser.email, cardUser.name ?? '', cardNumber)
       const token = await createSession(cardUser.id)
       const res = NextResponse.json({ user: mapDbToServerUser(cardUser) }, { status: 200 })
@@ -134,6 +149,7 @@ export async function POST(req: NextRequest) {
           approvalRequired: company.approvalWorkflowEnabled,
           auditLoggingEnabled: true,
           mustChangePassword: true,
+          ...privacyData,
         },
       })
 

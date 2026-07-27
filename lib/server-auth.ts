@@ -83,7 +83,7 @@ export async function createSession(userId: string): Promise<string> {
   return token
 }
 
-export async function getServerUser(): Promise<ServerUser | null> {
+export async function getServerUser(options: { allowPasswordChangeRequired?: boolean } = {}): Promise<ServerUser | null> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get(SESSION_COOKIE)?.value
@@ -105,7 +105,12 @@ export async function getServerUser(): Promise<ServerUser | null> {
       return null
     }
 
-    return mapDbToServerUser(session.user)
+    const user = mapDbToServerUser(session.user)
+    // A shared/temporary onboarding credential must never create a full account
+    // session. Only the password-change and session-introspection endpoints opt
+    // in to seeing this restricted user.
+    if (user.mustChangePassword && !options.allowPasswordChangeRequired) return null
+    return user
   } catch {
     return null
   }

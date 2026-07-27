@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server'
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     company: { findFirst: vi.fn() },
-    user: { findFirst: vi.fn() },
+    user: { findFirst: vi.fn(), update: vi.fn() },
     $transaction: vi.fn(),
   },
 }))
@@ -32,7 +32,7 @@ import { POST } from './route'
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/auth/register-card', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ privacyAcknowledged: true, ...body }),
     headers: { 'Content-Type': 'application/json' },
   })
 }

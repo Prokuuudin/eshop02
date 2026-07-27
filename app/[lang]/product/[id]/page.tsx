@@ -11,6 +11,8 @@ import { brandSlug } from '@/lib/brand-slug';
 import { buildProductIndex, pickRelated, pickBoughtTogether } from '@/lib/related-products';
 import copurchaseData from '@/data/product-bought-together.json';
 import { serializeJsonLd } from '@/lib/json-ld';
+import { getServerUser } from '@/lib/server-auth';
+import { redactProductPrices } from '@/lib/product-price-visibility';
 
 const COPURCHASE = copurchaseData as Record<string, string[]>;
 
@@ -24,8 +26,6 @@ type PageProps = {
 const interpolate = (template: string, params: Record<string, string>): string => {
     return template.replace(/\{(\w+)\}/g, (match, key: string) => params[key] ?? match);
 };
-
-export const revalidate = 3600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { id, lang } = await params;
@@ -72,6 +72,7 @@ export default async function ProductPage({ params }: PageProps) {
     const t = translations[language];
     const mergedProducts = await getMergedProducts();
     const product = mergedProducts.find((p) => p.id === id);
+    const canSeePrices = Boolean(await getServerUser());
 
     if (!product) {
         return (
@@ -114,14 +115,16 @@ export default async function ProductPage({ params }: PageProps) {
             '@type': 'Brand',
             name: product.brand,
         },
-        offers: {
-            '@type': 'Offer',
-            url: productUrl,
-            priceCurrency: 'EUR',
-            price: product.price.toFixed(2),
-            availability:
-                product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-        },
+        ...(canSeePrices ? {
+            offers: {
+                '@type': 'Offer',
+                url: productUrl,
+                priceCurrency: 'EUR',
+                price: product.price.toFixed(2),
+                availability:
+                    product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            },
+        } : {}),
         aggregateRating: {
             '@type': 'AggregateRating',
             ratingValue: product.rating,
@@ -144,6 +147,9 @@ export default async function ProductPage({ params }: PageProps) {
     const productIndex = buildProductIndex(mergedProducts);
     const relatedProducts = pickRelated(product, mergedProducts, productIndex);
     const oftenBoughtTogether = pickBoughtTogether(product, productIndex, COPURCHASE);
+    const visibleProduct = canSeePrices ? product : redactProductPrices(product);
+    const visibleRelated = canSeePrices ? relatedProducts : redactProductPrices(relatedProducts);
+    const visibleBoughtTogether = canSeePrices ? oftenBoughtTogether : redactProductPrices(oftenBoughtTogether);
 
     const breadcrumbSchema = {
         '@context': 'https://schema.org',
@@ -166,9 +172,9 @@ export default async function ProductPage({ params }: PageProps) {
                 dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
             <ProductPageContent
-                product={product}
-                relatedProducts={relatedProducts}
-                oftenBoughtTogether={oftenBoughtTogether}
+                product={visibleProduct}
+                relatedProducts={visibleRelated}
+                oftenBoughtTogether={visibleBoughtTogether}
                 manufacturer={manufacturer}
                 distributor={distributor}
             />

@@ -11,4 +11,5 @@ export const SESSION_COOKIE = 'eshop_session'
 // devtools, with no need to ever have received the email. Real security here
 // rests entirely on the password only reaching people through that email.
 export const FIRST_LOGIN_PASSWORD =
-  process.env.FIRST_LOGIN_PASSWORD || 'Welcome1!Change'
+  process.env.FIRST_LOGIN_PASSWORD
+  || (process.env.NODE_ENV === 'production' ? '' : 'Welcome1!Change')

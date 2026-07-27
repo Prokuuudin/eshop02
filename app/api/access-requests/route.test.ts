@@ -30,7 +30,7 @@ import { POST } from './route'
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/access-requests', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ privacyAcknowledged: true, ...body }),
     headers: { 'Content-Type': 'application/json' },
   })
 }

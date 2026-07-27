@@ -21,17 +21,23 @@ export async function POST(req: NextRequest) {
     // Occasional GC
     if (Math.random() < 0.05) void gcRateLimitStore()
 
-    const { email, password } = await req.json()
-    if (!email || !password) {
-      return NextResponse.json({ error: 'email_password_required' }, { status: 400 })
+    const { identifier, email, password } = await req.json()
+    const rawIdentifier = identifier ?? email
+    if (!rawIdentifier || !password) {
+      return NextResponse.json({ error: 'identifier_password_required' }, { status: 400 })
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase()
-    if (normalizedEmail.length > 254) {
+    const normalizedIdentifier = String(rawIdentifier).trim()
+    const isEmail = normalizedIdentifier.includes('@')
+    const lookupValue = isEmail
+      ? normalizedIdentifier.toLowerCase()
+      : normalizedIdentifier.replace(/\s+/g, '').toUpperCase()
+    if (!lookupValue || lookupValue.length > (isEmail ? 254 : 64)) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
     const ip = getClientIp(req)
-    const limitKeys = [`login:ip:${ip}`, `login:email:${normalizedEmail}`]
+    const identifierLimitKey = isEmail ? `login:email:${lookupValue}` : `login:card:${lookupValue}`
+    const limitKeys = [`login:ip:${ip}`, identifierLimitKey]
     const limits = await Promise.all(limitKeys.map((key) => checkRateLimit(key)))
     const limited = limits.find((result) => result.limited)
     if (limited) {
@@ -44,7 +50,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    const user = isEmail
+      ? await prisma.user.findUnique({ where: { email: lookupValue } })
+      : await prisma.user.findFirst({
+          where: { cardNumber: { equals: lookupValue, mode: 'insensitive' } },
+        })
     if (!user || !user.passwordHash) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }

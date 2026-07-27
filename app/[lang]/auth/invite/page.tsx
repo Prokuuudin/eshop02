@@ -17,6 +17,7 @@ const ERROR_TEXT: Record<string, [string, string, string]> = {
     weak_password: ['Пароль должен быть не короче 12 символов.', 'Password must be at least 12 characters.', 'Parolei jābūt vismaz 12 rakstzīmēm.'],
     password_too_short: ['Пароль должен быть не короче 12 символов.', 'Password must be at least 12 characters.', 'Parolei jābūt vismaz 12 rakstzīmēm.'],
     user_not_found: ['Аккаунт для этого приглашения не найден. Свяжитесь с администратором.', 'The account for this invitation was not found. Please contact the administrator.', 'Šī ielūguma konts nav atrasts. Lūdzu, sazinieties ar administratoru.'],
+    too_many_attempts: ['Слишком много попыток. Попробуйте позже.', 'Too many attempts. Please try again later.', 'Pārāk daudz mēģinājumu. Lūdzu, mēģiniet vēlāk.'],
     server_error: ['Ошибка сервера. Попробуйте ещё раз.', 'Server error. Please try again.', 'Servera kļūda. Mēģiniet vēlreiz.'],
 };
 

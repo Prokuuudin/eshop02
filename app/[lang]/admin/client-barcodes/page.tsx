@@ -139,8 +139,14 @@ export default function AdminClientBarcodesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'approved', cardNumber: digits, companyName: draft.companyName }),
             });
+            const json = await res.json().catch(() => ({}));
             if (!res.ok) {
-                const json = await res.json().catch(() => ({}));
+                if (res.status === 502 && json.emailStatus === 'error') {
+                    setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
+                    setFormError('');
+                    setMessage(`Карта выдана: ${digits}, но письмо не отправлено. Повторите отправку в разделе «Приглашения».`);
+                    return;
+                }
                 setFormError(
                     json.error === 'card_taken'
                         ? `Номер ${digits} уже занят — укажите другой.`
@@ -152,16 +158,7 @@ export default function AdminClientBarcodesPage() {
                 return;
             }
             setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
-            try {
-                await fetch('/api/admin/card-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'approve', email, name, cardNumber: digits, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
-                });
-                setMessage(`Карта выдана: ${digits}. Письмо отправлено на ${email}.`);
-            } catch {
-                setMessage(`Карта выдана: ${digits}. Не удалось отправить письмо.`);
-            }
+            setMessage(`Карта выдана: ${digits}. Одноразовое приглашение отправлено на ${email}.`);
             setFormError('');
         } finally {
             setEmailBusy((prev) => { const next = { ...prev }; delete next[requestId]; return next; });

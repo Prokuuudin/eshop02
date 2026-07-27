@@ -14,7 +14,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { getAdminAccessLevel, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
+import { getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
 import { prisma } from '@/lib/prisma'
 
 function futureDate() {
@@ -75,6 +75,23 @@ describe('requireAdmin', () => {
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
     expect((res as NextResponse).status).toBe(403)
+  })
+})
+
+describe('restricted onboarding session', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('is hidden from normal server authorization until the password is changed', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer')
+    session.user.mustChangePassword = true
+    vi.mocked(prisma.session.findUnique as any).mockResolvedValue(session)
+
+    expect(await getServerUser()).toBeNull()
+    expect(await getServerUser({ allowPasswordChangeRequired: true })).toMatchObject({
+      id: 'u1',
+      mustChangePassword: true,
+    })
   })
 })
 

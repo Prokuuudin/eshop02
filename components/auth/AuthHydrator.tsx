@@ -6,6 +6,9 @@ export default function AuthHydrator() {
   const { idsByScope, addItem, productCache } = useWishlist()
 
   useEffect(() => {
+    // One-time cleanup for drafts written by the retired access-request store.
+    // Requests and certificates must only exist in the server-side database.
+    localStorage.removeItem('access-request-store')
     const stored = localStorage.getItem('currentUser')
 
     const syncWishlist = (userId: string) => {

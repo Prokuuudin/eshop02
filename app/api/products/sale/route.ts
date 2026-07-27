@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { mapDbToProduct } from '@/lib/product-overrides-store'
 import { isProductOnSale } from '@/data/products'
+import { getServerUser } from '@/lib/server-auth'
+import { redactProductPrices } from '@/lib/product-price-visibility'
 
 export const runtime = 'nodejs'
 
@@ -21,7 +23,10 @@ export async function GET() {
       })
       .slice(0, 24)
 
-    return NextResponse.json({ products })
+    const canSeePrices = Boolean(await getServerUser())
+    return NextResponse.json({
+      products: canSeePrices ? products : redactProductPrices(products),
+    })
   } catch (err) {
     console.error('sale products error', err)
     return NextResponse.json({ products: [] })

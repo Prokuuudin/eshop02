@@ -3,6 +3,17 @@ import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { deleteCertificate } from '@/lib/certificate-store'
+import { sendEmail } from '@/lib/mailer'
+import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
+import { getTemplates } from '@/lib/email-templates-server-store'
+import {
+  hashInviteToken,
+  INVITE_TTL_DAYS,
+  newInviteToken,
+  replaceInvitation,
+  resolveInviteLang,
+} from '@/lib/invitations'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 
@@ -80,13 +91,23 @@ export async function PATCH(
         return NextResponse.json({ error: 'user_has_card', cardNumber: sameEmail.cardNumber }, { status: 409 })
       }
 
-      const updated = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
+        let targetUserId: string
         if (sameEmail) {
-          if (sameEmail.cardNumber !== cardNumber) {
-            await tx.user.update({ where: { id: sameEmail.id }, data: { cardNumber } })
-          }
+          targetUserId = sameEmail.id
+          await tx.user.update({
+            where: { id: sameEmail.id },
+            data: {
+              cardNumber,
+              mustChangePassword: true,
+              privacyNoticeVersion: existing.privacyNoticeVersion,
+              privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
+              marketingConsent: existing.marketingConsent,
+              marketingConsentAt: existing.marketingConsentAt,
+            },
+          })
         } else {
-          await tx.user.create({
+          const created = await tx.user.create({
             data: {
               id: randomUUID(),
               email: existing.email.toLowerCase(),
@@ -99,15 +120,63 @@ export async function PATCH(
               companyName: body.companyName?.trim() || null,
               platformRole: 'customer',
               mustChangePassword: true,
+              privacyNoticeVersion: existing.privacyNoticeVersion,
+              privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
+              marketingConsent: existing.marketingConsent,
+              marketingConsentAt: existing.marketingConsentAt,
             },
           })
+          targetUserId = created.id
         }
         // Решение принято — временный сертификат больше не нужен
         await deleteCertificate(tx, id)
-        return tx.accessRequest.update(requestUpdate)
+        const request = await tx.accessRequest.update(requestUpdate)
+        return { request, targetUserId }
       })
 
-      return NextResponse.json({ request: updated, cardNumber })
+      // Approval and invitation creation are one server workflow. The token is
+      // persisted before SMTP is attempted, so a failed delivery can be safely
+      // retried from the invitations screen without recreating the account.
+      const token = newInviteToken()
+      const language = resolveInviteLang(existing.language ?? undefined)
+      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000)
+      await replaceInvitation(prisma, {
+        userId: result.targetUserId,
+        email: existing.email.toLowerCase(),
+        cardNumber,
+        token,
+        expiresAt: expiresAt.toISOString(),
+        language,
+      })
+
+      const templates = await getTemplates()
+      const tpl = pickInviteTemplate(templates, language)
+      const inviteUrl = `${getSiteUrl()}/auth/invite?token=${token}`
+      const mail = buildInviteEmail(
+        language,
+        { name: existing.name ?? '', cardNumber, inviteUrl },
+        tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
+      )
+      try {
+        await sendEmail(existing.email, mail.subject, mail.html)
+      } catch (emailError) {
+        await prisma.invitationToken.updateMany({
+          where: { tokenHash: hashInviteToken(token), status: 'sent' },
+          data: { status: 'error' },
+        })
+        console.error('[admin/access-requests/:id PATCH] invitation email failed', emailError)
+        return NextResponse.json(
+          { request: result.request, cardNumber, userId: result.targetUserId, emailStatus: 'error' },
+          { status: 502 },
+        )
+      }
+
+      return NextResponse.json({
+        request: result.request,
+        cardNumber,
+        userId: result.targetUserId,
+        emailStatus: 'sent',
+      })
     }
 
     const updated = await prisma.accessRequest.update(requestUpdate)

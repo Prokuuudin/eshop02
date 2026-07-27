@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked
 
   try {
-    const session = await getServerUser()
+    const session = await getServerUser({ allowPasswordChangeRequired: true })
     if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
     const body = await req.json().catch(() => ({}))

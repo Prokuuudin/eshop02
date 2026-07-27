@@ -33,11 +33,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Avoid needless re-renders: only replace the user object when identity actually changed.
     if (prev?.id === user?.id && get().isHydrated) {
       // Same user — still ensure derived flags are correct (e.g. role change after edit).
-      if (prev?.platformRole === user?.platformRole) return
+      if (
+        prev?.platformRole === user?.platformRole
+        && prev?.mustChangePassword === user?.mustChangePassword
+      ) return
     }
     set({
       user,
-      isAuthenticated: !!user,
+      // Restricted onboarding users may only set their own password. Treat them
+      // as unauthenticated everywhere else (prices, cart and account actions).
+      isAuthenticated: !!user && !user.mustChangePassword,
       isAdmin: isAdminUser(user),
       isHydrated: true,
     })

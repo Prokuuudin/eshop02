@@ -1,6 +1,7 @@
 ﻿'use client';
 import React, { useRef, useState } from 'react';
 import Script from 'next/script';
+import Link from 'next/link';
 import { Upload, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,12 +28,18 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
+    const [marketingConsent, setMarketingConsent] = useState(false);
     const turnstile = useTurnstile();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!certificate) {
             setError(t('auth.certificateRequired', 'Необходимо приложить сертификат или лицензию мастера'));
+            return;
+        }
+        if (!privacyAcknowledged) {
+            setError(t('auth.privacyAcknowledgementRequired', 'Подтвердите ознакомление с Политикой конфиденциальности'));
             return;
         }
 
@@ -43,7 +50,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             // Фото ужимается на клиенте — сервер принимает до ~1.5 МБ
             const certificateData = await prepareCertificateDataUrl(certificate);
 
-            const result = submitNoCardRequest({
+            const result = await submitNoCardRequest({
                 name: name.trim(),
                 email: email.trim(),
                 phone: phone || undefined,
@@ -52,6 +59,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 message: message.trim() || undefined,
                 language: language as 'ru' | 'en' | 'lv',
                 turnstileToken: turnstile.token,
+                privacyAcknowledged,
+                marketingConsent,
             });
 
             if (!result.success) {
@@ -228,6 +237,31 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
             </div>
             {turnstile.enabled && <div ref={turnstile.containerRef} className="mb-2" />}
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                    type="checkbox"
+                    checked={privacyAcknowledged}
+                    onChange={(e) => setPrivacyAcknowledged(e.target.checked)}
+                    className="mt-0.5"
+                    required
+                />
+                <span>
+                    {t('auth.privacyAcknowledgement', 'Я ознакомился(-ась) с')}{' '}
+                    <Link href="/privacy" className="underline text-foreground">
+                        {t('footer.privacy', 'Политикой конфиденциальности')}
+                    </Link>
+                    . {t('auth.privacyPurpose', 'Данные и сертификат используются для рассмотрения заявки на клиентскую карту.')}
+                </span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="mt-0.5"
+                />
+                <span>{t('auth.marketingConsent', 'Я хочу получать новости и специальные предложения по электронной почте (необязательно).')}</span>
+            </label>
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={submitting || (turnstile.enabled && !turnstile.token)}>
                     {submitting

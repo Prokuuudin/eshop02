@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() } } }))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: vi.fn(), createSession: vi.fn(), mapDbToServerUser: vi.fn((user) => user),
   SESSION_COOKIE: 'eshop_session',
@@ -54,5 +54,26 @@ describe('POST /api/auth/login', () => {
     expect(resetRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
     expect(resetRateLimit).toHaveBeenCalledWith('login:email:user@test.com')
     expect(createSession).toHaveBeenCalledWith('u1')
+  })
+
+  it('finds a real-email account directly by normalized cardNumber', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+      id: 'u-card',
+      email: 'anna@example.com',
+      cardNumber: '1234',
+      passwordHash: 'hash',
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest(' 12 34 '))
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { cardNumber: { equals: '1234', mode: 'insensitive' } },
+    })
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+    expect(checkRateLimit).toHaveBeenCalledWith('login:card:1234')
+    expect(json.user.email).toBe('anna@example.com')
   })
 })

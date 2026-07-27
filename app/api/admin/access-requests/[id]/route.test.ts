@@ -12,6 +12,26 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: vi.fn(),
 }))
+vi.mock('@/lib/invitations', () => ({
+  hashInviteToken: vi.fn(() => 'token-hash'),
+  INVITE_TTL_DAYS: 7,
+  newInviteToken: vi.fn(() => 'invite-token'),
+  replaceInvitation: vi.fn().mockResolvedValue(undefined),
+  resolveInviteLang: vi.fn(() => 'ru'),
+}))
+vi.mock('@/lib/mailer', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}))
+vi.mock('@/lib/invitation-emails', () => ({
+  buildInviteEmail: vi.fn(() => ({ subject: 'Invite', html: '<p>Invite</p>' })),
+  pickInviteTemplate: vi.fn(() => undefined),
+}))
+vi.mock('@/lib/email-templates-server-store', () => ({
+  getTemplates: vi.fn().mockResolvedValue([]),
+}))
+vi.mock('@/lib/site-url', () => ({
+  getSiteUrl: vi.fn(() => 'https://example.com'),
+}))
 
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'

@@ -1,6 +1,7 @@
 ﻿'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
 import { registerCardUser, type RegisterCardErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,8 @@ export default function RegisterForm({ onClose }: Props) {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
+    const [marketingConsent, setMarketingConsent] = useState(false);
 
     const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
         card_not_found: t('auth.cardNotFound'),
@@ -44,6 +47,10 @@ export default function RegisterForm({ onClose }: Props) {
             setError(t('auth.enterPassword'));
             return;
         }
+        if (!privacyAcknowledged) {
+            setError(t('auth.privacyAcknowledgementRequired', 'Подтвердите ознакомление с Политикой конфиденциальности'));
+            return;
+        }
 
         // The welcome password is checked server-side (never shipped to the
         // client bundle) — a wrong guess comes back as errorCode 'wrong_password'.
@@ -52,6 +59,8 @@ export default function RegisterForm({ onClose }: Props) {
             cardNumber: trimmedCard,
             password,
             name: name.trim() || undefined,
+            privacyAcknowledged,
+            marketingConsent,
         });
         setLoading(false);
 
@@ -156,6 +165,32 @@ export default function RegisterForm({ onClose }: Props) {
                     </a>
                 </div>
             </div>
+
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                    type="checkbox"
+                    checked={privacyAcknowledged}
+                    onChange={(e) => setPrivacyAcknowledged(e.target.checked)}
+                    className="mt-0.5"
+                    required
+                />
+                <span>
+                    {t('auth.privacyAcknowledgement', 'Я ознакомился(-ась) с')}{' '}
+                    <Link href="/privacy" className="underline text-foreground">
+                        {t('footer.privacy', 'Политикой конфиденциальности')}
+                    </Link>
+                    .
+                </span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="mt-0.5"
+                />
+                <span>{t('auth.marketingConsent', 'Я хочу получать новости и специальные предложения по электронной почте (необязательно).')}</span>
+            </label>
 
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={loading}>

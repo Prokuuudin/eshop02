@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { toNum } from '@/lib/decimal'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getServerUser } from '@/lib/server-auth'
 
 const SEARCH_LIMIT = { windowMs: 60 * 1000, maxAttempts: 30 }
 const MAX_QUERY_LENGTH = 160
@@ -78,7 +79,13 @@ export async function GET(req: NextRequest) {
 
     // $queryRawUnsafe bypasses the Prisma Client Extension in lib/prisma-money-extension.ts,
     // so `price` (a Decimal column) needs manual conversion back to a plain number here.
-    const products = results.map((row) => ({ ...row, price: toNum(row.price) }))
+    const canSeePrices = Boolean(await getServerUser())
+    const products = results.map((row) => {
+      const product = { ...row, price: toNum(row.price) }
+      if (canSeePrices) return product
+      const { price: _price, ...publicProduct } = product
+      return publicProduct
+    })
 
     return NextResponse.json({ products })
   } catch (e) {

@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/server-auth'
-import { parseDataUrl, saveCertificate, MAX_CERT_DATA_LENGTH } from '@/lib/certificate-store'
+import {
+  cleanupExpiredCertificates,
+  parseDataUrl,
+  saveCertificate,
+  MAX_CERT_DATA_LENGTH,
+} from '@/lib/certificate-store'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 
 export const runtime = 'nodejs'
 
 const ACCESS_REQUEST_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 3 }
+const PRIVACY_NOTICE_VERSION = '2026-07-03'
 
 const clientIp = (req: NextRequest): string =>
   req.headers.get('cf-connecting-ip')?.trim()
@@ -45,11 +51,15 @@ export async function POST(req: NextRequest) {
       companyId?: string; companyName?: string; cardNumber?: string; requestType?: string
       certificateName?: string; certificateData?: string; message?: string; language?: string
       turnstileToken?: string
+      privacyAcknowledged?: boolean; marketingConsent?: boolean
     }
     const email = body.email?.trim().toLowerCase() ?? ''
     const password = body.password ?? ''
     const isNoCard = body.requestType === 'no-card'
 
+    if (body.privacyAcknowledged !== true) {
+      return NextResponse.json({ error: 'privacy_acknowledgement_required' }, { status: 400 })
+    }
     if (!email || !password || (!isNoCard && (!body.companyId || !body.companyName || !body.cardNumber))) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
@@ -119,6 +129,10 @@ export async function POST(req: NextRequest) {
             cardNumber: body.cardNumber ?? '', requestType: body.requestType ?? 'card',
             certificateName: body.certificateName ?? null, message: body.message ?? null,
             language: body.language ?? null, status: 'pending',
+            privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
+            privacyAcknowledgedAt: new Date(),
+            marketingConsent: body.marketingConsent === true,
+            marketingConsentAt: body.marketingConsent === true ? new Date() : null,
           },
         })
         if (certificateData) {
@@ -135,7 +149,12 @@ export async function POST(req: NextRequest) {
       throw error
     }
 
-    if (Math.random() < 0.01) void gcRateLimitStore()
+    if (Math.random() < 0.01) {
+      void gcRateLimitStore()
+      void cleanupExpiredCertificates(prisma).catch((error) =>
+        console.error('[access-requests] certificate retention cleanup failed', error)
+      )
+    }
     return NextResponse.json({ id: requestId }, { status: 201 })
   } catch (error) {
     console.error('[access-requests POST]', error)

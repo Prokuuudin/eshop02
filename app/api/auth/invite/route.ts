@@ -3,8 +3,17 @@ import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { hashInviteToken } from '@/lib/invitations'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
+const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
+
+function clientIp(req: NextRequest): string {
+  return req.headers.get('cf-connecting-ip')?.trim()
+    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')?.trim()
+    || 'unknown'
+}
 
 class InviteConsumedError extends Error {}
 
@@ -43,6 +52,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { token?: string; password?: string }
+    const tokenHash = hashInviteToken(body.token ?? '')
+    const limits = await Promise.all([
+      checkRateLimit(`invite:ip:${clientIp(req)}`, INVITE_ATTEMPT_LIMIT),
+      checkRateLimit(`invite:token:${tokenHash}`, INVITE_ATTEMPT_LIMIT),
+    ])
+    const limited = limits.find((item) => item.limited)
+    if (limited) {
+      return NextResponse.json({ ok: false, error: 'too_many_attempts' }, { status: 429 })
+    }
     if (!body.password || body.password.length < 12) {
       return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
     }
@@ -54,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ ok: false, error: 'user_not_found' }, { status: 404 })
 
     const passwordHash = await hashPassword(body.password)
-    const companyId = `company_master_${randomUUID()}`
+    const companyId = user.companyId ?? `company_master_${randomUUID()}`
     const companyName = user.name || inv.email
 
     try {
@@ -72,14 +90,16 @@ export async function POST(req: NextRequest) {
         })
         if (consumed.count !== 1) throw new InviteConsumedError()
 
-        const cardTaken = await tx.company.findUnique({ where: { cardNumber: inv.cardNumber }, select: { id: true } })
-        await tx.company.create({ data: { id: companyId, companyName, cardNumber: cardTaken ? null : inv.cardNumber } })
-        await tx.companyMember.create({
-          data: {
-            id: randomUUID(), companyId, userId: user.id, email: inv.email,
-            name: user.name ?? inv.email, role: 'admin', addedBy: 'invitation',
-          },
-        })
+        if (!user.companyId) {
+          const cardTaken = await tx.company.findUnique({ where: { cardNumber: inv.cardNumber }, select: { id: true } })
+          await tx.company.create({ data: { id: companyId, companyName, cardNumber: cardTaken ? null : inv.cardNumber } })
+          await tx.companyMember.create({
+            data: {
+              id: randomUUID(), companyId, userId: user.id, email: inv.email,
+              name: user.name ?? inv.email, role: 'admin', addedBy: 'invitation',
+            },
+          })
+        }
         await tx.user.update({
           where: { id: user.id },
           data: {
@@ -87,6 +107,7 @@ export async function POST(req: NextRequest) {
             companyId, companyName, teamRole: 'admin',
           },
         })
+        await tx.session.deleteMany({ where: { userId: user.id } })
       }, { isolationLevel: 'Serializable' })
     } catch (error) {
       if (error instanceof InviteConsumedError || (error as { code?: string })?.code === 'P2034') {

@@ -51,3 +51,17 @@ export async function readCertificate(db: Db, requestId: string): Promise<Stored
 export async function deleteCertificate(db: Db, requestId: string): Promise<void> {
   await db.keyValueSetting.deleteMany({ where: { key: certKey(requestId) } })
 }
+
+/** Remove certificate copies from requests left pending for more than 90 days. */
+export async function cleanupExpiredCertificates(db: Db, now: Date = new Date()): Promise<number> {
+  const cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+  const stale = await db.accessRequest.findMany({
+    where: { status: 'pending', requestedAt: { lt: cutoff } },
+    select: { id: true },
+    take: 100,
+  })
+  if (stale.length === 0) return 0
+  const keys = stale.map(({ id }) => certKey(id))
+  const deleted = await db.keyValueSetting.deleteMany({ where: { key: { in: keys } } })
+  return deleted.count
+}

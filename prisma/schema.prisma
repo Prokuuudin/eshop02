@@ -23,6 +23,10 @@ model User {
   avatarUrl           String?
   bonusPoints         Int       @default(350)
   mustChangePassword  Boolean   @default(false)
+  privacyNoticeVersion String?
+  privacyAcknowledgedAt DateTime?
+  marketingConsent    Boolean   @default(false)
+  marketingConsentAt  DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
@@ -425,6 +429,10 @@ model AccessRequest {
   certificateName  String?
   message          String?
   language         String?
+  privacyNoticeVersion String
+  privacyAcknowledgedAt DateTime
+  marketingConsent Boolean @default(false)
+  marketingConsentAt DateTime?
 
   @@index([email])
   @@index([companyId])

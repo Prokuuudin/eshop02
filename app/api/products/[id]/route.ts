@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getServerUser } from '@/lib/server-auth'
+import { redactProductPrices } from '@/lib/product-price-visibility'
 
 export const runtime = 'nodejs'
 
@@ -12,5 +14,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ product: null }, { status: 404 })
   }
 
-  return NextResponse.json({ product })
+  const canSeePrices = Boolean(await getServerUser())
+  return NextResponse.json({
+    product: canSeePrices ? product : redactProductPrices(product),
+  })
 }

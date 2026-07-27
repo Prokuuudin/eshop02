@@ -1,5 +1,4 @@
 import { useCompanyStore } from '@/lib/company-store'
-import { useAccessRequestStore } from '@/lib/access-request-store'
 import { logAuditAction } from '@/lib/audit-log-store'
 
 // Not the real shared welcome password: that constant is server-only (see
@@ -273,6 +272,8 @@ export const registerCardUser = async (data: {
   cardNumber: string
   password: string
   name?: string
+  privacyAcknowledged?: boolean
+  marketingConsent?: boolean
 }): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
   const normalizedCard = normalizeCard(data.cardNumber)
 
@@ -281,7 +282,13 @@ export const registerCardUser = async (data: {
     res = await fetch('/api/auth/register-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardNumber: normalizedCard, password: data.password, name: data.name }),
+      body: JSON.stringify({
+        cardNumber: normalizedCard,
+        password: data.password,
+        name: data.name,
+        privacyAcknowledged: data.privacyAcknowledged === true,
+        marketingConsent: data.marketingConsent === true,
+      }),
     })
   } catch {
     return { success: false, errorCode: 'network_error' }
@@ -363,7 +370,7 @@ export const forceChangePassword = async (
 const normalizeCard = (cardNumber: string): string =>
   cardNumber.trim().replace(/\s+/g, '').toUpperCase()
 
-export const submitNoCardRequest = (data: {
+export const submitNoCardRequest = async (data: {
   name: string
   email: string
   phone?: string
@@ -372,46 +379,68 @@ export const submitNoCardRequest = (data: {
   message?: string
   language?: 'ru' | 'en' | 'lv'
   turnstileToken?: string
-}): { success: boolean; error?: string } => {
-  const users = readUsers()
+  privacyAcknowledged?: boolean
+  marketingConsent?: boolean
+}): Promise<{ success: boolean; error?: string }> => {
   const normalizedEmail = normalizeEmail(data.email)
 
   if (!normalizedEmail) return { success: false, error: 'Укажите email' }
-  if (findUserByEmail(users, normalizedEmail)) return { success: false, error: 'Пользователь с таким email уже существует' }
-
-  const accessRequestStore = useAccessRequestStore.getState()
-  if (accessRequestStore.getPendingRequestByEmail(normalizedEmail)) {
-    return { success: false, error: 'Заявка с таким email уже ожидает рассмотрения' }
+  // Remove sensitive drafts left by the legacy persisted request store.
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('access-request-store')
   }
 
-  accessRequestStore.createRequest({
-    email: normalizedEmail,
-    password: NO_CARD_REQUEST_PLACEHOLDER_PASSWORD,
-    name: data.name,
-    phone: data.phone,
-    companyId: '',
-    companyName: '',
-    cardNumber: '',
-    requestType: 'no-card',
-    certificateData: data.certificateData,
-    certificateName: data.certificateName,
-    message: data.message,
-    language: data.language,
-    turnstileToken: data.turnstileToken,
-  })
+  let response: Response
+  try {
+    response = await fetch('/api/access-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password: NO_CARD_REQUEST_PLACEHOLDER_PASSWORD,
+        name: data.name,
+        phone: data.phone,
+        companyId: '',
+        companyName: '',
+        cardNumber: '',
+        requestType: 'no-card',
+        certificateData: data.certificateData,
+        certificateName: data.certificateName,
+        message: data.message,
+        language: data.language,
+        turnstileToken: data.turnstileToken,
+        privacyAcknowledged: data.privacyAcknowledged === true,
+        marketingConsent: data.marketingConsent === true,
+      }),
+    })
+  } catch {
+    return { success: false, error: 'Сервер недоступен. Попробуйте позже.' }
+  }
 
-  return { success: true }
+  if (response.ok) return { success: true }
+
+  const payload = await response.json().catch(() => ({})) as { error?: string }
+  const errors: Record<string, string> = {
+    pending_exists: 'Заявка с таким email уже ожидает рассмотрения.',
+    rate_limited: 'Слишком много попыток. Попробуйте позже.',
+    captcha_required: 'Подтвердите, что вы не робот.',
+    captcha_failed: 'Проверка CAPTCHA не пройдена. Попробуйте ещё раз.',
+    captcha_not_configured: 'Отправка заявок временно недоступна.',
+    certificate_too_large: 'Файл слишком большой.',
+    invalid_certificate: 'Недопустимый формат сертификата.',
+    privacy_acknowledgement_required: 'Подтвердите, что вы ознакомились с Политикой конфиденциальности.',
+  }
+  return {
+    success: false,
+    error: errors[payload.error ?? ''] ?? 'Не удалось сохранить заявку. Попробуйте позже.',
+  }
 }
-
-const cardToEmail = (cardNumber: string): string =>
-  `card.${normalizeCard(cardNumber).toLowerCase()}@client.local`
 
 /**
  * Authenticates against the server (bcrypt-verified, rate-limited) — the client
  * never decides whether a password is correct. `identifier` may be an email or
- * a client card number; card numbers resolve to their deterministic internal
- * email (same pattern used at card registration) without needing to trust any
- * locally-cached password. On success, the local mirror is refreshed for UI
+ * a client card number; the server looks up User.email or User.cardNumber
+ * directly without trusting any locally-cached directory. On success, the local mirror is refreshed for UI
  * purposes only, with the password field blanked — it is never the source of
  * truth for auth again once a login round-trip has verified the account.
  */
@@ -421,22 +450,16 @@ export const loginUserAuto = async (
 ): Promise<{ success: boolean; error?: string }> => {
   const trimmed = identifier.trim()
   const isEmail = trimmed.includes('@')
-  const email = isEmail ? normalizeEmail(trimmed) : cardToEmail(trimmed)
   const users = readUsers()
-  const localUser = findUserByEmail(users, email)
 
   let res: Response
   try {
-    res = await fetch('/api/auth/sync', {
+    res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: localUser?.id ?? `u_${Date.now()}`,
-        email,
+        identifier: trimmed,
         password,
-        name: localUser?.name,
-        phone: localUser?.phone,
-        avatarUrl: localUser?.avatarUrl,
       }),
     })
   } catch {
@@ -450,19 +473,16 @@ export const loginUserAuto = async (
     return { success: false, error: isEmail ? 'Неверный email или пароль' : 'Неверный номер карты или пароль' }
   }
 
-  const verifiedUser: User = localUser
-    ? { ...localUser, password: '' }
-    : normalizeUser({ id: `u_${Date.now()}`, email, password: '' })
-
-  if (!localUser) {
-    writeUsers([...users, verifiedUser])
-  } else if (localUser.password) {
-    const idx = users.findIndex((u) => u.id === localUser.id)
-    if (idx !== -1) {
-      users[idx] = verifiedUser
-      writeUsers(users)
-    }
+  const payload = await res.json().catch(() => ({})) as {
+    user?: Partial<User> & { id: string; email: string }
   }
+  if (!payload.user) {
+    return { success: false, error: 'Не удалось загрузить аккаунт' }
+  }
+
+  const verifiedUser = normalizeUser({ ...payload.user, password: '' })
+  const nextUsers = users.filter((u) => u.id !== verifiedUser.id && u.email !== verifiedUser.email)
+  writeUsers([...nextUsers, verifiedUser])
 
   if (verifiedUser.companyId) {
     useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId)

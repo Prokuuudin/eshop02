@@ -3,7 +3,7 @@ import { getServerUser } from '@/lib/server-auth'
 
 export async function GET() {
   try {
-    const user = await getServerUser()
+    const user = await getServerUser({ allowPasswordChangeRequired: true })
     return NextResponse.json({ user })
   } catch (e) {
     console.error('[auth/me]', e)

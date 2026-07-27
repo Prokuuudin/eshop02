@@ -28,7 +28,6 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
     const turnstile = useTurnstile();
 
@@ -36,10 +35,6 @@ export default function RegisterNoCardForm({ onClose }: Props) {
         e.preventDefault();
         if (!certificate) {
             setError(t('auth.certificateRequired', 'Необходимо приложить сертификат или лицензию мастера'));
-            return;
-        }
-        if (!privacyAcknowledged) {
-            setError(t('auth.privacyAcknowledgementRequired', 'Подтвердите ознакомление с Политикой конфиденциальности'));
             return;
         }
 
@@ -59,7 +54,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 message: message.trim() || undefined,
                 language: language as 'ru' | 'en' | 'lv',
                 turnstileToken: turnstile.token,
-                privacyAcknowledged,
+                privacyAcknowledged: true,
                 marketingConsent,
             });
 
@@ -237,22 +232,13 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 />
             </div>
             {turnstile.enabled && <div ref={turnstile.containerRef} className="mb-2" />}
-            <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <input
-                    type="checkbox"
-                    checked={privacyAcknowledged}
-                    onChange={(e) => setPrivacyAcknowledged(e.target.checked)}
-                    className="mt-0.5"
-                    required
-                />
-                <span>
-                    {t('auth.privacyAcknowledgement', 'Я ознакомился(-ась) с')}{' '}
-                    <Link href="/privacy" className="underline text-foreground">
-                        {t('footer.privacy', 'Политикой конфиденциальности')}
-                    </Link>
-                    . {t('auth.privacyPurpose', 'Данные и сертификат используются для рассмотрения заявки на клиентскую карту.')}
-                </span>
-            </label>
+            <p className="text-xs text-muted-foreground">
+                {t('auth.privacyAcknowledgement', 'Отправляя форму, вы подтверждаете, что ознакомились с')}{' '}
+                <Link href="/privacy" className="underline text-foreground">
+                    {t('footer.privacy', 'Политикой конфиденциальности')}
+                </Link>
+                . {t('auth.privacyPurpose', 'Данные и сертификат используются для рассмотрения заявки на клиентскую карту.')}
+            </p>
             <label className="flex items-start gap-2 text-xs text-muted-foreground">
                 <input
                     type="checkbox"

@@ -429,8 +429,8 @@ model AccessRequest {
   certificateName  String?
   message          String?
   language         String?
-  privacyNoticeVersion String
-  privacyAcknowledgedAt DateTime
+  privacyNoticeVersion String?
+  privacyAcknowledgedAt DateTime?
   marketingConsent Boolean @default(false)
   marketingConsentAt DateTime?
 

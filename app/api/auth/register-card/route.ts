@@ -54,6 +54,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'card_required' }, { status: 400 })
     }
 
+    // Every cardholder shares the same welcome password, so per-IP limiting
+    // alone doesn't stop a targeted attempt against one known card number
+    // from a fresh IP — cap attempts per card too.
+    const cardRl = await checkRateLimit(`register-card:card:${cardNumber}`, { windowMs: 60 * 60 * 1000, maxAttempts: 5 })
+    if (cardRl.limited) {
+      return NextResponse.json(
+        { error: 'too_many_attempts', resetAt: cardRl.resetAt },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((cardRl.resetAt - Date.now()) / 1000)) } }
+      )
+    }
+
     const cardUser = await prisma.user.findFirst({
       where: { cardNumber: { equals: cardNumber, mode: 'insensitive' } },
     })

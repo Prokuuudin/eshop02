@@ -1,9 +1,13 @@
 import { useCompanyStore } from '@/lib/company-store'
 import { useAccessRequestStore } from '@/lib/access-request-store'
 import { logAuditAction } from '@/lib/audit-log-store'
-import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 
-export { FIRST_LOGIN_PASSWORD }
+// Not the real shared welcome password: that constant is server-only (see
+// lib/auth-constants.ts) precisely so it never ends up in this client bundle.
+// The stored hash built from this placeholder is never read for gating —
+// register-card checks the User.mustChangePassword flag + the plaintext
+// welcome password against the server-side constant directly, not this hash.
+const NO_CARD_REQUEST_PLACEHOLDER_PASSWORD = 'no-card-request-pending-review'
 
 export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 export type PlatformRole = 'customer' | 'admin'
@@ -382,7 +386,7 @@ export const submitNoCardRequest = (data: {
 
   accessRequestStore.createRequest({
     email: normalizedEmail,
-    password: FIRST_LOGIN_PASSWORD,
+    password: NO_CARD_REQUEST_PLACEHOLDER_PASSWORD,
     name: data.name,
     phone: data.phone,
     companyId: '',

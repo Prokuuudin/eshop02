@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
-import { registerCardUser, FIRST_LOGIN_PASSWORD, type RegisterCardErrorCode } from '@/lib/auth';
+import { registerCardUser, type RegisterCardErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/lib/use-translation';
@@ -45,11 +45,8 @@ export default function RegisterForm({ onClose }: Props) {
             return;
         }
 
-        if (password !== FIRST_LOGIN_PASSWORD) {
-            setError(t('auth.wrongPassword'));
-            return;
-        }
-
+        // The welcome password is checked server-side (never shipped to the
+        // client bundle) — a wrong guess comes back as errorCode 'wrong_password'.
         setLoading(true);
         const result = await registerCardUser({
             cardNumber: trimmedCard,

@@ -55,7 +55,7 @@ npm run dev
 | `TURNSTILE_SECRET_KEY` | optional | Cloudflare Turnstile secret key — server-side verification |
 | `STRIPE_SECRET_KEY` | yes for payments | Stripe secret key (server-side only) |
 | `STRIPE_WEBHOOK_SECRET` | yes for payments | Verifies the Stripe webhook signature |
-| `NEXT_PUBLIC_FIRST_LOGIN_PASSWORD` | yes | Universal first-login password for newly provisioned B2B accounts (must change on first login) |
+| `FIRST_LOGIN_PASSWORD` | yes | Shared welcome password for every cardholder, individual or company (must change on first login). Server-only — never prefix this `NEXT_PUBLIC_`, or it leaks into the client JS bundle. |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | yes for email | Outgoing mail (registration confirmation, notifications) |
 | `CONTACT_TO` | optional | Recipient for the contact form (defaults to `SMTP_USER`) |
 

@@ -172,6 +172,24 @@ describe('POST /api/auth/register-card', () => {
     expect(prisma.company.findFirst).not.toHaveBeenCalled()
   })
 
+  it('rate-limits repeated attempts against the same card number regardless of IP', async () => {
+    // The shared welcome password means a single known card number is the only
+    // thing standing between an attacker and someone else's account — cap
+    // attempts per card, not just per IP, to slow that down.
+    vi.mocked(checkRateLimit as any).mockImplementation(async (key: string) =>
+      key.startsWith('register-card:card:')
+        ? { limited: true, resetAt: Date.now() + 60_000 }
+        : { limited: false, resetAt: 0 }
+    )
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
+    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(null)
+
+    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(res.status).toBe(429)
+    expect(prisma.user.findFirst).not.toHaveBeenCalled()
+  })
+
   it('rate-limits repeated attempts from the same IP', async () => {
     vi.mocked(checkRateLimit as any).mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
 

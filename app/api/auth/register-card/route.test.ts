@@ -18,10 +18,14 @@ vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn(),
   gcRateLimitStore: vi.fn(),
 }))
+vi.mock('@/lib/mailer', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}))
 
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { sendEmail } from '@/lib/mailer'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { POST } from './route'
 
@@ -38,6 +42,7 @@ const COMPANY = {
   companyName: 'SIA MIKS PLUS',
   cardNumber: '1234',
   approvalWorkflowEnabled: false,
+  contactEmail: 'office@example.com',
 }
 
 const DORMANT_USER = {
@@ -110,9 +115,16 @@ describe('POST /api/auth/register-card', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled()
     const setCookie = res.headers.get('set-cookie')
     expect(setCookie).toContain('eshop_session=token')
+    // A shared password means anyone who guesses/knows the card number can
+    // trigger this — notify the real owner so an unwanted activation surfaces.
+    expect(sendEmail).toHaveBeenCalledWith(
+      'master@example.com',
+      expect.any(String),
+      expect.any(String)
+    )
   })
 
-  it('rejects a dormant individual cardholder who mistypes the welcome password', async () => {
+  it('does not notify anyone when the welcome password is wrong', async () => {
     vi.mocked(prisma.user.findFirst as any).mockResolvedValue(DORMANT_USER)
 
     const res = await POST(makeRequest({ cardNumber: '5678', password: 'wrong-guess' }))
@@ -120,6 +132,7 @@ describe('POST /api/auth/register-card', () => {
     expect(res.status).toBe(401)
     expect(await res.json()).toMatchObject({ error: 'wrong_password' })
     expect(createSession).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('rejects a brand-new company card claim with the wrong password', async () => {
@@ -162,6 +175,19 @@ describe('POST /api/auth/register-card', () => {
     expect(createSession).toHaveBeenCalled()
     const setCookie = res.headers.get('set-cookie')
     expect(setCookie).toContain('eshop_session=token')
+    expect(sendEmail).toHaveBeenCalledWith('office@example.com', expect.any(String), expect.any(String))
+  })
+
+  it('skips the activation notice when the company has no contact email on file', async () => {
+    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
+    vi.mocked(prisma.company.findFirst as any).mockResolvedValue({ ...COMPANY, contactEmail: null })
+    const tx = makeTx()
+    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+
+    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(res.status).toBe(201)
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('rejects when the card number is blank', async () => {

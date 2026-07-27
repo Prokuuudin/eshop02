@@ -4,6 +4,21 @@ import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
+import { sendEmail } from '@/lib/mailer'
+import { buildCardActivatedEmail } from '@/lib/invitation-emails'
+
+// Best-effort "was this you?" notice — a shared password means this activation
+// could be an attacker who guessed/knew the card number, not the real owner.
+// Never let a mail failure break the response the browser is waiting on.
+async function notifyCardActivated(email: string | null | undefined, name: string, cardNumber: string): Promise<void> {
+  if (!email) return
+  try {
+    const { subject, html } = buildCardActivatedEmail({ name, cardNumber })
+    await sendEmail(email, subject, html)
+  } catch (e) {
+    console.error('[auth/register-card] activation notice failed', e)
+  }
+}
 
 export const runtime = 'nodejs'
 
@@ -77,6 +92,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
       }
 
+      await notifyCardActivated(cardUser.email, cardUser.name ?? '', cardNumber)
       const token = await createSession(cardUser.id)
       const res = NextResponse.json({ user: mapDbToServerUser(cardUser) }, { status: 200 })
       res.cookies.set(SESSION_COOKIE, token, {
@@ -135,6 +151,9 @@ export async function POST(req: NextRequest) {
       return created
     })
 
+    // The user's own email is the synthetic card.<number>@client.local
+    // placeholder, not a real inbox — notify the company's contact address.
+    await notifyCardActivated(company.contactEmail, user.name ?? '', cardNumber)
     const token = await createSession(user.id)
 
     const res = NextResponse.json({ user: mapDbToServerUser(user) }, { status: 201 })

@@ -29,6 +29,7 @@ import {
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
 import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
+import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 
 type CartDrawerProps = {
     isOpen: boolean;
@@ -193,7 +194,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     ) : (
                         items.map((item) => {
                             const minQuantity = getMinimumOrderQuantity(item);
-                            const localizedTitle = t(`products.${item.id}.title`, item.title);
+                            const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                             const isSelected = selectedItemIds.includes(item.lineKey);
                             return (
                                 <div

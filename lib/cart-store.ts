@@ -13,7 +13,10 @@ export function buildLineKey(id: string, selectedVariants?: SelectedVariant[]): 
 
 type AddableProduct = {
   id: string
+  titleKey?: string
   title: string
+  titleEn?: string
+  titleLv?: string
   brand: string
   image?: string
   images?: string[]
@@ -29,7 +32,10 @@ export type CartItem = {
   id: string
   lineKey: string
   selectedVariants?: SelectedVariant[]
+  titleKey?: string
   title: string
+  titleEn?: string
+  titleLv?: string
   brand: string
   image?: string
   price: number
@@ -92,7 +98,10 @@ export const useCart = create<CartStore>()(
           lineKey,
           selectedVariants,
           variantLabel,
+          titleKey: product.titleKey,
           title: product.title,
+          titleEn: product.titleEn,
+          titleLv: product.titleLv,
           brand: product.brand,
           image: product.image || product.images?.[0],
           price: product.price + priceAdjustment,

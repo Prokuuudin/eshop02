@@ -32,6 +32,7 @@ import {
 import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
 import AnimatedPrice from '@/components/AnimatedPrice';
+import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 
 export default function CartPage() {
     const { t, language } = useTranslation();
@@ -153,7 +154,7 @@ export default function CartPage() {
                         {items.map((item) => {
                             const minQuantity = getMinimumOrderQuantity(item);
                             const unitPrice = calculatePrice(item, item.quantity);
-                            const localizedTitle = t(`products.${item.id}.title`, item.title);
+                            const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                             const isSelected = selectedItemIds.includes(item.lineKey);
                             return (
                                 <div

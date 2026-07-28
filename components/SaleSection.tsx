@@ -6,6 +6,7 @@ import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
 import Newsletter from './Newsletter';
 import SaleBanner, { type PromoBanner } from './SaleBanner';
+import Reveal from '@/components/ui/Reveal';
 import { useTranslation } from '@/lib/use-translation';
 
 export default function SaleSection() {
@@ -77,7 +78,9 @@ export default function SaleSection() {
                             {t('sale.allProducts')}{' '}
                             <span className="text-muted-foreground font-normal">({products.length})</span>
                         </h3>
-                        <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                        <Reveal>
+                            <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                        </Reveal>
                     </>
                 )}
             </div>

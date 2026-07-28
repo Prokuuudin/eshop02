@@ -16,6 +16,11 @@ export default function Reveal({ children, index = 0, className = '' }: RevealPr
     const node = ref.current
     if (!node) return
 
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {

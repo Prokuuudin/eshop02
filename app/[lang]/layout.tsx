@@ -5,6 +5,7 @@ import ThemeInitScript from '@/components/ThemeInitScript'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import AppBreadcrumbs from '@/components/AppBreadcrumbs'
+import RouteTransition from '@/components/RouteTransition'
 import { Providers } from './providers'
 import RouteUiEffects from '@/components/RouteUiEffects'
 import AuthHydrator from '@/components/auth/AuthHydrator'
@@ -98,7 +99,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
               <div className="mx-auto mt-2 w-full max-w-7xl px-4">
                 <AppBreadcrumbs />
               </div>
-              {children}
+              <RouteTransition>{children}</RouteTransition>
             </main>
             <Footer />
           </AccountGuard>

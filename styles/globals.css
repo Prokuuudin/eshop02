@@ -419,3 +419,57 @@ body[data-scroll-locked][data-scroll-locked] {
   text-decoration: underline;
   overflow-wrap: anywhere;
 }
+
+/* ── Smooth entrance animations (page/element mount) ──────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.route-transition {
+  animation: page-enter 0.28s ease-out both;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.38s ease-out, transform 0.38s ease-out;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+
+.toast-item {
+  animation: toast-in 0.25s ease-out;
+}
+
+.toast-item--leaving {
+  animation: toast-out 0.2s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-transition,
+  .reveal,
+  .toast-item,
+  .toast-item--leaving {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -4,6 +4,7 @@ import { type Product } from '../data/products'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import ProductCard from './ProductCard'
 import ProductCardSkeleton from './ProductCardSkeleton'
+import Reveal from '@/components/ui/Reveal'
 import { useTranslation } from '@/lib/use-translation'
 import { brandSlug } from '@/lib/brand-slug'
 
@@ -301,8 +302,10 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
                 <>
                   {viewMode === 'list' ? (
                     <div className="flex flex-col gap-3">
-                      {filtered.slice(0, visibleCount).map((p) => (
-                        <ProductListRow key={p.id} product={p} />
+                      {filtered.slice(0, visibleCount).map((p, i) => (
+                        <Reveal key={p.id} index={i}>
+                          <ProductListRow product={p} />
+                        </Reveal>
                       ))}
                       {loading && Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
@@ -310,8 +313,10 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
                     </div>
                   ) : (
                     <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {filtered.slice(0, visibleCount).map((p) => (
-                        <ProductCard key={p.id} product={p} />
+                      {filtered.slice(0, visibleCount).map((p, i) => (
+                        <Reveal key={p.id} index={i}>
+                          <ProductCard product={p} />
+                        </Reveal>
                       ))}
                       {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                     </div>

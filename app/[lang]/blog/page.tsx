@@ -2,6 +2,7 @@
 import React from 'react'
 import { localizeBlogPost, type BlogPost } from '@/data/blog'
 import BlogCard from '@/components/BlogCard'
+import Reveal from '@/components/ui/Reveal'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
 import { getSiteUrl } from '@/lib/site-url'
@@ -145,8 +146,10 @@ export default function BlogPage() {
           <section className="mb-8 md:mb-12">
             <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">⭐ {t('blog.featuredArticles')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {featuredPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
+              {featuredPosts.map((post, i) => (
+                <Reveal key={post.id} index={i}>
+                  <BlogCard post={post} />
+                </Reveal>
               ))}
             </div>
           </section>
@@ -159,8 +162,10 @@ export default function BlogPage() {
             <p className="text-muted-foreground">{t('common.loading')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {regularPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
+              {regularPosts.map((post, i) => (
+                <Reveal key={post.id} index={i}>
+                  <BlogCard post={post} />
+                </Reveal>
               ))}
             </div>
           )}

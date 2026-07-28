@@ -1,6 +1,7 @@
 import '@/styles/globals.css'
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
+import { Instrument_Sans } from 'next/font/google'
 import ThemeInitScript from '@/components/ThemeInitScript'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -18,6 +19,11 @@ type LayoutProps = {
   children: ReactNode
   params: Promise<{ lang: string }>
 }
+
+const instrumentSans = Instrument_Sans({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+})
 
 export function generateStaticParams(): Array<{ lang: string }> {
   return LANGUAGES.map((lang) => ({ lang }))
@@ -77,7 +83,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
 
   return (
     <html lang={language}>
-      <body>
+      <body className={instrumentSans.className}>
         <ThemeInitScript />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }} />

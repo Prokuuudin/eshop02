@@ -132,7 +132,7 @@ export default function DesignSystemPage() {
 
         {/* ── 2. Typography ─────────────────────────────────────────── */}
         <Section title="2 · Typography">
-          <p className="text-sm text-muted-foreground">Шрифт: системный стек (<span className="font-mono">ui-sans-serif / system-ui</span>, переменная <span className="font-mono">--font-inter</span>) · Система: Tailwind type scale.</p>
+          <p className="text-sm text-muted-foreground">Шрифт: <span className="font-mono">Instrument Sans</span> (переменная <span className="font-mono">--font-inter</span>) · Система: Tailwind type scale.</p>
 
           <Card>
             <CardContent className="pt-4 px-5 pb-5">

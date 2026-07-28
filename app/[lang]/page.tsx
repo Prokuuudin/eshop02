@@ -13,6 +13,7 @@ import { translations } from '@/data/translations';
 import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
 import HomeRetailBanner from '@/components/HomeRetailBanner';
 import AboutSection from '@/components/AboutSection';
+import Reveal from '@/components/ui/Reveal';
 
 type PageProps = { params: Promise<{ lang: string }> };
 
@@ -40,18 +41,18 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
     return (
         <div className="bg-white dark:bg-background">
             <Hero language={language} />
-            <Benefits language={language} />
+            <Reveal><Benefits language={language} /></Reveal>
             <BestsellersSection />
-            <Categories />
-            <Brands />
+            <Reveal><Categories /></Reveal>
+            <Reveal><Brands /></Reveal>
             <SaleSection />
-            <ProductRequestSection />
+            <Reveal><ProductRequestSection /></Reveal>
             <main className="w-full py-6">
-                <HomeRetailBanner />
-                <AboutSection language={language} />
+                <Reveal><HomeRetailBanner /></Reveal>
+                <Reveal><AboutSection language={language} /></Reveal>
             </main>
-            <BonusSection />
-            <FAQSection language={language} />
+            <Reveal><BonusSection /></Reveal>
+            <Reveal><FAQSection language={language} /></Reveal>
         </div>
     );
 }

@@ -8,6 +8,7 @@ type ToastItem = {
   id: string
   message: string
   type: ToastType
+  leaving?: boolean
 }
 
 type ToastContextValue = {
@@ -28,7 +29,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
 
   const removeToast = React.useCallback((id: string): void => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    setToasts((prev) => prev.map((toast) => (toast.id === id ? { ...toast, leaving: true } : toast)))
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    }, 200)
   }, [])
 
   const showToast = React.useCallback((message: string, type: ToastType = 'info'): void => {
@@ -47,7 +51,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto min-w-[240px] max-w-sm rounded-md px-4 py-3 text-sm shadow-lg border ${
+            className={`toast-item ${toast.leaving ? 'toast-item--leaving' : ''} pointer-events-auto min-w-[240px] max-w-sm rounded-md px-4 py-3 text-sm shadow-lg border ${
               toast.type === 'success'
                 ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/40 dark:border-green-700 dark:text-green-200'
                 : toast.type === 'error'

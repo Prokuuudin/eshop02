@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
+import Reveal from '@/components/ui/Reveal';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useTranslation } from '@/lib/use-translation';
 import BenefitsList from '@/components/BenefitsList';
@@ -69,8 +70,10 @@ export default function WishlistPage() {
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                        {items.map((product) => (
-                            <ProductCard key={product.id} product={product} />
+                        {items.map((product, i) => (
+                            <Reveal key={product.id} index={i}>
+                                <ProductCard product={product} />
+                            </Reveal>
                         ))}
                     </div>
                 </div>

@@ -9,6 +9,8 @@ import { useTranslation } from '@/lib/use-translation';
 // fetch — defer its bundle out of the initial homepage JS.
 const BestsellersSlider = dynamic(() => import('./BestsellersSlider'), { ssr: false });
 
+import Reveal from '@/components/ui/Reveal'
+
 export default function BestsellersSection() {
     const { t } = useTranslation();
     const [products, setProducts] = useState<Product[]>([]);
@@ -40,7 +42,9 @@ export default function BestsellersSection() {
                     </div>
                     <div id="bestsellers-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
-                <BestsellersSlider arrowsContainerId="bestsellers-slider-arrows" products={products} />
+                <Reveal>
+                    <BestsellersSlider arrowsContainerId="bestsellers-slider-arrows" products={products} />
+                </Reveal>
             </div>
         </section>
     );

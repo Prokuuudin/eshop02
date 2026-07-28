@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link'
 import type { Product } from '../data/products'
 import ProductCard from './ProductCard'
+import Reveal from '@/components/ui/Reveal'
 import { useTranslation } from '@/lib/use-translation'
 
 export default function NewArrivalsSection() {
@@ -35,8 +36,10 @@ export default function NewArrivalsSection() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {newArrivals.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {newArrivals.map((p, i) => (
+            <Reveal key={p.id} index={i}>
+              <ProductCard product={p} />
+            </Reveal>
           ))}
         </div>
       </div>

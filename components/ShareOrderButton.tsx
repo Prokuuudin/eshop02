@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
+import { useToast } from '@/lib/toast-context';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { buildInvoiceHtml, fetchInvoiceTitles } from '@/lib/invoice-template';
 import { buildShareChannelUrl } from '@/lib/share-order';
@@ -22,11 +23,13 @@ interface ShareOrderButtonProps {
 
 export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
     const { t, language } = useTranslation();
+    const { showToast } = useToast();
     // Starts false to match SSR (no `navigator` on the server); a browser that
     // supports the Web Share API flips this after mount. Two distinct render
     // trees below (native-share button vs. dropdown) avoid ever fighting
     // Radix's own pointerdown-to-open handling on the trigger.
     const [supportsNativeShare, setSupportsNativeShare] = React.useState(false);
+    const [isSharing, setIsSharing] = React.useState(false);
 
     React.useEffect(() => {
         setSupportsNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
@@ -41,24 +44,30 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
 
     if (supportsNativeShare) {
         const handleNativeShare = async () => {
-            const shareData: ShareData = { title: shareText, text: shareText };
-
+            setIsSharing(true);
             try {
-                const titles = await fetchInvoiceTitles(order.items, 'lv');
-                const html = buildInvoiceHtml(order, titles, 'lv');
-                const file = new File([html], `invoice-${order.id}.html`, { type: 'text/html' });
-                if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ ...shareData, files: [file] });
-                    return;
+                const shareData: ShareData = { title: shareText, text: shareText };
+
+                try {
+                    const titles = await fetchInvoiceTitles(order.items, 'lv');
+                    const html = buildInvoiceHtml(order, titles, 'lv');
+                    const file = new File([html], `invoice-${order.id}.html`, { type: 'text/html;charset=utf-8' });
+                    if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ ...shareData, files: [file] });
+                        return;
+                    }
+                } catch (err) {
+                    if (err instanceof Error && err.name === 'AbortError') return;
                 }
-            } catch (err) {
-                if (err instanceof Error && err.name === 'AbortError') return;
-            }
 
-            try {
-                await navigator.share(shareData);
-            } catch {
-                // AbortError (user dismissed) or no-op — nothing to do either way
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    if (err instanceof Error && err.name === 'AbortError') return;
+                    showToast(t('order.shareFailed', 'Sharing failed. Please try again.'), 'error');
+                }
+            } finally {
+                setIsSharing(false);
             }
         };
 
@@ -66,7 +75,7 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
             <TooltipProvider delayDuration={150}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" aria-label={shareLabel} onClick={handleNativeShare}>
+                        <Button variant="outline" size="icon" aria-label={shareLabel} onClick={handleNativeShare} disabled={isSharing}>
                             <Share2 className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
@@ -99,8 +108,6 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
                             <DropdownMenuItem asChild>
                                 <a
                                     href={buildShareChannelUrl('email', shareText)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     aria-label={emailLabel}
                                 >
                                     <Mail className="h-4 w-4" />

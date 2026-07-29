@@ -12,6 +12,7 @@ import { pointsToEuros } from '@/lib/bonus-program';
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
 import { useToast } from '@/lib/toast-context';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
+import ShareOrderButton from '@/components/ShareOrderButton';
 
 type PageProps = {
     params: Promise<{
@@ -685,8 +686,11 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             <div className="space-y-2">
-                                <Button className="w-full" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
+                                    <Button variant="outline" className="flex-1" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
+                                    <ShareOrderButton order={order} />
+                                </div>
                                 {order.paymentStatus === 'paid' && (
                                     <Button
                                         variant="outline"

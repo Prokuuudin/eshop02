@@ -373,7 +373,8 @@
       "Bash(node scripts/_tmp_check_drawer.mjs)",
       "Bash(node scripts/_tmp_check_crop.mjs)",
       "Bash(node scripts/_tmp_check_drawer2.mjs)",
-      "Bash(node scripts/_tmp_check_footer.mjs)"
+      "Bash(node scripts/_tmp_check_footer.mjs)",
+      "Bash(node scripts/_tmp_check_1440.mjs)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

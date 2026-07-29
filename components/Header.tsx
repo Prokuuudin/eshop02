@@ -35,7 +35,7 @@ export default function Header() {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`w-full px-2 sm:px-4 flex items-center gap-1 transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`w-full max-w-[1440px] mx-auto px-2 sm:px-4 flex items-center gap-1 transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex items-center flex-shrink-0 min-w-[100px]">
             <HeaderLogo />
@@ -67,7 +67,7 @@ export default function Header() {
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="border-t border-border border-b border-b-transparent dark:border-b-border w-full">
-              <div className={`w-full px-2 sm:px-4 flex flex-wrap items-center gap-y-2 gap-x-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2'}`}>
+              <div className={`w-full max-w-[1440px] mx-auto px-2 sm:px-4 flex flex-wrap items-center gap-y-2 gap-x-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
                   <HeaderSearch />
                 </div>
@@ -80,7 +80,7 @@ export default function Header() {
           </>
         )}
         {isAdminPage && (
-          <div className="border-t border-border w-full px-2 sm:px-4 py-2">
+          <div className="border-t border-border w-full max-w-[1440px] mx-auto px-2 sm:px-4 py-2">
             <AdminHeaderNav />
           </div>
         )}

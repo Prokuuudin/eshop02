@@ -8,7 +8,7 @@ export default async function Hero({ language }: { language: Language }): Promis
   const heroSrc = resolveImageSrc('/hero.jpg')
 
   return (
-    <section id="home" className="hero relative isolate rounded-xl overflow-hidden aspect-[4/5] sm:aspect-[16/9] lg:aspect-[3393/1080] lg:max-h-[560px]">
+    <section id="home" className="hero relative isolate rounded-xl overflow-hidden aspect-[4/5] sm:aspect-[16/9] lg:aspect-[3393/1080] lg:max-h-[560px] max-w-[1440px] mx-auto">
       <Image
         src={heroSrc}
         alt={t('hero.alt')}

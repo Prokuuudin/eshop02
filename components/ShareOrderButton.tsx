@@ -13,15 +13,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useTranslation } from '@/lib/use-translation';
 import { useToast } from '@/lib/toast-context';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
-import { buildInvoiceHtml, fetchInvoiceTitles } from '@/lib/invoice-template';
+import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
 import { buildShareChannelUrl } from '@/lib/share-order';
 import type { Order } from '@/lib/orders-store';
 
 interface ShareOrderButtonProps {
     order: Order;
+    invoiceLang: InvoiceLang;
 }
 
-export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
+export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButtonProps) {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     // Starts false to match SSR (no `navigator` on the server); a browser that
@@ -30,10 +31,35 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
     // Radix's own pointerdown-to-open handling on the trigger.
     const [supportsNativeShare, setSupportsNativeShare] = React.useState(false);
     const [isSharing, setIsSharing] = React.useState(false);
+    const [invoiceFile, setInvoiceFile] = React.useState<File | null>(null);
 
     React.useEffect(() => {
         setSupportsNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
     }, []);
+
+    // Pre-build the invoice file on mount, not inside the click handler:
+    // navigator.share() requires transient user activation, and awaiting a
+    // network fetch between the click and the share() call loses that
+    // activation window — the call then silently fails (or rejects with an
+    // error the user never sees). Building the file ahead of time lets the
+    // click handler call navigator.share() synchronously.
+    React.useEffect(() => {
+        let cancelled = false;
+        fetchInvoiceTitles(order.items, invoiceLang)
+            .then((titles) => {
+                if (cancelled) return;
+                const html = buildInvoiceHtml(order, titles, invoiceLang);
+                const fileName = `invoice-${order.id}${invoiceLang === 'en' ? '-en' : ''}.html`;
+                setInvoiceFile(new File([html], fileName, { type: 'text/html;charset=utf-8' }));
+            })
+            .catch(() => {
+                // Pre-fetch failed (e.g. offline) — native share below just falls
+                // back to text-only sharing since invoiceFile stays null.
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [order, invoiceLang]);
 
     const shareLabel = t('order.share', 'Share');
     const shareText = t(
@@ -43,31 +69,31 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
     );
 
     if (supportsNativeShare) {
-        const handleNativeShare = async () => {
+        const handleNativeShare = () => {
+            const shareData: ShareData = { title: shareText, text: shareText };
+            const canAttachFile =
+                invoiceFile !== null &&
+                typeof navigator.canShare === 'function' &&
+                navigator.canShare({ files: [invoiceFile] });
+
             setIsSharing(true);
             try {
-                const shareData: ShareData = { title: shareText, text: shareText };
+                // Called synchronously (no await above this point) so the browser
+                // still treats it as a direct response to the user's click.
+                const sharePromise = canAttachFile
+                    ? navigator.share({ ...shareData, files: [invoiceFile as File] })
+                    : navigator.share(shareData);
 
-                try {
-                    const titles = await fetchInvoiceTitles(order.items, 'lv');
-                    const html = buildInvoiceHtml(order, titles, 'lv');
-                    const file = new File([html], `invoice-${order.id}.html`, { type: 'text/html;charset=utf-8' });
-                    if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-                        await navigator.share({ ...shareData, files: [file] });
-                        return;
-                    }
-                } catch (err) {
-                    if (err instanceof Error && err.name === 'AbortError') return;
-                }
-
-                try {
-                    await navigator.share(shareData);
-                } catch (err) {
-                    if (err instanceof Error && err.name === 'AbortError') return;
-                    showToast(t('order.shareFailed', 'Sharing failed. Please try again.'), 'error');
-                }
-            } finally {
+                sharePromise
+                    .catch((err: unknown) => {
+                        if (err instanceof Error && err.name === 'AbortError') return;
+                        showToast(t('order.shareFailed', 'Sharing failed. Please try again.'), 'error');
+                    })
+                    .finally(() => setIsSharing(false));
+            } catch (err) {
                 setIsSharing(false);
+                if (err instanceof Error && err.name === 'AbortError') return;
+                showToast(t('order.shareFailed', 'Sharing failed. Please try again.'), 'error');
             }
         };
 

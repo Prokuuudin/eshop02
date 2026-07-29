@@ -686,9 +686,14 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             <div className="space-y-2">
-                                <Button className="w-full" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
-                                <Button variant="outline" className="w-full" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
-                                <ShareOrderButton order={order} />
+                                <div className="flex items-center gap-2">
+                                    <Button className="flex-1 min-w-0 whitespace-normal" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
+                                    <ShareOrderButton order={order} invoiceLang="lv" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" className="flex-1 min-w-0 whitespace-normal" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
+                                    <ShareOrderButton order={order} invoiceLang="en" />
+                                </div>
                                 {order.paymentStatus === 'paid' && (
                                     <Button
                                         variant="outline"

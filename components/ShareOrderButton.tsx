@@ -101,7 +101,7 @@ export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButto
             <TooltipProvider delayDuration={150}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" aria-label={shareLabel} onClick={handleNativeShare} disabled={isSharing}>
+                        <Button variant="outline" size="icon" className="h-auto shrink-0" aria-label={shareLabel} onClick={handleNativeShare} disabled={isSharing}>
                             <Share2 className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
@@ -121,7 +121,7 @@ export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButto
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" aria-label={shareLabel}>
+                            <Button variant="outline" size="icon" className="h-auto shrink-0" aria-label={shareLabel}>
                                 <Share2 className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>

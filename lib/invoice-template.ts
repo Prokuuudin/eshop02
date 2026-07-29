@@ -57,8 +57,8 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
   },
 }
 
-function eur(cents: number): string {
-  return (cents / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+function eur(value: number): string {
+  return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
 }
 
 /**

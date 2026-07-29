@@ -10,7 +10,7 @@ const order = {
       lineKey: 'k',
       title: 'KALLOS KJMN ARGAN шампунь для окрашенных волос 5000мл',
       brand: 'KALLOS',
-      price: 2500,
+      price: 25,
       quantity: 2,
       sku: 'K-1',
     },
@@ -22,11 +22,11 @@ const order = {
   address: 'Brīvības iela 1',
   city: 'Rīga',
   postalCode: 'LV-1010',
-  subtotal: 5000,
+  subtotal: 50,
   discount: 0,
-  tax: 868,
-  delivery: 500,
-  total: 5500,
+  tax: 8.68,
+  delivery: 5,
+  total: 55,
   createdAt: '2026-07-18T10:00:00.000Z',
   status: 'processing',
   deliveryMethod: 'courier',
@@ -43,6 +43,14 @@ describe('buildInvoiceHtml', () => {
     expect(html).toContain('PVN (21%)')
     expect(html).toContain('šampūns krāsotiem matiem')
     expect(html).not.toContain('шампунь')
+  })
+
+  it('renders order amounts as real euros, not divided by 100', () => {
+    const html = buildInvoiceHtml(order)
+    // order.total is already whole-euro decimal (Decimal(12,2) in the DB) — 55, not 5500.
+    expect(html).toContain('55,00 €')
+    expect(html).toContain('50,00 €')
+    expect(html).not.toContain('0,55 €')
   })
 
   it('includes seller requisites with Latvian address', () => {

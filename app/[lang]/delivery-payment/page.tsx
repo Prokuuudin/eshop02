@@ -62,7 +62,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
 
                 <div className="delivery-payment bem-delivery-payment grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
                     {/* Левая колонка: Доставка */}
-                    <section className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
+                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
                         <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300">
                             Доставка
                         </h2>
@@ -229,10 +229,10 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         <li>
                                             E-mail:{' '}
                                             <a
-                                                href="mailto:Info@HairShop.lv"
+                                                href="mailto:info@hairshop.lv"
                                                 className="text-blue-600 hover:underline"
                                             >
-                                                Info@HairShop.lv
+                                                info@hairshop.lv
                                             </a>
                                         </li>
                                     </ul>
@@ -241,7 +241,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                         </Accordion>
                     </section>
                     {/* Правая колонка: Оплата */}
-                    <section className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
+                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
                         <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-green-700 dark:text-green-300">
                             Оплата
                         </h2>
@@ -394,10 +394,10 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         <li>
                                             E-mail:{' '}
                                             <a
-                                                href="mailto:Info@HairShop.lv"
+                                                href="mailto:info@hairshop.lv"
                                                 className="text-blue-600 hover:underline"
                                             >
-                                                Info@HairShop.lv
+                                                info@hairshop.lv
                                             </a>
                                         </li>
                                     </ul>

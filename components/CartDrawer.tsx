@@ -161,7 +161,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 </div>
 
                 {/* Items scroll area */}
-                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-3 bg-muted">
+                <div className="cart-drawer__items flex-1 overflow-y-auto p-4 space-y-2 bg-muted">
                     {items.length > 0 && (
                         <div className="mb-2 flex flex-wrap items-center gap-3 rounded border border-border bg-card p-2 text-xs">
                             <span className="text-gray-700 dark:text-gray-300">
@@ -199,7 +199,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             return (
                                 <div
                                     key={item.lineKey}
-                                    className="cart-drawer__item flex gap-3 border-b border-border pb-3"
+                                    className="cart-drawer__item flex gap-3 border-b border-border pb-2"
                                 >
                                     <div className="pt-1">
                                         <TooltipProvider>
@@ -227,22 +227,21 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                    <Image
-                                        src={item.image || '/placeholder.png'}
-                                        alt={localizedTitle || t('cart.imageAlt')}
-                                        width={80}
-                                        height={80}
-                                        className="w-20 h-20 object-cover rounded"
-                                    />
+                                    <div className="relative w-20 h-20 flex-shrink-0 bg-white rounded overflow-hidden">
+                                        <Image
+                                            src={item.image || '/placeholder.png'}
+                                            alt={localizedTitle || t('cart.imageAlt')}
+                                            fill
+                                            sizes="80px"
+                                            className="object-contain p-1"
+                                        />
+                                    </div>
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-medium line-clamp-2 text-foreground">
+                                        <h3 className="text-sm font-medium line-clamp-2 text-foreground mb-1">
                                             {localizedTitle}
                                         </h3>
-                                        <p className="text-xs text-muted-foreground mb-1">
-                                            {item.brand}
-                                        </p>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5">
                                                 <button
                                                     onClick={() =>
                                                         handleDecrease(
@@ -251,18 +250,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                                             minQuantity
                                                         )
                                                     }
-                                                    className="w-11 h-11 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-7 h-7 flex items-center justify-center border rounded text-xs hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     −
                                                 </button>
-                                                <span className="w-6 text-center text-sm text-foreground">
+                                                <span className="w-5 text-center text-xs text-foreground">
                                                     {item.quantity}
                                                 </span>
                                                 <button
                                                     onClick={() =>
                                                         updateQuantity(item.lineKey, item.quantity + 1)
                                                     }
-                                                    className="w-11 h-11 flex items-center justify-center border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                                    className="w-7 h-7 flex items-center justify-center border rounded text-xs hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
                                                 >
                                                     +
                                                 </button>

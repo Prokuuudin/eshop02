@@ -76,7 +76,7 @@ export default function Footer() {
         </div>
 
         <div className="footer__bottom mt-8 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-          <div className="footer__copyright">© {new Date().getFullYear()} Eshop. {t('footer.returns')}</div>
+          <div className="footer__copyright">© {new Date().getFullYear()} Hairshop-Pro. {t('footer.allRightsReserved')}</div>
         </div>
       </div>
     </footer>

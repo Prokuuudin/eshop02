@@ -90,6 +90,40 @@ export default function ProductCard({ product }: Props) {
                     {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>
 
+                {product.rating > 0 && (
+                    <div
+                        className="product-card__rating mt-1 text-sm text-yellow-500"
+                        aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
+                    >
+                        {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
+                    </div>
+                )}
+
+                <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 max-w-full overflow-hidden">
+                    {product.badges?.includes('sale') && (
+                        <Badge className="bg-red-600 text-white max-w-[90%] truncate">
+                            {t('product.sale')}
+                        </Badge>
+                    )}
+                    {product.badges?.includes('new') && (
+                        <Badge className="bg-green-600 text-white max-w-[90%] truncate">
+                            {t('product.new')}
+                        </Badge>
+                    )}
+                    {product.badges?.includes('bestseller') && (
+                        <Badge className="bg-yellow-600 text-black max-w-[90%] truncate">
+                            {t('product.bestseller')}
+                        </Badge>
+                    )}
+                    {product.stock < 5 && product.stock > 0 && (
+                        <Badge className="bg-orange-600 text-white max-w-[90%] truncate animate-pulse">
+                            {t('product.left')} {product.stock}
+                        </Badge>
+                    )}
+                </div>
+
+                {/* mt-auto — прижимает строку цены к низу карточки, поэтому она на одном
+                    уровне у всех карточек в ряду независимо от длины тайтла/бейджей. */}
                 <div className="product-card__meta mt-auto pt-1 flex items-center justify-between gap-3">
                     <div>
                         {!isHydrated ? (
@@ -122,38 +156,6 @@ export default function ProductCard({ product }: Props) {
                             </div>
                         )}
                     </div>
-
-                    {product.rating > 0 && (
-                        <div
-                            className="product-card__rating text-sm text-yellow-500"
-                            aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
-                        >
-                            {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 mb-2 max-w-full overflow-hidden">
-                    {product.badges?.includes('sale') && (
-                        <Badge className="bg-red-600 text-white max-w-[90%] truncate">
-                            {t('product.sale')}
-                        </Badge>
-                    )}
-                    {product.badges?.includes('new') && (
-                        <Badge className="bg-green-600 text-white max-w-[90%] truncate">
-                            {t('product.new')}
-                        </Badge>
-                    )}
-                    {product.badges?.includes('bestseller') && (
-                        <Badge className="bg-yellow-600 text-black max-w-[90%] truncate">
-                            {t('product.bestseller')}
-                        </Badge>
-                    )}
-                    {product.stock < 5 && product.stock > 0 && (
-                        <Badge className="bg-orange-600 text-white max-w-[90%] truncate animate-pulse">
-                            {t('product.left')} {product.stock}
-                        </Badge>
-                    )}
                 </div>
 
                 {/* На десктопе блок действий не занимает места в карточке: по ховеру/фокусу

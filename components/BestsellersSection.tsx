@@ -40,10 +40,9 @@ export default function BestsellersSection() {
                             {t('cart.goToCatalog')}
                         </Link>
                     </div>
-                    <div id="bestsellers-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
                 <Reveal>
-                    <BestsellersSlider arrowsContainerId="bestsellers-slider-arrows" products={products} />
+                    <BestsellersSlider products={products} />
                 </Reveal>
             </div>
         </section>

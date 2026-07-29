@@ -22,6 +22,7 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
         'inline-flex items-center rounded-md px-2 lg:px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 dark:hover:bg-primary/80/15 dark:hover:text-primary';
 
     const [open, setOpen] = React.useState(false);
+    const [importantOpen, setImportantOpen] = React.useState(false);
     return (
         <nav className="header__nav max-w-full overflow-hidden whitespace-nowrap">
             <ul className="header__nav-list flex flex-nowrap gap-0.5 lg:gap-1">
@@ -103,9 +104,47 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
                 {!onlyCatalog && (
                     <>
                         <li className="header__nav-item">
-                            <Link href="/delivery-payment" className={navLinkClass}>
-                                {t('deliveryPayment.title')}
-                            </Link>
+                            <DropdownMenu open={importantOpen} onOpenChange={setImportantOpen} modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        className={navLinkClass + ' flex items-center gap-1'}
+                                        type="button"
+                                    >
+                                        {t('nav.important')}
+                                        <ChevronDown
+                                            className={`transition-transform duration-200 ${
+                                                importantOpen ? 'rotate-180' : ''
+                                            }`}
+                                            size={18}
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    <DropdownMenuItem asChild key="delivery">
+                                        <Link href="/delivery-payment#delivery">
+                                            {t('deliveryPayment.deliveryTitle')}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild key="payment">
+                                        <Link href="/delivery-payment#payment">
+                                            {t('deliveryPayment.paymentTitle')}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild key="bonus">
+                                        <Link href="/#bonus">{t('breadcrumb.bonus')}</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild key="promotions">
+                                        <Link href="/#sale">{t('nav.promotions')}</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild key="stores">
+                                        <Link href="/stores">{t('nav.stores')}</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild key="about">
+                                        <Link href="/#about">{t('nav.about')}</Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </li>
                         <li className="header__nav-item">
                             <Link href="/#faq" className={navLinkClass}>

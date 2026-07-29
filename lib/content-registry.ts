@@ -111,7 +111,7 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'footer.contact', label: 'Заголовок «Контакты»' },
       { type: 'text', key: 'footer.privacy', label: 'Политика конфиденциальности' },
       { type: 'text', key: 'footer.terms', label: 'Условия использования' },
-      { type: 'text', key: 'footer.returns', label: 'Возвраты' },
+      { type: 'text', key: 'footer.allRightsReserved', label: 'Копирайт (текст после года)' },
     ],
   },
   {

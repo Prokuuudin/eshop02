@@ -9,7 +9,7 @@ export const COMPANY = {
   bankAccount: 'LV66HABA0551036604107',
   swift: 'HABALV22',
   phone: '+37127067730',
-  email: 'Info@HairShop.lv',
+  email: 'info@hairshop.lv',
 } as const
 
 export const COMPANY_CONTACT_LINES: ReadonlyArray<{ labelKey: string; value: string }> = [

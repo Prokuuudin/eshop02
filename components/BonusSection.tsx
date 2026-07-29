@@ -41,7 +41,7 @@ export default function BonusSection() {
     if (!bonusProgram.enabled) return null;
 
     return (
-        <section className="bonus-section py-12 px-4">
+        <section id="bonus" className="bonus-section py-12 px-4">
             <div className="bonus-section__inner max-w-[1200px] mx-auto">
 
                 {/* Header */}

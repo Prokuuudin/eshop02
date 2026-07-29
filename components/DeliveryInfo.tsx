@@ -194,8 +194,8 @@ export const DeliveryInfo = () => {
                     </li>
                     <li>
                         E-mail:{' '}
-                        <a href="mailto:Info@HairShop.lv" className="text-blue-600 hover:underline">
-                            Info@HairShop.lv
+                        <a href="mailto:info@hairshop.lv" className="text-blue-600 hover:underline">
+                            info@hairshop.lv
                         </a>
                     </li>
                 </ul>

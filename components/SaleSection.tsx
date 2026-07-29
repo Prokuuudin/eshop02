@@ -27,7 +27,7 @@ export default function SaleSection() {
 
     if (!products.length && !banner) {
         return (
-            <section className="sale-section py-8">
+            <section id="sale" className="sale-section py-8">
                 <div className="mx-auto w-full max-w-[1200px] px-4">
                     <Newsletter compact />
                 </div>
@@ -36,7 +36,7 @@ export default function SaleSection() {
     }
 
     return (
-        <section className="sale-section py-8">
+        <section id="sale" className="sale-section py-8">
             <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -54,7 +54,6 @@ export default function SaleSection() {
                             {t('cart.goToCatalog')}
                         </Link>
                     </div>
-                    <div id="sale-slider-arrows" className="hidden sm:flex gap-2" />
                 </div>
                 {banner && (
                     <div className="sale-section__banner relative mb-4 md:mt-16">
@@ -79,7 +78,7 @@ export default function SaleSection() {
                             <span className="text-muted-foreground font-normal">({products.length})</span>
                         </h3>
                         <Reveal>
-                            <BestsellersSlider arrowsContainerId="sale-slider-arrows" products={products} />
+                            <BestsellersSlider products={products} />
                         </Reveal>
                     </>
                 )}

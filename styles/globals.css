@@ -87,6 +87,37 @@
     display: flex;
     justify-content: center;
     align-items: flex-end;
+    /* Дефолтные точки Swiper — чёрные при 20% непрозрачности, на тёмном фоне
+       неразличимы. muted-foreground читается в обеих темах. */
+    --swiper-pagination-bullet-inactive-color: hsl(var(--muted-foreground));
+    --swiper-pagination-bullet-inactive-opacity: 0.5;
+    --swiper-pagination-color: hsl(var(--foreground));
+}
+
+/* Стрелки навигации — круглая подложка в стиле карточек (as WishlistButton). */
+.bestsellers-swiper .swiper-button-prev,
+.bestsellers-swiper .swiper-button-next {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    background: hsl(var(--card) / 0.95);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    color: hsl(var(--foreground));
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.bestsellers-swiper .swiper-button-prev:hover,
+.bestsellers-swiper .swiper-button-next:hover {
+    /* Полностью непрозрачная заливка — полупрозрачный hover терялся на
+       светлых участках фото товара. */
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
+.bestsellers-swiper .swiper-button-prev svg,
+.bestsellers-swiper .swiper-button-next svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* Keep bestseller cards equal to the tallest slide content */
@@ -101,6 +132,14 @@
 .bestsellers-swiper .swiper-slide {
     height: auto;
     display: flex;
+}
+
+/* swiper-wrapper is z-20 (above, для ховер-флайаута), поэтому дефолтный
+   z-10 у стрелок навигации перекрывается кликабельным after:inset-0
+   у последней/первой карточки. Поднимаем стрелки выше wrapper. */
+.bestsellers-swiper .swiper-button-prev,
+.bestsellers-swiper .swiper-button-next {
+    z-index: 30;
 }
 
 .bestsellers-swiper .swiper-slide > div {

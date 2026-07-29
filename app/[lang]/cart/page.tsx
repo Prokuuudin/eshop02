@@ -190,12 +190,13 @@ export default function CartPage() {
                                             </TooltipProvider>
                                         </div>
 
-                                        <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden relative">
+                                        <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-white rounded-lg overflow-hidden relative">
                                             <Image
                                                 src={item.image || '/placeholder.png'}
                                                 alt={localizedTitle}
                                                 fill
-                                                className="object-cover"
+                                                sizes="96px"
+                                                className="object-contain p-1"
                                             />
                                         </div>
 

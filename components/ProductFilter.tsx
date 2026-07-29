@@ -44,7 +44,7 @@ type ProductFilterProps = {
   products?: Product[]
 }
 
-export default function ProductFilter({ onFilter, initialFilters = {}, products }: ProductFilterProps) {
+export default function ProductFilter({ onFilter, initialFilters = {}, products }: ProductFilterProps): React.ReactElement {
       const handleBrandChange = (brandId: string) => {
         if (brands.includes(brandId)) {
           onFilter({ group, subcat, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order });
@@ -55,7 +55,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       const handleReset = () => {
         onFilter({ group: '', subcat: '', onSale: false, brands: [], minPrice: '', maxPrice: '', order: '' });
       };
-    const sourceProducts = products ?? [];
+    const sourceProducts = React.useMemo(() => products ?? [], [products]);
     const priceRange = React.useMemo(() => {
       const prices = sourceProducts.map(p => p.price).filter(p => p > 0);
       if (!prices.length) return { min: 0, max: 0 };
@@ -86,10 +86,10 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   // Сабкатегории текущей категории (конфиг с сервера уже без пустых)
-  const groupSubcategories = React.useMemo(() => {
+  const groupSubcategories = (() => {
     if (!group) return []
     return categories.find((entry) => entry.id === group)?.subcategories ?? []
-  }, [categories, group])
+  })()
 
   const getSubcatLabel = (slug: string): string => {
     if (!slug) return ''

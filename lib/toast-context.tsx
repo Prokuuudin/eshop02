@@ -25,7 +25,7 @@ export function useToast(): ToastContextValue {
   return context
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
 
   const removeToast = React.useCallback((id: string): void => {

@@ -20,7 +20,7 @@ export default function CheckoutGuardButton({
   href = '/checkout',
   className,
   onNavigate
-}: CheckoutGuardButtonProps) {
+}: CheckoutGuardButtonProps): React.ReactElement {
   const { t } = useTranslation()
   const [shaking, setShaking] = useState(false)
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -43,7 +43,15 @@ export default function CheckoutGuardButton({
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="block" onClick={handleDisabledClick}>
+          <span
+            className="block"
+            role="button"
+            tabIndex={0}
+            onClick={handleDisabledClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') handleDisabledClick()
+            }}
+          >
             <Button
               className={`${className ?? ''} ${shaking ? 'animate-shake' : ''} pointer-events-none`}
               disabled

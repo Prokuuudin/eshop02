@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { RotateCcw, ChevronRight, Package } from 'lucide-react';
 import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, type ReturnReason, ReturnStatus } from '@/lib/returns-store';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useTranslation } from '@/lib/use-translation';
 import { getLocaleFromLanguage } from '@/lib/utils';
 
@@ -38,11 +38,7 @@ export const AccountReturnsSection: React.FC = () => {
     const locale = getLocaleFromLanguage(language);
     const returns = useReturnsStore((s) => s.returns);
     const setReturns = useReturnsStore((s) => s.setReturns);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
-
-    useEffect(() => {
-        setUserEmail(getCurrentUser()?.email ?? null);
-    }, []);
+    const userEmail = useAuthStore((state) => state.user?.email ?? null);
 
     useEffect(() => {
         fetch('/api/returns')

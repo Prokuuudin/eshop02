@@ -159,8 +159,9 @@ function KpiCard({
     );
 }
 
-export default function AdminAccountDashboard({ user }: { user: User }) {
+export default function AdminAccountDashboard({ user }: { user: User }): React.ReactElement {
     const orders = useOrders((s) => s.orders);
+    const [statsTimestamp] = useState(Date.now);
     const [lowStockCount, setLowStockCount] = useState<number | null>(null);
     const [totalCustomers, setTotalCustomers] = useState<number>(0);
     const [newCustomers7d, setNewCustomers7d] = useState<number>(0);
@@ -181,16 +182,17 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
                 }
             })
             .catch(() => {});
-        const customers = readUsers().filter((u) => u.platformRole !== 'admin');
-        setTotalCustomers(customers.length);
-        const sevenDaysAgo = Date.now() - 7 * 86400000;
-        setNewCustomers7d(customers.filter((u) => u.createdAt && new Date(u.createdAt).getTime() >= sevenDaysAgo).length);
-    }, []);
+        queueMicrotask(() => {
+            const customers = readUsers().filter((u) => u.platformRole !== 'admin');
+            setTotalCustomers(customers.length);
+            const sevenDaysAgo = statsTimestamp - 7 * 86400000;
+            setNewCustomers7d(customers.filter((u) => u.createdAt && new Date(u.createdAt).getTime() >= sevenDaysAgo).length);
+        });
+    }, [statsTimestamp]);
 
     const stats = useMemo(() => {
-        const now = Date.now();
-        const sevenDaysAgo = now - 7 * 86400000;
-        const todayStart = new Date();
+        const sevenDaysAgo = statsTimestamp - 7 * 86400000;
+        const todayStart = new Date(statsTimestamp);
         todayStart.setHours(0, 0, 0, 0);
 
         const recent = orders.filter((o) => new Date(o.createdAt).getTime() >= sevenDaysAgo);
@@ -212,7 +214,7 @@ export default function AdminAccountDashboard({ user }: { user: User }) {
             uniqueBuyers: allEmails.size,
             newBuyers7d,
         };
-    }, [orders]);
+    }, [orders, statsTimestamp]);
 
     const now = new Date();
     const hour = now.getHours();

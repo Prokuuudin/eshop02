@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-export const IconPlus = (props: React.SVGProps<SVGSVGElement>) => (
+export const IconPlus = (props: React.SVGProps<SVGSVGElement>): React.ReactElement => (
     <svg
         viewBox="0 0 24 24"
         fill="none"

@@ -2,10 +2,11 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import AccountOrderCard from '@/components/account/AccountOrderCard';
+import type { Order } from '@/lib/orders-store';
 
 interface AccountOrdersSectionProps {
-    userOrders: any[];
-    filteredOrders: any[];
+    userOrders: Order[];
+    filteredOrders: Order[];
     setOrderFilter: (filter: string) => void;
     getOrderFilterButtonClasses: (filter: string) => string;
     getStatusLabel: (status: string) => string;
@@ -13,7 +14,7 @@ interface AccountOrdersSectionProps {
     getOrderStatus: (orderId: string) => string;
     locale: string;
     t: (key: string) => string;
-    tl: (...args: any[]) => string;
+    tl: (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => string;
     activeOrdersCount: number;
     completedOrdersCount: number;
     handleRepeatOrder: (orderId: string) => void;

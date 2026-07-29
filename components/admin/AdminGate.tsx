@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -13,13 +13,20 @@ type AdminGateProps = {
   access?: 'partial' | 'full'
 }
 
-export default function AdminGate({ children, access = 'full' }: AdminGateProps) {
+export default function AdminGate({ children, access = 'full' }: AdminGateProps): React.ReactElement {
   const router = useRouter()
   const { language } = useTranslation()
   const user = useAuthStore((s) => s.user)
   const isHydrated = useAuthStore((s) => s.isHydrated)
-  const [status, setStatus] = useState<'loading' | 'allowed' | 'forbidden' | 'unauthenticated' | 'setup-required'>('loading')
-  const [accessLevel, setAccessLevel] = useState<AdminAccessLevel>('none')
+  const accessLevel: AdminAccessLevel = user ? getAdminAccessLevel(user) : 'none'
+  const status: 'loading' | 'allowed' | 'forbidden' | 'unauthenticated' | 'setup-required' =
+    !isHydrated
+      ? 'loading'
+      : !user
+        ? hasAdminUsers() ? 'unauthenticated' : 'setup-required'
+        : access === 'full'
+          ? accessLevel === 'admin' ? 'allowed' : 'forbidden'
+          : canAccessAdminPanel(user) ? 'allowed' : 'forbidden'
 
   const labels = {
     ru: {
@@ -71,26 +78,6 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
       partialAccessWithUser: (email: string) => `Lietotajam ${email} nav piekluves admin panelim.`
     }
   }[language]
-
-  useEffect(() => {
-    // Derive access from the shared auth store. 'loading' until the store has hydrated.
-    if (!isHydrated) {
-      setStatus('loading')
-      return
-    }
-    if (!user) {
-      setStatus(hasAdminUsers() ? 'unauthenticated' : 'setup-required')
-      setAccessLevel('none')
-      return
-    }
-    const level = getAdminAccessLevel(user)
-    setAccessLevel(level)
-    if (access === 'full') {
-      setStatus(level === 'admin' ? 'allowed' : 'forbidden')
-      return
-    }
-    setStatus(canAccessAdminPanel(user) ? 'allowed' : 'forbidden')
-  }, [user, isHydrated, access])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

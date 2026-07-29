@@ -15,7 +15,7 @@ function getClientIp(req: NextRequest): string {
     || 'unknown'
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const query = req.nextUrl.searchParams.get('q')?.trim() || ''
     const rawTake = req.nextUrl.searchParams.get('take') ?? '20'

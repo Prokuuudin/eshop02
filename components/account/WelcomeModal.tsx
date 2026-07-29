@@ -15,7 +15,7 @@ type FieldHint = {
     missing: boolean;
 };
 
-export default function WelcomeModal({ user }: { user: User }) {
+export default function WelcomeModal({ user }: { user: User }): React.ReactElement {
     const router = useRouter();
 
     const fields: FieldHint[] = [

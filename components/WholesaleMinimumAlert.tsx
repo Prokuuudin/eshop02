@@ -15,7 +15,7 @@ export default function WholesaleMinimumAlert({
   shortage,
   formatCurrency,
   className
-}: WholesaleMinimumAlertProps) {
+}: WholesaleMinimumAlertProps): React.ReactElement {
   const { t } = useTranslation()
 
   return (

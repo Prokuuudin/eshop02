@@ -27,7 +27,7 @@ const limitedResponse = (resetAt: number) => NextResponse.json(
   { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))) } },
 )
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     let captchaRequired: boolean
     try {

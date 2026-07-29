@@ -47,11 +47,12 @@ export default function ReturnRequestDialog({
     order: Order;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-}) {
+}): React.ReactElement {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const addReturn = useReturnsStore((s) => s.addReturn);
     const locale = getLocaleFromLanguage(language);
+    const [localReturnTimestamp] = useState(Date.now);
 
     const [lines, setLines] = useState<Record<string, DraftLine>>({});
     const [reason, setReason] = useState<ReturnReason | ''>('');
@@ -86,7 +87,7 @@ export default function ReturnRequestDialog({
         setSubmitting(true);
         const result = await addReturn({
             // Temp id: replaced by the server-assigned one on success.
-            id: `ret_local_${Date.now()}`,
+            id: `ret_local_${localReturnTimestamp}`,
             orderId: order.id,
             createdAt: new Date(),
             status: 'pending',

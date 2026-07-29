@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 // ...existing code...
 
-export default function Categories() {
+export default function Categories(): React.ReactElement | null {
     const { t, language } = useTranslation();
     const { categories } = useCategoriesConfig();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

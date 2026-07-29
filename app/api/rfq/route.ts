@@ -4,7 +4,7 @@ import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

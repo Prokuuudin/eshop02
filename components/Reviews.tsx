@@ -1,5 +1,5 @@
 ﻿"use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@/lib/use-translation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ type ReviewStats = {
   distribution: Record<number, number>;
 };
 
-export default function Reviews({ productId }: ReviewsProps) {
+export default function Reviews({ productId }: ReviewsProps): React.ReactElement {
   const { t, language } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ author: "", rating: 5, title: "", text: "" });
@@ -48,7 +48,7 @@ export default function Reviews({ productId }: ReviewsProps) {
     distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   });
 
-  const loadReviews = async (): Promise<void> => {
+  const loadReviews = useCallback(async (): Promise<void> => {
     try {
       const response = await fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`, { cache: 'no-store' });
       if (!response.ok) throw new Error('failed-to-load-reviews');
@@ -66,11 +66,11 @@ export default function Reviews({ productId }: ReviewsProps) {
       setProductReviews([]);
       setStats({ averageRating: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
     }
-  };
+  }, [productId]);
 
   useEffect(() => {
-    void loadReviews();
-  }, [productId]);
+    queueMicrotask(() => void loadReviews());
+  }, [loadReviews]);
 
   // Для залогиненного юзера имя берётся из профиля (сервер всё равно
   // перезапишет автора именем из сессии — см. POST /api/reviews)
@@ -78,8 +78,10 @@ export default function Reviews({ productId }: ReviewsProps) {
   useEffect(() => {
     const name = getCurrentUser()?.name?.trim();
     if (name) {
-      setLockedAuthor(name);
-      setFormData((prev) => ({ ...prev, author: name }));
+      queueMicrotask(() => {
+        setLockedAuthor(name);
+        setFormData((prev) => ({ ...prev, author: name }));
+      });
     }
   }, []);
 
@@ -317,4 +319,3 @@ export default function Reviews({ productId }: ReviewsProps) {
     </section>
   );
 }
-

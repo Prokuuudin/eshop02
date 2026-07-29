@@ -14,7 +14,7 @@ interface TopCategoriesProps {
 export default function TopCategories({
   analytics,
   limit = 5
-}: TopCategoriesProps) {
+}: TopCategoriesProps): React.ReactElement {
   const { t, language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const topItems = analytics.topCategories.slice(0, limit)

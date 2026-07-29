@@ -4,12 +4,16 @@ export interface VideoPlayerProps extends React.VideoHTMLAttributes<HTMLVideoEle
     src: string;
     poster?: string;
     className?: string;
+    captionsSrc?: string;
+    captionsLabel?: string;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     src,
     poster,
     className = '',
+    captionsSrc,
+    captionsLabel = 'Captions',
     ...props
 }) => {
     return (
@@ -23,7 +27,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className="w-full h-full object-cover bg-black"
                 preload="metadata"
                 {...props}
-            />
+            >
+                <track kind="captions" src={captionsSrc} srcLang="en" label={captionsLabel} />
+            </video>
         </div>
     );
 };

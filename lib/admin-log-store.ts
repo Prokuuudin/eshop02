@@ -181,6 +181,6 @@ export function logAdminAction(
     after?: Record<string, unknown>
     details?: string
   }
-) {
+): void {
   useAdminLogStore.getState().log(action, entity, opts)
 }

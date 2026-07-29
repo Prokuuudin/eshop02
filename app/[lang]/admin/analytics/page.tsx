@@ -406,7 +406,6 @@ function SeoSection() {
   const [issueFilter, setIssueFilter] = useState<'all' | 'metaTitle' | 'metaDesc' | 'image'>('all')
 
   useEffect(() => {
-    setLoading(true)
     fetch('/api/admin/products')
       .then((r) => r.json())
       .then((data: { data?: { products?: Record<string, unknown>[] } }) => {
@@ -582,7 +581,7 @@ const TABS: { value: Tab; label: string; desc: string }[] = [
   { value: 'seo',    label: 'SEO-отчёт',        desc: 'Товары с пробелами в метаданных' },
 ]
 
-export default function AdminAnalyticsPage() {
+export default function AdminAnalyticsPage(): React.ReactElement {
   const [tab, setTab] = useState<Tab>('abc')
   const active = TABS.find((t) => t.value === tab)!
 

@@ -1,8 +1,9 @@
 'use client'
 import { useEffect } from 'react'
+import type { ReactElement } from 'react'
 import { useWishlist } from '@/lib/wishlist-store'
 
-export default function AuthHydrator() {
+export default function AuthHydrator(): ReactElement | null {
   const { idsByScope, addItem, productCache } = useWishlist()
 
   useEffect(() => {

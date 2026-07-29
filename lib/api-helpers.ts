@@ -18,6 +18,16 @@ const DEMO_API_KEY = 'b2b-demo-api-key-12345'
 
 type ApiKeyEntry = { key: string; companyId?: string }
 
+type ApiFilters = {
+  category: string
+  status: string
+  startDate: Date
+  endDate: Date
+  search: string
+  minPrice: number
+  maxPrice: number
+}
+
 /**
  * Valid API keys, configured via the V1_API_KEYS env var (comma-separated).
  * Each entry is either a bare `key` or `key:companyId`. A key bound to a company
@@ -63,7 +73,7 @@ function matchApiKey(candidate: string): ApiKeyEntry | null {
  * Supports: API key in `x-api-key` header (validated against V1_API_KEYS env),
  * or an authenticated server session cookie.
  */
-export async function authenticateRequest(req: NextRequest) {
+export async function authenticateRequest(req: NextRequest): Promise<AuthResult> {
   // Check for API key header — fail closed if none are configured.
   const apiKey = req.headers.get('x-api-key')
 
@@ -125,7 +135,7 @@ export async function authenticateRequest(req: NextRequest) {
 /**
  * Error response helper
  */
-export function errorResponse(message: string, status: number = 400) {
+export function errorResponse(message: string, status: number = 400): NextResponse {
   return NextResponse.json(
     {
       error: message,
@@ -138,7 +148,7 @@ export function errorResponse(message: string, status: number = 400) {
 /**
  * Success response helper
  */
-export function successResponse(data: any, status: number = 200) {
+export function successResponse(data: unknown, status: number = 200): NextResponse {
   return NextResponse.json(
     {
       success: true,
@@ -152,7 +162,7 @@ export function successResponse(data: any, status: number = 200) {
 /**
  * Pagination helper
  */
-export function parsePagination(req: NextRequest) {
+export function parsePagination(req: NextRequest): { page: number; limit: number; offset: number } {
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
@@ -164,9 +174,9 @@ export function parsePagination(req: NextRequest) {
 /**
  * Filter parser helper
  */
-export function parseFilters(req: NextRequest) {
+export function parseFilters(req: NextRequest): Partial<ApiFilters> {
   const { searchParams } = new URL(req.url)
-  const filters: Record<string, any> = {}
+  const filters: Partial<ApiFilters> = {}
 
   // Parse common filters
   const category = searchParams.get('category')

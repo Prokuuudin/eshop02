@@ -32,7 +32,7 @@ function match(q: string, ...fields: (string | undefined)[]): boolean {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AdminGlobalSearch() {
+export default function AdminGlobalSearch(): React.ReactElement {
   const router = useRouter()
   const orders = useOrders((s) => s.orders)
 
@@ -64,7 +64,9 @@ export default function AdminGlobalSearch() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setOpen((v) => !v)
+        setQuery('')
+        setSelectedIdx(0)
+        setOpen(true)
       }
       if (e.key === 'Escape') setOpen(false)
     }
@@ -75,8 +77,6 @@ export default function AdminGlobalSearch() {
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50)
-      setQuery('')
-      setSelectedIdx(0)
     }
   }, [open])
 
@@ -174,7 +174,11 @@ export default function AdminGlobalSearch() {
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setQuery('')
+          setSelectedIdx(0)
+          setOpen(true)
+        }}
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
         title="Глобальный поиск (Ctrl+K)"
       >
@@ -190,7 +194,9 @@ export default function AdminGlobalSearch() {
   return (
     <>
       {/* Overlay */}
-      <div
+      <button
+        type="button"
+        aria-label="Закрыть поиск"
         className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
@@ -215,12 +221,13 @@ export default function AdminGlobalSearch() {
                 <X className="h-4 w-4" />
               </button>
             )}
-            <kbd
+            <button
+              type="button"
               onClick={() => setOpen(false)}
               className="text-xs text-gray-400 border border-border rounded px-1.5 py-0.5 cursor-pointer font-mono hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Esc
-            </kbd>
+            </button>
           </div>
 
           {/* Results */}

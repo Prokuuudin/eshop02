@@ -1,18 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
+const {
+  settingFindUniqueMock,
+  settingUpsertMock,
+  requireAdminMock,
+} = vi.hoisted(() => ({
+  settingFindUniqueMock: vi.fn(),
+  settingUpsertMock: vi.fn(),
+  requireAdminMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    keyValueSetting: { findUnique: vi.fn(), upsert: vi.fn() },
+    keyValueSetting: {
+      findUnique: settingFindUniqueMock,
+      upsert: settingUpsertMock,
+    },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  requireAdmin: vi.fn(),
+  requireAdmin: requireAdminMock,
 }))
 
-import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
 import { GET, PUT } from './route'
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
@@ -31,7 +42,7 @@ beforeEach(() => {
 
 describe('GET /api/admin/locale-config', () => {
   it('rejects non-admins', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(
+    requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
     )
 
@@ -41,8 +52,8 @@ describe('GET /api/admin/locale-config', () => {
   })
 
   it('returns defaults when no config is stored yet', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(null)
+    requireAdminMock.mockResolvedValue(ADMIN_USER)
+    settingFindUniqueMock.mockResolvedValue(null)
 
     const res = await GET()
     const body = await res.json()
@@ -58,7 +69,7 @@ describe('GET /api/admin/locale-config', () => {
 
 describe('PUT /api/admin/locale-config', () => {
   it('rejects non-admins', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(
+    requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
     )
 
@@ -68,9 +79,9 @@ describe('PUT /api/admin/locale-config', () => {
   })
 
   it('normalizes and persists a valid partial update', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(null)
-    vi.mocked(prisma.keyValueSetting.upsert as any).mockResolvedValue({})
+    requireAdminMock.mockResolvedValue(ADMIN_USER)
+    settingFindUniqueMock.mockResolvedValue(null)
+    settingUpsertMock.mockResolvedValue({})
 
     const res = await PUT(makeRequest({ dateFormat: 'YYYY-MM-DD', priceFormat: 'symbol_after' }))
     const body = await res.json()
@@ -80,15 +91,15 @@ describe('PUT /api/admin/locale-config', () => {
       priceFormat: 'symbol_after',
       defaultLanguage: 'ru',
     })
-    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
+    expect(settingUpsertMock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { key: 'locale-config' } })
     )
   })
 
   it('falls back to the default for an invalid enum value instead of persisting garbage', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(null)
-    vi.mocked(prisma.keyValueSetting.upsert as any).mockResolvedValue({})
+    requireAdminMock.mockResolvedValue(ADMIN_USER)
+    settingFindUniqueMock.mockResolvedValue(null)
+    settingUpsertMock.mockResolvedValue({})
 
     const res = await PUT(makeRequest({ dateFormat: 'not-a-format' }))
     const body = await res.json()

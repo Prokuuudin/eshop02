@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage(): React.ReactElement {
   const { t } = useTranslation()
 
   return (

@@ -15,7 +15,7 @@ type Props = {
   onClose: () => void
 }
 
-export default function OrderInvoiceModal({ order, open, onClose }: Props) {
+export default function OrderInvoiceModal({ order, open, onClose }: Props): React.ReactElement | null {
   const [lang, setLang] = useState<InvoiceLang>('lv')
   const [email, setEmail] = useState(order.email)
   const [sending, setSending] = useState(false)
@@ -59,7 +59,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <button type="button" aria-label="Закрыть окно счёта" className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 bg-card rounded-xl shadow-xl border border-border w-full max-w-md p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">

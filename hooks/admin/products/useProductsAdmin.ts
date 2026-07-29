@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import type { Product } from '@/data/products';
 import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
 import type { NewProductDraft } from '@/types/product-admin';
@@ -7,7 +7,30 @@ import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
 
 type ApiEnvelope<T> = { success: true; data: T } | { error: string };
 
-export function useProductsAdmin() {
+type ProductsAdminResult = {
+  products: Product[];
+  viewMode: 'cards' | 'list';
+  setViewMode: Dispatch<SetStateAction<'cards' | 'list'>>;
+  searchQuery: string;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
+  newProduct: NewProductDraft;
+  setNewProduct: Dispatch<SetStateAction<NewProductDraft>>;
+  archiveItems: ArchivedProductRecord[];
+  handleDeleteProduct: (product: Product) => Promise<void>;
+  handleRestoreProduct: (id: string) => Promise<void>;
+  handlePurgeArchivedProduct: (id: string) => Promise<void>;
+  handleCreateProduct: () => void;
+  loading: boolean;
+  creating: boolean;
+  savingId: string | null;
+  restoringId: string | null;
+  purgingArchiveId: string | null;
+  message: string;
+  error: string;
+  reload: () => Promise<void>;
+};
+
+export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
   const [baseProducts, setBaseProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +80,10 @@ export function useProductsAdmin() {
   }, []);
 
   useEffect(() => {
-    void loadProducts();
-    void loadArchive();
+    queueMicrotask(() => {
+      void loadProducts();
+      void loadArchive();
+    });
   }, [loadProducts, loadArchive]);
 
   const filteredProducts = useMemo(() => {

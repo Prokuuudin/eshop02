@@ -16,7 +16,7 @@ type DraftItem = {
   quantity: number
 }
 
-export default function RequestQuotePage() {
+export default function RequestQuotePage(): React.ReactElement {
   const user = getCurrentUser()
   const { showToast } = useToast()
   const { createRequest, getByCompany, setStatus, setRequests } = useRFQStore()

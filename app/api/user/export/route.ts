@@ -5,7 +5,7 @@ import { exportUserData } from '@/lib/user-erasure'
 export const runtime = 'nodejs'
 
 // GDPR Art. 15/20 — the data subject downloads everything held about them as JSON.
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

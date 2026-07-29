@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, ChevronRight } from 'lucide-react';
@@ -11,11 +11,7 @@ import type { Product } from '@/data/products';
 export const AccountViewedProductsWidget: React.FC = () => {
     const { t } = useTranslation();
     const getRecentViews = useViewedProducts((s) => s.getRecentViews);
-    const [products, setProducts] = useState<Product[]>([]);
-
-    useEffect(() => {
-        setProducts(getRecentViews(4));
-    }, [getRecentViews]);
+    const [products] = useState<Product[]>(() => getRecentViews(4));
 
     return (
         <div className="flex flex-col rounded-2xl border border-sky-100 bg-sky-50 p-5 shadow-sm dark:border-sky-900 dark:bg-sky-950/30">

@@ -136,7 +136,7 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLa
   )
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     let captchaRequired: boolean
     try {

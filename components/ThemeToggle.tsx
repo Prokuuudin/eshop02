@@ -9,28 +9,30 @@ const applyTheme = (isDark: boolean): void => {
   document.documentElement.classList.toggle("dark", isDark);
 };
 
-export default function ThemeToggle({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }) {
+export default function ThemeToggle({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }): React.ReactElement {
   const { t } = useTranslation();
   const [dark, setDark] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
   const tooltipLabel = dark ? t("theme.toLight") : t("theme.toDark");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (savedTheme === "dark") {
-      setDark(true);
-      setIsThemeReady(true);
-      return;
-    }
-    if (savedTheme === "light") {
-      setDark(false);
-      setIsThemeReady(true);
-      return;
-    }
+    queueMicrotask(() => {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedTheme === "dark") {
+        setDark(true);
+        setIsThemeReady(true);
+        return;
+      }
+      if (savedTheme === "light") {
+        setDark(false);
+        setIsThemeReady(true);
+        return;
+      }
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setDark(prefersDark);
-    setIsThemeReady(true);
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDark(prefersDark);
+      setIsThemeReady(true);
+    });
   }, []);
 
   useEffect(() => {

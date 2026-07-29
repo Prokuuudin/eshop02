@@ -24,7 +24,7 @@ type DbUser = {
   createdAt: string
 }
 
-export default function AdminAccountsPage() {
+export default function AdminAccountsPage(): React.ReactElement {
   const { t, language } = useTranslation()
   const { getCompanies, syncFromDb } = useCompanyStore()
   const companies = getCompanies()
@@ -67,7 +67,9 @@ export default function AdminAccountsPage() {
     }
   }, [dbSearch, dbRoleFilter])
 
-  useEffect(() => { loadDbUsers() }, [loadDbUsers])
+  useEffect(() => {
+    queueMicrotask(() => void loadDbUsers())
+  }, [loadDbUsers])
 
   const handleUpdateDbRole = async (userId: string, newRole: string) => {
     try {

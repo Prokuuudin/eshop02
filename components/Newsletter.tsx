@@ -5,7 +5,7 @@ import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 
-export default function Newsletter({ compact = false }: { compact?: boolean }) {
+export default function Newsletter({ compact = false }: { compact?: boolean }): React.ReactElement {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)

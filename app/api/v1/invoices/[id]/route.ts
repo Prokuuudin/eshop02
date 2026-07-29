@@ -4,7 +4,7 @@ import { getInvoiceById } from '@/lib/invoices-data-store'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const { id } = await context.params
     const auth = await authenticateRequest(req)

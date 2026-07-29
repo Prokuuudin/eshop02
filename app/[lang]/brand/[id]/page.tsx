@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BrandPage({ params }: PageProps) {
+export default async function BrandPage({ params }: PageProps): Promise<React.ReactElement> {
   const { id, lang } = await params;
   const config = await getBrandsConfigFromStore()
   const language: Language = resolveLanguage(lang);

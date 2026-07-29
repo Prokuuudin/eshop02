@@ -13,7 +13,7 @@ const clientIp = (req: NextRequest) =>
   || req.headers.get('x-real-ip')?.trim()
   || 'unknown'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const { searchParams } = new URL(req.url)
     const productId = searchParams.get('productId')?.trim()
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const contentLength = Number(req.headers.get('content-length') ?? 0)
     if (contentLength > 16_384) return errorResponse('Payload too large', 413)

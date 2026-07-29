@@ -18,7 +18,7 @@ function getActionBadgeClass(action: string): string {
 
 const PAGE_SIZE = 50
 
-export default function AdminSystemLogsPage() {
+export default function AdminSystemLogsPage(): React.ReactElement {
   const entriesMap = useAuditLogStore((s) => s.entries)
   const clearOldEntries = useAuditLogStore((s) => s.clearOldEntries)
 
@@ -40,7 +40,7 @@ export default function AdminSystemLogsPage() {
     return Array.from(set).sort()
   }, [all])
 
-  const now = useMemo(() => Date.now(), [])
+  const [now] = useState(Date.now)
   const stats = useMemo(() => {
     const last24h = all.filter((e) => now - new Date(e.timestamp).getTime() < 86400_000).length
     const last7d = all.filter((e) => now - new Date(e.timestamp).getTime() < 7 * 86400_000).length

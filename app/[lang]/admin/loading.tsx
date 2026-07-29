@@ -1,4 +1,4 @@
-export default function AdminLoading() {
+export default function AdminLoading(): React.ReactElement {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
       <div className="mb-6 h-8 w-56 animate-pulse rounded bg-muted" />

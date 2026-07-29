@@ -29,7 +29,7 @@ export function SaveAsTemplateDialog({
   onOpenChange,
   items,
   defaultName = '',
-}: SaveAsTemplateDialogProps) {
+}: SaveAsTemplateDialogProps): React.ReactElement {
   const { t } = useTranslation()
   const { showToast } = useToast()
   const { create } = useOrderTemplatesStore()
@@ -38,7 +38,7 @@ export function SaveAsTemplateDialog({
 
   useEffect(() => {
     if (open) {
-      setName(defaultName)
+      queueMicrotask(() => setName(defaultName))
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }, [open, defaultName])

@@ -61,7 +61,7 @@ const SAMPLE_VARS = { first_name: 'Иван', last_name: 'Петров', email: 
 const UNSUBSCRIBE_TEXT =
   'Чтобы отписаться от рассылки, ответьте на это письмо с пометкой «Отписаться». / To unsubscribe, reply to this email with "Unsubscribe". / Lai atteiktos no jaunumiem, atbildiet uz šo e-pastu ar norādi "Atteikt".'
 
-export default function AdminCustomerSegmentsPage() {
+export default function AdminCustomerSegmentsPage(): React.ReactElement {
   const [customers, setCustomers] = useState<CustomerRow[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -79,9 +79,6 @@ export default function AdminCustomerSegmentsPage() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setFetchError(null)
-
     fetch('/api/admin/customers')
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -263,8 +260,9 @@ export default function AdminCustomerSegmentsPage() {
 
                     {/* Subject */}
                     <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">Тема письма</label>
+                      <label htmlFor="broadcast-subject" className="block text-xs font-medium text-muted-foreground mb-1">Тема письма</label>
                       <Input
+                        id="broadcast-subject"
                         value={bSubject}
                         onChange={(e) => setBSubject(e.target.value)}
                         placeholder="Например: Привет, {first_name}! Специальное предложение для вас"
@@ -274,7 +272,7 @@ export default function AdminCustomerSegmentsPage() {
                     {/* Body with edit/preview tabs */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-medium text-muted-foreground">Текст письма</label>
+                        <label htmlFor="broadcast-body" className="text-xs font-medium text-muted-foreground">Текст письма</label>
                         <div className="flex rounded-md border border-border overflow-hidden text-xs">
                           {(['edit', 'preview'] as const).map((t) => (
                             <button
@@ -291,6 +289,7 @@ export default function AdminCustomerSegmentsPage() {
 
                       {bTab === 'edit' ? (
                         <textarea
+                          id="broadcast-body"
                           rows={7}
                           value={bBody}
                           onChange={(e) => setBBody(e.target.value)}

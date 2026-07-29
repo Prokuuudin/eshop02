@@ -19,7 +19,7 @@ export default function WishlistButton({
     product,
     className = '',
     asButton = false,
-}: WishlistButtonProps) {
+}: WishlistButtonProps): React.ReactElement {
     const { t } = useTranslation();
     const { showToast } = useToast();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

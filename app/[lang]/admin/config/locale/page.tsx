@@ -46,7 +46,7 @@ function formatPricePreview(format: PriceFormatOption): string {
   return format === 'symbol_before' ? '€ 1 234.56' : '1 234.56 €'
 }
 
-export default function AdminLocalePage() {
+export default function AdminLocalePage(): React.ReactElement {
   const [config, setConfig] = useState<LocaleConfig>(DEFAULT_LOCALE_CONFIG)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string>('')
@@ -120,14 +120,14 @@ export default function AdminLocalePage() {
             </div>
 
             <div className="max-w-xs space-y-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="admin-locale-field-1" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Язык по умолчанию
               </label>
               <Select
                 value={config.defaultLanguage}
                 onValueChange={(v) => setConfig((c) => ({ ...c, defaultLanguage: v as Language }))}
               >
-                <SelectTrigger className={SELECT_CLASS}>
+                <SelectTrigger id="admin-locale-field-1" className={SELECT_CLASS}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,14 +165,14 @@ export default function AdminLocalePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-2" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Формат даты
                 </label>
                 <Select
                   value={config.dateFormat}
                   onValueChange={(v) => setConfig((c) => ({ ...c, dateFormat: v as DateFormatOption }))}
                 >
-                  <SelectTrigger className={SELECT_CLASS}>
+                  <SelectTrigger id="admin-locale-field-2" className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -186,14 +186,14 @@ export default function AdminLocalePage() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-3" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Часовой пояс (для писем)
                 </label>
                 <Select
                   value={config.timezone}
                   onValueChange={(v) => setConfig((c) => ({ ...c, timezone: v as SupportedTimezone }))}
                 >
-                  <SelectTrigger className={SELECT_CLASS}>
+                  <SelectTrigger id="admin-locale-field-3" className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -218,14 +218,14 @@ export default function AdminLocalePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-4" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Расположение символа
                 </label>
                 <Select
                   value={config.priceFormat}
                   onValueChange={(v) => setConfig((c) => ({ ...c, priceFormat: v as PriceFormatOption }))}
                 >
-                  <SelectTrigger className={SELECT_CLASS}>
+                  <SelectTrigger id="admin-locale-field-4" className={SELECT_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -239,9 +239,9 @@ export default function AdminLocalePage() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <p className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Превью цены
-                </label>
+                </p>
                 <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground">
                   {pricePreview}
                 </div>

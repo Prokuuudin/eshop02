@@ -17,7 +17,7 @@ import { getMergedProducts } from '@/lib/product-overrides-store'
  * Headers:
  * - x-api-key: string (optional, for API access)
  */
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     // Authenticate
     const auth = await authenticateRequest(req)
@@ -48,11 +48,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Apply price range filter
-    if (filters.minPrice) {
-      products = products.filter(p => p.price >= filters.minPrice)
+    const { minPrice, maxPrice } = filters
+    if (minPrice) {
+      products = products.filter(p => p.price >= minPrice)
     }
-    if (filters.maxPrice) {
-      products = products.filter(p => p.price <= filters.maxPrice)
+    if (maxPrice) {
+      products = products.filter(p => p.price <= maxPrice)
     }
 
     // Pagination

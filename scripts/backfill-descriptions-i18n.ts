@@ -35,14 +35,15 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
       return await fn()
-    } catch (e: any) {
-      const retriable = e?.message?.includes('connection error') ||
-        e?.message?.includes('Connection terminated') ||
-        e?.message?.includes('not queryable') ||
-        e?.message?.includes('timeout') ||
-        e?.code === 'P1001' || e?.code === 'P1008' || e?.code === 'ETIMEDOUT'
+    } catch (e: unknown) {
+      const error = e as { message?: string; code?: string }
+      const retriable = error.message?.includes('connection error') ||
+        error.message?.includes('Connection terminated') ||
+        error.message?.includes('not queryable') ||
+        error.message?.includes('timeout') ||
+        error.code === 'P1001' || error.code === 'P1008' || error.code === 'ETIMEDOUT'
       if (retriable && attempt < 6) {
-        console.log(`  retry ${attempt} after error: ${e?.message}`)
+        console.log(`  retry ${attempt} after error: ${error.message}`)
         await new Promise((r) => setTimeout(r, attempt * 3000))
       } else {
         throw e

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
@@ -51,8 +51,9 @@ export async function PATCH(req: NextRequest) {
         cardNumber: updated.cardNumber,
       },
     })
-  } catch (e: any) {
-    if (e?.code === 'P2002' && e?.meta?.target?.includes('email')) {
+  } catch (e: unknown) {
+    const databaseError = e as { code?: string; meta?: { target?: string[] | string } }
+    if (databaseError.code === 'P2002' && databaseError.meta?.target?.includes('email')) {
       return NextResponse.json({ error: 'email_taken' }, { status: 409 })
     }
     console.error('[user/profile PATCH]', e)

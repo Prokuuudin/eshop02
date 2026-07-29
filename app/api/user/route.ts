@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 // GDPR Art. 17 — right to erasure. Implemented as anonymisation: orders/invoices are
 // retained (tax/accounting) with their personal fields blanked, the account is scrubbed
 // and permanently locked, and the session is cleared.
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 

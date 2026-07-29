@@ -11,7 +11,7 @@ import BenefitsList from '@/components/BenefitsList';
 import { useToast } from '@/lib/toast-context';
 import { useWishlist, hydrateWishlistFromServer } from '@/lib/wishlist-store';
 
-export default function WishlistPage() {
+export default function WishlistPage(): React.ReactElement {
     const { t } = useTranslation();
     const { showToast } = useToast();
     const items = useWishlist((state) => state.items);

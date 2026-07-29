@@ -3,7 +3,7 @@ import { getSiteContentOverridesFromStore } from '@/lib/site-content-server-stor
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const overrides = await getSiteContentOverridesFromStore()
   return NextResponse.json(overrides)
 }

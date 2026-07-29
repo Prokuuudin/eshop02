@@ -195,19 +195,21 @@ const groupLabels: Record<OnboardingStep['group'], string> = {
 
 const STORAGE_KEY = 'admin-onboarding-checked'
 
-export default function AdminOnboardingPage() {
+export default function AdminOnboardingPage(): React.ReactElement {
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as number[]
-        if (Array.isArray(parsed)) setChecked(new Set(parsed))
-      }
-    } catch { /* ignore */ }
-    setLoaded(true)
+    queueMicrotask(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const parsed = JSON.parse(raw) as number[]
+          if (Array.isArray(parsed)) setChecked(new Set(parsed))
+        }
+      } catch { /* ignore */ }
+      setLoaded(true)
+    })
   }, [])
 
   const toggle = (id: number) => {

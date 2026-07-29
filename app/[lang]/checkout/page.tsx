@@ -44,7 +44,7 @@ const validateEmail = (email: string): boolean => {
 };
 
 
-export default function CheckoutPage() {
+export default function CheckoutPage(): React.ReactElement {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
@@ -62,17 +62,22 @@ export default function CheckoutPage() {
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
-    const [formData, setFormData] = useState<CheckoutFormData>({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        postalCode: '',
+    const [formData, setFormData] = useState<CheckoutFormData>(() => ({
+        firstName: searchParams.get('firstName') ?? '',
+        lastName: searchParams.get('lastName') ?? '',
+        email: searchParams.get('email') ?? '',
+        phone: searchParams.get('phone') ?? '',
+        address: searchParams.get('address') ?? '',
+        city: searchParams.get('city') ?? '',
+        postalCode: searchParams.get('postalCode') ?? '',
         paymentMethod: 'card',
+    }));
+    const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
+        const method = searchParams.get('delivery');
+        return method === 'courier' || method === 'pickup' || method === 'post'
+            ? method
+            : 'courier';
     });
-    const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('courier');
     const [pickupStoreId, setPickupStoreId] = useState('');
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
@@ -83,7 +88,13 @@ export default function CheckoutPage() {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const turnstile = useTurnstile();
+    const {
+        enabled: turnstileEnabled,
+        token: turnstileToken,
+        setContainer: setTurnstileContainer,
+        render: renderTurnstile,
+        reset: resetTurnstile,
+    } = useTurnstile();
     const applyBtnRef = useRef<HTMLButtonElement>(null)
     const selectedItemIds = React.useMemo(() => {
         const raw = searchParams.get('items');
@@ -111,50 +122,9 @@ export default function CheckoutPage() {
         [checkoutItems]
     );
 
-    // Метод доставки, выбранный в корзине/дровере, приходит query-параметром
-    React.useEffect(() => {
-        const method = searchParams.get('delivery');
-        if (method === 'courier' || method === 'pickup' || method === 'post') {
-            setDeliveryMethod(method);
-        }
-    }, [searchParams]);
-
     // Оплата при получении возможна только в офисе (Rencēnu 10A) —
     // требуется самовывоз именно из «Рига Офис».
     const cashUnavailable = deliveryMethod !== 'pickup' || pickupStoreId !== 'riga-office';
-    React.useEffect(() => {
-        if (cashUnavailable) {
-            setFormData((prev) =>
-                prev.paymentMethod === 'cash' ? { ...prev, paymentMethod: 'card' } : prev
-            );
-        }
-    }, [cashUnavailable]);
-
-    React.useEffect(() => {
-        const firstName = searchParams.get('firstName');
-        const lastName = searchParams.get('lastName');
-        const email = searchParams.get('email');
-        const phone = searchParams.get('phone');
-        const address = searchParams.get('address');
-        const city = searchParams.get('city');
-        const postalCode = searchParams.get('postalCode');
-
-        if (!firstName && !lastName && !email && !phone && !address && !city && !postalCode) {
-            return;
-        }
-
-        setFormData((prev) => ({
-            ...prev,
-            firstName: firstName ?? prev.firstName,
-            lastName: lastName ?? prev.lastName,
-            email: email ?? prev.email,
-            phone: phone ?? prev.phone,
-            address: address ?? prev.address,
-            city: city ?? prev.city,
-            postalCode: postalCode ?? prev.postalCode,
-        }));
-    }, [searchParams]);
-
     if (items.length === 0) {
         return (
             <main className="w-full px-4 py-12">
@@ -340,7 +310,7 @@ export default function CheckoutPage() {
                         ...orderData,
                         createdAt: orderData.createdAt.toISOString(),
                     },
-                    turnstileToken: turnstile.token,
+                    turnstileToken,
                 }),
             });
             if (!response.ok) {
@@ -352,7 +322,7 @@ export default function CheckoutPage() {
                         ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
                         : 'Не удалось оформить заказ. Попробуйте ещё раз.';
                 showToast(message, 'error');
-                turnstile.reset();
+                resetTurnstile();
                 setIsSubmitting(false);
                 return;
             }
@@ -364,7 +334,7 @@ export default function CheckoutPage() {
             }
             orderId = String(payload.orderId);
         } catch {
-            turnstile.reset();
+            resetTurnstile();
             showToast('Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.', 'error');
             setIsSubmitting(false);
             return;
@@ -572,8 +542,8 @@ export default function CheckoutPage() {
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Форма */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
-                    {turnstile.enabled && (
-                        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
+                    {turnstileEnabled && (
+                        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
                     )}
                     <CustomerDetailsSection
                         formData={formData}
@@ -598,7 +568,17 @@ export default function CheckoutPage() {
                         </div>
                         <RadioGroup
                             value={deliveryMethod}
-                            onValueChange={(value) => setDeliveryMethod(value as DeliveryMethod)}
+                            onValueChange={(value) => {
+                                const method = value as DeliveryMethod;
+                                setDeliveryMethod(method);
+                                if (method !== 'pickup') {
+                                    setFormData((prev) =>
+                                        prev.paymentMethod === 'cash'
+                                            ? { ...prev, paymentMethod: 'card' }
+                                            : prev
+                                    );
+                                }
+                            }}
                             className="space-y-3"
                         >
                             {DELIVERY_OPTIONS.map((option) => (
@@ -634,6 +614,13 @@ export default function CheckoutPage() {
                                                 value={pickupStoreId || undefined}
                                                 onValueChange={(value) => {
                                                     setPickupStoreId(value);
+                                                    if (value !== 'riga-office') {
+                                                        setFormData((prev) =>
+                                                            prev.paymentMethod === 'cash'
+                                                                ? { ...prev, paymentMethod: 'card' }
+                                                                : prev
+                                                        );
+                                                    }
                                                     if (errors.pickupStore) {
                                                         setErrors((prev) => {
                                                             const newErrors = { ...prev };
@@ -734,12 +721,12 @@ export default function CheckoutPage() {
                         </RadioGroup>
                     </div>
 
-                    {turnstile.enabled && <div ref={turnstile.containerRef} />}
+                    {turnstileEnabled && <div ref={setTurnstileContainer} />}
                     <div className="flex gap-3">
                         <Button
                             type="submit"
                             className="flex-1"
-                            disabled={!wholesaleGuard.isMinimumReached || isSubmitting || (turnstile.enabled && !turnstile.token)}
+                            disabled={!wholesaleGuard.isMinimumReached || isSubmitting || (turnstileEnabled && !turnstileToken)}
                         >
                             {t('checkout.submit')}
                         </Button>

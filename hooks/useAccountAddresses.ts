@@ -1,8 +1,34 @@
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { SavedAddress } from '@/lib/saved-addresses-store';
 import { validateAddress } from '@/utils/accountValidation';
+import type { User } from '@/lib/auth';
 
-export function useAccountAddresses(user: any, t: (key: string) => string, getByEmail: any, upsertForEmail: any) {
+type AccountAddressesResult = {
+    editingAddressId: string | null;
+    addressDraft: SavedAddress | null;
+    editAddressErrors: Record<string, string>;
+    isAddingAddress: boolean;
+    newAddressDraft: SavedAddress | null;
+    newAddressErrors: Record<string, string>;
+    savedAddresses: SavedAddress[];
+    setAddressDraft: Dispatch<SetStateAction<SavedAddress | null>>;
+    setEditAddressErrors: Dispatch<SetStateAction<Record<string, string>>>;
+    setNewAddressDraft: Dispatch<SetStateAction<SavedAddress | null>>;
+    setNewAddressErrors: Dispatch<SetStateAction<Record<string, string>>>;
+    startEditingAddress: (address: SavedAddress) => void;
+    cancelEditingAddress: () => void;
+    saveEditingAddress: () => void;
+    startAddingAddress: () => void;
+    cancelAddingAddress: () => void;
+    saveNewAddress: () => void;
+};
+
+function useAccountAddressesImpl(
+    user: User | null,
+    t: (key: string) => string,
+    getByEmail: (email: string) => SavedAddress[],
+    upsertForEmail: (email: string, address: SavedAddress) => void
+): AccountAddressesResult {
     const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
     const [addressDraft, setAddressDraft] = useState<SavedAddress | null>(null);
     const [editAddressErrors, setEditAddressErrors] = useState<Record<string, string>>({});
@@ -90,3 +116,5 @@ export function useAccountAddresses(user: any, t: (key: string) => string, getBy
         saveNewAddress,
     };
 }
+
+export const useAccountAddresses: typeof useAccountAddressesImpl = useAccountAddressesImpl;

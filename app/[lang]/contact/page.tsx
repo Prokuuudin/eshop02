@@ -23,9 +23,9 @@ type TurnstileWindow = Window & typeof globalThis & {
   turnstile?: TurnstileApi
 }
 
-export default function ContactPage() {
+export default function ContactPage(): React.ReactElement {
   const { t } = useTranslation()
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     name: '',
     email: '',
     subject: '',
@@ -33,7 +33,7 @@ export default function ContactPage() {
     website: '',
     submittedAt: Date.now(),
     turnstileToken: ''
-  })
+  }))
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')

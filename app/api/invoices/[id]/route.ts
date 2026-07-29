@@ -6,7 +6,7 @@ import { getServerUser } from '@/lib/server-auth'
 // excluded — a buyer must not be able to set their own invoice to `paid`/`cancelled`.
 const ALLOWED_UPDATE_FIELDS = new Set(['notes'])
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

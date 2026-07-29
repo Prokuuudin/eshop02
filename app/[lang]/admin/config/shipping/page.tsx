@@ -57,7 +57,7 @@ const DEFAULT_SETTINGS: ShippingSettings = {
   },
 }
 
-export default function AdminShippingPage() {
+export default function AdminShippingPage(): React.ReactElement {
   const [settings, setSettings] = React.useState<ShippingSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -174,14 +174,14 @@ export default function AdminShippingPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-1`} className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
                           <Select
                             value={method.enabled ? 'yes' : 'no'}
                             onValueChange={(v) => updateDelivery(key, 'enabled', v === 'yes')}
                           >
-                            <SelectTrigger className={SELECT_CLASS}>
+                            <SelectTrigger id={`shipping-${key}-1`} className={SELECT_CLASS}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -192,10 +192,10 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-2`} className="block text-xs font-medium text-muted-foreground">
                             Название
                           </label>
-                          <Input
+                          <Input id={`shipping-${key}-2`}
                             value={method.label}
                             onChange={(e) => updateDelivery(key, 'label', e.target.value)}
                             placeholder="Название"
@@ -203,10 +203,10 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-3`} className="block text-xs font-medium text-muted-foreground">
                             Цена (€)
                           </label>
-                          <Input
+                          <Input id={`shipping-${key}-3`}
                             type="number"
                             min={0}
                             step={0.01}
@@ -217,10 +217,10 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-4`} className="block text-xs font-medium text-muted-foreground">
                             Бесплатно от (€)
                           </label>
-                          <Input
+                          <Input id={`shipping-${key}-4`}
                             type="number"
                             min={0}
                             step={0.01}
@@ -255,14 +255,14 @@ export default function AdminShippingPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-5`} className="block text-xs font-medium text-muted-foreground">
                             Статус
                           </label>
                           <Select
                             value={method.enabled ? 'yes' : 'no'}
                             onValueChange={(v) => updatePayment(key, 'enabled', v === 'yes')}
                           >
-                            <SelectTrigger className={SELECT_CLASS}>
+                            <SelectTrigger id={`shipping-${key}-5`} className={SELECT_CLASS}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -273,10 +273,10 @@ export default function AdminShippingPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-xs font-medium text-muted-foreground">
+                          <label htmlFor={`shipping-${key}-6`} className="block text-xs font-medium text-muted-foreground">
                             Название
                           </label>
-                          <Input
+                          <Input id={`shipping-${key}-6`}
                             value={method.label}
                             onChange={(e) => updatePayment(key, 'label', e.target.value)}
                             placeholder="Название"

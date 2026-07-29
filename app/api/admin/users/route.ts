@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const caller = await getServerUser()
     if (!caller || caller.platformRole !== 'admin') {
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 

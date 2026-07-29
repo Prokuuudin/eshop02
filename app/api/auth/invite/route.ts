@@ -36,7 +36,7 @@ async function findValid(token: string | null) {
   return { ok: true as const, invitation }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const found = await findValid(req.nextUrl.searchParams.get('token'))
     if (!found.ok) return found.res
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = (await req.json()) as { token?: string; password?: string }
     const tokenHash = hashInviteToken(body.token ?? '')

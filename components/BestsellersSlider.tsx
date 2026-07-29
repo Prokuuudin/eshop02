@@ -6,7 +6,7 @@ import "swiper/css/navigation"
 import "swiper/css/pagination"
 import type { Product } from "../data/products"
 import ProductCard from "./ProductCard"
-export default function BestsellersSlider({ products }: { products: Product[] }) {
+export default function BestsellersSlider({ products }: { products: Product[] }): React.ReactElement {
   const bestsellers = products
   return (
     <div className="w-full flex justify-center mb-8">

@@ -18,15 +18,26 @@ type TurnstileWindow = Window & typeof globalThis & {
 
 export const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 
-export function useTurnstile() {
+type UseTurnstileResult = {
+  enabled: boolean
+  token: string
+  setContainer: (node: HTMLDivElement | null) => void
+  render: () => void
+  reset: () => void
+}
+
+export function useTurnstile(): UseTurnstileResult {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
   const enabled = Boolean(siteKey)
   const [token, setToken] = useState('')
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const containerElementRef = useRef<HTMLDivElement | null>(null)
   const widgetIdRef = useRef<string | null>(null)
+  const setContainer = useCallback((node: HTMLDivElement | null): void => {
+    containerElementRef.current = node
+  }, [])
 
   const render = useCallback(() => {
-    if (!enabled || !containerRef.current || widgetIdRef.current !== null) {
+    if (!enabled || !containerElementRef.current || widgetIdRef.current !== null) {
       return
     }
 
@@ -35,7 +46,7 @@ export function useTurnstile() {
       return
     }
 
-    widgetIdRef.current = browserWindow.turnstile.render(containerRef.current, {
+    widgetIdRef.current = browserWindow.turnstile.render(containerElementRef.current, {
       sitekey: siteKey,
       callback: (newToken: string) => setToken(newToken),
       'expired-callback': () => setToken(''),
@@ -59,5 +70,5 @@ export function useTurnstile() {
     render()
   }, [render])
 
-  return { enabled, token, containerRef, render, reset }
+  return { enabled, token, setContainer, render, reset }
 }

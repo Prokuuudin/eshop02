@@ -9,7 +9,7 @@ type Suggestion = {
   brand: string;
 };
 
-export default function HeaderSearch() {
+export default function HeaderSearch(): React.ReactElement {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [focused, setFocused] = useState(false);
@@ -20,7 +20,7 @@ export default function HeaderSearch() {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < 2) {
-      setSuggestions([]);
+      queueMicrotask(() => setSuggestions([]));
       return;
     }
 

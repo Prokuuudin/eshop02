@@ -5,7 +5,7 @@ import { getServerUser } from '@/lib/server-auth'
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; userId: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {
@@ -30,7 +30,7 @@ export async function PATCH(
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string; userId: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

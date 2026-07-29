@@ -23,7 +23,7 @@ type BlogPostContentProps = {
 };
 
 const ARTICLE_FAVORITES_KEY = 'blog-favorites';
-export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPostContentProps) {
+export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPostContentProps): React.ReactElement {
     const { t, language } = useTranslation();
     const { resolveImageSrc } = useSiteContent();
     const locale = getLocaleFromLanguage(language);
@@ -58,7 +58,8 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
     };
 
     React.useEffect(() => {
-        try {
+        queueMicrotask(() => {
+          try {
             const storedRaw = localStorage.getItem(ARTICLE_FAVORITES_KEY);
             if (!storedRaw) {
                 setIsSaved(false);
@@ -67,9 +68,10 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
 
             const savedSlugs = JSON.parse(storedRaw) as string[];
             setIsSaved(Array.isArray(savedSlugs) && savedSlugs.includes(localizedPost.slug));
-        } catch {
+          } catch {
             setIsSaved(false);
-        }
+          }
+        });
     }, [localizedPost.slug]);
 
     const toggleSaved = (): void => {

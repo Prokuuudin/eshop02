@@ -47,8 +47,10 @@ export const SubscriptionWidget: React.FC<SubscriptionWidgetProps> = ({ product,
   useEffect(() => {
     const user = getCurrentUser()
     if (!user) return
-    setUserId(user.id)
-    setExistingSub(getActiveForProduct(user.id, product.id))
+    queueMicrotask(() => {
+      setUserId(user.id)
+      setExistingSub(getActiveForProduct(user.id, product.id))
+    })
   }, [product.id, getActiveForProduct])
 
   const discount = SUBSCRIPTION_DISCOUNTS[interval]

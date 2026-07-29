@@ -44,7 +44,7 @@ const emptyForm = (): Omit<Showcase, 'id' | 'order' | 'createdAt' | 'updatedAt'>
   active: true
 })
 
-export default function AdminShowcasesPage() {
+export default function AdminShowcasesPage(): React.ReactElement {
   const [items, setItems] = useState<Showcase[]>([])
   const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,7 +74,15 @@ export default function AdminShowcasesPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function openCreate() {
     setEditId(null)
@@ -199,9 +207,9 @@ export default function AdminShowcasesPage() {
               {editId ? 'Редактировать подборку' : 'Новая подборка'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="space-y-1">
+              <label htmlFor="admin-showcase-field-1" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Название *</span>
-                <Input
+                <Input id="admin-showcase-field-1"
                   value={form.name}
                   onChange={(e) => {
                     const name = e.target.value
@@ -210,27 +218,27 @@ export default function AdminShowcasesPage() {
                   placeholder="Хиты продаж"
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-showcase-field-2" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Slug (URL)</span>
-                <Input
+                <Input id="admin-showcase-field-2"
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
                   placeholder="hits-of-sales"
                 />
               </label>
-              <label className="space-y-1 sm:col-span-2">
+              <label htmlFor="admin-showcase-field-3" className="space-y-1 sm:col-span-2">
                 <span className="text-sm text-muted-foreground">Описание</span>
-                <Textarea
+                <Textarea id="admin-showcase-field-3"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={2}
                   placeholder="Короткое описание подборки"
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-showcase-field-4" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Видимость</span>
                 <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
-                  <SelectTrigger className={selectCls}>
+                  <SelectTrigger id="admin-showcase-field-4" className={selectCls}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

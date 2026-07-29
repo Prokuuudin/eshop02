@@ -70,7 +70,7 @@ function buildLineItems(order: ServerOrder) {
   return { lineItems, targetTotalCents }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 

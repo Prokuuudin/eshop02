@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Pencil, Trash2 } from 'lucide-react';
@@ -59,9 +60,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="admin-product-card__image relative h-40 bg-white flex items-center justify-center overflow-hidden">
                 {imageUrl ? (
-                    <img
+                    <Image
+                        unoptimized
                         src={imageUrl}
                         alt={product.title}
+                        width={320}
+                        height={160}
                         className="object-contain w-full h-full p-2"
                     />
                 ) : (

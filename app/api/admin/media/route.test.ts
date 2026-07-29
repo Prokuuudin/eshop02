@@ -1,18 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
+const { mediaFindManyMock, mediaDeleteManyMock, requireAdminMock } = vi.hoisted(() => ({
+  mediaFindManyMock: vi.fn(),
+  mediaDeleteManyMock: vi.fn(),
+  requireAdminMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    mediaAsset: { findMany: vi.fn(), deleteMany: vi.fn() },
+    mediaAsset: { findMany: mediaFindManyMock, deleteMany: mediaDeleteManyMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  requireAdmin: vi.fn(),
+  requireAdmin: requireAdminMock,
 }))
 
-import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
 import { GET, DELETE } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -27,12 +31,12 @@ function makeDeleteRequest(body: Record<string, unknown>): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
+  requireAdminMock.mockResolvedValue(ADMIN_USER)
 })
 
 describe('GET /api/admin/media', () => {
   it('rejects non-admins', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(
+    requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
     )
     const res = await GET()
@@ -42,7 +46,7 @@ describe('GET /api/admin/media', () => {
   it('lists assets in the legacy shape without fetching bytes', async () => {
     const created = new Date('2026-07-01T10:00:00Z')
     const updated = new Date('2026-07-02T10:00:00Z')
-    vi.mocked(prisma.mediaAsset.findMany as any).mockResolvedValue([
+    mediaFindManyMock.mockResolvedValue([
       { name: '111-pic.png', size: 4, createdAt: created, updatedAt: updated },
     ])
 
@@ -61,7 +65,10 @@ describe('GET /api/admin/media', () => {
       },
     ])
 
-    const arg = vi.mocked(prisma.mediaAsset.findMany as any).mock.calls[0][0]
+    const arg = mediaFindManyMock.mock.calls[0][0] as {
+      select: Record<string, unknown>
+      orderBy: { updatedAt: string }
+    }
     expect(arg.select).not.toHaveProperty('data')
     expect(arg.orderBy).toEqual({ updatedAt: 'desc' })
   })
@@ -75,8 +82,8 @@ describe('DELETE /api/admin/media', () => {
   })
 
   it('deletes existing names, reports invalid and missing ones as errors', async () => {
-    vi.mocked(prisma.mediaAsset.findMany as any).mockResolvedValue([{ name: 'a.png' }])
-    vi.mocked(prisma.mediaAsset.deleteMany as any).mockResolvedValue({ count: 1 })
+    mediaFindManyMock.mockResolvedValue([{ name: 'a.png' }])
+    mediaDeleteManyMock.mockResolvedValue({ count: 1 })
 
     const res = await DELETE(
       makeDeleteRequest({ names: ['a.png', '../evil.png', 'missing.png'] })
@@ -86,14 +93,14 @@ describe('DELETE /api/admin/media', () => {
     expect(body.ok).toBe(true)
     expect(body.deleted).toBe(1)
     expect(body.errors).toEqual(expect.arrayContaining(['../evil.png', 'missing.png']))
-    expect(prisma.mediaAsset.deleteMany).toHaveBeenCalledWith({
+    expect(mediaDeleteManyMock).toHaveBeenCalledWith({
       where: { name: { in: ['a.png'] } },
     })
   })
 
   it('supports single-name form', async () => {
-    vi.mocked(prisma.mediaAsset.findMany as any).mockResolvedValue([{ name: 'a.png' }])
-    vi.mocked(prisma.mediaAsset.deleteMany as any).mockResolvedValue({ count: 1 })
+    mediaFindManyMock.mockResolvedValue([{ name: 'a.png' }])
+    mediaDeleteManyMock.mockResolvedValue({ count: 1 })
 
     const res = await DELETE(makeDeleteRequest({ name: 'a.png' }))
     const body = await res.json()

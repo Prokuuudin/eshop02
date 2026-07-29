@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
+const { mediaUpdateMock, requireAdminMock } = vi.hoisted(() => ({
+  mediaUpdateMock: vi.fn(),
+  requireAdminMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    mediaAsset: { update: vi.fn() },
+    mediaAsset: { update: mediaUpdateMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  requireAdmin: vi.fn(),
+  requireAdmin: requireAdminMock,
 }))
 
-import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
 import { POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -26,19 +29,19 @@ function makeRequest(name: string | null, file: File | null): NextRequest {
     body: fd,
     // undici требует duplex при теле-стриме
     duplex: 'half',
-  } as any)
+  } as NonNullable<ConstructorParameters<typeof NextRequest>[1]> & { duplex: 'half' })
 }
 
 const PNG = () => new File([new Uint8Array([9, 8, 7])], 'new.png', { type: 'image/png' })
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
+  requireAdminMock.mockResolvedValue(ADMIN_USER)
 })
 
 describe('POST /api/admin/media/replace', () => {
   it('rejects non-admins', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(
+    requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
     )
     const res = await POST(makeRequest('a.png', PNG()))
@@ -65,7 +68,7 @@ describe('POST /api/admin/media/replace', () => {
   })
 
   it('returns 404 when the asset does not exist', async () => {
-    vi.mocked(prisma.mediaAsset.update as any).mockRejectedValue(
+    mediaUpdateMock.mockRejectedValue(
       Object.assign(new Error('not found'), { code: 'P2025' })
     )
     const res = await POST(makeRequest('missing.png', PNG()))
@@ -74,7 +77,7 @@ describe('POST /api/admin/media/replace', () => {
   })
 
   it('updates bytes in place keeping the same name and path', async () => {
-    vi.mocked(prisma.mediaAsset.update as any).mockResolvedValue({})
+    mediaUpdateMock.mockResolvedValue({})
 
     const res = await POST(makeRequest('123-pic.png', PNG()))
     const body = await res.json()
@@ -82,7 +85,10 @@ describe('POST /api/admin/media/replace', () => {
     expect(res.status).toBe(200)
     expect(body).toEqual({ ok: true, path: '/api/media/123-pic.png' })
 
-    const arg = vi.mocked(prisma.mediaAsset.update as any).mock.calls[0][0]
+    const arg = mediaUpdateMock.mock.calls[0][0] as {
+      where: { name: string }
+      data: { mimeType: string; size: number; data: Uint8Array }
+    }
     expect(arg.where).toEqual({ name: '123-pic.png' })
     expect(arg.data.mimeType).toBe('image/png')
     expect(arg.data.size).toBe(3)

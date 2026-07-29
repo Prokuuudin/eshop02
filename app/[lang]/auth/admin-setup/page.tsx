@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { getCurrentUser, hasAdminUsers, isAdminUser, registerAdminUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function AdminSetupPage() {
+export default function AdminSetupPage(): React.ReactElement {
     const { t } = useTranslation();
     const router = useRouter();
     const [name, setName] = useState('');

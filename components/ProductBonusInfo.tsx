@@ -25,7 +25,7 @@ interface ProductBonusInfoProps {
  * количество с евро-эквивалентом экономии. Гостям не показывается (они не
  * видят и цен); курс и процент — те же, что в серверном начислении.
  */
-export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: ProductBonusInfoProps) {
+export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: ProductBonusInfoProps): React.ReactElement | null {
     const { t, language } = useTranslation();
     const user = useAuthStore((s) => s.user);
     const isHydrated = useAuthStore((s) => s.isHydrated);

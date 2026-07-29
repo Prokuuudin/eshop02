@@ -1,17 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const { settingFindUniqueMock, getServerUserMock } = vi.hoisted(() => ({
+  settingFindUniqueMock: vi.fn(),
+  getServerUserMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    keyValueSetting: { findUnique: vi.fn() },
+    keyValueSetting: { findUnique: settingFindUniqueMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  getServerUser: vi.fn(),
+  getServerUser: getServerUserMock,
 }))
 
-import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
 import { GET } from './route'
 
 const makeRequest = () =>
@@ -24,22 +27,22 @@ beforeEach(() => {
 
 describe('GET /api/admin/access-requests/[id]/certificate', () => {
   it('не-админ → 403', async () => {
-    vi.mocked(getServerUser as any).mockResolvedValue({ platformRole: 'customer' })
+    getServerUserMock.mockResolvedValue({ platformRole: 'customer' })
     const res = await GET(makeRequest(), params)
     expect(res.status).toBe(403)
   })
 
   it('сертификата нет → 404', async () => {
-    vi.mocked(getServerUser as any).mockResolvedValue({ platformRole: 'admin' })
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(null)
+    getServerUserMock.mockResolvedValue({ platformRole: 'admin' })
+    settingFindUniqueMock.mockResolvedValue(null)
     const res = await GET(makeRequest(), params)
     expect(res.status).toBe(404)
   })
 
   it('отдаёт файл с правильным content-type inline', async () => {
-    vi.mocked(getServerUser as any).mockResolvedValue({ platformRole: 'admin' })
+    getServerUserMock.mockResolvedValue({ platformRole: 'admin' })
     const dataUrl = 'data:image/jpeg;base64,' + Buffer.from('jpeg-bytes').toString('base64')
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue({
+    settingFindUniqueMock.mockResolvedValue({
       key: 'access-request-cert-req1',
       value: { data: dataUrl, name: 'diploms.jpg' },
     })

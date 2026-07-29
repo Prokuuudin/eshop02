@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,10 +23,17 @@ type ReviewRecord = {
   adminReply?: { text: string; repliedAt: string }
 }
 
-export default function AdminReviewsPage() {
+export default function AdminReviewsPage(): React.ReactElement {
   const { t, language } = useTranslation()
-  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
-  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
+  const l = useCallback(
+    (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en),
+    [language]
+  )
+  const tl = useCallback(
+    (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) =>
+      t(key, l(ru, en, lv), params),
+    [l, t]
+  )
   const STATUS_LABELS: Record<ReviewStatus, string> = {
     approved: tl('admin.reviews.status.approved', 'Показывается', 'Visible', 'Redzams'),
     hidden: tl('admin.reviews.status.hidden', 'Скрыт', 'Hidden', 'Slepts'),
@@ -52,7 +59,7 @@ export default function AdminReviewsPage() {
   const [replyExpanded, setReplyExpanded] = useState<Set<string>>(new Set())
   const [replySavingId, setReplySavingId] = useState<string | null>(null)
 
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -74,11 +81,11 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, status, tl])
 
   useEffect(() => {
-    void loadReviews()
-  }, [status])
+    queueMicrotask(() => void loadReviews())
+  }, [loadReviews])
 
   const filteredClientSide = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -381,8 +388,9 @@ export default function AdminReviewsPage() {
             return (
               <article key={review.id} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-wrap items-start gap-2">
-                  <label className="inline-flex items-center">
+                  <label htmlFor={`select-review-${review.id}`} className="inline-flex items-center">
                     <Checkbox
+                      id={`select-review-${review.id}`}
                       checked={isSelected}
                       onCheckedChange={(checked) => toggleReviewSelection(review.id, checked === true)}
                     />

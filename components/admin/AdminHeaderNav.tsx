@@ -278,7 +278,7 @@ const isActive = (pathname: string, href: string): boolean => {
     return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
 };
 
-export default function AdminHeaderNav() {
+export default function AdminHeaderNav(): React.ReactElement {
     const pathname = useUnprefixedPathname();
     const { language } = useTranslation();
     const labels = NAV_LABELS[language];

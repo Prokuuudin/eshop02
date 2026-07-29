@@ -4,7 +4,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import ForceChangePasswordModal from '@/components/account/ForceChangePasswordModal';
 import WelcomeModal from '@/components/account/WelcomeModal';
 
-export default function AccountGuard({ children }: { children: React.ReactNode }) {
+export default function AccountGuard({ children }: { children: React.ReactNode }): React.ReactElement | null {
     const user = useAuthStore((s) => s.user);
     const isHydrated = useAuthStore((s) => s.isHydrated);
 

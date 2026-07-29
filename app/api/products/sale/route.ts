@@ -7,7 +7,7 @@ import { redactProductPrices } from '@/lib/product-price-visibility'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const dbProducts = await prisma.product.findMany({
       where: { isActive: true, image: { not: null }, oldPrice: { not: null } },

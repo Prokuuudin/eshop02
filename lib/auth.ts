@@ -81,7 +81,7 @@ export const readUsers = (): User[] => {
   }
 }
 
-export const writeUsers = (users: User[]) => {
+export const writeUsers = (users: User[]): void => {
   localStorage.setItem(USERS_KEY, JSON.stringify(users))
 }
 

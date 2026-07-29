@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import AdminGate from '@/components/admin/AdminGate'
 import { useOrders } from '@/lib/orders-store'
@@ -56,7 +57,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function CustomerProfilePage() {
+export default function CustomerProfilePage(): React.ReactElement {
   const searchParams = useSearchParams()
   const email = decodeURIComponent(searchParams.get('email') ?? '')
 
@@ -292,7 +293,7 @@ export default function CustomerProfilePage() {
             )}
             {topProducts.map((p, i) => (
               <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3">
-                {p.image && <img src={p.image} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />}
+                {p.image && <Image unoptimized src={p.image} alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-cover shrink-0" />}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-sm text-gray-400 w-5 shrink-0 tabular-nums">{i + 1}</span>
                   <div className="min-w-0">

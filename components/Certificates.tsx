@@ -8,7 +8,7 @@ type CertificatesProps = {
   product: Product
 }
 
-export default function Certificates({ product }: CertificatesProps) {
+export default function Certificates({ product }: CertificatesProps): React.ReactElement | null {
   const { t } = useTranslation()
   if (!product.certificates || product.certificates.length === 0) {
     return null

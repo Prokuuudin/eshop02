@@ -13,7 +13,7 @@ const clientIp = (req: NextRequest) =>
   || req.headers.get('x-real-ip')?.trim()
   || 'unknown'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const contentLength = Number(req.headers.get('content-length') ?? 0)
     if (contentLength > 4096) return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })

@@ -12,7 +12,7 @@ const LANGUAGES: { code: Language; name: string; flag: string }[] = [
   { code: 'lv', name: 'Latviešu', flag: '🇱🇻' }
 ]
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher(): React.ReactElement {
   const { language, setLanguage } = useI18n()
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)

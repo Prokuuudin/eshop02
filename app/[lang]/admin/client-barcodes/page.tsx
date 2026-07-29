@@ -46,7 +46,7 @@ type NoCardRequest = {
     requestedAt: string;
 };
 
-export default function AdminClientBarcodesPage() {
+export default function AdminClientBarcodesPage(): React.ReactElement {
     const { t, language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -80,7 +80,9 @@ export default function AdminClientBarcodesPage() {
             );
         } catch { /* сеть — оставляем прежний список */ }
     }, []);
-    useEffect(() => { void loadNoCardRequests(); }, [loadNoCardRequests]);
+    useEffect(() => {
+        queueMicrotask(() => void loadNoCardRequests());
+    }, [loadNoCardRequests]);
 
     const filteredCompanies = search.trim()
         ? (() => {
@@ -122,7 +124,7 @@ export default function AdminClientBarcodesPage() {
         return noCardDrafts[requestId];
     };
 
-    const handleApproveNoCardRequest = async (requestId: string, email: string, name: string) => {
+    const handleApproveNoCardRequest = async (requestId: string, email: string) => {
         const draft = noCardDrafts[requestId];
         if (!draft) return;
         const digits = draft.cardNumber.replace(/\D/g, '');
@@ -315,9 +317,10 @@ export default function AdminClientBarcodesPage() {
                                         )}
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                            <label className="text-sm">
+                                            <label htmlFor={`company-name-${req.id}`} className="text-sm">
                                                 <span className="block mb-1 text-muted-foreground">Название компании</span>
                                                 <Input
+                                                    id={`company-name-${req.id}`}
                                                     value={draft.companyName}
                                                     onChange={(e) =>
                                                         setNoCardDrafts((prev) => ({
@@ -328,10 +331,11 @@ export default function AdminClientBarcodesPage() {
                                                     placeholder="Имя мастера / ИП"
                                                 />
                                             </label>
-                                            <label className="text-sm">
+                                            <label htmlFor={`card-number-${req.id}`} className="text-sm">
                                                 <span className="block mb-1 text-muted-foreground">Номер карты</span>
                                                 <div className="flex gap-2">
                                                     <Input
+                                                        id={`card-number-${req.id}`}
                                                         value={draft.cardNumber}
                                                         onChange={(e) =>
                                                             setNoCardDrafts((prev) => ({
@@ -379,7 +383,7 @@ export default function AdminClientBarcodesPage() {
                                             <Button
                                                 size="sm"
                                                 disabled={emailBusy[req.id]}
-                                                onClick={() => handleApproveNoCardRequest(req.id, req.email, req.name || req.email)}
+                                                onClick={() => handleApproveNoCardRequest(req.id, req.email)}
                                             >
                                                 {emailBusy[req.id] ? 'Отправка...' : 'Выдать карту и уведомить'}
                                             </Button>

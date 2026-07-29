@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -16,7 +16,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

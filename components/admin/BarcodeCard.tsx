@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { CompanyProfile } from '@/lib/company-store';
 
-export default function BarcodeCard({ company }: { company: CompanyProfile }) {
+export default function BarcodeCard({ company }: { company: CompanyProfile }): React.ReactElement {
     const svgRef = useRef<SVGSVGElement | null>(null);
     const barcodeValue = company.cardNumber || company.companyId;
 

@@ -8,7 +8,7 @@ type RevealProps = {
   className?: string
 }
 
-export default function Reveal({ children, index = 0, className = '' }: RevealProps) {
+export default function Reveal({ children, index = 0, className = '' }: RevealProps): React.ReactElement {
   const ref = React.useRef<HTMLDivElement | null>(null)
   const [isVisible, setIsVisible] = React.useState(false)
 
@@ -17,7 +17,7 @@ export default function Reveal({ children, index = 0, className = '' }: RevealPr
     if (!node) return
 
     if (typeof IntersectionObserver === 'undefined') {
-      setIsVisible(true)
+      queueMicrotask(() => setIsVisible(true))
       return
     }
 

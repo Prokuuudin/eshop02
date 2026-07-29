@@ -11,7 +11,7 @@ const BestsellersSlider = dynamic(() => import('./BestsellersSlider'), { ssr: fa
 
 import Reveal from '@/components/ui/Reveal'
 
-export default function BestsellersSection() {
+export default function BestsellersSection(): React.ReactElement | null {
     const { t } = useTranslation();
     const [products, setProducts] = useState<Product[]>([]);
 

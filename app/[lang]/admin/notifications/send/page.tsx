@@ -23,7 +23,7 @@ type SendResult = {
   emailsFailed?: number
 }
 
-export default function AdminNotificationsSendPage() {
+export default function AdminNotificationsSendPage(): React.ReactElement {
   const { t } = useTranslation()
 
   // Users state
@@ -47,7 +47,6 @@ export default function AdminNotificationsSendPage() {
 
   // Load users on mount
   useEffect(() => {
-    setUsersLoading(true)
     fetch('/api/admin/users?take=200')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load users')

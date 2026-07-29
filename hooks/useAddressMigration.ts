@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
+import type { User } from '@/lib/auth';
+import type { Order } from '@/lib/orders-store';
+import type { SavedAddress } from '@/lib/saved-addresses-store';
 
-export function useAddressMigration(
-    user: any,
-    userOrders: any[],
-    getByEmail: (...args: any[]) => any,
-    replaceForEmail: (...args: any[]) => any
-) {
+function useAddressMigrationImpl(
+    user: User | null,
+    userOrders: Order[],
+    getByEmail: (email: string) => SavedAddress[],
+    replaceForEmail: (email: string, addresses: SavedAddress[]) => void
+): void {
     useEffect(() => {
         if (!user?.email) return;
         const SAVED_ADDRESS_MIGRATION_KEY = 'saved-addresses-migration-v1';
@@ -35,7 +38,7 @@ export function useAddressMigration(
         }
         const existingSignatureSet = new Set(
             existing.map(
-                (item: any) => `${item.firstName}|${item.lastName}|${item.phone}|${item.address}|${item.city}|${item.postalCode ?? ''}`
+                (item) => `${item.firstName}|${item.lastName}|${item.phone}|${item.address}|${item.city}|${item.postalCode ?? ''}`
             )
         );
         const migratedFromOrders = userOrders
@@ -65,3 +68,5 @@ export function useAddressMigration(
         } catch {}
     }, [user?.email, userOrders, getByEmail, replaceForEmail]);
 }
+
+export const useAddressMigration: typeof useAddressMigrationImpl = useAddressMigrationImpl;

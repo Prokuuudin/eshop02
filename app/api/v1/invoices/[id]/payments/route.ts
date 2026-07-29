@@ -6,7 +6,7 @@ import { triggerCompanyWebhook } from '@/lib/webhook-sender'
 
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const { id } = await context.params
     const auth = await authenticateRequest(req)

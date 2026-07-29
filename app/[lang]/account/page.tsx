@@ -30,20 +30,19 @@ import { useAdminStore } from '@/lib/admin-store';
 
 import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
 import { hydrateWishlistFromServer } from '@/lib/wishlist-store';
-import { getCurrentUser, writeCurrentUser } from '@/lib/auth';
+import { writeCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useCart } from '@/lib/cart-store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-import type { User } from '@/lib/auth';
 import React from 'react';
 
 export default function AccountPage(): React.ReactElement {
     const { t, language, tl } = useLocaleHelpers();
-    const [user, setUser] = useState<User | null>(null);
+    const user = useAuthStore((state) => state.user);
+    const isHydrated = useAuthStore((state) => state.isHydrated);
     const companyStore = useCompanyStore();
-    const [loading, setLoading] = useState(true);
     const ordersStore = useOrders();
     const { replaceWithItems } = useCart();
     const router = useRouter();
@@ -53,13 +52,7 @@ export default function AccountPage(): React.ReactElement {
     const { upsertOrder } = ordersStore;
     const locale = getLocaleFromLanguage(language);
     useEffect(() => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) {
-            setLoading(false);
-            return;
-        }
-        setUser(currentUser as User);
-        setLoading(false);
+        if (!isHydrated || !user) return;
 
         // Load order history from DB and merge into Zustand
         fetch('/api/orders/my')
@@ -75,14 +68,13 @@ export default function AccountPage(): React.ReactElement {
         fetch('/api/user/bonus')
             .then((r) => r.json())
             .then(({ bonusPoints }) => {
-                if (typeof bonusPoints === 'number' && bonusPoints !== currentUser.bonusPoints) {
-                    const updated = { ...currentUser, bonusPoints };
+                if (typeof bonusPoints === 'number' && bonusPoints !== user.bonusPoints) {
+                    const updated = { ...user, bonusPoints };
                     writeCurrentUser(updated);
-                    setUser(updated as User);
                 }
             })
             .catch(() => {});
-    }, []);
+    }, [isHydrated, upsertOrder, user]);
     const userOrders = allOrders.filter((o) => o.email === user?.email);
     const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);
     const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);
@@ -108,7 +100,7 @@ export default function AccountPage(): React.ReactElement {
         totalSpent
     );
 
-    if (loading) {
+    if (!isHydrated) {
         return (
             <main className="w-full px-4 py-12">
                 <p className="text-muted-foreground">{t('common.loading')}</p>

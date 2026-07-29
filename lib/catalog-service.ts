@@ -91,7 +91,13 @@ export function generateCsvCatalog(
 export function generateStructuredCatalog(
   items: CatalogItem[],
   locale: string
-) {
+): {
+  generatedAt: string
+  version: string
+  locale: string
+  totalItems: number
+  categories: Record<string, ReturnType<typeof formatCatalogForDisplay>>
+} {
   const formatted = formatCatalogForDisplay(items, locale)
   const byCategory = new Map<string, typeof formatted>()
 

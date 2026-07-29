@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteSession, SESSION_COOKIE } from '@/lib/server-auth'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.cookies.get(SESSION_COOKIE)?.value
   if (token) await deleteSession(token)
 

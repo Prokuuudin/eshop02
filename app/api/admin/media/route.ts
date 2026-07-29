@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif'])
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -36,7 +36,7 @@ function safeName(name: string): boolean {
   return Boolean(name) && !name.includes('/') && !name.includes('..') && !name.includes('\\')
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

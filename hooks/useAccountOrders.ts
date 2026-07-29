@@ -1,6 +1,30 @@
 ﻿import { useMemo } from 'react';
+import type { Order } from '@/lib/orders-store';
+import type { CartItem } from '@/lib/cart-store';
 
-export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string) => string, orderFilter: 'all' | 'active' | 'completed') {
+type OrderFilter = 'all' | 'active' | 'completed';
+
+type AccountOrdersResult = {
+    activeOrdersCount: number;
+    completedOrdersCount: number;
+    filteredOrders: Order[];
+    getOrderFilterButtonClasses: (filter: OrderFilter) => string;
+    getStatusLabel: (status: string, t?: (key: string) => string) => string;
+    getStatusClasses: (status: string) => string;
+    handleRepeatOrder: (
+        orderId: string,
+        orders: Order[],
+        replaceWithItems: (items: CartItem[]) => void,
+        router: { push: (href: string) => void }
+    ) => void;
+    getDeliveryLabel: (deliveryMethod: string, t?: (key: string) => string) => string;
+};
+
+function useAccountOrdersImpl(
+    userOrders: Order[],
+    getOrderStatus: (id: string) => string,
+    orderFilter: OrderFilter
+): AccountOrdersResult {
     const activeOrdersCount = useMemo(() => userOrders.filter((order) => {
         const status = getOrderStatus(order.id);
         return status !== 'delivered' && status !== 'cancelled';
@@ -50,8 +74,13 @@ export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string)
         return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200';
     };
 
-    const handleRepeatOrder = (orderId: string, userOrders: any[], replaceWithItems: (items: any[]) => void, router: any) => {
-        const order = userOrders.find((item) => item.id === orderId);
+    const handleRepeatOrder = (
+        orderId: string,
+        orders: Order[],
+        replaceWithItems: (items: CartItem[]) => void,
+        router: { push: (href: string) => void }
+    ): void => {
+        const order = orders.find((item) => item.id === orderId);
         if (!order) return;
         replaceWithItems(order.items);
         router.push('/cart');
@@ -75,3 +104,5 @@ export function useAccountOrders(userOrders: any[], getOrderStatus: (id: string)
         getDeliveryLabel,
     };
 }
+
+export const useAccountOrders: typeof useAccountOrdersImpl = useAccountOrdersImpl;

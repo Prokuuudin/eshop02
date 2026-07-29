@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Bell, BellOff } from 'lucide-react';
 import { useStockNotifyStore, StockNotifySubscription } from '@/lib/stock-notify-store';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useTranslation } from '@/lib/use-translation';
 import { Button } from '@/components/ui/button';
 
@@ -12,11 +12,7 @@ export const AccountStockNotificationsSection: React.FC = () => {
     const { t } = useTranslation();
     const subscriptions = useStockNotifyStore((s) => s.subscriptions);
     const unsubscribe = useStockNotifyStore((s) => s.unsubscribe);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
-
-    useEffect(() => {
-        setUserEmail(getCurrentUser()?.email ?? null);
-    }, []);
+    const userEmail = useAuthStore((state) => state.user?.email ?? null);
 
     const userSubs: StockNotifySubscription[] = userEmail
         ? subscriptions.filter(

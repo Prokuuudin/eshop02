@@ -21,7 +21,7 @@ const ERROR_TEXT: Record<string, [string, string, string]> = {
     server_error: ['Ошибка сервера. Попробуйте ещё раз.', 'Server error. Please try again.', 'Servera kļūda. Mēģiniet vēlreiz.'],
 };
 
-export default function InvitePage() {
+export default function InvitePage(): React.ReactElement {
     const { language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -34,8 +34,8 @@ export default function InvitePage() {
     const router = useRouter();
     const token = searchParams.get('token');
 
-    const [stage, setStage] = useState<Stage>('loading');
-    const [error, setError] = useState('');
+    const [stage, setStage] = useState<Stage>(() => token ? 'loading' : 'error');
+    const [error, setError] = useState(() => token ? '' : errText('invalid_token'));
     const [email, setEmail] = useState('');
     const [cardNumber, setCardNumber] = useState('');
     const [name, setName] = useState('');
@@ -45,8 +45,6 @@ export default function InvitePage() {
 
     useEffect(() => {
         if (!token) {
-            setError(errText('invalid_token'));
-            setStage('error');
             return;
         }
         fetch(`/api/auth/invite?token=${encodeURIComponent(token)}`)

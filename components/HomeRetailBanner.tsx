@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/auth-store';
 
 const RETAIL_STORE_URL = 'https://hairshop.lv';
 
-export default function HomeRetailBanner() {
+export default function HomeRetailBanner(): React.ReactElement | null {
     const { t } = useTranslation();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isHydrated = useAuthStore((s) => s.isHydrated);

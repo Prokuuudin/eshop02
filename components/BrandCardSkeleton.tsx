@@ -1,6 +1,6 @@
 import { Card } from './ui/card';
 
-export default function BrandCardSkeleton() {
+export default function BrandCardSkeleton(): React.ReactElement {
   return (
     <Card className="brand-card p-4 flex flex-col items-center animate-pulse bg-card border border-border">
       <div className="w-16 h-16 rounded-full bg-muted mb-3" />

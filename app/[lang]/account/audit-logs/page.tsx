@@ -1,27 +1,25 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
+import { useAuthStore } from '@/lib/auth-store'
 import { useCompanyStore } from '@/lib/company-store'
 import AuditLogViewer from '@/components/AuditLogViewer'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
 
-export default function AuditLogsPage() {
+export default function AuditLogsPage(): React.ReactElement {
   const router = useRouter()
-  const [user, setUser] = useState(getCurrentUser())
+  const user = useAuthStore((state) => state.user)
+  const isHydrated = useAuthStore((state) => state.isHydrated)
   const { getCompany, syncFromDb } = useCompanyStore()
   const { t } = useTranslation()
 
   useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser || !currentUser.companyId) {
+    if (isHydrated && (!user || !user.companyId)) {
       router.push('/account')
-      return
     }
-    setUser(currentUser)
-  }, [router])
+  }, [isHydrated, router, user])
 
   useEffect(() => {
     void syncFromDb()

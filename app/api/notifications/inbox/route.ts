@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
-export async function GET(_req: NextRequest) {
+export async function GET(_req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

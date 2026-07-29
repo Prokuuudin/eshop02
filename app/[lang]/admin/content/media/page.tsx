@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,7 +43,7 @@ function fmtDate(iso: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AdminMediaPage() {
+export default function AdminMediaPage(): React.ReactElement {
   const [files, setFiles] = useState<MediaFile[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -85,7 +86,15 @@ export default function AdminMediaPage() {
     }
   }, [])
 
-  useEffect(() => { void loadFiles() }, [loadFiles])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadFiles()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadFiles])
 
   // ── Load product usage ──────────────────────────────────────────────────────
 
@@ -376,15 +385,15 @@ export default function AdminMediaPage() {
                         ].join(' ')}
                       >
                         {/* Checkbox */}
-                        <label
+                        <div
                           className="absolute top-1.5 left-1.5 z-10 cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
                         >
                           <Checkbox
+                            aria-label={`Выбрать ${file.name}`}
                             checked={isChecked}
                             onCheckedChange={() => toggleCheck(file.name)}
                           />
-                        </label>
+                        </div>
 
                         {/* Usage badge */}
                         {usedIn?.length && (
@@ -402,7 +411,7 @@ export default function AdminMediaPage() {
                         >
                           <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
                             {file.isImage ? (
-                              <img src={file.path} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                              <Image src={file.path} alt={file.name} width={300} height={300} unoptimized className="w-full h-full object-cover" />
                             ) : (
                               <span className="text-2xl font-bold text-gray-300 dark:text-gray-600 uppercase">{file.ext}</span>
                             )}
@@ -447,7 +456,7 @@ export default function AdminMediaPage() {
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
                                 {file.isImage
-                                  ? <img src={file.path} alt="" className="h-8 w-8 rounded object-cover shrink-0" loading="lazy" />
+                                  ? <Image src={file.path} alt="" width={32} height={32} unoptimized className="h-8 w-8 rounded object-cover shrink-0" />
                                   : <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold text-gray-400 uppercase shrink-0">{file.ext}</div>
                                 }
                                 <span className="truncate text-gray-800 dark:text-gray-200 max-w-xs">{file.name}</span>
@@ -489,7 +498,7 @@ export default function AdminMediaPage() {
                 {/* Preview */}
                 <div className="aspect-square rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden">
                   {selected.isImage
-                    ? <img src={selected.path} alt={selected.name} className="w-full h-full object-contain" />
+                    ? <Image src={selected.path} alt={selected.name} width={288} height={288} unoptimized className="w-full h-full object-contain" />
                     : <span className="text-4xl font-bold text-gray-300 dark:text-gray-600 uppercase">{selected.ext}</span>
                   }
                 </div>

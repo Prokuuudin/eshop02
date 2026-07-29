@@ -64,7 +64,7 @@ const getStatusIcon = (status: InvoiceStatus): string => {
   }
 }
 
-export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoiceId }: InvoiceListProps) {
+export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoiceId }: InvoiceListProps): React.ReactElement {
   const { t, language } = useTranslation()
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date')
   const [filterStatus, setFilterStatus] = useState<InvoiceStatus | 'all'>('all')
@@ -136,7 +136,15 @@ export default function InvoiceList({ invoices, onSelectInvoice, selectedInvoice
         {sorted.map((invoice) => (
           <div
             key={invoice.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelectInvoice(invoice)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onSelectInvoice(invoice)
+              }
+            }}
             className={`rounded-lg border-2 p-4 cursor-pointer transition-colors ${
               selectedInvoiceId === invoice.id
                 ? 'border-primary bg-primary/5 dark:bg-primary/10'

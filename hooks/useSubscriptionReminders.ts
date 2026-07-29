@@ -5,7 +5,7 @@ import { formatEuro } from '@/lib/utils'
 
 const REMIND_DAYS_BEFORE = 3
 
-function isSameDay(a: Date, b: Date) {
+function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -13,7 +13,7 @@ function isSameDay(a: Date, b: Date) {
   )
 }
 
-export function useSubscriptionReminders(userId: string | null) {
+export function useSubscriptionReminders(userId: string | null): void {
   const subscriptions = useSubscriptionStore((s) => s.subscriptions)
   const markReminded = useSubscriptionStore((s) => s.markReminded)
   const addNotification = useNotificationsStore((s) => s.addNotification)

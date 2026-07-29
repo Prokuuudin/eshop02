@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

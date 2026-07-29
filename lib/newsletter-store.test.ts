@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
+const settingUpsertMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     keyValueSetting: {
-      upsert: vi.fn(),
+      upsert: settingUpsertMock,
     },
   },
 }))
@@ -61,7 +63,7 @@ describe('marketing unsubscribe token', () => {
 
 describe('subscribeToNewsletter', () => {
   it('calls upsert with lowercased email in key', async () => {
-    vi.mocked(prisma.keyValueSetting.upsert as any).mockResolvedValue({
+    settingUpsertMock.mockResolvedValue({
       key: 'newsletter:subscriber:foo@bar.com',
       value: { email: 'foo@bar.com', consentAt: '2026-01-01T00:00:00.000Z' },
     })
@@ -76,7 +78,7 @@ describe('subscribeToNewsletter', () => {
   })
 
   it('stores value with lowercased email and ISO timestamp in both create and update', async () => {
-    vi.mocked(prisma.keyValueSetting.upsert as any).mockResolvedValue({
+    settingUpsertMock.mockResolvedValue({
       key: 'newsletter:subscriber:test@example.com',
       value: { email: 'test@example.com', consentAt: '2026-01-01T00:00:00.000Z' },
     })
@@ -112,7 +114,7 @@ describe('subscribeToNewsletter', () => {
   })
 
   it('handles re-subscribe by calling upsert both times without error', async () => {
-    vi.mocked(prisma.keyValueSetting.upsert as any).mockResolvedValue({
+    settingUpsertMock.mockResolvedValue({
       key: 'newsletter:subscriber:user@test.com',
       value: { email: 'user@test.com', consentAt: '2026-01-01T00:00:00.000Z' },
     })

@@ -18,7 +18,14 @@ const fallbackCategories: CategoryConfigItem[] = CATEGORY_CARDS.map((category) =
   }))
 }))
 
-export function useCategoriesConfig() {
+type CategoriesConfigResult = {
+  categories: CategoryConfigItem[]
+  loading: boolean
+  error: string | null
+  reload: () => Promise<void>
+}
+
+export function useCategoriesConfig(): CategoriesConfigResult {
   const [categories, setCategories] = React.useState<CategoryConfigItem[]>(fallbackCategories)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -45,7 +52,7 @@ export function useCategoriesConfig() {
   }, [])
 
   React.useEffect(() => {
-    void load()
+    queueMicrotask(() => void load())
   }, [load])
 
   return { categories, loading, error, reload: load }

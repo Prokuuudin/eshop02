@@ -22,20 +22,20 @@ interface ShareOrderButtonProps {
     invoiceLang: InvoiceLang;
 }
 
-export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButtonProps) {
+export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButtonProps): React.ReactElement {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     // Starts false to match SSR (no `navigator` on the server); a browser that
     // supports the Web Share API flips this after mount. Two distinct render
     // trees below (native-share button vs. dropdown) avoid ever fighting
     // Radix's own pointerdown-to-open handling on the trigger.
-    const [supportsNativeShare, setSupportsNativeShare] = React.useState(false);
+    const supportsNativeShare = React.useSyncExternalStore(
+        () => () => undefined,
+        () => typeof navigator.share === 'function',
+        () => false
+    );
     const [isSharing, setIsSharing] = React.useState(false);
     const [invoiceFile, setInvoiceFile] = React.useState<File | null>(null);
-
-    React.useEffect(() => {
-        setSupportsNativeShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
-    }, []);
 
     // Pre-build the invoice file on mount, not inside the click handler:
     // navigator.share() requires transient user activation, and awaiting a

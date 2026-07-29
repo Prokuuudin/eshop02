@@ -144,17 +144,18 @@ function StackedBarChart({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function SalesBreakdownPage() {
+export default function SalesBreakdownPage(): React.ReactElement {
   const orders = useOrders((s) => s.orders)
   const [period, setPeriod] = useState<Period>('30d')
+  const [now] = useState(Date.now)
   const [metric, setMetric] = useState<Metric>('revenue')
 
   const filtered = useMemo(() => {
     if (period === 'all') return orders
     const days = period === '7d' ? 7 : period === '30d' ? 30 : 90
-    const cutoff = Date.now() - days * 86400000
+    const cutoff = now - days * 86400000
     return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
-  }, [orders, period])
+  }, [orders, period, now])
 
   // ── KPIs
   const totalRevenue = useMemo(() => filtered.reduce((s, o) => s + (o.total ?? 0), 0), [filtered])

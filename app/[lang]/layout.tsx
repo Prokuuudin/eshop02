@@ -53,7 +53,7 @@ export const viewport = {
   initialScale: 1,
 }
 
-export default async function RootLayout({ children, params }: LayoutProps) {
+export default async function RootLayout({ children, params }: LayoutProps): Promise<React.ReactElement> {
   const { lang } = await params
   const language = resolveLanguage(lang)
   const siteUrl = getSiteUrl()

@@ -13,7 +13,7 @@ function clientIp(req: NextRequest): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     if (Math.random() < 0.02) void gcRateLimitStore()
 

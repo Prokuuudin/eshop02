@@ -3,8 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 interface ProductEditorProps {
-    draft: any;
-    onChange: (patch: Partial<any>) => void;
+    draft: { title: string; [key: string]: unknown };
+    onChange: (patch: Partial<ProductEditorProps['draft']>) => void;
     onSave: () => void;
     onReset: () => void;
     onDelete: () => void;

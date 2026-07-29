@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const { code, orderAmount } = (await req.json()) as { code?: string; orderAmount?: number }
     if (!code?.trim()) return NextResponse.json({ valid: false, error: 'code_required' })

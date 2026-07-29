@@ -20,7 +20,7 @@ type PageProps = {
     }>;
 };
 
-export default function OrderPage({ params }: PageProps) {
+export default function OrderPage({ params }: PageProps): React.ReactElement {
     const { id } = React.use(params);
     const searchParams = useSearchParams();
     const { t, language } = useTranslation();
@@ -28,11 +28,13 @@ export default function OrderPage({ params }: PageProps) {
     const { getOrderStatus } = useAdminStore();
     const localOrder = getOrder(id);
     const [serverOrder, setServerOrder] = React.useState<ReturnType<typeof getOrder> | null>(null);
-    const [serverOrderLoading, setServerOrderLoading] = React.useState(false);
+    const [serverOrderLoading, setServerOrderLoading] = React.useState(true);
     const [serverOrderResolved, setServerOrderResolved] = React.useState(false);
     const order = serverOrder ?? localOrder;
     const locale = getLocaleFromLanguage(language);
-    const [paymentCheckPending, setPaymentCheckPending] = React.useState(false);
+    const [paymentCheckPending, setPaymentCheckPending] = React.useState(
+        () => searchParams.get('payment') === 'success' && Boolean(searchParams.get('session_id'))
+    );
     const [retryingPayment, setRetryingPayment] = React.useState(false);
     const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const { showToast } = useToast();
@@ -41,8 +43,6 @@ export default function OrderPage({ params }: PageProps) {
         if (serverOrderResolved) return;
 
         let isMounted = true;
-        setServerOrderLoading(true);
-
         fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: 'no-store' })
             .then(async (res) => {
                 if (res.status === 404) return null;
@@ -198,18 +198,22 @@ export default function OrderPage({ params }: PageProps) {
         const sessionId = searchParams.get('session_id');
 
         if (paymentState === 'cancelled') {
-            applyOrderPaymentUpdate(order.id, {
-                paymentStatus: 'failed',
-                paymentProvider: 'stripe',
+            let cancelled = false;
+            queueMicrotask(() => {
+                if (cancelled) return;
+                applyOrderPaymentUpdate(order.id, {
+                    paymentStatus: 'failed',
+                    paymentProvider: 'stripe',
+                });
             });
-            return;
+            return () => {
+                cancelled = true;
+            };
         }
 
         if (paymentState !== 'success' || !sessionId) return;
 
         let isMounted = true;
-        setPaymentCheckPending(true);
-
         fetch('/api/payments/stripe/verify', {
             method: 'POST',
             headers: {
@@ -675,13 +679,13 @@ export default function OrderPage({ params }: PageProps) {
                             )}
 
                             {(order.bonusEarned ?? 0) > 0 && (
-                                <div className="mb-4 p-3 bg-primary/5 dark:bg-primary/15 border border-primary/30 dark:border-primary/40 rounded text-sm">
-                                    <p className="font-medium text-primary dark:text-primary/60">
+                                <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-primary/5 dark:bg-primary/15 border border-primary/30 dark:border-primary/40 rounded text-sm">
+                                    <span className="font-medium text-primary dark:text-primary/60">
                                         {t('order.bonusEarned')}
-                                    </p>
-                                    <p className="text-primary">
+                                    </span>
+                                    <span className="shrink-0 text-primary">
                                         +{order.bonusEarned ?? 0}
-                                    </p>
+                                    </span>
                                 </div>
                             )}
 

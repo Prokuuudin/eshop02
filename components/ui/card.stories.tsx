@@ -1,11 +1,13 @@
 import { Card, CardHeader, CardTitle, CardContent } from './card';
-export default {
+const meta = {
   title: 'UI/Card',
   component: Card,
 };
 
+export default meta;
+
 export const Default = {
-  render: () => (
+  render: (): React.ReactElement => (
     <Card>
       <CardHeader>
         <CardTitle>Товар</CardTitle>

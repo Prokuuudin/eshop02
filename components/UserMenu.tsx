@@ -20,7 +20,7 @@ import RegisterSwitcher from './auth/RegisterSwitcher';
 import LoginForm from './auth/LoginForm';
 import ForgotPasswordForm from './auth/ForgotPasswordForm';
 
-export default function UserMenu() {
+export default function UserMenu(): React.ReactElement {
     const user = useAuthStore((s) => s.user);
     const [isOpen, setIsOpen] = useState(false);
     const [registerOpen, setRegisterOpen] = useState(false);
@@ -32,7 +32,7 @@ export default function UserMenu() {
 
     // Recompute "first admin not set up yet" whenever the current user changes (store-driven).
     useEffect(() => {
-        setSetupRequired(!hasAdminUsers());
+        queueMicrotask(() => setSetupRequired(!hasAdminUsers()));
     }, [user]);
 
     const handleLoginSuccess = () => {

@@ -15,7 +15,7 @@ function getClientIp(req: NextRequest): string {
   )
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     if (Math.random() < 0.05) void gcRateLimitStore()
 

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const mediaFindUniqueMock = vi.hoisted(() => vi.fn())
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    mediaAsset: { findUnique: vi.fn() },
+    mediaAsset: { findUnique: mediaFindUniqueMock },
   },
 }))
 
@@ -28,13 +30,13 @@ describe('GET /api/media/[name]', () => {
   })
 
   it('returns 404 for a missing asset', async () => {
-    vi.mocked(prisma.mediaAsset.findUnique as any).mockResolvedValue(null)
+    mediaFindUniqueMock.mockResolvedValue(null)
     const res = await call('nope.png')
     expect(res.status).toBe(404)
   })
 
   it('serves bytes with content-type, nosniff and cache headers', async () => {
-    vi.mocked(prisma.mediaAsset.findUnique as any).mockResolvedValue({
+    mediaFindUniqueMock.mockResolvedValue({
       name: '123-pic.png',
       mimeType: 'image/png',
       size: 3,

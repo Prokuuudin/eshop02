@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Package, RotateCcw } from 'lucide-react';
 import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, type ReturnReason, type ReturnStatus } from '@/lib/returns-store';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useTranslation } from '@/lib/use-translation';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,20 +35,19 @@ const REASON_KEY: Record<ReturnReason, string> = {
     other:            'account.returns.reasonOther',
 };
 
-export default function AccountReturnsPage() {
+export default function AccountReturnsPage(): React.ReactElement | null {
     const { t, language } = useTranslation();
     const locale = getLocaleFromLanguage(language);
     const router = useRouter();
     const returns = useReturnsStore((s) => s.returns);
     const setReturns = useReturnsStore((s) => s.setReturns);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const userEmail = useAuthStore((state) => state.user?.email ?? null);
+    const isHydrated = useAuthStore((state) => state.isHydrated);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const user = getCurrentUser();
-        if (!user) { router.replace('/auth/login'); return; }
-        setUserEmail(user.email);
-    }, [router]);
+        if (isHydrated && !userEmail) router.replace('/auth/login');
+    }, [isHydrated, router, userEmail]);
 
     useEffect(() => {
         fetch('/api/returns')

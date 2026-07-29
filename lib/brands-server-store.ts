@@ -48,17 +48,23 @@ const normalizeBrandManufacturerInfo = (
 }
 
 const buildDefaultPayload = (): BrandsConfigPayload => {
-  const brands: BrandConfigItem[] = BRANDS.map((brand) => ({
-    id: sanitizeSlug(brand.id),
-    name: brand.name,
-    logo: brand.logo,
-    popular: Boolean(brand.popular),
-    isDistributor: Boolean(brand.isDistributor),
-    allowLogo: brand.allowLogo !== false,
-    description: resolveDescriptionFromStatic(brand.id, brand.description),
-    manufacturer: normalizeBrandManufacturerInfo((brand as any).manufacturer),
-    distributor: normalizeBrandManufacturerInfo((brand as any).distributor),
-  }))
+  const brands: BrandConfigItem[] = BRANDS.map((brand) => {
+    const extendedBrand = brand as typeof brand & {
+      manufacturer?: BrandManufacturerInfo
+      distributor?: BrandManufacturerInfo
+    }
+    return {
+      id: sanitizeSlug(brand.id),
+      name: brand.name,
+      logo: brand.logo,
+      popular: Boolean(brand.popular),
+      isDistributor: Boolean(brand.isDistributor),
+      allowLogo: brand.allowLogo !== false,
+      description: resolveDescriptionFromStatic(brand.id, brand.description),
+      manufacturer: normalizeBrandManufacturerInfo(extendedBrand.manufacturer),
+      distributor: normalizeBrandManufacturerInfo(extendedBrand.distributor),
+    }
+  })
 
   return { brands }
 }

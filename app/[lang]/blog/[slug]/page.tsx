@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
-export default async function BlogPostPage({ params }: PageProps) {
+export default async function BlogPostPage({ params }: PageProps): Promise<React.ReactElement> {
     const { slug, lang } = await params;
     const language = resolveLanguage(lang);
     const post = await getBlogPostBySlug(slug);

@@ -20,7 +20,7 @@ const MAX_TITLE_LENGTH = 160
 const MAX_MESSAGE_LENGTH = 5000
 const MAX_LINK_LENGTH = 500
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) {

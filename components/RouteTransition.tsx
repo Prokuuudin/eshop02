@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { useUnprefixedPathname } from '@/lib/i18n-context'
 
-export default function RouteTransition({ children }: { children: ReactNode }) {
+export default function RouteTransition({ children }: { children: ReactNode }): React.ReactElement {
   const pathname = usePathname()
   const unprefixedPathname = useUnprefixedPathname()
   const isAdminPage = unprefixedPathname.startsWith('/admin')

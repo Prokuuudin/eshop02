@@ -9,7 +9,7 @@ type BulkPricingProps = {
   product: Product
 }
 
-export default function BulkPricing({ product }: BulkPricingProps) {
+export default function BulkPricing({ product }: BulkPricingProps): React.ReactElement | null {
   const { language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const formatPrice = (value: number): string => formatEuro(value, locale)

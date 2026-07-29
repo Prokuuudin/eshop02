@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useReturnsStore, mapServerReturn, type ReturnStatus, type ReturnReason, type ReturnItem, RETURN_REASON_LABELS } from '@/lib/returns-store'
-import { useOrders } from '@/lib/orders-store'
+import { useOrders, type Order } from '@/lib/orders-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,9 +35,9 @@ function generateReturnId() {
   return `RET-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
 }
 
-export default function AdminReturnsPage() {
+export default function AdminReturnsPage(): React.ReactElement {
   const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore()
-  const { orders, getOrder } = useOrders()
+  const { orders } = useOrders()
 
   useEffect(() => {
     fetch('/api/returns?take=200')
@@ -60,7 +61,7 @@ export default function AdminReturnsPage() {
   // Create form state
   const [showCreate, setShowCreate] = useState(false)
   const [formOrderId, setFormOrderId] = useState('')
-  const [foundOrder, setFoundOrder] = useState<ReturnType<typeof getOrder>>(undefined)
+  const [foundOrder, setFoundOrder] = useState<Order | undefined>(undefined)
   const [formReason, setFormReason] = useState<ReturnReason>('defective')
   const [formComment, setFormComment] = useState('')
   const [formRefund, setFormRefund] = useState('')
@@ -300,7 +301,7 @@ export default function AdminReturnsPage() {
               <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700 bg-card">
                 {formItems.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3 px-3 py-2.5">
-                    {item.image && <img src={item.image} alt={item.title} className="w-8 h-8 object-cover rounded shrink-0" />}
+                    {item.image && <Image unoptimized src={item.image} alt={item.title} width={32} height={32} className="w-8 h-8 object-cover rounded shrink-0" />}
                     <p className="flex-1 min-w-0 text-sm text-foreground truncate">{item.title}</p>
                     <p className="text-xs text-muted-foreground shrink-0">{formatEuro(item.price, locale)}</p>
                     <input
@@ -490,7 +491,7 @@ export default function AdminReturnsPage() {
                         {ret.items.map((item, idx) => (
                           <div key={idx} className="flex items-center gap-3 px-3 py-2.5">
                             {item.image && (
-                              <img src={item.image} alt={item.title} className="w-10 h-10 object-cover rounded-md shrink-0" />
+                              <Image unoptimized src={item.image} alt={item.title} width={40} height={40} className="w-10 h-10 object-cover rounded-md shrink-0" />
                             )}
                             <p className="flex-1 min-w-0 text-sm text-foreground truncate">{item.title}</p>
                             <div className="text-right shrink-0">

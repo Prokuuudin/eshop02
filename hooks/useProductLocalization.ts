@@ -1,7 +1,15 @@
 import { useTranslation } from '@/lib/use-translation';
 import { Product } from '@/data/products';
 
-export function useProductLocalization(product: Product) {
+type ProductLocalization = Pick<ReturnType<typeof useTranslation>, 't' | 'language'> & {
+  localizedTitle: string;
+  productDescription: string;
+  productApplication: string;
+  productWarnings: string;
+  productFeatures: string[];
+};
+
+export function useProductLocalization(product: Product): ProductLocalization {
   const { t, language } = useTranslation();
   const productBaseKey = `products.${product.id}`;
 

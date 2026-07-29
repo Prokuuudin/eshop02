@@ -14,7 +14,7 @@ type InvoiceViewerProps = {
   onRecordPayment?: (invoiceId: string, payment: Omit<PaymentRecord, 'id' | 'date'>) => void
 }
 
-export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: InvoiceViewerProps) {
+export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: InvoiceViewerProps): React.ReactElement {
   const { t, language } = useTranslation()
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')

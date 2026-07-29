@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 import { useOrderTemplatesStore, OrderTemplate } from '@/lib/order-templates-store';
 import { useCart } from '@/lib/cart-store';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { useToast } from '@/lib/toast-context';
 import { formatEuro } from '@/lib/utils';
@@ -105,7 +105,6 @@ function TemplateCard({
                                         if (e.key === 'Escape') cancelEdit();
                                     }}
                                     className="h-8 text-sm"
-                                    autoFocus
                                     maxLength={60}
                                 />
                                 <Tooltip>
@@ -133,13 +132,14 @@ function TemplateCard({
                                 </Tooltip>
                             </div>
                         ) : (
-                            <p
-                                className="text-sm font-semibold text-foreground truncate cursor-pointer hover:text-primary dark:hover:text-primary/80 transition-colors"
+                            <button
+                                type="button"
+                                className="block w-full truncate text-left text-sm font-semibold text-foreground hover:text-primary dark:hover:text-primary/80 transition-colors"
                                 title={t('templates.clickToRename')}
                                 onClick={startEdit}
                             >
                                 {tpl.name}
-                            </p>
+                            </button>
                         )}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{date}</p>
                     </div>
@@ -227,20 +227,19 @@ function TemplateCard({
 
 // ── Страница ─────────────────────────────────────────────────────────────────
 
-export default function AccountTemplatesPage() {
+export default function AccountTemplatesPage(): React.ReactElement | null {
     const { t } = useLocaleHelpers();
     const router = useRouter();
     const { showToast } = useToast();
     const allTemplates = useOrderTemplatesStore((s) => s.templates);
     const { rename, delete: del } = useOrderTemplatesStore();
     const { addItem } = useCart();
-    const [userId, setUserId] = useState<string | null>(null);
+    const userId = useAuthStore((state) => state.user?.id ?? null);
+    const isHydrated = useAuthStore((state) => state.isHydrated);
 
     useEffect(() => {
-        const u = getCurrentUser();
-        if (!u) { router.replace('/auth/login'); return; }
-        setUserId(u.id);
-    }, [router]);
+        if (isHydrated && !userId) router.replace('/auth/login');
+    }, [isHydrated, router, userId]);
 
     const templates = useMemo(
         () => (userId ? allTemplates.filter((tp) => tp.userId === userId) : []),

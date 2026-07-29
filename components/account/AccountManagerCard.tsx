@@ -5,7 +5,7 @@ interface AccountManagerCardProps {
     phone: string;
     email: string;
     t: (key: string) => string;
-    tl: (...args: any[]) => string;
+    tl: (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => string;
 }
 
 const AccountManagerCard: React.FC<AccountManagerCardProps> = ({ name, phone, email, tl }) => (

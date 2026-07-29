@@ -5,7 +5,7 @@ import { saveSiteContentOverridesToStore, type SiteContentOverrides } from '@/li
 
 export const runtime = 'nodejs'
 
-export async function PUT(request: NextRequest) {
+export async function PUT(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

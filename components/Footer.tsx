@@ -8,7 +8,7 @@ import { resolveLocaleText } from '@/lib/locale-text'
 
 type FooterPromo = { title: string; link: string }
 
-export default function Footer() {
+export default function Footer(): React.ReactElement {
   const { t, language } = useTranslation()
   const [promo, setPromo] = React.useState<FooterPromo | null>(null)
 

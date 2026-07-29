@@ -14,7 +14,7 @@ type BlogCardProps = {
     post: BlogPost;
 };
 
-export default function BlogCard({ post }: BlogCardProps) {
+export default function BlogCard({ post }: BlogCardProps): React.ReactElement {
     const { t, language } = useTranslation();
     const { resolveImageSrc } = useSiteContent();
     const locale = getLocaleFromLanguage(language);

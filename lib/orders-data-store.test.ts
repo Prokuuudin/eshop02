@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const { queryRawMock, transactionMock } = vi.hoisted(() => ({
+  queryRawMock: vi.fn(),
+  transactionMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    $queryRaw: vi.fn(),
-    $transaction: vi.fn(),
+    $queryRaw: queryRawMock,
+    $transaction: transactionMock,
     order: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
 }))
 
-import { prisma } from '@/lib/prisma'
 import { canAccessOrder, createServerOrder, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
@@ -53,9 +57,9 @@ beforeEach(() => {
 
 describe('createServerOrder — server-side id generation', () => {
   it('assigns max existing numeric id + 1', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     const created = await createServerOrder(ORDER)
 
@@ -66,9 +70,9 @@ describe('createServerOrder — server-side id generation', () => {
   })
 
   it('starts at 1001 when there are no numeric ids yet', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: null }])
+    queryRawMock.mockResolvedValue([{ max: null }])
     const tx = makeTx()
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     const created = await createServerOrder(ORDER)
 
@@ -76,46 +80,46 @@ describe('createServerOrder — server-side id generation', () => {
   })
 
   it('retries with a fresh id when a concurrent order takes the same id', async () => {
-    vi.mocked(prisma.$queryRaw as any)
+    queryRawMock
       .mockResolvedValueOnce([{ max: 1042n }])
       .mockResolvedValueOnce([{ max: 1043n }])
 
     const tx = makeTx()
-    vi.mocked(prisma.$transaction as any)
+    transactionMock
       .mockRejectedValueOnce({ code: 'P2002' })
-      .mockImplementationOnce(async (fn: any) => fn(tx))
+      .mockImplementationOnce(async (fn) => fn(tx))
 
     const created = await createServerOrder(ORDER)
 
     expect(created.id).toBe('1044')
-    expect(prisma.$transaction).toHaveBeenCalledTimes(2)
+    expect(transactionMock).toHaveBeenCalledTimes(2)
   })
 
   it('rethrows non-conflict errors without retrying', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1n }])
-    vi.mocked(prisma.$transaction as any).mockRejectedValue(new Error('db down'))
+    queryRawMock.mockResolvedValue([{ max: 1n }])
+    transactionMock.mockRejectedValue(new Error('db down'))
 
     await expect(createServerOrder(ORDER)).rejects.toThrow('db down')
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+    expect(transactionMock).toHaveBeenCalledTimes(1)
   })
 
   it('rejects the whole order when an item has insufficient stock, instead of silently creating it', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()
     // updateMany's where clause (stock >= quantity) matched 0 rows — out of stock/missing product.
     tx.product.updateMany.mockResolvedValue({ count: 0 })
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
     await expect(createServerOrder(ORDER)).rejects.toMatchObject({ items: ['p1'] })
   })
 
   it('does not create a discounted order when the atomic bonus debit loses a race', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()
     tx.user.findUnique.mockResolvedValue({ bonusPoints: 500 })
     tx.user.updateMany.mockResolvedValue({ count: 0 })
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
     const order = { ...ORDER, userId: 'user-1' }
 
     await expect(createServerOrder(order, async (_tx, balance) => ({
@@ -132,10 +136,10 @@ describe('createServerOrder — server-side id generation', () => {
   })
 
   it('rolls back a discounted order when another checkout claims the final promo use', async () => {
-    vi.mocked(prisma.$queryRaw as any).mockResolvedValue([{ max: 1042n }])
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()
     tx.promoCode.updateMany.mockResolvedValue({ count: 0 })
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
     const order = { ...ORDER, promoCode: 'last-one', discount: 10, total: 45 }
 
     await expect(createServerOrder(order)).rejects.toThrow(PromoCodeUsageLimitError)

@@ -65,9 +65,18 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                             onLoad={zoom.onImageLoad}
                         />
                     )}
-                    {zoom.mounted && <ProductZoomLens zoom={zoom} />}
+                    {zoom.mounted && <ProductZoomLens lensRef={zoom.lensRef} visible={zoom.visible} />}
                 </div>
-                {zoom.mounted && <ProductZoomPane zoom={zoom} />}
+                {zoom.mounted && (
+                    <ProductZoomPane
+                        paneRef={zoom.paneRef}
+                        paneImgRef={zoom.paneImgRef}
+                        paneSrc={zoom.paneSrc}
+                        effectivePaneMode={zoom.effectivePaneMode}
+                        visible={zoom.visible}
+                        onPaneImgError={zoom.onPaneImgError}
+                    />
+                )}
                 <ProductImageLightbox zoom={zoom} title={title} />
             </div>
             {images.length > 1 && (
@@ -136,7 +145,8 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                                     aria-label={`Показать видео ${idx + 1}`}
                                 >
                                     {video.poster ? (
-                                        <img
+                                        <Image
+                                            unoptimized
                                             src={video.poster}
                                             alt={`Видео превью ${idx + 1}`}
                                             width={80}

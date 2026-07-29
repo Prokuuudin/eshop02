@@ -21,16 +21,16 @@ const ProductManufacturerFields: React.FC<ProductManufacturerFieldsProps> = ({ l
             </p>
             <div className="add-product__fields-grid">
                 <div>
-                    <label className="block text-sm font-medium mb-1">Производитель — название</label>
-                    <Input placeholder="Название производителя" {...register('manufacturerName')} />
+                    <label htmlFor="manufacturer-name" className="block text-sm font-medium mb-1">Производитель — название</label>
+                    <Input id="manufacturer-name" placeholder="Название производителя" {...register('manufacturerName')} />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1">Производитель — адрес</label>
-                    <Input placeholder="Адрес производителя" {...register('manufacturerAddress')} />
+                    <label htmlFor="manufacturer-address" className="block text-sm font-medium mb-1">Производитель — адрес</label>
+                    <Input id="manufacturer-address" placeholder="Адрес производителя" {...register('manufacturerAddress')} />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1">Производитель — email</label>
-                    <Input placeholder="email@manufacturer.com" type="email" {...register('manufacturerEmail')} />
+                    <label htmlFor="manufacturer-email" className="block text-sm font-medium mb-1">Производитель — email</label>
+                    <Input id="manufacturer-email" placeholder="email@manufacturer.com" type="email" {...register('manufacturerEmail')} />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1">
@@ -51,8 +51,8 @@ const ProductManufacturerFields: React.FC<ProductManufacturerFieldsProps> = ({ l
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1">Дистрибьютор — email</label>
-                    <Input placeholder="email@distributor.com" type="email" {...register('distributorEmail')} />
+                    <label htmlFor="distributor-email" className="block text-sm font-medium mb-1">Дистрибьютор — email</label>
+                    <Input id="distributor-email" placeholder="email@distributor.com" type="email" {...register('distributorEmail')} />
                 </div>
             </div>
         </div>

@@ -12,7 +12,7 @@ interface OrderHistoryProps {
 
 export default function OrderHistory({
   analytics
-}: OrderHistoryProps) {
+}: OrderHistoryProps): React.ReactElement {
   const { t, language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const monthlyData = analytics.ordersByMonth

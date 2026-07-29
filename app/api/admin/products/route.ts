@@ -6,7 +6,7 @@ import type { Product } from '@/data/products'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -19,7 +19,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

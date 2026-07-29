@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -57,10 +58,36 @@ const normalizeLabels = (ru: string, en: string, lv: string, fallback: string): 
   return { ru: normalizedRu, en: normalizedEn, lv: normalizedLv }
 }
 
-export default function AdminCategoriesPage() {
+function AccessibleLabel({
+  className,
+  children
+}: {
+  className?: string
+  children: React.ReactNode
+}): React.ReactElement {
+  const id = React.useId()
+  return (
+    <label htmlFor={id} className={className}>
+      {React.Children.map(children, (child) =>
+        React.isValidElement<{ id?: string }>(child) && child.type === Input
+          ? React.cloneElement(child, { id })
+          : child
+      )}
+    </label>
+  )
+}
+
+export default function AdminCategoriesPage(): React.ReactElement {
   const { language, t } = useTranslation()
-  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
-  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
+  const l = React.useCallback(
+    (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en),
+    [language]
+  )
+  const tl = React.useCallback(
+    (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) =>
+      t(key, l(ru, en, lv), params),
+    [l, t]
+  )
 
   const [categories, setCategories] = React.useState<CategoryConfigItem[]>([])
   const [savedCategories, setSavedCategories] = React.useState<CategoryConfigItem[]>([])
@@ -97,7 +124,7 @@ export default function AdminCategoriesPage() {
     }
 
     void loadCategories()
-  }, [language])
+  }, [tl])
 
   const saveConfig = async (nextCategories: CategoryConfigItem[], nextDeletedCategories: CategoryConfigItem[], successMessage: string) => {
     setSaving(true)
@@ -376,46 +403,46 @@ export default function AdminCategoriesPage() {
           </h2>
           <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="grid gap-2 md:grid-cols-3">
-              <label className="text-xs">
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">ID (slug)</span>
                 <Input
                   value={newCategory.id}
                   placeholder={tl('admin.categories.placeholder.id', 'Например: hair-care', 'Example: hair-care', 'Piemers: hair-care')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, id: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs md:col-span-2">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs md:col-span-2">
                 <span className="mb-1 block text-muted-foreground">Image</span>
                 <Input
                   value={newCategory.image}
                   placeholder={tl('admin.categories.placeholder.image', '/categories/hair-care.jpg', '/categories/hair-care.jpg', '/categories/hair-care.jpg')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, image: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">Name RU</span>
                 <Input
                   value={newCategory.ru}
                   placeholder={tl('admin.categories.placeholder.nameRu', 'Уход за волосами', 'Hair care', 'Matu kopsana')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, ru: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">Name EN</span>
                 <Input
                   value={newCategory.en}
                   placeholder={tl('admin.categories.placeholder.nameEn', 'Hair care', 'Hair care', 'Hair care')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, en: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">Name LV</span>
                 <Input
                   value={newCategory.lv}
                   placeholder={tl('admin.categories.placeholder.nameLv', 'Matu kopsana', 'Hair care', 'Matu kopsana')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, lv: event.target.value }))}
                 />
-              </label>
+              </AccessibleLabel>
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
@@ -423,9 +450,12 @@ export default function AdminCategoriesPage() {
                 {tl('admin.categories.previewCard', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
               </p>
               <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                <img
+                <Image
                   src={newCategory.image.trim() || '/categories/new.jpg'}
                   alt={newCategoryPreviewLabel}
+                  width={400}
+                  height={144}
+                  unoptimized
                   className="h-36 w-full object-cover"
                   loading="lazy"
                   onError={(event) => {
@@ -443,46 +473,46 @@ export default function AdminCategoriesPage() {
               {tl('admin.categories.firstSubOptional', 'Первый подпункт (опционально)', 'First subcategory (optional)', 'Pirma apakskategorija (neobligata)')}
             </p>
             <div className="mt-2 grid gap-2 md:grid-cols-5">
-              <label className="text-xs">
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">Slug</span>
                 <Input
                   value={newCategory.firstSubSlug}
                   placeholder={tl('admin.categories.placeholder.firstSubSlug', 'Например: shampoo', 'Example: shampoo', 'Piemers: shampoo')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, firstSubSlug: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">Search token</span>
                 <Input
                   value={newCategory.firstSubSearch}
                   placeholder={tl('admin.categories.placeholder.firstSubSearch', 'Например: шампунь', 'Example: shampoo', 'Piemers: sampuns')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, firstSubSearch: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">RU</span>
                 <Input
                   value={newCategory.firstSubRu}
                   placeholder={tl('admin.categories.placeholder.firstSubRu', 'Шампуни', 'Shampoos', 'Sampuni')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, firstSubRu: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">EN</span>
                 <Input
                   value={newCategory.firstSubEn}
                   placeholder={tl('admin.categories.placeholder.firstSubEn', 'Shampoos', 'Shampoos', 'Shampoos')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, firstSubEn: event.target.value }))}
                 />
-              </label>
-              <label className="text-xs">
+              </AccessibleLabel>
+              <AccessibleLabel className="text-xs">
                 <span className="mb-1 block text-muted-foreground">LV</span>
                 <Input
                   value={newCategory.firstSubLv}
                   placeholder={tl('admin.categories.placeholder.firstSubLv', 'Sampuni', 'Shampoos', 'Sampuni')}
                   onChange={(event) => setNewCategory((prev) => ({ ...prev, firstSubLv: event.target.value }))}
                 />
-              </label>
+              </AccessibleLabel>
             </div>
           </div>
 
@@ -528,28 +558,28 @@ export default function AdminCategoriesPage() {
 
                 <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="grid gap-2 md:grid-cols-4">
-                    <label className="text-xs">
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">RU</span>
                       <Input
                         value={category.labels.ru}
                         onChange={(event) => updateCategoryLabels(category.id, { ru: event.target.value })}
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">EN</span>
                       <Input
                         value={category.labels.en}
                         onChange={(event) => updateCategoryLabels(category.id, { en: event.target.value })}
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">LV</span>
                       <Input
                         value={category.labels.lv}
                         onChange={(event) => updateCategoryLabels(category.id, { lv: event.target.value })}
                       />
-                    </label>
-                    <label className="text-xs md:col-span-4">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs md:col-span-4">
                       <span className="mb-1 block text-muted-foreground">Image</span>
                       <Input
                         value={category.image}
@@ -559,7 +589,7 @@ export default function AdminCategoriesPage() {
                           )
                         }
                       />
-                    </label>
+                    </AccessibleLabel>
                   </div>
 
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
@@ -567,9 +597,12 @@ export default function AdminCategoriesPage() {
                       {tl('admin.categories.previewCard', 'Превью карточки', 'Card preview', 'Kartites priekskats')}
                     </p>
                     <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                      <img
+                      <Image
                         src={category.image.trim() || '/categories/new.jpg'}
                         alt={category.labels[language] || category.id}
+                        width={400}
+                        height={144}
+                        unoptimized
                         className="h-36 w-full object-cover"
                         loading="lazy"
                         onError={(event) => {
@@ -602,28 +635,28 @@ export default function AdminCategoriesPage() {
                           </Button>
                         </div>
                         <div className="grid gap-2 md:grid-cols-4">
-                          <label className="text-xs">
+                          <AccessibleLabel className="text-xs">
                             <span className="mb-1 block text-muted-foreground">RU</span>
                             <Input
                               value={subcategory.labels.ru}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { ru: event.target.value })}
                             />
-                          </label>
-                          <label className="text-xs">
+                          </AccessibleLabel>
+                          <AccessibleLabel className="text-xs">
                             <span className="mb-1 block text-muted-foreground">EN</span>
                             <Input
                               value={subcategory.labels.en}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { en: event.target.value })}
                             />
-                          </label>
-                          <label className="text-xs">
+                          </AccessibleLabel>
+                          <AccessibleLabel className="text-xs">
                             <span className="mb-1 block text-muted-foreground">LV</span>
                             <Input
                               value={subcategory.labels.lv}
                               onChange={(event) => updateSubcategoryLabels(category.id, subcategory.slug, { lv: event.target.value })}
                             />
-                          </label>
-                          <label className="text-xs">
+                          </AccessibleLabel>
+                          <AccessibleLabel className="text-xs">
                             <span className="mb-1 block text-muted-foreground">Search token</span>
                             <Input
                               value={subcategory.search}
@@ -641,14 +674,14 @@ export default function AdminCategoriesPage() {
                                 )
                               }
                             />
-                          </label>
+                          </AccessibleLabel>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   <div className="mt-3 grid gap-2 md:grid-cols-5">
-                    <label className="text-xs">
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">New slug</span>
                       <Input
                         value={newSubByCategory[category.id]?.slug ?? ''}
@@ -665,8 +698,8 @@ export default function AdminCategoriesPage() {
                           }))
                         }
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">Search token</span>
                       <Input
                         value={newSubByCategory[category.id]?.search ?? ''}
@@ -683,8 +716,8 @@ export default function AdminCategoriesPage() {
                           }))
                         }
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">RU</span>
                       <Input
                         value={newSubByCategory[category.id]?.ru ?? ''}
@@ -701,8 +734,8 @@ export default function AdminCategoriesPage() {
                           }))
                         }
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">EN</span>
                       <Input
                         value={newSubByCategory[category.id]?.en ?? ''}
@@ -719,8 +752,8 @@ export default function AdminCategoriesPage() {
                           }))
                         }
                       />
-                    </label>
-                    <label className="text-xs">
+                    </AccessibleLabel>
+                    <AccessibleLabel className="text-xs">
                       <span className="mb-1 block text-muted-foreground">LV</span>
                       <Input
                         value={newSubByCategory[category.id]?.lv ?? ''}
@@ -737,7 +770,7 @@ export default function AdminCategoriesPage() {
                           }))
                         }
                       />
-                    </label>
+                    </AccessibleLabel>
                   </div>
 
                   <div className="mt-3 flex justify-end">

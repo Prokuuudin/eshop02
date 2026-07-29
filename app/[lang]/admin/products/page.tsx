@@ -12,7 +12,7 @@ import NewProductForm from '@/components/admin/products/NewProductForm';
 import { logAdminAction } from '@/lib/admin-log-store';
 import type { Product } from '@/data/products';
 
-export default function AdminProductsPage() {
+export default function AdminProductsPage(): React.ReactElement {
     const router = useRouter();
     const admin = useProductsAdmin();
     const { language } = useI18n();

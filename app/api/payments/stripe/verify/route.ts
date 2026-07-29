@@ -26,7 +26,7 @@ function limitedResponse(resetAt: number) {
   })
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY
     if (!secretKey) {

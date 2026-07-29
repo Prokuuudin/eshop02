@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { FadeTransition } from "./FadeTransition";
 import { useTranslation } from '@/lib/use-translation'
 
-export default function PageLoader({ show }: { show: boolean }) {
+export default function PageLoader({ show }: { show: boolean }): React.ReactElement {
   const { t } = useTranslation()
   return (
     <Dialog open={show}>

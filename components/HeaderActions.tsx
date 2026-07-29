@@ -19,7 +19,7 @@ export default function HeaderActions({
   onlyLangSwitcher?: boolean
   hideLangSwitcher?: boolean
   hideUserMenu?: boolean
-}) {
+}): React.ReactElement {
   const { items } = useCart();
   const wishlistItems = useWishlist((state) => state.items)
   const { t } = useTranslation();

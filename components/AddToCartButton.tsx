@@ -23,7 +23,7 @@ type Props = {
   onQuantityChange?: (quantity: number) => void
 }
 
-export default function AddToCartButton({ product, selectedVariants, onQuantityChange }: Props) {
+export default function AddToCartButton({ product, selectedVariants, onQuantityChange }: Props): React.ReactElement {
   const { t } = useTranslation();
   const { showToast } = useToast()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -71,7 +71,7 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
   }, [activeTier?.quantity])
 
   useEffect(() => {
-    setQuantity((prev) => Math.max(prev, minOrderQuantity))
+    queueMicrotask(() => setQuantity((prev) => Math.max(prev, minOrderQuantity)))
   }, [minOrderQuantity])
 
   useEffect(() => {

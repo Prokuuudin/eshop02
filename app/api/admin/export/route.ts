@@ -30,7 +30,7 @@ function escapeCell(value: unknown): string {
   return str
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

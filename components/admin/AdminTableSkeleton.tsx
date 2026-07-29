@@ -3,7 +3,7 @@ interface AdminTableSkeletonProps {
   cols?: number;
 }
 
-export default function AdminTableSkeleton({ rows = 5, cols = 4 }: AdminTableSkeletonProps) {
+export default function AdminTableSkeleton({ rows = 5, cols = 4 }: AdminTableSkeletonProps): React.ReactElement {
   return (
     <div className="admin-table-skeleton animate-pulse rounded-xl border border-border bg-card overflow-hidden">
       {/* Header row */}

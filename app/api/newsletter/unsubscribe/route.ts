@@ -24,7 +24,7 @@ function confirmationPage(ok: boolean): NextResponse {
 }
 
 // Human clicks the link in a marketing email.
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   const { email, token } = extract(req)
   if (!EMAIL_RE.test(email) || !token || !verifyMarketingUnsubToken(email, token)) {
     return confirmationPage(false)
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 }
 
 // RFC 8058 one-click: mail clients POST here from the native "Unsubscribe" control.
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   let body: Record<string, unknown> = {}
   try {
     const ct = req.headers.get('content-type') ?? ''

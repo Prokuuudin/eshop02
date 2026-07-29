@@ -6,7 +6,7 @@ import { COMPANY } from '@/data/company';
  * Компонент PaymentInfo объединяет информацию о способах и процессе оплаты.
  * Использует БЭМ-нейминг и utility-классы для адаптивной и чистой верстки.
  */
-export const PaymentInfo = () => {
+export const PaymentInfo = (): React.ReactElement => {
     const { t } = useTranslation();
     return (
         <section className="payment-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">

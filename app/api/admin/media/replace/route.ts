@@ -9,7 +9,7 @@ const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
 ])
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

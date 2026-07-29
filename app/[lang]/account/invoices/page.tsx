@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BadgeAlert, Building2, CircleDollarSign, CreditCard, FileSpreadsheet, ReceiptText, RotateCcw, ShieldHalf, Wallet } from 'lucide-react'
 import { useInvoicesStore, hydrateInvoicesFromServer } from '@/lib/invoices-store'
 import { useCompanyStore } from '@/lib/company-store'
@@ -14,9 +14,9 @@ import InvoiceViewer from '@/components/InvoiceViewer'
 import AccountPageHero from '@/components/account/AccountPageHero'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import type { Invoice } from '@/lib/invoices-store'
+import type { Invoice, PaymentRecord } from '@/lib/invoices-store'
 
-export default function InvoicesPage() {
+export default function InvoicesPage(): React.ReactElement {
   const { t, language } = useTranslation()
   const currentUser = getCurrentUser()
   const { getInvoicesByCompany, recordPayment } = useInvoicesStore()
@@ -43,7 +43,7 @@ export default function InvoicesPage() {
   }, [companyId])
 
   // Calculate statistics before branching so hook order stays stable.
-  const stats = useMemo(() => {
+  const stats = (() => {
     const totalIssued = invoices.filter(inv => inv.status === 'issued').length
     const totalPaid = invoices.filter(inv => inv.status === 'paid').length
     const totalOverdue = invoices.filter(inv => inv.status === 'overdue').length
@@ -59,7 +59,7 @@ export default function InvoicesPage() {
       paidAmount,
       remainingAmount
     }
-  }, [invoices])
+  })()
 
   const invoiceSummaryCards = [
     {
@@ -157,7 +157,10 @@ export default function InvoicesPage() {
     )
   }
 
-  const handleRecordPayment = (invoiceId: string, payment: any) => {
+  const handleRecordPayment = (
+    invoiceId: string,
+    payment: Omit<PaymentRecord, 'id' | 'date'>
+  ): void => {
     // Real payment recording is admin-only on the server; this path only drives the
     // local demo showcase, so keep it local-only and never round-trip to the API.
     recordPayment(invoiceId, payment, { localOnly: true })

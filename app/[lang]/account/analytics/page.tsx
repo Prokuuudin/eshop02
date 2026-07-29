@@ -12,7 +12,7 @@ import TopProducts from '@/components/TopProducts'
 import TopCategories from '@/components/TopCategories'
 import OrderHistory from '@/components/OrderHistory'
 
-export default function AnalyticsPage() {
+export default function AnalyticsPage(): React.ReactElement {
   const { language, t } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const currentUser = getCurrentUser()

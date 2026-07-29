@@ -55,7 +55,7 @@ function validateRow(row: ImportRow): string | null {
   return null
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

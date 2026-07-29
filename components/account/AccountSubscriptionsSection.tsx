@@ -1,6 +1,7 @@
 ﻿'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { RefreshCw, Pause, Play, X, Package, ChevronDown, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
     SubscriptionInterval,
     SUBSCRIPTION_DISCOUNTS,
 } from '@/lib/subscription-store';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro } from '@/lib/utils';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
@@ -55,9 +56,12 @@ function SubscriptionCard({
         <div className="account-subscriptions__card rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
                 {sub.productImage ? (
-                    <img
+                    <Image
                         src={sub.productImage}
                         alt={sub.productTitle}
+                        width={56}
+                        height={56}
+                        unoptimized
                         className="w-14 h-14 rounded-md object-cover shrink-0 border border-gray-100 dark:border-gray-800"
                     />
                 ) : (
@@ -165,12 +169,8 @@ export const AccountSubscriptionsSection: React.FC = () => {
     const { t } = useTranslation();
     const allSubscriptions = useSubscriptionStore((state) => state.subscriptions);
     const { pause, resume, cancel, changeInterval } = useSubscriptionStore();
-    const [userId, setUserId] = useState<string | null>(null);
+    const userId = useAuthStore((state) => state.user?.id ?? null);
     const [showCancelled, setShowCancelled] = useState(false);
-
-    useEffect(() => {
-        setUserId(getCurrentUser()?.id ?? null);
-    }, []);
 
     const subs = useMemo(
         () => (userId ? allSubscriptions.filter((s) => s.userId === userId) : []),

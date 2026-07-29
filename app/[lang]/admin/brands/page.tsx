@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronDown, Plus, Search } from 'lucide-react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
@@ -50,7 +51,7 @@ const normalizeDescription = (ru: string, en: string, lv: string): LocalizedBran
   return { ru: normalizedRu, en: normalizedEn, lv: normalizedLv }
 }
 
-export default function AdminBrandsPage() {
+export default function AdminBrandsPage(): React.ReactElement {
   const { t, language } = useTranslation()
   const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
   const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
@@ -79,14 +80,21 @@ export default function AdminBrandsPage() {
         setSavedBrands(nextBrands)
         setError('')
       } catch {
-        setError(tl('admin.brands.msg.loadFailed', 'Не удалось загрузить бренды', 'Failed to load brands', 'Neizdevas ieladet zimolus'))
+        setError(t(
+          'admin.brands.msg.loadFailed',
+          language === 'ru'
+            ? 'Не удалось загрузить бренды'
+            : language === 'lv'
+              ? 'Neizdevas ieladet zimolus'
+              : 'Failed to load brands'
+        ))
       } finally {
         setLoading(false)
       }
     }
 
-    void loadBrands()
-  }, [language])
+    queueMicrotask(() => void loadBrands())
+  }, [language, t])
 
   const saveBrands = async (nextBrands: BrandConfigItem[], successMessage: string) => {
     setSaving(true)
@@ -371,9 +379,12 @@ export default function AdminBrandsPage() {
               </p>
               <div className="rounded border border-gray-200 p-3 dark:border-gray-700">
                 <div className="relative mx-auto h-12 w-24">
-                  <img
+                  <Image
+                    unoptimized
                     src={newBrand.logo.trim() || '/brands/new-brand.svg'}
                     alt={newBrandTitle}
+                    width={96}
+                    height={48}
                     className="h-full w-full object-contain"
                     onError={(event) => {
                       event.currentTarget.onerror = null
@@ -499,9 +510,12 @@ export default function AdminBrandsPage() {
                     </p>
                     <div className="rounded border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
                       <div className="relative mx-auto h-12 w-24">
-                        <img
+                        <Image
+                          unoptimized
                           src={brand.logo.trim() || '/brands/new-brand.svg'}
                           alt={brand.name}
+                          width={96}
+                          height={48}
                           className="h-full w-full object-contain"
                           onError={(event) => {
                             event.currentTarget.onerror = null

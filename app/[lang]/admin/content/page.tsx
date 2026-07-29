@@ -33,14 +33,12 @@ function ChangedBadge() {
 
 function TextEntryRow({
   entry,
-  language,
   overrideValue,
   baseValue,
   onSave,
   onReset,
 }: {
   entry: Extract<ContentEntry, { type: 'text' }>
-  language: Language
   overrideValue: string | undefined
   baseValue: string | undefined
   onSave: (value: string) => Promise<void>
@@ -55,8 +53,7 @@ function TextEntryRow({
   // remaining path: a global «Сбросить все» clears the override without remounting the row,
   // and the stale local value would otherwise re-enable «Сохранить» with the cleared text.
   React.useEffect(() => {
-    setValue(currentValue)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    queueMicrotask(() => setValue(currentValue))
   }, [currentValue])
 
   const save = async () => {
@@ -156,7 +153,7 @@ function ImageEntryRow({
   )
 }
 
-export default function AdminContentPage() {
+export default function AdminContentPage(): React.ReactElement {
   const { overrides, resolveImageSrc, setText, setImage, removeText, removeImage, clearAll } = useSiteContent()
 
   const [language, setLanguage] = React.useState<Language>('ru')
@@ -179,9 +176,6 @@ export default function AdminContentPage() {
   const currentText = existingOverride ?? baseTranslation
   const nextText = textValue.trim() ? textValue : baseTranslation
 
-  React.useEffect(() => { setSourcePreviewFailed(false) }, [imageFrom])
-  React.useEffect(() => { setTargetPreviewFailed(false) }, [imageTo])
-
   const run = async (action: () => Promise<void>, ok: string, fail: string) => {
     setSaving(true)
     try {
@@ -201,6 +195,7 @@ export default function AdminContentPage() {
     try {
       const path = await uploadImageFile(file)
       setImageTo(path)
+      setTargetPreviewFailed(false)
       setMessage('Файл загружен. Новый путь подставлен в поле "Новый src".')
     } catch {
       setMessage('Не удалось загрузить файл.')
@@ -285,7 +280,6 @@ export default function AdminContentPage() {
                         <TextEntryRow
                           key={`${language}-${entry.key}`}
                           entry={entry}
-                          language={language}
                           overrideValue={overrides.text[language]?.[entry.key]}
                           baseValue={translations[language][entry.key]}
                           onSave={(value) =>
@@ -385,8 +379,22 @@ export default function AdminContentPage() {
                   Заменяйте изображения, подменяя исходный src на новый путь или URL.
                 </p>
 
-                <Input value={imageFrom} onChange={(e) => setImageFrom(e.target.value)} placeholder="Исходный src, например /icons/originals.svg" />
-                <Input value={imageTo} onChange={(e) => setImageTo(e.target.value)} placeholder="Новый src, например /api/media/new-icon.png" />
+                <Input
+                  value={imageFrom}
+                  onChange={(e) => {
+                    setImageFrom(e.target.value)
+                    setSourcePreviewFailed(false)
+                  }}
+                  placeholder="Исходный src, например /icons/originals.svg"
+                />
+                <Input
+                  value={imageTo}
+                  onChange={(e) => {
+                    setImageTo(e.target.value)
+                    setTargetPreviewFailed(false)
+                  }}
+                  placeholder="Новый src, например /api/media/new-icon.png"
+                />
 
                 {(imageFrom.trim() || imageTo.trim()) && (
                   <div className="space-y-2 rounded-md border border-border p-3">

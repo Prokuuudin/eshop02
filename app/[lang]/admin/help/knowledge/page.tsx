@@ -234,7 +234,7 @@ const articles: KnowledgeArticle[] = [
 
 const STORAGE_KEY = 'admin-knowledge-view'
 
-export default function AdminKnowledgePage() {
+export default function AdminKnowledgePage(): React.ReactElement {
   const [view, setView] = useState<'grid' | 'list'>(() => {
     if (typeof window === 'undefined') return 'grid'
     return (localStorage.getItem(STORAGE_KEY) as 'grid' | 'list') ?? 'grid'

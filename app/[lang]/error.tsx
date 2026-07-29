@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error; reset: () => void }): React.ReactElement {
     const { t } = useTranslation();
     useEffect(() => {
         // Log the error to an error reporting service

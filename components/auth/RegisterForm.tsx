@@ -12,7 +12,7 @@ type Props = {
     onClose?: () => void;
 };
 
-export default function RegisterForm({ onClose }: Props) {
+export default function RegisterForm({ onClose }: Props): React.ReactElement {
     const { t } = useTranslation();
     const router = useRouter();
     const [name, setName] = useState('');

@@ -1,6 +1,6 @@
 import ProductCardSkeleton from '@/components/ProductCardSkeleton'
 
-export default function CatalogLoading() {
+export default function CatalogLoading(): React.ReactElement {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
       <div className="mb-6 h-8 w-40 animate-pulse rounded bg-muted" />

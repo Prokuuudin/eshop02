@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MapPin, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AccountAddressCard from '@/components/account/AccountAddressCard';
 import { AddressFormDialog } from '@/components/account/AddressFormDialog';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import type { SavedAddress } from '@/lib/saved-addresses-store';
 
 function buildCheckoutUrl(a: SavedAddress): string {
@@ -24,17 +24,16 @@ import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-
 import { useAccountAddresses } from '@/hooks/useAccountAddresses';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 
-export default function AccountAddressesPage() {
+export default function AccountAddressesPage(): React.ReactElement | null {
     const { t } = useLocaleHelpers();
     const router = useRouter();
-    const [user, setUser] = useState<any>(null);
+    const user = useAuthStore((state) => state.user);
+    const isHydrated = useAuthStore((state) => state.isHydrated);
     const { getByEmail, upsertForEmail, deleteForEmail, replaceForEmail } = useSavedAddresses();
 
     useEffect(() => {
-        const u = getCurrentUser();
-        if (!u) { router.replace('/auth/login'); return; }
-        setUser(u);
-    }, [router]);
+        if (isHydrated && !user) router.replace('/auth/login');
+    }, [isHydrated, router, user]);
 
     useEffect(() => {
         if (user?.email) void hydrateSavedAddressesFromServer(user.email, replaceForEmail);

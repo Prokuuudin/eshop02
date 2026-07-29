@@ -15,7 +15,7 @@ type Props = {
     onClose?: () => void;
 };
 
-export default function RegisterNoCardForm({ onClose }: Props) {
+export default function RegisterNoCardForm({ onClose }: Props): React.ReactElement {
     const { t, language } = useTranslation();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -29,7 +29,13 @@ export default function RegisterNoCardForm({ onClose }: Props) {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
-    const turnstile = useTurnstile();
+    const {
+        enabled: turnstileEnabled,
+        token: turnstileToken,
+        setContainer: setTurnstileContainer,
+        render: renderTurnstile,
+        reset: resetTurnstile,
+    } = useTurnstile();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +59,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 certificateName: certificate.name,
                 message: message.trim() || undefined,
                 language: language as 'ru' | 'en' | 'lv',
-                turnstileToken: turnstile.token,
+                turnstileToken,
                 privacyAcknowledged: true,
                 marketingConsent,
             });
@@ -70,7 +76,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             setCertificate(null);
             setFileKey((k) => k + 1);
             setMessage('');
-            turnstile.reset();
+            resetTurnstile();
         } catch (err) {
             setError(
                 (err as Error).message === 'file_too_large'
@@ -105,8 +111,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
             onSubmit={handleSubmit}
             className="register-form space-y-3 bg-card p-3 rounded-lg"
         >
-            {turnstile.enabled && (
-                <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
+            {turnstileEnabled && (
+                <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
             )}
             {error && (
                 <p className="register-form__error text-red-600 dark:text-red-400 mb-2">{error}</p>
@@ -180,8 +186,8 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                         <div className="register-form__file-selected flex items-center gap-2 text-primary dark:text-primary">
                             <Upload className="w-4 h-4 shrink-0" />
                             <span className="register-form__file-name truncate max-w-[220px]">{certificate.name}</span>
-                            <span
-                                role="button"
+                            <button
+                                type="button"
                                 aria-label="Удалить файл"
                                 className="register-form__file-clear ml-1 rounded-full p-0.5 hover:bg-primary/20 dark:hover:bg-primary/30"
                                 onClick={() => {
@@ -190,7 +196,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                                 }}
                             >
                                 <X className="w-3.5 h-3.5" />
-                            </span>
+                            </button>
                         </div>
                     ) : (
                         <>
@@ -231,7 +237,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                     placeholder={t('auth.messagePlaceholder')}
                 />
             </div>
-            {turnstile.enabled && <div ref={turnstile.containerRef} className="mb-2" />}
+            {turnstileEnabled && <div ref={setTurnstileContainer} className="mb-2" />}
             <p className="text-xs text-muted-foreground">
                 {t('auth.privacyAcknowledgement', 'Отправляя форму, вы подтверждаете, что ознакомились с')}{' '}
                 <Link href="/privacy" className="underline text-foreground">
@@ -249,7 +255,7 @@ export default function RegisterNoCardForm({ onClose }: Props) {
                 <span>{t('auth.marketingConsent', 'Я хочу получать новости и специальные предложения по электронной почте (необязательно).')}</span>
             </label>
             <div className="register-form__actions flex gap-2">
-                <Button type="submit" className="register-form__submit flex-1" disabled={submitting || (turnstile.enabled && !turnstile.token)}>
+                <Button type="submit" className="register-form__submit flex-1" disabled={submitting || (turnstileEnabled && !turnstileToken)}>
                     {submitting
                         ? t('common.sending', 'Отправка...')
                         : t('auth.sendRequest', 'Отправить заявку')}

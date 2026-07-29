@@ -179,7 +179,7 @@ function NotificationItem({
 
 // ── Main section ───────────────────────────────────────────────────────────────
 
-export default function AccountNotificationsSection() {
+export default function AccountNotificationsSection(): React.ReactElement {
     const { t, language } = useTranslation();
     const {
         notifications,
@@ -229,7 +229,15 @@ export default function AccountNotificationsSection() {
     // Clear stale selections when notifications change
     React.useEffect(() => {
         const ids = new Set(notifications.map((n) => n.id));
-        setSelectedIds((prev) => prev.filter((id) => ids.has(id)));
+        let cancelled = false;
+        queueMicrotask(() => {
+            if (!cancelled) {
+                setSelectedIds((prev) => prev.filter((id) => ids.has(id)));
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [notifications]);
 
     React.useEffect(() => {

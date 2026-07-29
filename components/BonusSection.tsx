@@ -33,7 +33,7 @@ const STEPS = [
     },
 ] as const;
 
-export default function BonusSection() {
+export default function BonusSection(): React.ReactElement | null {
     const { t } = useTranslation();
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();

@@ -5,7 +5,7 @@ import { getDeletedProductsArchive, restoreDeletedProduct } from '@/lib/product-
 
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

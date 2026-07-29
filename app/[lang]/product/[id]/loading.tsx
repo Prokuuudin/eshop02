@@ -1,4 +1,4 @@
-export default function ProductLoading() {
+export default function ProductLoading(): React.ReactElement {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">

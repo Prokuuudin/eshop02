@@ -6,7 +6,7 @@ import { redactProductPrices } from '@/lib/product-price-visibility'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const canSeePrices = Boolean(await getServerUser())
     const { searchParams } = new URL(req.url)

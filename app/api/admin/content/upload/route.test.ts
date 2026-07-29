@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
+const { mediaCreateMock, requireAdminMock } = vi.hoisted(() => ({
+  mediaCreateMock: vi.fn(),
+  requireAdminMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    mediaAsset: { create: vi.fn() },
+    mediaAsset: { create: mediaCreateMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  requireAdmin: vi.fn(),
+  requireAdmin: requireAdminMock,
 }))
 
-import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
 import { POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -25,22 +28,22 @@ function makeRequest(file: File | null): NextRequest {
     body: fd,
     // undici требует duplex при теле-стриме
     duplex: 'half',
-  } as any)
+  } as NonNullable<ConstructorParameters<typeof NextRequest>[1]> & { duplex: 'half' })
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(requireAdmin as any).mockResolvedValue(ADMIN_USER)
+  requireAdminMock.mockResolvedValue(ADMIN_USER)
 })
 
 describe('POST /api/admin/content/upload', () => {
   it('rejects non-admins', async () => {
-    vi.mocked(requireAdmin as any).mockResolvedValue(
+    requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
     )
     const res = await POST(makeRequest(new File([new Uint8Array(4)], 'a.png', { type: 'image/png' })))
     expect(res.status).toBe(403)
-    expect(prisma.mediaAsset.create).not.toHaveBeenCalled()
+    expect(mediaCreateMock).not.toHaveBeenCalled()
   })
 
   it('requires a file', async () => {
@@ -64,7 +67,7 @@ describe('POST /api/admin/content/upload', () => {
   })
 
   it('stores the file in the DB and returns /api/media path', async () => {
-    vi.mocked(prisma.mediaAsset.create as any).mockResolvedValue({})
+    mediaCreateMock.mockResolvedValue({})
     const file = new File([new Uint8Array([1, 2, 3, 4])], 'My Photo.PNG', { type: 'image/png' })
 
     const res = await POST(makeRequest(file))
@@ -76,7 +79,9 @@ describe('POST /api/admin/content/upload', () => {
     expect(body.size).toBe(4)
     expect(body.mimeType).toBe('image/png')
 
-    const createArg = vi.mocked(prisma.mediaAsset.create as any).mock.calls[0][0]
+    const createArg = mediaCreateMock.mock.calls[0][0] as {
+      data: { name: string; mimeType: string; size: number; data: Uint8Array }
+    }
     expect(createArg.data.name).toMatch(/^\d+-my-photo\.png$/)
     expect(createArg.data.mimeType).toBe('image/png')
     expect(createArg.data.size).toBe(4)

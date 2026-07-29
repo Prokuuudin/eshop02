@@ -13,7 +13,7 @@ import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
 
-export default function AdminBonusPage() {
+export default function AdminBonusPage(): React.ReactElement {
   const { t } = useTranslation()
   const { bonusProgram, updateBonusProgram } = useAdminStore()
   const { orders } = useOrders()
@@ -31,7 +31,13 @@ export default function AdminBonusPage() {
   const [balancesOpen, setBalancesOpen] = useState(false)
 
   useEffect(() => {
-    setUsers(readUsers().filter((u) => u.platformRole !== 'admin'))
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setUsers(readUsers().filter((u) => u.platformRole !== 'admin'))
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Load the admin-authoritative config directly — the shared useAdminStore value may
@@ -160,39 +166,39 @@ export default function AdminBonusPage() {
                   </Select>
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-1" className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.earnRate')} (%)</span>
-                  <Input type="number" min={0} max={100} step={0.1} value={draft.earnRatePercent}
+                  <Input id="admin-bonus-field-1" type="number" min={0} max={100} step={0.1} value={draft.earnRatePercent}
                     onChange={(e) => setDraft((p) => ({ ...p, earnRatePercent: Number(e.target.value) }))} />
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-2" className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.maxSpend')} (%)</span>
-                  <Input type="number" min={0} max={100} value={draft.maxSpendPercent}
+                  <Input id="admin-bonus-field-2" type="number" min={0} max={100} value={draft.maxSpendPercent}
                     onChange={(e) => setDraft((p) => ({ ...p, maxSpendPercent: Number(e.target.value) }))} />
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-3" className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.minOrderForEarn')} (€)</span>
-                  <Input type="number" min={0} value={draft.minOrderForEarn}
+                  <Input id="admin-bonus-field-3" type="number" min={0} value={draft.minOrderForEarn}
                     onChange={(e) => setDraft((p) => ({ ...p, minOrderForEarn: Number(e.target.value) }))} />
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-4" className="text-sm">
                   <span className="block text-muted-foreground mb-1">Минимум баллов для списания</span>
-                  <Input type="number" min={0} value={draft.minPointsToSpend}
+                  <Input id="admin-bonus-field-4" type="number" min={0} value={draft.minPointsToSpend}
                     onChange={(e) => setDraft((p) => ({ ...p, minPointsToSpend: Number(e.target.value) }))} />
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-5" className="text-sm">
                   <span className="block text-muted-foreground mb-1">Макс. баллов за один заказ (0 = без лимита)</span>
-                  <Input type="number" min={0} value={draft.maxEarnPerOrder}
+                  <Input id="admin-bonus-field-5" type="number" min={0} value={draft.maxEarnPerOrder}
                     onChange={(e) => setDraft((p) => ({ ...p, maxEarnPerOrder: Number(e.target.value) }))} />
                 </label>
 
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-6" className="text-sm">
                   <span className="block text-muted-foreground mb-1">Срок жизни баллов (дней, 0 = бессрочно)</span>
-                  <Input type="number" min={0} max={3650} value={draft.pointsExpiryDays}
+                  <Input id="admin-bonus-field-6" type="number" min={0} max={3650} value={draft.pointsExpiryDays}
                     onChange={(e) => setDraft((p) => ({ ...p, pointsExpiryDays: Number(e.target.value) }))} />
                 </label>
               </div>
@@ -222,9 +228,9 @@ export default function AdminBonusPage() {
                 Введите произвольную сумму заказа — калькулятор покажет, сколько баллов получит клиент и сколько сможет потратить на следующую покупку, исходя из текущих настроек выше.
               </p>
               <div className="flex items-end gap-4 flex-wrap">
-                <label className="text-sm">
+                <label htmlFor="admin-bonus-field-7" className="text-sm">
                   <span className="block text-muted-foreground mb-1">Сумма заказа (€)</span>
-                  <Input
+                  <Input id="admin-bonus-field-7"
                     type="number"
                     min={0}
                     value={calcOrder}

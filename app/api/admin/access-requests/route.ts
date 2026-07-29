@@ -4,7 +4,7 @@ import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

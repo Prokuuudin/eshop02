@@ -4,18 +4,22 @@ import { NextResponse } from 'next/server'
 vi.mock('server-only', () => ({}))
 
 const cookieGet = vi.fn()
+const { sessionFindUniqueMock, userCountMock } = vi.hoisted(() => ({
+  sessionFindUniqueMock: vi.fn(),
+  userCountMock: vi.fn(),
+}))
+
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({ get: cookieGet })),
 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    session: { findUnique: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() },
-    user: { count: vi.fn() },
+    session: { findUnique: sessionFindUniqueMock, delete: vi.fn(), deleteMany: vi.fn() },
+    user: { count: userCountMock },
   },
 }))
 
 import { getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
-import { prisma } from '@/lib/prisma'
 
 function futureDate() {
   const d = new Date()
@@ -52,7 +56,7 @@ describe('requireAdmin', () => {
 
   it('returns 403 when session user is not admin', async () => {
     cookieGet.mockReturnValue({ value: 'tok' })
-    vi.mocked(prisma.session.findUnique as any).mockResolvedValue(makeSession('customer'))
+    sessionFindUniqueMock.mockResolvedValue(makeSession('customer'))
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
     expect((res as NextResponse).status).toBe(403)
@@ -60,18 +64,18 @@ describe('requireAdmin', () => {
 
   it('returns the admin user when session user is admin', async () => {
     cookieGet.mockReturnValue({ value: 'tok' })
-    vi.mocked(prisma.session.findUnique as any).mockResolvedValue(makeSession('admin'))
+    sessionFindUniqueMock.mockResolvedValue(makeSession('admin'))
     const res = await requireAdmin()
     expect(res).not.toBeInstanceOf(NextResponse)
-    expect((res as any).platformRole).toBe('admin')
-    expect((res as any).id).toBe('u1')
+    expect((res as ServerUser).platformRole).toBe('admin')
+    expect((res as ServerUser).id).toBe('u1')
   })
 
   it('returns 403 when session is expired', async () => {
     cookieGet.mockReturnValue({ value: 'tok' })
     const expired = makeSession('admin')
     expired.expiresAt = new Date(Date.now() - 1000)
-    vi.mocked(prisma.session.findUnique as any).mockResolvedValue(expired)
+    sessionFindUniqueMock.mockResolvedValue(expired)
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
     expect((res as NextResponse).status).toBe(403)
@@ -85,7 +89,7 @@ describe('restricted onboarding session', () => {
     cookieGet.mockReturnValue({ value: 'tok' })
     const session = makeSession('customer')
     session.user.mustChangePassword = true
-    vi.mocked(prisma.session.findUnique as any).mockResolvedValue(session)
+    sessionFindUniqueMock.mockResolvedValue(session)
 
     expect(await getServerUser()).toBeNull()
     expect(await getServerUser({ allowPasswordChangeRequired: true })).toMatchObject({
@@ -131,17 +135,17 @@ describe('hasAdminUsersInDb', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns true when at least one admin exists', async () => {
-    vi.mocked(prisma.user.count as any).mockResolvedValue(1)
+    userCountMock.mockResolvedValue(1)
     expect(await hasAdminUsersInDb()).toBe(true)
   })
 
   it('returns false when no admin exists', async () => {
-    vi.mocked(prisma.user.count as any).mockResolvedValue(0)
+    userCountMock.mockResolvedValue(0)
     expect(await hasAdminUsersInDb()).toBe(false)
   })
 
   it('fails closed to true (assume admin exists) if the DB call throws', async () => {
-    vi.mocked(prisma.user.count as any).mockRejectedValue(new Error('db down'))
+    userCountMock.mockRejectedValue(new Error('db down'))
     expect(await hasAdminUsersInDb()).toBe(true)
   })
 })

@@ -14,7 +14,7 @@ export default function AccountBonusCard({
     totalEarned,
     totalSpent,
     t,
-}: AccountBonusCardProps) {
+}: AccountBonusCardProps): React.ReactElement {
     return (
         <div className="account-bonus-card rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/30">
             <div className="account-bonus-card__header flex items-center justify-between mb-3">

@@ -5,7 +5,7 @@ import { getDeletedProductsArchive, purgeDeletedProductArchive } from '@/lib/pro
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -18,7 +18,7 @@ export async function GET() {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

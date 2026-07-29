@@ -14,7 +14,7 @@ type ChatMessage = {
   authorName?: string
 }
 
-export default function B2BChat() {
+export default function B2BChat(): React.ReactElement | null {
   const user = getCurrentUser()
   const { showToast } = useToast()
   const [open, setOpen] = useState(false)
@@ -55,7 +55,7 @@ export default function B2BChat() {
 
   useEffect(() => {
     if (!open || !companyId) return
-    void loadMessages()
+    queueMicrotask(() => void loadMessages())
     const timer = setInterval(() => {
       void loadMessages()
     }, 10000)

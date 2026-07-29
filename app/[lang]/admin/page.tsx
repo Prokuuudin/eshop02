@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useRef, useMemo } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/lib/orders-store'
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
@@ -67,12 +67,11 @@ type CardDef = {
   linkText: string
 }
 
-export default function AdminPage() {
+export default function AdminPage(): React.ReactElement {
   const { t, language } = useTranslation()
   const { orders } = useOrders()
   const { getOrderStatus, setOrderStatus, cardOrder, setCardOrder, resetCardOrder } = useAdminStore()
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
-  const [accessLevel, setAccessLevel] = useState<'manager' | 'admin'>('manager')
   const [editMode, setEditMode] = useState(false)
   const dragId = useRef<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
@@ -86,12 +85,13 @@ export default function AdminPage() {
   const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0)
 
   const [chartPeriod, setChartPeriod] = useState<'7d' | '30d' | '90d'>('30d')
+  const [chartNow] = useState(Date.now)
 
   const chartOrders = useMemo(() => {
     const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 90
-    const cutoff = Date.now() - days * 86400000
+    const cutoff = chartNow - days * 86400000
     return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
-  }, [orders, chartPeriod])
+  }, [orders, chartPeriod, chartNow])
 
   const revenueByDay = useMemo(() => {
     const map = new Map<string, number>()
@@ -127,12 +127,7 @@ export default function AdminPage() {
   }
 
   const currentUser = useAuthStore((s) => s.user)
-  useEffect(() => {
-    const level = getAdminAccessLevel(currentUser)
-    setAccessLevel(level === 'admin' ? 'admin' : 'manager')
-  }, [currentUser])
-
-  const hasFullAccess = accessLevel === 'admin'
+  const hasFullAccess = getAdminAccessLevel(currentUser) === 'admin'
 
   const ALL_CARDS: CardDef[] = [
     { id: 'orders',     href: '/admin/orders',                adminOnly: false, bg: 'bg-blue-50 dark:bg-blue-950/20',    border: 'border-l-blue-500',    title: tl('admin.dashboard.cards.orders.title', 'Заказы', 'Orders', 'Pasutijumi'), description: tl('admin.dashboard.cards.orders.description', 'Управление заказами, статусами и оплатой', 'Manage orders, statuses and payments', 'Pasutijumu, statusu un maksajumu parvaldiba'), linkText: tl('admin.dashboard.cards.orders.open', 'Открыть заказы', 'Open orders', 'Atvert pasutijumus') },

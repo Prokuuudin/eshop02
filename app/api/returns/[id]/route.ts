@@ -10,7 +10,7 @@ const ALLOWED_ADMIN_FIELDS = new Set(['status', 'resolution', 'resolvedAt', 'com
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -35,7 +35,7 @@ export async function GET(
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/server-auth'
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   try {
     const user = await getServerUser({ allowPasswordChangeRequired: true })
     return NextResponse.json({ user })

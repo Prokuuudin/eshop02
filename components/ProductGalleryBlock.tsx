@@ -12,7 +12,7 @@ import { getProductIngredients } from '@/lib/product-ingredients';
 interface ProductGalleryBlockProps {
     product: Product;
     images: string[];
-    demoVideos: any[];
+    demoVideos: { src: string; poster?: string }[];
     title: string;
     productDescription: string;
     productFeatures: string[];

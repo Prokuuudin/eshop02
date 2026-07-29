@@ -22,7 +22,7 @@ function toBrandTitleCase(name: string): string {
     .replace(/(^|[\s\-.'])([a-zа-яё])/gi, (_m, sep, chr) => sep + chr.toUpperCase());
 }
 
-export default function Brands() {
+export default function Brands(): React.ReactElement {
   const { t, language } = useTranslation();
   const { resolveImageSrc } = useSiteContent();
   const { brands } = useBrandsConfig();
@@ -58,7 +58,6 @@ export default function Brands() {
   }, [brands, language]);
 
   React.useEffect(() => {
-    setLoading(true);
     const timeout = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(timeout);
   }, []);

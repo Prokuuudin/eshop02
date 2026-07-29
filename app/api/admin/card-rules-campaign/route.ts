@@ -27,7 +27,7 @@ const ELIGIBLE_WHERE = {
   email: { contains: '@', not: { endsWith: '@client.local' } },
 } as const
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
   try {
@@ -42,7 +42,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 

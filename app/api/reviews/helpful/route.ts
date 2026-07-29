@@ -16,7 +16,7 @@ const clientIp = (req: NextRequest): string =>
   || req.headers.get('x-real-ip')?.trim()
   || 'unknown'
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const ip = clientIp(req)
     const user = await getServerUser()

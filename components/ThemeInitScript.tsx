@@ -1,7 +1,7 @@
 "use client"
 import { useEffect } from "react"
 
-export default function ThemeInitScript() {
+export default function ThemeInitScript(): React.ReactElement | null {
   useEffect(() => {
     try {
       const key = "eshop_theme"
@@ -10,7 +10,7 @@ export default function ThemeInitScript() {
         saved === "dark" ||
         (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches)
       document.documentElement.classList.toggle("dark", dark)
-    } catch (e) {}
+    } catch {}
   }, [])
   return null
 }

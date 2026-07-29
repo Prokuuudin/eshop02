@@ -148,7 +148,7 @@ function getBlogPostTitle(
     return post.translations?.[language]?.title ?? post.title;
 }
 
-export default function AppBreadcrumbs() {
+export default function AppBreadcrumbs(): React.ReactElement {
     const pathname = useUnprefixedPathname();
     const { t, language } = useTranslation();
     const { brands } = useBrandsConfig();

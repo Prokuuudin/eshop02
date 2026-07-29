@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { randomBytes } from 'node:crypto'
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

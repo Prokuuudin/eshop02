@@ -10,7 +10,7 @@ const MIN_LENGTH = 6
 // POST /api/user/password — change the signed-in user's password.
 // Auth is server-authoritative (bcrypt hash in DB): the old localStorage-only
 // flows never actually changed the password. This is the single source of truth.
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 

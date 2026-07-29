@@ -35,7 +35,7 @@ async function writeData(data: Showcase[]): Promise<void> {
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(request: NextRequest, { params }: Params): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: Params) {
+export async function DELETE(_request: NextRequest, { params }: Params): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

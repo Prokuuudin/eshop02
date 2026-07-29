@@ -17,7 +17,7 @@ export default function RouteError({
   error: Error
   reset: () => void
   homeHref?: string
-}) {
+}): React.ReactElement {
   const { t } = useTranslation()
 
   useEffect(() => {

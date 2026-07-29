@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import type { ReactElement } from 'react'
 import { MapPin, Pencil, Trash2, ShoppingCart } from 'lucide-react'
 import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import { AddressFormDialog } from '@/components/account/AddressFormDialog'
@@ -52,7 +53,7 @@ export default function AccountAddressCard({
   onSave,
   onStartEdit,
   onDelete,
-}: Props) {
+}: Props): ReactElement {
   return (
     <>
       <div className="account-address-card flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">

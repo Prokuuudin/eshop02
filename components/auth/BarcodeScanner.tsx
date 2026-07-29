@@ -21,7 +21,7 @@ const getBarcodeDetector = (): BarcodeDetectorConstructor | undefined => {
   return (globalThis as typeof globalThis & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector
 }
 
-export default function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
+export default function BarcodeScanner({ onDetected }: BarcodeScannerProps): React.ReactElement {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const intervalRef = useRef<number | null>(null)

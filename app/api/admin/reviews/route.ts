@@ -5,7 +5,7 @@ import { deleteAdminReply, deleteReview, getAllReviews, setAdminReply, type Revi
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+export async function PATCH(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -84,7 +84,7 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

@@ -27,7 +27,14 @@ const fallbackBrands: BrandConfigItem[] = BRANDS.map((brand) => {
   }
 })
 
-export function useBrandsConfig() {
+type BrandsConfigResult = {
+  brands: BrandConfigItem[]
+  loading: boolean
+  error: string | null
+  reload: () => Promise<void>
+}
+
+export function useBrandsConfig(): BrandsConfigResult {
   const [brands, setBrands] = React.useState<BrandConfigItem[]>(fallbackBrands)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -54,7 +61,7 @@ export function useBrandsConfig() {
   }, [])
 
   React.useEffect(() => {
-    void load()
+    queueMicrotask(() => void load())
   }, [load])
 
   return { brands, loading, error, reload: load }

@@ -1,19 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const { userUpdateMock, getServerUserMock } = vi.hoisted(() => ({
+  userUpdateMock: vi.fn(),
+  getServerUserMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: { update: vi.fn() },
+    user: { update: userUpdateMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  getServerUser: vi.fn(),
+  getServerUser: getServerUserMock,
   SESSION_COOKIE: 'eshop_session',
 }))
 
-import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
 import { PATCH } from './route'
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
@@ -28,8 +31,8 @@ const SESSION_USER = { id: 'u1', email: 'user@test.com' }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getServerUser as any).mockResolvedValue(SESSION_USER)
-  vi.mocked(prisma.user.update as any).mockImplementation(async ({ data }: any) => ({
+  getServerUserMock.mockResolvedValue(SESSION_USER)
+  userUpdateMock.mockImplementation(async ({ data }) => ({
     id: 'u1',
     email: 'user@test.com',
     name: data.name ?? null,
@@ -44,7 +47,9 @@ describe('PATCH /api/user/profile', () => {
     const res = await PATCH(makeRequest({ cardNumber: 'ZZ-AUDIT-TEST' }))
 
     expect(res.status).toBe(200)
-    const updateArgs = vi.mocked(prisma.user.update).mock.calls[0][0] as any
+    const updateArgs = userUpdateMock.mock.calls[0][0] as {
+      data: Record<string, unknown>
+    }
     expect(updateArgs.data).not.toHaveProperty('cardNumber')
   })
 
@@ -52,7 +57,9 @@ describe('PATCH /api/user/profile', () => {
     const res = await PATCH(makeRequest({ name: 'New Name', phone: '+37120000000' }))
 
     expect(res.status).toBe(200)
-    const updateArgs = vi.mocked(prisma.user.update).mock.calls[0][0] as any
+    const updateArgs = userUpdateMock.mock.calls[0][0] as {
+      data: Record<string, unknown>
+    }
     expect(updateArgs.data.name).toBe('New Name')
     expect(updateArgs.data.phone).toBe('+37120000000')
   })
@@ -61,6 +68,6 @@ describe('PATCH /api/user/profile', () => {
     const res = await PATCH(makeRequest({ email: 'victim@example.com' }))
 
     expect(res.status).toBe(400)
-    expect(prisma.user.update).not.toHaveBeenCalled()
+    expect(userUpdateMock).not.toHaveBeenCalled()
   })
 })

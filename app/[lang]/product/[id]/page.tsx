@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
 }
 
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params }: PageProps): Promise<React.ReactElement> {
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
     const t = translations[language];

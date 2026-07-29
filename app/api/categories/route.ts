@@ -5,7 +5,7 @@ import { getMergedProducts } from '@/lib/product-overrides-store'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const config = await getCategoriesConfigFromStore()
   const products = await getMergedProducts()
   return NextResponse.json({

@@ -4,7 +4,7 @@ import { sanitizeStoredLink } from '@/lib/safe-link'
 
 export const runtime = 'nodejs'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
   const type = request.nextUrl.searchParams.get('type')
   const data = await readBannersData()
   return NextResponse.json({

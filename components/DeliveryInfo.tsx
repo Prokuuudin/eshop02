@@ -11,7 +11,7 @@ import {
  * Компонент DeliveryInfo объединяет информацию о доставке и правилах получения заказов.
  * Использует БЭМ-нейминг и utility-классы для адаптивной и чистой верстки.
  */
-export const DeliveryInfo = () => {
+export const DeliveryInfo = (): React.ReactElement => {
     useTranslation();
     return (
         <section className="delivery-info bg-slate-50 dark:bg-gray-800 rounded-lg p-6 shadow">

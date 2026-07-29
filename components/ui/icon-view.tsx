@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export const IconGrid = (props: React.SVGProps<SVGSVGElement>) => (
+export const IconGrid = (props: React.SVGProps<SVGSVGElement>): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -17,7 +17,7 @@ export const IconGrid = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const IconList = (props: React.SVGProps<SVGSVGElement>) => (
+export const IconList = (props: React.SVGProps<SVGSVGElement>): React.ReactElement => (
   <svg
     viewBox="0 0 24 24"
     fill="none"

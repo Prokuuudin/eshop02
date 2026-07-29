@@ -4,7 +4,7 @@ import { getTemplates } from '@/lib/email-templates-server-store'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

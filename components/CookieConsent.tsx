@@ -37,7 +37,7 @@ function saveConsent(analytics: boolean, marketing: boolean): void {
   localStorage.setItem(CONSENT_KEY, JSON.stringify(value))
 }
 
-export default function CookieConsent() {
+export default function CookieConsent(): React.ReactElement | null {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
   const [shown, setShown] = useState(false)

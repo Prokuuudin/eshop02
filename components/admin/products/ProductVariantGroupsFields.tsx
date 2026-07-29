@@ -35,12 +35,13 @@ const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) 
                         placeholder="URL картинки опции"
                         {...register(`variantGroups.${groupIndex}.options.${idx}.image`)}
                     />
-                    <label className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap">
+                    <label htmlFor={`variant-${groupIndex}-option-${idx}-preselected`} className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap">
                         <Controller
                             control={control}
                             name={`variantGroups.${groupIndex}.options.${idx}.preselected`}
                             render={({ field: checkboxField }) => (
                                 <Checkbox
+                                    id={`variant-${groupIndex}-option-${idx}-preselected`}
                                     checked={checkboxField.value ?? false}
                                     onCheckedChange={checkboxField.onChange}
                                 />
@@ -81,12 +82,13 @@ const ProductVariantGroupsFields: React.FC = () => {
                                 placeholder="Название группы (напр.: Krāsu numurs)"
                                 {...register(`variantGroups.${idx}.name`)}
                             />
-                            <label className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
+                            <label htmlFor={`variant-${idx}-required`} className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
                                 <Controller
                                     control={control}
                                     name={`variantGroups.${idx}.required`}
                                     render={({ field: checkboxField }) => (
                                         <Checkbox
+                                            id={`variant-${idx}-required`}
                                             checked={checkboxField.value}
                                             onCheckedChange={checkboxField.onChange}
                                         />
@@ -94,12 +96,13 @@ const ProductVariantGroupsFields: React.FC = () => {
                                 />
                                 Обязательно
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
+                            <label htmlFor={`variant-${idx}-image-squares`} className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
                                 <Controller
                                     control={control}
                                     name={`variantGroups.${idx}.displayType`}
                                     render={({ field: displayField }) => (
                                         <Checkbox
+                                            id={`variant-${idx}-image-squares`}
                                             checked={displayField.value === 'imageSquares'}
                                             onCheckedChange={(checked) =>
                                                 displayField.onChange(checked ? 'imageSquares' : undefined)

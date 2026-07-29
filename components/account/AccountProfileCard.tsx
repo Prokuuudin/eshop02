@@ -4,18 +4,27 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
+import type { User } from '@/lib/auth';
+
+type ProfileDraft = {
+    name: string;
+    email: string;
+    phone: string;
+    companyName: string;
+    avatarUrl: string;
+};
 
 interface AccountProfileCardProps {
-    user: any;
+    user: User;
     isEditing: boolean;
-    profileDraft: any;
-    profileErrors: any;
+    profileDraft: ProfileDraft | null;
+    profileErrors: Record<string, string>;
     onEdit: () => void;
     onCancel: () => void;
     onSave: () => void;
     onChange: (field: string, value: string) => void;
     t: (key: string, defaultValue?: string, params?: Record<string, string | number>) => string;
-    tl: (...args: any[]) => string;
+    tl: (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => string;
 }
 
 const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
@@ -54,13 +63,22 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         first?.focus();
     }, [isEditing, profileDraft]);
 
+    const activeDraft: ProfileDraft = profileDraft ?? {
+        name: user.name ?? '',
+        email: user.email,
+        phone: user.phone ?? '',
+        companyName: user.companyName ?? '',
+        avatarUrl: user.avatarUrl ?? '',
+    };
+    const avatarUrl = isEditing ? activeDraft.avatarUrl : user.avatarUrl;
+
     return (
         <div className="account-profile rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
             <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
                 <div className="account-profile__avatar flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm overflow-hidden relative">
-                    {(isEditing ? profileDraft?.avatarUrl : user.avatarUrl) ? (
+                    {avatarUrl ? (
                         <Image
-                            src={isEditing ? profileDraft?.avatarUrl : user.avatarUrl}
+                            src={avatarUrl}
                             alt={user.name || 'avatar'}
                             width={64}
                             height={64}
@@ -176,7 +194,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                         ? 'account-profile__input--error border-red-500'
                                         : ''
                                 }`}
-                                value={profileDraft.name}
+                                value={activeDraft.name}
                                 onChange={(e) => onChange('name', e.target.value)}
                             />
                             {profileErrors.name && (
@@ -205,7 +223,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             <div ref={phoneWrapperRef}>
                             <PhoneInput
                                 className={profileErrors.phone ? 'account-profile__input--error' : ''}
-                                value={profileDraft.phone || ''}
+                                value={activeDraft.phone}
                                 onChange={(val) => onChange('phone', val)}
                             />
                             </div>
@@ -223,7 +241,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 id="profile-company"
                                 ref={companyRef}
                                 className="account-profile__input"
-                                value={profileDraft.companyName}
+                                value={activeDraft.companyName}
                                 onChange={(e) => onChange('companyName', e.target.value)}
                             />
                         </div>

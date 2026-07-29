@@ -9,7 +9,7 @@ interface PageProps {
 
 export const revalidate = 0;
 
-export default async function ProductEditPage({ params }: PageProps) {
+export default async function ProductEditPage({ params }: PageProps): Promise<React.ReactElement> {
     const { id } = await params;
     const products = await getAdminProducts();
     const product = products.find((p) => p.id === id);

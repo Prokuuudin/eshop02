@@ -71,7 +71,7 @@ export function AddressFormDialog({
   onSave,
   onCancel,
   labels,
-}: AddressFormDialogProps) {
+}: AddressFormDialogProps): React.ReactElement {
   const handleCancel = () => {
     onCancel()
     onOpenChange(false)

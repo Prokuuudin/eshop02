@@ -88,7 +88,7 @@ const ACTION_STYLES: Record<RowAction, { label: string; chip: string }> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AdminImportPage() {
+export default function AdminImportPage(): React.ReactElement {
   const [rows, setRows] = React.useState<Record<string, string>[]>([])
   const [fileName, setFileName] = React.useState('')
   const [mode, setMode] = React.useState<ImportMode>('upsert')

@@ -7,7 +7,7 @@ interface ProductSkuInputProps {
     initialSku?: string;
 }
 
-export default function ProductSkuInput({ productId, initialSku }: ProductSkuInputProps) {
+export default function ProductSkuInput({ productId, initialSku }: ProductSkuInputProps): React.ReactElement {
     const [sku, setSku] = useState(initialSku || '');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -25,7 +25,7 @@ export default function ProductSkuInput({ productId, initialSku }: ProductSkuInp
             });
             if (!res.ok) throw new Error('Ошибка сохранения');
             setSuccess(true);
-        } catch (e) {
+        } catch {
             setError('Ошибка сохранения');
         } finally {
             setSaving(false);

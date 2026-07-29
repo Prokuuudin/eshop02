@@ -18,7 +18,7 @@ export default function BenefitsList({
 }: {
     compact?: boolean;
     only?: string[];
-}) {
+}): React.ReactElement {
     const { t } = useTranslation();
     const items = only ? ITEMS.filter((it) => only.includes(it.id)) : ITEMS;
     return (

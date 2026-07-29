@@ -9,7 +9,7 @@ import SaleBanner, { type PromoBanner } from './SaleBanner';
 import Reveal from '@/components/ui/Reveal';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function SaleSection() {
+export default function SaleSection(): React.ReactElement {
     const { t } = useTranslation();
     const [products, setProducts] = useState<Product[]>([]);
     const [banner, setBanner] = useState<PromoBanner | null>(null);

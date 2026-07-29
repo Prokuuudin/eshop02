@@ -16,7 +16,7 @@ function formatEur(amount: number): string {
   return `€${amount.toFixed(2)}`
 }
 
-export default function AdminMarketingAnalyticsPage() {
+export default function AdminMarketingAnalyticsPage(): React.ReactElement {
   const { orders } = useOrders()
 
   const promoOrders = useMemo(() => orders.filter((o) => o.promoCode && o.promoCode.trim() !== ''), [orders])

@@ -52,7 +52,7 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
 )
 BreadcrumbPage.displayName = 'BreadcrumbPage'
 
-const BreadcrumbSeparator = ({ className, ...props }: React.ComponentProps<'li'>) => (
+const BreadcrumbSeparator = ({ className, ...props }: React.ComponentProps<'li'>): React.ReactElement => (
   <li
     role="presentation"
     aria-hidden="true"

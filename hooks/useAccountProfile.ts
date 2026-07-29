@@ -1,12 +1,39 @@
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { validateProfile } from '@/utils/accountValidation';
+import type { User } from '@/lib/auth';
 
 const isInternalEmail = (email: string) => email.endsWith('@client.local');
 
-export function useAccountProfile(user: any, t: (key: string) => string, readUsers: any, writeUsers: any, writeCurrentUser: any) {
+type ProfileDraft = {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    companyName: string;
+    avatarUrl: string;
+};
+
+type AccountProfileResult = {
+    isEditingProfile: boolean;
+    profileDraft: ProfileDraft | null;
+    profileErrors: Record<string, string>;
+    setProfileDraft: Dispatch<SetStateAction<ProfileDraft | null>>;
+    setProfileErrors: Dispatch<SetStateAction<Record<string, string>>>;
+    startEditingProfile: () => void;
+    cancelEditingProfile: () => void;
+    saveProfile: () => Promise<void>;
+};
+
+function useAccountProfileImpl(
+    user: User | null,
+    t: (key: string) => string,
+    readUsers: () => User[],
+    writeUsers: (users: User[]) => void,
+    writeCurrentUser: (user: User) => void
+): AccountProfileResult {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
-    const [profileDraft, setProfileDraft] = useState<any>(null);
-    const [profileErrors, setProfileErrors] = useState<any>({});
+    const [profileDraft, setProfileDraft] = useState<ProfileDraft | null>(null);
+    const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
 
     const startEditingProfile = () => {
         setProfileDraft({
@@ -28,7 +55,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
     };
 
     const saveProfile = async () => {
-        if (!profileDraft) return;
+        if (!profileDraft || !user) return;
         // Email is read-only in the form (the server has no verified email-change flow and
         // rejects any change), so it never enters the draft as editable — validate without it.
         const errors = validateProfile(profileDraft, t, true);
@@ -37,7 +64,7 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
             return;
         }
         const users = readUsers();
-        const idx = users.findIndex((u: any) => u.id === user.id);
+        const idx = users.findIndex((candidate) => candidate.id === user.id);
         if (idx === -1) return;
         const updatedUser = {
             ...users[idx],
@@ -84,3 +111,5 @@ export function useAccountProfile(user: any, t: (key: string) => string, readUse
         saveProfile,
     };
 }
+
+export const useAccountProfile: typeof useAccountProfileImpl = useAccountProfileImpl;

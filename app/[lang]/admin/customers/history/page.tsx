@@ -30,7 +30,7 @@ function actionColor(action: string) {
   return ACTION_COLORS[action] ?? 'bg-gray-100 text-gray-700'
 }
 
-export default function AdminCustomerHistoryPage() {
+export default function AdminCustomerHistoryPage(): React.ReactElement {
   const entriesMap = useAuditLogStore((s) => s.entries)
   const clearOldEntries = useAuditLogStore((s) => s.clearOldEntries)
 
@@ -117,15 +117,17 @@ export default function AdminCustomerHistoryPage() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2 text-sm">
-            <label className="text-muted-foreground">От:</label>
+            <label htmlFor="customer-history-date-from" className="text-muted-foreground">От:</label>
             <input
+              id="customer-history-date-from"
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(0) }}
               className="border rounded-md px-2 py-1.5 text-sm bg-background"
             />
-            <label className="text-muted-foreground">До:</label>
+            <label htmlFor="customer-history-date-to" className="text-muted-foreground">До:</label>
             <input
+              id="customer-history-date-to"
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(0) }}

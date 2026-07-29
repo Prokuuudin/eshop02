@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AccountProfileCard from '@/components/account/AccountProfileCard';
@@ -8,24 +8,18 @@ import { AccountPasswordSection } from '@/components/account/AccountPasswordSect
 import { AccountDataSection } from '@/components/account/AccountDataSection';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { useAccountProfile } from '@/hooks/useAccountProfile';
-import { getCurrentUser, readUsers, writeUsers, writeCurrentUser } from '@/lib/auth';
-import type { User } from '@/lib/auth';
+import { readUsers, writeUsers, writeCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 
 export default function AccountProfilePage(): React.ReactElement {
     const { t, tl } = useLocaleHelpers();
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const user = useAuthStore((state) => state.user);
+    const isHydrated = useAuthStore((state) => state.isHydrated);
 
     useEffect(() => {
-        const currentUser = getCurrentUser();
-        if (!currentUser) {
-            router.replace('/');
-            return;
-        }
-        setUser(currentUser as User);
-        setLoading(false);
-    }, [router]);
+        if (isHydrated && !user) router.replace('/');
+    }, [isHydrated, router, user]);
 
     const profile = useAccountProfile(user, t, readUsers, writeUsers, writeCurrentUser);
 
@@ -36,7 +30,7 @@ export default function AccountProfilePage(): React.ReactElement {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    if (loading) {
+    if (!isHydrated) {
         return (
             <main className="w-full px-4 py-12">
                 <p className="text-muted-foreground">{t('common.loading')}</p>
@@ -84,7 +78,9 @@ export default function AccountProfilePage(): React.ReactElement {
                             onCancel={profile.cancelEditingProfile}
                             onSave={profile.saveProfile}
                             onChange={(field, value) =>
-                                profile.setProfileDraft({ ...profile.profileDraft, [field]: value })
+                                profile.setProfileDraft((current) =>
+                                    current ? { ...current, [field]: value } : current
+                                )
                             }
                             t={t}
                             tl={tl}

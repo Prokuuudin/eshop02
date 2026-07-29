@@ -35,7 +35,7 @@ export const StockNotifyButton: React.FC<StockNotifyButtonProps> = ({ productId,
 
   useEffect(() => {
     const user = getCurrentUser()
-    if (user?.email) setEmail(user.email)
+    if (user?.email) queueMicrotask(() => setEmail(user.email))
   }, [])
 
   const activeSub = useMemo(
@@ -117,7 +117,7 @@ export const StockNotifyButton: React.FC<StockNotifyButtonProps> = ({ productId,
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={error ? 'border-red-400' : ''}
-              autoFocus
+              ref={(element) => element?.focus()}
             />
             {error && <p className="text-xs text-red-500">{error}</p>}
           </div>

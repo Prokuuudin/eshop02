@@ -26,7 +26,7 @@ type CampaignState = {
     runningSince: string | null;
 };
 
-export default function AdminInvitationsPage() {
+export default function AdminInvitationsPage(): React.ReactElement {
     const { language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -70,8 +70,10 @@ export default function AdminInvitationsPage() {
     }, []);
 
     useEffect(() => {
-        void loadHolders();
-        void loadCampaign();
+        queueMicrotask(() => {
+            void loadHolders();
+            void loadCampaign();
+        });
     }, [loadHolders, loadCampaign]);
 
     const sendInvites = async (userIds: string[]) => {

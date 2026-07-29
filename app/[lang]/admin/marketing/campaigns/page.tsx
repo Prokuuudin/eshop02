@@ -62,7 +62,7 @@ function getCampaignStatus(campaign: PromoCampaign): { label: string; cls: strin
   return { label: 'Активна', cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' }
 }
 
-export default function AdminCampaignsPage() {
+export default function AdminCampaignsPage(): React.ReactElement {
   const [items, setItems] = useState<PromoCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -84,7 +84,15 @@ export default function AdminCampaignsPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function openCreate() {
     setEditId(null)
@@ -195,27 +203,27 @@ export default function AdminCampaignsPage() {
               {editId ? 'Редактировать кампанию' : 'Новая кампания'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="space-y-1 sm:col-span-2">
+              <label htmlFor="admin-campaign-field-1" className="space-y-1 sm:col-span-2">
                 <span className="text-sm text-muted-foreground">Название *</span>
-                <Input
+                <Input id="admin-campaign-field-1"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Весенняя акция"
                 />
               </label>
-              <label className="space-y-1 sm:col-span-2">
+              <label htmlFor="admin-campaign-field-2" className="space-y-1 sm:col-span-2">
                 <span className="text-sm text-muted-foreground">Описание</span>
-                <Textarea
+                <Textarea id="admin-campaign-field-2"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
                   placeholder="Подробное описание кампании"
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-3" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Тип</span>
                 <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as CampaignType }))}>
-                  <SelectTrigger className={selectCls}>
+                  <SelectTrigger id="admin-campaign-field-3" className={selectCls}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -226,9 +234,9 @@ export default function AdminCampaignsPage() {
                   </SelectContent>
                 </Select>
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-4" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Скидка, %</span>
-                <Input
+                <Input id="admin-campaign-field-4"
                   type="number"
                   min={0}
                   max={100}
@@ -236,35 +244,35 @@ export default function AdminCampaignsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, discountPercent: Number(e.target.value) }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-5" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Дата начала</span>
-                <Input
+                <Input id="admin-campaign-field-5"
                   type="date"
                   value={form.startDate}
                   onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-6" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Дата окончания</span>
-                <Input
+                <Input id="admin-campaign-field-6"
                   type="date"
                   value={form.endDate}
                   onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-7" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Мин. сумма заказа, €</span>
-                <Input
+                <Input id="admin-campaign-field-7"
                   type="number"
                   min={0}
                   value={form.minOrderAmount}
                   onChange={(e) => setForm((f) => ({ ...f, minOrderAmount: Number(e.target.value) }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-campaign-field-8" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Статус</span>
                 <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
-                  <SelectTrigger className={selectCls}>
+                  <SelectTrigger id="admin-campaign-field-8" className={selectCls}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

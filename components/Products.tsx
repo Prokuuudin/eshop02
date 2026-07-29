@@ -33,7 +33,7 @@ const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
-export default function Products({ initialFilters, initialSearch = '', initialSubcat = '' }: ProductsProps) {
+export default function Products({ initialFilters, initialSearch = '', initialSubcat = '' }: ProductsProps): React.ReactElement {
   const { t, language } = useTranslation();
   const [products, setProducts] = React.useState<Product[]>([])
   const [productsLoading, setProductsLoading] = React.useState(true)
@@ -65,7 +65,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
   // Sync filters with initialFilters only when they actually change from navigation
   React.useEffect(() => {
-    setFilters(prev => {
+    queueMicrotask(() => setFilters(prev => {
       // Only update if initialFilters changed (e.g. navigation)
       if (
         prev.group !== (initialFilters?.group ?? '') ||
@@ -84,7 +84,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
         };
       }
       return prev;
-    });
+    }));
   }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
 
   React.useEffect(() => {
@@ -209,7 +209,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   const loaderRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    setVisibleCount(12);
+    queueMicrotask(() => setVisibleCount(12));
   }, [filters, normalizedSearch]);
 
   React.useEffect(() => {

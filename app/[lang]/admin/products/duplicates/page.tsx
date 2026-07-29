@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { formatEuro } from '@/lib/utils'
@@ -34,7 +35,7 @@ function normalizeTitle(t: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function DuplicatesPage() {
+export default function DuplicatesPage(): React.ReactElement {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'title' | 'sku'>('all')
@@ -218,7 +219,7 @@ export default function DuplicatesPage() {
                             {/* Image */}
                             <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border">
                               {p.image
-                                ? <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                                ? <Image unoptimized src={p.image} alt={p.title} width={48} height={48} className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center text-xs text-gray-300 dark:text-gray-600">нет</div>
                               }
                             </div>

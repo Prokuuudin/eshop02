@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/use-translation';
@@ -23,7 +24,7 @@ const CTA_VARIANT = {
     outline: 'outline'
 } as const;
 
-export default function SaleBanner({ banner, contentClassName = '' }: { banner: PromoBanner; contentClassName?: string }) {
+export default function SaleBanner({ banner, contentClassName = '' }: { banner: PromoBanner; contentClassName?: string }): React.ReactElement {
     const { language } = useTranslation();
     const isLight = banner.textColor === 'light';
     const title = resolveLocaleText(banner.title, language);
@@ -37,11 +38,12 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
         >
             {banner.image && (
                 <>
-                    <img
+                    <Image
+                        unoptimized
+                        fill
                         src={banner.image}
                         alt=""
                         aria-hidden="true"
-                        loading="lazy"
                         className="sale-banner__image absolute inset-0 h-full w-full object-cover"
                     />
                     <div

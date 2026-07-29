@@ -19,7 +19,7 @@ type Props = {
     product: Product;
 };
 
-export default function ProductCard({ product }: Props) {
+export default function ProductCard({ product }: Props): React.ReactElement {
     const { t, language } = useTranslation();
     const isOutOfStock = product.stock === 0;
     const localizedTitle =

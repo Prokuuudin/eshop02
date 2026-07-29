@@ -1,21 +1,43 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
+const {
+  reviewCreateMock,
+  reviewFindUniqueMock,
+  reviewFindManyMock,
+  reviewUpdateMock,
+  reviewUpdateManyMock,
+  reviewDeleteMock,
+  reviewAggregateMock,
+  helpfulVoteCreateMock,
+  transactionMock,
+} = vi.hoisted(() => ({
+  reviewCreateMock: vi.fn(),
+  reviewFindUniqueMock: vi.fn(),
+  reviewFindManyMock: vi.fn(),
+  reviewUpdateMock: vi.fn(),
+  reviewUpdateManyMock: vi.fn(),
+  reviewDeleteMock: vi.fn(),
+  reviewAggregateMock: vi.fn(),
+  helpfulVoteCreateMock: vi.fn(),
+  transactionMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     review: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      update: vi.fn(),
-      updateMany: vi.fn(),
-      delete: vi.fn(),
-      aggregate: vi.fn(),
+      create: reviewCreateMock,
+      findUnique: reviewFindUniqueMock,
+      findMany: reviewFindManyMock,
+      update: reviewUpdateMock,
+      updateMany: reviewUpdateManyMock,
+      delete: reviewDeleteMock,
+      aggregate: reviewAggregateMock,
     },
     product: {
       updateMany: vi.fn(),
     },
-    reviewHelpfulVote: { create: vi.fn() },
-    $transaction: vi.fn(),
+    reviewHelpfulVote: { create: helpfulVoteCreateMock },
+    $transaction: transactionMock,
   },
 }))
 
@@ -44,13 +66,13 @@ const dbReview = (overrides: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(prisma))
+  transactionMock.mockImplementation(async (fn) => fn(prisma))
 })
 
 describe('markReviewHelpful', () => {
   it('creates one unique vote and increments an approved review atomically', async () => {
-    vi.mocked(prisma.reviewHelpfulVote.create as any).mockResolvedValue({})
-    vi.mocked(prisma.review.updateMany as any).mockResolvedValue({ count: 1 })
+    helpfulVoteCreateMock.mockResolvedValue({})
+    reviewUpdateManyMock.mockResolvedValue({ count: 1 })
 
     await expect(markReviewHelpful('rvw_1', 'user:u1')).resolves.toBe('incremented')
     expect(prisma.reviewHelpfulVote.create).toHaveBeenCalledWith({
@@ -60,7 +82,7 @@ describe('markReviewHelpful', () => {
   })
 
   it('does not increment when the unique vote already exists', async () => {
-    vi.mocked(prisma.reviewHelpfulVote.create as any).mockRejectedValue({ code: 'P2002' })
+    helpfulVoteCreateMock.mockRejectedValue({ code: 'P2002' })
 
     await expect(markReviewHelpful('rvw_1', 'user:u1')).resolves.toBe('duplicate')
     expect(prisma.review.updateMany).not.toHaveBeenCalled()
@@ -69,7 +91,7 @@ describe('markReviewHelpful', () => {
 
 describe('createReview', () => {
   it('creates review with pending status (premoderation)', async () => {
-    vi.mocked(prisma.review.create as any).mockImplementation(async ({ data }: any) => dbReview(data))
+    reviewCreateMock.mockImplementation(async ({ data }) => dbReview(data))
 
     const review = await createReview({ productId: 'p1', author: 'Anna', rating: 5, title: 'Отлично', text: 'Супер' })
 
@@ -78,7 +100,7 @@ describe('createReview', () => {
   })
 
   it('does not touch product aggregates for pending review', async () => {
-    vi.mocked(prisma.review.create as any).mockImplementation(async ({ data }: any) => dbReview(data))
+    reviewCreateMock.mockImplementation(async ({ data }) => dbReview(data))
 
     await createReview({ productId: 'p1', author: 'Anna', rating: 5, title: 'Отлично', text: 'Супер' })
 
@@ -88,7 +110,7 @@ describe('createReview', () => {
 
 describe('recomputeProductRating', () => {
   it('writes approved-only aggregate into product fields', async () => {
-    vi.mocked(prisma.review.aggregate as any).mockResolvedValue({ _avg: { rating: 4.666666666666667 }, _count: 3 })
+    reviewAggregateMock.mockResolvedValue({ _avg: { rating: 4.666666666666667 }, _count: 3 })
 
     await recomputeProductRating('p1')
 
@@ -104,7 +126,7 @@ describe('recomputeProductRating', () => {
   })
 
   it('resets fields to zero when no approved reviews left', async () => {
-    vi.mocked(prisma.review.aggregate as any).mockResolvedValue({ _avg: { rating: null }, _count: 0 })
+    reviewAggregateMock.mockResolvedValue({ _avg: { rating: null }, _count: 0 })
 
     await recomputeProductRating('p1')
 
@@ -117,9 +139,9 @@ describe('recomputeProductRating', () => {
 
 describe('updateReviewStatus', () => {
   it('recomputes product rating after status change', async () => {
-    vi.mocked(prisma.review.findUnique as any).mockResolvedValue(dbReview({ status: 'pending' }))
-    vi.mocked(prisma.review.update as any).mockResolvedValue(dbReview())
-    vi.mocked(prisma.review.aggregate as any).mockResolvedValue({ _avg: { rating: 5 }, _count: 1 })
+    reviewFindUniqueMock.mockResolvedValue(dbReview({ status: 'pending' }))
+    reviewUpdateMock.mockResolvedValue(dbReview())
+    reviewAggregateMock.mockResolvedValue({ _avg: { rating: 5 }, _count: 1 })
 
     const changed = await updateReviewStatus('rvw_1', 'approved')
 
@@ -131,7 +153,7 @@ describe('updateReviewStatus', () => {
   })
 
   it('returns false and skips recompute when review missing', async () => {
-    vi.mocked(prisma.review.findUnique as any).mockResolvedValue(null)
+    reviewFindUniqueMock.mockResolvedValue(null)
 
     const changed = await updateReviewStatus('nope', 'approved')
 
@@ -142,9 +164,9 @@ describe('updateReviewStatus', () => {
 
 describe('deleteReview', () => {
   it('recomputes product rating after delete', async () => {
-    vi.mocked(prisma.review.findUnique as any).mockResolvedValue(dbReview())
-    vi.mocked(prisma.review.delete as any).mockResolvedValue(dbReview())
-    vi.mocked(prisma.review.aggregate as any).mockResolvedValue({ _avg: { rating: null }, _count: 0 })
+    reviewFindUniqueMock.mockResolvedValue(dbReview())
+    reviewDeleteMock.mockResolvedValue(dbReview())
+    reviewAggregateMock.mockResolvedValue({ _avg: { rating: null }, _count: 0 })
 
     const changed = await deleteReview('rvw_1')
 
@@ -159,7 +181,7 @@ describe('deleteReview', () => {
 describe('getReviewsByAuthor', () => {
   it('returns reviews for author, newest first, all statuses', async () => {
     const { getReviewsByAuthor } = await import('@/lib/reviews-data-store')
-    vi.mocked(prisma.review.findMany as any).mockResolvedValue([dbReview({ status: 'pending' })])
+    reviewFindManyMock.mockResolvedValue([dbReview({ status: 'pending' })])
 
     const rows = await getReviewsByAuthor('Anna')
 

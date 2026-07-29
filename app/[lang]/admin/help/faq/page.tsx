@@ -91,7 +91,7 @@ const faqItems: FaqItem[] = [
   },
 ]
 
-export default function AdminFaqPage() {
+export default function AdminFaqPage(): React.ReactElement {
   const [openId, setOpenId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
 

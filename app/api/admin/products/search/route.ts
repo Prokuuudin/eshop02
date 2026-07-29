@@ -32,7 +32,7 @@ const selectFields = { id: true, title: true, brand: true, image: true, isActive
 // Лёгкий поиск товаров для пикеров админки:
 //   ?q=<текст>   — поиск по названию/бренду/ID (до 20 результатов)
 //   ?ids=1,2,3   — резолв конкретных ID в название/картинку (для чипов уже выбранных)
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

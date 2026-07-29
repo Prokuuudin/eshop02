@@ -1,6 +1,6 @@
 import { Card } from './ui/card';
 
-export default function OrderCardSkeleton() {
+export default function OrderCardSkeleton(): React.ReactElement {
   return (
     <Card className="order-card-skeleton rounded-2xl border border-border p-4 animate-pulse bg-card">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">

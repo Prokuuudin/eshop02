@@ -20,7 +20,7 @@ const STATUS_DETAILS: Record<string, string> = {
   completed: 'Возврат успешно завершён. Спасибо, что обратились к нам.',
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

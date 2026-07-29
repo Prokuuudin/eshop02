@@ -35,7 +35,8 @@ const PAGE_SIZE = 50
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function AdminLogPage() {
+export default function AdminLogPage(): React.ReactElement {
+  const [now] = useState(Date.now)
   const entries = useAdminLogStore((s) => s.entries)
   const clear = useAdminLogStore((s) => s.clear)
   const setEntries = useAdminLogStore((s) => s.setEntries)
@@ -88,13 +89,12 @@ export default function AdminLogPage() {
 
   // Stats
   const stats = useMemo(() => {
-    const now = Date.now()
     return {
       total: entries.length,
       today: entries.filter((e) => now - new Date(e.at).getTime() < 86400_000).length,
       week:  entries.filter((e) => now - new Date(e.at).getTime() < 7 * 86400_000).length,
     }
-  }, [entries])
+  }, [entries, now])
 
   const downloadCSV = () => {
     const header = ['Дата', 'Администратор', 'Email', 'Действие', 'Тип', 'ID', 'Объект', 'До', 'После', 'Детали']

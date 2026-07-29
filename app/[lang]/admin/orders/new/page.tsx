@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -80,7 +81,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function NewOrderPage() {
+export default function NewOrderPage(): React.ReactElement {
   const router = useRouter()
   const { addOrder } = useOrders()
   const { setOrderStatus } = useAdminStore()
@@ -96,7 +97,6 @@ export default function NewOrderPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
-  const [emailSuggestions, setEmailSuggestions] = useState<ReturnType<typeof readUsers>>([])
   const [showEmailList, setShowEmailList] = useState(false)
 
   // ── Items
@@ -150,14 +150,14 @@ export default function NewOrderPage() {
 
   // ── Customer lookup ───────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!email.trim()) { setEmailSuggestions([]); return }
+  const emailSuggestions = useMemo(() => {
+    if (!email.trim()) return []
     try {
       const users = readUsers()
-      setEmailSuggestions(
-        users.filter((u) => u.email.toLowerCase().includes(email.toLowerCase())).slice(0, 5)
-      )
-    } catch { setEmailSuggestions([]) }
+      return users.filter((u) => u.email.toLowerCase().includes(email.toLowerCase())).slice(0, 5)
+    } catch {
+      return []
+    }
   }, [email])
 
   const fillCustomer = (user: ReturnType<typeof readUsers>[number]) => {
@@ -397,7 +397,7 @@ export default function NewOrderPage() {
                         className="w-full text-left px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 last:border-0"
                       >
                         {p.image && (
-                          <img src={p.image} alt="" className="h-9 w-9 rounded object-cover shrink-0" />
+                          <Image unoptimized src={p.image} alt="" width={36} height={36} className="h-9 w-9 rounded object-cover shrink-0" />
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
@@ -425,7 +425,7 @@ export default function NewOrderPage() {
                   {items.map((item) => (
                     <div key={item.product.id} className="flex items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2.5">
                       {item.product.image && (
-                        <img src={item.product.image} alt="" className="h-10 w-10 rounded object-cover shrink-0" />
+                        <Image unoptimized src={item.product.image} alt="" width={40} height={40} className="h-10 w-10 rounded object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.product.title}</p>

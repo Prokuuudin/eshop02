@@ -10,7 +10,7 @@ function safeName(name: string): boolean {
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
-) {
+): Promise<Response> {
   const { name } = await params
 
   if (!safeName(name)) {

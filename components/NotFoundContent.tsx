@@ -7,7 +7,7 @@ import type { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro } from '@/lib/utils';
 
-export default function NotFoundContent() {
+export default function NotFoundContent(): React.ReactElement {
     const { t, language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
     const [suggestedProducts, setSuggestedProducts] = React.useState<Product[]>([]);

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
+const settingFindUniqueMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     product: {
@@ -11,7 +13,7 @@ vi.mock('@/lib/prisma', () => ({
       delete: vi.fn(),
     },
     keyValueSetting: {
-      findUnique: vi.fn(),
+      findUnique: settingFindUniqueMock,
       upsert: vi.fn(),
     },
   },
@@ -358,7 +360,7 @@ describe('restoreDeletedProduct', () => {
       rating: 4, category: 'hair' as const, stock: 3,
     }
 
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockImplementation(async (args: unknown) => {
+    settingFindUniqueMock.mockImplementation(async (args: unknown) => {
       const key = (args as { where: { key: string } }).where.key
       if (key === 'deleted-products-archive') {
         return {

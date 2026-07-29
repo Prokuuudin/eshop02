@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 const SUBSCRIPTION_DISCOUNTS = { monthly: 10, quarterly: 7 } as const
 type SubscriptionInterval = keyof typeof SUBSCRIPTION_DISCOUNTS
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -34,7 +34,7 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function HeaderLogo() {
+export default function HeaderLogo(): React.ReactElement {
     const { t } = useTranslation();
     return (
         <Link

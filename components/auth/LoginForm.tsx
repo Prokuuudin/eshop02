@@ -1,5 +1,5 @@
 ﻿'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { hasAdminUsers, loginUserAuto } from '@/lib/auth';
@@ -16,22 +16,17 @@ export default function LoginForm({
     onSuccess?: () => void;
     onForgotPassword?: () => void;
     onClose?: () => void;
-}) {
+}): React.ReactElement {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { t } = useTranslation();
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [setupRequired, setSetupRequired] = useState(false);
+    const [setupRequired] = useState(() => !hasAdminUsers());
     const [showPassword, setShowPassword] = useState(false);
-    const [confirmed, setConfirmed] = useState(false);
+    const confirmed = searchParams.get('confirmed') === '1';
     const [submitting, setSubmitting] = useState(false);
-
-    useEffect(() => {
-        setSetupRequired(!hasAdminUsers());
-        if (searchParams.get('confirmed') === '1') setConfirmed(true);
-    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

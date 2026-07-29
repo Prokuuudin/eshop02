@@ -30,7 +30,7 @@ function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
 
 const CATEGORIES = ['hair', 'nails', 'face', 'body', 'equipment'];
 
-export default function BulkPricePage() {
+export default function BulkPricePage(): React.ReactElement {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -146,7 +146,7 @@ export default function BulkPricePage() {
                     </h2>
                     <div className="flex flex-wrap items-end gap-4">
                         <div>
-                            <label className="mb-1 block text-xs text-gray-500">Тип изменения</label>
+                            <p className="mb-1 block text-xs text-gray-500">Тип изменения</p>
                             <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
                                 {MODE_OPTIONS.map((opt) => (
                                     <button
@@ -165,8 +165,9 @@ export default function BulkPricePage() {
                             </div>
                         </div>
                         <div>
-                            <label className="mb-1 block text-xs text-gray-500">Значение</label>
+                            <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-gray-500">Значение</label>
                             <input
+                                id="bulk-price-value"
                                 type="number"
                                 value={value}
                                 onChange={(e) => setValue(e.target.value)}
@@ -174,8 +175,9 @@ export default function BulkPricePage() {
                                 className="w-40 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                             />
                         </div>
-                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <label htmlFor="bulk-price-save-old" className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                             <Checkbox
+                                id="bulk-price-save-old"
                                 checked={saveOldPrice}
                                 onCheckedChange={(checked) => setSaveOldPrice(checked === true)}
                             />

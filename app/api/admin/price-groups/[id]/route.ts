@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -49,7 +49,7 @@ export async function PUT(
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { forceChangePassword } from '@/lib/auth';
 
-export default function ForceChangePasswordModal() {
+export default function ForceChangePasswordModal(): React.ReactElement {
     const [next, setNext] = useState('');
     const [confirm, setConfirm] = useState('');
     const [showNext, setShowNext] = useState(false);
@@ -54,18 +54,18 @@ export default function ForceChangePasswordModal() {
                 <div className="space-y-3">
                     {/* Новый пароль */}
                     <div>
-                        <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="forced-new-password" className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                             Новый пароль
                         </label>
                         <div className="relative flex items-center">
                             <Input
+                                id="forced-new-password"
                                 type={showNext ? 'text' : 'password'}
                                 value={next}
                                 onChange={(e) => setNext(e.target.value)}
                                 placeholder="Не менее 6 символов"
                                 className="pr-10 bg-card"
                                 autoComplete="new-password"
-                                autoFocus
                             />
                             <button
                                 type="button"
@@ -80,11 +80,12 @@ export default function ForceChangePasswordModal() {
 
                     {/* Подтверждение */}
                     <div>
-                        <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="forced-confirm-password" className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                             Повторите пароль
                         </label>
                         <div className="relative flex items-center">
                             <Input
+                                id="forced-confirm-password"
                                 type={showConfirm ? 'text' : 'password'}
                                 value={confirm}
                                 onChange={(e) => setConfirm(e.target.value)}

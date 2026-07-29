@@ -1,20 +1,16 @@
 ﻿'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { BookmarkPlus, ChevronRight } from 'lucide-react';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useOrderTemplatesStore } from '@/lib/order-templates-store';
 import { useTranslation } from '@/lib/use-translation';
 
 export const AccountTemplatesWidget: React.FC = () => {
     const { t } = useTranslation();
     const allTemplates = useOrderTemplatesStore((s) => s.templates);
-    const [userId, setUserId] = useState<string | null>(null);
-
-    useEffect(() => {
-        setUserId(getCurrentUser()?.id ?? null);
-    }, []);
+    const userId = useAuthStore((state) => state.user?.id ?? null);
 
     const templates = useMemo(
         () => (userId ? allTemplates.filter((tp) => tp.userId === userId) : []),

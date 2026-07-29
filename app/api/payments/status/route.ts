@@ -5,7 +5,7 @@ import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(req.url)
     const orderId = searchParams.get('orderId')?.trim()

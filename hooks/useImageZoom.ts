@@ -129,8 +129,10 @@ export function useImageZoom({
     // Смена картинки: старые natural-размеры невалидны, зум прячем до onLoad новой
     React.useEffect(() => {
         naturalRef.current = null;
-        setVisible(false);
-        setHiResFailed(false);
+        queueMicrotask(() => {
+            setVisible(false);
+            setHiResFailed(false);
+        });
     }, [src, hiResSrc]);
 
     React.useEffect(

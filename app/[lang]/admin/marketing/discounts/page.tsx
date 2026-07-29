@@ -30,7 +30,7 @@ const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
   description: ''
 })
 
-export default function AdminDiscountsPage() {
+export default function AdminDiscountsPage(): React.ReactElement {
   const [items, setItems] = useState<PromoCodeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -52,7 +52,15 @@ export default function AdminDiscountsPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function openCreate() {
     setEditId(null)
@@ -175,17 +183,17 @@ export default function AdminDiscountsPage() {
               {editId ? 'Редактировать промокод' : 'Новый промокод'}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-1" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Код *</span>
-                <Input
+                <Input id="admin-discount-field-1"
                   value={form.code}
                   onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
                   placeholder="WELCOME10"
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-2" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Скидка, %</span>
-                <Input
+                <Input id="admin-discount-field-2"
                   type="number"
                   min={1}
                   max={100}
@@ -193,18 +201,18 @@ export default function AdminDiscountsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, discount: Number(e.target.value) }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-3" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Мин. сумма заказа, €</span>
-                <Input
+                <Input id="admin-discount-field-3"
                   type="number"
                   min={0}
                   value={form.minOrder}
                   onChange={(e) => setForm((f) => ({ ...f, minOrder: Number(e.target.value) }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-4" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Макс. использований (пусто = без лимита)</span>
-                <Input
+                <Input id="admin-discount-field-4"
                   type="number"
                   min={1}
                   value={form.maxUses ?? ''}
@@ -212,18 +220,18 @@ export default function AdminDiscountsPage() {
                   placeholder="Без лимита"
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-5" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Действует до</span>
-                <Input
+                <Input id="admin-discount-field-5"
                   type="date"
                   value={form.expiresAt ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value || null }))}
                 />
               </label>
-              <label className="space-y-1">
+              <label htmlFor="admin-discount-field-6" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Статус</span>
                 <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
-                  <SelectTrigger className={selectCls}>
+                  <SelectTrigger id="admin-discount-field-6" className={selectCls}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,9 +240,9 @@ export default function AdminDiscountsPage() {
                   </SelectContent>
                 </Select>
               </label>
-              <label className="space-y-1 sm:col-span-2">
+              <label htmlFor="admin-discount-field-7" className="space-y-1 sm:col-span-2">
                 <span className="text-sm text-muted-foreground">Описание</span>
-                <Input
+                <Input id="admin-discount-field-7"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Краткое описание"

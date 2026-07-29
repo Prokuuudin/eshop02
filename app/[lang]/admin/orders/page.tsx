@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { useOrders } from '@/lib/orders-store'
 import { isOrderTaxIncluded, extractVat } from '@/lib/tax'
@@ -31,7 +32,7 @@ import {
   type SortField,
 } from './order-config'
 
-export default function AdminOrdersPage() {
+export default function AdminOrdersPage(): React.ReactElement {
   const { orders } = useOrders()
   const { getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, loadOrderMeta } = useAdminStore()
   const { upsertOrder } = useOrdersStore()
@@ -71,7 +72,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     const q = searchParams.get('q')
-    if (q) setSearch(q)
+    if (q) queueMicrotask(() => setSearch(q))
   }, [searchParams])
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
@@ -128,7 +129,9 @@ export default function AdminOrdersPage() {
   }, [orders, search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir, getOrderStatus])
 
   // Reset page when filters change
-  React.useEffect(() => { setPage(0) }, [search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir])
+  React.useEffect(() => {
+    queueMicrotask(() => setPage(0))
+  }, [search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PAGE_SIZE))
   const pageItems = filtered.slice(page * ORDERS_PAGE_SIZE, (page + 1) * ORDERS_PAGE_SIZE)
@@ -475,8 +478,9 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-          <label className="flex items-center gap-1.5 cursor-pointer mr-2">
+          <label htmlFor="select-all-orders" className="flex items-center gap-1.5 cursor-pointer mr-2">
             <Checkbox
+              id="select-all-orders"
               checked={isAllSelected ? true : isSomeSelected ? 'indeterminate' : false}
               onCheckedChange={toggleSelectAll}
             />
@@ -697,7 +701,7 @@ export default function AdminOrdersPage() {
                         <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800 bg-card">
                           {editItems.map((item) => (
                             <div key={item.lineKey} className="flex items-center gap-3 px-3 py-2.5">
-                              {item.image && <img src={item.image} alt="" className="w-9 h-9 rounded object-cover shrink-0" />}
+                              {item.image && <Image unoptimized src={item.image} alt="" width={36} height={36} className="w-9 h-9 rounded object-cover shrink-0" />}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{item.title}</p>
                                 {item.variantLabel && (
@@ -729,7 +733,7 @@ export default function AdminOrdersPage() {
                               {editProductResults.map((p) => (
                                 <button key={p.id} type="button" onClick={() => editAddProduct(p)}
                                   className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-primary/5 dark:hover:bg-primary/10 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                  {p.image && <img src={p.image} alt="" className="h-8 w-8 rounded object-cover shrink-0" />}
+                                  {p.image && <Image unoptimized src={p.image} alt="" width={32} height={32} className="h-8 w-8 rounded object-cover shrink-0" />}
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm text-foreground truncate">{p.title}</p>
                                     <p className="text-xs text-gray-400">{p.brand}{p.sku ? ` · ${p.sku}` : ''}</p>
@@ -829,9 +833,12 @@ export default function AdminOrdersPage() {
                       {order.items.map((item) => (
                         <div key={item.lineKey} className="flex items-center gap-3 px-3 py-2.5">
                           {item.image && (
-                            <img
+                            <Image
+                              unoptimized
                               src={item.image}
                               alt={item.title}
+                              width={40}
+                              height={40}
                               className="w-10 h-10 object-cover rounded-md shrink-0"
                             />
                           )}

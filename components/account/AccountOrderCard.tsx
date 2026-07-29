@@ -38,7 +38,7 @@ export default function AccountOrderCard({
   saveAsTemplateLabel,
   detailsLabel,
   onRepeatOrder,
-}: Props) {
+}: Props): React.ReactElement {
   const [templateOpen, setTemplateOpen] = useState(false)
   const defaultName = formatDate(order.createdAt, locale)
 

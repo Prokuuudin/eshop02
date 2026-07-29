@@ -52,7 +52,7 @@ function TypeRow({ size, tailwind, weight, sample }: { size: string; tailwind: s
 
 // ─── page ──────────────────────────────────────────────────────────────────
 
-export default function DesignSystemPage() {
+export default function DesignSystemPage(): React.ReactElement {
   return (
     <AdminGate>
       <main className="w-full py-4 space-y-14 text-foreground">
@@ -321,19 +321,19 @@ export default function DesignSystemPage() {
           <div>
             <p className="text-xs text-gray-400 mb-3 font-medium">Controls</p>
             <div className="flex flex-wrap gap-6 items-center">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label htmlFor="ds-check-1" className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox id="ds-check-1" />
                 <span>Checkbox unchecked</span>
               </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label htmlFor="ds-check-2" className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox id="ds-check-2" defaultChecked />
                 <span>Checkbox checked</span>
               </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label htmlFor="ds-switch-1" className="flex items-center gap-2 text-sm cursor-pointer">
                 <Switch id="ds-switch-1" />
                 <span>Switch off</span>
               </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label htmlFor="ds-switch-2" className="flex items-center gap-2 text-sm cursor-pointer">
                 <Switch id="ds-switch-2" defaultChecked />
                 <span>Switch on</span>
               </label>

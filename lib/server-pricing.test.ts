@@ -1,11 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const {
+  productFindManyMock,
+  promoCodeFindFirstMock,
+  keyValueSettingFindUniqueMock,
+} = vi.hoisted(() => ({
+  productFindManyMock: vi.fn(),
+  promoCodeFindFirstMock: vi.fn(),
+  keyValueSettingFindUniqueMock: vi.fn(),
+}))
+
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    product: { findMany: vi.fn() },
-    promoCode: { findFirst: vi.fn() },
-    keyValueSetting: { findUnique: vi.fn() },
+    product: { findMany: productFindManyMock },
+    promoCode: { findFirst: promoCodeFindFirstMock },
+    keyValueSetting: { findUnique: keyValueSettingFindUniqueMock },
   },
 }))
 
@@ -14,13 +24,12 @@ import {
   getServerPromoDiscountPct,
   recomputeOrderPricing,
 } from './server-pricing'
-import { prisma } from '@/lib/prisma'
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('resolveLineItems', () => {
   it('uses catalog price and ignores client-supplied price', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
     const items = await resolveLineItems([{ id: 'p1', quantity: 2, price: 1 }])
@@ -29,7 +38,7 @@ describe('resolveLineItems', () => {
   })
 
   it('applies bulk tier pricing by quantity', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: [{ quantity: 10, pricePerUnit: 800 }] },
     ])
     const cheap = await resolveLineItems([{ id: 'p1', quantity: 5 }])
@@ -39,14 +48,14 @@ describe('resolveLineItems', () => {
   })
 
   it('falls back to sanitized client price when product missing from catalog', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([])
+    productFindManyMock.mockResolvedValue([])
     const items = await resolveLineItems([{ id: 'ghost', quantity: 1, price: 500 }])
     expect(items[0].price).toBe(500)
     expect(items[0].fromCatalog).toBe(false)
   })
 
   it('clamps negative client fallback price to 0', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([])
+    productFindManyMock.mockResolvedValue([])
     const items = await resolveLineItems([{ id: 'ghost', quantity: 1, price: -999 }])
     expect(items[0].price).toBe(0)
   })
@@ -58,21 +67,21 @@ describe('getServerPromoDiscountPct', () => {
   })
 
   it('returns 0 when minOrder not met', async () => {
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue({
+    promoCodeFindFirstMock.mockResolvedValue({
       code: 'SPRING20', discount: 20, minOrder: 2000, maxUses: null, usedCount: 0, expiresAt: null,
     })
     expect(await getServerPromoDiscountPct('SPRING20', 1500)).toBe(0)
   })
 
   it('returns discount when valid', async () => {
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue({
+    promoCodeFindFirstMock.mockResolvedValue({
       code: 'WELCOME10', discount: 10, minOrder: 0, maxUses: null, usedCount: 0, expiresAt: null,
     })
     expect(await getServerPromoDiscountPct('welcome10', 1000)).toBe(10)
   })
 
   it('returns 0 when maxUses exhausted', async () => {
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue({
+    promoCodeFindFirstMock.mockResolvedValue({
       code: 'X', discount: 50, minOrder: 0, maxUses: 5, usedCount: 5, expiresAt: null,
     })
     expect(await getServerPromoDiscountPct('X', 1000)).toBe(0)
@@ -81,10 +90,10 @@ describe('getServerPromoDiscountPct', () => {
 
 describe('recomputeOrderPricing', () => {
   it('recomputes totals from catalog and ignores tampered prices', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 2, price: 1 }], // attacker tries price=1
@@ -99,10 +108,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('charges the courier fee in euros below the free-delivery threshold', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 6, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -115,10 +124,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('applies free delivery from €100 of subtotal', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -131,10 +140,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('forbids bonus spend for guests (no balance)', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -145,10 +154,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('caps bonus spend at the real user balance; discount is points * point value', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -160,10 +169,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('caps bonus spend at the order total converted to points', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 10, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -176,10 +185,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('computes bonusEarned from catalog bonusRate (no bonus spent)', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null, bonusRate: 5 },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 3 }],
@@ -190,10 +199,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('scales bonusEarned down when points are spent', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null, bonusRate: 10 },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     // grandTotal = 1000 (pickup); spend 50000 points = €500 -> total 500
     const r = await recomputeOrderPricing({
@@ -208,10 +217,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('falls back to 0.5% of item subtotal when bonusRate is null', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 200, bulkPricingTiers: null, bonusRate: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -222,10 +231,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('earns visible points on a small order (€60 -> 30 points)', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 60, bulkPricingTiers: null, bonusRate: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -236,11 +245,11 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('mixes explicit bonusRate items with percent-fallback items', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 10 },
       { id: 'p2', price: 200, bulkPricingTiers: null, bonusRate: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [
@@ -254,10 +263,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('scales fallback earn down when points are spent', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 400, bulkPricingTiers: null, bonusRate: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     // base = 200 points; grandTotal €400 (pickup), spend 20000 points = €200 -> total €200
     const r = await recomputeOrderPricing({
@@ -270,10 +279,10 @@ describe('recomputeOrderPricing', () => {
   })
 
   it('applies a valid promo discount', async () => {
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 1000, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue({
+    promoCodeFindFirstMock.mockResolvedValue({
       code: 'WELCOME10', discount: 10, minOrder: 0, maxUses: null, usedCount: 0, expiresAt: null,
     })
 
@@ -293,15 +302,15 @@ describe('recomputeOrderPricing', () => {
 
 describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSetting)', () => {
   const mockBonusConfig = (value: Record<string, unknown> | null) => {
-    vi.mocked(prisma.keyValueSetting.findUnique as any).mockResolvedValue(value ? { value } : null)
+    keyValueSettingFindUniqueMock.mockResolvedValue(value ? { value } : null)
   }
 
   it('disables earning and spending entirely when the admin turns the program off', async () => {
     mockBonusConfig({ enabled: false })
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 10 },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -316,10 +325,10 @@ describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSett
 
   it('caps bonus spend at the admin-configured max-spend-percent, not 100%', async () => {
     mockBonusConfig({ enabled: true, maxSpendPercent: 20 })
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -333,10 +342,10 @@ describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSett
 
   it('withholds earning below the admin-configured minimum order amount', async () => {
     mockBonusConfig({ enabled: true, minOrderForEarn: 500 })
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 10 },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -349,10 +358,10 @@ describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSett
 
   it('caps bonusEarned at the admin-configured max-earn-per-order', async () => {
     mockBonusConfig({ enabled: true, maxEarnPerOrder: 50 })
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null, bonusRate: 1000 },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],
@@ -365,10 +374,10 @@ describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSett
 
   it('blocks redemption when the balance is under the admin-configured minimum to spend', async () => {
     mockBonusConfig({ enabled: true, minPointsToSpend: 500 })
-    vi.mocked(prisma.product.findMany as any).mockResolvedValue([
+    productFindManyMock.mockResolvedValue([
       { id: 'p1', price: 100, bulkPricingTiers: null },
     ])
-    vi.mocked(prisma.promoCode.findFirst as any).mockResolvedValue(null)
+    promoCodeFindFirstMock.mockResolvedValue(null)
 
     const r = await recomputeOrderPricing({
       items: [{ id: 'p1', quantity: 1 }],

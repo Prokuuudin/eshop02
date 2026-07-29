@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- Next loads this file as CommonJS.
 const path = require('path');
 
 /** @type {import('next').NextConfig} */

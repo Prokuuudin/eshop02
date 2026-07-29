@@ -34,7 +34,7 @@ import { calcDeliveryFee } from '@/lib/delivery';
 import AnimatedPrice from '@/components/AnimatedPrice';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 
-export default function CartPage() {
+export default function CartPage(): React.ReactElement {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const router = useRouter();
@@ -49,7 +49,7 @@ export default function CartPage() {
         return getCurrentUser();
     });
     React.useEffect(() => {
-        setCurrentUser(getCurrentUser());
+        queueMicrotask(() => setCurrentUser(getCurrentUser()));
     }, []);
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 

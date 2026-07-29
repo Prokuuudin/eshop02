@@ -53,7 +53,7 @@ interface AuditLogViewerProps {
 export default function AuditLogViewer({
   companyId,
   limit = 50
-}: AuditLogViewerProps) {
+}: AuditLogViewerProps): React.ReactElement {
   const { t, language } = useTranslation()
   const { getEntriesByCompany } = useAuditLogStore()
   const [filterType, setFilterType] = useState<FilterType>('all')
@@ -61,7 +61,10 @@ export default function AuditLogViewer({
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const locale = LANGUAGE_LOCALE[language] || 'en-US'
 
-  const allEntries = companyId ? getEntriesByCompany(companyId) : []
+  const allEntries = useMemo(
+    () => companyId ? getEntriesByCompany(companyId) : [],
+    [companyId, getEntriesByCompany]
+  )
 
   const filteredEntries = useMemo(() => {
     let filtered = allEntries
@@ -78,7 +81,7 @@ export default function AuditLogViewer({
     }
 
     return filtered.slice(0, limit)
-  }, [allEntries, filterType, filterValue, limit])
+  }, [allEntries, filterType, filterValue, limit, locale])
 
   const actionTypes = [...new Set(allEntries.map(e => e.action))]
 
@@ -176,8 +179,16 @@ export default function AuditLogViewer({
             return (
           <div
             key={entry.id}
+            role="button"
+            tabIndex={0}
             className="p-3 rounded-lg border border-border bg-muted cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                setExpandedId(expandedId === entry.id ? null : entry.id)
+              }
+            }}
           >
             <div className="flex items-start gap-3">
               <div className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${

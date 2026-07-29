@@ -16,7 +16,7 @@ const ALLOWED_ENTITY_TYPES = new Set([
   'order', 'product', 'promo', 'return', 'rfq', 'review',
 ])
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

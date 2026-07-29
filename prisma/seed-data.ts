@@ -13,7 +13,6 @@ const prisma = new PrismaClient({ adapter })
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonBlogPost = {
   id: string
   slug: string

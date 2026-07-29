@@ -36,7 +36,7 @@ type CartDrawerProps = {
     onClose: () => void;
 };
 
-export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.ReactPortal | null {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const router = useRouter();
@@ -45,7 +45,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     const { toggle: toggleSelected, selectAll, unselectAll } = useCartSelection();
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
-    const [mounted, setMounted] = React.useState(false);
+    const mounted = React.useSyncExternalStore(
+        () => () => undefined,
+        () => true,
+        () => false
+    );
     const [templateOpen, setTemplateOpen] = React.useState(false);
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
@@ -77,10 +81,6 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             : '/checkout';
 
     React.useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    React.useEffect(() => {
         if (!isOpen) return;
 
         const handleKeyDown = (event: KeyboardEvent): void => {
@@ -101,13 +101,15 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     };
 
     if (!mounted) {
-        return <></>;
+        return null;
     }
 
     return createPortal(
         <>
             {/* Backdrop */}
-            <div
+            <button
+                type="button"
+                aria-label={t('common.close')}
                 data-testid="cart-drawer-backdrop"
                 className={`fixed inset-0 z-drawer bg-black/50 transition-opacity duration-300 ${
                     isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'

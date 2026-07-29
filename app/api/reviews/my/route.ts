@@ -4,7 +4,7 @@ import { getServerUser } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return errorResponse('Unauthorized', 401)

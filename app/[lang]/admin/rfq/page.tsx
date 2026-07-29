@@ -97,7 +97,7 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function AdminRFQPage() {
+export default function AdminRFQPage(): React.ReactElement {
   const [loadedProducts, setLoadedProducts] = useState<Product[]>([])
   const [quotePrice, setQuotePrice] = useState<Record<string, string>>({})
   const [quoteTerms, setQuoteTerms] = useState<Record<string, string>>({})

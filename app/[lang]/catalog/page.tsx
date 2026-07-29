@@ -40,7 +40,7 @@ type PageProps = {
   }>
 }
 
-export default async function CatalogPage({ params: routeParams, searchParams }: PageProps) {
+export default async function CatalogPage({ params: routeParams, searchParams }: PageProps): Promise<React.ReactElement> {
   const language = resolveLanguage((await routeParams).lang)
   const t = translations[language]
 

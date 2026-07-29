@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import SmoothScrollHandler from './SmoothScrollHandler'
 import PageLoader from './PageLoader'
 
-export default function RouteUiEffects() {
+export default function RouteUiEffects(): React.ReactElement {
   const pathname = usePathname()
   const [loading, setLoading] = useState(false)
 
@@ -47,7 +47,7 @@ export default function RouteUiEffects() {
 
   useEffect(() => {
     // Route changed -> loader must be completed.
-    setLoading(false)
+    queueMicrotask(() => setLoading(false))
   }, [pathname])
 
   return (

@@ -14,7 +14,7 @@ interface TopProductsProps {
 export default function TopProducts({
   analytics,
   limit = 5
-}: TopProductsProps) {
+}: TopProductsProps): React.ReactElement {
   const { t, language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const topItems = analytics.topProducts.slice(0, limit)

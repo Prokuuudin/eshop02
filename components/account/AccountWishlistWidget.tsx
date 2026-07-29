@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ChevronRight } from 'lucide-react';
@@ -11,11 +11,14 @@ export const AccountWishlistWidget: React.FC = () => {
     const { t } = useTranslation();
     const syncWishlistScope = useWishlist((s) => s.syncWishlistScope);
     const items = useWishlist((s) => s.items);
-    const [hydrated, setHydrated] = useState(false);
+    const hydrated = React.useSyncExternalStore(
+        () => () => undefined,
+        () => true,
+        () => false
+    );
 
     useEffect(() => {
         syncWishlistScope();
-        setHydrated(true);
     }, [syncWishlistScope]);
 
     const preview = hydrated ? items.slice(0, 4) : [];

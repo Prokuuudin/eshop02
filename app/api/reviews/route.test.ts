@@ -26,12 +26,12 @@ const createdReview = { id: 'rvw_1', productId: 'p1', author: 'X', rating: 5, ti
 describe('POST /api/reviews', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(createReview).mockResolvedValue(createdReview as any)
+    vi.mocked(createReview).mockResolvedValue(createdReview as never)
     vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
   })
 
   it('forces author from session for logged-in user', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna' } as any)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna' } as never)
 
     const res = await POST(makePost({ productId: 'p1', author: 'Кто-то другой', rating: 5, title: 'T', text: 'B' }))
 

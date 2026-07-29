@@ -3,24 +3,26 @@ import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui
 import { IconClose } from '@/components/ui/icon-close';
 import type { UseImageZoomResult } from '@/hooks/useImageZoom';
 
-interface ZoomPartProps {
-    zoom: UseImageZoomResult;
-}
+type ZoomLensProps = Pick<UseImageZoomResult, 'lensRef' | 'visible'>;
+type ZoomPaneProps = Pick<
+    UseImageZoomResult,
+    'paneRef' | 'paneImgRef' | 'paneSrc' | 'effectivePaneMode' | 'visible' | 'onPaneImgError'
+>;
 
 /**
  * Линза внутри квадратного контейнера превью. Позицию и размер задаёт
  * useImageZoom напрямую через style (translate3d), сюда приходит только
  * состояние видимости для fade-анимации.
  */
-export const ProductZoomLens: React.FC<ZoomPartProps> = ({ zoom }) => (
+export const ProductZoomLens: React.FC<ZoomLensProps> = ({ lensRef, visible }) => (
     <div
-        ref={zoom.lensRef}
+        ref={lensRef}
         aria-hidden="true"
         className="product-detail__zoom-lens pointer-events-none absolute left-0 top-0 z-10"
     >
         <div
             className={`h-full w-full rounded-sm border border-primary/40 bg-primary/10 transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
-                zoom.visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+                visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
             }`}
         />
     </div>
@@ -31,23 +33,30 @@ export const ProductZoomLens: React.FC<ZoomPartProps> = ({ zoom }) => (
  * справа от превью, в 'inline' — поверх превью. Сдвиг/масштаб картинки внутри
  * задаёт useImageZoom, режимы отличаются только позиционированием панели.
  */
-export const ProductZoomPane: React.FC<ZoomPartProps> = ({ zoom }) => (
+export const ProductZoomPane: React.FC<ZoomPaneProps> = ({
+    paneRef,
+    paneImgRef,
+    paneSrc,
+    effectivePaneMode,
+    visible,
+    onPaneImgError,
+}) => (
     <div
-        ref={zoom.paneRef}
+        ref={paneRef}
         aria-hidden="true"
         className={`product-detail__zoom-pane pointer-events-none absolute z-30 overflow-hidden rounded-lg border border-border bg-white shadow-lg transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
-            zoom.effectivePaneMode === 'side' ? 'left-full top-0 ml-4 h-full w-full' : 'inset-0'
-        } ${zoom.visible ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
+            effectivePaneMode === 'side' ? 'left-full top-0 ml-4 h-full w-full' : 'inset-0'
+        } ${visible ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
     >
         {/* обычный <img>: размеры и сдвиг в px задаёт хук, srcset от next/image здесь только мешал бы */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-            ref={zoom.paneImgRef}
-            src={zoom.paneSrc}
+            ref={paneImgRef}
+            src={paneSrc}
             alt=""
             draggable={false}
             className="block max-w-none select-none"
-            onError={zoom.onPaneImgError}
+            onError={onPaneImgError}
         />
     </div>
 );
@@ -56,7 +65,7 @@ export const ProductZoomPane: React.FC<ZoomPartProps> = ({ zoom }) => (
  * Полноэкранный просмотр для touch-устройств (открывается тапом по превью).
  * Панорамирование — нативный скролл контейнера, без кастомных жестов.
  */
-export const ProductImageLightbox: React.FC<ZoomPartProps & { title: string }> = ({
+export const ProductImageLightbox: React.FC<{ zoom: UseImageZoomResult; title: string }> = ({
     zoom,
     title,
 }) => {

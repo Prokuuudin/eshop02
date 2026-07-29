@@ -5,7 +5,7 @@ import { getBonusProgramConfig, saveBonusProgramConfig } from '@/lib/bonus-confi
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -13,7 +13,7 @@ export async function GET() {
   return NextResponse.json(config)
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 

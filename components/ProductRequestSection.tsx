@@ -22,7 +22,7 @@ const initialFormState = {
   website: ''
 }
 
-export default function ProductRequestSection({ embedded = false }: { embedded?: boolean }) {
+export default function ProductRequestSection({ embedded = false }: { embedded?: boolean }): React.ReactElement {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState(initialFormState)
   const [startedAt] = useState(() => Date.now())
@@ -30,9 +30,13 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const turnstile = useTurnstile()
-
-  const renderTurnstile = turnstile.render
+  const {
+    enabled: turnstileEnabled,
+    token: turnstileToken,
+    setContainer: setTurnstileContainer,
+    render: renderTurnstile,
+    reset: resetTurnstile,
+  } = useTurnstile()
 
   // Контейнер капчи монтируется только вместе с формой
   useEffect(() => {
@@ -73,7 +77,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
           message: messageLines.join('\n'),
           website: formData.website,
           submittedAt: startedAt,
-          turnstileToken: turnstile.token
+          turnstileToken
         })
       })
 
@@ -86,7 +90,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
           setSubmitError(t('contact.errorSpam'))
         } else if (result.code === 'captcha_required' || result.code === 'captcha_failed') {
           setSubmitError(t('contact.errorCaptcha'))
-          turnstile.reset()
+          resetTurnstile()
         } else {
           setSubmitError(t('contact.errorGeneric'))
         }
@@ -95,7 +99,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
 
       setSubmitted(true)
       setFormData(initialFormState)
-      turnstile.reset()
+      resetTurnstile()
 
       setTimeout(() => {
         setSubmitted(false)
@@ -110,8 +114,8 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
 
   return (
     <section className={embedded ? 'product-request mb-12' : 'product-request py-10'} id="product-request">
-      {turnstile.enabled && (
-        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={turnstile.render} />
+      {turnstileEnabled && (
+        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
       )}
       <div className={embedded ? 'product-request__container' : 'product-request__container max-w-[1200px] mx-auto px-4'}>
         <div className="product-request__banner relative rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:mt-16 md:px-10 md:pl-36 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -175,7 +179,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                     placeholder={t('home.productRequest.productPlaceholder')}
                     minLength={3}
                     maxLength={200}
-                    autoFocus
+                    ref={(element) => element?.focus()}
                     required
                   />
                 </div>
@@ -237,9 +241,9 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                     maxLength={2000}
                   />
                 </div>
-                {turnstile.enabled && (
+                {turnstileEnabled && (
                   <div className="product-request__captcha pt-1">
-                    <div ref={turnstile.containerRef} />
+                    <div ref={setTurnstileContainer} />
                   </div>
                 )}
                 {submitError && (
@@ -253,7 +257,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                 <Button
                   type="submit"
                   className="product-request__submit w-full sm:w-auto"
-                  disabled={submitting || (turnstile.enabled && !turnstile.token)}
+                  disabled={submitting || (turnstileEnabled && !turnstileToken)}
                 >
                   {submitting ? t('contact.sending') : t('home.productRequest.send')}
                 </Button>

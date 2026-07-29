@@ -8,7 +8,7 @@ type Context = {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: NextRequest, context: Context) {
+export async function GET(_req: NextRequest, context: Context): Promise<NextResponse> {
   try {
     const { id } = await context.params
     const order = await getServerOrderById(id)
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, context: Context) {
   }
 }
 
-export async function PATCH(req: NextRequest, context: Context) {
+export async function PATCH(req: NextRequest, context: Context): Promise<NextResponse> {
   try {
     // Payment status is set authoritatively by the Stripe webhook/verify endpoints.
     // Any manual override here is admin-only — clients must never set paymentStatus directly.

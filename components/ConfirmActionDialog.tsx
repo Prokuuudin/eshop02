@@ -28,7 +28,7 @@ export default function ConfirmActionDialog({
   cancelLabel,
   onConfirm,
   trigger
-}: ConfirmActionDialogProps) {
+}: ConfirmActionDialogProps): React.ReactElement {
   const [open, setOpen] = React.useState(false)
 
   const handleConfirm = (): void => {

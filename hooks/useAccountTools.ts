@@ -1,6 +1,21 @@
 ﻿import { Activity, CreditCard } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { User } from '@/lib/auth'
 
-export function getAccountTools(user: any, tl: (...args: any[]) => string) {
+type AccountTool = {
+    title: string
+    description: string
+    href: string
+    linkLabel: string
+    icon: LucideIcon
+    classes: string
+    linkClasses: string
+}
+
+function getAccountToolsImpl(
+    user: User | null,
+    tl: (key: string, ru: string, en: string, lv: string) => string
+): AccountTool[] {
     const tools = [
         {
             title: tl('account.page.tools.analytics.title', 'Статистика покупок', 'Purchase analytics', 'Pirkumu statistika'),
@@ -26,3 +41,5 @@ export function getAccountTools(user: any, tl: (...args: any[]) => string) {
     }
     return tools;
 }
+
+export const getAccountTools: typeof getAccountToolsImpl = getAccountToolsImpl

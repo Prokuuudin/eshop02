@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import { useForm, FormProvider, SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,7 +33,7 @@ interface ProductFormModeContextValue {
     isEdit: boolean;
 }
 const ProductFormModeContext = createContext<ProductFormModeContextValue>({ isEdit: false });
-export const useProductFormMode = () => useContext(ProductFormModeContext);
+export const useProductFormMode = (): ProductFormModeContextValue => useContext(ProductFormModeContext);
 
 const emptyDefaults: AddProductFormValues = {
     id: '',
@@ -132,17 +132,11 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         mode: 'onChange',
     });
 
-    const { handleSubmit, formState, watch } = methods;
-    const image = watch('image');
-    const title = watch('title');
-    const titleEn = watch('titleEn');
-    const titleLv = watch('titleLv');
-    const brand = watch('brand');
-    const price = watch('price');
-    const oldPrice = watch('oldPrice');
-    const badges = watch('badges');
-    const stock = watch('stock');
-    const sku = watch('sku');
+    const { handleSubmit, formState } = methods;
+    const [image, title, titleEn, titleLv, brand, price, oldPrice, badges, stock, sku] = useWatch({
+        control: methods.control,
+        name: ['image', 'title', 'titleEn', 'titleLv', 'brand', 'price', 'oldPrice', 'badges', 'stock', 'sku'],
+    });
 
     const localizedTitle = language === 'en' ? titleEn : language === 'lv' ? titleLv : title;
 

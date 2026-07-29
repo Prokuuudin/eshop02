@@ -3,7 +3,7 @@ import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const config = await getBonusProgramConfig()
   return NextResponse.json(config)
 }

@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const subscriptionCreateMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  product: { findUnique: vi.fn() }, productSubscription: { create: vi.fn(), findMany: vi.fn() },
+  product: { findUnique: vi.fn() }, productSubscription: { create: subscriptionCreateMock, findMany: vi.fn() },
 } }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 
@@ -27,7 +29,7 @@ beforeEach(() => {
   vi.mocked(prisma.product.findUnique).mockResolvedValue({
     id: 'p1', title: 'DB product', image: '/db.jpg', price: 42.5, isActive: true, isDeleted: false,
   } as never)
-  vi.mocked(prisma.productSubscription.create as any).mockImplementation(async ({ data }: any) => ({ ...data }))
+  subscriptionCreateMock.mockImplementation(async ({ data }) => ({ ...data }))
 })
 
 describe('POST /api/subscriptions', () => {

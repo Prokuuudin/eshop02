@@ -28,7 +28,7 @@ function countEntries(value: unknown): string {
   return 'данные'
 }
 
-export default function AdminBackupPage() {
+export default function AdminBackupPage(): React.ReactElement {
   const [lastDownload, setLastDownload] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
@@ -41,7 +41,7 @@ export default function AdminBackupPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem(LS_KEY)
-    if (saved) setLastDownload(saved)
+    if (saved) queueMicrotask(() => setLastDownload(saved))
   }, [])
 
   async function handleDownload() {
@@ -174,8 +174,9 @@ export default function AdminBackupPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Выберите файл backup (.json)</label>
+            <label htmlFor="backup-file" className="block text-sm font-medium mb-2">Выберите файл backup (.json)</label>
             <input
+              id="backup-file"
               ref={fileInputRef}
               type="file"
               accept=".json"

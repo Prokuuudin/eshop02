@@ -23,7 +23,7 @@ export const maxDuration = 60
 const inviteUrlFor = (base: string, token: string) => `${base}/auth/invite?token=${token}`
 
 // GET: держатели карт + статусы приглашений
-export async function GET(req: NextRequest) {
+export async function GET(): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 // порциями. Токены сохраняются в БД ДО отправки писем: обрыв посреди порции
 // не оставит клиентам мёртвых ссылок (худший случай — статус sent без письма,
 // лечится повторной отправкой).
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { formatEuro } from '@/lib/utils';
 
@@ -49,7 +50,7 @@ function GroupForm({
         <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                    <label className="mb-1 block text-xs text-gray-500">Название *</label>
+                    <div className="mb-1 block text-xs text-gray-500">Название *</div>
                     <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -58,9 +59,9 @@ function GroupForm({
                     />
                 </div>
                 <div>
-                    <label className="mb-1 block text-xs text-gray-500">
+                    <div className="mb-1 block text-xs text-gray-500">
                         Множитель цены (1.0 = без скидки, 0.8 = −20%)
-                    </label>
+                    </div>
                     <input
                         type="number"
                         step="0.01"
@@ -72,7 +73,7 @@ function GroupForm({
                 </div>
             </div>
             <div>
-                <label className="mb-1 block text-xs text-gray-500">Описание</label>
+                <div className="mb-1 block text-xs text-gray-500">Описание</div>
                 <input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -81,7 +82,7 @@ function GroupForm({
                 />
             </div>
             <div>
-                <label className="mb-1 block text-xs text-gray-500">Цвет метки</label>
+                <div className="mb-1 block text-xs text-gray-500">Цвет метки</div>
                 <div className="flex gap-2">
                     {COLOR_OPTIONS.map((c) => (
                         <button
@@ -122,7 +123,7 @@ function GroupForm({
     );
 }
 
-export default function PriceGroupsPage() {
+export default function PriceGroupsPage(): ReactElement {
     const [groups, setGroups] = useState<PriceGroup[]>([]);
     const [overrides, setOverrides] = useState<PriceOverride[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -147,7 +148,15 @@ export default function PriceGroupsPage() {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        let cancelled = false;
+        queueMicrotask(() => {
+            if (!cancelled) load();
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleCreate = async (data: Omit<PriceGroup, 'id' | 'createdAt'>) => {
         await fetch('/api/admin/price-groups', {
@@ -253,17 +262,27 @@ export default function PriceGroupsPage() {
                             return (
                                 <div
                                     key={g.id}
+                                    role="button"
+                                    tabIndex={0}
                                     className={`cursor-pointer rounded-xl border p-4 transition-all ${
                                         selectedGroup === g.id
                                             ? 'border-emerald-400 bg-emerald-50/40 shadow-sm dark:border-emerald-600 dark:bg-emerald-900/10'
                                             : 'border-gray-200 bg-white hover:border-border dark:bg-gray-900'
                                     }`}
-                                    onClick={() =>
-                                        setSelectedGroup(selectedGroup === g.id ? null : g.id)
-                                    }
+                                    onClick={(event) => {
+                                        if ((event.target as HTMLElement).closest('button, input')) return;
+                                        setSelectedGroup(selectedGroup === g.id ? null : g.id);
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.target !== event.currentTarget) return;
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            setSelectedGroup(selectedGroup === g.id ? null : g.id);
+                                        }
+                                    }}
                                 >
                                     {editingId === g.id ? (
-                                        <div onClick={(e) => e.stopPropagation()}>
+                                        <div>
                                             <GroupForm
                                                 initial={g}
                                                 onSave={(data) => handleUpdate(g.id, data)}

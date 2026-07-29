@@ -13,7 +13,7 @@ import { guardOrigin } from '@/lib/api-guard'
 
 const ALLOWED_EVENTS: WebhookEvent[] = ['order.created', 'order.shipped', 'order.cancelled', 'payment.recorded', 'invoice.issued']
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   const auth = await authenticateRequest(req)
   if (!auth.authenticated) {
     return errorResponse(auth.error || 'Unauthorized', auth.status || 401)
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   return successResponse({ endpoints, deliveries })
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req, { allowApiKey: true })
   if (blocked) return blocked
 
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   return successResponse({ endpoint, testDelivery }, 201)
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req, { allowApiKey: true })
   if (blocked) return blocked
 

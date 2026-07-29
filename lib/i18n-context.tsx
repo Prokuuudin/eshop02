@@ -1,7 +1,7 @@
 
 "use client";
 import { translations } from '@/data/translations'
-export function useTranslation() {
+export function useTranslation(): { t: (key: string) => string } {
   const { language } = useI18n();
   function t(key: string): string {
     return translations[language]?.[key] || key;

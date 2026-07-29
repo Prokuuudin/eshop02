@@ -1,4 +1,6 @@
-export default function AccountSectionSkeleton() {
+import type { ReactElement } from 'react'
+
+export default function AccountSectionSkeleton(): ReactElement {
   return (
     <div className="account-section-skeleton animate-pulse rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
       {/* Section header: title + optional subtitle */}

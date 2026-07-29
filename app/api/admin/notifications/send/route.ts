@@ -38,7 +38,7 @@ function buildHtml(title: string, message: string, type: AllowedType, link: stri
     </div>`
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const caller = await getServerUser()
     if (!caller || caller.platformRole !== 'admin') {

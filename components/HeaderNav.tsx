@@ -13,7 +13,7 @@ import {
 } from './ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 
-export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boolean }) {
+export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boolean }): React.ReactElement {
     const { t, language } = useTranslation();
     const { categories } = useCategoriesConfig();
     const homeHref = onlyCatalog ? '/' : '/#home';

@@ -10,7 +10,7 @@ const ALLOWED_INTERVALS = new Set(['monthly', 'quarterly'])
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

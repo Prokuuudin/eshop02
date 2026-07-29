@@ -33,7 +33,7 @@ function renderPreview(body: string, vars: string[]): string {
     return result;
 }
 
-export default function EmailTemplatesPage() {
+export default function EmailTemplatesPage(): React.ReactElement {
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState<EmailTemplate | null>(null);
@@ -54,7 +54,9 @@ export default function EmailTemplatesPage() {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        queueMicrotask(() => void load());
+    }, []);
 
     const select = (t: EmailTemplate) => {
         setSelected(t);
@@ -209,20 +211,22 @@ export default function EmailTemplatesPage() {
                                 {tab === 'edit' ? (
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                            <label htmlFor="email-template-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 Тема письма
                                             </label>
                                             <input
+                                                id="email-template-subject"
                                                 value={subject}
                                                 onChange={(e) => setSubject(e.target.value)}
                                                 className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                            <label htmlFor="email-template-body" className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 HTML-тело письма
                                             </label>
                                             <textarea
+                                                id="email-template-body"
                                                 value={body}
                                                 onChange={(e) => setBody(e.target.value)}
                                                 rows={14}

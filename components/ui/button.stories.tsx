@@ -1,8 +1,10 @@
 import { Button } from './button';
-export default {
+const meta = {
   title: 'UI/Button',
   component: Button,
 };
+
+export default meta;
 
 export const Default = {
   args: {

@@ -8,7 +8,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { getSiteUrl } from '@/lib/site-url'
 import { serializeJsonLd } from '@/lib/json-ld'
 
-export default function BlogPage() {
+export default function BlogPage(): React.ReactElement {
   const { t, language } = useTranslation()
   const [posts, setPosts] = React.useState<BlogPost[]>([])
   const [loading, setLoading] = React.useState(true)

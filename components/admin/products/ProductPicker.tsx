@@ -61,12 +61,14 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         const q = query.trim();
         if (q.length < 2) {
-            setSuggestions([]);
-            setIsLoading(false);
+            debounceRef.current = setTimeout(() => {
+                setSuggestions([]);
+                setIsLoading(false);
+            }, 0);
             return;
         }
-        setIsLoading(true);
         debounceRef.current = setTimeout(() => {
+            setIsLoading(true);
             fetch(`/api/admin/products/search?q=${encodeURIComponent(q)}`)
                 .then((res) => (res.ok ? res.json() : null))
                 .then((json) => {

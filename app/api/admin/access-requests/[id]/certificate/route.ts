@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 
 import ArchivePanel from '@/components/admin/products/ArchivePanel';
+import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
 
 interface ProductsToolbarProps {
     searchQuery: string;
@@ -26,7 +27,7 @@ interface ProductsToolbarProps {
     archiveCount?: number;
     onToggleArchive?: () => void;
     archiveOpen?: boolean;
-    archiveItems?: any[];
+    archiveItems?: ArchivedProductRecord[];
     onRestoreArchive?: (id: string) => void;
     onDeleteArchive?: (id: string) => void;
 }

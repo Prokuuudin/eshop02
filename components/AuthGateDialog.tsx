@@ -20,7 +20,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
 }
 
-export default function AuthGateDialog({ open, onOpenChange }: Props) {
+export default function AuthGateDialog({ open, onOpenChange }: Props): React.ReactElement {
   const { t } = useTranslation()
   const [view, setView] = useState<View>('gate')
 

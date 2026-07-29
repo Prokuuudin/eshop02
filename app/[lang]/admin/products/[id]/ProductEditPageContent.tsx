@@ -16,7 +16,7 @@ export default function ProductEditPageContent({
     productId,
     productTitle,
     initialValues,
-}: ProductEditPageContentProps) {
+}: ProductEditPageContentProps): React.ReactElement {
     return (
         <AdminGate>
             <main className="admin-products w-full space-y-4 text-foreground">

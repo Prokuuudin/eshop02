@@ -3,7 +3,7 @@ import { getInvoicesByCompany, createInvoiceInDb } from '@/lib/invoices-data-sto
 import { getServerUser } from '@/lib/server-auth'
 import { getServerOrderById, canAccessOrder } from '@/lib/orders-data-store'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

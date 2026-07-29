@@ -1,21 +1,18 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { MapPin, ChevronRight } from 'lucide-react';
-import { getCurrentUser } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 import { useSavedAddresses } from '@/lib/saved-addresses-store';
+import type { SavedAddress } from '@/lib/saved-addresses-store';
 import { useTranslation } from '@/lib/use-translation';
 
 export const AccountAddressesWidget: React.FC = () => {
     const { t } = useTranslation();
     const { getByEmail } = useSavedAddresses();
-    const [addresses, setAddresses] = useState<any[]>([]);
-
-    useEffect(() => {
-        const user = getCurrentUser();
-        if (user?.email) setAddresses(getByEmail(user.email));
-    }, [getByEmail]);
+    const userEmail = useAuthStore((state) => state.user?.email);
+    const addresses: SavedAddress[] = userEmail ? getByEmail(userEmail) : [];
 
     const preview = addresses[0];
 

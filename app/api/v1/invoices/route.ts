@@ -4,7 +4,7 @@ import { getInvoicesByCompany } from '@/lib/invoices-data-store'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) return errorResponse(auth.error || 'Unauthorized', auth.status || 401)

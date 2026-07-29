@@ -5,7 +5,7 @@ import { brandSlug } from '@/lib/brand-slug'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const config = await getBrandsConfigFromStore()
 
   const activeProducts = await prisma.product.findMany({

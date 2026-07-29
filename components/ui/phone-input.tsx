@@ -28,7 +28,7 @@ export default function PhoneInput({
     disabled,
     required,
     ...rest
-}: PhoneInputProps) {
+}: PhoneInputProps): React.ReactElement {
     const e164Value = normalizePhoneInputValue(value, defaultCountry)
 
     return (

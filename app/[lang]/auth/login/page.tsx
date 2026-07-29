@@ -1,10 +1,11 @@
 import Link from 'next/link'
+import type { ReactElement } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
 import { Button } from '@/components/ui/button'
 import { translations } from '@/data/translations'
 import { resolveLanguage } from '@/lib/i18n-routing'
 
-export default async function LoginPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function LoginPage({ params }: { params: Promise<{ lang: string }> }): Promise<ReactElement> {
   const language = resolveLanguage((await params).lang);
   const t = translations[language];
 

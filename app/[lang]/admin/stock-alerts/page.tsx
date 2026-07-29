@@ -39,7 +39,7 @@ function StockBadge({ stock, threshold }: { stock: number; threshold: number }) 
     );
 }
 
-export default function StockAlertsPage() {
+export default function StockAlertsPage(): React.ReactElement {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
@@ -52,22 +52,23 @@ export default function StockAlertsPage() {
     const [lastSent, setLastSent] = useState<string | null>(null);
 
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const v = parseInt(saved, 10);
-            if (Number.isFinite(v)) {
-                setThreshold(v);
-                setThresholdInput(String(v));
+        queueMicrotask(() => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const v = parseInt(saved, 10);
+                if (Number.isFinite(v)) {
+                    setThreshold(v);
+                    setThresholdInput(String(v));
+                }
             }
-        }
-        const savedEmail = localStorage.getItem('admin-stock-alert-email');
-        if (savedEmail) setAlertEmail(savedEmail);
-        const savedLastSent = localStorage.getItem('admin-stock-alert-last-sent');
-        if (savedLastSent) setLastSent(savedLastSent);
+            const savedEmail = localStorage.getItem('admin-stock-alert-email');
+            if (savedEmail) setAlertEmail(savedEmail);
+            const savedLastSent = localStorage.getItem('admin-stock-alert-last-sent');
+            if (savedLastSent) setLastSent(savedLastSent);
+        });
     }, []);
 
     useEffect(() => {
-        setLoading(true);
         fetch('/api/admin/products')
             .then((r) => r.json())
             .then((data: Product[]) => setProducts(Array.isArray(data) ? data : []))

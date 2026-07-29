@@ -1,12 +1,22 @@
 import { ShoppingBag, ClipboardList, MapPinned, Package } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { Order } from '@/lib/orders-store'
+import type { SavedAddress } from '@/lib/saved-addresses-store'
 
-export function getAccountSummaryCards(
+type AccountSummaryCard = {
+    title: string
+    value: string
+    caption: string
+    icon: LucideIcon
+}
+
+function getAccountSummaryCardsImpl(
     t: (key: string) => string,
-    tl: (...args: any[]) => string,
-    userOrders: any[],
-    savedAddresses: any[],
+    tl: (key: string, ru: string, en: string, lv: string) => string,
+    userOrders: Array<Order & { status?: string }>,
+    savedAddresses: SavedAddress[],
     totalSpent: string | number
-) {
+): AccountSummaryCard[] {
     return [
         {
             title: t('account.myOrders'),
@@ -37,3 +47,5 @@ export function getAccountSummaryCards(
         },
     ];
 }
+
+export const getAccountSummaryCards: typeof getAccountSummaryCardsImpl = getAccountSummaryCardsImpl

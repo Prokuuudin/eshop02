@@ -31,12 +31,12 @@ export default function SmoothScrollHandler(): null {
     return (header?.offsetHeight ?? 0) + 8;
   }, []);
 
-  const tryScrollToHash = useCallback((
+  const tryScrollToHash = useCallback(function tryScrollToHash(
     hash: string,
     behavior: ScrollBehavior,
     token: number,
     attempt = 0
-  ): boolean => {
+  ): boolean {
     const id = decodeURIComponent(hash.replace(/^#/, ''));
     if (!id) return false;
 

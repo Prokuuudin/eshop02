@@ -75,16 +75,17 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
     );
 }
 
-export default function SalesAnalyticsPage() {
+export default function SalesAnalyticsPage(): React.ReactElement {
     const orders = useOrders((s) => s.orders);
     const [period, setPeriod] = useState<Period>('30d');
+    const [now] = useState(Date.now);
 
     const filteredOrders = useMemo(() => {
         if (period === 'all') return orders;
         const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-        const cutoff = Date.now() - days * 86400000;
+        const cutoff = now - days * 86400000;
         return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff);
-    }, [orders, period]);
+    }, [orders, period, now]);
 
     const totalRevenue = filteredOrders.reduce((s, o) => s + (o.total ?? 0), 0);
     const avgOrder = filteredOrders.length ? totalRevenue / filteredOrders.length : 0;

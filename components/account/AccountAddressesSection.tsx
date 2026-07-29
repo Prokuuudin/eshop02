@@ -22,7 +22,23 @@ interface AccountAddressesSectionProps {
     onEditDraftChange: (field: string, value: string) => void;
     onDelete: (addressId: string) => void;
     buildCheckoutAddressLink: (address: SavedAddress) => string;
-    labels: any;
+    labels: {
+        firstName: string;
+        lastName: string;
+        phone: string;
+        address: string;
+        city: string;
+        postalCode: string;
+        postalCodeLabel: string;
+        useAddress: string;
+        editAddress: string;
+        deleteAddress: string;
+        cancel: string;
+        save: string;
+        confirmTitle: string;
+        confirmDeleteAddress: string;
+        delete: string;
+    };
     t: (key: string) => string;
 }
 

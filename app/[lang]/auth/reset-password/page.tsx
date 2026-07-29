@@ -9,20 +9,18 @@ import { readUsers, writeUsers } from '@/lib/auth'
 
 type Phase = 'loading' | 'form' | 'success' | 'error'
 
-export default function ResetPasswordPage() {
+export default function ResetPasswordPage(): React.ReactElement {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [phase, setPhase] = useState<Phase>('loading')
-  const [errorMsg, setErrorMsg] = useState('')
+  const token = searchParams.get('token') ?? ''
+  const [phase, setPhase] = useState<Phase>(() => token ? 'loading' : 'error')
+  const [errorMsg, setErrorMsg] = useState(() => token ? '' : 'Ссылка недействительна.')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const token = searchParams.get('token') ?? ''
 
   useEffect(() => {
     if (!token) {
-      setErrorMsg('Ссылка недействительна.')
-      setPhase('error')
       return
     }
 
@@ -142,10 +140,11 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
           <div>
-            <label className="block mb-1 text-sm text-foreground">
+            <label htmlFor="reset-password" className="block mb-1 text-sm text-foreground">
               Новый пароль
             </label>
             <Input
+              id="reset-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -155,10 +154,11 @@ export default function ResetPasswordPage() {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm text-foreground">
+            <label htmlFor="reset-password-confirmation" className="block mb-1 text-sm text-foreground">
               Повторите пароль
             </label>
             <Input
+              id="reset-password-confirmation"
               type="password"
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}

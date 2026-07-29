@@ -10,7 +10,7 @@ type Props = {
     onClose?: () => void;
 };
 
-export default function RegisterSwitcher({ onClose }: Props) {
+export default function RegisterSwitcher({ onClose }: Props): React.ReactElement {
     const { t } = useTranslation();
     const [hasCard, setHasCard] = useState(true);
 

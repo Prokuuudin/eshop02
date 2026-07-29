@@ -14,7 +14,7 @@ export interface CustomerRow {
   lastOrderDate: string | null
 }
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const user = await getServerUser()
   if (!user || user.platformRole !== 'admin') {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })

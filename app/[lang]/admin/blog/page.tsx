@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -83,11 +83,18 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
   translations: { en: { ...EMPTY_TRANSLATION }, lv: { ...EMPTY_TRANSLATION } }
 }
 
-export default function AdminBlogPage() {
+export default function AdminBlogPage(): React.ReactElement {
   const router = useRouter()
   const { language, t } = useTranslation()
-  const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
-  const tl = (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) => t(key, l(ru, en, lv), params)
+  const l = useCallback(
+    (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en),
+    [language]
+  )
+  const tl = useCallback(
+    (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) =>
+      t(key, l(ru, en, lv), params),
+    [l, t]
+  )
   const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US'
 
   const [blogPosts, setBlogPosts] = useState<AdminBlogPost[]>([])
@@ -98,7 +105,7 @@ export default function AdminBlogPage() {
   const [blogForm, setBlogForm] = useState<AdminBlogForm>(INITIAL_BLOG_FORM)
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null)
 
-  const loadBlogPosts = async (): Promise<void> => {
+  const loadBlogPosts = useCallback(async (): Promise<void> => {
     setBlogLoading(true)
     setBlogError('')
     try {
@@ -114,11 +121,11 @@ export default function AdminBlogPage() {
     } finally {
       setBlogLoading(false)
     }
-  }
+  }, [tl])
 
   useEffect(() => {
-    void loadBlogPosts()
-  }, [])
+    queueMicrotask(() => void loadBlogPosts())
+  }, [loadBlogPosts])
 
   const handleBlogCreate = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()

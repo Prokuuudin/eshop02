@@ -101,7 +101,7 @@ function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; er
   return { product }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
@@ -139,7 +139,6 @@ export async function POST(request: NextRequest) {
         if (res.success) { result.created++; existingIds.add(product.id) }
         else result.errors.push({ row: rowNum, id: product.id, message: res.error ?? 'create_failed' })
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id: _id, ...changes } = product
         const res = await upsertProductOverride(product.id, changes)
         if (res.success) result.updated++

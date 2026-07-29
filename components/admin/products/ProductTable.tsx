@@ -1,5 +1,6 @@
 ﻿'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Button } from '@/components/ui/button';
 
@@ -84,7 +85,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 <td className="p-3 align-middle">
                                     <div className="w-12 h-12 rounded overflow-hidden bg-white flex items-center justify-center shrink-0">
                                         {product.image
-                                            ? <img src={product.image} alt={product.title} className="object-contain w-full h-full" />
+                                            ? <Image unoptimized src={product.image} alt={product.title} width={48} height={48} className="object-contain w-full h-full" />
                                             : <span className="text-xs text-gray-400">—</span>
                                         }
                                     </div>
@@ -105,7 +106,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 <td className="p-3 align-middle">
                                     {isEditingPrice ? (
                                         <input
-                                            autoFocus
+                                            ref={(element) => element?.focus()}
                                             type="number"
                                             min={0}
                                             step={0.01}
@@ -129,7 +130,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 <td className="p-3 align-middle">
                                     {isEditingStock ? (
                                         <input
-                                            autoFocus
+                                            ref={(element) => element?.focus()}
                                             type="number"
                                             min={0}
                                             step={1}

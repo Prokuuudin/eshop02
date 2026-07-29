@@ -12,7 +12,7 @@ import UserMenu from './UserMenu'
 import AdminHeaderNav from './admin/AdminHeaderNav'
 import { Menu } from 'lucide-react'
 
-export default function Header() {
+export default function Header(): React.ReactElement {
   const pathname = useUnprefixedPathname()
   const isAdminPage = pathname.startsWith('/admin')
 

@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 
+const { transactionMock, userFindUniqueMock } = vi.hoisted(() => ({
+  transactionMock: vi.fn(),
+  userFindUniqueMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
-  prisma: { $transaction: vi.fn(), user: { findUnique: vi.fn() } },
+  prisma: { $transaction: transactionMock, user: { findUnique: userFindUniqueMock } },
 }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn(async () => []) }))
@@ -13,7 +18,6 @@ vi.mock('@/lib/rate-limit', () => ({
   gcRateLimitStore: vi.fn(),
 }))
 
-import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/mailer'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
@@ -28,7 +32,7 @@ function request(email = 'user@test.com') {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(prisma.user.findUnique as any).mockResolvedValue({ id: 'u1' })
+  userFindUniqueMock.mockResolvedValue({ id: 'u1' })
   vi.mocked(sendEmail).mockResolvedValue(undefined)
 })
 
@@ -37,7 +41,7 @@ describe('POST /api/auth/forgot-password', () => {
     const tx = {
       passwordResetToken: { deleteMany: vi.fn(), create: vi.fn() },
     }
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     const res = await POST(request())
     expect(res.status).toBe(200)
@@ -60,6 +64,6 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.status).toBe(429)
     expect(checkRateLimit).toHaveBeenCalledWith('forgot-password:ip:203.0.113.5')
     expect(checkRateLimit).toHaveBeenCalledWith('forgot-password:email:user@test.com')
-    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
   })
 })

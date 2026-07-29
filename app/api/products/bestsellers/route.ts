@@ -6,7 +6,7 @@ import { redactProductPrices } from '@/lib/product-price-visibility'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const rows = await prisma.$queryRaw<{ product_id: string; total_qty: number }[]>`
       SELECT

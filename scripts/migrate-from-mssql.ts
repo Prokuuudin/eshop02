@@ -16,6 +16,8 @@ import { PrismaClient } from '../generated/prisma/client'
 const DATA = 'C:/Temp/migration'
 const BATCH = 500
 
+type LegacyRow = Record<string, never>
+
 function load<T>(name: string): T[] {
   const raw = readFileSync(`${DATA}/${name}.json`, 'utf8').trim()
   if (!raw || raw === 'NULL') return []
@@ -50,11 +52,12 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       return await fn()
-    } catch (e: any) {
-      const retriable = e?.message?.includes('connection error') ||
-        e?.message?.includes('Connection terminated') ||
-        e?.message?.includes('not queryable') ||
-        e?.code === 'P1001'
+    } catch (e) {
+      const error = e as { message?: string; code?: string }
+      const retriable = error.message?.includes('connection error') ||
+        error.message?.includes('Connection terminated') ||
+        error.message?.includes('not queryable') ||
+        error.code === 'P1001'
       if (retriable && attempt < 5) {
         await new Promise(r => setTimeout(r, attempt * 2000))
       } else {
@@ -119,10 +122,10 @@ function makeSlug(text: string, suffix: string | number): string {
 // ── 1. Products ───────────────────────────────────────────────────────────────
 async function migrateProducts() {
   console.log('\n[1/7] Products...')
-  const products = load<any>('products')
-  const images   = load<any>('product_images')
-  const related  = load<any>('related_products')
-  const crossSell = load<any>('crosssell_products')
+  const products = load<LegacyRow>('products')
+  const images   = load<LegacyRow>('product_images')
+  const related  = load<LegacyRow>('related_products')
+  const crossSell = load<LegacyRow>('crosssell_products')
 
   const imageMap: Record<string, string[]> = {}
   for (const r of images) {
@@ -145,7 +148,7 @@ async function migrateProducts() {
     crossSellMap[pid].push(String(r.crossSellId))
   }
 
-  const rows = products.map((p: any) => {
+  const rows = products.map((p: LegacyRow) => {
     const imgs = imageMap[String(p.id)] ?? []
     return {
       id: String(p.id),
@@ -192,10 +195,10 @@ async function migrateProducts() {
 // ── 2. Users ──────────────────────────────────────────────────────────────────
 async function migrateUsers() {
   console.log('\n[2/7] Users...')
-  const users = load<any>('users')
+  const users = load<LegacyRow>('users')
   const defaultHash = await bcrypt.hash('Welcome1!', 10)
 
-  const rows = users.map((u: any) => ({
+  const rows = users.map((u: LegacyRow) => ({
     id: String(u.id),
     email: u.email,
     passwordHash: defaultHash,
@@ -221,9 +224,9 @@ async function migrateUsers() {
 // ── 3. Orders ─────────────────────────────────────────────────────────────────
 async function migrateOrders() {
   console.log('\n[3/7] Orders...')
-  const orders  = load<any>('orders')
-  const items   = load<any>('order_items')
-  const guidMap = load<any>('customer_guid_map')
+  const orders  = load<LegacyRow>('orders')
+  const items   = load<LegacyRow>('order_items')
+  const guidMap = load<LegacyRow>('customer_guid_map')
 
   const nopToGuid = new Map<number, string>()
   for (const r of guidMap) nopToGuid.set(Number(r.nopId), String(r.guid))
@@ -245,7 +248,7 @@ async function migrateOrders() {
     (await withRetry(() => prisma.user.findMany({ select: { id: true } }))).map(u => u.id)
   )
 
-  const rows = orders.map((o: any) => {
+  const rows = orders.map((o: LegacyRow) => {
     const guid   = nopToGuid.get(Number(o.customerId))
     const userId = guid && existingUserIds.has(guid) ? guid : null
     return {
@@ -285,15 +288,15 @@ async function migrateOrders() {
 // ── 4. Reviews ────────────────────────────────────────────────────────────────
 async function migrateReviews() {
   console.log('\n[4/7] Reviews...')
-  const rows = load<any>('reviews')
+  const rows = load<LegacyRow>('reviews')
 
   const existingProductIds = new Set(
     (await withRetry(() => prisma.product.findMany({ select: { id: true } }))).map(p => p.id)
   )
 
   const valid = rows
-    .filter((r: any) => existingProductIds.has(String(r.productId)))
-    .map((r: any) => ({
+    .filter((r: LegacyRow) => existingProductIds.has(String(r.productId)))
+    .map((r: LegacyRow) => ({
       id: String(r.id),
       productId: String(r.productId),
       author: String(r.author || 'Customer').trim(),
@@ -318,9 +321,9 @@ async function migrateReviews() {
 // ── 5. Blog posts ─────────────────────────────────────────────────────────────
 async function migrateBlogPosts() {
   console.log('\n[5/7] Blog posts...')
-  const rows = load<any>('blog_posts')
+  const rows = load<LegacyRow>('blog_posts')
 
-  const data = rows.map((b: any) => ({
+  const data = rows.map((b: LegacyRow) => ({
     id: String(b.id),
     slug: makeSlug(b.title, b.id),
     title: b.title,
@@ -329,7 +332,7 @@ async function migrateBlogPosts() {
     author: 'Admin',
     image: '/blog/default.jpg',
     category: 'news',
-    readTime: Math.max(1, Math.ceil((b.body || '').length / 1500)),
+    readTime: Math.max(1, Math.ceil(String(b.body || '').length / 1500)),
     createdAt: new Date(b.createdAt),
     featured: false,
   }))
@@ -347,9 +350,9 @@ async function migrateBlogPosts() {
 // ── 6. Addresses ──────────────────────────────────────────────────────────────
 async function migrateSavedAddresses() {
   console.log('\n[6/7] Addresses...')
-  const rows = load<any>('addresses')
+  const rows = load<LegacyRow>('addresses')
 
-  const data = rows.map((a: any) => ({
+  const data = rows.map((a: LegacyRow) => ({
     id: String(a.id),
     email: a.email,
     firstName: a.firstName || '',
@@ -374,9 +377,9 @@ async function migrateSavedAddresses() {
 // ── 7. Promo codes ────────────────────────────────────────────────────────────
 async function migratePromoCodes() {
   console.log('\n[7/7] Promo codes...')
-  const rows = load<any>('promo_codes')
+  const rows = load<LegacyRow>('promo_codes')
 
-  const data = rows.map((d: any) => ({
+  const data = rows.map((d: LegacyRow) => ({
     id: String(d.id),
     code: d.code,
     discount: d.usePercentage ? Number(d.discountPercentage) : Number(d.discountAmount) || 10,

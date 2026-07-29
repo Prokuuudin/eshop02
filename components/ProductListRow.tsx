@@ -15,7 +15,7 @@ import { StockNotifyButton } from './StockNotifyButton';
 
 type Props = { product: Product };
 
-export default function ProductListRow({ product }: Props) {
+export default function ProductListRow({ product }: Props): React.ReactElement {
   const { t, language } = useTranslation();
   const locale = getLocaleFromLanguage(language);
   const isOutOfStock = product.stock === 0;

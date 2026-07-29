@@ -29,7 +29,7 @@ const ProductGalleryFields: React.FC = () => {
                     )}
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-2">Галерея</label>
+                    <p className="block text-sm font-medium mb-2">Галерея</p>
                     <div className="flex flex-col gap-2">
                         {(fields as { id: string }[]).map((field, index) => (
                             <div key={field.id} className="flex gap-2">
@@ -54,7 +54,7 @@ const ProductGalleryFields: React.FC = () => {
                     </div>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-2">Демо-видео</label>
+                    <p className="block text-sm font-medium mb-2">Демо-видео</p>
                     <p className="text-xs text-gray-500 mb-2">
                         Показываются в галерее на странице товара (mp4/webm или ссылка на видео)
                     </p>

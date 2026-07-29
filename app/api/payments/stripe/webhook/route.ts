@@ -33,7 +33,7 @@ async function sessionMatchesOrderAmount(orderId: string, session: Stripe.Checko
   return true
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET

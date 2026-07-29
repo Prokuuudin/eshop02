@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/server-auth'
 export const runtime = 'nodejs'
 
 // POST: вручную назначить номер карты существующему клиенту (замена ERP-импорта)
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 

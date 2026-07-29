@@ -1,4 +1,6 @@
-export default function AccountLoading() {
+import type { ReactElement } from 'react'
+
+export default function AccountLoading(): ReactElement {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <div className="mb-6 h-8 w-48 animate-pulse rounded bg-muted" />

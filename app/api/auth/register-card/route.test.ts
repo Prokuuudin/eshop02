@@ -1,21 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const {
+  companyFindFirstMock,
+  userFindFirstMock,
+  transactionMock,
+  hashPasswordMock,
+  createSessionMock,
+  checkRateLimitMock,
+} = vi.hoisted(() => ({
+  companyFindFirstMock: vi.fn(),
+  userFindFirstMock: vi.fn(),
+  transactionMock: vi.fn(),
+  hashPasswordMock: vi.fn(),
+  createSessionMock: vi.fn(),
+  checkRateLimitMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    company: { findFirst: vi.fn() },
-    user: { findFirst: vi.fn(), update: vi.fn() },
-    $transaction: vi.fn(),
+    company: { findFirst: companyFindFirstMock },
+    user: { findFirst: userFindFirstMock, update: vi.fn() },
+    $transaction: transactionMock,
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  hashPassword: vi.fn(),
-  createSession: vi.fn(),
+  hashPassword: hashPasswordMock,
+  createSession: createSessionMock,
   mapDbToServerUser: vi.fn((u: unknown) => u),
   SESSION_COOKIE: 'eshop_session',
 }))
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: vi.fn(),
+  checkRateLimit: checkRateLimitMock,
   gcRateLimitStore: vi.fn(),
 }))
 vi.mock('@/lib/mailer', () => ({
@@ -23,8 +39,6 @@ vi.mock('@/lib/mailer', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { hashPassword, createSession } from '@/lib/server-auth'
-import { checkRateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/mailer'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { POST } from './route'
@@ -68,15 +82,15 @@ function makeTx() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(checkRateLimit as any).mockResolvedValue({ limited: false, resetAt: 0 })
-  vi.mocked(hashPassword as any).mockResolvedValue('hashed')
-  vi.mocked(createSession as any).mockResolvedValue('token')
+  checkRateLimitMock.mockResolvedValue({ limited: false, resetAt: 0 })
+  hashPasswordMock.mockResolvedValue('hashed')
+  createSessionMock.mockResolvedValue('token')
 })
 
 describe('POST /api/auth/register-card', () => {
   it('rejects a card number with no matching company or individual cardholder', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(null)
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue(null)
 
     const res = await POST(makeRequest({ cardNumber: '9999', password: FIRST_LOGIN_PASSWORD }))
 
@@ -85,18 +99,18 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rejects when the card belongs to an already-activated individual cardholder', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(ACTIVATED_USER)
+    userFindFirstMock.mockResolvedValue(ACTIVATED_USER)
 
     const res = await POST(makeRequest({ cardNumber: '9012', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
   })
 
   it('rejects a card that already has a registered user (company path, legacy shape)', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue({ id: 'existing-user' })
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+    userFindFirstMock.mockResolvedValue({ id: 'existing-user' })
+    companyFindFirstMock.mockResolvedValue(COMPANY)
 
     const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 
@@ -105,13 +119,13 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('logs in a dormant individual cardholder (ERP import) on the shared welcome password, without creating a new user', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(DORMANT_USER)
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
     const res = await POST(makeRequest({ cardNumber: '5678', password: FIRST_LOGIN_PASSWORD }))
 
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ user: expect.objectContaining({ id: 'user_dormant_1' }) })
-    expect(createSession).toHaveBeenCalledWith('user_dormant_1')
+    expect(createSessionMock).toHaveBeenCalledWith('user_dormant_1')
     expect(prisma.$transaction).not.toHaveBeenCalled()
     const setCookie = res.headers.get('set-cookie')
     expect(setCookie).toContain('eshop_session=token')
@@ -125,19 +139,19 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('does not notify anyone when the welcome password is wrong', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(DORMANT_USER)
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
     const res = await POST(makeRequest({ cardNumber: '5678', password: 'wrong-guess' }))
 
     expect(res.status).toBe(401)
     expect(await res.json()).toMatchObject({ error: 'wrong_password' })
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('rejects a brand-new company card claim with the wrong password', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue(COMPANY)
 
     const res = await POST(makeRequest({ cardNumber: '1234', password: 'wrong-guess' }))
 
@@ -147,10 +161,10 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('creates a real user bound to the company and a session on success', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(COMPANY)
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue(COMPANY)
     const tx = makeTx()
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     const res = await POST(makeRequest({ cardNumber: '1234', name: 'Ivan', password: FIRST_LOGIN_PASSWORD }))
 
@@ -172,17 +186,17 @@ describe('POST /api/auth/register-card', () => {
         data: expect.objectContaining({ companyId: 'company_1', role: 'buyer' }),
       })
     )
-    expect(createSession).toHaveBeenCalled()
+    expect(createSessionMock).toHaveBeenCalled()
     const setCookie = res.headers.get('set-cookie')
     expect(setCookie).toContain('eshop_session=token')
     expect(sendEmail).toHaveBeenCalledWith('office@example.com', expect.any(String), expect.any(String))
   })
 
   it('skips the activation notice when the company has no contact email on file', async () => {
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue({ ...COMPANY, contactEmail: null })
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue({ ...COMPANY, contactEmail: null })
     const tx = makeTx()
-    vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(tx))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
 
     const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 
@@ -202,13 +216,13 @@ describe('POST /api/auth/register-card', () => {
     // The shared welcome password means a single known card number is the only
     // thing standing between an attacker and someone else's account — cap
     // attempts per card, not just per IP, to slow that down.
-    vi.mocked(checkRateLimit as any).mockImplementation(async (key: string) =>
+    checkRateLimitMock.mockImplementation(async (key: string) =>
       key.startsWith('register-card:card:')
         ? { limited: true, resetAt: Date.now() + 60_000 }
         : { limited: false, resetAt: 0 }
     )
-    vi.mocked(prisma.user.findFirst as any).mockResolvedValue(null)
-    vi.mocked(prisma.company.findFirst as any).mockResolvedValue(null)
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue(null)
 
     const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 
@@ -217,7 +231,7 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rate-limits repeated attempts from the same IP', async () => {
-    vi.mocked(checkRateLimit as any).mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
+    checkRateLimitMock.mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
 
     const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
 

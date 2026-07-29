@@ -253,11 +253,17 @@ export const useInvoicesStore = create<InvoiceStore>()(
         invoices: Array.from(state.invoices.entries()),
         invoiceNumberCounter: state.invoiceNumberCounter
       }),
-      merge: (persistedState: any, currentState) => ({
-        ...currentState,
-        invoices: mergeInvoices(persistedState?.invoices),
-        invoiceNumberCounter: persistedState.invoiceNumberCounter || 1000
-      })
+      merge: (persistedState: unknown, currentState) => {
+        const persisted = persistedState as {
+          invoices?: Array<[string, Invoice]>
+          invoiceNumberCounter?: number
+        }
+        return {
+          ...currentState,
+          invoices: mergeInvoices(persisted.invoices),
+          invoiceNumberCounter: persisted.invoiceNumberCounter || 1000
+        }
+      }
     }
   )
 )

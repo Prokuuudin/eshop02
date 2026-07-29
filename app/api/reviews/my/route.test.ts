@@ -18,7 +18,7 @@ describe('GET /api/reviews/my', () => {
   })
 
   it('returns empty list when user has no display name', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: undefined } as any)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: undefined } as never)
     const res = await GET()
     const json = await res.json()
     expect(res.status).toBe(200)
@@ -27,10 +27,10 @@ describe('GET /api/reviews/my', () => {
   })
 
   it('returns reviews matched by user name', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna' } as any)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'a@b.com', name: 'Anna' } as never)
     vi.mocked(getReviewsByAuthor).mockResolvedValue([
       { id: 'rvw_1', productId: 'p1', author: 'Anna', rating: 5, title: 'T', text: 'X', createdAt: '2026-01-01T00:00:00.000Z', helpful: 0, status: 'pending' },
-    ] as any)
+    ] as never)
 
     const res = await GET()
     const json = await res.json()

@@ -24,7 +24,7 @@ export interface AuditEntry {
   userName?: string
   userEmail?: string
   action: AuditAction
-  details: Record<string, any> // Flexible for different action types
+  details: Record<string, unknown> // Flexible for different action types
   timestamp: Date
   ipAddress?: string
 }
@@ -117,10 +117,13 @@ export const useAuditLogStore = create<AuditLogStore>()(
       partialize: (state) => ({
         entries: Array.from(state.entries.entries())
       }),
-      merge: (persistedState: any, currentState) => ({
-        ...currentState,
-        entries: new Map(persistedState.entries || [])
-      })
+      merge: (persistedState: unknown, currentState) => {
+        const persisted = persistedState as { entries?: Array<[string, AuditEntry]> }
+        return {
+          ...currentState,
+          entries: new Map(persisted.entries ?? [])
+        }
+      }
     }
   )
 )
@@ -130,9 +133,9 @@ export const logAuditAction = (
   companyId: string,
   userId: string,
   action: AuditAction,
-  details: Record<string, any>,
+  details: Record<string, unknown>,
   options?: { userName?: string; userEmail?: string; ipAddress?: string }
-) => {
+): void => {
   const store = useAuditLogStore.getState()
   store.logAction({
     companyId,

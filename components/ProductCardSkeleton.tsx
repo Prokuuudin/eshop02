@@ -1,6 +1,6 @@
 import { Card } from './ui/card';
 
-export default function ProductCardSkeleton() {
+export default function ProductCardSkeleton(): React.ReactElement {
   return (
     <Card className="product-card-skeleton p-3 h-full flex flex-col animate-pulse bg-card border border-border">
       <div className="rounded-md overflow-hidden w-full h-48 bg-muted" />

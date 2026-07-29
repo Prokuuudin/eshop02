@@ -1,15 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+const {
+  accessRequestFindFirstMock,
+  accessRequestCreateMock,
+  settingUpsertMock,
+  transactionMock,
+  hashPasswordMock,
+} = vi.hoisted(() => ({
+  accessRequestFindFirstMock: vi.fn(),
+  accessRequestCreateMock: vi.fn(),
+  settingUpsertMock: vi.fn(),
+  transactionMock: vi.fn(),
+  hashPasswordMock: vi.fn(),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    accessRequest: { findFirst: vi.fn(), create: vi.fn() },
-    keyValueSetting: { upsert: vi.fn() },
-    $transaction: vi.fn(),
+    accessRequest: {
+      findFirst: accessRequestFindFirstMock,
+      create: accessRequestCreateMock,
+    },
+    keyValueSetting: { upsert: settingUpsertMock },
+    $transaction: transactionMock,
   },
 }))
 vi.mock('@/lib/server-auth', () => ({
-  hashPassword: vi.fn(),
+  hashPassword: hashPasswordMock,
 }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn(),
@@ -22,7 +39,6 @@ vi.mock('@/lib/turnstile-server', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
-import { hashPassword } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { POST } from './route'
@@ -37,13 +53,13 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(hashPassword as any).mockResolvedValue('hashed')
+  hashPasswordMock.mockResolvedValue('hashed')
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
   vi.mocked(verifyTurnstile).mockResolvedValue(true)
   vi.mocked(isTurnstileRequired).mockReturnValue(false)
-  vi.mocked(prisma.accessRequest.findFirst as any).mockResolvedValue(null)
-  vi.mocked(prisma.accessRequest.create as any).mockImplementation(async ({ data }: any) => ({ ...data }))
-  vi.mocked(prisma.$transaction as any).mockImplementation(async (fn: any) => fn(prisma))
+  accessRequestFindFirstMock.mockResolvedValue(null)
+  accessRequestCreateMock.mockImplementation(async ({ data }) => ({ ...data }))
+  transactionMock.mockImplementation(async (fn) => fn(prisma))
 })
 
 describe('POST /api/access-requests', () => {
@@ -60,7 +76,9 @@ describe('POST /api/access-requests', () => {
     )
 
     expect(res.status).toBe(201)
-    const createArgs = vi.mocked(prisma.accessRequest.create).mock.calls[0][0] as any
+    const createArgs = accessRequestCreateMock.mock.calls[0][0] as {
+      data: Record<string, unknown>
+    }
     expect(createArgs.data.email).toBe('master@inbox.lv')
     expect(createArgs.data.requestType).toBe('no-card')
     expect(createArgs.data.cardNumber).toBe('')
@@ -79,7 +97,10 @@ describe('POST /api/access-requests', () => {
     )
 
     expect(res.status).toBe(201)
-    const upsertArgs = vi.mocked(prisma.keyValueSetting.upsert).mock.calls[0][0] as any
+    const upsertArgs = settingUpsertMock.mock.calls[0][0] as {
+      where: { key: string }
+      create: { value: { data: string; name: string } }
+    }
     expect(upsertArgs.where.key).toMatch(/^access-request-cert-/)
     expect(upsertArgs.create.value.data).toBe(dataUrl)
     expect(upsertArgs.create.value.name).toBe('diploms.jpg')
@@ -96,7 +117,7 @@ describe('POST /api/access-requests', () => {
     )
 
     expect(res.status).toBe(413)
-    expect(vi.mocked(prisma.accessRequest.create)).not.toHaveBeenCalled()
+    expect(accessRequestCreateMock).not.toHaveBeenCalled()
   })
 
   it('битый certificateData (не data URL) → 400', async () => {
@@ -134,7 +155,7 @@ describe('POST /api/access-requests', () => {
     }))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe('weak_password')
-    expect(hashPassword).not.toHaveBeenCalled()
+    expect(hashPasswordMock).not.toHaveBeenCalled()
   })
 
   it('rate-limits by IP before bcrypt', async () => {
@@ -143,7 +164,7 @@ describe('POST /api/access-requests', () => {
       email: 'master@inbox.lv', password: 'LongPassword1!', requestType: 'no-card',
     }))
     expect(res.status).toBe(429)
-    expect(hashPassword).not.toHaveBeenCalled()
+    expect(hashPasswordMock).not.toHaveBeenCalled()
   })
 
   it('requires and verifies Turnstile before bcrypt', async () => {
@@ -153,7 +174,7 @@ describe('POST /api/access-requests', () => {
     }))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe('captcha_required')
-    expect(hashPassword).not.toHaveBeenCalled()
+    expect(hashPasswordMock).not.toHaveBeenCalled()
   })
 
   it('fails closed before bcrypt when Turnstile is not configured', async () => {
@@ -163,12 +184,12 @@ describe('POST /api/access-requests', () => {
     }))
     expect(res.status).toBe(503)
     expect((await res.json()).error).toBe('captcha_not_configured')
-    expect(hashPassword).not.toHaveBeenCalled()
-    expect(prisma.accessRequest.create).not.toHaveBeenCalled()
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(accessRequestCreateMock).not.toHaveBeenCalled()
   })
 
   it('maps a concurrent pending-request unique conflict to 409', async () => {
-    vi.mocked(prisma.accessRequest.create).mockRejectedValueOnce({ code: 'P2002' } as never)
+    accessRequestCreateMock.mockRejectedValueOnce({ code: 'P2002' })
     const res = await POST(makeRequest({
       email: 'master@inbox.lv', password: 'LongPassword1!', requestType: 'no-card',
     }))

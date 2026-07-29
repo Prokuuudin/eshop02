@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { getServerUser } from '@/lib/server-auth'
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     // Recording a payment moves the invoice balance and can flip it to `paid`.
     // That must be a trusted action — admin here, or a company-bound API key on

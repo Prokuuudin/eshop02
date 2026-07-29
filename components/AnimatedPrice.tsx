@@ -8,15 +8,15 @@ interface AnimatedPriceProps {
   duration?: number
 }
 
-export default function AnimatedPrice({ value, format, duration = 500 }: AnimatedPriceProps) {
+export default function AnimatedPrice({ value, format, duration = 500 }: AnimatedPriceProps): React.ReactElement {
   const [displayed, setDisplayed] = useState(value)
   const prevRef = useRef(value)
   const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayed(value)
       prevRef.current = value
+      queueMicrotask(() => setDisplayed(value))
       return
     }
 

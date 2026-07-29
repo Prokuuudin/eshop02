@@ -43,7 +43,7 @@ const ALL_EVENTS: WebhookEvent[] = [
   'invoice.issued'
 ]
 
-export default function WebhooksPage() {
+export default function WebhooksPage(): React.ReactElement {
   const user = getCurrentUser()
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -64,8 +64,9 @@ export default function WebhooksPage() {
     [apiKey, companyId]
   )
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async (): Promise<void> => {
     if (!companyId) return
+    await Promise.resolve()
     setLoading(true)
     try {
       const response = await fetch('/api/v1/webhooks', { headers: { 'x-api-key': apiKey, 'x-company-id': companyId } })
@@ -82,11 +83,17 @@ export default function WebhooksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiKey, companyId, showToast])
 
   React.useEffect(() => {
-    loadData()
-  }, [companyId])
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadData()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadData])
 
   const toggleEvent = (event: WebhookEvent) => {
     setSelectedEvents((prev) => {

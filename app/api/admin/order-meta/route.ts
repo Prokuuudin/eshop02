@@ -19,7 +19,8 @@ async function sendOrderStatusEmail(
   const order = await getServerOrderById(orderId)
   if (!order?.email) return
 
-  const lang = ((order as any).language ?? 'ru') as 'ru' | 'en' | 'lv'
+  const lang: 'ru' | 'en' | 'lv' =
+    order.language === 'en' || order.language === 'lv' ? order.language : 'ru'
 
   const templates = await getTemplates()
   const templateId = status === 'shipped' ? 'order-shipped' : 'order-delivered'
@@ -40,7 +41,7 @@ async function sendOrderStatusEmail(
     },
   }
 
-  const firstName = (order as any).firstName ?? ''
+  const firstName = order.firstName ?? ''
 
   let html: string
   if (tpl) {
@@ -71,7 +72,7 @@ async function sendOrderStatusEmail(
 
 // GET /api/admin/order-meta?ids=id1,id2,...
 // Returns statuses and notes for given order IDs
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/admin/order-meta — upsert status or note
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user || user.platformRole !== 'admin') {

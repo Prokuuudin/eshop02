@@ -6,21 +6,23 @@ export function FadeTransition({ show, children, duration = 300 }: {
   show: boolean;
   children: React.ReactNode;
   duration?: number;
-}) {
+}): React.ReactElement | null {
   const [shouldRender, setShouldRender] = React.useState(show);
   const [visible, setVisible] = React.useState(show);
   const nodeRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (show) {
-      setShouldRender(true);
-      setVisible(false);
+      queueMicrotask(() => {
+        setShouldRender(true);
+        setVisible(false);
+      });
       // Гарантируем, что opacity: 1 применяется после рендера (двойной rAF + setTimeout)
       requestAnimationFrame(() => {
         setTimeout(() => setVisible(true), 10);
       });
     } else if (nodeRef.current) {
-      setVisible(false);
+      queueMicrotask(() => setVisible(false));
       const timeout = setTimeout(() => setShouldRender(false), duration);
       return () => clearTimeout(timeout);
     }

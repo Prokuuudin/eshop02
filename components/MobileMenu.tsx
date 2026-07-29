@@ -15,7 +15,7 @@ type Props = {
   onClose: () => void
 }
 
-export default function MobileMenu({ isOpen, onClose }: Props) {
+export default function MobileMenu({ isOpen, onClose }: Props): React.ReactElement | null {
   const { t, language } = useTranslation();
   const { categories } = useCategoriesConfig();
   const [expandCategories, setExpandCategories] = useState(false);
@@ -37,7 +37,7 @@ export default function MobileMenu({ isOpen, onClose }: Props) {
 
   return (
     <div className="header__menu-overlay fixed inset-0 z-drawer">
-      <div className="header__menu-backdrop absolute inset-0 bg-black/40" onClick={onClose} />
+      <button type="button" aria-label="Закрыть меню" className="header__menu-backdrop absolute inset-0 bg-black/40" onClick={onClose} />
 
       <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-card text-foreground shadow-md p-4 z-drawer border-b border-border">
         <div className="header__menu-top flex items-center justify-between mb-4">

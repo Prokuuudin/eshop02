@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,7 +30,7 @@ import {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AdminBannersPage() {
+export default function AdminBannersPage(): React.ReactElement {
   const [banners, setBanners] = React.useState<Banner[]>([])
   const [blocks, setBlocks] = React.useState<ContentBlock[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -70,7 +71,15 @@ export default function AdminBannersPage() {
     }
   }, [])
 
-  React.useEffect(() => { void loadData() }, [loadData])
+  React.useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadData()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadData])
 
   // ── Image upload ─────────────────────────────────────────────────────────────
 
@@ -402,12 +411,12 @@ export default function AdminBannersPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Тип</label>
+                      <label htmlFor="admin-banner-field-1" className="text-xs text-muted-foreground">Тип</label>
                       <Select
                         value={bannerForm.type}
                         onValueChange={(v) => setBannerForm((f) => ({ ...f, type: v as BannerType }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-1" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -433,8 +442,8 @@ export default function AdminBannersPage() {
                     />
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Изображение (src)</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-2" className="text-xs text-muted-foreground">Изображение (src)</label>
+                      <Input id="admin-banner-field-2"
                         value={bannerForm.image}
                         onChange={(e) => setBannerForm((f) => ({ ...f, image: e.target.value }))}
                         placeholder="/api/media/banner.jpg"
@@ -442,8 +451,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Загрузить изображение</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-3" className="text-xs text-muted-foreground">Загрузить изображение</label>
+                      <Input id="admin-banner-field-3"
                         type="file"
                         accept="image/*"
                         disabled={uploadingBannerImage || saving}
@@ -453,17 +462,20 @@ export default function AdminBannersPage() {
 
                     {bannerForm.image && (
                       <div className="sm:col-span-2">
-                        <img
+                        <Image
                           src={bannerForm.image}
                           alt="Превью баннера"
+                          width={800}
+                          height={128}
+                          unoptimized
                           className="h-32 w-full rounded-md border border-border object-cover bg-muted"
                         />
                       </div>
                     )}
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Ссылка (href)</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-4" className="text-xs text-muted-foreground">Ссылка (href)</label>
+                      <Input id="admin-banner-field-4"
                         value={bannerForm.link}
                         onChange={(e) => setBannerForm((f) => ({ ...f, link: e.target.value }))}
                         placeholder="/catalog или https://..."
@@ -478,12 +490,12 @@ export default function AdminBannersPage() {
                     />
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Стиль кнопки</label>
+                      <label htmlFor="admin-banner-field-5" className="text-xs text-muted-foreground">Стиль кнопки</label>
                       <Select
                         value={bannerForm.ctaStyle}
                         onValueChange={(v) => setBannerForm((f) => ({ ...f, ctaStyle: v as CtaStyle }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-5" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -495,12 +507,12 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Цвет текста</label>
+                      <label htmlFor="admin-banner-field-6" className="text-xs text-muted-foreground">Цвет текста</label>
                       <Select
                         value={bannerForm.textColor}
                         onValueChange={(v) => setBannerForm((f) => ({ ...f, textColor: v as TextColor }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-6" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -511,9 +523,9 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Цвет фона</label>
+                      <label htmlFor="admin-banner-field-7" className="text-xs text-muted-foreground">Цвет фона</label>
                       <div className="flex items-center gap-2">
-                        <input
+                        <input id="admin-banner-field-7"
                           type="color"
                           value={bannerForm.bgColor}
                           onChange={(e) => setBannerForm((f) => ({ ...f, bgColor: e.target.value }))}
@@ -529,12 +541,12 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Активен</label>
+                      <label htmlFor="admin-banner-field-8" className="text-xs text-muted-foreground">Активен</label>
                       <Select
                         value={bannerForm.active ? 'yes' : 'no'}
                         onValueChange={(v) => setBannerForm((f) => ({ ...f, active: v === 'yes' }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-8" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -577,9 +589,12 @@ export default function AdminBannersPage() {
                     >
                       {/* Preview thumbnail */}
                       {banner.image ? (
-                        <img
+                        <Image
                           src={banner.image}
                           alt={previewTitle}
+                          width={96}
+                          height={64}
+                          unoptimized
                           className="h-16 w-24 rounded object-cover bg-muted flex-shrink-0"
                         />
                       ) : (
@@ -677,12 +692,12 @@ export default function AdminBannersPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Тип блока</label>
+                      <label htmlFor="admin-banner-field-9" className="text-xs text-muted-foreground">Тип блока</label>
                       <Select
                         value={blockForm.type}
                         onValueChange={(v) => setBlockForm((f) => ({ ...f, type: v as BlockType }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-9" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -694,8 +709,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Заголовок *</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-10" className="text-xs text-muted-foreground">Заголовок *</label>
+                      <Input id="admin-banner-field-10"
                         value={blockForm.title}
                         onChange={(e) => setBlockForm((f) => ({ ...f, title: e.target.value }))}
                         placeholder="Заголовок блока"
@@ -703,8 +718,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-muted-foreground">Подзаголовок</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-11" className="text-xs text-muted-foreground">Подзаголовок</label>
+                      <Input id="admin-banner-field-11"
                         value={blockForm.subtitle}
                         onChange={(e) => setBlockForm((f) => ({ ...f, subtitle: e.target.value }))}
                         placeholder="Краткое описание"
@@ -712,8 +727,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <label className="text-xs text-muted-foreground">Текст / HTML-контент</label>
-                      <Textarea
+                      <label htmlFor="admin-banner-field-12" className="text-xs text-muted-foreground">Текст / HTML-контент</label>
+                      <Textarea id="admin-banner-field-12"
                         value={blockForm.content}
                         onChange={(e) => setBlockForm((f) => ({ ...f, content: e.target.value }))}
                         placeholder="Основной текст блока..."
@@ -722,8 +737,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Иконка (emoji или путь)</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-13" className="text-xs text-muted-foreground">Иконка (emoji или путь)</label>
+                      <Input id="admin-banner-field-13"
                         value={blockForm.icon}
                         onChange={(e) => setBlockForm((f) => ({ ...f, icon: e.target.value }))}
                         placeholder="✨ или /icons/star.svg"
@@ -731,9 +746,9 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Цвет фона</label>
+                      <label htmlFor="admin-banner-field-14" className="text-xs text-muted-foreground">Цвет фона</label>
                       <div className="flex items-center gap-2">
-                        <input
+                        <input id="admin-banner-field-14"
                           type="color"
                           value={blockForm.bgColor}
                           onChange={(e) => setBlockForm((f) => ({ ...f, bgColor: e.target.value }))}
@@ -749,8 +764,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Ссылка (href)</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-15" className="text-xs text-muted-foreground">Ссылка (href)</label>
+                      <Input id="admin-banner-field-15"
                         value={blockForm.link}
                         onChange={(e) => setBlockForm((f) => ({ ...f, link: e.target.value }))}
                         placeholder="/catalog"
@@ -758,8 +773,8 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Текст ссылки</label>
-                      <Input
+                      <label htmlFor="admin-banner-field-16" className="text-xs text-muted-foreground">Текст ссылки</label>
+                      <Input id="admin-banner-field-16"
                         value={blockForm.linkLabel}
                         onChange={(e) => setBlockForm((f) => ({ ...f, linkLabel: e.target.value }))}
                         placeholder="Подробнее"
@@ -767,12 +782,12 @@ export default function AdminBannersPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Активен</label>
+                      <label htmlFor="admin-banner-field-17" className="text-xs text-muted-foreground">Активен</label>
                       <Select
                         value={blockForm.active ? 'yes' : 'no'}
                         onValueChange={(v) => setBlockForm((f) => ({ ...f, active: v === 'yes' }))}
                       >
-                        <SelectTrigger className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
+                        <SelectTrigger id="admin-banner-field-17" className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

@@ -1,5 +1,23 @@
-export function validateProfile(draft: any, t: (key: string) => string, emailOptional = false) {
-    const errors: any = {};
+type ProfileDraft = {
+    name: string;
+    email: string;
+    password?: string;
+};
+
+type AddressDraft = {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address: string;
+    city: string;
+};
+
+export function validateProfile(
+    draft: ProfileDraft,
+    t: (key: string) => string,
+    emailOptional = false
+): Record<string, string> {
+    const errors: Record<string, string> = {};
     if (!draft.name.trim()) errors.name = t('account.errors.name');
     if (!emailOptional && !draft.email.trim()) errors.email = t('account.errors.email');
     if (draft.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))
@@ -9,7 +27,7 @@ export function validateProfile(draft: any, t: (key: string) => string, emailOpt
     return errors;
 }
 
-export function validateAddress(draft: any, t: (key: string) => string) {
+export function validateAddress(draft: AddressDraft, t: (key: string) => string): Record<string, string> {
     const errors: Record<string, string> = {};
     if (!draft.firstName.trim()) errors.firstName = t('checkout.errors.firstName');
     if (!draft.lastName.trim()) errors.lastName = t('checkout.errors.lastName');

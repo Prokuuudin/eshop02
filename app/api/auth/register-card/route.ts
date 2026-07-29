@@ -48,7 +48,7 @@ function getClientIp(req: NextRequest): string {
  *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
  *     team member claiming a shared company card) — create one.
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     if (!FIRST_LOGIN_PASSWORD) {
       console.error('[auth/register-card] FIRST_LOGIN_PASSWORD is not configured')

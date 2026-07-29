@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
  *
  * Query: page, limit, paymentStatus, sortBy (date|total), sortOrder (asc|desc)
  */
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<Response> {
   try {
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) {
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
  *
  * Body: { items: [{ productId, quantity }], address: {...}, payment?, promoCode?, deliveryMethod?, notes? }
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   try {
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) {

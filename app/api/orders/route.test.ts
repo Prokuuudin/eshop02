@@ -155,6 +155,13 @@ describe('POST /api/orders — admin notification', () => {
     expect(html).not.toContain('2026-06-16')
   })
 
+  it('accepts the bank-transfer option offered by checkout', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank' }))
+
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
   it('rate-limits a guest by IP and normalized email before reserving stock', async () => {
     vi.mocked(checkRateLimit).mockResolvedValueOnce({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
     const res = await POST(makeRequest({ ...VALID_ORDER, email: ' Buyer@Example.com ' }))

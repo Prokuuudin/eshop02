@@ -1,9 +1,11 @@
 'use client';
 import React from 'react';
 import ReactPhoneInput, { type Country } from 'react-phone-number-input';
+import flags from 'react-phone-number-input/flags';
 import 'react-phone-number-input/style.css';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { normalizePhoneInputValue } from '@/lib/phone';
 
 type PhoneInputProps = {
     value: string;
@@ -27,19 +29,21 @@ export default function PhoneInput({
     required,
     ...rest
 }: PhoneInputProps) {
-    const normalized = value ? value.replace(/\s+/g, '') : ''
-    const e164Value = /^\+\d+$/.test(normalized) ? normalized : undefined
+    const e164Value = normalizePhoneInputValue(value, defaultCountry)
 
     return (
         <ReactPhoneInput
             international
             defaultCountry={defaultCountry}
+            flags={flags}
             value={e164Value}
             onChange={(val) => onChange(val ?? '')}
             inputComponent={Input}
             placeholder={placeholder}
             disabled={disabled}
             required={required}
+            name="phone"
+            autoComplete="tel"
             className={cn('phone-input', className)}
             {...rest}
         />

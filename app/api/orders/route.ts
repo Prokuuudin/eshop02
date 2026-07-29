@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
     if (!['courier', 'pickup', 'post'].includes(order.deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
-    if (!['card', 'cash'].includes(order.paymentMethod)) {
+    if (!['card', 'bank', 'cash'].includes(order.paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
 

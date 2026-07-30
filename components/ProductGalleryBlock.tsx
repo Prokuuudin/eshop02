@@ -1,5 +1,6 @@
 import React from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
+import { ProductVideoGallery } from '@/components/ProductVideoGallery';
 import { ProductImageDisclaimer } from '@/components/ProductImageDisclaimer';
 import { ProductDescription } from '@/components/ProductDescription';
 import { ManufacturerDistributorInfo } from '@/components/ManufacturerDistributorInfo';
@@ -57,23 +58,42 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
             : undefined;
 
     return (
-        <div className="flex flex-col gap-4">
-            <ProductGallery images={images} demoVideos={demoVideos} title={title} />
-            <ProductImageDisclaimer />
-            <ProductDescription
-                description={productDescription}
-                features={productFeatures}
-                ingredients={getProductIngredients(product)}
-                application={productApplication}
-                warnings={productWarnings}
-                productId={product.id}
-            />
-            <ManufacturerDistributorInfo
-                manufacturer={productManufacturer ?? manufacturer}
-                distributor={productDistributor ?? distributor}
-                language={language}
-            />
-            <Certificates product={product} />
+        <div className="contents md:flex md:flex-col md:gap-4">
+            <div className="order-1 md:order-none">
+                <ProductGallery images={images} title={title} />
+            </div>
+            {demoVideos.length > 0 && (
+                <div className="order-3 md:order-none">
+                    <ProductVideoGallery
+                        demoVideos={demoVideos}
+                        title={title}
+                        fallbackPoster={images[0]}
+                    />
+                </div>
+            )}
+            <div className="order-5 md:order-none">
+                <ProductImageDisclaimer />
+            </div>
+            <div className="order-4 md:order-none">
+                <ProductDescription
+                    description={productDescription}
+                    features={productFeatures}
+                    ingredients={getProductIngredients(product)}
+                    application={productApplication}
+                    warnings={productWarnings}
+                    productId={product.id}
+                />
+            </div>
+            <div className="order-5 md:order-none">
+                <ManufacturerDistributorInfo
+                    manufacturer={productManufacturer ?? manufacturer}
+                    distributor={productDistributor ?? distributor}
+                    language={language}
+                />
+            </div>
+            <div className="order-5 md:order-none">
+                <Certificates product={product} />
+            </div>
         </div>
     );
 };

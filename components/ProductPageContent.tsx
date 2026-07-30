@@ -89,17 +89,21 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                         distributor={distributor}
                     />
                     {/* Правая колонка: вся остальная информация */}
-                    <div className="flex flex-col gap-4">
-                        <ProductInfo
-                            product={product}
-                            localizedTitle={localizedTitle}
-                            ratingCount={ratingCount}
-                            displayPrice={displayPrice}
-                            displayOldPrice={displayOldPrice}
-                            priceLocale={priceLocale}
-                            minOrderQuantity={minOrderQuantity}
-                        />
-                        <ProductBenefits />
+                    <div className="contents md:flex md:flex-col md:gap-4">
+                        <div className="order-2 md:order-none">
+                            <ProductInfo
+                                product={product}
+                                localizedTitle={localizedTitle}
+                                ratingCount={ratingCount}
+                                displayPrice={displayPrice}
+                                displayOldPrice={displayOldPrice}
+                                priceLocale={priceLocale}
+                                minOrderQuantity={minOrderQuantity}
+                            />
+                        </div>
+                        <div className="order-5 md:order-none">
+                            <ProductBenefits />
+                        </div>
                     </div>
                 </div>
                 <ProductBulkPricing product={product} />

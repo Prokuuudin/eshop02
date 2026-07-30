@@ -42,6 +42,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fast-xml-parser": "^5.10.1",
     "he": "^1.2.0",
     "jose": "^6.2.3",
     "jsbarcode": "^3.12.3",

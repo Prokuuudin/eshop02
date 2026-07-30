@@ -46,20 +46,21 @@ export async function saveSnapshot(xml: string): Promise<SnapshotMeta> {
     downloadedAt: new Date().toISOString(),
   }
 
-  await prisma.keyValueSetting.upsert({
-    where: { key: contentKey(slot) },
-    create: { key: contentKey(slot), value: { xml } as unknown as Prisma.InputJsonValue },
-    update: { value: { xml } as unknown as Prisma.InputJsonValue },
-  })
-
   const nextEntries = [meta, ...index.entries.filter(e => e.slot !== slot)].slice(0, MAX_SNAPSHOTS)
   const nextIndex: SnapshotIndex = { nextSlot: (slot + 1) % MAX_SNAPSHOTS, entries: nextEntries }
 
-  await prisma.keyValueSetting.upsert({
-    where: { key: INDEX_KEY },
-    create: { key: INDEX_KEY, value: nextIndex as unknown as Prisma.InputJsonValue },
-    update: { value: nextIndex as unknown as Prisma.InputJsonValue },
-  })
+  await prisma.$transaction([
+    prisma.keyValueSetting.upsert({
+      where: { key: contentKey(slot) },
+      create: { key: contentKey(slot), value: { xml } as unknown as Prisma.InputJsonValue },
+      update: { value: { xml } as unknown as Prisma.InputJsonValue },
+    }),
+    prisma.keyValueSetting.upsert({
+      where: { key: INDEX_KEY },
+      create: { key: INDEX_KEY, value: nextIndex as unknown as Prisma.InputJsonValue },
+      update: { value: nextIndex as unknown as Prisma.InputJsonValue },
+    }),
+  ])
 
   return meta
 }

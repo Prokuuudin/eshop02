@@ -2,6 +2,7 @@ import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
+import { replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { withRetry } from './retry'
 import { SyncLogger } from './logger'
 import { acquireSyncLock, releaseSyncLock } from './sync-lock'
@@ -46,6 +47,7 @@ export async function runSync(
   let deactivated = 0
   let consecutiveFetchErrors = 0
   const seenExternalIds = new Set<string>()
+  const extraDataByExternalId: Record<string, ErpExtraData> = {}
 
   try {
     let cursor: string | number | undefined = undefined
@@ -98,6 +100,17 @@ export async function runSync(
           }
           seenExternalIds.add(p.externalId)
           valid.push(p)
+          if (p.prices || p.warehouseQuantities) {
+            extraDataByExternalId[p.externalId] = {
+              prices: {
+                price1: p.prices?.price1 ?? 0,
+                price2: p.prices?.price2 ?? 0,
+                price3: p.prices?.price3 ?? 0,
+                price4: p.prices?.price4 ?? 0,
+              },
+              warehouseQuantities: p.warehouseQuantities ?? {},
+            }
+          }
         }
         if (duplicateIds.length > 0) {
           logger.recordBatchError(batchIndex, new Error('Duplicate externalId in feed'), duplicateIds)
@@ -143,6 +156,10 @@ export async function runSync(
 
     deactivated = await deactivateMissing(db, runId)
     logger.info('Deactivation complete', { deactivated })
+
+    if (Object.keys(extraDataByExternalId).length > 0) {
+      await replaceErpExtraData(db, extraDataByExternalId)
+    }
 
     await db.syncRun.update({
       where: { id: runId },

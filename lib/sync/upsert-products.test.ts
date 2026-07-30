@@ -30,6 +30,15 @@ describe('buildUpsertQuery', () => {
     expect(updatePart).not.toMatch(/\bid\b\s*=/)
     expect(updatePart).not.toContain('"createdAt"')
   })
+
+  it('DO UPDATE SET does not overwrite admin-owned fields (title/brand/category/description/images)', () => {
+    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
+    expect(updatePart).not.toMatch(/\btitle\b\s*=/)
+    expect(updatePart).not.toMatch(/\bbrand\b\s*=/)
+    expect(updatePart).not.toMatch(/\bcategory\b\s*=/)
+    expect(updatePart).not.toMatch(/\bdescription\b\s*=/)
+    expect(updatePart).not.toMatch(/\bimages\b\s*=/)
+  })
 })
 
 describe('upsertProducts', () => {
@@ -58,5 +67,14 @@ describe('upsertProducts', () => {
     await upsertProducts(db, [{ externalId: 'e1', title: 'P', price: 10, stock: 1 }], 'my-run-id')
     const args = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
     expect(args).toContain('my-run-id')
+  })
+
+  it('inserts new rows as isActive=false (pending review), regardless of feed value', async () => {
+    const db = makeMockDb()
+    await upsertProducts(db, [{ externalId: 'e1', title: 'placeholder', price: 10, stock: 1 }], 'run-1')
+    const args = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
+    // args[0] is the SQL string; params start at args[1]. isActive is column
+    // index 11 (0-based) of the 14 COLS_PER_ROW, so its param is args[1 + 11].
+    expect(args[1 + 11]).toBe(false)
   })
 })

@@ -20,15 +20,14 @@ export function buildUpsertQuery(rowCount: number): string {
       description, "isActive", "lastSyncRunId", "updatedAt"
     ) VALUES ${values}
     ON CONFLICT ("externalId") DO UPDATE SET
-      title           = EXCLUDED.title,
-      brand           = EXCLUDED.brand,
-      category        = EXCLUDED.category,
+      -- title/brand/category/description/images are admin-owned forever for synced
+      -- products: the feed doesn't send brand/category/image/description at all, and
+      -- title is deliberately seeded from SKU only (see grins-xml-parser.ts), so
+      -- overwriting them here on every run would blank out real admin-entered data.
       price           = EXCLUDED.price,
       "oldPrice"      = EXCLUDED."oldPrice",
       stock           = EXCLUDED.stock,
       sku             = EXCLUDED.sku,
-      images          = EXCLUDED.images,
-      description     = EXCLUDED.description,
       "isActive"      = true,
       "lastSyncRunId" = EXCLUDED."lastSyncRunId",
       "updatedAt"     = now()
@@ -48,7 +47,10 @@ function buildParams(products: ErpProduct[], runId: string): unknown[] {
     p.sku ?? null,          // sku
     p.images ?? null,       // images (TEXT[], nullable)
     p.description ?? null,  // description
-    true,                   // isActive
+    // Brand-new rows start hidden (pending review, spec section 10 — the feed has no
+    // machine-readable flag for non-product junk rows). Already-known rows are
+    // unaffected: ON CONFLICT DO UPDATE forces isActive back to true unconditionally.
+    false,                  // isActive
     runId,                  // lastSyncRunId
     new Date(),             // updatedAt (createdAt uses DB DEFAULT for new rows)
   ])

@@ -83,7 +83,8 @@ const nextConfig = {
             "img-src 'self' data: https://hairshop.lv",
             "font-src 'self' data:",
             "connect-src 'self' https://challenges.cloudflare.com",
-            "frame-src https://challenges.cloudflare.com",
+            // Facebook/YouTube/Vimeo: product demo-video embeds (see isEmbedUrl in ProductVideoGallery).
+            "frame-src https://challenges.cloudflare.com https://www.facebook.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",

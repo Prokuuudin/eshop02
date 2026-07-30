@@ -374,7 +374,36 @@
       "Bash(node scripts/_tmp_check_crop.mjs)",
       "Bash(node scripts/_tmp_check_drawer2.mjs)",
       "Bash(node scripts/_tmp_check_footer.mjs)",
-      "Bash(node scripts/_tmp_check_1440.mjs)"
+      "Bash(node scripts/_tmp_check_1440.mjs)",
+      "Bash(node scripts/_tmp_check_pages_1440.mjs)",
+      "Bash(node scripts/_tmp_check_admin_wrap.mjs)",
+      "Bash(node scripts/_tmp_check_admin_wrap2.mjs)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\(p.devDependencies||{}\\).filter\\(k=>/test|vitest|jest|testing-library/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).devDependencies.tsx || 'no tsx dep'\\)\")",
+      "Bash(tee /tmp/dev-server.log)",
+      "Bash(echo \"started in background, pid $!\")",
+      "Bash(time curl -s -o /dev/null -w \"%{http_code} %{time_total}s\\\\n\" http://localhost:3000/api/products/21020)",
+      "Bash(rm \"c:/Users/User/.claude/projects/c--Users-User-Desktop-eshop02/memory/project_invoice_cents_bug_2026_07_29.md\")",
+      "Bash(mkdir -p /tmp/patch-work)",
+      "Bash(git show *)",
+      "Bash(rm \"/c/Users/User/Desktop/eshop02/scripts/_tmp_find_video_product.ts\")",
+      "Bash(node \"C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Desktop-eshop02/b200fd4b-e7e9-482e-a984-ff9d94e296b8/scratchpad/shot.mjs\")",
+      "Bash(cp \"C:/Users/User/AppData/Local/Temp/claude/c--Users-User-Desktop-eshop02/b200fd4b-e7e9-482e-a984-ff9d94e296b8/scratchpad/shot.mjs\" ./_tmp_shot.mjs)",
+      "Bash(node ./_tmp_shot.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --max-time 10 \"http://localhost:3000/ru/product/13139\")",
+      "Bash(curl -s -D - -o /dev/null --max-time 10 \"http://localhost:3000/ru/product/13139\")",
+      "Bash(rm -f \"/c/Users/User/Desktop/eshop02/scripts/_tmp_check_video_domains.ts\")",
+      "Bash(powershell -Command \"Get-Process -Id 18580 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path\")",
+      "Bash(tasklist //FI \"PID eq 18580\")",
+      "Bash(curl -s -D - -o /dev/null --max-time 10 \"http://localhost:3000/product/13139\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{time_total}s\\\\n\" --max-time 10 \"https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Fblackparisienneinternational%2Fvideos%2Fvb.1689146234631599%2F1714399378772951%2F%3Ftype%3D3&show_text=0&width=560\")",
+      "Bash(curl -s \"http://localhost:3000/product/18427\" --max-time 15)",
+      "Bash(git log *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\(p.dependencies\\).filter\\(d=>/xml|ftp/i.test\\(d\\)\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).devDependencies && Object.keys\\(require\\('./package.json'\\).devDependencies\\).length\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(p.dependencies['@neondatabase/serverless'], p.engines\\)\")",
+      "Bash(sort -k6,7)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",
@@ -383,7 +412,9 @@
       "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd",
       "C:\\Users\\User\\Desktop\\eshop02",
       "\\tmp",
-      "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd\\2026-07-28-smooth-ui-animations"
+      "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd\\2026-07-28-smooth-ui-animations",
+      "c:\\Users\\User\\.claude\\projects\\c--Users-User-Desktop-eshop02\\memory",
+      "C:\\Users\\User\\Desktop\\eshop02\\scripts"
     ]
   }
 }

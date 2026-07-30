@@ -1,20 +1,12 @@
 import { runSync } from '@/lib/sync/sync-runner'
 import { prisma } from '@/lib/prisma'
-import { RestPaginatedAdapter } from '@/lib/sync/adapters/rest-paginated'
+import { GrinsXmlAdapter } from '@/lib/sync/adapters/grins-xml'
 
 async function main() {
-  const erpUrl = process.env.ERP_API_URL
-  const erpKey = process.env.ERP_API_KEY ?? ''
-
-  if (!erpUrl) {
-    console.error(JSON.stringify({ event: 'sync_abort', reason: 'ERP_API_URL is not set' }))
-    process.exit(1)
-  }
-
-  const adapter = new RestPaginatedAdapter(erpUrl, erpKey)
+  const adapter = new GrinsXmlAdapter()
 
   try {
-    const result = await runSync(adapter, prisma, 'cron')
+    const result = await runSync(adapter, prisma, 'manual')
     console.log(JSON.stringify({ event: 'sync_complete', ...result }))
     process.exit(result.status === 'completed' ? 0 : 1)
   } finally {

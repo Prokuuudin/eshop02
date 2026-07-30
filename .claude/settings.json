@@ -374,7 +374,18 @@
       "Bash(node scripts/_tmp_check_crop.mjs)",
       "Bash(node scripts/_tmp_check_drawer2.mjs)",
       "Bash(node scripts/_tmp_check_footer.mjs)",
-      "Bash(node scripts/_tmp_check_1440.mjs)"
+      "Bash(node scripts/_tmp_check_1440.mjs)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/sdd-workspace\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\")",
+      "Bash(ls \"C:/Users/User/Desktop/eshop02/docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" && mkdir -p \"C:/Users/User/Desktop/eshop02/.claude/worktrees/grins-xml-sync-adapter/docs/superpowers/plans\" && cp \"C:/Users/User/Desktop/eshop02/docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" \"C:/Users/User/Desktop/eshop02/.claude/worktrees/grins-xml-sync-adapter/docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" && echo copied)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/task-brief\" \"C:/Users/User/Desktop/eshop02/.claude/worktrees/grins-xml-sync-adapter/docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 1)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/review-package\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 94e3016 847f84e)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/task-brief\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 2)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/review-package\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 847f84e 7ed8fb3)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/task-brief\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 3)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/review-package\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 7ed8fb3 14f2f13)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/task-brief\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 4)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/review-package\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 14f2f13 7a980dd)",
+      "Bash(bash \"C:/Users/User/.claude/plugins/cache/claude-plugins-official/superpowers/6.2.0/skills/subagent-driven-development/scripts/task-brief\" \"docs/superpowers/plans/2026-07-30-grins-xml-sync-adapter.md\" 5)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",
@@ -383,7 +394,8 @@
       "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd",
       "C:\\Users\\User\\Desktop\\eshop02",
       "\\tmp",
-      "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd\\2026-07-28-smooth-ui-animations"
+      "C:\\Users\\User\\Desktop\\eshop02\\.superpowers\\sdd\\2026-07-28-smooth-ui-animations",
+      "C:\\Users\\User\\Desktop\\eshop02\\docs\\superpowers\\plans"
     ]
   }
 }

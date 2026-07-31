@@ -13,6 +13,7 @@ type Props = {
 export default function RegisterSwitcher({ onClose }: Props): React.ReactElement {
     const { t } = useTranslation();
     const [hasCard, setHasCard] = useState(true);
+    const [noCodeNotice, setNoCodeNotice] = useState(false);
 
     return (
         <div className="register-switcher max-w-md mx-auto">
@@ -20,7 +21,10 @@ export default function RegisterSwitcher({ onClose }: Props): React.ReactElement
                 <Button
                     className="register-switcher__type-btn"
                     variant={hasCard ? 'default' : 'outline'}
-                    onClick={() => setHasCard(true)}
+                    onClick={() => {
+                        setHasCard(true);
+                        setNoCodeNotice(false);
+                    }}
                 >
                     {hasCard && <Check className="w-4 h-4 mr-1" />}
                     {t('auth.hasCard', 'Есть карта клиента')}
@@ -28,14 +32,28 @@ export default function RegisterSwitcher({ onClose }: Props): React.ReactElement
                 <Button
                     className="register-switcher__type-btn"
                     variant={!hasCard ? 'default' : 'outline'}
-                    onClick={() => setHasCard(false)}
+                    onClick={() => {
+                        setHasCard(false);
+                        setNoCodeNotice(false);
+                    }}
                 >
                     {!hasCard && <Check className="w-4 h-4 mr-1" />}
                     {t('auth.noCard', 'Нет карты клиента')}
                 </Button>
             </div>
             <div className="register-switcher__form">
-                {hasCard ? <RegisterForm onClose={onClose} onNoPersonalCode={() => setHasCard(false)} /> : <RegisterNoCardForm onClose={onClose} />}
+                {hasCard ? (
+                    <RegisterForm onClose={onClose} onNoPersonalCode={() => { setHasCard(false); setNoCodeNotice(true); }} />
+                ) : (
+                    <>
+                        {noCodeNotice && (
+                            <p className="register-switcher__notice text-sm text-muted-foreground mb-3">
+                                {t('auth.noPersonalCodeOnFile')}
+                            </p>
+                        )}
+                        <RegisterNoCardForm onClose={onClose} />
+                    </>
+                )}
             </div>
         </div>
     );

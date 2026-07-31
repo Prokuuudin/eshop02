@@ -804,6 +804,22 @@ git commit -m "feat(import): populate pkLast3 and correct mustChangePassword for
 
 ### Task 9: `scripts/backfill-pk-last3.ts` — one-time backfill for already-imported cards
 
+**Post-implementation correction (fix round 1):** task review found the
+`mustChangePassword` flip logic below only excluded re-flipping users
+activated via the email-invite path, with no awareness of the register-card
++ password-change path this feature introduces — a genuinely-activated
+register-card user could incorrectly qualify as a flip candidate on a future
+re-run. Verified against the live database that this flip logic has zero
+legitimate targets (a separate pre-existing script,
+`scripts/mark-dormant-cardholders.ts`, already set `mustChangePassword: true`
+for all current cardholders, and Task 8 makes all future dormant imports
+default to `true` too). Human decision: **the flip logic was removed
+entirely** from the shipped script — it does pkLast3 backfill only. The code
+block below is kept for historical reference of what was originally planned;
+it does not match the final `scripts/backfill-pk-last3.ts`. See
+`.superpowers/sdd/2026-07-31-card-pk-registration/task-9-report.md` for the
+fix details.
+
 **Files:**
 - Create: `scripts/backfill-pk-last3.ts`
 
@@ -933,7 +949,7 @@ main()
 npx tsx scripts/backfill-pk-last3.ts
 ```
 
-Expected: prints counts for "Карт с pk в файле" (~7400-7500, i.e. 10875 minus the 3372 blanks), "Юзеров с cardNumber в БД", "pkLast3 будет проставлен", and "mustChangePassword false→true". Review the numbers make sense (pkUpdates should be close to the count of DB users whose card has a non-blank `pk`) before ever running with `--apply`.
+Expected (as actually shipped, post fix-round-1): prints counts for "Карт с pk в файле" (~7400-7500, i.e. 10875 minus the 3372 blanks), "Юзеров с cardNumber в БД", and "pkLast3 будет проставлен" only — the `mustChangePassword false→true` line was removed (see the correction note above). Review the numbers make sense (pkUpdates should be close to the count of DB users whose card has a non-blank `pk`) before ever running with `--apply`.
 
 - [ ] **Step 4: Commit**
 
@@ -958,7 +974,7 @@ Expected: all tests pass, including every file touched in Tasks 2-4.
 
 - [ ] **Step 2: Apply the migration and backfill to the real Neon database — ask the user for explicit go-ahead first**
 
-This writes to production data (a new nullable column is low-risk, but the `mustChangePassword` flip in the backfill touches thousands of live user rows). Do not run `--apply` without the user confirming they've reviewed the dry-run counts from Task 9, Step 3.
+This writes to production data (the shipped script only writes `pkLast3` — the originally-planned `mustChangePassword` flip was removed in Task 9's fix round 1, see the correction note there — so this is now a low-risk, additive-only write touching thousands of rows' `pkLast3` field). Do not run `--apply` without the user confirming they've reviewed the dry-run counts from Task 9, Step 3.
 
 ```bash
 npx tsx scripts/backfill-pk-last3.ts --apply

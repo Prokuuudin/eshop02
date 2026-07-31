@@ -35,7 +35,7 @@ export default function RegisterSwitcher({ onClose }: Props): React.ReactElement
                 </Button>
             </div>
             <div className="register-switcher__form">
-                {hasCard ? <RegisterForm onClose={onClose} /> : <RegisterNoCardForm onClose={onClose} />}
+                {hasCard ? <RegisterForm onClose={onClose} onNoPersonalCode={() => setHasCard(false)} /> : <RegisterNoCardForm onClose={onClose} />}
             </div>
         </div>
     );

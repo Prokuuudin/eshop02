@@ -20,16 +20,20 @@ export function buildUpsertQuery(rowCount: number): string {
       description, "isActive", "lastSyncRunId", "updatedAt"
     ) VALUES ${values}
     ON CONFLICT ("externalId") DO UPDATE SET
-      title           = EXCLUDED.title,
-      brand           = EXCLUDED.brand,
-      category        = EXCLUDED.category,
+      -- title/brand/category/description/images/oldPrice are admin-owned forever for
+      -- synced products: the feed doesn't send brand/category/image/description/oldPrice
+      -- at all, and title is deliberately seeded from SKU only (see grins-xml-parser.ts),
+      -- so overwriting them here on every run would blank out real admin-entered data.
+      --
+      -- "isActive" is also intentionally absent here. The feed is a full dump sent every
+      -- run, so unconditionally forcing isActive back to true on conflict would silently
+      -- self-publish brand-new pending rows (inserted this run as isActive=false, awaiting
+      -- admin review) on the very next run, before any admin ever looked at them. Accepted
+      -- tradeoff: products deactivated by deactivateMissing (gone from the feed) no longer
+      -- auto-reactivate if they reappear later — an admin must manually re-enable them too.
       price           = EXCLUDED.price,
-      "oldPrice"      = EXCLUDED."oldPrice",
       stock           = EXCLUDED.stock,
       sku             = EXCLUDED.sku,
-      images          = EXCLUDED.images,
-      description     = EXCLUDED.description,
-      "isActive"      = true,
       "lastSyncRunId" = EXCLUDED."lastSyncRunId",
       "updatedAt"     = now()
   `
@@ -48,7 +52,12 @@ function buildParams(products: ErpProduct[], runId: string): unknown[] {
     p.sku ?? null,          // sku
     p.images ?? null,       // images (TEXT[], nullable)
     p.description ?? null,  // description
-    true,                   // isActive
+    // Brand-new rows start hidden (pending review, spec section 10 — the feed has no
+    // machine-readable flag for non-product junk rows). Already-known rows are also
+    // unaffected on conflict: isActive is intentionally excluded from DO UPDATE SET
+    // (see buildUpsertQuery), so admin-driven activation/deactivation decisions persist
+    // across sync runs instead of being clobbered back to true every hour.
+    false,                  // isActive
     runId,                  // lastSyncRunId
     new Date(),             // updatedAt (createdAt uses DB DEFAULT for new rows)
   ])

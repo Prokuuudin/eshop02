@@ -12,9 +12,14 @@ vi.mock('./deactivate-missing', () => ({
   deactivateMissing: vi.fn().mockResolvedValue(0),
 }))
 
+vi.mock('./erp-extra-data-store', () => ({
+  replaceErpExtraData: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { runSync } from './sync-runner'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
+import { replaceErpExtraData } from './erp-extra-data-store'
 import type { ErpAdapter } from './erp-adapter'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 
@@ -140,5 +145,38 @@ describe('runSync', () => {
     expect(calledWith.map((p: { externalId: string }) => p.externalId)).toEqual(['dup', 'unique'])
     expect(result.status).toBe('failed')
     expect(result.errorCount).toBeGreaterThan(0)
+  })
+
+  it('flushes accumulated price/warehouse data only when the run succeeds', async () => {
+    const products = [
+      {
+        externalId: 'e1',
+        title: 'e1',
+        price: 7,
+        stock: 53,
+        prices: { price1: 9, price2: 7, price3: 2.44, price4: 5 },
+        warehouseQuantities: { '10000': 22 },
+      },
+    ]
+    await runSync(makeAdapter(products), makeMockDb())
+    expect(replaceErpExtraData).toHaveBeenCalledWith(
+      expect.anything(),
+      { e1: { prices: { price1: 9, price2: 7, price3: 2.44, price4: 5 }, warehouseQuantities: { '10000': 22 } } },
+    )
+  })
+
+  it('does not flush price/warehouse data when the run fails', async () => {
+    const products = [
+      { externalId: 'e1', title: 'e1', price: 7, stock: 53, prices: { price1: 9, price2: 7, price3: 2.44, price4: 5 }, warehouseQuantities: {} },
+    ]
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    await runSync(makeAdapter(products), makeMockDb())
+    expect(replaceErpExtraData).not.toHaveBeenCalled()
+  })
+
+  it('does not flush at all when no product in the run carries extra data', async () => {
+    const products = [{ externalId: 'e1', title: 'e1', price: 7, stock: 53 }]
+    await runSync(makeAdapter(products), makeMockDb())
+    expect(replaceErpExtraData).not.toHaveBeenCalled()
   })
 })

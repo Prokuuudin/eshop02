@@ -191,8 +191,14 @@ git commit -m "feat: add pkLast3 derivation/normalization helpers"
 ### Task 3: `lib/auth.ts` — new error codes on `registerCardUser`
 
 **Files:**
-- Modify: `lib/auth.ts:139-185` (`RegisterCardErrorCode` type + `registerCardUser`)
+- Modify: `lib/auth.ts:256-317` (`RegisterCardErrorCode` type + `registerCardUser`)
 - Test: `lib/auth.test.ts` (extend the `registerCardUser` describe block)
+
+Note: line numbers below were re-verified against the actual worktree checkout
+(the plan was drafted while a large, unrelated, *uncommitted* refactor sat in
+the original working directory splitting this file differently — that
+refactor is not part of any commit, so it is not present in this worktree;
+these line numbers are correct for the code you are actually editing).
 
 **Interfaces:**
 - Consumes: nothing new.
@@ -242,7 +248,7 @@ Expected: FAIL — the two new error codes aren't distinguishable/mapped yet (`w
 
 - [ ] **Step 3: Implement**
 
-In `lib/auth.ts`, replace the `RegisterCardErrorCode` type (lines 139-145):
+In `lib/auth.ts`, replace the `RegisterCardErrorCode` type (lines 256-262):
 
 ```ts
 export type RegisterCardErrorCode =
@@ -256,7 +262,7 @@ export type RegisterCardErrorCode =
   | 'server_error'
 ```
 
-Replace the status-mapping block (lines 180-184):
+Replace the status-mapping block (lines 297-301):
 
 ```ts
   if (res.status === 404) return { success: false, errorCode: 'card_not_found' }
@@ -498,82 +504,100 @@ git commit -m "feat(auth): verify individual card registration by personal-code 
 
 ---
 
-### Task 5: Translations — ru/lv/en
+### Task 5: Translations — ru/en/lv
 
 **Files:**
-- Modify: `data/translations/ru/account.ts`
-- Modify: `data/translations/lv/account.ts`
-- Modify: `data/translations/en/account.ts`
+- Modify: `data/translations.ts` (single monolithic file — three per-language object literals, ru first, then en, then lv, each keyed by flat strings like `'auth.cardNotFound'`)
+
+Note: the plan was drafted while a large, unrelated, *uncommitted* refactor
+sat in the original working directory splitting this file into
+`data/translations/<lang>/account.ts` per-language files — that refactor is
+not part of any commit, so it is not present in this worktree. Edit the
+single `data/translations.ts` file as it actually exists here; line numbers
+below were verified directly against it.
 
 **Interfaces:**
-- Produces: translation keys `auth.personalCodeLabel`, `auth.personalCodeHint`, `auth.personalCodePlaceholder`, `auth.enterPersonalCode`, `auth.wrongCode`, `auth.noPersonalCodeOnFile`, `auth.switchToNoCardRequest` — consumed by Task 6 (`RegisterForm.tsx`). Also updates the existing `auth.registerHint` key (its current wording describes the old shared-password flow).
+- Produces: translation keys `auth.personalCodeLabel`, `auth.personalCodeHint`, `auth.personalCodePlaceholder`, `auth.enterPersonalCode`, `auth.wrongCode`, `auth.noPersonalCodeOnFile`, `auth.switchToNoCardRequest` (present in all three language blocks) — consumed by Task 6 (`RegisterForm.tsx`). Also updates the existing `auth.registerHint` key (its current wording describes the old shared-password flow).
 
 - [ ] **Step 1: No test — these are static string tables.** Skip straight to implementation (there's no test harness for translation completeness in this repo; correctness here is verified visually in Task 10).
 
-- [ ] **Step 2: Edit `data/translations/ru/account.ts`**
+- [ ] **Step 2: Edit the ru block**
 
-Replace line 111 (`auth.registerHint`):
-
-```ts
-  'auth.registerHint': 'Для регистрации укажите номер карты клиента и последние 3 цифры вашего персонального кода (или, если карта выдана на компанию — рег. номера компании). Остальное можно заполнить позже в своём профиле. Там же можно изменить пароль.',
-```
-
-Add after line 130 (`auth.cardAlreadyRegistered`):
+Replace line 724 (`auth.registerHint`):
 
 ```ts
-  'auth.personalCodeLabel': 'Последние 3 цифры персонального кода / рег. номера',
-  'auth.personalCodePlaceholder': '123',
-  'auth.personalCodeHint': 'Физлицо — последние 3 цифры персонального кода (personas kods). Карта юрлица — последние 3 цифры регистрационного номера компании.',
-  'auth.enterPersonalCode': 'Укажите последние 3 цифры кода.',
-  'auth.wrongCode': 'Неверный код.',
-  'auth.noPersonalCodeOnFile': 'Для этой карты нет кода в базе. Заполните, пожалуйста, форму без карты — администратор проверит и активирует аккаунт вручную.',
-  'auth.switchToNoCardRequest': 'Заполнить форму без карты',
+    'auth.registerHint': 'Для регистрации укажите номер карты клиента и последние 3 цифры вашего персонального кода (или, если карта выдана на компанию — рег. номера компании). Остальное можно заполнить позже в своём профиле. Там же можно изменить пароль.',
 ```
 
-- [ ] **Step 3: Edit `data/translations/lv/account.ts`**
-
-Replace line 112 (`auth.registerHint`):
+Add immediately after line 745 (`auth.cardAlreadyRegistered`):
 
 ```ts
-  'auth.registerHint': 'Reģistrācijai norādiet klienta kartes numuru un pēdējos 3 personas koda ciparus (vai, ja karte izsniegta uzņēmumam — uzņēmuma reģistrācijas numura pēdējos 3 ciparus). Pārējo var aizpildīt vēlāk savā profilā, kur var arī mainīt paroli.',
+    'auth.personalCodeLabel': 'Последние 3 цифры персонального кода / рег. номера',
+    'auth.personalCodePlaceholder': '123',
+    'auth.personalCodeHint': 'Физлицо — последние 3 цифры персонального кода (personas kods). Карта юрлица — последние 3 цифры регистрационного номера компании.',
+    'auth.enterPersonalCode': 'Укажите последние 3 цифры кода.',
+    'auth.wrongCode': 'Неверный код.',
+    'auth.noPersonalCodeOnFile': 'Для этой карты нет кода в базе. Заполните, пожалуйста, форму без карты — администратор проверит и активирует аккаунт вручную.',
+    'auth.switchToNoCardRequest': 'Заполнить форму без карты',
 ```
 
-Add after line 131 (`auth.cardAlreadyRegistered`):
+(Indentation in this file is 4 spaces, not 2 — match the surrounding lines.)
+
+- [ ] **Step 3: Edit the en block**
+
+Replace line 2224 (`auth.registerHint`):
 
 ```ts
-  'auth.personalCodeLabel': 'Personas koda / reģ. numura pēdējie 3 cipari',
-  'auth.personalCodePlaceholder': '123',
-  'auth.personalCodeHint': 'Privātpersonai — personas koda pēdējie 3 cipari. Uzņēmuma kartei — uzņēmuma reģistrācijas numura pēdējie 3 cipari.',
-  'auth.enterPersonalCode': 'Lūdzu, ievadiet koda pēdējos 3 ciparus.',
-  'auth.wrongCode': 'Nepareizs kods.',
-  'auth.noPersonalCodeOnFile': 'Šai kartei nav koda mūsu datubāzē. Lūdzu, aizpildiet veidlapu bez kartes — administrators pārbaudīs un aktivizēs kontu manuāli.',
-  'auth.switchToNoCardRequest': 'Aizpildīt veidlapu bez kartes',
+    'auth.registerHint': 'To register, enter your client card number and the last 3 digits of your personal code (or, if the card was issued to a company, the last 3 digits of the company registration number). Everything else can be filled in later in your profile, where you can also change your password.',
 ```
 
-- [ ] **Step 4: Edit `data/translations/en/account.ts`**
-
-Replace line 112 (`auth.registerHint`):
+Add immediately after line 2245 (`auth.cardAlreadyRegistered`):
 
 ```ts
-  'auth.registerHint': 'To register, enter your client card number and the last 3 digits of your personal code (or, if the card was issued to a company, the last 3 digits of the company registration number). Everything else can be filled in later in your profile, where you can also change your password.',
+    'auth.personalCodeLabel': 'Last 3 digits of your personal code / registration number',
+    'auth.personalCodePlaceholder': '123',
+    'auth.personalCodeHint': 'Individual — last 3 digits of your personal code. Company-issued card — last 3 digits of the company registration number.',
+    'auth.enterPersonalCode': 'Please enter the last 3 digits of the code.',
+    'auth.wrongCode': 'Incorrect code.',
+    'auth.noPersonalCodeOnFile': 'There is no code on file for this card. Please use the no-card form instead — an administrator will verify and activate your account manually.',
+    'auth.switchToNoCardRequest': 'Use the no-card form instead',
 ```
 
-Add after line 131 (`auth.cardAlreadyRegistered`):
+- [ ] **Step 4: Edit the lv block**
+
+Replace line 4043 (`auth.registerHint`):
 
 ```ts
-  'auth.personalCodeLabel': 'Last 3 digits of your personal code / registration number',
-  'auth.personalCodePlaceholder': '123',
-  'auth.personalCodeHint': 'Individual — last 3 digits of your personal code. Company-issued card — last 3 digits of the company registration number.',
-  'auth.enterPersonalCode': 'Please enter the last 3 digits of the code.',
-  'auth.wrongCode': 'Incorrect code.',
-  'auth.noPersonalCodeOnFile': 'There is no code on file for this card. Please use the no-card form instead — an administrator will verify and activate your account manually.',
-  'auth.switchToNoCardRequest': 'Use the no-card form instead',
+    'auth.registerHint': 'Reģistrācijai norādiet klienta kartes numuru un pēdējos 3 personas koda ciparus (vai, ja karte izsniegta uzņēmumam — uzņēmuma reģistrācijas numura pēdējos 3 ciparus). Pārējo var aizpildīt vēlāk savā profilā, kur var arī mainīt paroli.',
 ```
 
-- [ ] **Step 5: Commit**
+Add immediately after line 4064 (`auth.cardAlreadyRegistered`):
+
+```ts
+    'auth.personalCodeLabel': 'Personas koda / reģ. numura pēdējie 3 cipari',
+    'auth.personalCodePlaceholder': '123',
+    'auth.personalCodeHint': 'Privātpersonai — personas koda pēdējie 3 cipari. Uzņēmuma kartei — uzņēmuma reģistrācijas numura pēdējie 3 cipari.',
+    'auth.enterPersonalCode': 'Lūdzu, ievadiet koda pēdējos 3 ciparus.',
+    'auth.wrongCode': 'Nepareizs kods.',
+    'auth.noPersonalCodeOnFile': 'Šai kartei nav koda mūsu datubāzē. Lūdzu, aizpildiet veidlapu bez kartes — administrators pārbaudīs un aktivizēs kontu manuāli.',
+    'auth.switchToNoCardRequest': 'Aizpildīt veidlapu bez kartes',
+```
+
+- [ ] **Step 5: Re-check line numbers before editing**
+
+Because Steps 2-4 each insert lines, editing the file top-to-bottom shifts
+every later line number by however many lines the previous step added (7
+new lines per step). Either apply the edits from the bottom of the file
+upward (lv block first, then en, then ru — so earlier edits don't shift
+later line numbers), or re-locate each anchor by searching for the literal
+key string (`'auth.registerHint'`, `'auth.cardAlreadyRegistered'`) within
+the relevant language block instead of trusting the absolute line number
+after the first edit lands.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add data/translations/ru/account.ts data/translations/lv/account.ts data/translations/en/account.ts
+git add data/translations.ts
 git commit -m "feat(i18n): add personal-code registration copy, update register hint"
 ```
 

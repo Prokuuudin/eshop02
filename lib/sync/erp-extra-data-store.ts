@@ -16,6 +16,15 @@ export async function getErpExtraData(db: ExtendedPrismaClient): Promise<Record<
     : {}
 }
 
+/**
+ * Looks up ERP extra data (price1-4, per-warehouse quantities) for a single externalId.
+ *
+ * Intended for admin/CLI/batch use only — it calls getErpExtraData() under the hood,
+ * which loads and JSON-parses the entire multi-MB extra-data blob just to pick out one
+ * entry. Do NOT call this from a per-request hot path (e.g. an API route handler); that
+ * would mean parsing the whole blob on every HTTP request. A future per-request feature
+ * should either cache the parsed blob or add a dedicated indexed lookup instead.
+ */
 export async function getErpExtraDataFor(
   db: ExtendedPrismaClient,
   externalId: string,

@@ -29,7 +29,7 @@ beforeEach(() => {
 describe('GrinsXmlAdapter', () => {
   it('downloads, snapshots, then parses, in that order', async () => {
     const adapter = new GrinsXmlAdapter()
-    const result = await adapter.fetchPage()
+    await adapter.fetchPage()
 
     expect(downloadFtpsFileMock).toHaveBeenCalledWith({ host: 'h', user: 'u', password: 'p', remotePath: 'export.xml' })
     expect(saveSnapshotMock).toHaveBeenCalledWith('<root>...</root>')

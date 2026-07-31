@@ -20,7 +20,6 @@ describe('buildUpsertQuery', () => {
   it('DO UPDATE SET includes ERP-owned fields', () => {
     const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
     expect(updatePart).toContain('"lastSyncRunId"')
-    expect(updatePart).toContain('"isActive"')
     expect(updatePart).toContain('price')
     expect(updatePart).toContain('stock')
   })
@@ -31,13 +30,19 @@ describe('buildUpsertQuery', () => {
     expect(updatePart).not.toContain('"createdAt"')
   })
 
-  it('DO UPDATE SET does not overwrite admin-owned fields (title/brand/category/description/images)', () => {
+  it('DO UPDATE SET does not overwrite admin-owned fields (title/brand/category/description/images/oldPrice)', () => {
     const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
     expect(updatePart).not.toMatch(/\btitle\b\s*=/)
     expect(updatePart).not.toMatch(/\bbrand\b\s*=/)
     expect(updatePart).not.toMatch(/\bcategory\b\s*=/)
     expect(updatePart).not.toMatch(/\bdescription\b\s*=/)
     expect(updatePart).not.toMatch(/\bimages\b\s*=/)
+    expect(updatePart).not.toMatch(/"oldPrice"\s*=/)
+  })
+
+  it('DO UPDATE SET does not force-reactivate isActive (new products stay pending until an admin approves them)', () => {
+    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
+    expect(updatePart).not.toMatch(/"isActive"\s*=/)
   })
 })
 

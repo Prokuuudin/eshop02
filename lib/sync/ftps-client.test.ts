@@ -17,6 +17,7 @@ vi.mock('basic-ftp', () => ({
   })),
 }))
 
+import { Client } from 'basic-ftp'
 import { getFtpsConfigFromEnv, downloadFtpsFile } from './ftps-client'
 
 describe('getFtpsConfigFromEnv', () => {
@@ -75,5 +76,11 @@ describe('downloadFtpsFile', () => {
     const config = { host: 'h', user: 'u', password: 'p', remotePath: 'export.xml' }
     await expect(downloadFtpsFile(config)).rejects.toThrow('connection refused')
     expect(closeMock).toHaveBeenCalled()
+  })
+
+  it('configures a connection timeout so a hung socket cannot stall a run indefinitely', async () => {
+    const config = { host: 'h', user: 'u', password: 'p', remotePath: 'export.xml' }
+    await downloadFtpsFile(config)
+    expect(Client).toHaveBeenCalledWith(30_000)
   })
 })

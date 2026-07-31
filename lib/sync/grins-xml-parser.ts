@@ -6,6 +6,15 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   isArray: (name) => name === 'item' || name === 'warehouse',
+  // SKU must be preserved as an opaque string — never coerced to a number. Without this,
+  // fast-xml-parser's default `strnum` numeric coercion mangles leading-zero SKUs (e.g.
+  // "0680.11", present in export_sample.xml) into `680.11` before we ever see the value.
+  // Numeric fields (price1-4, quantity, per-warehouse #text) are unaffected: they still
+  // go through toNumber()/parseFloat below, which works fine on string input.
+  parseTagValue: false,
+  // Defense-in-depth: this parses an 8.5MB vendor-controlled file fetched over FTPS: no
+  // reason to let it use XML entity expansion for anything.
+  processEntities: false,
 })
 
 interface RawWarehouse {

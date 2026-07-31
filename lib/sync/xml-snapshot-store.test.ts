@@ -19,7 +19,7 @@ import { checksumOf, saveSnapshot, getSnapshotHistory, getSnapshotContent, type 
 beforeEach(() => {
   vi.clearAllMocks()
   findUniqueMock.mockResolvedValue(null)
-  transactionMock.mockImplementation(async (ops) => {
+  transactionMock.mockImplementation(async (_ops) => {
     // Execute the upserts in the transaction and return empty array
     return []
   })
@@ -113,6 +113,53 @@ describe('saveSnapshot', () => {
     expect(indexState.entries[0].slot).toBe(0) // most recent
     expect(indexState.entries[1].slot).toBe(2)
     expect(indexState.entries[2].slot).toBe(1)
+  })
+
+  it('dedupes byte-identical content: a second call with the same xml does not rotate the slot or write again', async () => {
+    // Same stateful mock pattern as the rotation test above, so a real "second write"
+    // would be observable via indexState/transactionMock changes.
+    const indexState: { nextSlot: number; entries: SnapshotMeta[] } = { nextSlot: 0, entries: [] }
+
+    findUniqueMock.mockImplementation(async ({ where: { key } }) => {
+      if (key === 'erp-xml-snapshot-index') {
+        const hasData = indexState.entries.length > 0 || indexState.nextSlot !== 0
+        return hasData ? { value: indexState } : null
+      }
+      return null
+    })
+
+    transactionMock.mockImplementation(async (promises) => {
+      const results = []
+      for (const promise of promises) {
+        results.push(await Promise.resolve(promise))
+      }
+
+      const recentCalls = upsertMock.mock.calls.slice(-2)
+      for (const call of recentCalls) {
+        if (call[0]?.where?.key === 'erp-xml-snapshot-index') {
+          const newValue = call[0].update?.value || call[0].create?.value
+          if (newValue) Object.assign(indexState, newValue)
+        }
+      }
+
+      return results
+    })
+
+    const xml = '<root>identical payload retried after a truncated download</root>'
+
+    const meta1 = await saveSnapshot(xml)
+    expect(meta1.slot).toBe(0)
+    expect(indexState.nextSlot).toBe(1)
+    expect(indexState.entries).toHaveLength(1)
+
+    const meta2 = await saveSnapshot(xml)
+
+    // No rotation, no second write: same slot/checksum metadata returned, and the
+    // transaction (the only place an actual write happens) fired exactly once total.
+    expect(meta2).toEqual(meta1)
+    expect(indexState.nextSlot).toBe(1)
+    expect(indexState.entries).toHaveLength(1)
+    expect(transactionMock).toHaveBeenCalledTimes(1)
   })
 })
 

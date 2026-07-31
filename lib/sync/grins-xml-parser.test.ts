@@ -51,6 +51,17 @@ describe('parseGrinsXml', () => {
     expect(sum).toBe(51)
   })
 
+  it('preserves a leading-zero, decimal-looking sku unmangled by XML number auto-coercion (regression)', () => {
+    const products = parseGrinsXml(sampleXml)
+    const nipper = products.find(p => p.externalId === '0680.11')
+    // fast-xml-parser's default strnum coercion would silently turn "0680.11" into the
+    // number 680.11 (destroying the leading zero) unless parseTagValue: false is set.
+    expect(nipper).toBeDefined()
+    expect(nipper?.externalId).toBe('0680.11')
+    expect(nipper?.sku).toBe('0680.11')
+    expect(nipper?.title).toBe('0680.11')
+  })
+
   it('does not read capacity into the result at all', () => {
     const products = parseGrinsXml(sampleXml)
     for (const p of products) {

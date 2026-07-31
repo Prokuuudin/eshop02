@@ -23,8 +23,12 @@ export function getFtpsConfigFromEnv(): FtpsConfig {
   return { host, user, password, remotePath }
 }
 
+const FTP_TIMEOUT_MS = 30_000
+
 export async function downloadFtpsFile(config: FtpsConfig): Promise<string> {
-  const client = new Client()
+  // basic-ftp has no timeout by default; a hung socket could otherwise stall a sync run
+  // indefinitely (compounding with sync-runner's own retry loop — see xml-snapshot-store.ts).
+  const client = new Client(FTP_TIMEOUT_MS)
   try {
     await client.access({
       host: config.host,

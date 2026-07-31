@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Phone, Mail } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
 import { registerCardUser, type RegisterCardErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,15 +10,15 @@ import { useTranslation } from '@/lib/use-translation';
 
 type Props = {
     onClose?: () => void;
+    onNoPersonalCode?: () => void;
 };
 
-export default function RegisterForm({ onClose }: Props): React.ReactElement {
+export default function RegisterForm({ onClose, onNoPersonalCode }: Props): React.ReactElement {
     const { t } = useTranslation();
     const router = useRouter();
     const [name, setName] = useState('');
     const [cardNumber, setCardNumber] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
@@ -27,6 +27,8 @@ export default function RegisterForm({ onClose }: Props): React.ReactElement {
         card_not_found: t('auth.cardNotFound'),
         card_already_registered: t('auth.cardAlreadyRegistered'),
         wrong_password: t('auth.wrongPassword'),
+        wrong_code: t('auth.wrongCode'),
+        no_personal_code_on_file: t('auth.noPersonalCodeOnFile'),
         too_many_attempts: t('auth.tooManyAttempts'),
         network_error: t('auth.registrationError'),
         server_error: t('auth.registrationError'),
@@ -43,7 +45,7 @@ export default function RegisterForm({ onClose }: Props): React.ReactElement {
         }
 
         if (!password) {
-            setError(t('auth.enterPassword'));
+            setError(t('auth.enterPersonalCode'));
             return;
         }
 
@@ -61,6 +63,9 @@ export default function RegisterForm({ onClose }: Props): React.ReactElement {
 
         if (!result.success) {
             setError(result.errorCode ? ERROR_MESSAGES[result.errorCode] : t('auth.registrationError'));
+            if (result.errorCode === 'no_personal_code_on_file') {
+                onNoPersonalCode?.();
+            }
             return;
         }
 
@@ -110,32 +115,24 @@ export default function RegisterForm({ onClose }: Props): React.ReactElement {
                 />
             </div>
 
-            {/* Пароль */}
+            {/* Последние 3 цифры кода */}
             <div className="register-form__field">
                 <label htmlFor="register-password" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.password', 'Пароль')}
+                    {t('auth.personalCodeLabel')}
                 </label>
-                <div className="register-form__password-wrapper relative flex items-center">
-                    <Input
-                        id="register-password"
-                        className="register-form__input bg-card text-foreground border-border pr-10"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={t('auth.passwordPlaceholder', 'Введите пароль')}
-                        required
-                        autoComplete="current-password"
-                    />
-                    <button
-                        type="button"
-                        className="register-form__password-toggle absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        tabIndex={-1}
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={showPassword ? t('account.hidePassword') : t('account.showPassword')}
-                    >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                </div>
+                <Input
+                    id="register-password"
+                    className="register-form__input bg-card text-foreground border-border"
+                    type="text"
+                    inputMode="numeric"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t('auth.personalCodePlaceholder')}
+                    maxLength={3}
+                    required
+                    autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground mt-1">{t('auth.personalCodeHint')}</p>
             </div>
 
             <div className="register-form__card-hint space-y-1">

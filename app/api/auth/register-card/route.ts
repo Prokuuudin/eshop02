@@ -6,6 +6,7 @@ import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
+import { normalizeSubmittedCode } from '@/lib/personal-code'
 
 // Best-effort "was this you?" notice — a shared password means this activation
 // could be an attacker who guessed/knew the card number, not the real owner.
@@ -36,24 +37,24 @@ function getClientIp(req: NextRequest): string {
 /**
  * Registers/activates a cardholder against a real card number — the only
  * server-authoritative path for "register with client card" (RegisterForm).
- * Every cardholder shares the same onboarding password (FIRST_LOGIN_PASSWORD);
- * its only job is to gate them into the forced "set your own password" screen
- * (mustChangePassword). Two cardholder shapes exist and are checked in order:
+ * Two cardholder shapes exist and are checked in order:
  *
  *  1. An individual already has a User row with this cardNumber — either a
  *     dormant ERP import (Klienti.xlsx, see scripts/import-client-cards.ts)
- *     or a company member created by this route before. We log them in
- *     rather than creating a duplicate; mustChangePassword tells us whether
- *     they already picked their own password (then this card is "taken").
+ *     or a company member created by this route before. Verified against
+ *     `pkLast3` — the last 3 characters of that person's personal code, or
+ *     for a card issued to a legal entity, their company registration
+ *     number — sourced from the client database, unique per cardholder
+ *     (never a value shared across cards). `mustChangePassword` tells us
+ *     whether they've already picked their own password (then this card is
+ *     "taken"); `pkLast3 === null` means this card has no code on file at
+ *     all (routed to the manual no-card request flow client-side).
  *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
- *     team member claiming a shared company card) — create one.
+ *     team member claiming a shared company card) — create one, gated by
+ *     the shared FIRST_LOGIN_PASSWORD mailed to the company contact.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    if (!FIRST_LOGIN_PASSWORD) {
-      console.error('[auth/register-card] FIRST_LOGIN_PASSWORD is not configured')
-      return NextResponse.json({ error: 'registration_not_configured' }, { status: 503 })
-    }
     if (Math.random() < 0.05) void gcRateLimitStore()
 
     const ip = getClientIp(req)
@@ -102,8 +103,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (!cardUser.mustChangePassword) {
         return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
       }
-      if (password !== FIRST_LOGIN_PASSWORD) {
-        return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
+      if (!cardUser.pkLast3) {
+        return NextResponse.json({ error: 'no_personal_code_on_file' }, { status: 422 })
+      }
+      if (normalizeSubmittedCode(password) !== cardUser.pkLast3) {
+        return NextResponse.json({ error: 'wrong_code' }, { status: 401 })
       }
 
       await prisma.user.update({ where: { id: cardUser.id }, data: privacyData })
@@ -125,6 +129,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     if (!company) {
       return NextResponse.json({ error: 'card_not_found' }, { status: 404 })
+    }
+    if (!FIRST_LOGIN_PASSWORD) {
+      console.error('[auth/register-card] FIRST_LOGIN_PASSWORD is not configured')
+      return NextResponse.json({ error: 'registration_not_configured' }, { status: 503 })
     }
     if (password !== FIRST_LOGIN_PASSWORD) {
       return NextResponse.json({ error: 'wrong_password' }, { status: 401 })

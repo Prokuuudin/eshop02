@@ -240,6 +240,34 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(stored?.password).toBe('')
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
   })
+
+  it('surfaces a wrong personal-code digit distinctly from a wrong shared password', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'wrong_code' }),
+    } as unknown as Response)
+
+    const res = await registerCardUser({ cardNumber: '5678', password: '999' })
+
+    expect(res.errorCode).toBe('wrong_code')
+  })
+
+  it('falls back to wrong_password on a 401 with no readable body (legacy shape)', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
+
+    const res = await registerCardUser({ cardNumber: '1234', password: 'nope' })
+
+    expect(res.errorCode).toBe('wrong_password')
+  })
+
+  it('surfaces a card with no personal code on file distinctly', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 422 } as Response)
+
+    const res = await registerCardUser({ cardNumber: '5678', password: '221' })
+
+    expect(res.errorCode).toBe('no_personal_code_on_file')
+  })
 })
 
 describe('logout — must clear the server session, not just localStorage', () => {

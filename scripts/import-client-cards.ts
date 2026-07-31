@@ -24,6 +24,7 @@ import { randomUUID, randomBytes } from 'crypto'
 import { writeFileSync } from 'fs'
 import bcrypt from 'bcryptjs'
 import * as XLSX from 'xlsx'
+import { derivePkLast3 } from '../lib/personal-code'
 
 const APPLY = process.argv.includes('--apply')
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -120,7 +121,7 @@ async function main() {
   const takenCards = new Set(users.map((u) => u.cardNumber).filter(Boolean) as string[])
 
   // ── 3. План операций ────────────────────────────────────────────────────
-  const toUpdate: { userId: string; email: string; prevCardNumber: string | null; cardNumber: string }[] = []
+  const toUpdate: { userId: string; email: string; prevCardNumber: string | null; cardNumber: string; pk: string | null }[] = []
   const toCreate: Client[] = []
 
   for (const c of clients) {
@@ -143,7 +144,7 @@ async function main() {
         skip('у юзера уже другая карта')
         continue
       }
-      toUpdate.push({ userId: u.id, email: c.email, prevCardNumber: u.cardNumber, cardNumber: c.code })
+      toUpdate.push({ userId: u.id, email: c.email, prevCardNumber: u.cardNumber, cardNumber: c.code, pk: c.pk })
     } else {
       toCreate.push(c)
     }
@@ -168,7 +169,10 @@ async function main() {
 
   let updated = 0
   for (const u of toUpdate) {
-    await prisma.user.update({ where: { id: u.userId }, data: { cardNumber: u.cardNumber } })
+    await prisma.user.update({
+      where: { id: u.userId },
+      data: { cardNumber: u.cardNumber, pkLast3: derivePkLast3(u.pk) },
+    })
     updated++
     if (updated % 100 === 0) process.stdout.write(`  updated ${updated}/${toUpdate.length}\r`)
   }
@@ -182,8 +186,9 @@ async function main() {
     name: c.name,
     phone: c.tel,
     cardNumber: c.code,
+    pkLast3: derivePkLast3(c.pk),
     platformRole: 'customer',
-    mustChangePassword: false,
+    mustChangePassword: true,
   }))
   let created = 0
   for (let i = 0; i < createRows.length; i += BATCH) {

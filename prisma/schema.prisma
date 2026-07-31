@@ -20,6 +20,7 @@ model User {
   auditLoggingEnabled Boolean   @default(false)
   phone               String?
   cardNumber          String?   @unique
+  pkLast3             String?   @db.VarChar(3)
   avatarUrl           String?
   bonusPoints         Int       @default(350)
   mustChangePassword  Boolean   @default(false)

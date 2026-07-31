@@ -6,6 +6,9 @@
  *  - для каждой строки файла с непустым pk вычисляет последние 3 символа
  *    (derivePkLast3) и пишет в User.pkLast3 по совпадению cardNumber, если
  *    там сейчас null. Существующее значение никогда не перезаписывается.
+ *  - код (`Код`), задублированный на нескольких строках файла, — неоднозначность
+ *    (последняя строка может принадлежать другому человеку); ВСЕ строки с
+ *    таким кодом пропускаются, как и в import-client-cards.ts.
  *
  * Больше ничего не делает — mustChangePassword этот скрипт не трогает.
  * (Ранее скрипт также переводил mustChangePassword false→true для «спящих»
@@ -39,13 +42,31 @@ async function main() {
     defval: null,
   })
 
+  // Дубли кода в файле — та же неоднозначность, что и в
+  // import-client-cards.ts: без этого Map.set молча берёт последнюю строку
+  // и может записать код от ЧУЖОГО клиента (см. final-review находку —
+  // код "303" встречался у двух разных людей). Пропускаем ВСЕ строки с
+  // задублированным кодом, а не только "лишние".
+  const codeCount = new Map<string, number>()
+  for (const r of rows) {
+    const code = r['Код'] === null || r['Код'] === undefined ? '' : String(r['Код']).trim()
+    if (code) codeCount.set(code, (codeCount.get(code) ?? 0) + 1)
+  }
+
   const pkByCode = new Map<string, string>()
+  const dupCodesSkipped = new Set<string>()
   for (const r of rows) {
     const code = r['Код'] === null || r['Код'] === undefined ? '' : String(r['Код']).trim()
     const rawPk = r['pk'] === null || r['pk'] === undefined ? null : String(r['pk'])
     const pk = derivePkLast3(rawPk)
-    if (code && pk) pkByCode.set(code, pk)
+    if (!code || !pk) continue
+    if (codeCount.get(code)! > 1) {
+      dupCodesSkipped.add(code)
+      continue
+    }
+    pkByCode.set(code, pk)
   }
+  console.log(`Пропущено дублей кода: ${dupCodesSkipped.size}`)
   console.log(`Карт с pk в файле: ${pkByCode.size}`)
 
   const users = await prisma.user.findMany({

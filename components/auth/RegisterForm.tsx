@@ -49,8 +49,8 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
             return;
         }
 
-        // The welcome password is checked server-side (never shipped to the
-        // client bundle) — a wrong guess comes back as errorCode 'wrong_password'.
+        // The 3-character personal code is checked server-side (never shipped
+        // to the client bundle) — a wrong guess comes back as errorCode 'wrong_code'.
         setLoading(true);
         const result = await registerCardUser({
             cardNumber: trimmedCard,

@@ -5,7 +5,10 @@
  *  - код клиента ERP (`Код`) становится User.cardNumber;
  *  - существующий юзер (матч по email, case-insensitive) получает cardNumber;
  *  - для клиента без юзера создаётся «спящий» аккаунт (случайный пароль,
- *    вход невозможен до активации по инвайту — см. /api/auth/invite);
+ *    mustChangePassword=true) — активировать его можно либо инвайтом (см.
+ *    /api/auth/invite), либо через самостоятельную регистрацию по номеру
+ *    карты + последним 3 цифрам personal code (см.
+ *    app/api/auth/register-card/route.ts), если pkLast3 у клиента заполнен;
  *  - письма НЕ отправляет — рассылка через админку /admin/invitations.
  *
  * Пропускает (с отчётом): без email / кривой email, нечисловой код,
@@ -164,14 +167,20 @@ async function main() {
 
   // ── 4. Запись ───────────────────────────────────────────────────────────
   // Один хэш случайного пароля на всех спящих: пароль никому не известен,
-  // вход невозможен до активации инвайтом (accept ставит свой пароль)
+  // вход по паролю невозможен — активация либо инвайтом (accept ставит свой
+  // пароль), либо через register-card (номер карты + последние 3 цифры
+  // personal code, если pkLast3 заполнен)
   const sleepingHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10)
 
   let updated = 0
   for (const u of toUpdate) {
+    // Blank pk in the file must never null out a pkLast3 the user already
+    // has — only include the field in the update when we actually derived
+    // a value (same rule as scripts/backfill-pk-last3.ts).
+    const pkLast3 = derivePkLast3(u.pk)
     await prisma.user.update({
       where: { id: u.userId },
-      data: { cardNumber: u.cardNumber, pkLast3: derivePkLast3(u.pk) },
+      data: { cardNumber: u.cardNumber, ...(pkLast3 ? { pkLast3 } : {}) },
     })
     updated++
     if (updated % 100 === 0) process.stdout.write(`  updated ${updated}/${toUpdate.length}\r`)

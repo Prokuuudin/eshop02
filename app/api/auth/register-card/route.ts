@@ -8,8 +8,8 @@ import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { normalizeSubmittedCode } from '@/lib/personal-code'
 
-// Best-effort "was this you?" notice — a shared password means this activation
-// could be an attacker who guessed/knew the card number, not the real owner.
+// Best-effort "was this you?" notice — an attacker could have guessed the
+// 3-character personal code, so this activation might not be the real owner.
 // Never let a mail failure break the response the browser is waiting on.
 async function notifyCardActivated(email: string | null | undefined, name: string, cardNumber: string): Promise<void> {
   if (!email) return
@@ -84,9 +84,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'card_required' }, { status: 400 })
     }
 
-    // Every cardholder shares the same welcome password, so per-IP limiting
-    // alone doesn't stop a targeted attempt against one known card number
-    // from a fresh IP — cap attempts per card too.
+    // Per-IP limiting alone doesn't stop a targeted attempt to guess one
+    // specific card's 3-character personal code from a fresh IP — cap
+    // attempts per card too.
     const cardRl = await checkRateLimit(`register-card:card:${cardNumber}`, { windowMs: 60 * 60 * 1000, maxAttempts: 5 })
     if (cardRl.limited) {
       return NextResponse.json(

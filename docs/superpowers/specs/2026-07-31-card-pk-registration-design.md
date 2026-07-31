@@ -67,6 +67,22 @@ No changes to `Company`, `AccessRequest`, or any other model.
 
 ## Backfill (existing data)
 
+**Post-implementation correction (fix round 1):** point 3 below (the
+`mustChangePassword` flip) documents the originally-planned behavior only —
+it was **removed entirely** during implementation. Task review found its
+exclusion logic didn't account for the register-card + personal-code
+activation path this feature introduces: a genuinely-activated register-card
+user (who already changed their password) could incorrectly qualify as a
+flip candidate on a future re-run of the script. Verified against the live
+database that the flip logic had zero legitimate targets anyway — a separate
+pre-existing script, `scripts/mark-dormant-cardholders.ts`, already sets
+`mustChangePassword: true` for all current cardholders, and this feature's
+own `import-client-cards.ts` fix makes all future dormant imports default to
+`true` too. The shipped `scripts/backfill-pk-last3.ts` only ever writes
+`pkLast3`; points 1, 2 and 4 below remain accurate. See
+`docs/superpowers/plans/2026-07-31-card-pk-registration.md` (search for
+"Post-implementation correction") for the equivalent plan-side note.
+
 New one-off script `scripts/backfill-pk-last3.ts`, following the existing
 convention in `scripts/import-client-cards.ts` (dry-run by default, `--apply`
 to write, rollback report written to `C:/Temp/pk-last3-backfill-<ts>.json`):

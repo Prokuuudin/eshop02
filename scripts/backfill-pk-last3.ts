@@ -5,20 +5,23 @@
  * Что делает:
  *  - для каждой строки файла с непустым pk вычисляет последние 3 символа
  *    (derivePkLast3) и пишет в User.pkLast3 по совпадению cardNumber, если
- *    там сейчас null;
- *  - отдельно переводит mustChangePassword false→true, но ТОЛЬКО для
- *    юзеров без companyId и без принятого InvitationToken — то есть
- *    реально ни разу не активированных. Юзеров, кто уже выбрал свой пароль
- *    (через инвайт), не трогает — иначе угадавший 3 цифры сможет
- *    перехватить уже живой аккаунт. См.
- *    docs/superpowers/specs/2026-07-31-card-pk-registration-design.md
+ *    там сейчас null. Существующее значение никогда не перезаписывается.
+ *
+ * Больше ничего не делает — mustChangePassword этот скрипт не трогает.
+ * (Ранее скрипт также переводил mustChangePassword false→true для «спящих»
+ * юзеров, но это убрано: у всех текущих держателей карт mustChangePassword
+ * уже true благодаря отдельному scripts/mark-dormant-cardholders.ts и
+ * обновлённому import-client-cards.ts (Task 8), а сама эвристика не умела
+ * отличить «настоящего активированного через карту+pkLast3 юзера, который
+ * сменил пароль» от «спящего» — что открыло бы окно для угона аккаунта.
+ * См. docs/superpowers/specs/2026-07-31-card-pk-registration-design.md
  *
  * Usage:
  *   npx tsx scripts/backfill-pk-last3.ts           # dry run, только отчёт
  *   npx tsx scripts/backfill-pk-last3.ts --apply   # запись в БД
  *
  * После --apply пишет отчёт C:/Temp/pk-last3-backfill-<ts>.json
- * (какие юзеры получили pkLast3 и/или mustChangePassword: true).
+ * (какие юзеры получили pkLast3).
  */
 import { config } from 'dotenv'
 config({ path: '.env.local' })
@@ -47,18 +50,11 @@ async function main() {
 
   const users = await prisma.user.findMany({
     where: { cardNumber: { not: null } },
-    select: { id: true, cardNumber: true, pkLast3: true, mustChangePassword: true, companyId: true },
+    select: { id: true, cardNumber: true, pkLast3: true },
   })
   console.log(`Юзеров с cardNumber в БД: ${users.length}`)
 
-  const acceptedInvites = await prisma.invitationToken.findMany({
-    where: { status: 'accepted' },
-    select: { userId: true },
-  })
-  const activatedViaInvite = new Set(acceptedInvites.map((i) => i.userId))
-
   const pkUpdates: { userId: string; cardNumber: string; pkLast3: string }[] = []
-  const flipUpdates: { userId: string; cardNumber: string }[] = []
 
   for (const u of users) {
     if (!u.cardNumber) continue
@@ -66,13 +62,9 @@ async function main() {
     if (pk && !u.pkLast3) {
       pkUpdates.push({ userId: u.id, cardNumber: u.cardNumber, pkLast3: pk })
     }
-    if (!u.mustChangePassword && !u.companyId && !activatedViaInvite.has(u.id)) {
-      flipUpdates.push({ userId: u.id, cardNumber: u.cardNumber })
-    }
   }
 
   console.log(`pkLast3 будет проставлен: ${pkUpdates.length}`)
-  console.log(`mustChangePassword false→true (спящие, без инвайта): ${flipUpdates.length}`)
 
   if (!APPLY) {
     console.log('\nDry run. Для записи: npx tsx scripts/backfill-pk-last3.ts --apply')
@@ -87,16 +79,8 @@ async function main() {
   }
   console.log(`  ✓ pkLast3 обновлён у ${pkUpdated}`)
 
-  let flipped = 0
-  for (const u of flipUpdates) {
-    await prisma.user.update({ where: { id: u.userId }, data: { mustChangePassword: true } })
-    flipped++
-    if (flipped % 200 === 0) process.stdout.write(`  mustChangePassword ${flipped}/${flipUpdates.length}\r`)
-  }
-  console.log(`  ✓ mustChangePassword выставлен у ${flipped}`)
-
   const reportPath = `C:/Temp/pk-last3-backfill-${Date.now()}.json`
-  writeFileSync(reportPath, JSON.stringify({ pkUpdates, flipUpdates }, null, 2))
+  writeFileSync(reportPath, JSON.stringify({ pkUpdates }, null, 2))
   console.log(`Rollback-отчёт: ${reportPath}`)
 }
 

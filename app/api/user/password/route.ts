@@ -6,6 +6,7 @@ import { guardOrigin } from '@/lib/api-guard'
 export const runtime = 'nodejs'
 
 const MIN_LENGTH = 12
+const MAX_LENGTH = 128
 
 // POST /api/user/password — change the signed-in user's password.
 // Auth is server-authoritative (bcrypt hash in DB): the old localStorage-only
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (newPassword.length < MIN_LENGTH) {
       return NextResponse.json({ error: 'password_too_short' }, { status: 400 })
+    }
+    if (newPassword.length > MAX_LENGTH) {
+      return NextResponse.json({ error: 'password_too_long' }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({

@@ -4,9 +4,11 @@ import { NextResponse } from 'next/server'
 vi.mock('server-only', () => ({}))
 
 const cookieGet = vi.fn()
-const { sessionFindUniqueMock, userCountMock } = vi.hoisted(() => ({
+const { sessionFindUniqueMock, sessionCreateMock, userCountMock, userFindUniqueMock } = vi.hoisted(() => ({
   sessionFindUniqueMock: vi.fn(),
+  sessionCreateMock: vi.fn(),
   userCountMock: vi.fn(),
+  userFindUniqueMock: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -14,12 +16,12 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    session: { findUnique: sessionFindUniqueMock, delete: vi.fn(), deleteMany: vi.fn() },
-    user: { count: userCountMock },
+    session: { findUnique: sessionFindUniqueMock, create: sessionCreateMock, delete: vi.fn(), deleteMany: vi.fn() },
+    user: { count: userCountMock, findUnique: userFindUniqueMock },
   },
 }))
 
-import { getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
+import { createSession, getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
 
 function futureDate() {
   const d = new Date()
@@ -128,6 +130,31 @@ describe('getAdminAccessLevel', () => {
 
   it('returns none for a plain customer', () => {
     expect(getAdminAccessLevel(makeServerUser())).toBe('none')
+  })
+})
+
+describe('createSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionCreateMock.mockResolvedValue(undefined)
+  })
+
+  it('gives an admin a ~1 day session', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
+    await createSession('u1')
+    const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
+    const days = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    expect(days).toBeGreaterThan(0.9)
+    expect(days).toBeLessThan(1.1)
+  })
+
+  it('gives a non-admin a ~30 day session', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'customer' })
+    await createSession('u1')
+    const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
+    const days = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    expect(days).toBeGreaterThan(29.9)
+    expect(days).toBeLessThan(30.1)
   })
 })
 

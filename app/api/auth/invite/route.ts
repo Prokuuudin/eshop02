@@ -7,6 +7,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
+const MAX_PASSWORD_LENGTH = 128
 
 function clientIp(req: NextRequest): string {
   return req.headers.get('cf-connecting-ip')?.trim()
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     if (!body.password || body.password.length < 12) {
       return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
+    }
+    if (body.password.length > MAX_PASSWORD_LENGTH) {
+      return NextResponse.json({ ok: false, error: 'password_too_long' }, { status: 400 })
     }
 
     const found = await findValid(body.token ?? null)

@@ -168,6 +168,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                         value={next}
                                         onChange={(e) => setNext(e.target.value)}
                                         className="pr-10"
+                                        maxLength={128}
                                         autoComplete="new-password"
                                     />
                                     <button

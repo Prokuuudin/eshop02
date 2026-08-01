@@ -26,6 +26,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!rawIdentifier || !password) {
       return NextResponse.json({ error: 'identifier_password_required' }, { status: 400 })
     }
+    if (typeof password !== 'string' || password.length > 128) {
+      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
+    }
 
     const normalizedIdentifier = String(rawIdentifier).trim()
     const isEmail = normalizedIdentifier.includes('@')

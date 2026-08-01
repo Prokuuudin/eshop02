@@ -6,6 +6,7 @@ import crypto from 'crypto'
 export const runtime = 'nodejs'
 
 const MIN_PASSWORD_LENGTH = 12
+const MAX_PASSWORD_LENGTH = 128
 const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 
 // GET ?token=xxx — проверить токен (не удаляет)
@@ -48,6 +49,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return NextResponse.json({ ok: false, error: 'password_too_long' }, { status: 400 })
   }
 
   const hash = tokenHash(token)

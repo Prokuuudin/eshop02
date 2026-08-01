@@ -9,6 +9,9 @@ import { SESSION_COOKIE } from '@/lib/auth-constants'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
+// Admin accounts get a shorter server-side session lifetime: a leaked admin
+// cookie/token stays exploitable for at most a day, not a month.
+const ADMIN_SESSION_DURATION_DAYS = 1
 
 export type ServerUser = {
   id: string
@@ -49,7 +52,7 @@ export function mapDbToServerUser(u: PrismaUser): ServerUser {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10)
+  return bcrypt.hash(password, 12)
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -68,8 +71,10 @@ export function hashToken(token: string): string {
 
 export async function createSession(userId: string): Promise<string> {
   const token = generateToken()
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { platformRole: true } })
+  const durationDays = user?.platformRole === 'admin' ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS)
+  expiresAt.setDate(expiresAt.getDate() + durationDays)
 
   await prisma.session.create({
     data: {

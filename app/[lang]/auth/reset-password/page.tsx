@@ -150,6 +150,7 @@ export default function ResetPasswordPage(): React.ReactElement {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={12}
+              maxLength={128}
               className="w-full bg-card text-foreground border-border"
             />
           </div>
@@ -164,6 +165,7 @@ export default function ResetPasswordPage(): React.ReactElement {
               onChange={(e) => setPassword2(e.target.value)}
               required
               minLength={12}
+              maxLength={128}
               className="w-full bg-card text-foreground border-border"
             />
           </div>

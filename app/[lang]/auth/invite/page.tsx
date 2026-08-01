@@ -191,6 +191,7 @@ export default function InvitePage(): React.ReactElement {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 minLength={12}
+                                maxLength={128}
                                 required
                                 autoComplete="new-password"
                             />
@@ -204,6 +205,7 @@ export default function InvitePage(): React.ReactElement {
                                 value={password2}
                                 onChange={(e) => setPassword2(e.target.value)}
                                 minLength={12}
+                                maxLength={128}
                                 required
                                 autoComplete="new-password"
                             />

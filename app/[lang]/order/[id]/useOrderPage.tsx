@@ -1,18 +1,14 @@
 ﻿'use client';
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useOrders } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
-import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
-import { pointsToEuros } from '@/lib/bonus-program';
+import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
 import { useToast } from '@/lib/toast-context';
-import ReturnRequestDialog from '@/components/ReturnRequestDialog';
-import ShareOrderButton from '@/components/ShareOrderButton';
 
 type PageProps = {
     params: Promise<{
@@ -20,7 +16,7 @@ type PageProps = {
     }>;
 };
 
-export function useOrderPage({ params }: PageProps) {
+function useOrderPageState({ params }: PageProps) {
     const { id } = React.use(params);
     const searchParams = useSearchParams();
     const { t, language } = useTranslation();
@@ -388,4 +384,8 @@ export function useOrderPage({ params }: PageProps) {
     };
 
       return { id, searchParams, t, language, getOrder, updateOrderPayment, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, paymentCheckPending, setPaymentCheckPending, retryingPayment, setRetryingPayment, returnDialogOpen, setReturnDialogOpen, showToast, applyOrderPaymentUpdate, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleRetryPayment, handleDownloadInvoice }
+}
+
+export function useOrderPage({ params }: PageProps): ReturnType<typeof useOrderPageState> {
+  return useOrderPageState({ params })
 }

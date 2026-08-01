@@ -2,15 +2,9 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { useOrders } from '@/lib/orders-store';
-import { useAdminStore } from '@/lib/admin-store';
-import { useTranslation } from '@/lib/use-translation';
-import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
-import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
-import { useToast } from '@/lib/toast-context';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 import ShareOrderButton from '@/components/ShareOrderButton';
 
@@ -26,7 +20,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { id, searchParams, t, language, getOrder, updateOrderPayment, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, paymentCheckPending, setPaymentCheckPending, retryingPayment, setRetryingPayment, returnDialogOpen, setReturnDialogOpen, showToast, applyOrderPaymentUpdate, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
+  const { t, order, locale, paymentCheckPending, retryingPayment, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
 return (
         <main className="w-full px-4 py-12">
             <div className="max-w-4xl mx-auto">

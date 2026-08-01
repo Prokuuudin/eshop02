@@ -1,36 +1,26 @@
 'use client';
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { stores } from '@/data/stores';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
-import { useCart } from '@/lib/cart-store';
-import { useOrders, DeliveryMethod } from '@/lib/orders-store';
-import { useAdminStore } from '@/lib/admin-store';
-import { calculateDiscount } from '@/lib/promo-codes';
-import { extractVat } from '@/lib/tax';
-import { useTranslation } from '@/lib/use-translation';
-import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
-import { useToast } from '@/lib/toast-context';
-import { canPlaceOrders, getCurrentUser, syncBonusBalanceFromServer } from '@/lib/auth';
-import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation';
-import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program';
+import { DeliveryMethod } from '@/lib/orders-store';
+import { calculatePrice } from '@/lib/customer-segmentation';
+import { pointsToEuros } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
-import { useInvoicesStore } from '@/lib/invoices-store';
-import { logAuditAction } from '@/lib/audit-log-store';
-import { useCompanyStore } from '@/lib/company-store';
-import { burstConfetti } from '@/lib/confetti';
-import { TURNSTILE_SCRIPT_SRC, useTurnstile } from '@/lib/use-turnstile';
-import {
-    CustomerDetailsSection,
-    type CheckoutFormData,
-} from './CheckoutFormSections';
+import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
+import { CustomerDetailsSection } from './CheckoutFormSections';
 
 const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
     { id: 'courier', labelKey: 'checkout.delivery.courier' },
@@ -38,18 +28,64 @@ const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
     { id: 'post', labelKey: 'checkout.delivery.omniva' },
 ];
 
-const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-};
-
-
-import { useCheckoutPage } from './useCheckoutPage'
+import { useCheckoutPage } from './useCheckoutPage';
 export default function CheckoutPage(): React.ReactElement {
-    const checkoutPage = useCheckoutPage()
-    if (React.isValidElement(checkoutPage)) return checkoutPage
-    const checkoutState = checkoutPage as Exclude<ReturnType<typeof useCheckoutPage>, React.ReactElement>
-    const { t, language, showToast, searchParams, items, replaceWithItems, addOrder, updateOrderPayment, bonusProgram, currentUser, isCheckoutAllowedForRole, getCompany, syncFromDb, locale, formatCurrency, company, formData, setFormData, deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, promoCode, setPromoCode, appliedPromo, setAppliedPromo, appliedPromoDiscountPct, setAppliedPromoDiscountPct, bonusApplied, setBonusApplied, termsAccepted, setTermsAccepted, promoError, setPromoError, submitted, isSubmitting, errors, setErrors, turnstileEnabled, turnstileToken, setTurnstileContainer, renderTurnstile, resetTurnstile, applyBtnRef, selectedItemIds, checkoutItems, subtotal, cashUnavailable, handleChange, handleApplyPromo, handleSubmit, discount, subtotalAfterDiscount, deliveryFee, taxAmount, grandTotal, wholesaleGuard, userBonusBalance, bonusToEarn, bonusApplicable, maxBonusSpendPoints, maxBonusDiscount, bonusDiscount, finalGrandTotal, adjustedBonusToEarn } = checkoutState
+    const checkoutPage = useCheckoutPage();
+    if (React.isValidElement(checkoutPage)) return checkoutPage;
+    const checkoutState = checkoutPage as Exclude<
+        ReturnType<typeof useCheckoutPage>,
+        React.ReactElement
+    >;
+    const {
+            t,
+            language,
+            currentUser,
+            formatCurrency,
+            formData,
+            setFormData,
+            deliveryMethod,
+            setDeliveryMethod,
+            pickupStoreId,
+            setPickupStoreId,
+            promoCode,
+            setPromoCode,
+            appliedPromo,
+            setAppliedPromo,
+            appliedPromoDiscountPct,
+            setAppliedPromoDiscountPct,
+            bonusApplied,
+            setBonusApplied,
+            termsAccepted,
+            setTermsAccepted,
+            promoError,
+            setPromoError,
+            isSubmitting,
+            errors,
+            setErrors,
+            turnstileEnabled,
+            turnstileToken,
+            setTurnstileContainer,
+            renderTurnstile,
+            applyBtnRef,
+            checkoutItems,
+            subtotal,
+            cashUnavailable,
+            handleChange,
+            handleApplyPromo,
+            handleSubmit,
+            discount,
+            subtotalAfterDiscount,
+            deliveryFee,
+            taxAmount,
+            wholesaleGuard,
+            userBonusBalance,
+            bonusToEarn,
+            bonusApplicable,
+            maxBonusDiscount,
+            bonusDiscount,
+            finalGrandTotal,
+            adjustedBonusToEarn,
+          } = checkoutState;
     return (
         <main className="w-full px-4 py-8 text-foreground">
             <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
@@ -58,7 +94,11 @@ export default function CheckoutPage(): React.ReactElement {
                 {/* Ð¤Ð¾Ñ€Ð¼Ð° */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
                     {turnstileEnabled && (
-                        <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
+                        <Script
+                            src={TURNSTILE_SCRIPT_SRC}
+                            strategy="afterInteractive"
+                            onLoad={renderTurnstile}
+                        />
                     )}
                     <CustomerDetailsSection
                         formData={formData}
@@ -110,9 +150,17 @@ export default function CheckoutPage(): React.ReactElement {
                                         <div className="flex-1">
                                             <div className="font-medium">{t(option.labelKey)}</div>
                                             <div className="text-sm text-muted-foreground">
-                                                {calcDeliveryFee(option.id, subtotalAfterDiscount) === 0
+                                                {calcDeliveryFee(
+                                                    option.id,
+                                                    subtotalAfterDiscount
+                                                ) === 0
                                                     ? t('checkout.delivery.free')
-                                                    : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}
+                                                    : formatCurrency(
+                                                          calcDeliveryFee(
+                                                              option.id,
+                                                              subtotalAfterDiscount
+                                                          )
+                                                      )}
                                             </div>
                                         </div>
                                     </label>
@@ -155,16 +203,21 @@ export default function CheckoutPage(): React.ReactElement {
                                                     aria-invalid={!!errors.pickupStore}
                                                 >
                                                     <SelectValue
-                                                        placeholder={t('checkout.pickup.storePlaceholder')}
+                                                        placeholder={t(
+                                                            'checkout.pickup.storePlaceholder'
+                                                        )}
                                                     />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {stores.map((store) => {
                                                         const lang = language as 'ru' | 'en' | 'lv';
                                                         return (
-                                                            <SelectItem key={store.id} value={store.id}>
-                                                                {store.name[lang] ?? store.name.ru} â€”{' '}
-                                                                {store.address.lv}
+                                                            <SelectItem
+                                                                key={store.id}
+                                                                value={store.id}
+                                                            >
+                                                                {store.name[lang] ?? store.name.ru}{' '}
+                                                                â€” {store.address.lv}
                                                             </SelectItem>
                                                         );
                                                     })}
@@ -241,7 +294,11 @@ export default function CheckoutPage(): React.ReactElement {
                         <Button
                             type="submit"
                             className="flex-1"
-                            disabled={!wholesaleGuard.isMinimumReached || isSubmitting || (turnstileEnabled && !turnstileToken)}
+                            disabled={
+                                !wholesaleGuard.isMinimumReached ||
+                                isSubmitting ||
+                                (turnstileEnabled && !turnstileToken)
+                            }
                         >
                             {t('checkout.submit')}
                         </Button>
@@ -265,7 +322,10 @@ export default function CheckoutPage(): React.ReactElement {
                                 const localizedTitle = t(`products.${item.id}.title`, item.title);
                                 const unitPrice = calculatePrice(item, item.quantity);
                                 return (
-                                    <div key={item.lineKey} className="text-sm flex justify-between">
+                                    <div
+                                        key={item.lineKey}
+                                        className="text-sm flex justify-between"
+                                    >
                                         <span>
                                             {localizedTitle} Ã— {item.quantity}
                                         </span>
@@ -345,7 +405,9 @@ export default function CheckoutPage(): React.ReactElement {
                                         +{adjustedBonusToEarn} {t('cart.bonus.unit')}
                                         {adjustedBonusToEarn > 0 && (
                                             <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                                (= âˆ’{formatCurrency(pointsToEuros(adjustedBonusToEarn))})
+                                                (= âˆ’
+                                                {formatCurrency(pointsToEuros(adjustedBonusToEarn))}
+                                                )
                                             </span>
                                         )}
                                     </span>
@@ -358,13 +420,15 @@ export default function CheckoutPage(): React.ReactElement {
                                                 onClick={() => setBonusApplied(true)}
                                                 className="checkout__bonus-apply w-full rounded border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 dark:border-amber-600"
                                             >
-                                                {t('checkout.bonus.apply')} (âˆ’{formatCurrency(maxBonusDiscount)})
+                                                {t('checkout.bonus.apply')} (âˆ’
+                                                {formatCurrency(maxBonusDiscount)})
                                             </button>
                                         ) : (
                                             <>
                                                 <div className="checkout__bonus-applied flex items-center justify-between text-xs">
                                                     <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                                        âœ“ {t('checkout.bonus.applied')} âˆ’{formatCurrency(maxBonusDiscount)}
+                                                        âœ“ {t('checkout.bonus.applied')} âˆ’
+                                                        {formatCurrency(maxBonusDiscount)}
                                                     </span>
                                                     <button
                                                         type="button"
@@ -397,18 +461,23 @@ export default function CheckoutPage(): React.ReactElement {
                                         {t('checkout.summary.discount').replace(/:\s*$/, '')}
                                         {appliedPromo && (
                                             <span className="text-muted-foreground">
-                                                {' '}({appliedPromo} âˆ’{appliedPromoDiscountPct}%)
+                                                {' '}
+                                                ({appliedPromo} âˆ’{appliedPromoDiscountPct}%)
                                             </span>
                                         )}
                                         :
                                     </span>
-                                    <span className="font-medium">âˆ’{formatCurrency(discount)}</span>
+                                    <span className="font-medium">
+                                        âˆ’{formatCurrency(discount)}
+                                    </span>
                                 </div>
                             )}
                             {bonusDiscount > 0 && (
                                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                                     <span>{t('checkout.summary.bonus')}</span>
-                                    <span className="font-medium">âˆ’{formatCurrency(bonusDiscount)}</span>
+                                    <span className="font-medium">
+                                        âˆ’{formatCurrency(bonusDiscount)}
+                                    </span>
                                 </div>
                             )}
 

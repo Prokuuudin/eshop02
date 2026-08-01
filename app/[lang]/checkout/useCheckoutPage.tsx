@@ -1,16 +1,12 @@
 'use client';
 import React, { useRef, useState } from 'react';
-import { EmptyCartView, NoSelectedItemsView, CheckoutSuccessView, CheckoutRoleBlockedView } from './CheckoutStatusViews'
-import Script from 'next/script';
-import Link from 'next/link';
+import {
+    EmptyCartView,
+    NoSelectedItemsView,
+    CheckoutSuccessView,
+    CheckoutRoleBlockedView,
+} from './CheckoutStatusViews';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { stores } from '@/data/stores';
-import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
@@ -27,25 +23,15 @@ import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
 import { burstConfetti } from '@/lib/confetti';
-import { TURNSTILE_SCRIPT_SRC, useTurnstile } from '@/lib/use-turnstile';
-import {
-    CustomerDetailsSection,
-    type CheckoutFormData,
-} from './CheckoutFormSections';
-
-const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
-    { id: 'courier', labelKey: 'checkout.delivery.courier' },
-    { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
-    { id: 'post', labelKey: 'checkout.delivery.omniva' },
-];
+import { useTurnstile } from '@/lib/use-turnstile';
+import { type CheckoutFormData } from './CheckoutFormSections';
 
 const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 };
 
-
-export function useCheckoutPage() {
+function useCheckoutPageState() {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
@@ -96,7 +82,7 @@ export function useCheckoutPage() {
         render: renderTurnstile,
         reset: resetTurnstile,
     } = useTurnstile();
-    const applyBtnRef = useRef<HTMLButtonElement>(null)
+    const applyBtnRef = useRef<HTMLButtonElement>(null);
     const selectedItemIds = React.useMemo(() => {
         const raw = searchParams.get('items');
         if (!raw) return null;
@@ -127,11 +113,11 @@ export function useCheckoutPage() {
     // Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚ÑÑ ÑÐ°Ð¼Ð¾Ð²Ñ‹Ð²Ð¾Ð· Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð¸Ð· Â«Ð Ð¸Ð³Ð° ÐžÑ„Ð¸ÑÂ».
     const cashUnavailable = deliveryMethod !== 'pickup' || pickupStoreId !== 'riga-office';
     if (items.length === 0) {
-        return <EmptyCartView t={t} />
+        return <EmptyCartView t={t} />;
     }
 
     if (selectedItemIds && checkoutItems.length === 0) {
-        return <NoSelectedItemsView t={t} />
+        return <NoSelectedItemsView t={t} />;
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
@@ -185,7 +171,10 @@ export function useCheckoutPage() {
         setIsSubmitting(true);
 
         if (!isCheckoutAllowedForRole) {
-            showToast('Ð”Ð»Ñ Ñ€Ð¾Ð»Ð¸ Ð¼ÐµÐ½ÐµÐ´Ð¶ÐµÑ€Ð° Ð¾Ñ„Ð¾Ñ€Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð° Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾', 'error');
+            showToast(
+                'Ð”Ð»Ñ Ñ€Ð¾Ð»Ð¸ Ð¼ÐµÐ½ÐµÐ´Ð¶ÐµÑ€Ð° Ð¾Ñ„Ð¾Ñ€Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð° Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾',
+                'error'
+            );
             setIsSubmitting(false);
             return;
         }
@@ -233,9 +222,10 @@ export function useCheckoutPage() {
         }
 
         // Calculate totals
-        const discount = appliedPromo && appliedPromoDiscountPct !== null
-            ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-            : 0;
+        const discount =
+            appliedPromo && appliedPromoDiscountPct !== null
+                ? calculateDiscount(subtotal, appliedPromoDiscountPct)
+                : 0;
         const subtotalAfterDiscount = subtotal - discount;
         const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
 
@@ -244,7 +234,10 @@ export function useCheckoutPage() {
         const grandTotal = subtotalAfterDiscount + deliveryFee;
         // Ð¡Ð¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð² Ð±Ð°Ð»Ð»Ð°Ñ… (1 Ð±Ð°Ð»Ð» = 1 Ñ†ÐµÐ½Ñ‚); ÑÐºÐ¸Ð´ÐºÐ° â€” ÐµÐ³Ð¾ ÐµÐ²Ñ€Ð¾-ÑÐºÐ²Ð¸Ð²Ð°Ð»ÐµÐ½Ñ‚.
         const bonusSpentPoints = bonusApplied
-            ? Math.min(currentUser?.bonusPoints ?? 0, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
+            ? Math.min(
+                  currentUser?.bonusPoints ?? 0,
+                  eurosToPoints((grandTotal * bonusProgram.maxSpendPercent) / 100)
+              )
             : 0;
         const bonusDiscount = pointsToEuros(bonusSpentPoints);
         const finalGrandTotal = grandTotal - bonusDiscount;
@@ -295,9 +288,10 @@ export function useCheckoutPage() {
                 }),
             });
             if (!response.ok) {
-                const errorPayload = await response
-                    .json()
-                    .catch(() => null) as { error?: string; items?: string[] } | null;
+                const errorPayload = (await response.json().catch(() => null)) as {
+                    error?: string;
+                    items?: string[];
+                } | null;
                 const message =
                     errorPayload?.error === 'insufficient_stock'
                         ? 'ÐÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… Ñ‚Ð¾Ð²Ð°Ñ€Ð¾Ð² ÑƒÐ¶Ðµ Ð½ÐµÑ‚ Ð² Ð´Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ñ‡Ð½Ð¾Ð¼ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ðµ. ÐžÐ±Ð½Ð¾Ð²Ð¸Ñ‚Ðµ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.'
@@ -309,14 +303,20 @@ export function useCheckoutPage() {
             }
             const payload = (await response.json()) as { orderId?: string };
             if (!payload.orderId) {
-                showToast('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.', 'error');
+                showToast(
+                    'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.',
+                    'error'
+                );
                 setIsSubmitting(false);
                 return;
             }
             orderId = String(payload.orderId);
         } catch {
             resetTurnstile();
-            showToast('ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.', 'error');
+            showToast(
+                'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.',
+                'error'
+            );
             setIsSubmitting(false);
             return;
         }
@@ -370,7 +370,10 @@ export function useCheckoutPage() {
                         paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
                         paymentProvider: 'stripe',
                     });
-                    showToast('ÐŸÐ»Ð°Ñ‚ÐµÐ¶Ð½Ð°Ñ ÑÐµÑÑÐ¸Ñ Ð½Ðµ Ð±Ñ‹Ð»Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð°. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.', 'error');
+                    showToast(
+                        'ÐŸÐ»Ð°Ñ‚ÐµÐ¶Ð½Ð°Ñ ÑÐµÑÑÐ¸Ñ Ð½Ðµ Ð±Ñ‹Ð»Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð°. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.',
+                        'error'
+                    );
                     setIsSubmitting(false);
                     return;
                 }
@@ -386,7 +389,10 @@ export function useCheckoutPage() {
                     paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
                     paymentProvider: 'stripe',
                 });
-                showToast('ÐžÑˆÐ¸Ð±ÐºÐ° Ð¿Ñ€Ð¸ Ð·Ð°Ð¿ÑƒÑÐºÐµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.', 'error');
+                showToast(
+                    'ÐžÑˆÐ¸Ð±ÐºÐ° Ð¿Ñ€Ð¸ Ð·Ð°Ð¿ÑƒÑÐºÐµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.',
+                    'error'
+                );
                 setIsSubmitting(false);
                 return;
             }
@@ -447,16 +453,17 @@ export function useCheckoutPage() {
     };
 
     if (submitted) {
-        return <CheckoutSuccessView t={t} />
+        return <CheckoutSuccessView t={t} />;
     }
 
     if (!isCheckoutAllowedForRole) {
-        return <CheckoutRoleBlockedView t={t} />
+        return <CheckoutRoleBlockedView t={t} />;
     }
 
-    const discount = appliedPromo && appliedPromoDiscountPct !== null
-        ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-        : 0;
+    const discount =
+        appliedPromo && appliedPromoDiscountPct !== null
+            ? calculateDiscount(subtotal, appliedPromoDiscountPct)
+            : 0;
     const subtotalAfterDiscount = subtotal - discount;
     const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
     // Catalog prices already include VAT â€” taxAmount is informational, not added to the total.
@@ -474,15 +481,88 @@ export function useCheckoutPage() {
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
     // ÐŸÐ¾Ñ‚Ð¾Ð»Ð¾Ðº ÑÐ¿Ð¸ÑÐ°Ð½Ð¸Ñ Ð² Ð±Ð°Ð»Ð»Ð°Ñ… (1 Ð±Ð°Ð»Ð» = 1 Ñ†ÐµÐ½Ñ‚); Ð² â‚¬ â€” Ð´Ð»Ñ ÑÑ‚Ñ€Ð¾Ðº Ð¸Ñ‚Ð¾Ð³Ð°.
     const maxBonusSpendPoints = bonusApplicable
-        ? Math.min(userBonusBalance, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
+        ? Math.min(
+              userBonusBalance,
+              eurosToPoints((grandTotal * bonusProgram.maxSpendPercent) / 100)
+          )
         : 0;
     const maxBonusDiscount = pointsToEuros(maxBonusSpendPoints);
     const bonusDiscount = bonusApplied ? maxBonusDiscount : 0;
     const finalGrandTotal = grandTotal - bonusDiscount;
-    const adjustedBonusToEarn = grandTotal > 0 && bonusApplied
-        ? Math.round(bonusToEarn * finalGrandTotal / grandTotal)
-        : bonusToEarn;
+    const adjustedBonusToEarn =
+        grandTotal > 0 && bonusApplied
+            ? Math.round((bonusToEarn * finalGrandTotal) / grandTotal)
+            : bonusToEarn;
 
+    return {
+        t,
+        language,
+        showToast,
+        searchParams,
+        items,
+        replaceWithItems,
+        addOrder,
+        updateOrderPayment,
+        bonusProgram,
+        currentUser,
+        isCheckoutAllowedForRole,
+        getCompany,
+        syncFromDb,
+        locale,
+        formatCurrency,
+        company,
+        formData,
+        setFormData,
+        deliveryMethod,
+        setDeliveryMethod,
+        pickupStoreId,
+        setPickupStoreId,
+        promoCode,
+        setPromoCode,
+        appliedPromo,
+        setAppliedPromo,
+        appliedPromoDiscountPct,
+        setAppliedPromoDiscountPct,
+        bonusApplied,
+        setBonusApplied,
+        termsAccepted,
+        setTermsAccepted,
+        promoError,
+        setPromoError,
+        submitted,
+        isSubmitting,
+        errors,
+        setErrors,
+        turnstileEnabled,
+        turnstileToken,
+        setTurnstileContainer,
+        renderTurnstile,
+        resetTurnstile,
+        applyBtnRef,
+        selectedItemIds,
+        checkoutItems,
+        subtotal,
+        cashUnavailable,
+        handleChange,
+        handleApplyPromo,
+        handleSubmit,
+        discount,
+        subtotalAfterDiscount,
+        deliveryFee,
+        taxAmount,
+        grandTotal,
+        wholesaleGuard,
+        userBonusBalance,
+        bonusToEarn,
+        bonusApplicable,
+        maxBonusSpendPoints,
+        maxBonusDiscount,
+        bonusDiscount,
+        finalGrandTotal,
+        adjustedBonusToEarn,
+    };
+}
 
-    return { t, language, showToast, searchParams, items, replaceWithItems, addOrder, updateOrderPayment, bonusProgram, currentUser, isCheckoutAllowedForRole, getCompany, syncFromDb, locale, formatCurrency, company, formData, setFormData, deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, promoCode, setPromoCode, appliedPromo, setAppliedPromo, appliedPromoDiscountPct, setAppliedPromoDiscountPct, bonusApplied, setBonusApplied, termsAccepted, setTermsAccepted, promoError, setPromoError, submitted, isSubmitting, errors, setErrors, turnstileEnabled, turnstileToken, setTurnstileContainer, renderTurnstile, resetTurnstile, applyBtnRef, selectedItemIds, checkoutItems, subtotal, cashUnavailable, handleChange, handleApplyPromo, handleSubmit, discount, subtotalAfterDiscount, deliveryFee, taxAmount, grandTotal, wholesaleGuard, userBonusBalance, bonusToEarn, bonusApplicable, maxBonusSpendPoints, maxBonusDiscount, bonusDiscount, finalGrandTotal, adjustedBonusToEarn }
+export function useCheckoutPage(): ReturnType<typeof useCheckoutPageState> {
+  return useCheckoutPageState()
 }

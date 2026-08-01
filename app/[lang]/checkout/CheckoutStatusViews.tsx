@@ -42,7 +42,7 @@ export function CheckoutSuccessView({ t }: { t: T }): React.ReactElement {
             </main>)
 }
 
-export function CheckoutRoleBlockedView({ t }: { t: T }): React.ReactElement {
+export function CheckoutRoleBlockedView({  }: { t: T }): React.ReactElement {
   return (<main className="w-full px-4 py-12 text-foreground">
                 <div className="mx-auto max-w-2xl rounded-lg border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-900/30">
                     <h1 className="text-2xl font-bold mb-2">

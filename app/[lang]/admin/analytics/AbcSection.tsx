@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { useOrders } from '@/lib/orders-store'
 import { formatEuro } from '@/lib/utils'
 import { GRADE_STYLES, type AbcGrade, type AbcRow, Empty } from './analytics-shared'
+import type { ReactElement } from 'react'
 
-export default function AbcSection() {
+export default function AbcSection(): ReactElement {
   const orders = useOrders((s) => s.orders)
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
 

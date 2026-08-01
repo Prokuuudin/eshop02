@@ -1,20 +1,14 @@
 ﻿'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useCompanyStore, type CompanyProfile } from '@/lib/company-store';
-import {
-    getCurrentUser,
-    listCompanyUsers,
-    updateUserTeamRole,
-    type TeamRole,
-} from '@/lib/auth';
+import type { CompanyProfile } from '@/lib/company-store';
+import { listCompanyUsers, type TeamRole } from '@/lib/auth';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from '@/lib/use-translation';
 
 // Для заявок мастеров: короткий номер от 4 до 6 цифр, уникальный среди всех карт
 const generateShortCardNumber = (companies: CompanyProfile[]): string => {
@@ -34,23 +28,11 @@ const generateShortCardNumber = (companies: CompanyProfile[]): string => {
 
 // Заявка мастера из Neon (GET /api/admin/access-requests); certificateData
 // (картинка) на сервер не передаётся — есть только certificateName
-type NoCardRequest = {
-    id: string;
-    email: string;
-    name: string | null;
-    phone: string | null;
-    requestType: string;
-    certificateName: string | null;
-    message: string | null;
-    language: string | null;
-    requestedAt: string;
-};
-
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage'
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
   const pageState = useAdminClientBarcodesPage()
-  const { t, language, l, tl, formError, setFormError, message, setMessage, memberRolesDraft, setMemberRolesDraft, roleUpdateInProgress, setRoleUpdateInProgress, search, setSearch, getCompanies, companies, noCardRequests, setNoCardRequests, loadNoCardRequests, filteredCompanies, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, handleApproveNoCardRequest, handleRejectNoCardRequest, resolveMemberRoleDraft, handleUpdateTeamMemberRole } = pageState
+  const { tl, formError, message, setMemberRolesDraft, roleUpdateInProgress, search, setSearch, companies, noCardRequests, filteredCompanies, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, handleApproveNoCardRequest, handleRejectNoCardRequest, resolveMemberRoleDraft, handleUpdateTeamMemberRole } = pageState
 return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">

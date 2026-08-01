@@ -9,7 +9,7 @@ import {
   type ContentBlockForm,
 } from './banner-model'
 
-export function useBannerContentManager() {
+function useBannerContentManagerState() {
   const [banners, setBanners] = React.useState<Banner[]>([])
   const [blocks, setBlocks] = React.useState<ContentBlock[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -334,4 +334,8 @@ export function useBannerContentManager() {
     onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm,
     onSaveBlock, onDeleteBlock, onToggleBlock, onMoveBlock, onEditBlock, resetBlockForm,
   }
+}
+
+export function useBannerContentManager(): ReturnType<typeof useBannerContentManagerState> {
+  return useBannerContentManagerState()
 }

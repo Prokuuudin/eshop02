@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { formatEuro } from '@/lib/utils';
@@ -14,23 +14,7 @@ type PriceGroup = {
     createdAt: string;
 };
 
-type PriceOverride = {
-    groupId: string;
-    productId: string;
-    price: number;
-};
-
-type Product = {
-    id: string;
-    title: string;
-    brand: string;
-    price: number;
-    category: string;
-};
-
-const COLOR_OPTIONS = [
-    '#6b7280', '#059669', '#7c3aed', '#dc2626', '#2563eb', '#d97706', '#0891b2',
-];
+const COLOR_OPTIONS = ['#6b7280', '#059669', '#7c3aed', '#dc2626', '#2563eb', '#d97706', '#0891b2'];
 
 function GroupForm({
     initial,
@@ -89,7 +73,9 @@ function GroupForm({
                             key={c}
                             type="button"
                             onClick={() => setColor(c)}
-                            className={`h-7 w-7 rounded-full transition-transform ${color === c ? 'scale-125 ring-2 ring-offset-1' : ''}`}
+                            className={`h-7 w-7 rounded-full transition-transform ${
+                                color === c ? 'scale-125 ring-2 ring-offset-1' : ''
+                            }`}
                             style={{ background: c }}
                         />
                     ))}
@@ -123,12 +109,34 @@ function GroupForm({
     );
 }
 
-import { usePriceGroupsPage } from './usePriceGroupsPage'
+import { usePriceGroupsPage } from './usePriceGroupsPage';
 
 export default function PriceGroupsPage(): ReactElement {
-  const pageState = usePriceGroupsPage()
-  const { groups, setGroups, overrides, setOverrides, products, setProducts, loading, setLoading, showCreate, setShowCreate, editingId, setEditingId, selectedGroup, setSelectedGroup, productSearch, setProductSearch, overrideInput, setOverrideInput, load, handleCreate, handleUpdate, handleDelete, handleSetOverride, handleRemoveOverride, discountLabel, activeGroup, filteredProducts } = pageState
-return (
+    const pageState = usePriceGroupsPage();
+    const {
+            groups,
+            overrides,
+            loading,
+            showCreate,
+            setShowCreate,
+            editingId,
+            setEditingId,
+            selectedGroup,
+            setSelectedGroup,
+            productSearch,
+            setProductSearch,
+            overrideInput,
+            setOverrideInput,
+            handleCreate,
+            handleUpdate,
+            handleDelete,
+            handleSetOverride,
+            handleRemoveOverride,
+            discountLabel,
+            activeGroup,
+            filteredProducts,
+          } = pageState;
+    return (
         <AdminGate access="full">
             <div className="space-y-6">
                 <div className="flex items-center justify-between gap-4">
@@ -154,10 +162,7 @@ return (
                         <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
                             Новая ценовая группа
                         </h2>
-                        <GroupForm
-                            onSave={handleCreate}
-                            onCancel={() => setShowCreate(false)}
-                        />
+                        <GroupForm onSave={handleCreate} onCancel={() => setShowCreate(false)} />
                     </div>
                 )}
 
@@ -178,7 +183,8 @@ return (
                                             : 'border-gray-200 bg-white hover:border-border dark:bg-gray-900'
                                     }`}
                                     onClick={(event) => {
-                                        if ((event.target as HTMLElement).closest('button, input')) return;
+                                        if ((event.target as HTMLElement).closest('button, input'))
+                                            return;
                                         setSelectedGroup(selectedGroup === g.id ? null : g.id);
                                     }}
                                     onKeyDown={(event) => {
@@ -232,7 +238,9 @@ return (
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p className="mt-1 text-xs text-gray-500">{g.description}</p>
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {g.description}
+                                            </p>
                                             <div className="mt-3 flex items-center justify-between">
                                                 <span
                                                     className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
@@ -268,8 +276,9 @@ return (
                                 />
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
-                                Базовый множитель: ×{activeGroup.multiplier} ({discountLabel(activeGroup.multiplier)}).
-                                Укажите индивидуальную цену для отдельных товаров.
+                                Базовый множитель: ×{activeGroup.multiplier} (
+                                {discountLabel(activeGroup.multiplier)}). Укажите индивидуальную
+                                цену для отдельных товаров.
                             </p>
                         </div>
                         <div className="max-h-[480px] overflow-auto">
@@ -296,9 +305,12 @@ return (
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                     {filteredProducts.map((p) => {
                                         const ov = overrides.find(
-                                            (o) => o.groupId === activeGroup.id && o.productId === p.id
+                                            (o) =>
+                                                o.groupId === activeGroup.id && o.productId === p.id
                                         );
-                                        const groupPrice = Math.round(p.price * activeGroup.multiplier * 100) / 100;
+                                        const groupPrice =
+                                            Math.round(p.price * activeGroup.multiplier * 100) /
+                                            100;
                                         const key = `${activeGroup.id}-${p.id}`;
                                         return (
                                             <tr
@@ -309,7 +321,9 @@ return (
                                                     <div className="font-medium text-gray-800 dark:text-gray-200">
                                                         {p.title}
                                                     </div>
-                                                    <div className="text-xs text-gray-400">{p.brand}</div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {p.brand}
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right text-muted-foreground">
                                                     {formatEuro(p.price, 'ru-RU')}
@@ -323,7 +337,9 @@ return (
                                                             {formatEuro(ov.price, 'ru-RU')}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-300 dark:text-gray-600">—</span>
+                                                        <span className="text-gray-300 dark:text-gray-600">
+                                                            —
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-2.5">
@@ -344,7 +360,10 @@ return (
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                handleSetOverride(activeGroup.id, p.id)
+                                                                handleSetOverride(
+                                                                    activeGroup.id,
+                                                                    p.id
+                                                                )
                                                             }
                                                             className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
                                                         >

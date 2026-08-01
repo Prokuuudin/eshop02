@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useOrders } from '@/lib/orders-store'
 import { monthDiff, monthLabel, retentionColor, toMonthKey, Empty } from './analytics-shared'
+import type { ReactElement } from 'react'
 
-export default function CohortSection() {
+export default function CohortSection(): ReactElement {
   const orders = useOrders((s) => s.orders)
   const [showPct, setShowPct] = useState(true)
 

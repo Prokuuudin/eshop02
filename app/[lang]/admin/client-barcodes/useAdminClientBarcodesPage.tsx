@@ -1,9 +1,6 @@
 ﻿'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useCallback, useEffect, useState } from 'react';
 import { useCompanyStore, type CompanyProfile } from '@/lib/company-store';
 import {
     getCurrentUser,
@@ -11,9 +8,6 @@ import {
     updateUserTeamRole,
     type TeamRole,
 } from '@/lib/auth';
-import AdminGate from '@/components/admin/AdminGate';
-import IconSearch from '@/components/ui/icon-search';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/lib/use-translation';
 
 // Для заявок мастеров: короткий номер от 4 до 6 цифр, уникальный среди всех карт
@@ -46,7 +40,7 @@ type NoCardRequest = {
     requestedAt: string;
 };
 
-export function useAdminClientBarcodesPage() {
+function useAdminClientBarcodesPageState() {
     const { t, language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -79,7 +73,7 @@ export function useAdminClientBarcodesPage() {
                 ((json.requests ?? []) as NoCardRequest[]).filter((r) => r.requestType === 'no-card')
             );
         } catch { /* сеть — оставляем прежний список */ }
-    }, []);
+    }, [setNoCardRequests]);
     useEffect(() => {
         queueMicrotask(() => void loadNoCardRequests());
     }, [loadNoCardRequests]);
@@ -227,4 +221,8 @@ export function useAdminClientBarcodesPage() {
     };
 
       return { t, language, l, tl, formError, setFormError, message, setMessage, memberRolesDraft, setMemberRolesDraft, roleUpdateInProgress, setRoleUpdateInProgress, search, setSearch, getCompanies, companies, noCardRequests, setNoCardRequests, loadNoCardRequests, filteredCompanies, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, handleApproveNoCardRequest, handleRejectNoCardRequest, resolveMemberRoleDraft, handleUpdateTeamMemberRole }
+}
+
+export function useAdminClientBarcodesPage(): ReturnType<typeof useAdminClientBarcodesPageState> {
+  return useAdminClientBarcodesPageState()
 }

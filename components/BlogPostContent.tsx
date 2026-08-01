@@ -8,7 +8,7 @@ import BlogCard from '@/components/BlogCard';
 import BlogContentBlockRenderer from '@/components/BlogContentBlockRenderer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { localizeBlogPost, type BlogContentBlock, type BlogPost } from '@/data/blog';
+import { localizeBlogPost, type BlogPost } from '@/data/blog';
 import { useTranslation } from '@/lib/use-translation';
 import { useSiteContent } from '@/lib/use-site-content';
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils';

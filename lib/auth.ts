@@ -161,6 +161,8 @@ export type RegisterCardErrorCode =
     | 'card_not_found'
     | 'card_already_registered'
     | 'wrong_password'
+    | 'wrong_code'
+    | 'no_personal_code_on_file'
     | 'too_many_attempts'
     | 'network_error'
     | 'server_error';
@@ -200,7 +202,18 @@ export const registerCardUser = async (data: {
 
     if (res.status === 404) return { success: false, errorCode: 'card_not_found' };
     if (res.status === 409) return { success: false, errorCode: 'card_already_registered' };
-    if (res.status === 401) return { success: false, errorCode: 'wrong_password' };
+    if (res.status === 422) return { success: false, errorCode: 'no_personal_code_on_file' };
+    if (res.status === 401) {
+        let errorCode: RegisterCardErrorCode = 'wrong_password';
+        try {
+            const body = (await res.json()) as { error?: string };
+            if (body.error === 'wrong_code') errorCode = 'wrong_code';
+        } catch {
+            // No readable JSON body (e.g. a legacy mocked response) — the shared
+            // company-branch wrong-password case is the safe default here.
+        }
+        return { success: false, errorCode };
+    }
     if (res.status === 429) return { success: false, errorCode: 'too_many_attempts' };
     if (!res.ok) return { success: false, errorCode: 'server_error' };
 

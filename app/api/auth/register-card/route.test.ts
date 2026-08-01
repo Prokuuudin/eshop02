@@ -64,6 +64,15 @@ const DORMANT_USER = {
   email: 'master@example.com',
   cardNumber: '5678',
   mustChangePassword: true,
+  pkLast3: '221',
+}
+
+const DORMANT_USER_NO_PK = {
+  id: 'user_dormant_2',
+  email: 'nopk@example.com',
+  cardNumber: '5679',
+  mustChangePassword: true,
+  pkLast3: null,
 }
 
 const ACTIVATED_USER = {
@@ -118,10 +127,10 @@ describe('POST /api/auth/register-card', () => {
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
   })
 
-  it('logs in a dormant individual cardholder (ERP import) on the shared welcome password, without creating a new user', async () => {
+  it('activates a dormant individual cardholder (ERP import) on the correct last-3 code, without creating a new user', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5678', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '5678', password: '221' }))
 
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ user: expect.objectContaining({ id: 'user_dormant_1' }) })
@@ -129,8 +138,6 @@ describe('POST /api/auth/register-card', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled()
     const setCookie = res.headers.get('set-cookie')
     expect(setCookie).toContain('eshop_session=token')
-    // A shared password means anyone who guesses/knows the card number can
-    // trigger this — notify the real owner so an unwanted activation surfaces.
     expect(sendEmail).toHaveBeenCalledWith(
       'master@example.com',
       expect.any(String),
@@ -138,15 +145,33 @@ describe('POST /api/auth/register-card', () => {
     )
   })
 
-  it('does not notify anyone when the welcome password is wrong', async () => {
+  it('accepts the code regardless of dashes/case/whitespace', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5678', password: 'wrong-guess' }))
+    const res = await POST(makeRequest({ cardNumber: '5678', password: ' 2-2-1 ' }))
+
+    expect(res.status).toBe(200)
+  })
+
+  it('does not notify anyone when the last-3 code is wrong', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
+
+    const res = await POST(makeRequest({ cardNumber: '5678', password: '999' }))
 
     expect(res.status).toBe(401)
-    expect(await res.json()).toMatchObject({ error: 'wrong_password' })
+    expect(await res.json()).toMatchObject({ error: 'wrong_code' })
     expect(createSessionMock).not.toHaveBeenCalled()
     expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('rejects with a distinct error when the card has no personal code on file', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER_NO_PK)
+
+    const res = await POST(makeRequest({ cardNumber: '5679', password: '123' }))
+
+    expect(res.status).toBe(422)
+    expect(await res.json()).toMatchObject({ error: 'no_personal_code_on_file' })
+    expect(createSessionMock).not.toHaveBeenCalled()
   })
 
   it('rejects a brand-new company card claim with the wrong password', async () => {

@@ -5,7 +5,10 @@
  *  - код клиента ERP (`Код`) становится User.cardNumber;
  *  - существующий юзер (матч по email, case-insensitive) получает cardNumber;
  *  - для клиента без юзера создаётся «спящий» аккаунт (случайный пароль,
- *    вход невозможен до активации по инвайту — см. /api/auth/invite);
+ *    mustChangePassword=true) — активировать его можно либо инвайтом (см.
+ *    /api/auth/invite), либо через самостоятельную регистрацию по номеру
+ *    карты + последним 3 цифрам personal code (см.
+ *    app/api/auth/register-card/route.ts), если pkLast3 у клиента заполнен;
  *  - письма НЕ отправляет — рассылка через админку /admin/invitations.
  *
  * Пропускает (с отчётом): без email / кривой email, нечисловой код,
@@ -24,6 +27,7 @@ import { randomUUID, randomBytes } from 'crypto'
 import { writeFileSync } from 'fs'
 import bcrypt from 'bcryptjs'
 import * as XLSX from 'xlsx'
+import { derivePkLast3 } from '../lib/personal-code'
 
 const APPLY = process.argv.includes('--apply')
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -120,7 +124,7 @@ async function main() {
   const takenCards = new Set(users.map((u) => u.cardNumber).filter(Boolean) as string[])
 
   // ── 3. План операций ────────────────────────────────────────────────────
-  const toUpdate: { userId: string; email: string; prevCardNumber: string | null; cardNumber: string }[] = []
+  const toUpdate: { userId: string; email: string; prevCardNumber: string | null; cardNumber: string; pk: string | null }[] = []
   const toCreate: Client[] = []
 
   for (const c of clients) {
@@ -143,7 +147,7 @@ async function main() {
         skip('у юзера уже другая карта')
         continue
       }
-      toUpdate.push({ userId: u.id, email: c.email, prevCardNumber: u.cardNumber, cardNumber: c.code })
+      toUpdate.push({ userId: u.id, email: c.email, prevCardNumber: u.cardNumber, cardNumber: c.code, pk: c.pk })
     } else {
       toCreate.push(c)
     }
@@ -163,12 +167,21 @@ async function main() {
 
   // ── 4. Запись ───────────────────────────────────────────────────────────
   // Один хэш случайного пароля на всех спящих: пароль никому не известен,
-  // вход невозможен до активации инвайтом (accept ставит свой пароль)
+  // вход по паролю невозможен — активация либо инвайтом (accept ставит свой
+  // пароль), либо через register-card (номер карты + последние 3 цифры
+  // personal code, если pkLast3 заполнен)
   const sleepingHash = await bcrypt.hash(randomBytes(32).toString('hex'), 10)
 
   let updated = 0
   for (const u of toUpdate) {
-    await prisma.user.update({ where: { id: u.userId }, data: { cardNumber: u.cardNumber } })
+    // Blank pk in the file must never null out a pkLast3 the user already
+    // has — only include the field in the update when we actually derived
+    // a value (same rule as scripts/backfill-pk-last3.ts).
+    const pkLast3 = derivePkLast3(u.pk)
+    await prisma.user.update({
+      where: { id: u.userId },
+      data: { cardNumber: u.cardNumber, ...(pkLast3 ? { pkLast3 } : {}) },
+    })
     updated++
     if (updated % 100 === 0) process.stdout.write(`  updated ${updated}/${toUpdate.length}\r`)
   }
@@ -182,8 +195,9 @@ async function main() {
     name: c.name,
     phone: c.tel,
     cardNumber: c.code,
+    pkLast3: derivePkLast3(c.pk),
     platformRole: 'customer',
-    mustChangePassword: false,
+    mustChangePassword: true,
   }))
   let created = 0
   for (let i = 0; i < createRows.length; i += BATCH) {

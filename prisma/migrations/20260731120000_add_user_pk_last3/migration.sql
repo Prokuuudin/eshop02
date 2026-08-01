@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "pkLast3" VARCHAR(3);

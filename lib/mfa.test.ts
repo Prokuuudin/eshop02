@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import {
   encryptSecret,
   decryptSecret,
@@ -10,6 +10,8 @@ import {
   consumeBackupCode,
 } from './mfa'
 import { generate } from 'otplib'
+
+vi.mock('server-only', () => ({}))
 
 beforeAll(() => {
   process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64')
@@ -69,6 +71,8 @@ describe('backup codes', () => {
     expect(new Set(codes).size).toBe(8)
   })
 
+  // bcryptjs is a pure-JS implementation (no native bindings); hashing 8
+  // codes at cost 12 can exceed Vitest's 5s default on slower machines.
   it('hashes codes and later consumes exactly one, removing it from the list', async () => {
     const codes = generateBackupCodes()
     const hashes = await hashBackupCodes(codes)
@@ -79,12 +83,12 @@ describe('backup codes', () => {
 
     const { ok: reuseOk } = await consumeBackupCode(remaining, codes[3])
     expect(reuseOk).toBe(false)
-  })
+  }, 20000)
 
   it('rejects a code that was never issued', async () => {
     const codes = generateBackupCodes()
     const hashes = await hashBackupCodes(codes)
     const { ok } = await consumeBackupCode(hashes, 'not-a-real-code')
     expect(ok).toBe(false)
-  })
+  }, 20000)
 })

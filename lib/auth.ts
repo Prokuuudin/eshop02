@@ -1,5 +1,12 @@
 import { useCompanyStore } from '@/lib/company-store'
 import { logAuditAction } from '@/lib/audit-log-store'
+import type { AdminAccessLevel, PlatformRole, TeamRole, User } from './auth-types'
+import { CURRENT_KEY, findUserByEmail, normalizeEmail, normalizeUser, notifyAuthChanged, getCurrentUser, readUsers, writeCurrentUser, writeUsers } from './auth-storage'
+
+export type { AdminAccessLevel, PlatformRole, TeamRole, User } from './auth-types'
+export { getCurrentUser, readUsers, writeCurrentUser, writeUsers } from './auth-storage'
+export { isAdminUser, getAdminAccessLevel, canAccessAdminPanel, hasFullAdminAccess, canViewOrderHistory, canPlaceOrders } from './auth-access'
+export { adjustUserBonusPoints, syncBonusBalanceFromServer } from './auth-bonus'
 
 // Not the real shared welcome password: that constant is server-only (see
 // lib/auth-constants.ts) precisely so it never ends up in this client bundle.
@@ -7,87 +14,6 @@ import { logAuditAction } from '@/lib/audit-log-store'
 // register-card checks the User.mustChangePassword flag + the plaintext
 // welcome password against the server-side constant directly, not this hash.
 const NO_CARD_REQUEST_PLACEHOLDER_PASSWORD = 'no-card-request-pending-review'
-
-export type TeamRole = 'viewer' | 'buyer' | 'manager' | 'admin'
-export type PlatformRole = 'customer' | 'admin'
-export type AdminAccessLevel = 'none' | 'manager' | 'admin'
-
-export type User = {
-  id: string
-  email: string
-  password: string
-  name?: string
-  platformRole?: PlatformRole
-
-  // B2B multi-user fields (optional)
-  companyId?: string // Company this user belongs to
-  companyName?: string // Quick reference
-  teamRole?: TeamRole // Role within the team (viewer, buyer, manager, admin)
-  approvalRequired?: boolean // Does this user's orders need approval?
-  auditLoggingEnabled?: boolean // Should this user's actions be logged?
-
-  phone?: string
-  cardNumber?: string // Клиентская карта для входа по номеру карты
-  avatarUrl?: string // User profile photo (base64 or URL)
-  bonusPoints?: number // Accumulated bonus balance
-  mustChangePassword?: boolean // Требует обязательной смены пароля при первом входе
-  isNewUser?: boolean // Новый пользователь — показать приветствие с предложением заполнить профиль
-  createdAt?: string // ISO дата регистрации
-}
-
-const USERS_KEY = 'eshop_users'
-const CURRENT_KEY = 'eshop_current_user'
-
-const normalizeEmail = (email: string): string => email.trim().toLowerCase()
-
-const findUserByEmail = (users: User[], email: string): User | undefined => {
-  const normalizedEmail = normalizeEmail(email)
-  return users.find((user) => user.email.toLowerCase() === normalizedEmail)
-}
-
-const normalizeUser = (user: Partial<User>): User => ({
-  id: user.id ?? `u_${Date.now()}`,
-  email: user.email ?? '',
-  password: user.password ?? '',
-  name: user.name,
-  platformRole: user.platformRole === 'admin' ? 'admin' : 'customer',
-  companyId: user.companyId,
-  companyName: user.companyName,
-  teamRole: user.teamRole,
-  approvalRequired: user.approvalRequired,
-  auditLoggingEnabled: user.auditLoggingEnabled,
-  phone: user.phone,
-  cardNumber: user.cardNumber,
-  avatarUrl: user.avatarUrl ?? '',
-  bonusPoints: user.bonusPoints ?? 350,
-  mustChangePassword: user.mustChangePassword ?? false,
-  isNewUser: user.isNewUser ?? false,
-  createdAt: user.createdAt ?? new Date().toISOString(),
-})
-
-const notifyAuthChanged = (): void => {
-  if (typeof window === 'undefined') return
-  window.dispatchEvent(new CustomEvent('eshop-user-changed'))
-}
-
-export const readUsers = (): User[] => {
-  try {
-    const raw = localStorage.getItem(USERS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as Array<Partial<User>>
-    return parsed.map(normalizeUser).filter((user) => user.email)
-  } catch {
-    return []
-  }
-}
-
-export const writeUsers = (users: User[]): void => {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
-
-export const writeCurrentUser = (user: User): void => {
-  localStorage.setItem(CURRENT_KEY, JSON.stringify(user))
-}
 
 export const hasAdminUsers = (): boolean => {
   return readUsers().some((user) => user.platformRole === 'admin')
@@ -136,49 +62,6 @@ export const logout = (): void => {
   })
   localStorage.removeItem(CURRENT_KEY)
   notifyAuthChanged()
-}
-
-export const getCurrentUser = (): User | null => {
-  try {
-    const raw = localStorage.getItem(CURRENT_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<User>
-    return normalizeUser(parsed)
-  } catch {
-    return null
-  }
-}
-
-export const isAdminUser = (user: User | null | undefined): boolean => {
-  return user?.platformRole === 'admin'
-}
-
-export const getAdminAccessLevel = (user: User | null | undefined): AdminAccessLevel => {
-  if (!user) return 'none'
-  if (isAdminUser(user)) return 'admin'
-  if (user.teamRole === 'manager' || user.teamRole === 'admin') return 'manager'
-  return 'none'
-}
-
-export const canAccessAdminPanel = (user: User | null | undefined): boolean => {
-  return getAdminAccessLevel(user) !== 'none'
-}
-
-export const hasFullAdminAccess = (user: User | null | undefined): boolean => {
-  return getAdminAccessLevel(user) === 'admin'
-}
-
-export const canViewOrderHistory = (user: User | null | undefined): boolean => {
-  if (!user) return false
-  if (isAdminUser(user)) return true
-  if (user.companyId) return true
-  return true
-}
-
-export const canPlaceOrders = (user: User | null | undefined): boolean => {
-  if (!user) return true
-  if (!user.companyId) return true
-  return user.teamRole === 'buyer' || user.teamRole === 'admin'
 }
 
 export const listCompanyUsers = (companyId: string): User[] => {
@@ -531,55 +414,4 @@ export const seedTestAccounts = (): void => {
   }
 
   writeUsers(next)
-}
-
-export const adjustUserBonusPoints = (
-  userId: string,
-  delta: number
-): { success: boolean; newBalance?: number; error?: string } => {
-  const users = readUsers()
-  const idx = users.findIndex((u) => u.id === userId)
-  if (idx === -1) return { success: false, error: 'Пользователь не найден' }
-
-  const newBalance = Math.max(0, (users[idx].bonusPoints ?? 0) + delta)
-  users[idx] = { ...users[idx], bonusPoints: newBalance }
-  writeUsers(users)
-
-  const current = getCurrentUser()
-  if (current?.id === userId) {
-    writeCurrentUser({ ...current, bonusPoints: newBalance })
-    notifyAuthChanged()
-  }
-
-  // Sync to DB — fire-and-forget
-  if (typeof window !== 'undefined') {
-    fetch('/api/user/bonus', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delta, userId }),
-    }).catch(() => {})
-  }
-
-  return { success: true, newBalance }
-}
-
-// Подтянуть баланс баллов из БД в localStorage — сервер сам дебетует/кредитует
-// его при создании заказа, клиенту начислять напрямую запрещено (403 на положительную дельту).
-export const syncBonusBalanceFromServer = async (): Promise<void> => {
-  try {
-    const res = await fetch('/api/user/bonus')
-    if (!res.ok) return
-    const { bonusPoints } = (await res.json()) as { bonusPoints?: number }
-    const current = getCurrentUser()
-    if (!current || typeof bonusPoints !== 'number') return
-
-    const users = readUsers()
-    const idx = users.findIndex((u) => u.id === current.id)
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], bonusPoints }
-      writeUsers(users)
-    }
-    writeCurrentUser({ ...current, bonusPoints })
-    notifyAuthChanged()
-  } catch { /* ignore — баланс подтянется на странице аккаунта */ }
 }

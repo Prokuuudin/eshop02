@@ -1,0 +1,367 @@
+'use client'
+
+import React from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import AdminGate from '@/components/admin/AdminGate'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import type { CategoriesConfigPayload, CategoryConfigItem, CategoryConfigSubcategory, LocalizedLabel } from '@/lib/categories-config'
+import { useTranslation } from '@/lib/use-translation'
+
+type NewCategoryDraft = {
+  id: string
+  image: string
+  ru: string
+  en: string
+  lv: string
+  firstSubSlug: string
+  firstSubSearch: string
+  firstSubRu: string
+  firstSubEn: string
+  firstSubLv: string
+}
+
+type NewSubDraft = {
+  slug: string
+  search: string
+  ru: string
+  en: string
+  lv: string
+}
+
+const EMPTY_NEW_CATEGORY: NewCategoryDraft = {
+  id: '',
+  image: '/categories/new.jpg',
+  ru: '',
+  en: '',
+  lv: '',
+  firstSubSlug: '',
+  firstSubSearch: '',
+  firstSubRu: '',
+  firstSubEn: '',
+  firstSubLv: ''
+}
+
+const sanitizeSlug = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '')
+
+const normalizeLabels = (ru: string, en: string, lv: string, fallback: string): LocalizedLabel => {
+  const normalizedRu = ru.trim() || fallback
+  const normalizedEn = en.trim() || normalizedRu
+  const normalizedLv = lv.trim() || normalizedRu
+  return { ru: normalizedRu, en: normalizedEn, lv: normalizedLv }
+}
+
+function AccessibleLabel({
+  className,
+  children
+}: {
+  className?: string
+  children: React.ReactNode
+}): React.ReactElement {
+  const id = React.useId()
+  return (
+    <label htmlFor={id} className={className}>
+      {React.Children.map(children, (child) =>
+        React.isValidElement<{ id?: string }>(child) && child.type === Input
+          ? React.cloneElement(child, { id })
+          : child
+      )}
+    </label>
+  )
+}
+
+export function useAdminCategoriesPage() {
+  const { language, t } = useTranslation()
+  const l = React.useCallback(
+    (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en),
+    [language]
+  )
+  const tl = React.useCallback(
+    (key: string, ru: string, en: string, lv: string, params?: Record<string, string | number>) =>
+      t(key, l(ru, en, lv), params),
+    [l, t]
+  )
+
+  const [categories, setCategories] = React.useState<CategoryConfigItem[]>([])
+  const [savedCategories, setSavedCategories] = React.useState<CategoryConfigItem[]>([])
+  const [deletedCategories, setDeletedCategories] = React.useState<CategoryConfigItem[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [saving, setSaving] = React.useState(false)
+  const [message, setMessage] = React.useState('')
+  const [error, setError] = React.useState('')
+  const [newCategory, setNewCategory] = React.useState<NewCategoryDraft>(EMPTY_NEW_CATEGORY)
+  const [newSubByCategory, setNewSubByCategory] = React.useState<Record<string, NewSubDraft>>({})
+  const newCategoryPreviewLabel =
+    newCategory.ru.trim()
+    || newCategory.en.trim()
+    || newCategory.lv.trim()
+    || sanitizeSlug(newCategory.id)
+    || tl('admin.categories.newCategoryFallback', 'ÐÐ¾Ð²Ð°Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ', 'New category', 'Jauna kategorija')
+
+  React.useEffect(() => {
+    const loadCategories = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/admin/categories', { cache: 'no-store' })
+        if (!response.ok) throw new Error('failed_to_load_categories')
+        const payload = (await response.json()) as Partial<CategoriesConfigPayload>
+        setCategories(payload.categories ?? [])
+        setSavedCategories(payload.categories ?? [])
+        setDeletedCategories(payload.deletedCategories ?? [])
+        setError('')
+      } catch {
+        setError(tl('admin.categories.msg.loadFailed', 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸', 'Failed to load categories', 'Neizdevas ieladet kategorijas'))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadCategories()
+  }, [tl])
+
+  const saveConfig = async (nextCategories: CategoryConfigItem[], nextDeletedCategories: CategoryConfigItem[], successMessage: string) => {
+    setSaving(true)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categories: nextCategories,
+          deletedCategories: nextDeletedCategories
+        })
+      })
+      if (!response.ok) throw new Error('failed_to_save_categories')
+
+      const payload = (await response.json()) as Partial<CategoriesConfigPayload>
+      const resolvedCategories = payload.categories ?? nextCategories
+      setCategories(resolvedCategories)
+      setSavedCategories(resolvedCategories)
+      setDeletedCategories(payload.deletedCategories ?? nextDeletedCategories)
+      setMessage(successMessage)
+    } catch {
+      setError(tl('admin.categories.msg.saveFailed', 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ', 'Failed to save changes', 'Neizdevas saglabat izmainas'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateCategoryLabels = (categoryId: string, nextLabels: Partial<LocalizedLabel>) => {
+    setCategories((prev) =>
+      prev.map((category) =>
+        category.id === categoryId
+          ? {
+              ...category,
+              labels: {
+                ...category.labels,
+                ...nextLabels
+              }
+            }
+          : category
+      )
+    )
+  }
+
+  const updateSubcategoryLabels = (categoryId: string, slug: string, nextLabels: Partial<LocalizedLabel>) => {
+    setCategories((prev) =>
+      prev.map((category) => {
+        if (category.id !== categoryId) return category
+
+        return {
+          ...category,
+          subcategories: category.subcategories.map((subcategory) =>
+            subcategory.slug === slug
+              ? {
+                  ...subcategory,
+                  labels: {
+                    ...subcategory.labels,
+                    ...nextLabels
+                  }
+                }
+              : subcategory
+          )
+        }
+      })
+    )
+  }
+
+  const handleCreateCategory = async () => {
+    const id = sanitizeSlug(newCategory.id)
+    if (!id) {
+      setError(tl('admin.categories.msg.idRequired', 'Ð£ÐºÐ°Ð¶Ð¸Ñ‚Ðµ ID ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸', 'Provide category ID', 'Noradiet kategorijas ID'))
+      return
+    }
+
+    if (categories.some((category) => category.id === id)) {
+      setError(tl('admin.categories.msg.idExists', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ ID ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚', 'Category with this ID already exists', 'Kategorija ar so ID jau pastav'))
+      return
+    }
+
+    const labels = normalizeLabels(newCategory.ru, newCategory.en, newCategory.lv, id)
+    const firstSubSlug = sanitizeSlug(newCategory.firstSubSlug)
+    const subcategories: CategoryConfigSubcategory[] = firstSubSlug
+      ? [
+          {
+            slug: firstSubSlug,
+            labels: normalizeLabels(newCategory.firstSubRu, newCategory.firstSubEn, newCategory.firstSubLv, firstSubSlug),
+            search: newCategory.firstSubSearch.trim()
+          }
+        ]
+      : []
+
+    const next: CategoryConfigItem[] = [
+      ...categories,
+      {
+        id,
+        href: `/catalog?cat=${id}`,
+        image: newCategory.image.trim() || '/categories/new.jpg',
+        labels,
+        subcategories
+      }
+    ]
+
+    await saveConfig(next, deletedCategories, tl('admin.categories.msg.created', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ ÑÐ¾Ð·Ð´Ð°Ð½Ð°', 'Category created', 'Kategorija izveidota'))
+    setNewCategory(EMPTY_NEW_CATEGORY)
+  }
+
+  const handleAddSubcategory = async (categoryId: string) => {
+    const draft = newSubByCategory[categoryId]
+    const slug = sanitizeSlug(draft?.slug ?? '')
+
+    if (!slug) {
+      setError(tl('admin.categories.msg.subSlugRequired', 'Ð£ÐºÐ°Ð¶Ð¸Ñ‚Ðµ slug Ð¿Ð¾Ð´Ð¿ÑƒÐ½ÐºÑ‚Ð°', 'Provide subcategory slug', 'Noradiet apakskategorijas slug'))
+      return
+    }
+
+    const category = categories.find((item) => item.id === categoryId)
+    if (!category) return
+
+    if (category.subcategories.some((subcategory) => subcategory.slug === slug)) {
+      setError(tl('admin.categories.msg.subSlugExists', 'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ slug ÑƒÐ¶Ðµ ÐµÑÑ‚ÑŒ', 'Subcategory slug already exists', 'Apakskategorijas slug jau pastav'))
+      return
+    }
+
+    const next = categories.map((item) => {
+      if (item.id !== categoryId) return item
+
+      return {
+        ...item,
+        subcategories: [
+          ...item.subcategories,
+          {
+            slug,
+            labels: normalizeLabels(draft?.ru ?? '', draft?.en ?? '', draft?.lv ?? '', slug),
+            search: draft?.search?.trim() ?? ''
+          }
+        ]
+      }
+    })
+
+    await saveConfig(next, deletedCategories, tl('admin.categories.msg.subAdded', 'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½', 'Subcategory added', 'Apakskategorija pievienota'))
+    setNewSubByCategory((prev) => ({
+      ...prev,
+      [categoryId]: { slug: '', search: '', ru: '', en: '', lv: '' }
+    }))
+  }
+
+  const handleRemoveSubcategory = async (categoryId: string, slug: string) => {
+    const next = categories.map((item) => {
+      if (item.id !== categoryId) return item
+      return {
+        ...item,
+        subcategories: item.subcategories.filter((subcategory) => subcategory.slug !== slug)
+      }
+    })
+
+    await saveConfig(next, deletedCategories, tl('admin.categories.msg.subRemoved', 'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ ÑƒÐ´Ð°Ð»ÐµÐ½', 'Subcategory removed', 'Apakskategorija dzesta'))
+  }
+
+  const handleSaveCategory = async () => {
+    await saveConfig(categories, deletedCategories, tl('admin.categories.msg.saved', 'Ð˜Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ñ‹', 'Category changes saved', 'Kategorijas izmainas saglabatas'))
+  }
+
+  const handleResetCategoryChanges = (categoryId: string) => {
+    const savedCategory = savedCategories.find((item) => item.id === categoryId)
+    if (!savedCategory) {
+      setError(tl('admin.categories.msg.savedVersionMissing', 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð½Ð°Ð¹Ñ‚Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð½ÑƒÑŽ Ð²ÐµÑ€ÑÐ¸ÑŽ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸', 'Saved category version not found', 'Saglabata kategorijas versija nav atrasta'))
+      return
+    }
+
+    setCategories((prev) => prev.map((item) => (item.id === categoryId ? savedCategory : item)))
+    setNewSubByCategory((prev) => {
+      if (!prev[categoryId]) return prev
+      const next = { ...prev }
+      delete next[categoryId]
+      return next
+    })
+    setError('')
+    setMessage(tl('admin.categories.msg.cardReset', 'Ð˜Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ¸ ÑÐ±Ñ€Ð¾ÑˆÐµÐ½Ñ‹', 'Card changes were reset', 'Kartites izmainas atiestatitas'))
+  }
+
+  const handleMoveCategoryToTrash = async (categoryId: string) => {
+    const category = categories.find((item) => item.id === categoryId)
+    if (!category) return
+
+    const confirmed = window.confirm(
+      tl(
+        'admin.categories.confirm.moveToTrash',
+        'ÐŸÐµÑ€ÐµÐ¼ÐµÑÑ‚Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð² ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ?',
+        'Move category {id} to trash?',
+        'Parvietot kategoriju {id} uz grozu?',
+        { id: categoryId }
+      )
+    )
+    if (!confirmed) return
+
+    const nextCategories = categories.filter((item) => item.id !== categoryId)
+    const nextDeletedCategories = [
+      ...deletedCategories.filter((item) => item.id !== categoryId),
+      category
+    ]
+
+    await saveConfig(nextCategories, nextDeletedCategories, tl('admin.categories.msg.movedToTrash', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð° Ð² ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ', 'Category moved to trash', 'Kategorija parvietota uz grozu'))
+  }
+
+  const handleRestoreCategory = async (categoryId: string) => {
+    const category = deletedCategories.find((item) => item.id === categoryId)
+    if (!category) return
+
+    if (categories.some((item) => item.id === categoryId)) {
+      setError(tl('admin.categories.msg.idExistsActive', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ ID ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚ ÑÑ€ÐµÐ´Ð¸ Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ñ…', 'Category with this ID already exists among active items', 'Kategorija ar so ID jau ir aktivajas'))
+      return
+    }
+
+    const nextCategories = [...categories, category]
+    const nextDeletedCategories = deletedCategories.filter((item) => item.id !== categoryId)
+
+    await saveConfig(nextCategories, nextDeletedCategories, tl('admin.categories.msg.restored', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð°', 'Category restored', 'Kategorija atjaunota'))
+  }
+
+  const handleDeleteCategoryForever = async (categoryId: string) => {
+    const confirmed = window.confirm(
+      tl(
+        'admin.categories.confirm.deleteForever',
+        'Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð¸Ð· ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñ‹ Ð½Ð°Ð²ÑÐµÐ³Ð´Ð°?',
+        'Delete category {id} from trash permanently?',
+        'Neatgriezeniski dzest kategoriju {id} no groza?',
+        { id: categoryId }
+      )
+    )
+    if (!confirmed) return
+
+    const nextDeletedCategories = deletedCategories.filter((item) => item.id !== categoryId)
+    await saveConfig(categories, nextDeletedCategories, tl('admin.categories.msg.deletedFromTrash', 'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ ÑƒÐ´Ð°Ð»ÐµÐ½Ð° Ð¸Ð· ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñ‹', 'Category removed from trash', 'Kategorija dzesta no groza'))
+  }
+
+
+  return { language, t, l, tl, categories, setCategories, savedCategories, deletedCategories, loading, saving, message, error, newCategory, setNewCategory, newSubByCategory, setNewSubByCategory, newCategoryPreviewLabel, updateCategoryLabels, updateSubcategoryLabels, handleCreateCategory, handleAddSubcategory, handleRemoveSubcategory, handleSaveCategory, handleResetCategoryChanges, handleMoveCategoryToTrash, handleRestoreCategory, handleDeleteCategoryForever }
+}

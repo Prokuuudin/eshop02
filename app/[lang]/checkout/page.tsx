@@ -44,503 +44,18 @@ const validateEmail = (email: string): boolean => {
 };
 
 
+import { useCheckoutPage } from './useCheckoutPage'
 export default function CheckoutPage(): React.ReactElement {
-    const { t, language } = useTranslation();
-    const { showToast } = useToast();
-    const searchParams = useSearchParams();
-    const { items, replaceWithItems } = useCart();
-    const { addOrder, updateOrderPayment } = useOrders();
-    const { bonusProgram } = useAdminStore();
-    const currentUser = getCurrentUser();
-    const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
-    const { getCompany, syncFromDb } = useCompanyStore();
-
-    React.useEffect(() => {
-        void syncFromDb();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    const locale = getLocaleFromLanguage(language);
-    const formatCurrency = (value: number): string => formatEuro(value, locale);
-    const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
-    const [formData, setFormData] = useState<CheckoutFormData>(() => ({
-        firstName: searchParams.get('firstName') ?? '',
-        lastName: searchParams.get('lastName') ?? '',
-        email: searchParams.get('email') ?? '',
-        phone: searchParams.get('phone') ?? '',
-        address: searchParams.get('address') ?? '',
-        city: searchParams.get('city') ?? '',
-        postalCode: searchParams.get('postalCode') ?? '',
-        paymentMethod: 'card',
-    }));
-    const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
-        const method = searchParams.get('delivery');
-        return method === 'courier' || method === 'pickup' || method === 'post'
-            ? method
-            : 'courier';
-    });
-    const [pickupStoreId, setPickupStoreId] = useState('');
-    const [promoCode, setPromoCode] = useState('');
-    const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
-    const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
-    const [bonusApplied, setBonusApplied] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false);
-    const [promoError, setPromoError] = useState('');
-    const [submitted, setSubmitted] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const {
-        enabled: turnstileEnabled,
-        token: turnstileToken,
-        setContainer: setTurnstileContainer,
-        render: renderTurnstile,
-        reset: resetTurnstile,
-    } = useTurnstile();
-    const applyBtnRef = useRef<HTMLButtonElement>(null)
-    const selectedItemIds = React.useMemo(() => {
-        const raw = searchParams.get('items');
-        if (!raw) return null;
-
-        return raw
-            .split(',')
-            .map((id) => id.trim())
-            .filter(Boolean);
-    }, [searchParams]);
-
-    const checkoutItems = React.useMemo(() => {
-        if (!selectedItemIds) return items;
-
-        const selectedSet = new Set(selectedItemIds);
-        return items.filter((item) => selectedSet.has(item.lineKey));
-    }, [items, selectedItemIds]);
-
-    const subtotal = React.useMemo(
-        () =>
-            checkoutItems.reduce(
-                (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
-                0
-            ),
-        [checkoutItems]
-    );
-
-    // Оплата при получении возможна только в офисе (Rencēnu 10A) —
-    // требуется самовывоз именно из «Рига Офис».
-    const cashUnavailable = deliveryMethod !== 'pickup' || pickupStoreId !== 'riga-office';
-    if (items.length === 0) {
-        return (
-            <main className="w-full px-4 py-12">
-                <h1 className="text-2xl font-bold mb-4 text-foreground">
-                    {t('checkout.title')}
-                </h1>
-                <p className="text-muted-foreground mb-4">{t('checkout.empty')}</p>
-                <Link href="/catalog">
-                    <Button>{t('checkout.backToCatalog')}</Button>
-                </Link>
-            </main>
-        );
-    }
-
-    if (selectedItemIds && checkoutItems.length === 0) {
-        return (
-            <main className="w-full px-4 py-12">
-                <h1 className="text-2xl font-bold mb-4 text-foreground">
-                    {t('checkout.title')}
-                </h1>
-                <p className="text-muted-foreground mb-4">{t('checkout.noSelected')}</p>
-                <Link href="/cart">
-                    <Button>{t('checkout.backToCart')}</Button>
-                </Link>
-            </main>
-        );
-    }
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-        setFormData((prev) => ({
-            ...prev,
-            [e.target.name]: e.target.value,
-        }));
-        if (errors[e.target.name]) {
-            setErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[e.target.name];
-                return newErrors;
-            });
-        }
-    };
-
-    const handleApplyPromo = async (): Promise<void> => {
-        setPromoError('');
-        if (!promoCode.trim()) {
-            const message = t('checkout.promo.enter');
-            setPromoError(message);
-            showToast(message, 'error');
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/promo/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: promoCode, orderAmount: subtotal }),
-            });
-            const data = (await res.json()) as { valid: boolean; discount?: number; code?: string };
-            if (!data.valid) {
-                const message = t('checkout.promo.invalid');
-                setPromoError(message);
-                showToast(message, 'error');
-                return;
-            }
-            setAppliedPromo(data.code ?? promoCode);
-            setAppliedPromoDiscountPct(data.discount ?? 0);
-            if (applyBtnRef.current) burstConfetti(applyBtnRef.current);
-        } catch {
-            const message = t('checkout.promo.invalid');
-            setPromoError(message);
-            showToast(message, 'error');
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-        e.preventDefault();
-        setIsSubmitting(true);
-
-        if (!isCheckoutAllowedForRole) {
-            showToast('Для роли менеджера оформление заказа недоступно', 'error');
-            setIsSubmitting(false);
-            return;
-        }
-
-        const newErrors: Record<string, string> = {};
-
-        if (!formData.firstName.trim()) newErrors.firstName = t('checkout.errors.firstName');
-        if (!formData.lastName.trim()) newErrors.lastName = t('checkout.errors.lastName');
-        if (!formData.email.trim()) {
-            newErrors.email = t('checkout.errors.email');
-        } else if (!validateEmail(formData.email)) {
-            newErrors.email = t('checkout.errors.emailInvalid');
-        }
-        if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
-        if (!formData.address.trim()) newErrors.address = t('checkout.errors.address');
-        if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
-        if (deliveryMethod === 'pickup' && !pickupStoreId) {
-            newErrors.pickupStore = t('checkout.errors.pickupStore');
-        }
-        // Страховка от рассинхрона UI: наличные только при самовывозе из офиса.
-        if (formData.paymentMethod === 'cash' && cashUnavailable) {
-            showToast(t('checkout.payment.cashNote'), 'error');
-            setIsSubmitting(false);
-            return;
-        }
-        if (!termsAccepted) {
-            newErrors.terms = t('checkout.errors.terms');
-            showToast(t('checkout.errors.terms'), 'error');
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            setIsSubmitting(false);
-            return;
-        }
-
-        const wholesaleGuard = getWholesaleOrderGuard(subtotal);
-        if (!wholesaleGuard.isMinimumReached) {
-            const message = `${t('checkout.minimumOrder')} ${t(
-                'checkout.wholesale.requiredAmount'
-            )}: ${formatCurrency(wholesaleGuard.minOrderAmount)}`;
-            showToast(message, 'error');
-            setIsSubmitting(false);
-            return;
-        }
-
-        // Calculate totals
-        const discount = appliedPromo && appliedPromoDiscountPct !== null
-            ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-            : 0;
-        const subtotalAfterDiscount = subtotal - discount;
-        const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-
-        // Catalog prices already include VAT — taxAmount is informational, not added to the total.
-        const taxAmount = extractVat(subtotalAfterDiscount);
-        const grandTotal = subtotalAfterDiscount + deliveryFee;
-        // Списание в баллах (1 балл = 1 цент); скидка — его евро-эквивалент.
-        const bonusSpentPoints = bonusApplied
-            ? Math.min(currentUser?.bonusPoints ?? 0, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
-            : 0;
-        const bonusDiscount = pointsToEuros(bonusSpentPoints);
-        const finalGrandTotal = grandTotal - bonusDiscount;
-
-        // Create order — the server assigns the canonical id (client counters collide across browsers)
-        const orderData = {
-            createdAt: new Date(),
-            items: checkoutItems.map((item) => ({
-                ...item,
-                price: calculatePrice(item, item.quantity),
-            })),
-            subtotal,
-            tax: taxAmount,
-            delivery: deliveryFee,
-            deliveryMethod,
-            pickupStoreId: deliveryMethod === 'pickup' ? pickupStoreId : undefined,
-            promoCode: appliedPromo,
-            discount,
-            total: finalGrandTotal,
-            bonusSpent: bonusSpentPoints > 0 ? bonusSpentPoints : undefined,
-            paymentStatus: (formData.paymentMethod === 'card'
-                ? 'pending'
-                : 'unpaid') as import('@/lib/orders-store').PaymentStatus,
-            paymentProvider: (formData.paymentMethod === 'card' ? 'stripe' : 'manual') as
-                | 'stripe'
-                | 'manual',
-            language: language as string,
-            ...formData,
-        };
-
-        // Persist server-side first: the server generates the unique order id and
-        // payment webhooks update canonical status there. If this fails, the order
-        // exists nowhere (no DB row, no confirmation email, no admin notification) —
-        // checkout must stop here rather than fake a success screen.
-        let orderId: string;
-        try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    order: {
-                        ...orderData,
-                        createdAt: orderData.createdAt.toISOString(),
-                    },
-                    turnstileToken,
-                }),
-            });
-            if (!response.ok) {
-                const errorPayload = await response
-                    .json()
-                    .catch(() => null) as { error?: string; items?: string[] } | null;
-                const message =
-                    errorPayload?.error === 'insufficient_stock'
-                        ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
-                        : 'Не удалось оформить заказ. Попробуйте ещё раз.';
-                showToast(message, 'error');
-                resetTurnstile();
-                setIsSubmitting(false);
-                return;
-            }
-            const payload = (await response.json()) as { orderId?: string };
-            if (!payload.orderId) {
-                showToast('Не удалось оформить заказ. Попробуйте ещё раз.', 'error');
-                setIsSubmitting(false);
-                return;
-            }
-            orderId = String(payload.orderId);
-        } catch {
-            resetTurnstile();
-            showToast('Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.', 'error');
-            setIsSubmitting(false);
-            return;
-        }
-
-        const order = { id: orderId, ...orderData };
-        addOrder(order);
-
-        // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
-        if (currentUser) {
-            await syncBonusBalanceFromServer();
-        }
-
-        let stripeCheckoutUrl: string | undefined;
-
-        if (formData.paymentMethod === 'card') {
-            try {
-                const response = await fetch('/api/payments/stripe/checkout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        orderId,
-                        email: formData.email,
-                        grandTotal: finalGrandTotal,
-                        items: checkoutItems.map((item) => ({
-                            id: item.id,
-                            title: t(`products.${item.id}.title`, item.title),
-                            quantity: item.quantity,
-                            price: calculatePrice(item, item.quantity),
-                        })),
-                    }),
-                });
-
-                if (!response.ok) {
-                    updateOrderPayment(orderId, {
-                        paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                        paymentProvider: 'stripe',
-                    });
-                    showToast(
-                        'Не удалось инициализировать онлайн-оплату. Попробуйте снова.',
-                        'error'
-                    );
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const payload = (await response.json()) as { url?: string; sessionId?: string };
-                if (!payload.url) {
-                    updateOrderPayment(orderId, {
-                        paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                        paymentProvider: 'stripe',
-                    });
-                    showToast('Платежная сессия не была создана. Попробуйте снова.', 'error');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                updateOrderPayment(orderId, {
-                    paymentStatus: 'pending' as import('@/lib/orders-store').PaymentStatus,
-                    paymentProvider: 'stripe',
-                    paymentSessionId: payload.sessionId,
-                });
-                stripeCheckoutUrl = payload.url;
-            } catch {
-                updateOrderPayment(orderId, {
-                    paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                    paymentProvider: 'stripe',
-                });
-                showToast('Ошибка при запуске оплаты. Попробуйте снова.', 'error');
-                setIsSubmitting(false);
-                return;
-            }
-        }
-
-        // B2B: Generate invoice if customer has payment terms
-        const paymentTermDays = company?.paymentTermDays ?? 0;
-        if (paymentTermDays > 0 && currentUser?.companyId) {
-            const createInvoice = useInvoicesStore.getState().createInvoice;
-            const issuedDate = new Date();
-            const dueDate = new Date(issuedDate);
-            dueDate.setDate(dueDate.getDate() + paymentTermDays);
-
-            const invoiceId = createInvoice({
-                companyId: currentUser.companyId,
-                orderId,
-                subtotal,
-                taxRate: 18,
-                taxAmount,
-                total: grandTotal,
-                status: 'issued',
-                issuedDate,
-                dueDate,
-                paidDate: undefined,
-                notes: `Заказ #${orderId} от ${issuedDate.toLocaleDateString('ru-RU')}`,
-            });
-
-            // Log invoice creation
-            logAuditAction(
-                currentUser.companyId,
-                currentUser.id,
-                'invoice_issued',
-                {
-                    invoiceId,
-                    orderId,
-                    amount: grandTotal,
-                    dueDate: dueDate.toISOString(),
-                },
-                { userName: currentUser.name, userEmail: currentUser.email }
-            );
-        }
-
-        const selectedSet = new Set(checkoutItems.map((item) => item.lineKey));
-        const remainingItems = items.filter((item) => !selectedSet.has(item.lineKey));
-        replaceWithItems(remainingItems);
-        setSubmitted(true);
-
-        // Redirect to confirmation page
-        setTimeout(() => {
-            if (formData.paymentMethod === 'card' && stripeCheckoutUrl) {
-                window.location.href = stripeCheckoutUrl;
-                return;
-            }
-
-            setIsSubmitting(false);
-            window.location.href = `/order/${orderId}`;
-        }, 500);
-    };
-
-    if (submitted) {
-        return (
-            <main className="w-full px-4 py-12">
-                <div className="max-w-md mx-auto text-center">
-                    <div className="text-6xl mb-4">✓</div>
-                    <h1 className="text-2xl font-bold mb-2 text-foreground">
-                        {t('checkout.success.title')}
-                    </h1>
-                    <p className="text-muted-foreground mb-4">
-                        {t('checkout.success.redirect')}
-                    </p>
-                </div>
-            </main>
-        );
-    }
-
-    if (!isCheckoutAllowedForRole) {
-        return (
-            <main className="w-full px-4 py-12 text-foreground">
-                <div className="mx-auto max-w-2xl rounded-lg border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-900/30">
-                    <h1 className="text-2xl font-bold mb-2">
-                        Оформление недоступно для текущей роли
-                    </h1>
-                    <p className="text-sm text-amber-800 dark:text-amber-200 mb-4">
-                        Пользователь с ролью менеджера может работать с заказами и RFQ, но не
-                        оформляет покупки. Для покупки используйте аккаунт с ролью buyer/admin или
-                        отдельный клиентский профиль.
-                    </p>
-                    <div className="flex gap-3 flex-wrap">
-                        <Link href="/cart">
-                            <Button variant="outline">Вернуться в корзину</Button>
-                        </Link>
-                        <Link href="/account">
-                            <Button>Перейти в аккаунт</Button>
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        );
-    }
-
-    const discount = appliedPromo && appliedPromoDiscountPct !== null
-        ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-        : 0;
-    const subtotalAfterDiscount = subtotal - discount;
-    const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-    // Catalog prices already include VAT — taxAmount is informational, not added to the total.
-    const taxAmount = extractVat(subtotalAfterDiscount);
-    const grandTotal = subtotalAfterDiscount + deliveryFee;
-    const wholesaleGuard = getWholesaleOrderGuard(subtotal);
-    const userBonusBalance = currentUser?.bonusPoints ?? 0;
-    const bonusToEarn = calcOrderBonus(
-        checkoutItems.map((item) => ({
-            price: calculatePrice(item, item.quantity),
-            quantity: item.quantity,
-            bonusRate: item.bonusRate,
-        }))
-    );
-    const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
-    // Потолок списания в баллах (1 балл = 1 цент); в € — для строк итога.
-    const maxBonusSpendPoints = bonusApplicable
-        ? Math.min(userBonusBalance, eurosToPoints(grandTotal * bonusProgram.maxSpendPercent / 100))
-        : 0;
-    const maxBonusDiscount = pointsToEuros(maxBonusSpendPoints);
-    const bonusDiscount = bonusApplied ? maxBonusDiscount : 0;
-    const finalGrandTotal = grandTotal - bonusDiscount;
-    const adjustedBonusToEarn = grandTotal > 0 && bonusApplied
-        ? Math.round(bonusToEarn * finalGrandTotal / grandTotal)
-        : bonusToEarn;
-
+    const checkoutPage = useCheckoutPage()
+    if (React.isValidElement(checkoutPage)) return checkoutPage
+    const checkoutState = checkoutPage as Exclude<ReturnType<typeof useCheckoutPage>, React.ReactElement>
+    const { t, language, showToast, searchParams, items, replaceWithItems, addOrder, updateOrderPayment, bonusProgram, currentUser, isCheckoutAllowedForRole, getCompany, syncFromDb, locale, formatCurrency, company, formData, setFormData, deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, promoCode, setPromoCode, appliedPromo, setAppliedPromo, appliedPromoDiscountPct, setAppliedPromoDiscountPct, bonusApplied, setBonusApplied, termsAccepted, setTermsAccepted, promoError, setPromoError, submitted, isSubmitting, errors, setErrors, turnstileEnabled, turnstileToken, setTurnstileContainer, renderTurnstile, resetTurnstile, applyBtnRef, selectedItemIds, checkoutItems, subtotal, cashUnavailable, handleChange, handleApplyPromo, handleSubmit, discount, subtotalAfterDiscount, deliveryFee, taxAmount, grandTotal, wholesaleGuard, userBonusBalance, bonusToEarn, bonusApplicable, maxBonusSpendPoints, maxBonusDiscount, bonusDiscount, finalGrandTotal, adjustedBonusToEarn } = checkoutState
     return (
         <main className="w-full px-4 py-8 text-foreground">
             <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
 
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Форма */}
+                {/* Ð¤Ð¾Ñ€Ð¼Ð° */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
                     {turnstileEnabled && (
                         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
@@ -648,7 +163,7 @@ export default function CheckoutPage(): React.ReactElement {
                                                         const lang = language as 'ru' | 'en' | 'lv';
                                                         return (
                                                             <SelectItem key={store.id} value={store.id}>
-                                                                {store.name[lang] ?? store.name.ru} —{' '}
+                                                                {store.name[lang] ?? store.name.ru} â€”{' '}
                                                                 {store.address.lv}
                                                             </SelectItem>
                                                         );
@@ -738,7 +253,7 @@ export default function CheckoutPage(): React.ReactElement {
                     </div>
                 </form>
 
-                {/* Сумма и промокод */}
+                {/* Ð¡ÑƒÐ¼Ð¼Ð° Ð¸ Ð¿Ñ€Ð¾Ð¼Ð¾ÐºÐ¾Ð´ */}
                 <aside className="checkout__summary sticky top-20 h-fit">
                     <div className="bg-card rounded-lg border border-border p-6">
                         <h2 className="font-bold text-lg mb-4 text-foreground">
@@ -752,7 +267,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 return (
                                     <div key={item.lineKey} className="text-sm flex justify-between">
                                         <span>
-                                            {localizedTitle} × {item.quantity}
+                                            {localizedTitle} Ã— {item.quantity}
                                         </span>
                                         <span>{formatCurrency(unitPrice * item.quantity)}</span>
                                     </div>
@@ -785,7 +300,7 @@ export default function CheckoutPage(): React.ReactElement {
                                     className="px-3 py-2 text-sm"
                                     variant={appliedPromo ? 'outline' : 'default'}
                                 >
-                                    {appliedPromo ? '✓' : t('checkout.promo.apply')}
+                                    {appliedPromo ? 'âœ“' : t('checkout.promo.apply')}
                                 </Button>
                             </div>
                             {promoError && (
@@ -810,7 +325,7 @@ export default function CheckoutPage(): React.ReactElement {
                             )}
                         </div>
 
-                        {/* Бонусные баллы */}
+                        {/* Ð‘Ð¾Ð½ÑƒÑÐ½Ñ‹Ðµ Ð±Ð°Ð»Ð»Ñ‹ */}
                         {currentUser && (
                             <div className="checkout__bonus mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
                                 <div className="flex justify-between text-amber-800 dark:text-amber-300">
@@ -830,7 +345,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         +{adjustedBonusToEarn} {t('cart.bonus.unit')}
                                         {adjustedBonusToEarn > 0 && (
                                             <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                                (= −{formatCurrency(pointsToEuros(adjustedBonusToEarn))})
+                                                (= âˆ’{formatCurrency(pointsToEuros(adjustedBonusToEarn))})
                                             </span>
                                         )}
                                     </span>
@@ -843,20 +358,20 @@ export default function CheckoutPage(): React.ReactElement {
                                                 onClick={() => setBonusApplied(true)}
                                                 className="checkout__bonus-apply w-full rounded border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 dark:border-amber-600"
                                             >
-                                                {t('checkout.bonus.apply')} (−{formatCurrency(maxBonusDiscount)})
+                                                {t('checkout.bonus.apply')} (âˆ’{formatCurrency(maxBonusDiscount)})
                                             </button>
                                         ) : (
                                             <>
                                                 <div className="checkout__bonus-applied flex items-center justify-between text-xs">
                                                     <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                                        ✓ {t('checkout.bonus.applied')} −{formatCurrency(maxBonusDiscount)}
+                                                        âœ“ {t('checkout.bonus.applied')} âˆ’{formatCurrency(maxBonusDiscount)}
                                                     </span>
                                                     <button
                                                         type="button"
                                                         onClick={() => setBonusApplied(false)}
                                                         className="ml-2 underline text-amber-700 dark:text-amber-400"
                                                     >
-                                                        {t('common.cancel', 'Отменить')}
+                                                        {t('common.cancel', 'ÐžÑ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ')}
                                                     </button>
                                                 </div>
                                                 <p className="checkout__bonus-earn-warning mt-1.5 text-xs text-amber-600/80 dark:text-amber-500/80">
@@ -882,18 +397,18 @@ export default function CheckoutPage(): React.ReactElement {
                                         {t('checkout.summary.discount').replace(/:\s*$/, '')}
                                         {appliedPromo && (
                                             <span className="text-muted-foreground">
-                                                {' '}({appliedPromo} −{appliedPromoDiscountPct}%)
+                                                {' '}({appliedPromo} âˆ’{appliedPromoDiscountPct}%)
                                             </span>
                                         )}
                                         :
                                     </span>
-                                    <span className="font-medium">−{formatCurrency(discount)}</span>
+                                    <span className="font-medium">âˆ’{formatCurrency(discount)}</span>
                                 </div>
                             )}
                             {bonusDiscount > 0 && (
                                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                                     <span>{t('checkout.summary.bonus')}</span>
-                                    <span className="font-medium">−{formatCurrency(bonusDiscount)}</span>
+                                    <span className="font-medium">âˆ’{formatCurrency(bonusDiscount)}</span>
                                 </div>
                             )}
 
@@ -918,7 +433,7 @@ export default function CheckoutPage(): React.ReactElement {
                             <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
                         </div>
 
-                        {/* Согласие с условиями предоставления услуг */}
+                        {/* Ð¡Ð¾Ð³Ð»Ð°ÑÐ¸Ðµ Ñ ÑƒÑÐ»Ð¾Ð²Ð¸ÑÐ¼Ð¸ Ð¿Ñ€ÐµÐ´Ð¾ÑÑ‚Ð°Ð²Ð»ÐµÐ½Ð¸Ñ ÑƒÑÐ»ÑƒÐ³ */}
                         <div className="checkout__terms mt-4 pt-4 border-t border-border">
                             <div className="flex items-start gap-2">
                                 <Checkbox

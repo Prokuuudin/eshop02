@@ -1,0 +1,377 @@
+'use client'
+
+import React, { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { useOrders } from '@/lib/orders-store'
+import { isOrderTaxIncluded, extractVat } from '@/lib/tax'
+import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
+import { formatDate, formatEuro } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Search, Printer, Download } from 'lucide-react'
+import { useTranslation } from '@/lib/use-translation'
+import { logAdminAction } from '@/lib/admin-log-store'
+import { useOrders as useOrdersStore } from '@/lib/orders-store'
+import OrderInvoiceModal from '@/components/admin/OrderInvoiceModal'
+import {
+  DELIVERY_LABELS,
+  EDIT_DELIVERY_COSTS,
+  ORDERS_PAGE_SIZE,
+  PAYMENT_COLORS,
+  PAYMENT_LABELS,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  STATUS_LIST,
+  type CatalogProduct,
+  type EditItem,
+  type SortDir,
+  type SortField,
+} from './order-config'
+
+export function useAdminOrdersPage() {
+  const { orders } = useOrders()
+  const { getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, loadOrderMeta } = useAdminStore()
+  const { upsertOrder } = useOrdersStore()
+
+  useEffect(() => {
+    fetch('/api/admin/orders?take=200')
+      .then((r) => r.json())
+      .then(({ orders: dbOrders }) => {
+        if (!Array.isArray(dbOrders)) return
+        const ids: string[] = []
+        for (const o of dbOrders) {
+          upsertOrder(o as import('@/lib/orders-store').Order)
+          ids.push(o.id)
+        }
+        if (ids.length) loadOrderMeta(ids)
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
+
+  // â”€â”€ Edit mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null)
+  const [editItems, setEditItems] = useState<EditItem[]>([])
+  const [editAddress, setEditAddress] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editPostalCode, setEditPostalCode] = useState('')
+  const [editDelivery, setEditDelivery] = useState<string>('pickup')
+  const [editProductSearch, setEditProductSearch] = useState('')
+  const [catalog, setCatalog] = useState<CatalogProduct[]>([])
+  const [editSaving, setEditSaving] = useState(false)
+  const { language } = useTranslation()
+  const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US'
+
+  const searchParams = useSearchParams()
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) queueMicrotask(() => setSearch(q))
+  }, [searchParams])
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
+  const [deliveryFilter, setDeliveryFilter] = useState('all')
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [invoiceOrder, setInvoiceOrder] = useState<import('@/lib/orders-store').Order | null>(null)
+  const [bulkStatus, setBulkStatus] = useState<OrderStatus | ''>('')
+  const [page, setPage] = useState(0)
+
+  const statsByStatus = useMemo(() => {
+    return STATUS_LIST.reduce(
+      (acc, s) => {
+        acc[s] = orders.filter((o) => getOrderStatus(o.id) === s).length
+        return acc
+      },
+      {} as Record<OrderStatus, number>
+    )
+  }, [orders, getOrderStatus])
+
+  const totalRevenue = useMemo(() => orders.reduce((sum, o) => sum + o.total, 0), [orders])
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    const result = orders.filter((order) => {
+      const matchSearch =
+        !q ||
+        order.id.toLowerCase().includes(q) ||
+        order.firstName.toLowerCase().includes(q) ||
+        order.lastName.toLowerCase().includes(q) ||
+        order.email.toLowerCase().includes(q) ||
+        order.phone.toLowerCase().includes(q)
+
+      const orderStatus = getOrderStatus(order.id)
+      const matchStatus = statusFilter === 'all' || orderStatus === statusFilter
+      const matchPayment = paymentFilter === 'all' || (order.paymentStatus ?? 'unpaid') === paymentFilter
+      const matchDelivery = deliveryFilter === 'all' || order.deliveryMethod === deliveryFilter
+
+      return matchSearch && matchStatus && matchPayment && matchDelivery
+    })
+
+    result.sort((a, b) => {
+      if (sortField === 'date') {
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        return sortDir === 'asc' ? diff : -diff
+      }
+      const diff = a.total - b.total
+      return sortDir === 'asc' ? diff : -diff
+    })
+
+    return result
+  }, [orders, search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir, getOrderStatus])
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    queueMicrotask(() => setPage(0))
+  }, [search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PAGE_SIZE))
+  const pageItems = filtered.slice(page * ORDERS_PAGE_SIZE, (page + 1) * ORDERS_PAGE_SIZE)
+
+  const unhandledCount = useMemo(
+    () => orders.filter((o) => ['pending', 'confirmed'].includes(getOrderStatus(o.id))).length,
+    [orders, getOrderStatus]
+  )
+
+  const isAllSelected = filtered.length > 0 && filtered.every((o) => selectedIds.has(o.id))
+  const isSomeSelected = filtered.some((o) => selectedIds.has(o.id))
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filtered.map((o) => o.id)))
+    }
+  }
+
+  const applyBulkStatus = () => {
+    if (!bulkStatus) return
+    const ids = Array.from(selectedIds)
+    ids.forEach((id) => {
+      const prev = getOrderStatus(id)
+      setOrderStatus(id, bulkStatus as OrderStatus)
+      logAdminAction('order.status_changed', { type: 'order', id }, {
+        before: { status: prev }, after: { status: bulkStatus },
+      })
+    })
+    logAdminAction('order.bulk_status_changed',
+      { type: 'orders', id: ids.join(','), title: `${ids.length} Ð·Ð°ÐºÐ°Ð·Ð¾Ð²` },
+      { after: { status: bulkStatus }, details: `${ids.length} Ð·Ð°ÐºÐ°Ð·Ð¾Ð² â†’ ${bulkStatus}` }
+    )
+    setSelectedIds(new Set())
+    setBulkStatus('')
+  }
+
+  const printSelected = () => {
+    const escapeHtml = (s: string): string =>
+      s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+    const selected = orders.filter((o) => selectedIds.has(o.id))
+    const rows = selected.map((order) => {
+      const status = getOrderStatus(order.id)
+      const payStatus = order.paymentStatus ?? 'unpaid'
+      const items = order.items.map((item) =>
+        `<div style="display:flex;justify-content:space-between;font-size:12px;margin:3px 0">
+          <span>${escapeHtml(item.title)}${item.variantLabel ? ` <span style="color:#6b7280">(${escapeHtml(item.variantLabel)})</span>` : ''} Ã— ${item.quantity}</span>
+          <span>${formatEuro(item.price * item.quantity, locale)}</span>
+        </div>`
+      ).join('')
+      return `<div style="margin-bottom:20px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;page-break-inside:avoid">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-family:monospace;font-size:11px;color:#6b7280">${escapeHtml(order.id)}</span>
+          <div style="display:flex;gap:8px">
+            <span style="font-size:12px;font-weight:600">${STATUS_LABELS[status]}</span>
+            <span style="font-size:12px;color:#6b7280">${PAYMENT_LABELS[payStatus]}</span>
+          </div>
+        </div>
+        <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(order.firstName)} ${escapeHtml(order.lastName)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.email)} Â· ${escapeHtml(order.phone)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.address)}, ${escapeHtml(order.city)}${order.postalCode ? ', ' + escapeHtml(order.postalCode) : ''}</p>
+        <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(order.createdAt).toLocaleDateString('ru-RU')}</p>
+        <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
+        ${items}
+        <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px">
+          <span>Ð˜Ñ‚Ð¾Ð³Ð¾</span><span>${formatEuro(order.total, locale)}</span>
+        </div>
+      </div>`
+    }).join('')
+
+    const win = window.open('', '_blank', 'width=820,height=700')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head><title>Ð—Ð°ÐºÐ°Ð·Ñ‹</title>
+      <style>body{font-family:sans-serif;padding:20px;max-width:760px;margin:0 auto}@media print{body{padding:0}}</style>
+      </head><body>${rows}</body></html>`)
+    win.document.close()
+    win.focus()
+    win.print()
+  }
+
+  // â”€â”€ Edit helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  const editProductResults = useMemo(() => {
+    const q = editProductSearch.trim().toLowerCase()
+    if (!q || q.length < 2) return []
+    return catalog
+      .filter((p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q))
+      .slice(0, 8)
+  }, [catalog, editProductSearch])
+
+  const startEdit = (order: (typeof orders)[number]) => {
+    setEditingOrderId(order.id)
+    setEditItems(order.items.map((i) => ({ id: i.id, lineKey: i.lineKey, title: i.title, price: i.price, quantity: i.quantity, image: i.image, variantLabel: i.variantLabel })))
+    setEditAddress(order.address)
+    setEditCity(order.city)
+    setEditPostalCode(order.postalCode ?? '')
+    setEditDelivery(order.deliveryMethod)
+    setEditProductSearch('')
+    if (catalog.length === 0) {
+      fetch('/api/admin/products')
+        .then((r) => r.json())
+        .then((d: { data?: { products?: CatalogProduct[] } }) => setCatalog(d.data?.products ?? []))
+        .catch(() => {})
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingOrderId(null)
+    setEditProductSearch('')
+  }
+
+  const saveEdit = (order: (typeof orders)[number]) => {
+    const newSubtotal = editItems.reduce((s, i) => s + i.price * i.quantity, 0)
+    const newDelivery = EDIT_DELIVERY_COSTS[editDelivery] ?? order.delivery
+    // Keep discount proportional if it existed
+    const origDiscountPct = order.subtotal > 0 ? order.discount / order.subtotal : 0
+    const newDiscount = order.promoCode && origDiscountPct > 0
+      ? Math.round(newSubtotal * origDiscountPct * 100) / 100
+      : order.discount
+    // Items unchanged since order creation keep that order's price model (VAT already
+    // included vs added on top) â€” detect it from the order itself, no schema flag needed.
+    const taxIncluded = isOrderTaxIncluded(order)
+    const newTax = taxIncluded ? extractVat(newSubtotal - newDiscount) : order.tax
+    const newTotal = Math.max(0, newSubtotal - newDiscount + newDelivery + (taxIncluded ? 0 : newTax))
+
+    setEditSaving(true)
+    const updated = {
+      ...order,
+      items: editItems as typeof order.items,
+      address: editAddress.trim() || order.address,
+      city: editCity.trim() || order.city,
+      postalCode: editPostalCode.trim() || undefined,
+      deliveryMethod: editDelivery as typeof order.deliveryMethod,
+      subtotal: newSubtotal,
+      discount: newDiscount,
+      delivery: newDelivery,
+      tax: newTax,
+      total: newTotal,
+    }
+    upsertOrder(updated)
+
+    logAdminAction('order.status_changed', { type: 'order', id: order.id, title: `${order.firstName} ${order.lastName}` }, {
+      details: `Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð°: ${editItems.length} Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¹, Ð¸Ñ‚Ð¾Ð³Ð¾ ${newTotal.toFixed(2)} â‚¬`,
+    })
+
+    setEditSaving(false)
+    setEditingOrderId(null)
+    setEditProductSearch('')
+  }
+
+  const editUpdateQty = (lineKey: string, qty: number) => {
+    if (qty <= 0) {
+      setEditItems((prev) => prev.filter((i) => i.lineKey !== lineKey))
+    } else {
+      setEditItems((prev) => prev.map((i) => i.lineKey === lineKey ? { ...i, quantity: qty } : i))
+    }
+  }
+
+  const editAddProduct = (p: CatalogProduct) => {
+    setEditItems((prev) => {
+      const existing = prev.find((i) => i.lineKey === p.id)
+      if (existing) return prev.map((i) => i.lineKey === p.id ? { ...i, quantity: i.quantity + 1 } : i)
+      return [...prev, { id: p.id, lineKey: p.id, title: p.title, price: p.price, quantity: 1, image: p.image }]
+    })
+    setEditProductSearch('')
+  }
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir('desc')
+    }
+  }
+
+  const downloadCSV = (rows: string[][], filename: string) => {
+    const content = rows
+      .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['ï»¿' + content], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const csvDate = () => new Date().toISOString().slice(0, 10)
+
+  const exportOrdersCSV = () => {
+    const header = ['ID', 'Ð”Ð°Ñ‚Ð°', 'Ð˜Ð¼Ñ', 'Ð¤Ð°Ð¼Ð¸Ð»Ð¸Ñ', 'Email', 'Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½', 'Ð¡Ñ‚Ð°Ñ‚ÑƒÑ', 'ÐžÐ¿Ð»Ð°Ñ‚Ð°', 'Ð”Ð¾ÑÑ‚Ð°Ð²ÐºÐ°', 'ÐÐ´Ñ€ÐµÑ', 'Ð“Ð¾Ñ€Ð¾Ð´', 'Ð˜Ð½Ð´ÐµÐºÑ', 'Ð¢Ð¾Ð²Ð°Ñ€Ñ‹', 'Ð¡ÑƒÐ¼Ð¼Ð°']
+    const rows = filtered.map((o) => {
+      const status = getOrderStatus(o.id)
+      return [
+        o.id,
+        new Date(o.createdAt).toLocaleDateString('ru-RU'),
+        o.firstName,
+        o.lastName,
+        o.email,
+        o.phone,
+        STATUS_LABELS[status],
+        PAYMENT_LABELS[o.paymentStatus ?? 'unpaid'],
+        DELIVERY_LABELS[o.deliveryMethod] ?? o.deliveryMethod,
+        o.address,
+        o.city,
+        o.postalCode ?? '',
+        o.items.map((i) => `${i.title} Ã—${i.quantity}`).join('; '),
+        o.total.toFixed(2),
+      ]
+    })
+    downloadCSV([header, ...rows], `orders-${csvDate()}.csv`)
+  }
+
+  const exportCustomersCSV = () => {
+    const seen = new Set<string>()
+    const header = ['Ð˜Ð¼Ñ', 'Ð¤Ð°Ð¼Ð¸Ð»Ð¸Ñ', 'Email', 'Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½', 'Ð“Ð¾Ñ€Ð¾Ð´', 'Ð—Ð°ÐºÐ°Ð·Ð¾Ð²', 'Ð¡ÑƒÐ¼Ð¼Ð° (â‚¬)']
+    const rows: string[][] = []
+    filtered.forEach((o) => {
+      if (seen.has(o.email)) return
+      seen.add(o.email)
+      const customerOrders = filtered.filter((x) => x.email === o.email)
+      const spent = customerOrders.reduce((s, x) => s + x.total, 0)
+      rows.push([o.firstName, o.lastName, o.email, o.phone, o.city, String(customerOrders.length), spent.toFixed(2)])
+    })
+    downloadCSV([header, ...rows], `customers-${csvDate()}.csv`)
+  }
+
+
+  return { orders, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts, editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity, editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch, setEditProductSearch, editSaving, language, locale, search, setSearch, statusFilter, setStatusFilter, paymentFilter, setPaymentFilter, deliveryFilter, setDeliveryFilter, sortField, sortDir, expandedOrder, setExpandedOrder, selectedIds, setSelectedIds, invoiceOrder, setInvoiceOrder, bulkStatus, setBulkStatus, page, setPage, statsByStatus, totalRevenue, filtered, totalPages, pageItems, unhandledCount, isAllSelected, isSomeSelected, toggleSelect, toggleSelectAll, applyBulkStatus, printSelected, editProductResults, startEdit, cancelEdit, saveEdit, editUpdateQty, editAddProduct, toggleSort, exportOrdersCSV, exportCustomersCSV }
+}

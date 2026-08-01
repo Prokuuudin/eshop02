@@ -88,113 +88,12 @@ const ACTION_STYLES: Record<RowAction, { label: string; chip: string }> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+import { useAdminImportPage } from './useAdminImportPage'
+
 export default function AdminImportPage(): React.ReactElement {
-  const [rows, setRows] = React.useState<Record<string, string>[]>([])
-  const [fileName, setFileName] = React.useState('')
-  const [mode, setMode] = React.useState<ImportMode>('upsert')
-  const [importing, setImporting] = React.useState(false)
-  const [previewing, setPreviewing] = React.useState(false)
-  const [result, setResult] = React.useState<ImportResult | null>(null)
-  const [previewResult, setPreviewResult] = React.useState<PreviewResult | null>(null)
-  const [parseError, setParseError] = React.useState('')
-  const [missingCols, setMissingCols] = React.useState<string[]>([])
-  const fileRef = React.useRef<HTMLInputElement>(null)
-
-  // ── File handling ─────────────────────────────────────────────────────────
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setFileName(file.name)
-    setResult(null)
-    setPreviewResult(null)
-    setParseError('')
-    setMissingCols([])
-
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string
-      try {
-        const parsed = csvToObjects(text)
-        if (parsed.length === 0) { setParseError('Файл пуст или не содержит строк данных.'); return }
-
-        const headers = Object.keys(parsed[0])
-        const missing = REQUIRED_COLS.filter((c) => !headers.includes(c))
-        setMissingCols(missing)
-        setRows(parsed)
-      } catch {
-        setParseError('Не удалось разобрать CSV. Проверьте формат файла.')
-      }
-    }
-    reader.readAsText(file, 'utf-8')
-    e.target.value = ''
-  }
-
-  const onReset = () => {
-    setRows([])
-    setFileName('')
-    setResult(null)
-    setPreviewResult(null)
-    setParseError('')
-    setMissingCols([])
-  }
-
-  const onModeChange = (m: ImportMode) => {
-    setMode(m)
-    setPreviewResult(null)
-  }
-
-  // ── Preview ───────────────────────────────────────────────────────────────
-
-  const onPreview = async () => {
-    if (!rows.length || missingCols.length > 0) return
-    setPreviewing(true)
-    setPreviewResult(null)
-    setResult(null)
-    try {
-      const res = await fetch('/api/admin/import/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows, mode }),
-      })
-      const data = (await res.json()) as PreviewResult
-      setPreviewResult(data)
-    } catch {
-      setParseError('Не удалось получить предпросмотр. Проверьте соединение.')
-    } finally {
-      setPreviewing(false)
-    }
-  }
-
-  // ── Import ────────────────────────────────────────────────────────────────
-
-  const onImport = async () => {
-    if (!rows.length || missingCols.length > 0) return
-    setImporting(true)
-    setResult(null)
-    try {
-      const res = await fetch('/api/admin/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows, mode })
-      })
-      const data = (await res.json()) as ImportResult
-      setResult(data)
-    } catch {
-      setResult({ created: 0, updated: 0, skipped: 0, errors: [{ row: 0, id: '', message: 'Ошибка соединения с сервером.' }] })
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  // ── Derived ───────────────────────────────────────────────────────────────
-
-  const detectedCols = rows.length > 0 ? Object.keys(rows[0]) : []
-  const canImport = rows.length > 0 && missingCols.length === 0
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  return (
+  const pageState = useAdminImportPage()
+  const { rows, setRows, fileName, setFileName, mode, setMode, importing, setImporting, previewing, setPreviewing, result, setResult, previewResult, setPreviewResult, parseError, setParseError, missingCols, setMissingCols, fileRef, onFileChange, onReset, onModeChange, onPreview, onImport, detectedCols, canImport } = pageState
+return (
     <AdminGate>
       <main className="w-full py-4 space-y-6">
 

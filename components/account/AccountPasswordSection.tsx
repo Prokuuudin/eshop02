@@ -47,7 +47,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
             setError(t('account.password.errorCurrentRequired'));
             return;
         }
-        if (next.length < 6) {
+        if (next.length < 12) {
             setError(t('account.password.errorTooShort'));
             return;
         }

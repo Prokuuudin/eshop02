@@ -184,7 +184,7 @@ const ruAccount: Record<string, string> = {
   'account.password.successMsg': 'Пароль успешно изменён',
   'account.password.errorCurrentRequired': 'Введите текущий пароль',
   'account.password.errorCurrentWrong': 'Текущий пароль неверный',
-  'account.password.errorTooShort': 'Новый пароль должен быть не менее 6 символов',
+  'account.password.errorTooShort': 'Новый пароль должен быть не менее 12 символов',
   'account.password.errorMismatch': 'Пароли не совпадают',
   'account.password.errorServer': 'Не удалось сменить пароль. Попробуйте позже.',
   'account.emailReadonlyHint': 'Email нельзя изменить здесь — обратитесь в поддержку',

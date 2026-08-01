@@ -185,7 +185,7 @@ const lvAccount: Record<string, string> = {
   'account.password.successMsg': 'Parole veiksmīgi nomainīta',
   'account.password.errorCurrentRequired': 'Lūdzu ievadiet pašreizējo paroli',
   'account.password.errorCurrentWrong': 'Pašreizējā parole ir nepareiza',
-  'account.password.errorTooShort': 'Jaunajai parolei jābūt vismaz 6 rakstzīmēm',
+  'account.password.errorTooShort': 'Jaunajai parolei jābūt vismaz 12 rakstzīmēm',
   'account.password.errorMismatch': 'Paroles nesakrīt',
   'account.password.errorServer': 'Neizdevās nomainīt paroli. Mēģiniet vēlāk.',
   'account.emailReadonlyHint': 'E-pastu šeit nevar mainīt — sazinieties ar atbalstu',

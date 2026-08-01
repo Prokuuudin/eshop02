@@ -63,7 +63,7 @@ describe('POST /api/user/password', () => {
   it('rejects a cross-site Origin (CSRF guard)', async () => {
     const req = new NextRequest('http://localhost/api/user/password', {
       method: 'POST',
-      body: JSON.stringify({ currentPassword: 'user123', newPassword: 'newpass1' }),
+      body: JSON.stringify({ currentPassword: 'user123', newPassword: 'newpassword1' }),
       headers: { 'Content-Type': 'application/json', cookie: 'eshop_session=tok', origin: 'https://evil.test' },
     })
     const res = await POST(req)
@@ -73,7 +73,7 @@ describe('POST /api/user/password', () => {
 
   it('rejects unauthenticated callers', async () => {
     getServerUserMock.mockResolvedValue(null)
-    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: 'newpass1' }))
+    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: 'newpassword1' }))
     expect(res.status).toBe(401)
     expect(userUpdateMock).not.toHaveBeenCalled()
   })
@@ -82,7 +82,7 @@ describe('POST /api/user/password', () => {
     userFindUniqueMock.mockResolvedValue({
       id: 'u1', passwordHash: 'OLD', mustChangePassword: false,
     })
-    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: '123' }))
+    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: 'short1' }))
     expect(res.status).toBe(400)
     expect(userUpdateMock).not.toHaveBeenCalled()
   })
@@ -92,7 +92,7 @@ describe('POST /api/user/password', () => {
       id: 'u1', passwordHash: 'OLD', mustChangePassword: false,
     })
     verifyPasswordMock.mockResolvedValue(false)
-    const res = await POST(makeRequest({ currentPassword: 'wrong', newPassword: 'newpass1' }))
+    const res = await POST(makeRequest({ currentPassword: 'wrong', newPassword: 'newpassword1' }))
     expect(res.status).toBe(401)
     expect(userUpdateMock).not.toHaveBeenCalled()
   })
@@ -102,7 +102,7 @@ describe('POST /api/user/password', () => {
       id: 'u1', passwordHash: 'OLD', mustChangePassword: false,
     })
     verifyPasswordMock.mockResolvedValue(true)
-    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: 'newpass1' }))
+    const res = await POST(makeRequest({ currentPassword: 'user123', newPassword: 'newpassword1' }))
     expect(res.status).toBe(200)
     const args = userUpdateMock.mock.calls[0][0] as {
       where: { id: string }
@@ -122,7 +122,7 @@ describe('POST /api/user/password', () => {
     userFindUniqueMock.mockResolvedValue({
       id: 'u1', passwordHash: 'OLD', mustChangePassword: true,
     })
-    const res = await POST(makeRequest({ newPassword: 'newpass1' }))
+    const res = await POST(makeRequest({ newPassword: 'newpassword1' }))
     expect(res.status).toBe(200)
     expect(verifyPasswordMock).not.toHaveBeenCalled()
     const args = userUpdateMock.mock.calls[0][0] as {

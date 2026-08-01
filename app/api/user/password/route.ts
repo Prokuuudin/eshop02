@@ -5,7 +5,7 @@ import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
-const MIN_LENGTH = 6
+const MIN_LENGTH = 12
 
 // POST /api/user/password — change the signed-in user's password.
 // Auth is server-authoritative (bcrypt hash in DB): the old localStorage-only

@@ -131,7 +131,7 @@ export default function AdminMfaSection(): React.ReactElement {
 
     if (!status && !loadError) return <></>;
 
-    if (loadError) {
+    if (loadError && !status) {
         return (
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
                 <div className="mb-3 flex items-center gap-2">

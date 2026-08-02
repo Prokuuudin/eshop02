@@ -1,0 +1,89 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { NextRequest } from 'next/server'
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: { mfaChallenge: { findUnique: vi.fn(), delete: vi.fn() }, user: { findUnique: vi.fn(), update: vi.fn() } },
+}))
+vi.mock('@/lib/server-auth', () => ({
+  hashToken: vi.fn((t: string) => `hash(${t})`),
+  createSession: vi.fn(),
+  mapDbToServerUser: vi.fn((u) => u),
+  SESSION_COOKIE: 'eshop_session',
+}))
+vi.mock('@/lib/mfa', () => ({
+  decryptSecret: vi.fn(() => 'RAWSECRET'),
+  verifyTotpCode: vi.fn(),
+  consumeBackupCode: vi.fn(async () => ({ ok: false, remaining: [] })),
+}))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
+
+import { prisma } from '@/lib/prisma'
+import { createSession } from '@/lib/server-auth'
+import { verifyTotpCode } from '@/lib/mfa'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { POST } from './route'
+
+function makeRequest(body: Record<string, unknown>) {
+  return new NextRequest('http://localhost/api/auth/mfa/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.10' },
+    body: JSON.stringify(body),
+  })
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 4, resetAt: Date.now() + 60_000 })
+  vi.mocked(createSession).mockResolvedValue('new-token')
+})
+
+describe('POST /api/auth/mfa/verify', () => {
+  it('rejects a missing/expired challenge', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue(null)
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    expect(res.status).toBe(401)
+  })
+
+  it('rejects when rate-limited', async () => {
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    expect(res.status).toBe(429)
+    expect(prisma.mfaChallenge.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('rejects a stale challenge whose user is no longer an MFA-enabled admin', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', platformRole: 'customer', mfaEnabled: false, mfaSecret: null, mfaBackupCodes: [] },
+    } as never)
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    expect(res.status).toBe(401)
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('rejects an expired challenge', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() - 1000),
+      user: { id: 'u1', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: [] },
+    } as never)
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    expect(res.status).toBe(401)
+  })
+
+  it('accepts a valid TOTP code, creates a session, and deletes the challenge', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'admin@test.com', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: [] },
+    } as never)
+    vi.mocked(verifyTotpCode).mockResolvedValue(true)
+
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.user.id).toBe('u1')
+    expect(createSession).toHaveBeenCalledWith('u1')
+    expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
+    expect(prisma.mfaChallenge.delete).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+  })
+})

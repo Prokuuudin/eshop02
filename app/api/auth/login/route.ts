@@ -6,6 +6,8 @@ import {
   mapDbToServerUser,
   SESSION_COOKIE,
 } from '@/lib/server-auth'
+import { randomBytes } from 'node:crypto'
+import { hashToken } from '@/lib/server-auth'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 
 function getClientIp(req: NextRequest): string {
@@ -69,6 +71,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Successful login — reset attempt counter
     await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
+
+    if (user.platformRole === 'admin' && user.mfaEnabled) {
+      const challengeToken = randomBytes(32).toString('hex')
+      await prisma.mfaChallenge.create({
+        data: {
+          tokenHash: hashToken(challengeToken),
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        },
+      })
+      return NextResponse.json({ mfaRequired: true, challengeToken })
+    }
 
     const token = await createSession(user.id)
 

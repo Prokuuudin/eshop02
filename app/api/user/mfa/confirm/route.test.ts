@@ -30,13 +30,24 @@ beforeEach(() => {
 
 describe('POST /api/user/mfa/confirm', () => {
   it('rejects when there is no pending secret', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: null } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: null, mfaEnabled: false } as never)
     const res = await POST(makeRequest('123456'))
     expect(res.status).toBe(400)
   })
 
+  it('rejects re-enrollment when MFA is already enabled, without touching the live secret', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: 'ENCRYPTED', mfaEnabled: true } as never)
+    const res = await POST(makeRequest('123456'))
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('mfa_already_enabled')
+    expect(verifyTotpCode).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
   it('rejects a wrong code without enabling MFA', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: 'ENCRYPTED' } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: 'ENCRYPTED', mfaEnabled: false } as never)
     vi.mocked(verifyTotpCode).mockResolvedValue(false)
     const res = await POST(makeRequest('000000'))
     expect(res.status).toBe(401)
@@ -44,7 +55,7 @@ describe('POST /api/user/mfa/confirm', () => {
   })
 
   it('enables MFA and returns backup codes on a correct code', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: 'ENCRYPTED' } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaSecret: 'ENCRYPTED', mfaEnabled: false } as never)
     vi.mocked(verifyTotpCode).mockResolvedValue(true)
     const res = await POST(makeRequest('123456'))
     const json = await res.json()

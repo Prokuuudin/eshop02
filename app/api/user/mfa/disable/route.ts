@@ -24,9 +24,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { passwordHash: true, mfaSecret: true, mfaBackupCodes: true },
+    select: { passwordHash: true, mfaSecret: true, mfaEnabled: true, mfaBackupCodes: true },
   })
-  if (!dbUser?.mfaSecret) {
+  // Also requires mfaEnabled (not just a leftover mfaSecret) so a pending/never-confirmed
+  // setup can't be "disabled" through this route — matches /backup-codes/regenerate's check.
+  if (!dbUser?.mfaEnabled || !dbUser.mfaSecret) {
     return NextResponse.json({ error: 'mfa_not_enabled' }, { status: 400 })
   }
 
@@ -35,9 +37,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_current_password' }, { status: 401 })
   }
 
-  const codeOk =
-    (await verifyTotpCode(decryptSecret(dbUser.mfaSecret), code)) ||
-    (await consumeBackupCode(dbUser.mfaBackupCodes, code)).ok
+  // A decrypt failure (e.g. MFA_ENCRYPTION_KEY misconfigured/rotated) must not throw before
+  // the backup-code fallback is checked — that would 500 instead of letting a code-holding
+  // admin clear the flag.
+  let totpOk = false
+  try {
+    totpOk = await verifyTotpCode(decryptSecret(dbUser.mfaSecret), code)
+  } catch {
+    totpOk = false
+  }
+  const codeOk = totpOk || (await consumeBackupCode(dbUser.mfaBackupCodes, code)).ok
   if (!codeOk) {
     return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
   }

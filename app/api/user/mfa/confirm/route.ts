@@ -19,9 +19,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const body = await req.json().catch(() => ({}))
   const code = typeof body.code === 'string' ? body.code : ''
 
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { mfaSecret: true } })
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { mfaSecret: true, mfaEnabled: true },
+  })
   if (!dbUser?.mfaSecret) {
     return NextResponse.json({ error: 'no_pending_setup' }, { status: 400 })
+  }
+  // Re-enrollment must go through /disable first (password + code required there) — see
+  // /setup's matching check for the full rationale.
+  if (dbUser.mfaEnabled) {
+    return NextResponse.json({ error: 'mfa_already_enabled' }, { status: 400 })
   }
 
   const valid = await verifyTotpCode(decryptSecret(dbUser.mfaSecret), code)

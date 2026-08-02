@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { randomBytes } from 'node:crypto'
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn() } },
+  prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn(), deleteMany: vi.fn() } },
 }))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: vi.fn(), createSession: vi.fn(), mapDbToServerUser: vi.fn((user) => user),
@@ -96,6 +95,7 @@ describe('POST /api/auth/login', () => {
     expect(json.user).toBeUndefined()
     expect(createSession).not.toHaveBeenCalled()
     expect(res.cookies.get('eshop_session')).toBeUndefined()
+    expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { userId: 'admin1' } })
     expect(prisma.mfaChallenge.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: 'admin1' }),
     })

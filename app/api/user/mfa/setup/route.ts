@@ -18,6 +18,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   if (user.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
+  // Re-enrollment must go through /disable first (password + code required there). Without
+  // this check, a stolen session alone could rebind the second factor to an attacker's device
+  // — or silently break the real admin's existing authenticator at their next login.
+  const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { mfaEnabled: true } })
+  if (existing?.mfaEnabled) {
+    return NextResponse.json({ error: 'mfa_already_enabled' }, { status: 400 })
+  }
+
   const secret = generateTotpSecret()
   const uri = buildOtpauthUri(user.email, secret)
   const qrCodeDataUrl = await QRCode.toDataURL(uri)

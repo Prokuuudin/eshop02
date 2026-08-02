@@ -21,9 +21,12 @@ export default function AdminMfaSection(): React.ReactElement {
     const [busy, setBusy] = useState(false);
 
     const loadStatus = () => {
-        setLoadError(false);
         fetch('/api/user/mfa/status')
             .then((r) => {
+                // Reset here (inside the async chain, not synchronously in the function
+                // body) so an effect calling this directly never sets state synchronously
+                // during its own execution — same net timing, just deferred a tick.
+                setLoadError(false);
                 if (!r.ok) throw new Error();
                 return r.json();
             })
@@ -39,6 +42,7 @@ export default function AdminMfaSection(): React.ReactElement {
         setCurrentPassword('');
         setError('');
         setQrCodeDataUrl(null);
+        setBackupCodes([]);
     };
 
     const startEnroll = async () => {
@@ -196,7 +200,7 @@ export default function AdminMfaSection(): React.ReactElement {
                     <p className="text-sm text-muted-foreground">
                         Отсканируйте QR-код в Google Authenticator / Microsoft Authenticator и введите текущий код.
                     </p>
-                    <Image src={qrCodeDataUrl} alt="MFA QR code" width={200} height={200} unoptimized />
+                    <Image src={qrCodeDataUrl} alt="QR-код для 2FA" width={200} height={200} unoptimized />
                     <Input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
@@ -239,11 +243,16 @@ export default function AdminMfaSection(): React.ReactElement {
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         placeholder="Код из приложения"
-                        maxLength={6}
+                        maxLength={10}
                     />
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => void disable()} disabled={busy}>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void disable()}
+                            disabled={busy || !currentPassword || code.length < 6}
+                        >
                             Отключить 2FA
                         </Button>
                         <Button size="sm" variant="outline" onClick={reset}>Отмена</Button>

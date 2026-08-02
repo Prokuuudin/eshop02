@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { mfaChallenge: { findUnique: vi.fn(), delete: vi.fn() }, user: { findUnique: vi.fn(), update: vi.fn() } },
+  prisma: { mfaChallenge: { findUnique: vi.fn(), deleteMany: vi.fn() }, user: { findUnique: vi.fn(), update: vi.fn() } },
 }))
 vi.mock('@/lib/server-auth', () => ({
   hashToken: vi.fn((t: string) => `hash(${t})`),
@@ -15,12 +15,12 @@ vi.mock('@/lib/mfa', () => ({
   verifyTotpCode: vi.fn(),
   consumeBackupCode: vi.fn(async () => ({ ok: false, remaining: [] })),
 }))
-vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), resetRateLimit: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/server-auth'
 import { verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
 
 function makeRequest(body: Record<string, unknown>) {
@@ -34,6 +34,7 @@ function makeRequest(body: Record<string, unknown>) {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 4, resetAt: Date.now() + 60_000 })
+  vi.mocked(resetRateLimit).mockResolvedValue(undefined)
   vi.mocked(createSession).mockResolvedValue('new-token')
 })
 
@@ -84,7 +85,9 @@ describe('POST /api/auth/mfa/verify', () => {
     expect(json.user.id).toBe('u1')
     expect(createSession).toHaveBeenCalledWith('u1')
     expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
-    expect(prisma.mfaChallenge.delete).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+    expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+    expect(resetRateLimit).toHaveBeenCalledWith('mfa:token:hash(tok)')
+    expect(resetRateLimit).toHaveBeenCalledWith('mfa:ip:203.0.113.10')
   })
 
   it('rejects a wrong TOTP code with no valid backup code, leaving the challenge intact for retry', async () => {
@@ -98,9 +101,10 @@ describe('POST /api/auth/mfa/verify', () => {
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '000000' }))
 
     expect(res.status).toBe(401)
-    expect(prisma.mfaChallenge.delete).not.toHaveBeenCalled()
+    expect(prisma.mfaChallenge.deleteMany).not.toHaveBeenCalled()
     expect(createSession).not.toHaveBeenCalled()
     expect(prisma.user.update).not.toHaveBeenCalled()
+    expect(resetRateLimit).not.toHaveBeenCalled()
   })
 
   it('accepts a valid backup code, persists the reduced backup-code list, and deletes the challenge', async () => {
@@ -115,7 +119,33 @@ describe('POST /api/auth/mfa/verify', () => {
 
     expect(res.status).toBe(200)
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { mfaBackupCodes: ['bhash2'] } })
-    expect(prisma.mfaChallenge.delete).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+    expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
     expect(createSession).toHaveBeenCalledWith('u1')
+  })
+
+  it('falls through to the backup-code check when decrypting the TOTP secret throws', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'admin@test.com', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: ['bhash1'] },
+    } as never)
+    vi.mocked(verifyTotpCode).mockRejectedValue(new Error('bad key'))
+    vi.mocked(consumeBackupCode).mockResolvedValue({ ok: true, remaining: [] })
+
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: 'deadbeef01' }))
+
+    expect(res.status).toBe(200)
+    expect(createSession).toHaveBeenCalledWith('u1')
+  })
+
+  it('resets the rate-limit keys used at the top of the request (hashed token, not the raw one)', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'admin@test.com', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: [] },
+    } as never)
+    vi.mocked(verifyTotpCode).mockResolvedValue(true)
+
+    await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+
+    expect(checkRateLimit).toHaveBeenCalledWith('mfa:token:hash(tok)', { windowMs: 15 * 60 * 1000, maxAttempts: 5 })
   })
 })

@@ -1,5 +1,5 @@
 ﻿'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { hasAdminUsers, loginUserAuto, verifyMfaAndLogin } from '@/lib/auth';
@@ -29,6 +29,11 @@ export default function LoginForm({
     const [submitting, setSubmitting] = useState(false);
     const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
     const [mfaCode, setMfaCode] = useState('');
+    const mfaCodeInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (mfaChallengeToken) mfaCodeInputRef.current?.focus();
+    }, [mfaChallengeToken]);
 
     const finishLogin = () => {
         if (onSuccess) { onSuccess(); return; }
@@ -73,18 +78,18 @@ export default function LoginForm({
                     </label>
                     <Input
                         id="login-mfa-code"
+                        ref={mfaCodeInputRef}
                         type="text"
                         inputMode="numeric"
                         className="bg-card text-foreground border-border"
                         value={mfaCode}
                         onChange={(e) => setMfaCode(e.target.value)}
-                        maxLength={6}
-                        autoFocus
+                        maxLength={10}
                         required
                     />
                 </div>
                 <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={mfaCode.length !== 6}>
+                    <Button type="submit" className="flex-1" disabled={mfaCode.length < 6}>
                         {t('auth.login')}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => { setMfaChallengeToken(null); setMfaCode(''); setError(''); }}>

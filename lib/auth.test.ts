@@ -8,7 +8,7 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest } from './auth'
+import { getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin } from './auth'
 
 function makeLocalStorageMock() {
   const store = new Map<string, string>()
@@ -155,6 +155,72 @@ describe('loginUserAuto — server-authoritative login', () => {
     await loginUserAuto('buyer@example.com', 'x')
 
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
+  })
+})
+
+describe('verifyMfaAndLogin — second step of an MFA-gated login', () => {
+  it('on success, applies the user via the same local-state path as loginUserAuto', async () => {
+    const fetchMock = vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: { id: 'admin1', email: 'admin@example.com' } }),
+    } as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', '123456')
+
+    expect(res.success).toBe(true)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/mfa/verify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ challengeToken: 'challenge-token', code: '123456' }),
+      })
+    )
+    // Same local-state path as loginUserAuto's success case: mirrored locally, password blanked.
+    const stored = getCurrentUser()
+    expect(stored?.id).toBe('admin1')
+    expect(stored?.email).toBe('admin@example.com')
+    expect(stored?.password).toBe('')
+  })
+
+  it('sets the current company when the verified account has one, same as loginUserAuto', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: { id: 'admin1', email: 'admin@example.com', companyId: 'company_1' } }),
+    } as unknown as Response)
+
+    await verifyMfaAndLogin('challenge-token', '123456')
+
+    expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
+  })
+
+  it('returns { success: false, error } on a non-ok response, without touching local state', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', '000000')
+
+    expect(res).toEqual({ success: false, error: expect.any(String) })
+    expect(res.error).toMatch(/Неверный код/)
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('surfaces rate limiting distinctly from a wrong code', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 429 } as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', '123456')
+
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/Слишком много попыток/)
+  })
+
+  it('fails closed when the server is unreachable', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('network down'))
+
+    const res = await verifyMfaAndLogin('challenge-token', '123456')
+
+    expect(res.success).toBe(false)
+    expect(getCurrentUser()).toBeNull()
   })
 })
 

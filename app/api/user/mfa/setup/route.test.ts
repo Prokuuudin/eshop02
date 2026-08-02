@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/prisma', () => ({ prisma: { user: { update: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn(), update: vi.fn() } } }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/mfa', () => ({
   generateTotpSecret: vi.fn(() => 'RAWSECRET'),
@@ -21,7 +21,10 @@ function makeRequest() {
   })
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaEnabled: false } as never)
+})
 
 describe('POST /api/user/mfa/setup', () => {
   it('rejects unauthenticated callers', async () => {
@@ -34,6 +37,17 @@ describe('POST /api/user/mfa/setup', () => {
     vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', platformRole: 'customer' } as never)
     const res = await POST(makeRequest())
     expect(res.status).toBe(403)
+  })
+
+  it('rejects re-enrollment when MFA is already enabled, without touching the live secret', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'admin1', email: 'admin@test.com', platformRole: 'admin' } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ mfaEnabled: true } as never)
+    const res = await POST(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('mfa_already_enabled')
+    expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
   it('generates and stores an encrypted pending secret for an admin', async () => {

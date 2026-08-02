@@ -11,6 +11,7 @@ type View = 'idle' | 'enrolling' | 'showing-backup-codes' | 'disabling' | 'regen
 
 export default function AdminMfaSection(): React.ReactElement {
     const [status, setStatus] = useState<Status | null>(null);
+    const [loadError, setLoadError] = useState(false);
     const [view, setView] = useState<View>('idle');
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
     const [code, setCode] = useState('');
@@ -20,10 +21,14 @@ export default function AdminMfaSection(): React.ReactElement {
     const [busy, setBusy] = useState(false);
 
     const loadStatus = () => {
+        setLoadError(false);
         fetch('/api/user/mfa/status')
-            .then((r) => r.json())
+            .then((r) => {
+                if (!r.ok) throw new Error();
+                return r.json();
+            })
             .then((json: Status) => setStatus(json))
-            .catch(() => {});
+            .catch(() => setLoadError(true));
     };
 
     useEffect(loadStatus, []);
@@ -124,12 +129,31 @@ export default function AdminMfaSection(): React.ReactElement {
         }
     };
 
-    if (!status) return <></>;
+    if (!status && !loadError) return <></>;
+
+    if (loadError) {
+        return (
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div className="mb-3 flex items-center gap-2">
+                    <ShieldOff className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <h2 className="text-sm font-semibold text-foreground">Двухфакторная аутентификация</h2>
+                </div>
+                <div className="space-y-3">
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                        Не удалось загрузить настройки 2FA. Попробуйте обновить страницу или повторить позже.
+                    </p>
+                    <Button size="sm" onClick={() => void loadStatus()}>
+                        Попробовать снова
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div className="mb-3 flex items-center gap-2">
-                {status.enabled ? (
+                {status!.enabled ? (
                     <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                     <ShieldOff className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -137,7 +161,7 @@ export default function AdminMfaSection(): React.ReactElement {
                 <h2 className="text-sm font-semibold text-foreground">Двухфакторная аутентификация</h2>
             </div>
 
-            {view === 'idle' && !status.enabled && (
+            {view === 'idle' && !status!.enabled && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
                         Не включена. Рекомендуем включить, чтобы пароль был не единственной защитой доступа к админке.
@@ -149,11 +173,11 @@ export default function AdminMfaSection(): React.ReactElement {
                 </div>
             )}
 
-            {view === 'idle' && status.enabled && (
+            {view === 'idle' && status!.enabled && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        Включена{status.enrolledAt ? ` с ${new Date(status.enrolledAt).toLocaleDateString('ru-RU')}` : ''}.
-                        Резервных кодов осталось: {status.backupCodesRemaining}.
+                        Включена{status!.enrolledAt ? ` с ${new Date(status!.enrolledAt).toLocaleDateString('ru-RU')}` : ''}.
+                        Резервных кодов осталось: {status!.backupCodesRemaining}.
                     </p>
                     <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => setView('regenerating')}>

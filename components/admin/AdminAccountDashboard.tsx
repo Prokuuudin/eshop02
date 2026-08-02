@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useOrders } from '@/lib/orders-store';
 import { readUsers, type User } from '@/lib/auth';
+import AdminMfaSection from '@/components/admin/AdminMfaSection';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -269,6 +270,8 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                     </Link>
                 </div>
             </div>
+
+            <AdminMfaSection />
 
             {/* Pending requests banner */}
             {pendingRequestCount > 0 && (

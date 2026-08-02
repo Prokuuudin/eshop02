@@ -19,7 +19,7 @@ vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'
 import { createSession } from '@/lib/server-auth'
-import { verifyTotpCode } from '@/lib/mfa'
+import { verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
 
@@ -85,5 +85,37 @@ describe('POST /api/auth/mfa/verify', () => {
     expect(createSession).toHaveBeenCalledWith('u1')
     expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
     expect(prisma.mfaChallenge.delete).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+  })
+
+  it('rejects a wrong TOTP code with no valid backup code, leaving the challenge intact for retry', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'admin@test.com', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: ['bhash1'] },
+    } as never)
+    vi.mocked(verifyTotpCode).mockResolvedValue(false)
+    vi.mocked(consumeBackupCode).mockResolvedValue({ ok: false, remaining: ['bhash1'] })
+
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: '000000' }))
+
+    expect(res.status).toBe(401)
+    expect(prisma.mfaChallenge.delete).not.toHaveBeenCalled()
+    expect(createSession).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('accepts a valid backup code, persists the reduced backup-code list, and deletes the challenge', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue({
+      tokenHash: 'hash(tok)', userId: 'u1', expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', email: 'admin@test.com', platformRole: 'admin', mfaEnabled: true, mfaSecret: 'ENCRYPTED', mfaBackupCodes: ['bhash1', 'bhash2'] },
+    } as never)
+    vi.mocked(verifyTotpCode).mockResolvedValue(false)
+    vi.mocked(consumeBackupCode).mockResolvedValue({ ok: true, remaining: ['bhash2'] })
+
+    const res = await POST(makeRequest({ challengeToken: 'tok', code: 'deadbeef01' }))
+
+    expect(res.status).toBe(200)
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { mfaBackupCodes: ['bhash2'] } })
+    expect(prisma.mfaChallenge.delete).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
+    expect(createSession).toHaveBeenCalledWith('u1')
   })
 })

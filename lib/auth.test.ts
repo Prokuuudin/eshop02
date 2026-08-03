@@ -307,6 +307,24 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
   })
 
+  it('carries pkLast3 through the local mirror so the soft password-change gate works after registration', async () => {
+    const serverUser = {
+      id: 'u_soft_1',
+      email: 'card.5678@client.local',
+      mustChangePassword: true,
+      pkLast3: 'X9Z',
+    }
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: serverUser }),
+    } as unknown as Response)
+
+    await registerCardUser({ cardNumber: '5678', password: '9zx' })
+
+    expect(getCurrentUser()?.pkLast3).toBe('X9Z')
+  })
+
   it('surfaces a wrong personal-code digit distinctly from a wrong shared password', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,

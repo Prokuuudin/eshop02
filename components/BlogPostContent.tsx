@@ -31,7 +31,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
     const localizedPost = React.useMemo(() => localizeBlogPost(post, language), [post, language]);
     const [isSaved, setIsSaved] = React.useState(false);
 
-    const formattedPublishedAt = formatDate(localizedPost.createdAt, locale, {
+    const formattedPublishedAt = formatDate(localizedPost.publishedAt ?? localizedPost.createdAt, locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -249,8 +249,13 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                                         {localizedPost.author}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                        {t('blog.articleAuthor')}
+                                        {localizedPost.authorRole || t('blog.articleAuthor')}
                                     </p>
+                                    {localizedPost.authorBio && (
+                                        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                                            {localizedPost.authorBio}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

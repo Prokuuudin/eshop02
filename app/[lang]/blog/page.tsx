@@ -1,194 +1,136 @@
-"use client"
 import React from 'react'
-import { localizeBlogPost, type BlogPost } from '@/data/blog'
+import { localizeBlogPost } from '@/data/blog'
 import BlogCard from '@/components/BlogCard'
+import BlogSubscribeForm from '@/components/BlogSubscribeForm'
 import Reveal from '@/components/ui/Reveal'
-import { Button } from '@/components/ui/button'
-import { useTranslation } from '@/lib/use-translation'
+import { getBlogPosts } from '@/lib/blog-store'
+import { getServerContent } from '@/lib/server-translation'
 import { getSiteUrl } from '@/lib/site-url'
+import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
+import { resolveBlogCategoryKey } from '@/lib/blog-category'
 import { serializeJsonLd } from '@/lib/json-ld'
 
-export default function BlogPage(): React.ReactElement {
-  const { t, language } = useTranslation()
-  const [posts, setPosts] = React.useState<BlogPost[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [subscribeEmail, setSubscribeEmail] = React.useState('')
-  const [subscribeError, setSubscribeError] = React.useState('')
-  const [subscribeSuccess, setSubscribeSuccess] = React.useState(false)
+type PageProps = { params: Promise<{ lang: string }> }
 
-  const validateEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+export const revalidate = 3600
 
-  const handleSubscribe = (e: React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault()
-    setSubscribeError('')
-    setSubscribeSuccess(false)
-
-    if (!validateEmail(subscribeEmail)) {
-      setSubscribeError('Введите корректный email')
-      return
-    }
-
-    setSubscribeSuccess(true)
-    setSubscribeEmail('')
-  }
-
-  React.useEffect(() => {
-    let active = true
-
-    const loadPosts = async () => {
-      try {
-        const response = await fetch('/api/blog', { cache: 'no-store' })
-        if (!response.ok) return
-        const data = (await response.json()) as { posts?: Array<BlogPost & { createdAt: string; updatedAt?: string }> }
-        if (!active) return
-
-        const nextPosts = (data.posts ?? []).map((post) => ({
-          ...post,
-          createdAt: new Date(post.createdAt),
-          updatedAt: post.updatedAt ? new Date(post.updatedAt) : undefined
-        }))
-
-        setPosts(nextPosts)
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
-      }
-    }
-
-    void loadPosts()
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const localizedPosts = React.useMemo(
-    () => posts.map((post) => localizeBlogPost(post, language)),
-    [language, posts]
-  )
-  const featuredPosts = localizedPosts.filter((p) => p.featured)
-  const regularPosts = localizedPosts.filter((p) => !p.featured).slice(0, 100)
-  const categories = [...new Set(localizedPosts.map((p) => p.category))]
+export default async function BlogPage({ params }: PageProps): Promise<React.ReactElement> {
+  const language = resolveLanguage((await params).lang)
+  const [{ t }, posts] = await Promise.all([getServerContent(language), getBlogPosts()])
+  const localizedPosts = posts.map((post) => localizeBlogPost(post, language))
+  const featuredPosts = localizedPosts.filter((post) => post.featured)
+  const regularPosts = localizedPosts.filter((post) => !post.featured).slice(0, 100)
+  const categories = [...new Set(localizedPosts.map((post) => post.category))]
   const siteUrl = getSiteUrl()
+  const blogUrl = `${siteUrl}${localizePath('/blog', language)}`
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: t('nav.home'), item: `${siteUrl}/` },
-      { '@type': 'ListItem', position: 2, name: t('nav.blog'), item: `${siteUrl}/blog` }
-    ]
-  }
-
-  const categoryKeyMap: Record<string, string> = {
-    'уход за лицом': 'blog.category.faceCare',
-    'уход за волосами': 'blog.category.hairCare',
-    'уход за телом': 'blog.category.bodyCare',
-    'макияж': 'blog.category.makeup',
-    'ингредиенты': 'blog.category.ingredients'
+      { '@type': 'ListItem', position: 1, name: t('nav.home'), item: `${siteUrl}${localizePath('/', language)}` },
+      { '@type': 'ListItem', position: 2, name: t('nav.blog'), item: blogUrl },
+    ],
   }
 
   const blogCollectionSchema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
+    '@id': `${blogUrl}#collection`,
     name: t('blog.pageName'),
-    url: `${siteUrl}/blog`,
+    url: blogUrl,
     description: t('blog.pageTitle'),
+    isPartOf: { '@id': `${siteUrl}/#website` },
     mainEntity: {
       '@type': 'Blog',
+      '@id': `${blogUrl}#blog`,
       name: t('blog.pageName'),
+      url: blogUrl,
+      publisher: { '@id': `${siteUrl}/#organization` },
       blogPost: localizedPosts.map((post) => {
-        const localizedCategory = t(categoryKeyMap[post.category] ?? post.category, post.category)
-
+        const categoryKey = resolveBlogCategoryKey(post.category, t)
         return {
           '@type': 'BlogPosting',
+          '@id': `${siteUrl}${localizePath(`/blog/${post.slug}`, language)}#article`,
           headline: post.title,
           description: post.excerpt,
-          articleSection: `${t('blog.topicLabel')}: ${localizedCategory}`,
-          url: `${siteUrl}/blog/${post.slug}`,
-          image: `${siteUrl}${post.image}`,
-          datePublished: post.createdAt.toISOString(),
+          articleSection: categoryKey ? t(categoryKey) : post.category,
+          url: `${siteUrl}${localizePath(`/blog/${post.slug}`, language)}`,
+          image: /^https?:\/\//i.test(post.image) ? post.image : `${siteUrl}${post.image}`,
+          datePublished: (post.publishedAt ?? post.createdAt).toISOString(),
+          dateModified: (post.updatedAt ?? post.publishedAt ?? post.createdAt).toISOString(),
           author: {
             '@type': 'Person',
-            name: post.author
-          }
+            name: post.author,
+            ...(post.authorRole ? { jobTitle: post.authorRole } : {}),
+          },
+          publisher: { '@id': `${siteUrl}/#organization` },
         }
-      })
-    }
+      }),
+    },
   }
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(blogCollectionSchema) }} />
-      <main className="w-full px-4 py-8 md:py-12">
+      <div className="w-full px-4 py-8 md:py-12">
         <section className="mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold text-foreground">
-            {t('blog.pageTitle')}
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground md:text-4xl">{t('blog.pageTitle')}</h1>
         </section>
 
-        {/* Categories */}
-        <section className="mb-8 md:mb-12">
-          <h3 className="text-lg font-semibold mb-4 text-foreground">{t('blog.categories')}</h3>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <Button key={cat} variant="outline" size="sm" className="h-8 px-3 text-xs font-medium">
-                #{t(categoryKeyMap[cat] ?? cat, cat)}
-              </Button>
-            ))}
-          </div>
-        </section>
+        {categories.length > 0 && (
+          <section className="mb-8 md:mb-12" aria-labelledby="blog-categories-heading">
+            <h2 id="blog-categories-heading" className="mb-4 text-lg font-semibold text-foreground">
+              {t('blog.categories')}
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {categories.map((category) => {
+                const categoryKey = resolveBlogCategoryKey(category, t)
+                return (
+                  <li key={category} className="rounded-md border border-border px-3 py-1.5 text-xs font-medium">
+                    #{categoryKey ? t(categoryKey) : category}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
 
-        {/* Featured Posts */}
-        {!loading && featuredPosts.length > 0 && (
+        {featuredPosts.length > 0 && (
           <section className="mb-8 md:mb-12">
-            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">⭐ {t('blog.featuredArticles')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {featuredPosts.map((post, i) => (
-                <Reveal key={post.id} index={i}>
-                  <BlogCard post={post} />
-                </Reveal>
+            <h2 className="mb-4 text-xl font-bold text-foreground md:mb-6 md:text-2xl">
+              ⭐ {t('blog.featuredArticles')}
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+              {featuredPosts.map((post, index) => (
+                <Reveal key={post.id} index={index}><BlogCard post={post} /></Reveal>
               ))}
             </div>
           </section>
         )}
 
-        {/* All Posts */}
         <section>
-          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">{t('blog.allPosts')} ({localizedPosts.length})</h2>
-          {loading ? (
-            <p className="text-muted-foreground">{t('common.loading')}</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {regularPosts.map((post, i) => (
-                <Reveal key={post.id} index={i}>
-                  <BlogCard post={post} />
-                </Reveal>
+          <h2 className="mb-4 text-xl font-bold text-foreground md:mb-6 md:text-2xl">
+            {t('blog.allPosts')} ({localizedPosts.length})
+          </h2>
+          {regularPosts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+              {regularPosts.map((post, index) => (
+                <Reveal key={post.id} index={index}><BlogCard post={post} /></Reveal>
               ))}
             </div>
+          ) : (
+            <p className="text-muted-foreground">{t('common.noResults')}</p>
           )}
         </section>
 
-        {/* Subscribe CTA */}
-        <section className="mt-12 md:mt-16 bg-muted rounded-lg p-6 md:p-8 text-center">
-          <h2 className="text-xl md:text-2xl font-bold mb-3 text-foreground">{t('blog.subscribeCtaTitle')}</h2>
-          <p className="text-muted-foreground mb-6">{t('blog.subscribeCtaDesc')}</p>
-          <form onSubmit={handleSubscribe} className="mx-auto max-w-xl flex flex-col sm:flex-row gap-2">
-            <input
-              className="w-full rounded-md border border-border px-3 py-2 bg-card text-foreground"
-              placeholder={t('newsletter.placeholder')}
-              value={subscribeEmail}
-              onChange={(e) => setSubscribeEmail(e.target.value)}
-              aria-label={t('newsletter.emailAria')}
-            />
-            <Button size="lg" type="submit">{t('blog.subscribe')}</Button>
-          </form>
-          {subscribeError && <p className="mt-3 text-sm text-red-600">{subscribeError}</p>}
-          {subscribeSuccess && <p className="mt-3 text-sm text-green-700">{t('newsletter.subscribed')}</p>}
+        <section className="mt-12 rounded-lg bg-muted p-6 text-center md:mt-16 md:p-8">
+          <h2 className="mb-3 text-xl font-bold text-foreground md:text-2xl">{t('blog.subscribeCtaTitle')}</h2>
+          <p className="mb-6 text-muted-foreground">{t('blog.subscribeCtaDesc')}</p>
+          <BlogSubscribeForm />
         </section>
-      </main>
+      </div>
     </>
   )
 }

@@ -16,6 +16,9 @@ type AdminBlogPost = {
     contentBlocks?: unknown[];
     createdAt: string;
     featured?: boolean;
+    status?: 'draft' | 'published';
+    authorRole?: string;
+    authorBio?: string;
     translations?: Partial<
         Record<
             'en' | 'lv',
@@ -60,6 +63,9 @@ type AdminBlogForm = {
     readTime: number;
     content: string;
     featured: boolean;
+    status: 'draft' | 'published';
+    authorRole: string;
+    authorBio: string;
     createdAt?: string;
     contentBlocksJson: string;
     translations: { en: TranslationForm; lv: TranslationForm };
@@ -76,6 +82,9 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
     readTime: 4,
     content: '',
     featured: false,
+    status: 'draft',
+    authorRole: '',
+    authorBio: '',
     createdAt: undefined,
     contentBlocksJson: '[]',
     translations: { en: { ...EMPTY_TRANSLATION }, lv: { ...EMPTY_TRANSLATION } },
@@ -232,6 +241,9 @@ function useAdminBlogPageState() {
                 readTime: Number(blogForm.readTime),
                 content: blogForm.content,
                 featured: blogForm.featured,
+                status: blogForm.status,
+                authorRole: blogForm.authorRole,
+                authorBio: blogForm.authorBio,
                 createdAt: blogForm.createdAt,
                 contentBlocks,
                 translations:
@@ -353,6 +365,9 @@ function useAdminBlogPageState() {
             readTime: post.readTime,
             content: post.content,
             featured: Boolean(post.featured),
+            status: post.status === 'draft' ? 'draft' : 'published',
+            authorRole: post.authorRole ?? '',
+            authorBio: post.authorBio ?? '',
             createdAt: post.createdAt,
             contentBlocksJson: JSON.stringify(post.contentBlocks ?? [], null, 2),
             translations: { en: getTranslationForm('en'), lv: getTranslationForm('lv') },

@@ -9,6 +9,7 @@ import { useSiteContent } from '@/lib/use-site-content';
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils';
 import type { Language } from '@/data/translations';
 import { resolveBlogCategoryKey } from '@/lib/blog-category';
+import { localizePath } from '@/lib/i18n-routing';
 
 type BlogCardProps = {
     post: BlogPost;
@@ -24,10 +25,11 @@ export default function BlogCard({ post }: BlogCardProps): React.ReactElement {
     const categoryKey =
         resolveBlogCategoryKey(localizedPost.category, t) ??
         resolveBlogCategoryKey(post.category, t);
+    const postHref = localizePath(`/blog/${localizedPost.slug}`, shortLang as Language);
 
     return (
         <article className="blog-card bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
-            <Link href={`/blog/${localizedPost.slug}`}>
+            <Link href={postHref}>
                 <div className="relative aspect-video bg-gray-100 overflow-hidden">
                     <Image
                         src={resolveImageSrc(localizedPost.image)}
@@ -57,7 +59,7 @@ export default function BlogCard({ post }: BlogCardProps): React.ReactElement {
                     </span>
                 </div>
 
-                <Link href={`/blog/${localizedPost.slug}`}>
+                <Link href={postHref}>
                     <h3 className="font-bold text-base md:text-lg text-foreground group-hover:text-primary transition line-clamp-2 leading-snug break-words min-h-[2.75rem] md:min-h-[3.25rem]">
                         {localizedPost.title}
                     </h3>

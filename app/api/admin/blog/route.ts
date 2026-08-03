@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { revalidatePath } from 'next/cache'
-import { createBlogPost, getBlogPosts } from '@/lib/blog-store'
+import { createBlogPost, getAllBlogPosts } from '@/lib/blog-store'
 import type { BlogContentBlock, BlogPost } from '@/data/blog'
 
 export const runtime = 'nodejs'
@@ -28,6 +28,9 @@ type CreateBlogPostPayload = {
   readTime: number
   createdAt?: string
   featured?: boolean
+  status?: 'draft' | 'published'
+  authorRole?: string
+  authorBio?: string
   translations?: Partial<Record<'en' | 'lv', TranslationPayload>>
 }
 
@@ -136,7 +139,7 @@ export async function GET(): Promise<NextResponse> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
-  const posts = await getBlogPosts()
+  const posts = await getAllBlogPosts()
   return NextResponse.json({ posts })
 }
 
@@ -175,7 +178,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const createdAt = payload.createdAt ? new Date(payload.createdAt) : new Date()
   const safeReadTime = Number.isFinite(payload.readTime) && payload.readTime > 0 ? payload.readTime : 3
-  const existingPosts = await getBlogPosts()
+  const existingPosts = await getAllBlogPosts()
   const existingPost = existingPosts.find((item) => item.id === payload.id)
 
   const buildTranslation = (lang: 'en' | 'lv'): TranslationPayload | undefined => {
@@ -213,6 +216,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
     updatedAt: existingPost ? new Date() : undefined,
     featured: Boolean(payload.featured),
+    status: payload.status === 'draft' ? 'draft' : 'published',
+    publishedAt: payload.status === 'draft' ? undefined : existingPost?.publishedAt ?? new Date(),
+    authorRole: payload.authorRole?.trim() || undefined,
+    authorBio: payload.authorBio?.trim() || undefined,
     translations: translations as BlogPost['translations']
   }
 

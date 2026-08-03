@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { revalidatePath } from 'next/cache'
-import { deleteBlogPostById, getBlogPosts } from '@/lib/blog-store'
+import { deleteBlogPostById, getAllBlogPosts } from '@/lib/blog-store'
 
 export const runtime = 'nodejs'
 
@@ -20,7 +20,7 @@ export async function DELETE(_: Request, { params }: RouteContext): Promise<Next
     return NextResponse.json({ ok: false, error: 'invalid_id' }, { status: 400 })
   }
 
-  const posts = await getBlogPosts()
+  const posts = await getAllBlogPosts()
   const deletedPost = posts.find((post) => post.id === id)
 
   await deleteBlogPostById(id)

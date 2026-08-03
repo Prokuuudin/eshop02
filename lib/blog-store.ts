@@ -22,6 +22,10 @@ function mapDbToBlogPost(row: PrismaBlogPost): BlogPost {
     createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
     updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt)) : undefined,
     featured: row.featured,
+    status: row.status === 'draft' ? 'draft' : 'published',
+    publishedAt: row.publishedAt ?? undefined,
+    authorRole: row.authorRole ?? undefined,
+    authorBio: row.authorBio ?? undefined,
     translations: row.translations ? (row.translations as BlogTranslations) : undefined,
   }
 }
@@ -40,17 +44,38 @@ function mapBlogPostToDb(post: BlogPost) {
     createdAt: post.createdAt,
     updatedAt: post.updatedAt ?? null,
     featured: post.featured ?? false,
+    status: post.status ?? 'published',
+    publishedAt: post.publishedAt ?? (post.status === 'draft' ? null : post.createdAt),
+    authorRole: post.authorRole ?? null,
+    authorBio: post.authorBio ?? null,
     translations: post.translations ?? Prisma.DbNull,
   }
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
+  const rows = await prisma.blogPost.findMany({
+    where: {
+      status: 'published',
+      OR: [{ publishedAt: null }, { publishedAt: { lte: new Date() } }],
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  return rows.map(mapDbToBlogPost)
+}
+
+export async function getAllBlogPosts(): Promise<BlogPost[]> {
   const rows = await prisma.blogPost.findMany({ orderBy: { createdAt: 'desc' } })
   return rows.map(mapDbToBlogPost)
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  const row = await prisma.blogPost.findUnique({ where: { slug } })
+  const row = await prisma.blogPost.findFirst({
+    where: {
+      slug,
+      status: 'published',
+      OR: [{ publishedAt: null }, { publishedAt: { lte: new Date() } }],
+    },
+  })
   return row ? mapDbToBlogPost(row) : null
 }
 

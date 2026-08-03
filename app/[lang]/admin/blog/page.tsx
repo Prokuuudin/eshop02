@@ -425,6 +425,43 @@ export default function AdminBlogPage(): React.ReactElement {
                             )}
                         </label>
 
+                        <label className="inline-flex items-center gap-2 text-sm">
+                            <Checkbox
+                                checked={blogForm.status === 'published'}
+                                onCheckedChange={(checked) =>
+                                    setBlogForm((prev) => ({
+                                        ...prev,
+                                        status: checked === true ? 'published' : 'draft',
+                                    }))
+                                }
+                            />
+                            {tl(
+                                'admin.blog.publishedToggle',
+                                'Опубликовать статью',
+                                'Publish post',
+                                'Publicēt rakstu'
+                            )}
+                        </label>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <label className="text-sm">
+                                <span className="mb-1 block">{tl('admin.blog.authorRole', 'Должность автора', 'Author role', 'Autora amats')}</span>
+                                <input
+                                    className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
+                                    value={blogForm.authorRole}
+                                    onChange={(event) => setBlogForm((prev) => ({ ...prev, authorRole: event.target.value }))}
+                                />
+                            </label>
+                            <label className="text-sm">
+                                <span className="mb-1 block">{tl('admin.blog.authorBio', 'Экспертность автора', 'Author expertise', 'Autora kompetence')}</span>
+                                <input
+                                    className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
+                                    value={blogForm.authorBio}
+                                    onChange={(event) => setBlogForm((prev) => ({ ...prev, authorBio: event.target.value }))}
+                                />
+                            </label>
+                        </div>
+
                         <div className="flex items-center gap-3">
                             <Button type="submit" disabled={blogSaving}>
                                 {blogSaving

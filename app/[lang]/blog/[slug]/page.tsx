@@ -5,8 +5,9 @@ import { localizeBlogPost } from '@/data/blog';
 import BlogPostContent from '@/components/BlogPostContent';
 import { getSiteUrl } from '@/lib/site-url';
 import { getBlogPostBySlug, getBlogPosts } from '@/lib/blog-store';
-import { DEFAULT_LANGUAGE, pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
+import { DEFAULT_LANGUAGE, localizePath, resolveLanguage } from '@/lib/i18n-routing';
 import { serializeJsonLd } from '@/lib/json-ld';
+import { buildPublicPageMetadata } from '@/lib/page-metadata';
 
 type Params = {
     lang: string;
@@ -48,18 +49,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const path = `/blog/${localizedPost.slug}`;
 
-    return {
-        title: `${localizedPost.title} | Hairshop-Pro`,
+    return buildPublicPageMetadata({
+        language,
+        path,
+        title: localizedPost.title,
         description: localizedPost.excerpt,
-        openGraph: {
-            title: `${localizedPost.title} | Hairshop-Pro`,
-            description: localizedPost.excerpt,
-            images: [{ url: localizedPost.image, alt: localizedPost.title }],
-            url: localizePath(path, language),
-            type: 'article',
-        },
-        alternates: pageAlternates(path, language),
-    };
+        image: { url: localizedPost.image, alt: localizedPost.title },
+        type: 'article',
+    });
 }
 
 export default async function BlogPostPage({ params }: PageProps): Promise<React.ReactElement> {
@@ -78,6 +75,26 @@ export default async function BlogPostPage({ params }: PageProps): Promise<React
 
     const siteUrl = getSiteUrl();
     const postUrl = `${siteUrl}${localizePath(`/blog/${post.slug}`, language)}`;
+    const localizedPost = localizeBlogPost(post, language);
+    const articleSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        '@id': `${postUrl}#article`,
+        headline: localizedPost.title,
+        description: localizedPost.excerpt,
+        image: /^https?:\/\//i.test(localizedPost.image) ? localizedPost.image : `${siteUrl}${localizedPost.image}`,
+        datePublished: (post.publishedAt ?? post.createdAt).toISOString(),
+        dateModified: (post.updatedAt ?? post.publishedAt ?? post.createdAt).toISOString(),
+        mainEntityOfPage: postUrl,
+        author: {
+            '@type': 'Person',
+            name: localizedPost.author,
+            ...(post.authorRole ? { jobTitle: post.authorRole } : {}),
+            ...(post.authorBio ? { description: post.authorBio } : {}),
+        },
+        publisher: { '@id': `${siteUrl}/#organization` },
+        isPartOf: { '@id': `${siteUrl}/#website` },
+    };
 
     const breadcrumbSchema = {
         '@context': 'https://schema.org',
@@ -101,6 +118,10 @@ export default async function BlogPostPage({ params }: PageProps): Promise<React
 
     return (
         <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
+            />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}

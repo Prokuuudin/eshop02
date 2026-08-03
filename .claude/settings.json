@@ -412,7 +412,11 @@
       "Bash(node -e 'require\\('\\\\''dotenv'\\\\''\\).config\\(\\); const { PrismaClient } = require\\('\\\\''./generated/prisma/client'\\\\''\\); const p = new PrismaClient\\(\\); p.user.findMany\\({ where: { platformRole: '\\\\''admin'\\\\'' }, select: { email: true, teamRole: true } }\\).then\\(r => { console.log\\(JSON.stringify\\(r\\)\\); return p.$disconnect\\(\\); }\\).catch\\(e => { console.error\\('\\\\''ERR'\\\\'', e.message\\); process.exit\\(1\\); }\\);')",
       "Bash(node -e 'require\\('\\\\''dotenv'\\\\''\\).config\\(\\); const { PrismaClient } = require\\('\\\\''@prisma/client'\\\\''\\); const p = new PrismaClient\\(\\); p.user.findMany\\({ where: { platformRole: '\\\\''admin'\\\\'' }, select: { email: true, teamRole: true } }\\).then\\(r => { console.log\\(JSON.stringify\\(r\\)\\); return p.$disconnect\\(\\); }\\).catch\\(e => { console.error\\('\\\\''ERR'\\\\'', e.message\\); process.exit\\(1\\); }\\);')",
       "Bash(node scripts/_tmp-dedupe-sku.cjs)",
-      "Bash(rm -f /c/Users/User/Desktop/eshop02/scripts/_tmp-dedupe-sku.cjs)"
+      "Bash(rm -f /c/Users/User/Desktop/eshop02/scripts/_tmp-dedupe-sku.cjs)",
+      "Bash(curl -sL -o /dev/null -w \"home-final: %{http_code}\\\\n\" http://localhost:3099/ru)",
+      "Bash(curl -sL -o /dev/null -w \"admin-final: %{http_code}\\\\n\" http://localhost:3099/ru/admin)",
+      "Bash(curl -s -o /dev/null -w \"product-page: %{http_code}\\\\n\" http://localhost:3099/ru/catalog)",
+      "Bash(taskkill //F //PID 28444)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

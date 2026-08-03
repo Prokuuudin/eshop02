@@ -370,7 +370,6 @@ model Product {
   @@index([isDeleted, category])
   @@index([isDeleted, isActive])
   @@index([lastSyncRunId])
-  @@unique([sku])
 }
 
 model Order {

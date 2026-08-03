@@ -24,6 +24,8 @@ model User {
   avatarUrl           String?
   bonusPoints         Int       @default(350)
   mustChangePassword  Boolean   @default(false)
+  mfaSecret           String?
+  mfaEnabled          Boolean   @default(false)
   privacyNoticeVersion String?
   privacyAcknowledgedAt DateTime?
   marketingConsent    Boolean   @default(false)
@@ -35,6 +37,7 @@ model User {
   invitationTokens    InvitationToken[]
   accountManagerMessages AccountManagerMessage[]
   userNotifications   UserNotification[]
+  bonusTransactions   BonusTransaction[]
 
   @@index([email])
   @@index([companyId])
@@ -250,6 +253,7 @@ model WishlistItem {
 
 model AuditLog {
   id          String   @id
+  sequence    BigInt   @unique @default(autoincrement())
   at          DateTime @default(now())
   adminEmail  String
   adminName   String?
@@ -260,11 +264,21 @@ model AuditLog {
   before      Json?
   after       Json?
   details     String?
+  actorUserId String?
+  requestId   String?
+  ipAddress   String?
+  userAgent   String?
+  sessionHash String?
+  reason      String?
+  previousHash String?
+  integrityHash String?
 
   @@index([adminEmail])
   @@index([action])
   @@index([entityType, entityId])
   @@index([at])
+  @@index([requestId])
+  @@unique([integrityHash])
 }
 
 model Product {
@@ -302,6 +316,7 @@ model Product {
   distributorName     Json?
   distributorAddress  Json?
   sku                 String?
+  revision            Int      @default(1)
   unitOfMeasure       String?
   certificates        String[]
   packagingSize       Int?
@@ -340,6 +355,7 @@ model Product {
   @@index([isDeleted, category])
   @@index([isDeleted, isActive])
   @@index([lastSyncRunId])
+  @@unique([sku])
 }
 
 model Order {
@@ -546,7 +562,46 @@ model BlogPost {
   createdAt     DateTime
   updatedAt     DateTime?
   featured      Boolean   @default(false)
+  status        String    @default("published")
+  publishedAt   DateTime?
+  authorRole    String?
+  authorBio     String?
   translations  Json?
+
+  @@index([status, publishedAt])
+}
+
+model AdminRoleChangeRequest {
+  id                String   @id @default(cuid())
+  targetUserId      String
+  requestedByUserId String
+  requestedRole     String
+  expectedUpdatedAt DateTime
+  status            String   @default("pending")
+  approvedByUserId  String?
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+  resolvedAt        DateTime?
+
+  @@index([status, expiresAt])
+  @@index([targetUserId, status])
+}
+
+model BonusTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  orderId      String?
+  type         String
+  points       Int
+  balanceAfter Int
+  actorUserId  String?
+  reason       String?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@index([type, createdAt])
 }
 
 model SyncRun {

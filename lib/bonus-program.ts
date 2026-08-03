@@ -1,7 +1,7 @@
 // Бонусная программа: конфиг по умолчанию и единый расчёт начисления.
 // Без 'server-only' — модуль импортируют и клиент (cart/checkout/страница товара),
-// и сервер (lib/server-pricing.ts). Конфиг админки живёт в localStorage каждого
-// браузера и на начисление не влияет — процент берётся из этого дефолта.
+// и сервер (lib/server-pricing.ts). Сохранённый конфиг живёт в PostgreSQL
+// (KeyValueSetting) и гидратируется в неперсистентный клиентский кэш.
 
 export interface BonusProgramConfig {
   enabled: boolean

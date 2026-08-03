@@ -24,8 +24,24 @@ export async function POST(req: NextRequest): Promise<Response> {
     const user = await prisma.user.findUnique({ where: { id: targetId } })
     if (!user) return NextResponse.json({ error: 'user_not_found' }, { status: 404 })
 
-    const newBalance = Math.max(0, user.bonusPoints + delta)
-    await prisma.user.update({ where: { id: targetId }, data: { bonusPoints: newBalance } })
+    const normalizedDelta = Math.trunc(delta)
+    if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) {
+      return NextResponse.json({ error: 'invalid_delta' }, { status: 400 })
+    }
+    const newBalance = Math.max(0, user.bonusPoints + normalizedDelta)
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: targetId }, data: { bonusPoints: newBalance } })
+      await tx.bonusTransaction.create({
+        data: {
+          userId: targetId,
+          type: caller.id === targetId ? 'user_adjustment' : 'admin_adjustment',
+          points: newBalance - user.bonusPoints,
+          balanceAfter: newBalance,
+          actorUserId: caller.id,
+          reason: 'Bonus balance API adjustment',
+        },
+      })
+    })
 
     return NextResponse.json({ newBalance })
   } catch (e) {

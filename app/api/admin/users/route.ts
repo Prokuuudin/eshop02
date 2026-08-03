@@ -4,8 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
-import { verifyTotp } from '@/lib/totp'
-import { decryptMfaSecret } from '@/lib/mfa-secret'
+import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
@@ -137,7 +136,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         ? await verifyPassword(currentPassword, actorCredentials.passwordHash)
         : false
       const mfaValid = actorCredentials?.mfaEnabled && actorCredentials.mfaSecret
-        ? verifyTotp(decryptMfaSecret(actorCredentials.mfaSecret), mfaCode)
+        ? await verifyTotpCode(decryptSecret(actorCredentials.mfaSecret), mfaCode)
         : false
       if (!passwordValid || !mfaValid) {
         return NextResponse.json({ error: 'reauthentication_failed' }, { status: 401 })

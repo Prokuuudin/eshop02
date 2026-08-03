@@ -4,8 +4,7 @@ import { z } from 'zod'
 import { guardOrigin } from '@/lib/api-guard'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
-import { verifyTotp } from '@/lib/totp'
-import { decryptMfaSecret } from '@/lib/mfa-secret'
+import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
 
 const approvalSchema = z.object({
@@ -34,10 +33,11 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (!parsed.success) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
 
   const actor = await prisma.user.findUnique({ where: { id: caller.id }, select: { passwordHash: true, mfaEnabled: true, mfaSecret: true } })
-  const authenticated = actor
-    && await verifyPassword(parsed.data.currentPassword, actor.passwordHash)
-    && actor.mfaEnabled && actor.mfaSecret && verifyTotp(decryptMfaSecret(actor.mfaSecret), parsed.data.mfaCode)
-  if (!authenticated) return NextResponse.json({ error: 'reauthentication_failed' }, { status: 401 })
+  const passwordValid = actor ? await verifyPassword(parsed.data.currentPassword, actor.passwordHash) : false
+  const mfaValid = actor?.mfaEnabled && actor.mfaSecret
+    ? await verifyTotpCode(decryptSecret(actor.mfaSecret), parsed.data.mfaCode)
+    : false
+  if (!passwordValid || !mfaValid) return NextResponse.json({ error: 'reauthentication_failed' }, { status: 401 })
 
   try {
     const result = await prisma.$transaction(async (tx) => {

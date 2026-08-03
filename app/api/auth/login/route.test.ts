@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => ({
+  prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn(), deleteMany: vi.fn() } },
+}))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: vi.fn(), createSession: vi.fn(), mapDbToServerUser: vi.fn((user) => user),
+  hashToken: vi.fn((token: string) => token),
   SESSION_COOKIE: 'eshop_session',
 }))
 vi.mock('@/lib/rate-limit', () => ({
@@ -90,5 +93,26 @@ describe('POST /api/auth/login', () => {
       where: { cardNumber: { equals: '1', mode: 'insensitive' } },
     })
     expect(checkRateLimit).toHaveBeenCalledWith('login:card:1')
+  })
+
+  it('creates an MFA challenge instead of a session for an MFA-enabled admin, without setting a cookie', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'admin1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true,
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.mfaRequired).toBe(true)
+    expect(typeof json.challengeToken).toBe('string')
+    expect(json.user).toBeUndefined()
+    expect(createSession).not.toHaveBeenCalled()
+    expect(res.cookies.get('eshop_session')).toBeUndefined()
+    expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { userId: 'admin1' } })
+    expect(prisma.mfaChallenge.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'admin1' }),
+    })
   })
 })

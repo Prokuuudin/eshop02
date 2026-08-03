@@ -1,8 +1,8 @@
 ﻿'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { hasAdminUsers, loginUserAuto } from '@/lib/auth';
+import { hasAdminUsers, loginUserAuto, verifyMfaAndLogin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
@@ -27,6 +27,20 @@ export default function LoginForm({
     const [showPassword, setShowPassword] = useState(false);
     const confirmed = searchParams.get('confirmed') === '1';
     const [submitting, setSubmitting] = useState(false);
+    const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
+    const [mfaCode, setMfaCode] = useState('');
+    const mfaCodeInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (mfaChallengeToken) mfaCodeInputRef.current?.focus();
+    }, [mfaChallengeToken]);
+
+    const finishLogin = () => {
+        if (onSuccess) { onSuccess(); return; }
+        const redirect = searchParams.get('redirect');
+        if (redirect) return router.push(redirect);
+        router.push('/account');
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,12 +49,56 @@ export default function LoginForm({
         setError('');
         const res = await loginUserAuto(identifier.trim(), password);
         setSubmitting(false);
+        if (res.mfaRequired && res.challengeToken) {
+            setMfaChallengeToken(res.challengeToken);
+            return;
+        }
         if (!res.success) return setError(res.error || t('form.error'));
-        if (onSuccess) { onSuccess(); return; }
-        const redirect = searchParams.get('redirect');
-        if (redirect) return router.push(redirect);
-        router.push('/account');
+        finishLogin();
     };
+
+    const handleMfaSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (submitting || !mfaChallengeToken) return;
+        setSubmitting(true);
+        setError('');
+        const res = await verifyMfaAndLogin(mfaChallengeToken, mfaCode);
+        setSubmitting(false);
+        if (!res.success) return setError(res.error || t('form.error'));
+        finishLogin();
+    };
+
+    if (mfaChallengeToken) {
+        return (
+            <form onSubmit={handleMfaSubmit} className="space-y-3 bg-card p-3 rounded-lg">
+                {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
+                <div>
+                    <label htmlFor="login-mfa-code" className="block mb-1 text-sm text-foreground">
+                        {t('auth.mfaCode', 'Код из приложения-аутентификатора')}
+                    </label>
+                    <Input
+                        id="login-mfa-code"
+                        ref={mfaCodeInputRef}
+                        type="text"
+                        inputMode="numeric"
+                        className="bg-card text-foreground border-border"
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value)}
+                        maxLength={10}
+                        required
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <Button type="submit" className="flex-1" disabled={mfaCode.length < 6}>
+                        {t('auth.login')}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => { setMfaChallengeToken(null); setMfaCode(''); setError(''); }}>
+                        {t('common.cancel', 'Отмена')}
+                    </Button>
+                </div>
+            </form>
+        );
+    }
 
     return (
         <form

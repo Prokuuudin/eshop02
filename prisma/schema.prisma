@@ -24,16 +24,19 @@ model User {
   avatarUrl           String?
   bonusPoints         Int       @default(350)
   mustChangePassword  Boolean   @default(false)
-  mfaSecret           String?
-  mfaEnabled          Boolean   @default(false)
   privacyNoticeVersion String?
   privacyAcknowledgedAt DateTime?
   marketingConsent    Boolean   @default(false)
   marketingConsentAt  DateTime?
+  mfaSecret           String?
+  mfaEnabled          Boolean   @default(false)
+  mfaBackupCodes      String[]  @default([])
+  mfaEnrolledAt       DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
+  mfaChallenges       MfaChallenge[]
   invitationTokens    InvitationToken[]
   accountManagerMessages AccountManagerMessage[]
   userNotifications   UserNotification[]
@@ -63,6 +66,18 @@ model InvitationToken {
 }
 
 model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model MfaChallenge {
   id        String   @id @default(cuid())
   tokenHash String   @unique
   userId    String

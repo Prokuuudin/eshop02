@@ -352,6 +352,21 @@ export const submitNoCardRequest = async (data: {
     };
 };
 
+function applyLoggedInUser(rawUser: Partial<User> & { id: string; email: string }): void {
+    const users = readUsers();
+    const verifiedUser = normalizeUser({ ...rawUser, password: '' });
+    const nextUsers = users.filter(
+        (u) => u.id !== verifiedUser.id && u.email !== verifiedUser.email
+    );
+    writeUsers([...nextUsers, verifiedUser]);
+
+    if (verifiedUser.companyId) {
+        useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId);
+    }
+    writeCurrentUser(verifiedUser);
+    notifyAuthChanged();
+}
+
 /**
  * Authenticates against the server (bcrypt-verified, rate-limited) — the client
  * never decides whether a password is correct. `identifier` may be an email or
@@ -359,14 +374,17 @@ export const submitNoCardRequest = async (data: {
  * directly without trusting any locally-cached directory. On success, the local mirror is refreshed for UI
  * purposes only, with the password field blanked — it is never the source of
  * truth for auth again once a login round-trip has verified the account.
+ *
+ * MFA-enabled admins don't get a session here: the server responds with
+ * `mfaRequired` + a short-lived `challengeToken` instead, and the caller must
+ * follow up with `verifyMfaAndLogin`.
  */
 export const loginUserAuto = async (
     identifier: string,
     password: string
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; challengeToken?: string }> => {
     const trimmed = identifier.trim();
     const isEmail = trimmed.includes('@');
-    const users = readUsers();
 
     let res: Response;
     try {
@@ -394,22 +412,50 @@ export const loginUserAuto = async (
 
     const payload = (await res.json().catch(() => ({}))) as {
         user?: Partial<User> & { id: string; email: string };
+        mfaRequired?: boolean;
+        challengeToken?: string;
     };
+
+    if (payload.mfaRequired && payload.challengeToken) {
+        return { success: false, mfaRequired: true, challengeToken: payload.challengeToken };
+    }
     if (!payload.user) {
         return { success: false, error: 'Не удалось загрузить аккаунт' };
     }
 
-    const verifiedUser = normalizeUser({ ...payload.user, password: '' });
-    const nextUsers = users.filter(
-        (u) => u.id !== verifiedUser.id && u.email !== verifiedUser.email
-    );
-    writeUsers([...nextUsers, verifiedUser]);
+    applyLoggedInUser(payload.user);
+    return { success: true };
+};
 
-    if (verifiedUser.companyId) {
-        useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId);
+/** Second step of an MFA-gated login — completes what loginUserAuto started. */
+export const verifyMfaAndLogin = async (
+    challengeToken: string,
+    code: string
+): Promise<{ success: boolean; error?: string }> => {
+    let res: Response;
+    try {
+        res = await fetch('/api/auth/mfa/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken, code }),
+        });
+    } catch {
+        return { success: false, error: 'Сервер недоступен. Попробуйте позже.' };
     }
-    writeCurrentUser(verifiedUser);
-    notifyAuthChanged();
+
+    if (res.status === 429) {
+        return { success: false, error: 'Слишком много попыток. Попробуйте позже.' };
+    }
+    if (!res.ok) {
+        return { success: false, error: 'Неверный код' };
+    }
+
+    const payload = (await res.json().catch(() => ({}))) as { user?: Partial<User> & { id: string; email: string } };
+    if (!payload.user) {
+        return { success: false, error: 'Не удалось загрузить аккаунт' };
+    }
+
+    applyLoggedInUser(payload.user);
     return { success: true };
 };
 

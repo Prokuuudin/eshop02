@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { useUnprefixedPathname } from '@/lib/i18n-context'
+import PageContainer from '@/components/PageContainer'
 
 export default function RouteTransition({ children }: { children: ReactNode }): React.ReactElement {
   const pathname = usePathname()
@@ -11,7 +12,7 @@ export default function RouteTransition({ children }: { children: ReactNode }): 
 
   return (
     <div key={pathname} className="route-transition">
-      {isAdminPage ? children : <div className="max-w-[1440px] mx-auto">{children}</div>}
+      {isAdminPage ? children : <PageContainer>{children}</PageContainer>}
     </div>
   )
 }

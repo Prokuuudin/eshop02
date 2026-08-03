@@ -35,6 +35,8 @@ const segmentLabelKeys: Record<string, string> = {
     product: 'common.product',
     brand: 'nav.brands',
     'delivery-payment': 'deliveryPayment.title',
+    delivery: 'deliveryPayment.deliveryTitle',
+    payment: 'deliveryPayment.paymentTitle',
     'return-policy': 'breadcrumb.returnPolicy',
     // Auth
     auth: 'common.auth',

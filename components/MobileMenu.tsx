@@ -145,6 +145,16 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
             </Link>
           </li>
           <li className="header__menu-item">
+            <Link href="/delivery" onClick={onClose} className={menuLinkClass}>
+              {t('deliveryPayment.deliveryTitle')}
+            </Link>
+          </li>
+          <li className="header__menu-item">
+            <Link href="/payment" onClick={onClose} className={menuLinkClass}>
+              {t('deliveryPayment.paymentTitle')}
+            </Link>
+          </li>
+          <li className="header__menu-item">
             <Link href="/#faq" onClick={onClose} className={menuLinkClass}>
               {t('nav.faq')}
             </Link>

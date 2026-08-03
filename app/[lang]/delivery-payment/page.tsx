@@ -1,19 +1,26 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
+import { CreditCard, Truck } from 'lucide-react';
 import { getSiteUrl } from '@/lib/site-url';
 import { COMPANY } from '@/data/company';
 import { resolveLanguage, localizePath } from '@/lib/i18n-routing';
 import { getServerContent } from '@/lib/server-translation';
 import { serializeJsonLd } from '@/lib/json-ld';
 
-import {
-    Accordion,
-    AccordionItem,
-    AccordionTrigger,
-    AccordionContent,
-} from '@/components/ui/accordion';
+type StaticBlockProps = { children: React.ReactNode; className?: string; type?: string; value?: string };
 
-export default async function DeliveryPaymentPage({ params }: { params: Promise<{ lang: string }> }): Promise<React.JSX.Element> {
-    const language = resolveLanguage((await params).lang);
+const Accordion = ({ children, className }: StaticBlockProps): React.JSX.Element => <div className={`${className ?? ''} space-y-6`}>{children}</div>;
+const AccordionItem = ({ children, className }: StaticBlockProps): React.JSX.Element => <section className={`${className ?? ''} border-b border-border pb-6 last:border-b-0 last:pb-0`}>{children}</section>;
+const AccordionTrigger = ({ children, className }: StaticBlockProps): React.JSX.Element => <h2 className={`${className ?? ''} mb-3 text-lg font-semibold`}>{children}</h2>;
+const AccordionContent = ({ children, className }: StaticBlockProps): React.JSX.Element => <div className={className}>{children}</div>;
+
+type DeliveryPaymentContentProps = { params: Promise<{ lang: string; section?: 'delivery' | 'payment' }> };
+
+export default async function DeliveryPaymentContent({ params }: DeliveryPaymentContentProps): Promise<React.JSX.Element> {
+    const routeParams = await params;
+    const language = resolveLanguage(routeParams.lang);
+    const section = routeParams.section;
+    if (!section) redirect(localizePath('/delivery', language));
     const { t } = await getServerContent(language);
     const siteUrl = getSiteUrl();
 
@@ -46,7 +53,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                 },
             },
         ],
-        url: `${siteUrl}${localizePath('/delivery-payment', language)}`,
+        url: `${siteUrl}${localizePath(`/${section}`, language)}`,
     };
 
     return (
@@ -55,17 +62,18 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
             />
-            <section className="max-w-6xl mx-auto py-10 px-4 text-foreground">
-                <h1 className="text-3xl font-bold mb-10 text-center text-foreground">
-                    {t('deliveryPayment.title')}
+            <section className="mx-auto max-w-6xl px-4 py-10 text-foreground">
+                <h1 className="mb-10 flex items-center justify-center gap-3 text-center text-3xl font-bold text-foreground">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                        {section === 'delivery' ? <Truck size={26} aria-hidden="true" /> : <CreditCard size={26} aria-hidden="true" />}
+                    </span>
+                    {t(section === 'delivery' ? 'deliveryPayment.deliveryTitle' : 'deliveryPayment.paymentTitle')}
                 </h1>
 
-                <div className="delivery-payment bem-delivery-payment grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
+                <div className="delivery-payment bem-delivery-payment grid grid-cols-1 gap-8 py-8">
                     {/* Левая колонка: Доставка */}
-                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
-                        <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300">
-                            Доставка
-                        </h2>
+                    {section === 'delivery' && (
+                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
                         <Accordion
                             type="multiple"
                             className="delivery-payment__accordion bem-delivery-payment__accordion"
@@ -77,21 +85,21 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
                                     Способы доставки
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ul className="list-disc pl-6 mb-2">
+                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content leading-6">
+                                    <ul className="list-disc space-y-5 pl-5">
                                         <li>
                                             <b>Доставка курьером по Латвии</b>
-                                            <ul className="list-disc pl-6">
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
                                                 <li>Стоимость — от 10 €</li>
                                             </ul>
-                                            <div className="text-xs mt-1">
+                                            <div className="mt-2 text-xs leading-5 text-muted-foreground">
                                                 При заказе на сумму свыше 200 € доставка по Латвии
                                                 осуществляется бесплатно.
                                             </div>
                                         </li>
                                         <li>
                                             <b>Доставка в пакоматы OMNIVA</b>
-                                            <ul className="list-disc pl-6">
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
                                                 <li>Стоимость — от 4 €</li>
                                                 <li>
                                                     Максимальный размер посылки: 38 × 64 × 19 см
@@ -101,10 +109,10 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         </li>
                                         <li>
                                             <b>Самовывоз из магазинов — бесплатно</b>
-                                            <div className="delivery-info__shops text-sm mt-1">
+                                            <div className="delivery-info__shops mt-2 text-sm">
                                                 Оплаченный заказ можно получить в одном из наших
                                                 магазинов:
-                                                <ul className="list-disc pl-6">
+                                                <ul className="mt-2 list-disc space-y-1 pl-5">
                                                     <li>Рига — Brāļu Kaudzīšu iela 13</li>
                                                     <li>Рига — Anniņmuižas bulvāris 82</li>
                                                     <li>Даугавпилс — Viestura iela 68-2</li>
@@ -126,7 +134,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Правила курьерской доставки
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ul className="delivery-info__list list-disc pl-6 space-y-2">
+                                    <ul className="delivery-info__list list-disc space-y-3 pl-5 leading-6">
                                         <li>Курьер ожидает получение заказа не более 10 минут.</li>
                                         <li>
                                             При получении необходимо указать имя, фамилию и
@@ -175,21 +183,21 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Возврат товара
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <p className="mb-2">
+                                    <p className="mb-4 leading-6">
                                         Вы можете вернуть товар в течение 14 дней с момента
                                         получения заказа.
                                     </p>
-                                    <div className="mb-2">Условия возврата:</div>
-                                    <ul className="list-disc pl-6 mb-2">
+                                    <div className="mb-2 font-medium">Условия возврата:</div>
+                                    <ul className="mb-4 list-disc space-y-2 pl-5">
                                         <li>товар не был в использовании;</li>
                                         <li>сохранён товарный вид;</li>
                                         <li>сохранена оригинальная неповреждённая упаковка.</li>
                                     </ul>
-                                    <p className="mb-2">
+                                    <p className="mb-3 leading-6">
                                         После получения и проверки товара возврат денежных средств
                                         будет произведён на ваш банковский счёт.
                                     </p>
-                                    <div className="text-xs text-gray-500 mb-2">
+                                    <div className="text-xs leading-5 text-gray-500">
                                         Обратите внимание! Согласно правилам дистанционной торговли,
                                         товары не подлежат возврату, если:
                                         <br />• была вскрыта упаковка товара, который по
@@ -206,8 +214,8 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Вопросы по доставке
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-1">Свяжитесь с нашей службой поддержки:</div>
-                                    <ul className="list-disc pl-6">
+                                    <div className="mb-3">Свяжитесь с нашей службой поддержки:</div>
+                                    <ul className="list-disc space-y-2 pl-5">
                                         <li>
                                             Телефон:{' '}
                                             <a
@@ -240,11 +248,10 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                             </AccordionItem>
                         </Accordion>
                     </section>
+                    )}
                     {/* Правая колонка: Оплата */}
-                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section bg-card rounded-2xl shadow p-6 flex flex-col h-full border border-gray-100 dark:border-gray-700 transition-colors">
-                        <h2 className="delivery-payment__title bem-delivery-payment__title text-2xl font-bold mb-4 text-green-700 dark:text-green-300">
-                            Оплата
-                        </h2>
+                    {section === 'payment' && (
+                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
                         <Accordion
                             type="multiple"
                             className="delivery-payment__accordion bem-delivery-payment__accordion"
@@ -257,10 +264,10 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Способы оплаты
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ul className="payment-info__list list-disc pl-6 space-y-4">
+                                    <ul className="payment-info__list list-disc space-y-5 pl-5 leading-6">
                                         <li>
                                             <b>Оплата банковской картой</b>
-                                            <div className="text-sm mt-1">
+                                            <div className="mt-2 text-sm">
                                                 Оплата картой доступна при получении заказа в офисе
                                                 интернет-магазина:
                                                 <br />
@@ -269,7 +276,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         </li>
                                         <li>
                                             <b>Оплата наличными</b>
-                                            <div className="text-sm mt-1">
+                                            <div className="mt-2 text-sm">
                                                 Оплата наличными осуществляется при получении заказа
                                                 в офисе интернет-магазина:
                                                 <br />
@@ -278,14 +285,14 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         </li>
                                         <li>
                                             <b>Оплата банковским переводом</b>
-                                            <div className="text-sm mt-1">
+                                            <div className="mt-2 text-sm">
                                                 После оформления заказа на вашу электронную почту
                                                 будет отправлен счёт для оплаты.
                                                 <br />
                                                 При оплате банковским переводом обязательно укажите
                                                 номер заказа в назначении платежа.
                                             </div>
-                                            <div className="payment-info__bank mt-2 p-3 bg-slate-100 dark:bg-gray-700 rounded">
+                                            <div className="payment-info__bank mt-3 space-y-1 rounded bg-slate-100 p-4 dark:bg-gray-700">
                                                 <div className="font-bold">
                                                     Реквизиты для оплаты
                                                 </div>
@@ -308,7 +315,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         </li>
                                         <li>
                                             <b>Оплата через Lateko Līzings</b>
-                                            <div className="text-sm mt-1">
+                                            <div className="mt-2 text-sm">
                                                 Также доступна оплата с использованием услуг Lateko
                                                 Līzings.
                                             </div>
@@ -324,7 +331,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Как происходит оплата
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ol className="list-decimal pl-6 space-y-1">
+                                    <ol className="list-decimal space-y-2 pl-5 leading-6">
                                         <li>Оформите заказ на сайте.</li>
                                         <li>Выберите способ и адрес доставки.</li>
                                         <li>Получите счёт на указанную электронную почту.</li>
@@ -340,11 +347,11 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Безопасность платежей
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-2">
+                                    <div className="mb-4 leading-6">
                                         Все платежи на нашем сайте защищены с помощью современных
                                         технологий шифрования (SSL/TLS).
                                     </div>
-                                    <ul className="list-disc pl-6 mb-2">
+                                    <ul className="mb-3 list-disc space-y-2 pl-5 leading-6">
                                         <li>
                                             Данные банковских карт не сохраняются и не передаются
                                             третьим лицам.
@@ -354,7 +361,7 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                         </li>
                                         <li>Мы соблюдаем стандарты безопасности PCI DSS.</li>
                                     </ul>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs leading-5 text-gray-500">
                                         Если у вас возникли вопросы по безопасности платежей,
                                         свяжитесь с нашей службой поддержки.
                                     </div>
@@ -368,11 +375,11 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                                     Вопросы по оплате
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-1">
+                                    <div className="mb-3 leading-6">
                                         Наша служба поддержки поможет решить вопросы, связанные с
                                         оплатой заказа.
                                     </div>
-                                    <ul className="list-disc pl-6">
+                                    <ul className="list-disc space-y-2 pl-5">
                                         <li>
                                             Телефон:{' '}
                                             <a
@@ -405,10 +412,11 @@ export default async function DeliveryPaymentPage({ params }: { params: Promise<
                             </AccordionItem>
                         </Accordion>
                     </section>
+                    )}
                 </div>
                 {/* Советы и примечания */}
-                <div className="mt-10 text-muted-foreground text-sm border-t pt-4">
-                    <ul className="list-disc pl-6 space-y-1">
+                <div className="mt-10 border-t pt-4 text-sm text-muted-foreground">
+                    <ul className="list-disc space-y-1 pl-6">
                         {[1, 2, 3].map((i) => (
                             <li key={i}>{t(`deliveryPayment.tips.${i}`)}</li>
                         ))}

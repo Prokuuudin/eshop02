@@ -41,7 +41,8 @@ export default function Footer(): React.ReactElement {
               {promo && (
                 <li className="footer__item"><Link href={promo.link} className="hover:underline text-gray-800 dark:text-gray-300">{promoTitle}</Link></li>
               )}
-              <li className="footer__item"><Link href="/delivery-payment" className="hover:underline text-gray-800 dark:text-gray-300">{t('deliveryPayment.title')}</Link></li>
+              <li className="footer__item"><Link href="/delivery" className="hover:underline text-gray-800 dark:text-gray-300">{t('deliveryPayment.deliveryTitle')}</Link></li>
+              <li className="footer__item"><Link href="/payment" className="hover:underline text-gray-800 dark:text-gray-300">{t('deliveryPayment.paymentTitle')}</Link></li>
               <li className="footer__item"><Link href="/blog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.blog')}</Link></li>
               <li className="footer__item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('terms.title')}</Link></li>
             </ul>

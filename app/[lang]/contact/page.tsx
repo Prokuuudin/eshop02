@@ -226,15 +226,23 @@ export default function ContactPage(): React.ReactElement {
       )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(localBusinessSchema) }} />
-      <main className="w-full px-4 py-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-foreground">{t('contact.title')}</h1>
+      <main className="w-full px-4 py-10">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="mb-10 flex items-center justify-center gap-3 text-center text-3xl font-bold text-foreground">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </span>
+            {t('contact.title')}
+          </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-2">
             {/* Contact Info */}
-            <div>
-              <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.info')}</h2>
-              <div className="space-y-4">
+            <section className="rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
+              <h2 className="mb-3 text-lg font-semibold text-foreground">{t('contact.info')}</h2>
+              <div className="space-y-3 leading-6">
                 {COMPANY_CONTACT_LINES.map(({ labelKey, value }) => (
                   <div key={labelKey}>
                     <p className="font-semibold text-foreground">{t(labelKey)}:</p>
@@ -242,17 +250,17 @@ export default function ContactPage(): React.ReactElement {
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Contact Form */}
-            <div>
-              <h2 className="text-lg font-bold mb-4 text-foreground">{t('contact.formTitle')}</h2>
+            <section className="rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
+              <h2 className="mb-3 text-lg font-semibold text-foreground">{t('contact.formTitle')}</h2>
               {submitted ? (
                 <div aria-live="polite" className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4 rounded text-green-700 dark:text-green-200">
                   ✓ {t('contact.success')}
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <input
                     type="text"
                     name="website"
@@ -326,7 +334,7 @@ export default function ContactPage(): React.ReactElement {
                       value={formData.message}
                       onChange={handleChange}
                       className="bg-card text-foreground border-border"
-                      rows={5}
+                      rows={4}
                       minLength={10}
                       maxLength={5000}
                       required
@@ -340,7 +348,7 @@ export default function ContactPage(): React.ReactElement {
                   <Button type="submit" disabled={submitting || (turnstileEnabled && !formData.turnstileToken)}>{submitting ? t('contact.sending') : t('contact.send')}</Button>
                 </form>
               )}
-            </div>
+            </section>
           </div>
         </div>
       </main>

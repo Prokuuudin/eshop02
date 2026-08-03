@@ -458,6 +458,63 @@ body[data-scroll-locked][data-scroll-locked] {
   overflow-wrap: anywhere;
 }
 
+/* Shared reading rhythm for public information and policy pages. */
+.public-content-rhythm {
+  line-height: 1.6;
+}
+
+.public-content-rhythm h2 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.public-content-rhythm h3 {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.public-content-rhythm p {
+  margin: 0 0 0.75rem;
+}
+
+.public-content-rhythm ul,
+.public-content-rhythm ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.public-content-rhythm ul {
+  list-style: disc;
+}
+
+.public-content-rhythm ol {
+  list-style: decimal;
+}
+
+.public-content-rhythm li + li {
+  margin-top: 0.5rem;
+}
+
+.public-content-rhythm li > ul,
+.public-content-rhythm li > ol {
+  margin: 0.5rem 0 0;
+}
+
+.public-content-rhythm li > ul > li + li,
+.public-content-rhythm li > ol > li + li {
+  margin-top: 0.25rem;
+}
+
+.public-content-rhythm > :first-child {
+  margin-top: 0;
+}
+
+.public-content-rhythm > :last-child {
+  margin-bottom: 0;
+}
+
 /* ── Smooth entrance animations (page/element mount) ──────────────────── */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(6px); }

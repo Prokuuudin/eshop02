@@ -122,12 +122,12 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">
                                     <DropdownMenuItem asChild key="delivery">
-                                        <Link href="/delivery-payment#delivery">
+                                        <Link href="/delivery">
                                             {t('deliveryPayment.deliveryTitle')}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild key="payment">
-                                        <Link href="/delivery-payment#payment">
+                                        <Link href="/payment">
                                             {t('deliveryPayment.paymentTitle')}
                                         </Link>
                                     </DropdownMenuItem>

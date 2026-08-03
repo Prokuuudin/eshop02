@@ -110,6 +110,8 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
                     onChange={(e) => setCardNumber(e.target.value)}
                     placeholder="0000"
                     maxLength={6}
+                    inputMode="numeric"
+                    pattern="[0-9 ]{1,6}"
                     required
                     autoComplete="off"
                 />

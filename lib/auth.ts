@@ -1,5 +1,6 @@
 import { useCompanyStore } from '@/lib/company-store';
 import { logAuditAction } from '@/lib/audit-log-store';
+import { normalizeCardNumber } from '@/lib/card-number';
 import type { TeamRole, User } from './auth-types';
 import {
     CURRENT_KEY,
@@ -181,7 +182,7 @@ export const registerCardUser = async (data: {
     privacyAcknowledged?: boolean;
     marketingConsent?: boolean;
 }): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
-    const normalizedCard = normalizeCard(data.cardNumber);
+    const normalizedCard = normalizeCardNumber(data.cardNumber);
 
     let res: Response;
     try {
@@ -283,9 +284,6 @@ export const forceChangePassword = async (
     notifyAuthChanged();
     return { success: true };
 };
-
-const normalizeCard = (cardNumber: string): string =>
-    cardNumber.trim().replace(/\s+/g, '').toUpperCase();
 
 export const submitNoCardRequest = async (data: {
     name: string;

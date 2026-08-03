@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 export const runtime = 'nodejs'
 
@@ -12,11 +13,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body = (await req.json()) as { email?: string; cardNumber?: string }
     const email = body.email?.trim()
-    const cardNumber = body.cardNumber?.trim()
+    const cardNumber = normalizeCardNumber(body.cardNumber ?? '')
     if (!email || !cardNumber) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
-    if (!/^\d{4,10}$/.test(cardNumber)) {
+    if (!isValidCardNumber(cardNumber)) {
       return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
 

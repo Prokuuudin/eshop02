@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
@@ -11,12 +12,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params
     const body = await req.json()
+    const cardNumber = body.cardNumber !== undefined
+      ? (body.cardNumber ? normalizeCardNumber(String(body.cardNumber)) : null)
+      : undefined
+    if (cardNumber && !isValidCardNumber(cardNumber)) {
+      return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
+    }
 
     const company = await prisma.company.update({
       where: { id },
       data: {
         companyName: body.companyName ?? undefined,
-        cardNumber: body.cardNumber !== undefined ? (body.cardNumber?.trim() || null) : undefined,
+        cardNumber,
         taxId: body.taxId !== undefined ? (body.taxId || null) : undefined,
         registrationNumber: body.registrationNumber !== undefined ? (body.registrationNumber || null) : undefined,
         address: body.address !== undefined ? (body.address || null) : undefined,

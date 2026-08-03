@@ -7,6 +7,7 @@ import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { normalizeSubmittedCode } from '@/lib/personal-code'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 // Best-effort "was this you?" notice — an attacker could have guessed the
 // 3-character personal code, so this activation might not be the real owner.
@@ -23,8 +24,6 @@ async function notifyCardActivated(email: string | null | undefined, name: strin
 
 export const runtime = 'nodejs'
 const PRIVACY_NOTICE_VERSION = '2026-07-03'
-
-const normalizeCard = (v: string): string => v.trim().replace(/\s+/g, '').toUpperCase()
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const body = await req.json()
-    const cardNumber = normalizeCard(String(body.cardNumber ?? ''))
+    const cardNumber = normalizeCardNumber(String(body.cardNumber ?? ''))
     const password = typeof body.password === 'string' ? body.password : ''
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : undefined
     if (body.privacyAcknowledged !== true) {
@@ -82,6 +81,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!cardNumber) {
       return NextResponse.json({ error: 'card_required' }, { status: 400 })
+    }
+    if (!isValidCardNumber(cardNumber)) {
+      return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
 
     // Per-IP limiting alone doesn't stop a targeted attempt to guess one

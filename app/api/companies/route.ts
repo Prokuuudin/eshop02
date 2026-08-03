@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { toNum, toNumOrNull } from '@/lib/decimal'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 function mapCompany(c: Awaited<ReturnType<typeof prisma.company.findMany>>[number]) {
   return {
@@ -56,12 +57,16 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!body.companyId || !body.companyName) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
+    const cardNumber = body.cardNumber ? normalizeCardNumber(String(body.cardNumber)) : null
+    if (cardNumber && !isValidCardNumber(cardNumber)) {
+      return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
+    }
 
     const company = await prisma.company.create({
       data: {
         id: body.companyId,
         companyName: body.companyName,
-        cardNumber: body.cardNumber?.trim() || null,
+        cardNumber,
         taxId: body.taxId || null,
         registrationNumber: body.registrationNumber || null,
         address: body.address || null,

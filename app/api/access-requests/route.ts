@@ -10,6 +10,7 @@ import {
 } from '@/lib/certificate-store'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 export const runtime = 'nodejs'
 
@@ -56,12 +57,16 @@ export async function POST(req: NextRequest): Promise<Response> {
     const email = body.email?.trim().toLowerCase() ?? ''
     const password = body.password ?? ''
     const isNoCard = body.requestType === 'no-card'
+    const cardNumber = isNoCard ? '' : normalizeCardNumber(body.cardNumber ?? '')
 
     if (body.privacyAcknowledged !== true) {
       return NextResponse.json({ error: 'privacy_acknowledgement_required' }, { status: 400 })
     }
-    if (!email || !password || (!isNoCard && (!body.companyId || !body.companyName || !body.cardNumber))) {
+    if (!email || !password || (!isNoCard && (!body.companyId || !body.companyName || !cardNumber))) {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
+    }
+    if (!isNoCard && !isValidCardNumber(cardNumber)) {
+      return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
@@ -126,7 +131,7 @@ export async function POST(req: NextRequest): Promise<Response> {
             id: requestId, email, passwordHash,
             name: body.name ?? null, phone: body.phone ?? null,
             companyId: body.companyId ?? '', companyName: body.companyName ?? '',
-            cardNumber: body.cardNumber ?? '', requestType: body.requestType ?? 'card',
+            cardNumber, requestType: body.requestType ?? 'card',
             certificateName: body.certificateName ?? null, message: body.message ?? null,
             language: body.language ?? null, status: 'pending',
             privacyNoticeVersion: PRIVACY_NOTICE_VERSION,

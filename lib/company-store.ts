@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { normalizeCardNumber } from '@/lib/card-number'
 
 export type TeamMemberRole = 'viewer' | 'buyer' | 'manager' | 'admin'
 
@@ -73,8 +74,6 @@ function apiDelete(url: string) {
   if (typeof window === 'undefined') return
   fetch(url, { method: 'DELETE' }).catch(() => {})
 }
-
-const normalizeCardNumber = (cardNumber: string | undefined): string => (cardNumber ?? '').replace(/\s+/g, '').toUpperCase()
 
 const toHydratedTeamMember = (member: TeamMember): TeamMember => ({
   ...member,
@@ -157,7 +156,7 @@ export const useCompanyStore = create<CompanyStore>()(
         const normalizedCardNumber = normalizeCardNumber(cardNumber)
         if (!normalizedCardNumber) return undefined
         return Array.from(get().companies.values()).find(
-          (company) => normalizeCardNumber(company.cardNumber) === normalizedCardNumber
+          (company) => normalizeCardNumber(company.cardNumber ?? '') === normalizedCardNumber
         )
       },
       
@@ -274,8 +273,8 @@ export const useCompanyStore = create<CompanyStore>()(
           if (!res.ok) return
           const { companies: dbCompanies } = await res.json()
           if (!Array.isArray(dbCompanies)) return
-          set(state => {
-            const newMap = new Map(state.companies)
+          set(() => {
+            const newMap = new Map<string, CompanyProfile>()
             for (const c of dbCompanies) {
               newMap.set(c.companyId, toHydratedCompany({
                 ...c,

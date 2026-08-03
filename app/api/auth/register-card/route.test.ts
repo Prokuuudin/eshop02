@@ -237,6 +237,28 @@ describe('POST /api/auth/register-card', () => {
     expect(prisma.company.findFirst).not.toHaveBeenCalled()
   })
 
+  it('treats leading zeroes as display padding for a short card number', async () => {
+    userFindFirstMock.mockResolvedValue(null)
+    companyFindFirstMock.mockResolvedValue(null)
+
+    await POST(makeRequest({ cardNumber: '0001', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(userFindFirstMock).toHaveBeenCalledWith({
+      where: { cardNumber: { equals: '1', mode: 'insensitive' } },
+    })
+    expect(companyFindFirstMock).toHaveBeenCalledWith({
+      where: { cardNumber: { equals: '1', mode: 'insensitive' } },
+    })
+  })
+
+  it('rejects a new card identifier longer than six digits', async () => {
+    const res = await POST(makeRequest({ cardNumber: '1234567', password: FIRST_LOGIN_PASSWORD }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: 'invalid_card' })
+    expect(userFindFirstMock).not.toHaveBeenCalled()
+  })
+
   it('rate-limits repeated attempts against the same card number regardless of IP', async () => {
     // The shared welcome password means a single known card number is the only
     // thing standing between an attacker and someone else's account — cap

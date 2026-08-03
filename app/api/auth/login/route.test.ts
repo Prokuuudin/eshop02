@@ -76,4 +76,19 @@ describe('POST /api/auth/login', () => {
     expect(checkRateLimit).toHaveBeenCalledWith('login:card:1234')
     expect(json.user.email).toBe('anna@example.com')
   })
+
+  it('accepts a zero-padded form of a short card number', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+      id: 'u-card-1', email: 'short@example.com', cardNumber: '1', passwordHash: 'hash',
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest('0001'))
+
+    expect(res.status).toBe(200)
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { cardNumber: { equals: '1', mode: 'insensitive' } },
+    })
+    expect(checkRateLimit).toHaveBeenCalledWith('login:card:1')
+  })
 })

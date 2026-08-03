@@ -14,11 +14,11 @@ import {
   resolveInviteLang,
 } from '@/lib/invitations'
 import { getSiteUrl } from '@/lib/site-url'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
 export const runtime = 'nodejs'
 
 const ALLOWED_STATUSES = new Set(['approved', 'rejected'])
-const CARD_RE = /^\d{4,10}$/
 
 export async function PATCH(
   req: NextRequest,
@@ -68,8 +68,8 @@ export async function PATCH(
     // один аккаунт: для no-card номер выдаёт админ (body), для card-заявки
     // номер уже в самой заявке.
     if (body.status === 'approved') {
-      const cardNumber = (body.cardNumber ?? existing.cardNumber ?? '').trim()
-      if (!CARD_RE.test(cardNumber)) {
+      const cardNumber = normalizeCardNumber(body.cardNumber ?? existing.cardNumber ?? '')
+      if (!isValidCardNumber(cardNumber)) {
         return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
       }
 
@@ -87,7 +87,7 @@ export async function PATCH(
       if (cardOwner && cardOwner.id !== sameEmail?.id) {
         return NextResponse.json({ error: 'card_taken' }, { status: 409 })
       }
-      if (sameEmail?.cardNumber && sameEmail.cardNumber !== cardNumber) {
+      if (sameEmail?.cardNumber && normalizeCardNumber(sameEmail.cardNumber) !== cardNumber) {
         return NextResponse.json({ error: 'user_has_card', cardNumber: sameEmail.cardNumber }, { status: 409 })
       }
 

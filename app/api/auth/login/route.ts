@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE,
 } from '@/lib/server-auth'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { normalizeCardNumber } from '@/lib/card-number'
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const isEmail = normalizedIdentifier.includes('@')
     const lookupValue = isEmail
       ? normalizedIdentifier.toLowerCase()
-      : normalizedIdentifier.replace(/\s+/g, '').toUpperCase()
+      : normalizeCardNumber(normalizedIdentifier)
     if (!lookupValue || lookupValue.length > (isEmail ? 254 : 64)) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
@@ -66,7 +67,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!valid) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
-
     // Successful login — reset attempt counter
     await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
 

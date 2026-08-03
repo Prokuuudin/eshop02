@@ -11,8 +11,9 @@
  *    app/api/auth/register-card/route.ts), если pkLast3 у клиента заполнен;
  *  - письма НЕ отправляет — рассылка через админку /admin/invitations.
  *
- * Пропускает (с отчётом): без email / кривой email, нечисловой код,
- * дубли кодов и email в файле, конфликты карт в БД.
+ * Для отсутствующего, некорректного или повторяющегося email использует
+ * уникальный технический адрес card.<номер>@client.local. Пропускает (с
+ * отчётом): нечисловой код, дубли кодов и конфликты карт в БД.
  *
  * Usage:
  *   npx tsx scripts/import-client-cards.ts           # dry run, только отчёт
@@ -28,6 +29,7 @@ import { writeFileSync } from 'fs'
 import bcrypt from 'bcryptjs'
 import * as XLSX from 'xlsx'
 import { derivePkLast3 } from '../lib/personal-code'
+import { isValidCardNumber, normalizeCardNumber } from '../lib/card-number'
 
 const APPLY = process.argv.includes('--apply')
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -38,9 +40,12 @@ type Client = {
   name: string | null
   pk: string | null
   tel: string | null
-  email: string
+  email: string | null
   type: string | null
 }
+
+const accountEmail = (client: Pick<Client, 'code' | 'email'>): string =>
+  client.email ?? `card.${client.code.toLowerCase()}@client.local`
 
 const clean = (v: unknown): string | null => {
   if (v === null || v === undefined) return null
@@ -65,25 +70,20 @@ async function main() {
   const raw: Client[] = []
   for (const r of rows) {
     const code = clean(r['Код'])
-    const email = clean(r['mail'])?.toLowerCase() ?? null
+    const rawEmail = clean(r['mail'])?.toLowerCase() ?? null
+    const email = rawEmail && EMAIL_RE.test(rawEmail) ? rawEmail : null
+    const normalizedCode = code ? normalizeCardNumber(code) : null
     if (!code || !clean(r['Наименование'])) {
       skip('нет кода или имени')
       continue
     }
-    if (!/^\d+$/.test(code)) {
+    if (!normalizedCode || !isValidCardNumber(normalizedCode)) {
       skip('нечисловой код')
       continue
     }
-    if (!email) {
-      skip('нет email')
-      continue
-    }
-    if (!EMAIL_RE.test(email)) {
-      skip('невалидный email')
-      continue
-    }
+    if (rawEmail && !email) skip('невалидный email заменён техническим')
     raw.push({
-      code,
+      code: normalizedCode,
       name: clean(r['Наименование']),
       pk: clean(r['pk']),
       tel: clean(r['tel']),
@@ -97,15 +97,19 @@ async function main() {
   const emailCount = new Map<string, number>()
   for (const c of raw) {
     codeCount.set(c.code, (codeCount.get(c.code) ?? 0) + 1)
-    emailCount.set(c.email, (emailCount.get(c.email) ?? 0) + 1)
+    if (c.email) emailCount.set(c.email, (emailCount.get(c.email) ?? 0) + 1)
+  }
+  // Один реальный email у нескольких ERP-карт неоднозначен: не связываем
+  // ни одну из них с чужим/общим аккаунтом, а выдаём каждой технический email.
+  for (const c of raw) {
+    if (c.email && emailCount.get(c.email)! > 1) {
+      skip('дубль email заменён техническим')
+      c.email = null
+    }
   }
   const clients = raw.filter((c) => {
     if (codeCount.get(c.code)! > 1) {
       skip('дубль кода в файле')
-      return false
-    }
-    if (emailCount.get(c.email)! > 1) {
-      skip('дубль email в файле')
       return false
     }
     return true
@@ -132,7 +136,8 @@ async function main() {
       skip('карта уже занята в БД')
       continue
     }
-    const matches = byEmail.get(c.email) ?? []
+    const email = accountEmail(c)
+    const matches = byEmail.get(email) ?? []
     if (matches.length > 1) {
       skip('несколько юзеров с этим email (разный регистр)')
       continue
@@ -147,7 +152,7 @@ async function main() {
         skip('у юзера уже другая карта')
         continue
       }
-      toUpdate.push({ userId: u.id, email: c.email, prevCardNumber: u.cardNumber, cardNumber: c.code, pk: c.pk })
+      toUpdate.push({ userId: u.id, email, prevCardNumber: u.cardNumber, cardNumber: c.code, pk: c.pk })
     } else {
       toCreate.push(c)
     }
@@ -190,7 +195,7 @@ async function main() {
   const createdIds: string[] = []
   const createRows = toCreate.map((c) => ({
     id: randomUUID(),
-    email: c.email,
+    email: accountEmail(c),
     passwordHash: sleepingHash,
     name: c.name,
     phone: c.tel,

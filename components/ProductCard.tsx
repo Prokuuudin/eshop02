@@ -14,6 +14,7 @@ import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
 import { useAuthStore } from '@/lib/auth-store';
 import { stripBrandPrefix } from '@/lib/product-title';
+import { localizePath } from '@/lib/i18n-routing';
 
 type Props = {
     product: Product;
@@ -84,7 +85,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 {/* Stretched link: the whole card is one keyboard-focusable link to the product
                     (after:inset-0 overlay). Interactive children (wishlist, cart) sit above it via z-10. */}
                 <Link
-                    href={`/product/${product.id}`}
+                    href={localizePath(`/product/${product.id}`, language)}
                     className="product-card__title text-sm font-medium hover:text-primary focus:outline-none after:absolute after:inset-0 after:content-['']"
                 >
                     {stripBrandPrefix(localizedTitle, product.brand)}

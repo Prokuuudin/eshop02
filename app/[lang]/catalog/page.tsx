@@ -1,28 +1,36 @@
 import React from 'react'
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import Products from '@/components/Products'
 import { getSiteUrl } from '@/lib/site-url'
 import { translations } from '@/data/translations'
-import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing'
+import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
+import { buildPublicPageMetadata } from '@/lib/page-metadata'
+import { getInitialCatalogProducts } from '@/lib/initial-catalog-products'
 import { serializeJsonLd } from '@/lib/json-ld'
 
 export const revalidate = 3600
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const language = resolveLanguage((await params).lang)
+  const query = await searchParams
   const t = translations[language]
-  const pageTitle = `${t['nav.catalog'] ?? 'Catalog'} | Eshop`
+  const parsedPage = Number.parseInt(query.page ?? '1', 10)
+  const pageNumber = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
+  const invalidPage = query.page !== undefined && String(pageNumber) !== query.page
+  const isPaginated = pageNumber > 1
+  const hasFilters = Boolean(
+    query.cat || query.subcat || query.brands || query.brand
+    || query.minPrice || query.maxPrice || query.search
+  )
+  const pageTitle = `${t['nav.catalog'] ?? 'Catalog'}${isPaginated ? ` — ${pageNumber}` : ''} | Hairshop-Pro`
   const pageDescription = t['meta.catalogDescription'] ?? 'Catalog of professional cosmetics and equipment'
+  const canonicalPath = isPaginated ? `/catalog?page=${pageNumber}` : '/catalog'
 
   return {
-    title: pageTitle,
-    description: pageDescription,
-    openGraph: {
-      title: pageTitle,
-      description: pageDescription,
-      url: localizePath('/catalog', language)
-    },
-    alternates: pageAlternates('/catalog', language)
+    ...buildPublicPageMetadata({ language, path: canonicalPath, title: pageTitle, description: pageDescription }),
+    ...((hasFilters || invalidPage) ? { robots: { index: false, follow: true } } : {}),
   }
 }
 
@@ -59,6 +67,22 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   const minPrice = Number.isFinite(minPriceValue) ? String(minPriceValue) : '';
   const maxPrice = Number.isFinite(maxPriceValue) ? String(maxPriceValue) : '';
 
+  const parsedPage = Number.parseInt(params.page ?? '1', 10);
+  const pageNumber = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+
+  const initialCatalog = await getInitialCatalogProducts({
+    language,
+    category: category || undefined,
+    subcategory: params.subcat?.trim() || undefined,
+    brands,
+    search: rawSearch,
+    minPrice: Number.isFinite(minPriceValue) ? minPriceValue : undefined,
+    maxPrice: Number.isFinite(maxPriceValue) ? maxPriceValue : undefined,
+    page: pageNumber,
+  });
+
+  if (pageNumber > initialCatalog.totalPages) notFound();
+
   const siteUrl = getSiteUrl();
   const urlParams = new URLSearchParams();
   if (params.search) urlParams.set('search', params.search);
@@ -67,11 +91,18 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   if (brands.length > 0) urlParams.set('brands', brands.join(','));
   if (params.minPrice) urlParams.set('minPrice', params.minPrice);
   if (params.maxPrice) urlParams.set('maxPrice', params.maxPrice);
-  if (params.page && params.page !== '1') urlParams.set('page', params.page);
+  if (pageNumber > 1) urlParams.set('page', String(pageNumber));
 
   const query = urlParams.toString();
   const catalogPath = query ? `/catalog?${query}` : '/catalog';
   const currentCrumbName = t['nav.catalog'] ?? 'Catalog';
+  const pageHref = (targetPage: number): string => {
+    const targetParams = new URLSearchParams(urlParams)
+    if (targetPage > 1) targetParams.set('page', String(targetPage))
+    else targetParams.delete('page')
+    const targetQuery = targetParams.toString()
+    return localizePath(targetQuery ? `/catalog?${targetQuery}` : '/catalog', language)
+  }
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -85,8 +116,10 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
-      <main>
+      <div>
         <Products
+          key={catalogPath}
+          initialProducts={initialCatalog.products}
           initialSearch={rawSearch}
           initialSubcat={params.subcat?.trim() || ''}
           initialFilters={{
@@ -95,8 +128,26 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
             minPrice,
             maxPrice
           }}
+          serverPagination
         />
-      </main>
+        {initialCatalog.totalPages > 1 && (
+          <nav className="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 pb-10" aria-label="Pagination">
+            {pageNumber > 1 && (
+              <Link className="rounded-md border border-border px-4 py-2 hover:bg-muted" href={pageHref(pageNumber - 1)}>
+                {language === 'ru' ? 'Назад' : language === 'lv' ? 'Iepriekšējā' : 'Previous'}
+              </Link>
+            )}
+            <span className="text-sm text-muted-foreground">
+              {language === 'ru' ? 'Страница' : language === 'lv' ? 'Lapa' : 'Page'} {pageNumber} / {initialCatalog.totalPages}
+            </span>
+            {pageNumber < initialCatalog.totalPages && (
+              <Link className="rounded-md border border-border px-4 py-2 hover:bg-muted" href={pageHref(pageNumber + 1)}>
+                {language === 'ru' ? 'Далее' : language === 'lv' ? 'Nākamā' : 'Next'}
+              </Link>
+            )}
+          </nav>
+        )}
+      </div>
     </>
   );
 }

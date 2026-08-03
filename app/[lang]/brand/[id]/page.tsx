@@ -5,8 +5,9 @@ import { notFound } from 'next/navigation';
 import { getSiteUrl } from '@/lib/site-url';
 import { translations, type Language } from '@/data/translations';
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
-import { DEFAULT_LANGUAGE, pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
+import { DEFAULT_LANGUAGE, localizePath, resolveLanguage } from '@/lib/i18n-routing';
 import { serializeJsonLd } from '@/lib/json-ld';
+import { buildPublicPageMetadata } from '@/lib/page-metadata';
 
 type PageProps = { params: Promise<{ lang: string; id: string }> }
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!brand) {
     return {
-      title: `${t['meta.brandNotFoundTitle'] ?? 'Brand not found'} | Eshop`,
+      title: `${t['meta.brandNotFoundTitle'] ?? 'Brand not found'} | Hairshop-Pro`,
       description: t['meta.brandNotFoundDescription'] ?? 'Requested brand was not found',
       robots: {
         index: false,
@@ -45,18 +46,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = brand.description?.[language] || brand.description?.en || brand.description?.ru || interpolate(descriptionTemplate, { brand: brand.name });
   const path = `/brand/${brand.id}`;
 
-  return {
-    title: `${brand.name} | Eshop`,
+  return buildPublicPageMetadata({
+    language,
+    path,
+    title: brand.name,
     description,
-    openGraph: {
-      title: `${brand.name} | Eshop`,
-      description,
-      images: [{ url: brand.logo, alt: brand.name }],
-      url: localizePath(path, language),
-      type: 'website'
-    },
-    alternates: pageAlternates(path, language)
-  };
+    image: { url: brand.logo, alt: brand.name },
+  });
 }
 
 export default async function BrandPage({ params }: PageProps): Promise<React.ReactElement> {

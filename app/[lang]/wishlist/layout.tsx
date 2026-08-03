@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   const t = translations[language]
 
   return {
-    title: `${t['wishlist.title'] ?? 'Wishlist'} | Eshop`,
+    title: `${t['wishlist.title'] ?? 'Wishlist'} | Hairshop-Pro`,
     robots: { index: false, follow: false },
     alternates: { canonical: '/wishlist' },
   }

@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   const { id, lang } = await params
   const language = resolveLanguage(lang)
   const t = translations[language]
-  const titleTemplate = t['meta.orderTitleTemplate'] ?? 'Order {id} | Eshop'
-  const descriptionTemplate = t['meta.orderDescriptionTemplate'] ?? 'Order page {id} in Eshop'
+  const titleTemplate = t['meta.orderTitleTemplate'] ?? 'Order {id} | Hairshop-Pro'
+  const descriptionTemplate = t['meta.orderDescriptionTemplate'] ?? 'Order page {id} in Hairshop-Pro'
 
   return {
     title: interpolate(titleTemplate, { id }),

@@ -406,7 +406,7 @@ function useCheckoutPageState() {
             const dueDate = new Date(issuedDate);
             dueDate.setDate(dueDate.getDate() + paymentTermDays);
 
-            const invoiceId = createInvoice({
+            const invoiceId = await createInvoice({
                 companyId: currentUser.companyId,
                 orderId,
                 subtotal,

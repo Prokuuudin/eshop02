@@ -76,7 +76,7 @@ export default function HeaderNav({ onlyCatalog = false }: { onlyCatalog?: boole
                                             {subcategories.map((sub) => (
                                                 <DropdownMenuItem asChild key={`${cat.id}-${sub.slug}`}>
                                                     <Link
-                                                        href={`/catalog?cat=${cat.id}&subcat=${encodeURIComponent(sub.slug)}`}
+                                                        href={`/category/${cat.id}?subcat=${encodeURIComponent(sub.slug)}`}
                                                     >
                                                         {sub.key
                                                             ? t(sub.key, sub.labels[language])

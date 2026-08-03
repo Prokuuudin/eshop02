@@ -53,7 +53,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
 
     // Формируем ссылки для категории и бренда
     const categoryUrl = product.category
-        ? `/catalog?cat=${encodeURIComponent(product.category)}`
+        ? `/category/${encodeURIComponent(product.category)}`
         : '/catalog';
     const brandUrl = product.brand
         ? `/catalog?brand=${encodeURIComponent(brandSlug(product.brand))}`

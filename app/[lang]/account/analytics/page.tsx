@@ -20,15 +20,15 @@ export default function AnalyticsPage(): React.ReactElement {
   // Order history lives in the DB. Load it here too — this page must not depend on the user
   // having visited /account first (which is the only other place that hydrates the store).
   const orders = useOrders((s) => s.orders)
-  const upsertOrder = useOrders((s) => s.upsertOrder)
+  const replaceOrders = useOrders((s) => s.replaceOrders)
   useEffect(() => {
     fetch('/api/orders/my')
       .then((r) => r.json())
       .then(({ orders: dbOrders }) => {
-        if (Array.isArray(dbOrders)) dbOrders.forEach((o: Order) => upsertOrder(o))
+        if (Array.isArray(dbOrders)) replaceOrders(dbOrders as Order[])
       })
       .catch(() => {})
-  }, [upsertOrder])
+  }, [replaceOrders])
 
   const analytics = useMemo(
     () => getUserPurchaseAnalytics(currentUser?.email),

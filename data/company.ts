@@ -10,6 +10,7 @@ export const COMPANY = {
   swift: 'HABALV22',
   phone: '+37127067730',
   email: 'info@hairshop.lv',
+  sameAs: ['https://hairshop.lv/'],
 } as const
 
 export const COMPANY_CONTACT_LINES: ReadonlyArray<{ labelKey: string; value: string }> = [

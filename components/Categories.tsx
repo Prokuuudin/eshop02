@@ -116,7 +116,7 @@ export default function Categories(): React.ReactElement | null {
                                                     asChild
                                                     className={dropdownItemClassName}
                                                 >
-                                                    <Link href={c.href}>{t('categories.all')}</Link>
+                                                            <Link href={`/category/${c.id}`}>{t('categories.all')}</Link>
                                                 </DropdownMenuItem>
                                                 {submenuItems.map((item) => (
                                                     <DropdownMenuItem

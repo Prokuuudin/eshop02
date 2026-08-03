@@ -7,17 +7,15 @@ import { LANGUAGES, localizePath } from '@/lib/i18n-routing'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl()
-  const now = new Date()
-
   const langUrl = (path: string, lang: (typeof LANGUAGES)[number]): string =>
     `${siteUrl}${localizePath(path, lang)}`
 
   // One entry per language version, each carrying the full hreflang set
   // (Google requires every alternate to list all alternates including itself).
-  const entriesFor = (path: string, lastModified: Date): MetadataRoute.Sitemap =>
+  const entriesFor = (path: string, lastModified?: Date): MetadataRoute.Sitemap =>
     LANGUAGES.map((lang) => ({
       url: langUrl(path, lang),
-      lastModified,
+      ...(lastModified ? { lastModified } : {}),
       alternates: {
         languages: {
           ru: langUrl(path, 'ru'),
@@ -42,13 +40,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/privacy',
     '/cookies',
   ]
-  const staticRoutes: MetadataRoute.Sitemap = staticPaths.flatMap((path) => entriesFor(path, now))
+  const staticRoutes: MetadataRoute.Sitemap = staticPaths.flatMap((path) => entriesFor(path))
+  const categoryRoutes: MetadataRoute.Sitemap = ['hair', 'nails', 'face', 'body', 'equipment']
+    .flatMap((category) => entriesFor(`/category/${category}`))
 
   // Each dynamic section is isolated so a single store failure can't blank the sitemap.
   let productRoutes: MetadataRoute.Sitemap = []
   try {
     const products = await getMergedProducts()
-    productRoutes = products.flatMap((product) => entriesFor(`/product/${product.id}`, now))
+    productRoutes = products.flatMap((product) => entriesFor(`/product/${product.id}`, product.updatedAt))
   } catch {
     /* skip products on failure */
   }
@@ -57,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const posts = await getBlogPosts()
     blogRoutes = posts.flatMap((post) =>
-      entriesFor(`/blog/${post.slug}`, post.updatedAt ? new Date(post.updatedAt) : now)
+      entriesFor(`/blog/${post.slug}`, new Date(post.updatedAt ?? post.createdAt))
     )
   } catch {
     /* skip blog on failure */
@@ -66,10 +66,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let brandRoutes: MetadataRoute.Sitemap = []
   try {
     const { brands } = await getBrandsConfigFromStore()
-    brandRoutes = brands.flatMap((brand) => entriesFor(`/brand/${brand.id}`, now))
+    brandRoutes = brands.flatMap((brand) => entriesFor(`/brand/${brand.id}`))
   } catch {
     /* skip brands on failure */
   }
 
-  return [...staticRoutes, ...productRoutes, ...blogRoutes, ...brandRoutes]
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...blogRoutes, ...brandRoutes]
 }

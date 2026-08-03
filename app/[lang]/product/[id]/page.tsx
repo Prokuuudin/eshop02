@@ -1,10 +1,9 @@
 import React from 'react';
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import ProductPageContent from '@/components/ProductPageContent';
 import { getSiteUrl } from '@/lib/site-url';
-import { translations } from '@/data/translations';
-import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing';
+import { localizePath, resolveLanguage } from '@/lib/i18n-routing';
 import { getMergedProducts } from '@/lib/product-overrides-store';
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 import { brandSlug } from '@/lib/brand-slug';
@@ -13,6 +12,8 @@ import copurchaseData from '@/data/product-bought-together.json';
 import { serializeJsonLd } from '@/lib/json-ld';
 import { getServerUser } from '@/lib/server-auth';
 import { redactProductPrices } from '@/lib/product-price-visibility';
+import { getProductPublicReviews } from '@/lib/reviews-data-store';
+import { buildPublicPageMetadata } from '@/lib/page-metadata';
 
 const COPURCHASE = copurchaseData as Record<string, string[]>;
 
@@ -23,69 +24,60 @@ type PageProps = {
     }>;
 };
 
-const interpolate = (template: string, params: Record<string, string>): string => {
-    return template.replace(/\{(\w+)\}/g, (match, key: string) => params[key] ?? match);
-};
+const localizedProductText = (product: Awaited<ReturnType<typeof getMergedProducts>>[number], language: string) => ({
+    title: language === 'en'
+        ? product.titleEn?.trim() || product.title
+        : language === 'lv'
+            ? product.titleLv?.trim() || product.title
+            : product.title,
+    description: language === 'en'
+        ? product.technicalSpecs?.__descriptionEn?.trim() || product.description
+        : language === 'lv'
+            ? product.technicalSpecs?.__descriptionLv?.trim() || product.description
+            : product.description,
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
-    const t = translations[language];
     const mergedProducts = await getMergedProducts();
     const product = mergedProducts.find((p) => p.id === id);
 
-    if (!product) {
-        return {
-            title: `${t['product.notFound'] ?? 'Product not found'} | Eshop`,
-            description: t['product.notFoundDescription'] ?? 'Requested product was not found',
-            robots: {
-                index: false,
-                follow: false,
-            },
-        };
-    }
+    if (!product) notFound();
 
     const productPath = `/product/${product.id}`;
-    const metaTitle = product.metaTitle?.trim() || `${product.title} | Eshop`;
+    const localized = localizedProductText(product, language);
+    const metaTitle = language === 'ru' && product.metaTitle?.trim()
+        ? product.metaTitle.trim()
+        : `${localized.title} | Hairshop-Pro`;
     const metaDescription =
-        product.metaDescription?.trim() || `${product.brand} - ${product.title}`;
+        (language === 'ru' ? product.metaDescription?.trim() : undefined)
+        || localized.description?.trim()
+        || `${product.brand} — ${localized.title}`;
     const openGraphImage = product.ogImage?.trim() || product.image;
-    const openGraphAlt = product.ogAlt?.trim() || product.title;
+    const openGraphAlt = product.ogAlt?.trim() || localized.title;
 
-    return {
+    return buildPublicPageMetadata({
+        language,
+        path: productPath,
         title: metaTitle,
         description: metaDescription,
-        openGraph: {
-            title: metaTitle,
-            description: metaDescription,
-            images: [{ url: openGraphImage || '/placeholder.png', alt: openGraphAlt }],
-            url: localizePath(productPath, language),
-            type: 'website',
-        },
-        alternates: pageAlternates(productPath, language),
-    };
+        image: { url: openGraphImage || '/placeholder.png', alt: openGraphAlt },
+    });
 }
 
 export default async function ProductPage({ params }: PageProps): Promise<React.ReactElement> {
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
-    const t = translations[language];
     const mergedProducts = await getMergedProducts();
     const product = mergedProducts.find((p) => p.id === id);
-    const canSeePrices = Boolean(await getServerUser());
+    if (!product) notFound();
 
-    if (!product) {
-        return (
-            <main className="w-full px-4 py-8 text-foreground">
-                <p className="text-center text-gray-700 dark:text-gray-300">
-                    {t['product.notFound'] ?? 'Product not found'}
-                </p>
-                <Link href="/catalog" className="text-primary inline-block mt-4">
-                    {t['product.backToCatalog'] ?? 'Back to catalog'}
-                </Link>
-            </main>
-        );
-    }
+    const [serverUser, approvedReviews] = await Promise.all([
+        getServerUser(),
+        getProductPublicReviews(product.id),
+    ]);
+    const canSeePrices = Boolean(serverUser);
 
     const brandsConfig = await getBrandsConfigFromStore();
     const productBrandSlug = brandSlug(product.brand);
@@ -102,15 +94,22 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
 
     const siteUrl = getSiteUrl();
     const productUrl = `${siteUrl}${localizePath(`/product/${product.id}`, language)}`;
-    const schemaReviewCount = product.reviewCount ?? product.ratingCount ?? 127;
+    const localized = localizedProductText(product, language);
+    const reviewCount = approvedReviews.length;
+    const averageRating = reviewCount > 0
+        ? approvedReviews.reduce((total, review) => total + review.rating, 0) / reviewCount
+        : 0;
+    const absoluteImage = (image: string): string => /^https?:\/\//i.test(image) ? image : `${siteUrl}${image}`;
 
     const productSchema = {
         '@context': 'https://schema.org',
         '@type': 'Product',
-        name: product.title,
-        image: [`${siteUrl}${product.image}`],
-        description: `${product.brand} - ${product.title}`,
-        sku: product.id,
+        '@id': `${productUrl}#product`,
+        name: localized.title,
+        image: (product.images?.length ? product.images : product.image ? [product.image] : []).map(absoluteImage),
+        description: localized.description?.trim() || `${product.brand} — ${localized.title}`,
+        sku: product.sku || product.id,
+        ...(product.barcode ? { gtin: product.barcode } : {}),
         brand: {
             '@type': 'Brand',
             name: product.brand,
@@ -121,27 +120,27 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
                 url: productUrl,
                 priceCurrency: 'EUR',
                 price: product.price.toFixed(2),
+                itemCondition: 'https://schema.org/NewCondition',
                 availability:
                     product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                seller: { '@id': `${siteUrl}/#organization` },
             },
         } : {}),
-        aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: product.rating,
-            reviewCount: schemaReviewCount,
-        },
-        review: [
-            {
-                '@type': 'Review',
-                author: { '@type': 'Person', name: 'Eshop Customer' },
-                reviewRating: { '@type': 'Rating', ratingValue: product.rating, bestRating: 5 },
-                reviewBody: interpolate(
-                    t['product.reviewBodyTemplate'] ??
-                        'Customers rated the product {title} highly.',
-                    { title: product.title }
-                ),
+        ...(reviewCount > 0 ? {
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: Number(averageRating.toFixed(2)),
+                reviewCount,
             },
-        ],
+            review: approvedReviews.map((review) => ({
+                '@type': 'Review',
+                author: { '@type': 'Person', name: review.author },
+                datePublished: review.createdAt,
+                name: review.title,
+                reviewBody: review.text,
+                reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5, worstRating: 1 },
+            })),
+        } : {}),
     };
 
     const productIndex = buildProductIndex(mergedProducts);
@@ -157,7 +156,7 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
         itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}${localizePath('/', language)}` },
             { '@type': 'ListItem', position: 2, name: 'Catalog', item: `${siteUrl}${localizePath('/catalog', language)}` },
-            { '@type': 'ListItem', position: 3, name: product.title, item: productUrl },
+            { '@type': 'ListItem', position: 3, name: localized.title, item: productUrl },
         ],
     };
 

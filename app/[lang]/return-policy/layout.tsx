@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { getReturnPolicyContent } from '@/data/return-policy-content'
-import { pageAlternates, resolveLanguage } from '@/lib/i18n-routing'
+import { resolveLanguage } from '@/lib/i18n-routing'
+import { buildPublicPageMetadata } from '@/lib/page-metadata'
 
 type LayoutProps = {
   children: ReactNode
@@ -12,10 +13,12 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   const language = resolveLanguage((await params).lang)
   const content = getReturnPolicyContent(language)
 
-  return {
-    title: `${content.title} | Eshop`,
-    alternates: pageAlternates('/return-policy', language),
+  const descriptions = {
+    ru: 'Условия возврата товаров, право отказа и порядок возврата средств в Hairshop-Pro.',
+    en: 'Hairshop-Pro product return, right of withdrawal and refund conditions.',
+    lv: 'Hairshop-Pro preču atgriešanas, atteikuma tiesību un atmaksas nosacījumi.',
   }
+  return buildPublicPageMetadata({ language, path: '/return-policy', title: content.title, description: descriptions[language] })
 }
 
 export default function ReturnPolicyLayout({ children }: LayoutProps): ReactNode {

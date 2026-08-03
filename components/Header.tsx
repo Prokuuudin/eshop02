@@ -11,8 +11,10 @@ import ThemeToggle from './ThemeToggle'
 import UserMenu from './UserMenu'
 import AdminHeaderNav from './admin/AdminHeaderNav'
 import { Menu } from 'lucide-react'
+import { useTranslation } from '@/lib/use-translation'
 
 export default function Header(): React.ReactElement {
+  const { t } = useTranslation()
   const pathname = useUnprefixedPathname()
   const isAdminPage = pathname.startsWith('/admin')
 
@@ -35,7 +37,7 @@ export default function Header(): React.ReactElement {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`w-full max-w-[1440px] mx-auto px-2 sm:px-4 flex items-center gap-1 transition-all duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`mx-auto flex w-full max-w-[1200px] items-center gap-1 px-2 transition-all duration-300 sm:px-4 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex items-center flex-shrink-0 min-w-[100px]">
             <HeaderLogo />
@@ -66,10 +68,21 @@ export default function Header(): React.ReactElement {
         {!isAdminPage && (
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
-            <div className="border-t border-border border-b border-b-transparent dark:border-b-border w-full">
-              <div className={`w-full max-w-[1440px] mx-auto px-2 sm:px-4 flex flex-wrap items-center gap-y-2 gap-x-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2'}`}>
+            <div className="w-full border-y border-border bg-slate-50 dark:bg-gray-900">
+              <div className={`mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-2 transition-all duration-300 sm:px-4 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
                   <HeaderSearch />
+                </div>
+                <div className="hidden shrink-0 items-center gap-1 md:flex">
+                  <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.instagram')} className="rounded-md p-2 text-[#0088C4] transition-colors hover:bg-black/5 hover:text-pink-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-pink-400">
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
+                  </a>
+                  <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.facebook')} className="rounded-md p-2 text-[#0088C4] transition-colors hover:bg-black/5 hover:text-blue-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-blue-400">
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><path d="M15 8h-2a1 1 0 0 0-1 1v2h3l-.5 2H12v6h-2v-6H8v-2h2V9a3 3 0 0 1 3-3h2v2z" fill="currentColor" stroke="none"/></svg>
+                  </a>
+                  <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.youtube')} className="rounded-md p-2 text-[#0088C4] transition-colors hover:bg-black/5 hover:text-red-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-red-400">
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
+                  </a>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                   <UserMenu />
@@ -80,7 +93,7 @@ export default function Header(): React.ReactElement {
           </>
         )}
         {isAdminPage && (
-          <div className="border-t border-border w-full max-w-[1440px] mx-auto px-2 sm:px-4 py-2">
+          <div className="mx-auto w-full max-w-[1200px] border-t border-border px-2 py-2 sm:px-4">
             <AdminHeaderNav />
           </div>
         )}

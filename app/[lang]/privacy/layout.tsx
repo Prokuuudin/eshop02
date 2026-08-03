@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { getPrivacyContent } from '@/data/privacy-content'
-import { pageAlternates, resolveLanguage } from '@/lib/i18n-routing'
+import { resolveLanguage } from '@/lib/i18n-routing'
+import { buildPublicPageMetadata } from '@/lib/page-metadata'
 
 type LayoutProps = {
   children: ReactNode
@@ -12,10 +13,12 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
   const language = resolveLanguage((await params).lang)
   const content = getPrivacyContent(language)
 
-  return {
-    title: `${content.title} | Eshop`,
-    alternates: pageAlternates('/privacy', language),
+  const descriptions = {
+    ru: 'Политика конфиденциальности Hairshop-Pro и информация об обработке персональных данных.',
+    en: 'Hairshop-Pro privacy policy and information about personal data processing.',
+    lv: 'Hairshop-Pro privātuma politika un informācija par personas datu apstrādi.',
   }
+  return buildPublicPageMetadata({ language, path: '/privacy', title: content.title, description: descriptions[language] })
 }
 
 export default function PrivacyLayout({ children }: LayoutProps): ReactNode {

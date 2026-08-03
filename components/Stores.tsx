@@ -16,8 +16,9 @@ export default async function Stores({ language }: { language: Language }): Prom
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {stores.map((store) => (
-                        <div
+                        <article
                             key={store.id}
+                            id={store.id}
                             className="store-card p-4 border rounded-lg flex flex-col items-center bg-slate-50 dark:bg-gray-800 shadow overflow-hidden"
                         >
                             <Image
@@ -40,7 +41,7 @@ export default async function Stores({ language }: { language: Language }): Prom
                                     ))}
                                 </ul>
                             </div>
-                        </div>
+                        </article>
                     ))}
                 </div>
             </div>

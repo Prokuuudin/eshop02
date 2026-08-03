@@ -17,7 +17,7 @@ export default function HeaderLogo(): React.ReactElement {
                 height={108}
                 priority
                 sizes="204px"
-                className="absolute left-0 top-1/2 -translate-y-1/2 block dark:hidden h-[72px] w-auto min-[400px]:h-[108px]"
+                className="absolute left-0 top-1/2 block h-[72px] w-auto origin-left -translate-y-1/2 scale-125 dark:hidden min-[400px]:h-[108px]"
             />
             <Image
                 src="/logo-white.svg"
@@ -26,7 +26,7 @@ export default function HeaderLogo(): React.ReactElement {
                 height={108}
                 priority
                 sizes="204px"
-                className="absolute left-0 top-1/2 -translate-y-1/2 hidden dark:block h-[72px] w-auto min-[400px]:h-[108px]"
+                className="absolute left-0 top-1/2 hidden h-[72px] w-auto origin-left -translate-y-1/2 scale-125 dark:block min-[400px]:h-[108px]"
             />
         </Link>
     );

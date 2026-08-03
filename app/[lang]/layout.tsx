@@ -14,6 +14,7 @@ import AccountGuard from '@/components/account/AccountGuard'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 import { LANGUAGES, resolveLanguage } from '@/lib/i18n-routing'
 import { serializeJsonLd } from '@/lib/json-ld'
+import { COMPANY } from '@/data/company'
 
 type LayoutProps = {
   children: ReactNode
@@ -33,17 +34,17 @@ const metadataBaseUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
-  title: 'Eshop - Professional Cosmetics',
+  title: 'Hairshop-Pro - Professional Cosmetics',
   description: 'Professional cosmetics online store',
   openGraph: {
-    title: 'Eshop - Professional Cosmetics',
+    title: 'Hairshop-Pro - Professional Cosmetics',
     description: 'Professional cosmetics online store',
     type: 'website',
     url: metadataBaseUrl
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Eshop - Professional Cosmetics',
+    title: 'Hairshop-Pro - Professional Cosmetics',
     description: 'Professional cosmetics online store'
   }
 }
@@ -61,19 +62,28 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Eshop',
+    '@id': `${siteUrl}/#organization`,
+    name: 'Hairshop-Pro',
+    legalName: COMPANY.name,
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
-    sameAs: [
-      `${siteUrl}/contact`
-    ]
+    logo: `${siteUrl}/logo.svg`,
+    email: COMPANY.email,
+    telephone: COMPANY.phone,
+    sameAs: COMPANY.sameAs,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: COMPANY.legalAddress,
+      addressCountry: 'LV',
+    },
   }
 
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'Eshop',
+    '@id': `${siteUrl}/#website`,
+    name: 'Hairshop-Pro',
     url: siteUrl,
+    publisher: { '@id': `${siteUrl}/#organization` },
     potentialAction: {
       '@type': 'SearchAction',
       target: `${siteUrl}/catalog?search={search_term_string}`,
@@ -102,7 +112,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
           <AccountGuard>
             <Header />
             <main id="main-content" className="w-full pb-6">
-              <div className="mx-auto mt-2 w-full max-w-7xl px-4">
+              <div className="mx-auto mt-2 w-full max-w-[1200px] px-4">
                 <AppBreadcrumbs />
               </div>
               <RouteTransition>{children}</RouteTransition>

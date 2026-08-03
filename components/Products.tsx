@@ -24,19 +24,22 @@ type ProductsFilters = {
 }
 
 type ProductsProps = {
+  initialProducts?: Product[]
   initialFilters?: Partial<ProductsFilters>
   initialSearch?: string
   initialSubcat?: string
+  baseCategory?: string
+  serverPagination?: boolean
 }
 
 const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
-export default function Products({ initialFilters, initialSearch = '', initialSubcat = '' }: ProductsProps): React.ReactElement {
+export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false }: ProductsProps): React.ReactElement {
   const { t, language } = useTranslation();
-  const [products, setProducts] = React.useState<Product[]>([])
-  const [productsLoading, setProductsLoading] = React.useState(true)
+  const [products, setProducts] = React.useState<Product[]>(initialProducts ?? [])
+  const [productsLoading, setProductsLoading] = React.useState(initialProducts === undefined)
   const [productsWarning, setProductsWarning] = React.useState('')
   const router = useRouter()
   const pathname = usePathname()
@@ -88,6 +91,8 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
   }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
 
   React.useEffect(() => {
+    if (serverPagination) return
+
     const loadProducts = async () => {
       try {
         const response = await fetch('/api/products', { cache: 'no-store' })
@@ -104,7 +109,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     }
 
     void loadProducts()
-  }, [])
+  }, [initialProducts, serverPagination])
 
   React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
@@ -121,7 +126,14 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
 
     // cat/subcat живут в URL: иначе router.replace после смены категории в
     // сайдбаре откатил бы выбор через navigation-sync (initialFilters из URL).
-    if (filters.group) {
+    if (baseCategory && filters.group !== baseCategory) {
+      if (filters.group) params.set('cat', filters.group)
+      else params.delete('cat')
+      const nextQuery = params.toString()
+      router.replace(nextQuery ? `/catalog?${nextQuery}` : '/catalog', { scroll: false })
+      return
+    }
+    if (filters.group && filters.group !== baseCategory) {
       params.set('cat', filters.group)
     } else {
       params.delete('cat')
@@ -137,7 +149,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     if (nextQuery === currentQuery || (!nextQuery && !currentQuery)) return
 
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false })
-  }, [filters.brands, filters.group, filters.subcat, pathname, router, searchParams])
+  }, [baseCategory, filters.brands, filters.group, filters.subcat, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
   const activeSubcat = filters.subcat
@@ -204,16 +216,16 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     : t('common.noResults')
 
   // Infinite scroll state
-  const [visibleCount, setVisibleCount] = React.useState(12);
+  const [visibleCount, setVisibleCount] = React.useState(serverPagination ? initialProducts?.length ?? 0 : 12);
   const [loading, setLoading] = React.useState(false);
   const loaderRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    queueMicrotask(() => setVisibleCount(12));
-  }, [filters, normalizedSearch]);
+    queueMicrotask(() => setVisibleCount(serverPagination ? initialProducts?.length ?? 0 : 12));
+  }, [filters, initialProducts?.length, normalizedSearch, serverPagination]);
 
   React.useEffect(() => {
-    if (!loaderRef.current) return;
+    if (serverPagination || !loaderRef.current) return;
     const observer = new window.IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && visibleCount < filtered.length) {
         setLoading(true);
@@ -225,7 +237,7 @@ export default function Products({ initialFilters, initialSearch = '', initialSu
     }, { threshold: 1 });
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [visibleCount, filtered.length]);
+  }, [serverPagination, visibleCount, filtered.length]);
 
   return (
     <section className="products py-8">

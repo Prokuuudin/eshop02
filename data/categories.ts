@@ -12,11 +12,11 @@ export type CategoryCardData = {
 }
 
 export const CATEGORY_CARDS: CategoryCardData[] = [
-  { id: 'hair', titleKey: 'categories.haircare', href: '/catalog?cat=hair', image: '/categories/hair.jpg' },
-  { id: 'nails', titleKey: 'categories.nails', href: '/catalog?cat=nails', image: '/categories/nails.jpg' },
-  { id: 'face', titleKey: 'categories.skincare', href: '/catalog?cat=face', image: '/categories/skin.jpg' },
-  { id: 'body', titleKey: 'categories.bodycare', href: '/catalog?cat=body', image: '/categories/body.jpg' },
-  { id: 'equipment', titleKey: 'categories.equipment', href: '/catalog?cat=equipment', image: '/categories/instruments.jpg' }
+  { id: 'hair', titleKey: 'categories.haircare', href: '/category/hair', image: '/categories/hair.jpg' },
+  { id: 'nails', titleKey: 'categories.nails', href: '/category/nails', image: '/categories/nails.jpg' },
+  { id: 'face', titleKey: 'categories.skincare', href: '/category/face', image: '/categories/skin.jpg' },
+  { id: 'body', titleKey: 'categories.bodycare', href: '/category/body', image: '/categories/body.jpg' },
+  { id: 'equipment', titleKey: 'categories.equipment', href: '/category/equipment', image: '/categories/instruments.jpg' }
 ]
 
 export const SUBCATEGORIES_BY_ID: Record<string, Subcategory[]> = {

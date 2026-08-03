@@ -7,8 +7,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const language = resolveLanguage((await params).lang);
   const t = translations[language];
   return {
-    title: `${t['checkout.title'] ?? 'Checkout'} | Eshop`,
-    description: t['meta.checkoutDescription'] ?? 'Secure checkout in Eshop',
+    title: `${t['checkout.title'] ?? 'Checkout'} | Hairshop-Pro`,
+    description: t['meta.checkoutDescription'] ?? 'Secure checkout in Hairshop-Pro',
     robots: { index: false, follow: false },
     alternates: { canonical: '/checkout' }
   };

@@ -49,7 +49,7 @@ export default function AccountPage(): React.ReactElement {
     const { getOrderStatus } = useAdminStore();
     const { getByEmail, replaceForEmail } = useSavedAddresses();
     const allOrders = ordersStore.orders;
-    const { upsertOrder } = ordersStore;
+    const { replaceOrders } = ordersStore;
     const locale = getLocaleFromLanguage(language);
     useEffect(() => {
         if (!isHydrated || !user) return;
@@ -59,7 +59,7 @@ export default function AccountPage(): React.ReactElement {
             .then((r) => r.json())
             .then(({ orders: dbOrders }) => {
                 if (Array.isArray(dbOrders)) {
-                    dbOrders.forEach((o: Order) => upsertOrder(o));
+                    replaceOrders(dbOrders as Order[]);
                 }
             })
             .catch(() => {});
@@ -74,7 +74,7 @@ export default function AccountPage(): React.ReactElement {
                 }
             })
             .catch(() => {});
-    }, [isHydrated, upsertOrder, user]);
+    }, [isHydrated, replaceOrders, user]);
     const userOrders = allOrders.filter((o) => o.email === user?.email);
     const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);
     const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);

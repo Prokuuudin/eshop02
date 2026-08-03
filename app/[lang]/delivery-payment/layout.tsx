@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { translations } from '@/data/translations'
-import { pageAlternates, localizePath, resolveLanguage } from '@/lib/i18n-routing'
+import { resolveLanguage } from '@/lib/i18n-routing'
+import { buildPublicPageMetadata } from '@/lib/page-metadata'
 
 type LayoutProps = {
   children: ReactNode
@@ -11,20 +12,10 @@ type LayoutProps = {
 export async function generateMetadata({ params }: LayoutProps): Promise<Metadata> {
   const language = resolveLanguage((await params).lang)
   const t = translations[language]
-  const pageTitle = `${t['deliveryPayment.title'] ?? 'Delivery & payment'} | Eshop`
-  const pageDescription = t['deliveryPayment.note'] ?? 'Delivery and payment terms for Eshop orders'
+  const pageTitle = t['deliveryPayment.title'] ?? 'Delivery & payment'
+  const pageDescription = t['deliveryPayment.note'] ?? 'Delivery and payment terms for Hairshop-Pro orders'
 
-  return {
-    title: pageTitle,
-    description: pageDescription,
-    alternates: pageAlternates('/delivery-payment', language),
-    openGraph: {
-      title: pageTitle,
-      description: pageDescription,
-      url: localizePath('/delivery-payment', language),
-      type: 'website'
-    }
-  }
+  return buildPublicPageMetadata({ language, path: '/delivery-payment', title: pageTitle, description: pageDescription })
 }
 
 export default function DeliveryPaymentLayout({ children }: LayoutProps): ReactNode {

@@ -83,7 +83,7 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
                   if (subcategories.length === 0) {
                     return (
                       <li key={cat.id}>
-                        <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className={subLinkClass}>
+                        <Link href={`/category/${cat.id}`} onClick={onClose} className={subLinkClass}>
                           {catLabel}
                         </Link>
                       </li>
@@ -105,14 +105,14 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
                       {expanded && (
                         <ul className="ml-3 mt-1 space-y-1 border-l border-border pl-3">
                           <li>
-                            <Link href={`/catalog?cat=${cat.id}`} onClick={onClose} className={subLinkClass}>
+                            <Link href={`/category/${cat.id}`} onClick={onClose} className={subLinkClass}>
                               {t('categories.all')}
                             </Link>
                           </li>
                           {subcategories.map((sub) => (
                             <li key={sub.slug}>
                               <Link
-                                href={`/catalog?cat=${cat.id}&subcat=${encodeURIComponent(sub.slug)}`}
+                                href={`/category/${cat.id}?subcat=${encodeURIComponent(sub.slug)}`}
                                 onClick={onClose}
                                 className={subLinkClass}
                               >

@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { getSiteUrl } from '@/lib/site-url'
 import { useTranslation } from '@/lib/use-translation'
 import { COMPANY, COMPANY_CONTACT_LINES } from '@/data/company'
+import { stores } from '@/data/stores'
 import { serializeJsonLd } from '@/lib/json-ld'
+import { localizePath } from '@/lib/i18n-routing'
 
 type TurnstileApi = {
   render: (container: HTMLElement, options: {
@@ -24,7 +26,7 @@ type TurnstileWindow = Window & typeof globalThis & {
 }
 
 export default function ContactPage(): React.ReactElement {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [formData, setFormData] = useState(() => ({
     name: '',
     email: '',
@@ -42,6 +44,7 @@ export default function ContactPage(): React.ReactElement {
   const turnstileEnabled = Boolean(turnstileSiteKey)
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null)
   const turnstileWidgetIdRef = useRef<string | null>(null)
+  const contactUrl = `${siteUrl}${localizePath('/contact', language)}`
 
   const setTurnstileToken = useCallback((token: string) => {
     setFormData((prev) => ({ ...prev, turnstileToken: token }))
@@ -116,46 +119,101 @@ export default function ContactPage(): React.ReactElement {
         }
       }
     ],
-    url: `${siteUrl}/contact`
+    url: contactUrl
   }
+
+  const openingHoursFor = (storeId: string) => {
+    const weekdayCloses = storeId === 'riga-office' ? '17:00' : '19:00'
+    const weekendClosed = storeId === 'riga-office'
+    const sundayClosed = weekendClosed || storeId === 'liepaja' || storeId === 'valmiera' || storeId === 'jelgava'
+    return [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        opens: '09:00',
+        closes: weekdayCloses,
+      },
+      ...(!weekendClosed ? [{
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Saturday'],
+        opens: '10:00',
+        closes: '16:00',
+      }] : []),
+      ...(!sundayClosed ? [{
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Sunday'],
+        opens: '10:00',
+        closes: '16:00',
+      }] : []),
+    ]
+  }
+
+  const storeSchemas = stores.map((store) => {
+    const addressParts = store.address.lv.split(',').map((part) => part.trim())
+    const postalCode = addressParts.find((part) => /^LV-\d{4}$/.test(part))
+    const addressLocality = store.city.lv
+    const streetAddress = addressParts
+      .filter((part) => part !== addressLocality && part !== postalCode && part !== 'Latvija')
+      .join(', ')
+    const storeUrl = `${siteUrl}${localizePath('/stores', language)}#${store.id}`
+    const geo = 'geo' in store ? store.geo : undefined
+
+    return {
+      '@type': store.id === 'riga-office' ? 'LocalBusiness' : 'Store',
+      '@id': `${siteUrl}/#store-${store.id}`,
+      name: `Hairshop-Pro — ${store.name[language]}`,
+      url: storeUrl,
+      image: `${siteUrl}/stores/${store.id}.jpg`,
+      telephone: store.phone,
+      email: COMPANY.email,
+      parentOrganization: { '@id': `${siteUrl}/#organization` },
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress,
+        addressLocality,
+        ...(postalCode ? { postalCode } : {}),
+        addressCountry: 'LV',
+      },
+      ...(geo ? {
+        geo: {
+          '@type': 'GeoCoordinates',
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+        },
+      } : {}),
+      hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address.lv)}`,
+      openingHoursSpecification: openingHoursFor(store.id),
+      areaServed: { '@type': 'Country', name: 'Latvia' },
+      priceRange: '€€',
+    }
+  })
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: 'HairShop',
-    legalName: COMPANY.name,
-    url: `${siteUrl}/contact`,
-    image: `${siteUrl}/logo.png`,
-    telephone: COMPANY.phone,
-    email: COMPANY.email,
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: 'Rencēnu iela 10A',
-      addressLocality: 'Rīga',
-      postalCode: 'LV-1073',
-      addressCountry: 'Latvija'
-    },
-    taxID: COMPANY.regNumber,
-    vatID: COMPANY.vatNumber,
-    bankAccount: COMPANY.bankAccount,
-    bankName: COMPANY.bankName,
-    swift: COMPANY.swift,
-    openingHoursSpecification: [
+    '@graph': [
       {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: [
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday'
-        ],
-        opens: '10:00',
-        closes: '18:00'
-      }
+        '@type': 'Organization',
+        '@id': `${siteUrl}/#organization`,
+        name: 'Hairshop-Pro',
+        legalName: COMPANY.name,
+        url: siteUrl,
+        logo: `${siteUrl}/logo.svg`,
+        telephone: COMPANY.phone,
+        email: COMPANY.email,
+        taxID: COMPANY.regNumber,
+        vatID: COMPANY.vatNumber,
+        sameAs: COMPANY.sameAs,
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Rencēnu iela 10A',
+          addressLocality: 'Rīga',
+          postalCode: 'LV-1073',
+          addressCountry: 'LV',
+        },
+        department: storeSchemas.map((store) => ({ '@id': store['@id'] })),
+      },
+      ...storeSchemas,
     ],
-    areaServed: 'LV',
-    priceRange: '€€'
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

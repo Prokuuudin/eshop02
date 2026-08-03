@@ -14,7 +14,7 @@ export default async function Stores({ language }: { language: Language }): Prom
                 <div className="mb-4">
                     <h2 className="stores__title text-2xl font-semibold">{t('stores.title')}</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {stores.map((store) => (
                         <div
                             key={store.id}

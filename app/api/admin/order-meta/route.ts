@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
 import { getServerOrderById } from '@/lib/orders-data-store'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { appendServerAudit } from '@/lib/server-audit'
+import { z } from 'zod'
+
+const orderStatusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
+type OrderStatus = z.infer<typeof orderStatusSchema>
+const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
+}
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
@@ -74,10 +86,8 @@ async function sendOrderStatusEmail(
 // Returns statuses and notes for given order IDs
 export async function GET(req: NextRequest): Promise<Response> {
   try {
-    const user = await getServerUser()
-    if (!user || user.platformRole !== 'admin') {
-      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-    }
+    const user = await requireAdminPermission('orders.read')
+    if (user instanceof NextResponse) return user
 
     const idsParam = req.nextUrl.searchParams.get('ids') || ''
     const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 200)
@@ -105,32 +115,93 @@ export async function GET(req: NextRequest): Promise<Response> {
 // POST /api/admin/order-meta — upsert status or note
 export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const user = await getServerUser()
-    if (!user || user.platformRole !== 'admin') {
-      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-    }
+    const user = await requireAdminPermission('orders.update')
+    if (user instanceof NextResponse) return user
 
-    const { orderId, status, note } = await req.json()
-    if (!orderId) return NextResponse.json({ error: 'orderId_required' }, { status: 400 })
+    const parsed = z.object({
+      orderId: z.string().trim().min(1).max(100),
+      status: orderStatusSchema.optional(),
+      note: z.string().max(10_000).optional(),
+    }).safeParse(await req.json().catch(() => null))
+    if (!parsed.success || (parsed.data.status === undefined && parsed.data.note === undefined)) {
+      return NextResponse.json({ error: 'invalid_order_meta' }, { status: 400 })
+    }
+    const { orderId, status, note } = parsed.data
 
     if (status !== undefined) {
-      await prisma.orderStatusRecord.upsert({
-        where: { orderId },
-        create: { orderId, status },
-        update: { status },
+      const transition = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: { id: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true },
+        })
+        if (!order) return { error: 'order_not_found' as const }
+        const currentRow = await tx.orderStatusRecord.findUnique({ where: { orderId } })
+        const currentResult = orderStatusSchema.safeParse(currentRow?.status ?? 'pending')
+        if (!currentResult.success) return { error: 'invalid_current_status' as const }
+        const current = currentResult.data
+        if (current !== status && !ALLOWED_TRANSITIONS[current].includes(status)) {
+          return { error: 'invalid_status_transition' as const, current }
+        }
+        if (current === status) return { current }
+        if (status === 'cancelled') {
+          if (order.paymentStatus === 'paid') return { error: 'paid_order_requires_refund' as const, current }
+          if (order.stockReservationStatus !== 'released') {
+            for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
+              if (item.id && Number.isInteger(item.quantity) && Number(item.quantity) > 0) {
+                await tx.product.updateMany({
+                  where: { id: item.id, isDeleted: false },
+                  data: { stock: { increment: Number(item.quantity) } },
+                })
+              }
+            }
+            await tx.order.update({
+              where: { id: orderId },
+              data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },
+            })
+          }
+        }
+        await tx.orderStatusRecord.upsert({
+          where: { orderId },
+          create: { orderId, status },
+          update: { status },
+        })
+        await appendServerAudit(tx, req, user, {
+            action: 'order.status_changed', entityType: 'order', entityId: orderId,
+            entityTitle: `${order.firstName} ${order.lastName}`.trim(),
+            before: { status: current },
+            after: { status },
+        })
+        return { current }
       })
+      if ('error' in transition) {
+        return NextResponse.json(transition, { status: transition.error === 'order_not_found' ? 404 : 409 })
+      }
 
       if (status === 'shipped' || status === 'delivered') {
-        sendOrderStatusEmail(orderId, status).catch(console.error)
+        try {
+          await sendOrderStatusEmail(orderId, status)
+        } catch (emailError) {
+          console.error('[admin/order-meta status email]', emailError)
+          return NextResponse.json({ ok: true, warning: 'status_saved_email_failed' }, { status: 202 })
+        }
       }
     }
 
     if (note !== undefined) {
-      await prisma.orderNote.upsert({
-        where: { orderId },
-        create: { orderId, note },
-        update: { note },
+      const saved = await prisma.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, firstName: true, lastName: true } })
+        if (!order) return false
+        const previous = await tx.orderNote.findUnique({ where: { orderId } })
+        await tx.orderNote.upsert({ where: { orderId }, create: { orderId, note }, update: { note } })
+        await appendServerAudit(tx, req, user, {
+            action: 'order.note_saved', entityType: 'order', entityId: orderId,
+            entityTitle: `${order.firstName} ${order.lastName}`.trim(),
+            before: { note: previous?.note ?? null }, after: { note },
+        })
+        return true
       })
+      if (!saved) return NextResponse.json({ error: 'order_not_found' }, { status: 404 })
     }
 
     return NextResponse.json({ ok: true })

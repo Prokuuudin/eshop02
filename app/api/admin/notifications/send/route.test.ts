@@ -14,12 +14,16 @@ const {
   notificationCreateManyMock: vi.fn(),
 }))
 
-vi.mock('@/lib/server-auth', () => ({ getServerUser: getServerUserMock }))
+vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: getServerUserMock }))
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: sendEmailMock }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findMany: userFindManyMock },
     userNotification: { createMany: notificationCreateManyMock },
+    $transaction: vi.fn((callback: (client: unknown) => unknown) => callback({
+      userNotification: { createMany: notificationCreateManyMock },
+    })),
   },
 }))
 

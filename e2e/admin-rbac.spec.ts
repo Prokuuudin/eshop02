@@ -52,6 +52,20 @@ test('manager can access partial admin dashboard and RFQ only', async ({ page })
 
   await page.goto('/admin/rfq')
   await expect(page.getByRole('heading', { name: 'RFQ заявки' })).toBeVisible()
+
+  // Проверяем серверную матрицу, а не только доступность клиентского экрана.
+  const ordersResponse = await page.request.get('/api/admin/orders?take=1')
+  expect(ordersResponse.ok()).toBeTruthy()
+  const ordersPayload = (await ordersResponse.json()) as { orders?: unknown[] }
+  expect(Array.isArray(ordersPayload.orders)).toBe(true)
+
+  const rfqResponse = await page.request.get('/api/rfq?take=1')
+  expect(rfqResponse.ok()).toBeTruthy()
+  const rfqPayload = (await rfqResponse.json()) as { requests?: unknown[] }
+  expect(Array.isArray(rfqPayload.requests)).toBe(true)
+
+  const usersResponse = await page.request.get('/api/admin/users?take=1')
+  expect(usersResponse.status()).toBe(403)
 })
 
 test('manager is forbidden from full-access admin pages', async ({ page }) => {

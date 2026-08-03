@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
 
 export const runtime = 'nodejs'
 
@@ -70,6 +71,7 @@ export async function PATCH(
     const requestedStatus = typeof data.status === 'string' ? data.status : null
 
     const updated = await prisma.$transaction(async (tx) => {
+      let after
       if (requestedStatus && STOCK_RESTORE_STATUSES.has(requestedStatus)) {
         const transitioned = await tx.returnRequest.updateMany({
           where: { id, status: { notIn: [...STOCK_RESTORE_STATUSES] } },
@@ -89,10 +91,16 @@ export async function PATCH(
             })
           }
         }
-        return tx.returnRequest.findUniqueOrThrow({ where: { id } })
+        after = await tx.returnRequest.findUniqueOrThrow({ where: { id } })
+      } else {
+        after = await tx.returnRequest.update({ where: { id }, data })
       }
-
-      return tx.returnRequest.update({ where: { id }, data })
+      await appendServerAudit(tx, req, user, {
+        action: user.platformRole === 'admin' ? 'return.admin_updated' : 'return.comment_updated',
+        entityType: 'return', entityId: id, entityTitle: ret.orderId, before: ret, after,
+        reason: typeof body.reason === 'string' ? body.reason.slice(0, 1000) : null,
+      })
+      return after
     })
 
     return NextResponse.json({

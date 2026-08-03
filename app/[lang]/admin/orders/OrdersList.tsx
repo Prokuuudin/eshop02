@@ -701,6 +701,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     onClick={() => {
                                                         const prev = getOrderStatus(order.id);
                                                         setOrderStatus(order.id, s);
+                                                        return;
                                                         logAdminAction(
                                                             'order.status_changed',
                                                             {
@@ -745,16 +746,17 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     const noteText =
                                                         noteDrafts[order.id] ??
                                                         getOrderNote(order.id);
-                                                    setOrderNote(order.id, noteText);
+                                                    if (!(await setOrderNote(order.id, noteText))) return;
                                                     setNoteDrafts((prev) => {
                                                         const n = { ...prev };
                                                         delete n[order.id];
                                                         return n;
                                                     });
+                                                    return;
                                                     logAdminAction(
                                                         'order.note_saved',
                                                         {

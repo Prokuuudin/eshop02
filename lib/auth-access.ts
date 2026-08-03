@@ -1,14 +1,12 @@
 import type { AdminAccessLevel, User } from './auth-types'
+import { getPermissionAccessLevel } from './admin-permissions'
 
 export const isAdminUser = (user: User | null | undefined): boolean => {
   return user?.platformRole === 'admin'
 }
 
 export const getAdminAccessLevel = (user: User | null | undefined): AdminAccessLevel => {
-  if (!user) return 'none'
-  if (isAdminUser(user)) return 'admin'
-  if (user.teamRole === 'manager' || user.teamRole === 'admin') return 'manager'
-  return 'none'
+  return getPermissionAccessLevel(user)
 }
 
 export const canAccessAdminPanel = (user: User | null | undefined): boolean => {

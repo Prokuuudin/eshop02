@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
@@ -13,15 +12,16 @@ type AdminStore = {
   orderNotes: Record<string, string>
   bonusProgram: BonusProgramConfig
   cardOrder: string[] | null
-  setOrderStatus: (orderId: string, status: OrderStatus) => void
+  setOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>
   getOrderStatus: (orderId: string) => OrderStatus
-  setOrderNote: (orderId: string, note: string) => void
+  setOrderNote: (orderId: string, note: string) => Promise<void>
   getOrderNote: (orderId: string) => string
-  updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => void
+  updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => Promise<BonusProgramConfig>
   setBonusProgram: (config: BonusProgramConfig) => void
   setCardOrder: (order: string[]) => void
   resetCardOrder: () => void
   loadOrderMeta: (orderIds: string[]) => Promise<void>
+  clearOrderMeta: () => void
 }
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -36,41 +36,35 @@ const clampFloat = (value: number, min: number, max: number): number => {
 }
 
 export const useAdminStore = create<AdminStore>()(
-  persist(
     (set, get) => ({
       orderStatuses: {},
       orderNotes: {},
       bonusProgram: DEFAULT_BONUS_PROGRAM_CONFIG,
       cardOrder: null,
+      clearOrderMeta: () => set({ orderStatuses: {}, orderNotes: {} }),
 
-      setOrderStatus: (orderId: string, status: OrderStatus) => {
-        set((state) => ({
-          orderStatuses: { ...state.orderStatuses, [orderId]: status }
-        }))
-        if (typeof window !== 'undefined') {
-          fetch('/api/admin/order-meta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, status }),
-          }).catch(() => {})
-        }
+      setOrderStatus: async (orderId: string, status: OrderStatus) => {
+        const res = await fetch('/api/admin/order-meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, status }),
+        })
+        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? 'status_update_failed')
+        set((state) => ({ orderStatuses: { ...state.orderStatuses, [orderId]: status } }))
       },
 
       getOrderStatus: (orderId: string) => {
         return get().orderStatuses[orderId] || 'pending'
       },
 
-      setOrderNote: (orderId: string, note: string) => {
-        set((state) => ({
-          orderNotes: { ...state.orderNotes, [orderId]: note }
-        }))
-        if (typeof window !== 'undefined') {
-          fetch('/api/admin/order-meta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, note }),
-          }).catch(() => {})
-        }
+      setOrderNote: async (orderId: string, note: string) => {
+        const res = await fetch('/api/admin/order-meta', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, note }),
+        })
+        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? 'note_update_failed')
+        set((state) => ({ orderNotes: { ...state.orderNotes, [orderId]: note } }))
       },
 
       getOrderNote: (orderId: string) => {
@@ -88,49 +82,35 @@ export const useAdminStore = create<AdminStore>()(
           if (!res.ok) return
           const { statuses, notes } = await res.json()
           set((state) => ({
-            orderStatuses: { ...statuses, ...state.orderStatuses },
-            orderNotes: { ...notes, ...state.orderNotes },
+            orderStatuses: { ...state.orderStatuses, ...statuses },
+            orderNotes: { ...state.orderNotes, ...notes },
           }))
         } catch { /* ignore */ }
       },
 
       updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => {
-        let saved: BonusProgramConfig = get().bonusProgram
-        set((state) => {
-          saved = {
-            enabled: nextConfig.enabled ?? state.bonusProgram.enabled,
-            earnRatePercent: clampFloat(nextConfig.earnRatePercent ?? state.bonusProgram.earnRatePercent, 0, 100),
-            maxSpendPercent: clamp(nextConfig.maxSpendPercent ?? state.bonusProgram.maxSpendPercent, 0, 100),
-            minOrderForEarn: clamp(nextConfig.minOrderForEarn ?? state.bonusProgram.minOrderForEarn, 0, 1_000_000),
-            pointsExpiryDays: clamp(nextConfig.pointsExpiryDays ?? state.bonusProgram.pointsExpiryDays, 0, 3650),
-            minPointsToSpend: clamp(nextConfig.minPointsToSpend ?? state.bonusProgram.minPointsToSpend, 0, 1_000_000),
-            maxEarnPerOrder: clamp(nextConfig.maxEarnPerOrder ?? state.bonusProgram.maxEarnPerOrder, 0, 1_000_000),
-          }
-          return { bonusProgram: saved }
-        })
-        if (typeof window !== 'undefined') {
-          fetch('/api/admin/bonus-config', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(saved),
-          }).catch(() => {})
+        const current = get().bonusProgram
+        const requested: BonusProgramConfig = {
+          enabled: nextConfig.enabled ?? current.enabled,
+          earnRatePercent: clampFloat(nextConfig.earnRatePercent ?? current.earnRatePercent, 0, 100),
+          maxSpendPercent: clamp(nextConfig.maxSpendPercent ?? current.maxSpendPercent, 0, 100),
+          minOrderForEarn: clamp(nextConfig.minOrderForEarn ?? current.minOrderForEarn, 0, 1_000_000),
+          pointsExpiryDays: clamp(nextConfig.pointsExpiryDays ?? current.pointsExpiryDays, 0, 3650),
+          minPointsToSpend: clamp(nextConfig.minPointsToSpend ?? current.minPointsToSpend, 0, 1_000_000),
+          maxEarnPerOrder: clamp(nextConfig.maxEarnPerOrder ?? current.maxEarnPerOrder, 0, 1_000_000),
         }
+        return fetch('/api/admin/bonus-config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requested),
+        }).then(async (response) => {
+          if (!response.ok) throw new Error('bonus_config_save_failed')
+          const saved = await response.json() as BonusProgramConfig
+          set({ bonusProgram: saved })
+          return saved
+        })
       },
 
       setBonusProgram: (config: BonusProgramConfig) => set({ bonusProgram: config }),
-    }),
-    {
-      name: 'admin-store',
-      // v1: earnRatePercent 5 -> 0.5; в localStorage старых браузеров лежит 5,
-      // и без миграции оно перекрывает новый дефолт.
-      version: 1,
-      migrate: (persistedState, version) => {
-        const state = (persistedState ?? {}) as Record<string, unknown>
-        if (version < 1) {
-          return { ...state, bonusProgram: DEFAULT_BONUS_PROGRAM_CONFIG }
-        }
-        return state
-      },
-    }
-  )
+    })
 )

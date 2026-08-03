@@ -8,7 +8,7 @@ import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
 import { useTranslation } from '@/lib/use-translation';
 import { logAdminAction } from '@/lib/admin-log-store';
-import { useOrders as useOrdersStore } from '@/lib/orders-store';
+import { reportAdminError } from '@/lib/admin-ui-errors';
 import {
     DELIVERY_LABELS,
     EDIT_DELIVERY_COSTS,
@@ -23,26 +23,9 @@ import {
 } from './order-config';
 
 function useAdminOrdersPageState() {
-    const { orders } = useOrders();
-    const { getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, loadOrderMeta } =
+    const { orders, upsertOrder } = useOrders();
+    const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } =
         useAdminStore();
-    const { upsertOrder } = useOrdersStore();
-
-    useEffect(() => {
-        fetch('/api/admin/orders?take=200')
-            .then((r) => r.json())
-            .then(({ orders: dbOrders }) => {
-                if (!Array.isArray(dbOrders)) return;
-                const ids: string[] = [];
-                for (const o of dbOrders) {
-                    upsertOrder(o as import('@/lib/orders-store').Order);
-                    ids.push(o.id);
-                }
-                if (ids.length) loadOrderMeta(ids);
-            })
-            .catch(() => {});
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
     const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
     // â”€â”€ Edit mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -55,6 +38,25 @@ function useAdminOrdersPageState() {
     const [editProductSearch, setEditProductSearch] = useState('');
     const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
     const [editSaving, setEditSaving] = useState(false);
+    const [mutationError, setMutationError] = useState('');
+    const setOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
+        setMutationError('');
+        try {
+            await persistOrderStatus(orderId, status);
+        } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Не удалось изменить статус');
+        }
+    };
+    const setOrderNote = async (orderId: string, note: string): Promise<boolean> => {
+        setMutationError('');
+        try {
+            await persistOrderNote(orderId, note);
+            return true;
+        } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Не удалось сохранить заметку');
+            return false;
+        }
+    };
     const { language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
 
@@ -162,9 +164,31 @@ function useAdminOrdersPageState() {
         }
     };
 
-    const applyBulkStatus = () => {
+    const applyBulkStatus = async () => {
         if (!bulkStatus) return;
         const ids = Array.from(selectedIds);
+        setMutationError('');
+        try {
+            const res = await fetch('/api/admin/order-meta/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderIds: ids, status: bulkStatus }),
+            });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(payload?.error ?? 'bulk_status_failed');
+            useAdminStore.setState((state) => ({
+                orderStatuses: {
+                    ...state.orderStatuses,
+                    ...Object.fromEntries(ids.map((id) => [id, bulkStatus as OrderStatus])),
+                },
+            }));
+            setSelectedIds(new Set());
+            setBulkStatus('');
+            return;
+        } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Не удалось изменить статусы');
+            return;
+        }
         ids.forEach((id) => {
             const prev = getOrderStatus(id);
             setOrderStatus(id, bulkStatus as OrderStatus);
@@ -298,7 +322,7 @@ function useAdminOrdersPageState() {
                 .then((d: { data?: { products?: CatalogProduct[] } }) =>
                     setCatalog(d.data?.products ?? [])
                 )
-                .catch(() => {});
+                .catch((error) => reportAdminError(error, 'Каталог для редактирования заказа'));
         }
     };
 
@@ -307,7 +331,7 @@ function useAdminOrdersPageState() {
         setEditProductSearch('');
     };
 
-    const saveEdit = (order: (typeof orders)[number]) => {
+    const saveEdit = async (order: (typeof orders)[number]) => {
         const newSubtotal = editItems.reduce((s, i) => s + i.price * i.quantity, 0);
         const newDelivery = EDIT_DELIVERY_COSTS[editDelivery] ?? order.delivery;
         // Keep discount proportional if it existed
@@ -324,6 +348,34 @@ function useAdminOrdersPageState() {
             0,
             newSubtotal - newDiscount + newDelivery + (taxIncluded ? 0 : newTax)
         );
+
+        setEditSaving(true);
+        setMutationError('');
+        try {
+            const res = await fetch('/api/admin/orders', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: order.id,
+                    items: editItems.map(({ id, quantity, lineKey, variantLabel }) => ({ id, quantity, lineKey, variantLabel })),
+                    address: editAddress.trim() || order.address,
+                    city: editCity.trim() || order.city,
+                    postalCode: editPostalCode.trim() || undefined,
+                    deliveryMethod: editDelivery,
+                }),
+            });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(payload?.message ?? payload?.error ?? 'order_update_failed');
+            upsertOrder(payload.order as import('@/lib/orders-store').Order);
+            setEditingOrderId(null);
+            setEditProductSearch('');
+            return;
+        } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Не удалось сохранить заказ');
+            return;
+        } finally {
+            setEditSaving(false);
+        }
 
         setEditSaving(true);
         const updated = {
@@ -502,6 +554,7 @@ function useAdminOrdersPageState() {
         editProductSearch,
         setEditProductSearch,
         editSaving,
+        mutationError,
         language,
         locale,
         search,

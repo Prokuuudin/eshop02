@@ -4,6 +4,7 @@ import { Prisma } from '@/generated/prisma/client'
 import { BRANDS } from '@/data/brands'
 import { BRAND_DESCRIPTIONS } from '@/data/brandDescriptions'
 import type { BrandsConfigPayload, BrandConfigItem, LocalizedBrandDescription, BrandManufacturerInfo } from '@/lib/brands-config'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 
 const BRANDS_CONFIG_KEY = 'brands-config'
 
@@ -101,8 +102,8 @@ const normalizePayload = (input?: Partial<BrandsConfigPayload> | null): BrandsCo
   return brands.length > 0 ? { brands } : buildDefaultPayload()
 }
 
-export async function getBrandsConfigFromStore(): Promise<BrandsConfigPayload> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: BRANDS_CONFIG_KEY } })
+export async function getBrandsConfigFromStore(db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<BrandsConfigPayload> {
+  const row = await db.keyValueSetting.findUnique({ where: { key: BRANDS_CONFIG_KEY } })
   if (!row) return buildDefaultPayload()
   try {
     return normalizePayload(row.value as Partial<BrandsConfigPayload>)
@@ -111,9 +112,9 @@ export async function getBrandsConfigFromStore(): Promise<BrandsConfigPayload> {
   }
 }
 
-export async function saveBrandsConfigToStore(payload: Partial<BrandsConfigPayload>): Promise<BrandsConfigPayload> {
+export async function saveBrandsConfigToStore(payload: Partial<BrandsConfigPayload>, db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<BrandsConfigPayload> {
   const normalized = normalizePayload(payload)
-  await prisma.keyValueSetting.upsert({
+  await db.keyValueSetting.upsert({
     where: { key: BRANDS_CONFIG_KEY },
     create: { key: BRANDS_CONFIG_KEY, value: normalized as unknown as Prisma.InputJsonValue },
     update: { value: normalized as unknown as Prisma.InputJsonValue },

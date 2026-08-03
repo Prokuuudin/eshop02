@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
 import { buildInvoiceHtml, type InvoiceLang } from '@/lib/invoice-template'
 import { sendEmail } from '@/lib/mailer'
 import { getServerOrderById } from '@/lib/orders-data-store'
@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const __gate = await requireAdmin()
+  const __gate = await requireAdminPermission('orders.update')
   if (__gate instanceof NextResponse) return __gate
 
   // Auth: require X-Admin-Token header matching ADMIN_API_TOKEN env var

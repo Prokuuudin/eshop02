@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { hasAdminPermission } from '@/lib/admin-permissions'
+import { appendServerAudit } from '@/lib/server-audit'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +18,7 @@ export async function GET(
     const rfq = await prisma.rFQRequest.findUnique({ where: { id } })
     if (!rfq) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    if (user.platformRole !== 'admin' && rfq.companyId !== user.companyId) {
+    if (!hasAdminPermission(user, 'rfq.read') && rfq.companyId !== user.companyId) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -41,14 +43,14 @@ export async function PATCH(
     const rfq = await prisma.rFQRequest.findUnique({ where: { id } })
     if (!rfq) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    if (user.platformRole !== 'admin' && rfq.companyId !== user.companyId) {
+    if (!hasAdminPermission(user, 'rfq.read') && rfq.companyId !== user.companyId) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
     const body = await req.json()
     const data: Record<string, unknown> = {}
 
-    if (user.platformRole === 'admin') {
+    if (hasAdminPermission(user, 'rfq.quote')) {
       // Admin can update status, quote, timeline, notes
       if ('status' in body) data.status = body.status
       if ('quote' in body) data.quote = body.quote ?? null
@@ -72,7 +74,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'no_allowed_fields' }, { status: 400 })
     }
 
-    const updated = await prisma.rFQRequest.update({ where: { id }, data })
+    const updated = await prisma.$transaction(async (tx) => {
+      const after = await tx.rFQRequest.update({ where: { id }, data })
+      await appendServerAudit(tx, req, user, {
+        action: hasAdminPermission(user, 'rfq.quote') ? 'rfq.admin_updated' : 'rfq.note_added',
+        entityType: 'rfq', entityId: id, entityTitle: rfq.companyId, before: rfq, after,
+        reason: typeof body.reason === 'string' ? body.reason.slice(0, 1000) : null,
+      })
+      return after
+    })
     return NextResponse.json({
       request: { ...updated, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() },
     })

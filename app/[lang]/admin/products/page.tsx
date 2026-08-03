@@ -10,9 +10,11 @@ import { useI18n } from '@/lib/i18n-context';
 import { useTranslation } from '@/lib/i18n-context';
 import NewProductForm from '@/components/admin/products/NewProductForm';
 import { logAdminAction } from '@/lib/admin-log-store';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 import type { Product } from '@/data/products';
 
 export default function AdminProductsPage(): React.ReactElement {
+    const confirmAction = useAdminConfirm();
     const router = useRouter();
     const admin = useProductsAdmin();
     const { language } = useI18n();
@@ -48,10 +50,9 @@ export default function AdminProductsPage(): React.ReactElement {
                             archiveOpen={archiveOpen}
                             archiveItems={admin.archiveItems}
                             onRestoreArchive={admin.handleRestoreProduct}
-                            onDeleteArchive={(id) => {
-                                if (window.confirm(t('admin.productsPage.confirm.deleteForever').replace('{id}', id))) {
-                                    admin.handlePurgeArchivedProduct(id);
-                                }
+                            onDeleteArchive={async (id) => {
+                                const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: 'Товар будет окончательно удалён из архива без возможности восстановления.', affected: [id], confirmText: id, requireReason: true, destructive: true });
+                                if (decision.confirmed) admin.handlePurgeArchivedProduct(id);
                             }}
                         />
                         <hr className="my-8 border-t border-border" />
@@ -65,8 +66,9 @@ export default function AdminProductsPage(): React.ReactElement {
                                 <ProductList
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
-                                    onDeleteProduct={(product: Product) => {
-                                        if (!window.confirm(t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id))) return;
+                                    onDeleteProduct={async (product: Product) => {
+                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: 'Товар исчезнет с витрины и будет перемещён в архив.', affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
+                                        if (!decision.confirmed) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
                                             type: 'product', id: product.id, title: product.title,
@@ -77,8 +79,9 @@ export default function AdminProductsPage(): React.ReactElement {
                                 <ProductTable
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
-                                    onDeleteProduct={(product: Product) => {
-                                        if (!window.confirm(t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id))) return;
+                                    onDeleteProduct={async (product: Product) => {
+                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: 'Товар исчезнет с витрины и будет перемещён в архив.', affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
+                                        if (!decision.confirmed) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
                                             type: 'product', id: product.id, title: product.title,

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuditLogStore } from '@/lib/audit-log-store'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 const PAGE_SIZE = 50
 
@@ -31,6 +32,7 @@ function actionColor(action: string) {
 }
 
 export default function AdminCustomerHistoryPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const entriesMap = useAuditLogStore((s) => s.entries)
   const clearOldEntries = useAuditLogStore((s) => s.clearOldEntries)
 
@@ -76,10 +78,9 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  function handleClear() {
-    if (confirm('Удалить все записи старше 90 дней?')) {
-      clearOldEntries(90)
-    }
+  async function handleClear() {
+    const decision = await confirmAction({ title: 'Удалить старую историю клиентов?', description: 'Записи старше 90 дней будут удалены без возможности восстановления.', affected: ['История клиентов старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true })
+    if (decision.confirmed) clearOldEntries(90)
   }
 
   return (

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuditLogStore } from '@/lib/audit-log-store'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 function getActionBadgeClass(action: string): string {
   if (action.startsWith('order_')) return 'bg-blue-100 text-blue-800 border-blue-200'
@@ -19,6 +20,7 @@ function getActionBadgeClass(action: string): string {
 const PAGE_SIZE = 50
 
 export default function AdminSystemLogsPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const entriesMap = useAuditLogStore((s) => s.entries)
   const clearOldEntries = useAuditLogStore((s) => s.clearOldEntries)
 
@@ -93,10 +95,9 @@ export default function AdminSystemLogsPage(): React.ReactElement {
     URL.revokeObjectURL(url)
   }
 
-  function handleClear() {
-    if (confirm('Удалить все записи логов старше 90 дней?')) {
-      clearOldEntries(90)
-    }
+  async function handleClear() {
+    const decision = await confirmAction({ title: 'Удалить старые системные логи?', description: 'Все записи старше 90 дней будут удалены. Новые записи останутся доступны.', affected: ['Системные логи старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true })
+    if (decision.confirmed) clearOldEntries(90)
   }
 
   return (

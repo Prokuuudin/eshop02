@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import { CartItem } from './cart-store'
 
 export type DeliveryMethod = 'courier' | 'pickup' | 'post'
@@ -36,6 +35,8 @@ export interface Order {
 
 type OrdersStore = {
   orders: Order[]
+  replaceOrders: (orders: Order[]) => void
+  clearOrders: () => void
   addOrder: (order: Order) => void
   upsertOrder: (order: Order) => void
   getOrder: (id: string) => Order | undefined
@@ -43,9 +44,12 @@ type OrdersStore = {
 }
 
 export const useOrders = create<OrdersStore>()(
-  persist(
     (set, get) => ({
       orders: [],
+      replaceOrders: (orders) => set({
+        orders: orders.map((order) => ({ ...order, createdAt: new Date(order.createdAt) })),
+      }),
+      clearOrders: () => set({ orders: [] }),
       addOrder: (order: Order) => {
         set((state) => ({
           orders: [order, ...state.orders]
@@ -79,9 +83,5 @@ export const useOrders = create<OrdersStore>()(
           orders: state.orders.map((order) => (order.id === id ? { ...order, ...updates } : order))
         }))
       }
-    }),
-    {
-      name: 'orders-store'
-    }
-  )
+    })
 )

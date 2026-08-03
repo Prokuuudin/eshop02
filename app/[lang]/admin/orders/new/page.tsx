@@ -128,7 +128,7 @@ export default function NewOrderPage(): React.ReactElement {
             selectCls,
           } = pageState;
     return (
-        <AdminGate>
+        <AdminGate access="partial">
             <main className="w-full py-4">
                 <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
                     <div>

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
+import { prisma } from '@/lib/prisma'
+import { appendServerAudit } from '@/lib/server-audit'
+import { createHash, randomUUID } from 'node:crypto'
 import { createProduct, getMergedProducts, upsertProductOverride } from '@/lib/product-overrides-store'
 import type { Product, CategoryType, BadgeType } from '@/data/products'
 import { revalidatePath } from 'next/cache'
@@ -102,8 +105,8 @@ function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; er
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as { rows?: ImportRow[]; mode?: ImportMode }
@@ -113,6 +116,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json({ error: 'rows_required' }, { status: 400 })
     }
+    const importId = randomUUID()
+    const payloadHash = createHash('sha256').update(JSON.stringify(rows)).digest('hex')
+    await prisma.$transaction(async (tx) => appendServerAudit(tx, request, actor, {
+      action: 'catalog.import_started', entityType: 'catalog_import', entityId: importId,
+      after: { mode, rowCount: rows.length, payloadHash },
+    }))
 
     const existing = await getMergedProducts()
     const existingIds = new Set(existing.map((p) => p.id))
@@ -148,6 +157,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     revalidatePath('/catalog')
     revalidatePath('/admin/products')
+
+    await prisma.$transaction(async (tx) => appendServerAudit(tx, request, actor, {
+      action: 'catalog.import_completed', entityType: 'catalog_import', entityId: importId,
+      after: result,
+    }))
 
     return NextResponse.json(result)
   } catch {

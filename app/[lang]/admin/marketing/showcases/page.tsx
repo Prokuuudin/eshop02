@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 type Showcase = {
   id: string
@@ -45,6 +46,7 @@ const emptyForm = (): Omit<Showcase, 'id' | 'order' | 'createdAt' | 'updatedAt'>
 })
 
 export default function AdminShowcasesPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const [items, setItems] = useState<Showcase[]>([])
   const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -138,7 +140,8 @@ export default function AdminShowcasesPage(): React.ReactElement {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Удалить подборку?')) return
+    const decision = await confirmAction({ title: 'Удалить подборку?', description: 'Подборка исчезнет с витрины. Это действие нельзя отменить.', affected: [id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
     await fetch(`/api/admin/showcases/${id}`, { method: 'DELETE' })
     await load()
   }

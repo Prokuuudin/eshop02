@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { reportAdminPartial } from '@/lib/admin-ui-errors';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -20,7 +21,7 @@ import {
     ClipboardList,
 } from 'lucide-react';
 import { useOrders } from '@/lib/orders-store';
-import { readUsers, type User } from '@/lib/auth';
+import { type User } from '@/lib/auth';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -173,7 +174,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
         fetch('/api/admin/access-requests?status=pending')
             .then((r) => r.json())
             .then((json: { total?: number }) => setPendingRequestCount(json.total ?? 0))
-            .catch(() => {});
+            .catch(() => reportAdminPartial('Счётчик заявок недоступен.', 'Dashboard'));
         fetch('/api/admin/products')
             .then((r) => r.json())
             .then((products: { stock: number }[]) => {
@@ -181,13 +182,19 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                     setLowStockCount(products.filter((p) => p.stock <= 5).length);
                 }
             })
-            .catch(() => {});
-        queueMicrotask(() => {
-            const customers = readUsers().filter((u) => u.platformRole !== 'admin');
-            setTotalCustomers(customers.length);
-            const sevenDaysAgo = statsTimestamp - 7 * 86400000;
-            setNewCustomers7d(customers.filter((u) => u.createdAt && new Date(u.createdAt).getTime() >= sevenDaysAgo).length);
-        });
+            .catch(() => reportAdminPartial('Счётчик низких остатков недоступен.', 'Dashboard'));
+        const sevenDaysAgo = new Date(statsTimestamp - 7 * 86400000).toISOString();
+        Promise.all([
+            fetch('/api/admin/users?role=customer&take=1', { cache: 'no-store' }),
+            fetch(`/api/admin/users?role=customer&take=1&createdSince=${encodeURIComponent(sevenDaysAgo)}`, { cache: 'no-store' }),
+        ])
+            .then(async ([all, recent]) => {
+                if (!all.ok || !recent.ok) return;
+                const [allData, recentData] = await Promise.all([all.json(), recent.json()]) as [{ total?: number }, { total?: number }];
+                setTotalCustomers(allData.total ?? 0);
+                setNewCustomers7d(recentData.total ?? 0);
+            })
+            .catch(() => reportAdminPartial('Статистика клиентов недоступна.', 'Dashboard'));
     }, [statsTimestamp]);
 
     const stats = useMemo(() => {

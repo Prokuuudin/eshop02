@@ -10,11 +10,13 @@ const mocks = vi.hoisted(() => ({
   getServerUser: vi.fn(),
   saveOrderPaymentStatus: vi.fn(),
   applyStripePaymentEvent: vi.fn(),
+  getOrderPaymentStatus: vi.fn(),
+  retrieveSession: vi.fn(),
 }))
 
 vi.mock('@/lib/stripe-client', () => ({
   createStripeClient: () => ({
-    checkout: { sessions: { create: mocks.createSession } },
+    checkout: { sessions: { create: mocks.createSession, retrieve: mocks.retrieveSession } },
     webhooks: { constructEvent: mocks.constructEvent },
   }),
 }))
@@ -27,6 +29,7 @@ vi.mock('@/lib/orders-data-store', () => ({
 vi.mock('@/lib/stripe-payment-store', () => ({
   saveOrderPaymentStatus: mocks.saveOrderPaymentStatus,
   applyStripePaymentEvent: mocks.applyStripePaymentEvent,
+  getOrderPaymentStatus: mocks.getOrderPaymentStatus,
 }))
 
 import { NextRequest } from 'next/server'
@@ -60,6 +63,7 @@ beforeEach(() => {
   })
   mocks.saveOrderPaymentStatus.mockResolvedValue({})
   mocks.applyStripePaymentEvent.mockResolvedValue(true)
+  mocks.getOrderPaymentStatus.mockResolvedValue(null)
 })
 
 describe('Stripe payment integration', () => {
@@ -96,7 +100,8 @@ describe('Stripe payment integration', () => {
           }),
         ],
         metadata: { orderId: '1001' },
-      })
+      }),
+      expect.objectContaining({ idempotencyKey: 'order-checkout-1001-initial' })
     )
     const [[sessionArgs]] = mocks.createSession.mock.calls
     const chargedCents = sessionArgs.line_items.reduce(

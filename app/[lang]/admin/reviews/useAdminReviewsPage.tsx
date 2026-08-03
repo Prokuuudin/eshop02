@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 type ReviewStatus = 'approved' | 'hidden' | 'pending';
 
@@ -19,6 +20,7 @@ type ReviewRecord = {
 };
 
 function useAdminReviewsPageState() {
+    const confirmAction = useAdminConfirm();
     const { t, language } = useTranslation();
     const l = useCallback(
         (ru: string, en: string, lv: string) =>
@@ -181,16 +183,14 @@ function useAdminReviewsPageState() {
     const removeSelectedReviews = async () => {
         if (selectedReviewIds.length === 0) return;
 
-        const confirmed = window.confirm(
-            tl(
+        const decision = await confirmAction({ title: tl(
                 'admin.reviews.confirm.deleteSelected',
                 'Удалить выбранные отзывы ({count}) без возможности восстановления?',
                 'Delete selected reviews ({count}) permanently?',
                 'Dzest atlasitas atsauksmes ({count}) neatgriezeniski?',
                 { count: selectedReviewIds.length }
-            )
-        );
-        if (!confirmed) return;
+            ), description: 'Отзывы будут удалены без возможности восстановления.', affected: selectedReviewIds, confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
 
         setBulkSaving(true);
         try {
@@ -272,16 +272,14 @@ function useAdminReviewsPageState() {
     };
 
     const removeReview = async (id: string) => {
-        const confirmed = window.confirm(
-            tl(
+        const decision = await confirmAction({ title: tl(
                 'admin.reviews.confirm.deleteOne',
                 'Удалить отзыв {id} без возможности восстановления?',
                 'Delete review {id} permanently?',
                 'Dzest atsauksmi {id} neatgriezeniski?',
                 { id }
-            )
-        );
-        if (!confirmed) return;
+            ), description: 'Отзыв будет удалён без возможности восстановления.', affected: [id], requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
 
         setSavingId(id);
         try {

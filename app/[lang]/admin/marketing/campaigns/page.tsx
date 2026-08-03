@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 type CampaignType = 'discount' | 'gift' | 'bundle' | 'free_shipping'
 
@@ -63,6 +64,7 @@ function getCampaignStatus(campaign: PromoCampaign): { label: string; cls: strin
 }
 
 export default function AdminCampaignsPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const [items, setItems] = useState<PromoCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -158,7 +160,8 @@ export default function AdminCampaignsPage(): React.ReactElement {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Удалить кампанию?')) return
+    const decision = await confirmAction({ title: 'Удалить кампанию?', description: 'Кампания и её настройки будут удалены без возможности восстановления.', affected: [id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
     await fetch(`/api/admin/campaigns/${id}`, { method: 'DELETE' })
     await load()
   }

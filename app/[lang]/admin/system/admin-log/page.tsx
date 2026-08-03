@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminLogStore, mapServerLogEntry, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
+import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -36,18 +38,21 @@ const PAGE_SIZE = 50
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminLogPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const [now] = useState(Date.now)
   const entries = useAdminLogStore((s) => s.entries)
   const clear = useAdminLogStore((s) => s.clear)
   const setEntries = useAdminLogStore((s) => s.setEntries)
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
-    fetch('/api/admin/audit-log?take=200')
-      .then((r) => r.json())
+    adminFetchJson<{ entries?: Array<Parameters<typeof mapServerLogEntry>[0]> }>('/api/admin/audit-log?take=200')
       .then(({ entries: dbEntries }) => {
         if (Array.isArray(dbEntries)) setEntries(dbEntries.map(mapServerLogEntry))
       })
-      .catch(() => {})
+      .then(() => setLoadState('ready'))
+      .catch((error) => { setLoadError(classifyAdminError(error, 'Журнал аудита').message); setLoadState('error') })
   }, [setEntries])
 
   const [search, setSearch] = useState('')
@@ -139,7 +144,7 @@ export default function AdminLogPage(): React.ReactElement {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => { if (confirm('Удалить записи старше 90 дней?')) clear(90) }}
+              onClick={async () => { const decision = await confirmAction({ title: 'Удалить старые записи аудита?', description: 'Записи старше 90 дней будут удалены. Используйте это действие только согласно retention policy.', affected: ['Audit log старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true }); if (decision.confirmed) clear(90) }}
             >
               Очистить старше 90 дней
             </Button>
@@ -197,7 +202,11 @@ export default function AdminLogPage(): React.ReactElement {
         </div>
 
         {/* Table */}
-        {entries.length === 0 ? (
+        {loadState === 'loading' ? (
+          <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">Загрузка журнала…</div>
+        ) : loadState === 'error' ? (
+          <div role="alert" className="rounded-xl border border-red-300 bg-red-50 py-10 text-center text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
+        ) : entries.length === 0 ? (
           <div className="rounded-xl border border-border py-16 text-center text-sm text-gray-400 dark:text-gray-500">
             Действия пока не зарегистрированы. Лог наполнится после первых операций в админке.
           </div>

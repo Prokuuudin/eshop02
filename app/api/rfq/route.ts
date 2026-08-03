@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const skip = parseInt(searchParams.get('skip') || '0', 10) || 0
     const take = Math.min(200, parseInt(searchParams.get('take') || '100', 10) || 100)
 
-    const where = user.platformRole === 'admin'
+    const where = hasAdminPermission(user, 'rfq.read')
       ? {}
       : user.companyId
         ? { companyId: user.companyId }
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     // Non-admins can only create for their own company
-    const resolvedCompanyId = user.platformRole === 'admin'
+    const resolvedCompanyId = hasAdminPermission(user, 'rfq.quote')
       ? (companyId ?? user.companyId ?? '')
       : (user.companyId ?? '')
 

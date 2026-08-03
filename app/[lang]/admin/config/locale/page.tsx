@@ -14,6 +14,7 @@ import {
   type SupportedTimezone,
 } from '@/lib/locale-config'
 import type { Language } from '@/data/translations'
+import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 
 const SELECT_CLASS =
   'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
@@ -54,10 +55,9 @@ export default function AdminLocalePage(): React.ReactElement {
   // Load the admin-authoritative config directly — don't seed from a
   // possibly-stale client cache (same reasoning as app/admin/bonus/page.tsx).
   useEffect(() => {
-    fetch('/api/admin/locale-config')
-      .then((r) => (r.ok ? r.json() : null))
+    adminFetchJson<LocaleConfig>('/api/admin/locale-config')
       .then((data: LocaleConfig | null) => { if (data) setConfig(data) })
-      .catch(() => {})
+      .catch((error) => setMessage(classifyAdminError(error, 'Локализация').message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -65,13 +65,14 @@ export default function AdminLocalePage(): React.ReactElement {
 
   const persist = (next: LocaleConfig, successMessage: string): void => {
     setConfig(next)
-    fetch('/api/admin/locale-config', {
+    void adminFetchJson('/api/admin/locale-config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(next),
-    }).catch(() => {})
-    setMessage(successMessage)
-    setTimeout(() => setMessage(''), 3000)
+    }).then(() => {
+      setMessage(successMessage)
+      setTimeout(() => setMessage(''), 3000)
+    }).catch((error) => setMessage(classifyAdminError(error, 'Сохранение локализации').message))
   }
 
   const handleSave = (): void => persist(config, 'Настройки сохранены')

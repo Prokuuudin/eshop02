@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { deleteAdminReply, deleteReview, getAllReviews, setAdminReply, type ReviewModerationStatus, updateReviewStatus } from '@/lib/reviews-data-store'
+import { getAllReviews, type ReviewModerationStatus } from '@/lib/reviews-data-store'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
+import { appendServerAudit } from '@/lib/server-audit'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { searchParams } = new URL(req.url)
@@ -37,8 +40,8 @@ export async function GET(req: NextRequest): Promise<Response> {
 }
 
 export async function PATCH(req: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await req.json()) as { id?: string; ids?: string[]; status?: ReviewModerationStatus; reply?: string | null }
@@ -47,9 +50,15 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     // Handle admin reply (set or clear)
     if ('reply' in body) {
       if (!id) return errorResponse('Review id is required', 400)
-      const changed = body.reply
-        ? await setAdminReply(id, body.reply.trim())
-        : await deleteAdminReply(id)
+      const changed = await prisma.$transaction(async (tx) => {
+        const before = await tx.review.findUnique({ where: { id } })
+        if (!before) return false
+        const after = await tx.review.update({ where: { id }, data: {
+          adminReply: body.reply ? { text: body.reply.trim(), repliedAt: new Date().toISOString() } : Prisma.DbNull,
+        } })
+        await appendServerAudit(tx, req, actor, { action: body.reply ? 'review.reply_saved' : 'review.reply_deleted', entityType: 'review', entityId: id, before, after })
+        return true
+      })
       if (!changed) return errorResponse('Review not found', 404)
       return successResponse({ id, reply: body.reply ?? null })
     }
@@ -66,12 +75,22 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     const targetIds = ids.length > 0 ? ids : [id as string]
-    let updatedCount = 0
-
-    for (const reviewId of targetIds) {
-      const changed = await updateReviewStatus(reviewId, status)
-      if (changed) updatedCount += 1
-    }
+    const updatedCount = await prisma.$transaction(async (tx) => {
+      let count = 0
+      const productIds = new Set<string>()
+      for (const reviewId of targetIds) {
+        const before = await tx.review.findUnique({ where: { id: reviewId } })
+        if (!before) continue
+        const after = await tx.review.update({ where: { id: reviewId }, data: { status } })
+        productIds.add(before.productId); count += 1
+        await appendServerAudit(tx, req, actor, { action: 'review.status_changed', entityType: 'review', entityId: reviewId, before, after })
+      }
+      for (const productId of productIds) {
+        const aggregate = await tx.review.aggregate({ where: { productId, status: 'approved' }, _avg: { rating: true }, _count: true })
+        await tx.product.updateMany({ where: { id: productId }, data: { rating: aggregate._avg.rating ?? 0, ratingCount: aggregate._count, reviewCount: aggregate._count } })
+      }
+      return count
+    })
 
     if (updatedCount === 0) {
       return errorResponse('Reviews not found', 404)
@@ -85,8 +104,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 }
 
 export async function DELETE(req: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await req.json()) as { id?: string; ids?: string[] }
@@ -98,12 +117,21 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     }
 
     const targetIds = ids.length > 0 ? ids : [id as string]
-    let deletedCount = 0
-
-    for (const reviewId of targetIds) {
-      const changed = await deleteReview(reviewId)
-      if (changed) deletedCount += 1
-    }
+    const deletedCount = await prisma.$transaction(async (tx) => {
+      let count = 0
+      const productIds = new Set<string>()
+      for (const reviewId of targetIds) {
+        const before = await tx.review.findUnique({ where: { id: reviewId } })
+        if (!before) continue
+        await tx.review.delete({ where: { id: reviewId } }); productIds.add(before.productId); count += 1
+        await appendServerAudit(tx, req, actor, { action: 'review.deleted', entityType: 'review', entityId: reviewId, before })
+      }
+      for (const productId of productIds) {
+        const aggregate = await tx.review.aggregate({ where: { productId, status: 'approved' }, _avg: { rating: true }, _count: true })
+        await tx.product.updateMany({ where: { id: productId }, data: { rating: aggregate._avg.rating ?? 0, ratingCount: aggregate._count, reviewCount: aggregate._count } })
+      }
+      return count
+    })
 
     if (deletedCount === 0) {
       return errorResponse('Reviews not found', 404)

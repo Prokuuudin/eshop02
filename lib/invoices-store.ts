@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled'
 
@@ -51,7 +50,10 @@ type InvoiceStore = {
   invoiceNumberCounter: number
   
   // Invoice CRUD
-  createInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'remainingAmount' | 'paymentRecords'>, opts?: { localOnly?: boolean }) => string // Returns invoice ID
+  createInvoice: {
+    (invoice: InvoiceDraft, opts: { localOnly: true }): string
+    (invoice: InvoiceDraft, opts?: { localOnly?: false }): Promise<string>
+  }
   getInvoice: (invoiceId: string) => Invoice | undefined
   getInvoicesByCompany: (companyId: string) => Invoice[]
   getInvoicesByOrder: (orderId: string) => Invoice | undefined
@@ -69,6 +71,8 @@ type InvoiceStore = {
   getGeneratedInvoiceNumber: () => string
 }
 
+type InvoiceDraft = Omit<Invoice, 'id' | 'invoiceNumber' | 'paidAmount' | 'remainingAmount' | 'paymentRecords'>
+
 const toHydratedPaymentRecord = (record: PaymentRecord): PaymentRecord => ({
   ...record,
   date: record.date instanceof Date ? record.date : new Date(record.date)
@@ -82,17 +86,12 @@ const toHydratedInvoice = (invoice: Invoice): Invoice => ({
   paymentRecords: (invoice.paymentRecords ?? []).map(toHydratedPaymentRecord)
 })
 
-const mergeInvoices = (persistedInvoices: Array<[string, Invoice]> | undefined): Map<string, Invoice> => {
-  return new Map((persistedInvoices ?? []).map(([invoiceId, invoice]) => [invoiceId, toHydratedInvoice(invoice)]))
-}
-
 export const useInvoicesStore = create<InvoiceStore>()(
-  persist(
     (set, get) => ({
       invoices: new Map(),
       invoiceNumberCounter: 1000,
       
-      createInvoice: (invoice, opts) => {
+      createInvoice: ((invoice: InvoiceDraft, opts?: { localOnly?: boolean }) => {
         const invoiceId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const invoiceNumber = get().getGeneratedInvoiceNumber()
 
@@ -105,25 +104,33 @@ export const useInvoicesStore = create<InvoiceStore>()(
           remainingAmount: invoice.total
         }
 
-        set(state => {
-          const newInvoices = new Map(state.invoices)
-          newInvoices.set(invoiceId, newInvoice)
-          return {
-            invoices: newInvoices,
-            invoiceNumberCounter: state.invoiceNumberCounter + 1
-          }
-        })
+        if (opts?.localOnly) {
+          set(state => {
+            const newInvoices = new Map(state.invoices)
+            newInvoices.set(invoiceId, newInvoice)
+            return { invoices: newInvoices, invoiceNumberCounter: state.invoiceNumberCounter + 1 }
+          })
+          return invoiceId
+        }
 
-        if (!opts?.localOnly) {
-          fetch('/api/invoices', {
+        return (async () => {
+          const response = await fetch('/api/invoices', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newInvoice),
-          }).catch(() => {})
-        }
-
-        return invoiceId
-      },
+          })
+          if (!response.ok) throw new Error(`Invoice creation failed (${response.status})`)
+          const payload = (await response.json()) as { invoice?: Invoice }
+          if (!payload.invoice) throw new Error('Invoice creation returned no invoice')
+          const authoritativeInvoice = toHydratedInvoice(payload.invoice)
+          set(state => {
+            const newInvoices = new Map(state.invoices)
+            newInvoices.set(authoritativeInvoice.id, authoritativeInvoice)
+            return { invoices: newInvoices, invoiceNumberCounter: state.invoiceNumberCounter + 1 }
+          })
+          return authoritativeInvoice.id
+        })()
+      }) as InvoiceStore['createInvoice'],
       
       getInvoice: (invoiceId) => {
         return get().invoices.get(invoiceId)
@@ -246,26 +253,7 @@ export const useInvoicesStore = create<InvoiceStore>()(
         const counter = get().invoiceNumberCounter
         return `INV-${year}-${String(counter).padStart(6, '0')}`
       }
-    }),
-    {
-      name: 'invoices-store',
-      partialize: (state) => ({
-        invoices: Array.from(state.invoices.entries()),
-        invoiceNumberCounter: state.invoiceNumberCounter
-      }),
-      merge: (persistedState: unknown, currentState) => {
-        const persisted = persistedState as {
-          invoices?: Array<[string, Invoice]>
-          invoiceNumberCounter?: number
-        }
-        return {
-          ...currentState,
-          invoices: mergeInvoices(persisted.invoices),
-          invoiceNumberCounter: persisted.invoiceNumberCounter || 1000
-        }
-      }
-    }
-  )
+    })
 )
 
 export async function hydrateInvoicesFromServer(companyId: string): Promise<void> {
@@ -277,6 +265,6 @@ export async function hydrateInvoicesFromServer(companyId: string): Promise<void
       useInvoicesStore.getState().setInvoicesForCompany(companyId, data.invoices)
     }
   } catch {
-    // Keep whatever's already in the local store on failure.
+    // PostgreSQL remains authoritative; cache hydration can be retried by the UI.
   }
 }

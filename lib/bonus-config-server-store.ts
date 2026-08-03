@@ -35,11 +35,11 @@ export async function getBonusProgramConfig(db: Pick<ExtendedTransactionClient, 
   }
 }
 
-export async function saveBonusProgramConfig(input: Partial<BonusProgramConfig>): Promise<BonusProgramConfig> {
-  const existing = await getBonusProgramConfig()
+export async function saveBonusProgramConfig(input: Partial<BonusProgramConfig>, db: ExtendedTransactionClient = prisma): Promise<BonusProgramConfig> {
+  const existing = await getBonusProgramConfig(db)
   const next = normalize({ ...existing, ...input })
 
-  await prisma.keyValueSetting.upsert({
+  await db.keyValueSetting.upsert({
     where: { key: BONUS_CONFIG_KEY },
     create: { key: BONUS_CONFIG_KEY, value: next as unknown as Prisma.InputJsonValue },
     update: { value: next as unknown as Prisma.InputJsonValue },

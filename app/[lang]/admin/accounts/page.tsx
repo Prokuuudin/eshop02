@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCompanyStore } from '@/lib/company-store'
-import { getCurrentUser, listCompanyUsers, updateUserTeamRole, type TeamRole } from '@/lib/auth'
+import { type TeamRole } from '@/lib/auth'
 import { useTranslation } from '@/lib/use-translation'
 import { Search } from 'lucide-react'
 
@@ -21,7 +21,9 @@ type DbUser = {
   phone: string | null
   cardNumber: string | null
   bonusPoints: number
+  mfaEnabled: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export default function AdminAccountsPage(): React.ReactElement {
@@ -72,15 +74,32 @@ export default function AdminAccountsPage(): React.ReactElement {
   }, [loadDbUsers])
 
   const handleUpdateDbRole = async (userId: string, newRole: string) => {
+    const target = dbUsers.find((user) => user.id === userId)
+    if (!target) return
+    const currentPassword = window.prompt(l('Подтвердите текущий пароль администратора', 'Confirm your current administrator password', 'Apstipriniet administratora paroli'))
+    if (!currentPassword) return
+    const mfaCode = window.prompt(l('Введите 6-значный код MFA', 'Enter the 6-digit MFA code', 'Ievadiet 6 ciparu MFA kodu'))
+    if (!mfaCode) return
+    const reason = window.prompt(l('Укажите причину изменения роли', 'State the reason for the role change', 'Norādiet lomas maiņas iemeslu'))
+    if (!reason || reason.trim().length < 5) return
     try {
-      await fetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userId, platformRole: newRole }),
+        body: JSON.stringify({ id: userId, platformRole: newRole, expectedUpdatedAt: target.updatedAt, currentPassword, mfaCode, reason }),
       })
-      setDbUsers((prev) => prev.map((u) => u.id === userId ? { ...u, platformRole: newRole } : u))
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error ?? 'role_update_failed')
+      if (payload.pendingApproval) {
+        setMessage(l('Запрос на повышение создан. Его должен подтвердить другой администратор.', 'Promotion request created. Another administrator must approve it.', 'Paaugstināšanas pieprasījums izveidots. Tas jāapstiprina citam administratoram.'))
+        return
+      }
+      setDbUsers((prev) => prev.map((u) => u.id === userId
+        ? { ...u, platformRole: payload.user.platformRole, updatedAt: payload.user.updatedAt }
+        : u))
       setMessage(tl('admin.accounts.msg.roleUpdated', 'Роль обновлена', 'Role updated', 'Loma atjaunota'))
-    } catch {
+    } catch (cause) {
+      if (cause instanceof Error) setError(cause.message)
       setError('Ошибка обновления роли')
     }
   }
@@ -89,17 +108,20 @@ export default function AdminAccountsPage(): React.ReactElement {
     return memberRolesDraft[userId] ?? fallbackRole
   }
 
-  const handleUpdateTeamMemberRole = (userId: string, fallbackRole: TeamRole) => {
-    const reviewer = getCurrentUser()
+  const handleUpdateTeamMemberRole = async (companyId: string, userId: string, fallbackRole: TeamRole) => {
     const nextRole = resolveMemberRoleDraft(userId, fallbackRole)
 
     setRoleUpdateInProgress(userId)
     setMessage('')
     setError('')
 
-    const result = updateUserTeamRole(userId, nextRole, reviewer)
-    if (!result.success) {
-      setError(result.error || tl('admin.accounts.msg.updateRoleFailed', 'Не удалось изменить роль', 'Failed to change role', 'Neizdevas nomainit lomu'))
+    const response = await fetch(`/api/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: nextRole }),
+    })
+    if (!response.ok) {
+      setError(tl('admin.accounts.msg.updateRoleFailed', 'Не удалось изменить роль', 'Failed to change role', 'Neizdevas nomainit lomu'))
       setRoleUpdateInProgress(null)
       return
     }
@@ -204,13 +226,13 @@ export default function AdminAccountsPage(): React.ReactElement {
           )}
         </section>
 
-        {/* Company team roles section (localStorage-based) */}
+        {/* Company team roles from PostgreSQL */}
         <section className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-xl font-semibold mb-4">{tl('admin.accounts.companies', 'Компании', 'Companies', 'Uznemumi')} ({companies.length})</h2>
 
           <div className="space-y-4">
             {companies.map((company) => {
-              const companyUsers = listCompanyUsers(company.companyId)
+              const companyUsers = company.teamMembers
 
               return (
                 <div key={company.companyId} className="rounded-lg border border-border p-4">
@@ -225,12 +247,12 @@ export default function AdminAccountsPage(): React.ReactElement {
                     ) : (
                       <div className="mt-3 space-y-2">
                         {companyUsers.map((companyUser) => {
-                          const selectedRole = resolveMemberRoleDraft(companyUser.id, companyUser.teamRole ?? 'viewer')
-                          const isBusy = roleUpdateInProgress === companyUser.id
+                          const selectedRole = resolveMemberRoleDraft(companyUser.userId, companyUser.role)
+                          const isBusy = roleUpdateInProgress === companyUser.userId
 
                           return (
                             <div
-                              key={companyUser.id}
+                              key={companyUser.userId}
                               className="grid grid-cols-1 gap-2 rounded border border-border p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
                             >
                               <div>
@@ -242,7 +264,7 @@ export default function AdminAccountsPage(): React.ReactElement {
                                 value={selectedRole}
                                 onValueChange={(v) => {
                                   const role = v as TeamRole
-                                  setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }))
+                                  setMemberRolesDraft((prev) => ({ ...prev, [companyUser.userId]: role }))
                                 }}
                               >
                                 <SelectTrigger className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm">
@@ -260,7 +282,7 @@ export default function AdminAccountsPage(): React.ReactElement {
                                 size="sm"
                                 variant="outline"
                                 disabled={isBusy}
-                                onClick={() => handleUpdateTeamMemberRole(companyUser.id, companyUser.teamRole ?? 'viewer')}
+                                onClick={() => handleUpdateTeamMemberRole(company.companyId, companyUser.userId, companyUser.role)}
                               >
                                 {isBusy
                                   ? tl('admin.accounts.saving', 'Сохраняем...', 'Saving...', 'Saglabajam...')

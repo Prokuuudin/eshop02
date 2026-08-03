@@ -10,12 +10,14 @@ interface ProductEditPageContentProps {
     productId: string;
     productTitle: string;
     initialValues: AddProductFormValues;
+    revision: number;
 }
 
 export default function ProductEditPageContent({
     productId,
     productTitle,
     initialValues,
+    revision,
 }: ProductEditPageContentProps): React.ReactElement {
     return (
         <AdminGate>
@@ -38,6 +40,7 @@ export default function ProductEditPageContent({
                         mode="edit"
                         productId={productId}
                         initialValues={initialValues}
+                        revision={revision}
                     />
                 </div>
             </main>

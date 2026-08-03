@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { reportAdminPartial } from '@/lib/admin-ui-errors';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,7 @@ type FilterType = 'all' | 'image' | 'other';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function useAdminMediaPageState() {
+    const confirmAction = useAdminConfirm();
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -95,7 +98,7 @@ function useAdminMediaPageState() {
                 });
                 setUsageMap(map);
             })
-            .catch(() => {});
+            .catch(() => reportAdminPartial('Файлы загружены, но сведения об их использовании в товарах недоступны.', 'Медиатека'));
     }, []);
 
     // ── Derived: filtered + sorted ──────────────────────────────────────────────
@@ -189,12 +192,8 @@ function useAdminMediaPageState() {
     // ── Delete single ───────────────────────────────────────────────────────────
 
     const onDelete = async (file: MediaFile) => {
-        if (
-            !confirm(
-                `Удалить «${file.name}»?\n\nЕсли файл используется в товарах — ссылки сломаются.`
-            )
-        )
-            return;
+        const decision = await confirmAction({ title: `Удалить «${file.name}»?`, description: 'Файл будет удалён безвозвратно. Если он используется в товарах, ссылки на него перестанут работать.', affected: [file.name, ...(usageMap.get(file.path) ?? []).map((title) => `Товар: ${title}`)], confirmText: file.name, requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
         const res = await fetch('/api/admin/media', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
@@ -214,12 +213,8 @@ function useAdminMediaPageState() {
     const onBulkDelete = async () => {
         const names = Array.from(checkedNames);
         if (!names.length) return;
-        if (
-            !confirm(
-                `Удалить ${names.length} файлов?\n\nЕсли они используются в товарах — ссылки сломаются.`
-            )
-        )
-            return;
+        const decision = await confirmAction({ title: `Удалить ${names.length} файлов?`, description: 'Файлы будут удалены безвозвратно. Связанные изображения в товарах перестанут работать.', affected: names, confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
         setBulkDeleting(true);
         try {
             const res = await fetch('/api/admin/media', {

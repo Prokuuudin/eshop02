@@ -15,6 +15,11 @@ export default function AdminOrdersPage(): React.ReactElement {
     return (
         <main className="w-full py-4 space-y-6">
             <OrdersHeader state={state} />
+            {state.mutationError && (
+                <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    Операция не сохранена: {state.mutationError}
+                </div>
+            )}
             <OrdersStatistics state={state} />
             <OrdersFilters state={state} />
             <OrdersBulkActions state={state} />

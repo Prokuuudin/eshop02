@@ -7,6 +7,7 @@ import { useRFQStore, mapServerRfq, type RFQStatus, type RFQTimelineEvent } from
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/lib/toast-context'
+import { adminFetchJson, reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -111,19 +112,17 @@ export default function AdminRFQPage(): React.ReactElement {
   const { showToast } = useToast()
 
   React.useEffect(() => {
-    fetch('/api/products', { cache: 'no-store' })
-      .then((r) => r.json())
+    adminFetchJson<{ data?: { products?: Product[] } }>('/api/products', { cache: 'no-store' })
       .then((p: { data?: { products?: Product[] } }) => setLoadedProducts(p.data?.products ?? []))
-      .catch(() => setLoadedProducts([]))
+      .catch(() => { setLoadedProducts([]); reportAdminPartial('RFQ загружены, но названия и цены товаров недоступны.', 'RFQ') })
   }, [])
 
   React.useEffect(() => {
-    fetch('/api/rfq?take=200')
-      .then((r) => r.json())
+    adminFetchJson<{ requests?: Array<Parameters<typeof mapServerRfq>[0]> }>('/api/rfq?take=200')
       .then(({ requests: dbRequests }) => {
         if (Array.isArray(dbRequests)) setRequests(dbRequests.map(mapServerRfq))
       })
-      .catch(() => {})
+      .catch((error) => reportAdminError(error, 'RFQ-заявки'))
   }, [setRequests])
 
   const products = loadedProducts

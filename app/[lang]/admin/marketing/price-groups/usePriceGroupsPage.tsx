@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 type PriceGroup = {
     id: string;
@@ -26,6 +27,7 @@ type Product = {
 };
 
 function usePriceGroupsPageState() {
+    const confirmAction = useAdminConfirm();
     const [groups, setGroups] = useState<PriceGroup[]>([]);
     const [overrides, setOverrides] = useState<PriceOverride[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -81,7 +83,8 @@ function usePriceGroupsPageState() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Удалить группу и все её ценовые переопределения?')) return;
+        const decision = await confirmAction({ title: 'Удалить ценовую группу?', description: 'Группа и все её ценовые переопределения будут удалены.', affected: [id], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
         await fetch(`/api/admin/price-groups/${id}`, { method: 'DELETE' });
         if (selectedGroup === id) setSelectedGroup(null);
         load();

@@ -21,7 +21,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { createSession, getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, type ServerUser } from './server-auth'
+import { createSession, getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, requireAdminPermission, type ServerUser } from './server-auth'
 
 function futureDate() {
   const d = new Date()
@@ -37,6 +37,7 @@ function makeSession(platformRole: string) {
       id: 'u1',
       email: 'a@b.c',
       platformRole,
+      teamRole: undefined as string | undefined,
       approvalRequired: false,
       auditLoggingEnabled: false,
       bonusPoints: 0,
@@ -49,11 +50,11 @@ function makeSession(platformRole: string) {
 describe('requireAdmin', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('returns 403 when no session cookie', async () => {
+  it('returns 401 when no session cookie', async () => {
     cookieGet.mockReturnValue(undefined)
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
-    expect((res as NextResponse).status).toBe(403)
+    expect((res as NextResponse).status).toBe(401)
   })
 
   it('returns 403 when session user is not admin', async () => {
@@ -73,14 +74,38 @@ describe('requireAdmin', () => {
     expect((res as ServerUser).id).toBe('u1')
   })
 
-  it('returns 403 when session is expired', async () => {
+  it('returns 401 when session is expired', async () => {
     cookieGet.mockReturnValue({ value: 'tok' })
     const expired = makeSession('admin')
     expired.expiresAt = new Date(Date.now() - 1000)
     sessionFindUniqueMock.mockResolvedValue(expired)
     const res = await requireAdmin()
     expect(res).toBeInstanceOf(NextResponse)
-    expect((res as NextResponse).status).toBe(403)
+    expect((res as NextResponse).status).toBe(401)
+  })
+})
+
+describe('requireAdminPermission', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('allows a manager to work with orders', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer')
+    session.user.teamRole = 'manager'
+    sessionFindUniqueMock.mockResolvedValue(session)
+    expect(await requireAdminPermission('orders.read')).not.toBeInstanceOf(NextResponse)
+    expect(await requireAdminPermission('orders.update')).not.toBeInstanceOf(NextResponse)
+  })
+
+  it('denies a manager user and catalog administration', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer')
+    session.user.teamRole = 'manager'
+    sessionFindUniqueMock.mockResolvedValue(session)
+    const users = await requireAdminPermission('users.manage')
+    const catalog = await requireAdminPermission('catalog.update')
+    expect((users as NextResponse).status).toBe(403)
+    expect((catalog as NextResponse).status).toBe(403)
   })
 })
 

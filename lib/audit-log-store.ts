@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export type AuditAction =
   | 'order_created'
@@ -42,7 +41,6 @@ type AuditLogStore = {
 }
 
 export const useAuditLogStore = create<AuditLogStore>()(
-  persist(
     (set, get) => ({
       entries: new Map(),
       
@@ -111,21 +109,7 @@ export const useAuditLogStore = create<AuditLogStore>()(
           return { entries: newEntries }
         })
       }
-    }),
-    {
-      name: 'audit-log-store',
-      partialize: (state) => ({
-        entries: Array.from(state.entries.entries())
-      }),
-      merge: (persistedState: unknown, currentState) => {
-        const persisted = persistedState as { entries?: Array<[string, AuditEntry]> }
-        return {
-          ...currentState,
-          entries: new Map(persisted.entries ?? [])
-        }
-      }
-    }
-  )
+    })
 )
 
 // Helper function to log actions from anywhere

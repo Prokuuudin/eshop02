@@ -22,6 +22,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/use-translation';
+import { useAuthStore } from '@/lib/auth-store';
+import { hasAdminPermission, permissionForAdminPath } from '@/lib/admin-permissions';
 
 type HeaderNavItem = {
     title: string;
@@ -283,6 +285,17 @@ export default function AdminHeaderNav(): React.ReactElement {
     const { language } = useTranslation();
     const labels = NAV_LABELS[language];
     const tr = (key: string) => labels[key as keyof typeof labels] ?? key;
+    const user = useAuthStore((state) => state.user);
+    const visibleSections = NAV_SECTIONS
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((item) =>
+                item.href.startsWith('/admin')
+                    ? hasAdminPermission(user, permissionForAdminPath(item.href))
+                    : hasAdminPermission(user, 'settings.manage')
+            ),
+        }))
+        .filter((section) => section.items.length > 0);
 
     return (
         <div className="mx-auto w-fit max-w-full rounded-2xl bg-white/95 p-2 shadow-sm dark:bg-gray-900/95">
@@ -300,7 +313,7 @@ export default function AdminHeaderNav(): React.ReactElement {
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="max-h-[70vh] min-w-[260px] overflow-y-auto">
-                        {NAV_SECTIONS.map((section, index) => (
+                        {visibleSections.map((section, index) => (
                             <div key={section.title}>
                                 {index > 0 && <div className="my-1 h-px bg-border" />}
                                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -330,7 +343,7 @@ export default function AdminHeaderNav(): React.ReactElement {
 
             {/* Desktop: per-section dropdowns in a row */}
             <div className="hidden md:flex items-center justify-center gap-2 overflow-x-auto">
-                {NAV_SECTIONS.map((section) => {
+                {visibleSections.map((section) => {
                     const Icon = section.icon;
                     const sectionActive = section.items.some((item) =>
                         isActive(pathname, item.href)

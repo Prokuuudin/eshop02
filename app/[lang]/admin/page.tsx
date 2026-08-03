@@ -8,6 +8,7 @@ import { formatDate, formatEuro } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
 import { getAdminAccessLevel } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 
 function RevenueBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -151,7 +152,11 @@ export default function AdminPage(): React.ReactElement {
     { id: 'notifications-broadcast', href: '/admin/notifications/send', adminOnly: true, bg: 'bg-primary/5 dark:bg-primary/10', border: 'border-l-primary/60', title: l('Рассылка уведомлений', 'Notification Broadcast', 'Pazinojumu izplatisana'), description: l('Отправка уведомлений выбранным пользователям в кабинет, email или оба канала', 'Send notifications to selected users via in-cabinet, email, or both channels', 'Nosutiet pazinojumus izveletajiem lietotajiem kabineta, e-pasta vai abos kanalos'), linkText: l('Открыть рассылку', 'Open broadcast', 'Atvert izplatisanu') },
   ]
 
-  const visibleCards = ALL_CARDS.filter((c) => !c.adminOnly || hasFullAccess)
+  const visibleCards = ALL_CARDS.filter((card) => {
+    if (card.id === 'orders') return hasAdminPermission(currentUser, 'orders.read')
+    if (card.id === 'rfq') return hasAdminPermission(currentUser, 'rfq.read')
+    return !card.adminOnly || hasFullAccess
+  })
   const defaultOrder = visibleCards.map((c) => c.id)
   const orderedIds = cardOrder ?? defaultOrder
   const sortedCards = [

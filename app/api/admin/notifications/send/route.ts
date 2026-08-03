@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerUser } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/mailer'
 
@@ -40,9 +41,9 @@ function buildHtml(title: string, message: string, type: AllowedType, link: stri
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const caller = await getServerUser()
-    if (!caller || caller.platformRole !== 'admin') {
-      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    const caller = await requireAdminPermission('marketing.manage')
+    if (!caller || caller instanceof NextResponse || caller.platformRole !== 'admin') {
+      return caller instanceof NextResponse ? caller : NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
     const body = await req.json() as {
@@ -73,8 +74,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!message)             return NextResponse.json({ error: 'message_required' }, { status: 400 })
 
     const now = new Date()
-    await prisma.userNotification.createMany({
-      data: userIds.map((userId) => ({
+    await prisma.$transaction(async (tx) => {
+      await tx.userNotification.createMany({ data: userIds.map((userId) => ({
         userId,
         type,
         title,
@@ -84,7 +85,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         emailSent:    false,
         appDelivered: false,
         createdAt:    now,
-      })),
+      })) })
+      await appendServerAudit(tx, req, caller, {
+        action: 'notification.broadcast_created', entityType: 'notification_batch', entityId: `batch:${now.toISOString()}`,
+        after: { recipientUserIds: userIds, title, message, type, link, channel },
+      })
     })
 
     let emailsSent   = 0
@@ -107,6 +112,13 @@ export async function POST(req: NextRequest): Promise<Response> {
         }
       }
     }
+
+    await prisma.$transaction(async (tx) => {
+      await appendServerAudit(tx, req, caller, {
+        action: 'notification.delivery_completed', entityType: 'notification_batch', entityId: `batch:${now.toISOString()}`,
+        after: { recipients: userIds.length, emailsSent, emailsFailed, channel },
+      })
+    })
 
     return NextResponse.json({ ok: true, created: userIds.length, emailsSent, emailsFailed })
   } catch (err) {

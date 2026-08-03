@@ -112,12 +112,14 @@ interface AddProductFormProps {
     mode?: 'add' | 'edit';
     productId?: string;
     initialValues?: AddProductFormValues;
+    revision?: number;
 }
 
 const AddProductForm: React.FC<AddProductFormProps> = ({
     mode = 'add',
     productId,
     initialValues,
+    revision,
 }) => {
     const router = useRouter();
     const [language, setLanguage] = useState<Language>('ru');
@@ -148,7 +150,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                 const res = await fetch('/api/admin/products', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: productId, changes: mapFormValuesToProductPatch(data) }),
+                    body: JSON.stringify({ id: productId, revision, changes: mapFormValuesToProductPatch(data) }),
                 });
                 if (!res.ok) {
                     const json = await res.json().catch(() => ({}));

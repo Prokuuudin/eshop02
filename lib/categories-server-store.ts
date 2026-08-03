@@ -4,6 +4,7 @@ import { Prisma } from '@/generated/prisma/client'
 import { CATEGORY_CARDS, SUBCATEGORIES_BY_ID } from '@/data/categories'
 import { translations, type Language } from '@/data/translations'
 import type { CategoriesConfigPayload, CategoryConfigItem, CategoryConfigSubcategory, LocalizedLabel } from '@/lib/categories-config'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 
 const CATEGORIES_CONFIG_KEY = 'categories-config'
 const LANGUAGES: Language[] = ['ru', 'en', 'lv']
@@ -117,8 +118,8 @@ const normalizePayload = (input?: Partial<CategoriesConfigPayload> | null): Cate
       }
 }
 
-export async function getCategoriesConfigFromStore(): Promise<CategoriesConfigPayload> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: CATEGORIES_CONFIG_KEY } })
+export async function getCategoriesConfigFromStore(db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<CategoriesConfigPayload> {
+  const row = await db.keyValueSetting.findUnique({ where: { key: CATEGORIES_CONFIG_KEY } })
   if (!row) return buildDefaultPayload()
   try {
     return normalizePayload(row.value as Partial<CategoriesConfigPayload>)
@@ -127,9 +128,9 @@ export async function getCategoriesConfigFromStore(): Promise<CategoriesConfigPa
   }
 }
 
-export async function saveCategoriesConfigToStore(payload: Partial<CategoriesConfigPayload>): Promise<CategoriesConfigPayload> {
+export async function saveCategoriesConfigToStore(payload: Partial<CategoriesConfigPayload>, db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<CategoriesConfigPayload> {
   const normalized = normalizePayload(payload)
-  await prisma.keyValueSetting.upsert({
+  await db.keyValueSetting.upsert({
     where: { key: CATEGORIES_CONFIG_KEY },
     create: { key: CATEGORIES_CONFIG_KEY, value: normalized as unknown as Prisma.InputJsonValue },
     update: { value: normalized as unknown as Prisma.InputJsonValue },

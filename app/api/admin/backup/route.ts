@@ -35,6 +35,8 @@ export async function GET(): Promise<Response> {
   }
 
   return NextResponse.json({
+    kind: 'configuration-export',
+    warning: 'This export does not contain the PostgreSQL database and is not a disaster-recovery backup.',
     timestamp: new Date().toISOString(),
     files,
   })
@@ -44,7 +46,10 @@ export async function POST(request: NextRequest): Promise<Response> {
   const __gate = await requireAdmin()
   if (__gate instanceof NextResponse) return __gate
 
-  let body: { files?: Record<string, unknown> }
+  void request
+  return NextResponse.json({ error: 'configuration_restore_disabled_use_controlled_maintenance' }, { status: 405 })
+
+  /* let body: { files?: Record<string, unknown>; confirmConfigurationRestore?: boolean }
 
   try {
     body = await request.json()
@@ -54,6 +59,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   if (!body?.files || typeof body.files !== 'object') {
     return NextResponse.json({ error: 'missing_files' }, { status: 400 })
+  }
+  if (body.confirmConfigurationRestore !== true) {
+    return NextResponse.json({ error: 'configuration_restore_confirmation_required' }, { status: 400 })
   }
 
   const restored: string[] = []
@@ -77,5 +85,5 @@ export async function POST(request: NextRequest): Promise<Response> {
     restored.push(filename)
   }
 
-  return NextResponse.json({ ok: true, restored, skipped })
+  return NextResponse.json({ ok: true, restored, skipped }) */
 }

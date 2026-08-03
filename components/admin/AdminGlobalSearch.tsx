@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, ShoppingCart, Package, Users, Tag } from 'lucide-react'
 import { useOrders } from '@/lib/orders-store'
+import { adminFetchJson, reportAdminPartial } from '@/lib/admin-ui-errors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,15 +48,13 @@ export default function AdminGlobalSearch(): React.ReactElement {
   // ── Load products + promos once ─────────────────────────────────────────────
 
   useEffect(() => {
-    fetch('/api/admin/products')
-      .then((r) => r.json())
+    adminFetchJson<{ data?: { products?: CatalogProduct[] } }>('/api/admin/products')
       .then((d: { data?: { products?: CatalogProduct[] } }) => setProducts(d.data?.products ?? []))
-      .catch(() => {})
+      .catch(() => reportAdminPartial('Поиск по товарам временно недоступен.', 'Глобальный поиск'))
 
-    fetch('/api/admin/promo-codes')
-      .then((r) => r.json())
+    adminFetchJson<unknown>('/api/admin/promo-codes')
       .then((d: unknown) => { if (Array.isArray(d)) setPromos(d as PromoCode[]) })
-      .catch(() => {})
+      .catch(() => reportAdminPartial('Поиск по промокодам временно недоступен.', 'Глобальный поиск'))
   }, [])
 
   // ── Keyboard shortcut Ctrl/⌘ + K ─────────────────────────────────────────

@@ -23,6 +23,7 @@ export default async function ProductEditPage({ params }: PageProps): Promise<Re
             productId={product.id}
             productTitle={product.title}
             initialValues={initialValues}
+            revision={product.revision ?? 1}
         />
     );
 }

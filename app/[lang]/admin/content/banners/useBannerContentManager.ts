@@ -1,5 +1,6 @@
 import React from 'react'
 import { resolveLocaleText } from '@/lib/locale-text'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import {
   EMPTY_BANNER,
   EMPTY_BLOCK,
@@ -10,6 +11,7 @@ import {
 } from './banner-model'
 
 function useBannerContentManagerState() {
+  const confirmAction = useAdminConfirm()
   const [banners, setBanners] = React.useState<Banner[]>([])
   const [blocks, setBlocks] = React.useState<ContentBlock[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -119,7 +121,8 @@ function useBannerContentManagerState() {
   }
 
   const onDeleteBanner = async (id: string) => {
-    if (!confirm('Удалить баннер?')) return
+    const decision = await confirmAction({ title: 'Удалить баннер?', description: 'Баннер перестанет отображаться на сайте.', affected: [id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
     setSaving(true)
     try {
       const res = await fetch(`/api/admin/banners/${id}`, {
@@ -239,7 +242,8 @@ function useBannerContentManagerState() {
   }
 
   const onDeleteBlock = async (id: string) => {
-    if (!confirm('Удалить блок?')) return
+    const decision = await confirmAction({ title: 'Удалить контентный блок?', description: 'Блок и его содержимое будут удалены без возможности восстановления.', affected: [id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
     setSaving(true)
     try {
       const res = await fetch(`/api/admin/banners/${id}`, {

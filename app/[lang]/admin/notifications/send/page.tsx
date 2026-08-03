@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
+import { reportAdminError } from '@/lib/admin-ui-errors'
 
 type DbUser = {
   id: string
@@ -28,7 +29,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
 
   // Users state
   const [users, setUsers] = useState<DbUser[]>([])
-  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersLoading, setUsersLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
@@ -57,7 +58,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
           setUsers(data.users)
         }
       })
-      .catch(() => {})
+      .catch((error) => reportAdminError(error, 'Получатели рассылки'))
       .finally(() => {
         setUsersLoading(false)
       })

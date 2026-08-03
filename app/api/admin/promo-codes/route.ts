@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
+import { appendServerAudit } from '@/lib/server-audit'
 
 export const runtime = 'nodejs'
 
 export async function GET(): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const data = await prisma.promoCode.findMany({ orderBy: { createdAt: 'asc' } })
@@ -17,8 +18,8 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as {
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     const existing = await prisma.promoCode.findUnique({ where: { code } })
     if (existing) return NextResponse.json({ error: 'duplicate_code' }, { status: 409 })
 
-    const item = await prisma.promoCode.create({
-      data: {
+    const item = await prisma.$transaction(async (tx) => {
+      const created = await tx.promoCode.create({ data: {
         id: `pc-${Date.now()}`,
         code,
         discount: Number(body.discount) || 0,
@@ -43,7 +44,9 @@ export async function POST(request: NextRequest): Promise<Response> {
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
         active: body.active ?? true,
         description: body.description ?? '',
-      },
+      } })
+      await appendServerAudit(tx, request, actor, { action: 'promo.created', entityType: 'promo', entityId: created.id, entityTitle: created.code, after: created })
+      return created
     })
     return NextResponse.json(item, { status: 201 })
   } catch {

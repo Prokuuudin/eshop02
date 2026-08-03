@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AddProductFormValues } from './productFormSchema';
 import type { AdminProductSearchItem } from '@/app/api/admin/products/search/route';
+import { reportAdminPartial } from '@/lib/admin-ui-errors';
 
 type PickerFieldName = 'relatedProductIds' | 'oftenBoughtTogether';
 
@@ -49,7 +50,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                 if (cancelled || !json?.data?.products) return;
                 cacheItems(json.data.products);
             })
-            .catch(() => {});
+            .catch(() => reportAdminPartial('Не удалось загрузить названия уже выбранных связанных товаров.', 'Редактор товара'));
         return () => {
             cancelled = true;
         };

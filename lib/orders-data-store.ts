@@ -1,8 +1,11 @@
 import { prisma } from '@/lib/prisma'
+import type { NextRequest } from 'next/server'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
 import { toNum } from '@/lib/decimal'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
+import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
+import { appendServerAudit } from '@/lib/server-audit'
 
 export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
@@ -76,6 +79,24 @@ export class PromoCodeUsageLimitError extends Error {
     super('Promo code usage limit reached')
     this.name = 'PromoCodeUsageLimitError'
   }
+}
+
+export class AdminOrderUpdateError extends Error {
+  constructor(
+    message: string,
+    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock'
+  ) {
+    super(message)
+    this.name = 'AdminOrderUpdateError'
+  }
+}
+
+export type AdminOrderUpdateInput = {
+  items: Array<{ id: string; quantity: number; lineKey?: string; variantLabel?: string }>
+  address: string
+  city: string
+  postalCode?: string
+  deliveryMethod: 'courier' | 'pickup' | 'post'
 }
 
 export type PrepareOrder = (
@@ -185,6 +206,19 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
     const data = buildOrderData(order)
     const created = await tx.order.create({ data: { id, ...data } })
 
+    if (order.userId && spent > 0) {
+      await tx.bonusTransaction.create({
+        data: {
+          userId: order.userId,
+          orderId: created.id,
+          type: 'order_spend',
+          points: -spent,
+          balanceAfter: (currentUser?.bonusPoints ?? spent) - spent,
+          reason: `Order ${created.id}`,
+        },
+      })
+    }
+
     // Decrement stock for each item. updateMany's where clause (isDeleted: false,
     // stock >= quantity) is the actual guard — if it matches 0 rows the product is
     // missing, deleted, or doesn't have enough stock. That must fail the whole
@@ -224,6 +258,16 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
       await tx.user.updateMany({
         where: { id: order.userId },
         data: { bonusPoints: { increment: earned } },
+      })
+      await tx.bonusTransaction.create({
+        data: {
+          userId: order.userId,
+          orderId: created.id,
+          type: 'order_earn',
+          points: earned,
+          balanceAfter: (currentUser?.bonusPoints ?? 0) - spent + earned,
+          reason: `Order ${created.id}`,
+        },
       })
     }
 
@@ -363,4 +407,133 @@ export const updateServerOrderPayment = async (
   })
 
   return row ? mapDbToServerOrder(row) : null
+}
+
+const ADMIN_DELIVERY_COSTS: Record<AdminOrderUpdateInput['deliveryMethod'], number> = {
+  courier: 5,
+  pickup: 0,
+  post: 3,
+}
+
+function quantitiesByProduct(items: Array<{ id: string; quantity: number }>): Map<string, number> {
+  const result = new Map<string, number>()
+  for (const item of items) result.set(item.id, (result.get(item.id) ?? 0) + item.quantity)
+  return result
+}
+
+/**
+ * Admin order editing is a single database transaction: lock the order, rebuild item
+ * snapshots from authoritative catalog prices, apply the stock delta, update totals and
+ * append the audit record. Client-calculated totals are deliberately not accepted.
+ */
+export async function updateServerOrderByAdmin(
+  orderId: string,
+  input: AdminOrderUpdateInput,
+  admin: ServerUser,
+  request: NextRequest,
+): Promise<ServerOrder> {
+  const row = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+    const current = await tx.order.findUnique({ where: { id: orderId } })
+    if (!current) throw new AdminOrderUpdateError('Order not found', 'not_found')
+    if (current.paymentStatus === 'paid') {
+      throw new AdminOrderUpdateError('Paid orders require a refund/adjustment workflow', 'paid_order')
+    }
+    if (current.stockReservationStatus === 'released') {
+      throw new AdminOrderUpdateError('Released stock reservation cannot be edited', 'released_stock')
+    }
+
+    const requestedIds = [...new Set(input.items.map((item) => item.id))]
+    const products = await tx.product.findMany({
+      where: { id: { in: requestedIds }, isDeleted: false, isActive: true },
+    })
+    const byId = new Map(products.map((product) => [product.id, product]))
+    if (products.length !== requestedIds.length) {
+      throw new AdminOrderUpdateError('One or more products are unavailable', 'invalid_item')
+    }
+
+    const currentItems = current.items as ServerOrderItem[]
+    const oldQty = quantitiesByProduct(currentItems)
+    const newQty = quantitiesByProduct(input.items)
+
+    for (const productId of new Set([...oldQty.keys(), ...newQty.keys()])) {
+      const delta = (newQty.get(productId) ?? 0) - (oldQty.get(productId) ?? 0)
+      if (delta > 0) {
+        const changed = await tx.product.updateMany({
+          where: { id: productId, isDeleted: false, isActive: true, stock: { gte: delta } },
+          data: { stock: { decrement: delta } },
+        })
+        if (changed.count !== 1) {
+          throw new AdminOrderUpdateError(`Insufficient stock for ${productId}`, 'insufficient_stock')
+        }
+      } else if (delta < 0) {
+        await tx.product.updateMany({
+          where: { id: productId, isDeleted: false },
+          data: { stock: { increment: -delta } },
+        })
+      }
+    }
+
+    const items: ServerOrderItem[] = input.items.map((item) => {
+      const product = byId.get(item.id)!
+      return {
+        id: product.id,
+        title: product.title,
+        brand: product.brand,
+        image: product.image ?? '',
+        category: product.category,
+        price: toNum(product.price),
+        rating: product.rating,
+        stock: product.stock,
+        quantity: item.quantity,
+        ...(item.lineKey ? { lineKey: item.lineKey } : {}),
+        ...(item.variantLabel ? { variantLabel: item.variantLabel } : {}),
+      } as ServerOrderItem
+    })
+
+    const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
+    const oldSubtotal = toNum(current.subtotal)
+    const oldDiscount = toNum(current.discount)
+    const discountRate = current.promoCode && oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
+    const discount = Math.round(subtotal * discountRate * 100) / 100
+    const delivery = ADMIN_DELIVERY_COSTS[input.deliveryMethod]
+    const currentTotals = {
+      subtotal: oldSubtotal,
+      discount: oldDiscount,
+      delivery: toNum(current.delivery),
+      tax: toNum(current.tax),
+      total: toNum(current.total),
+      bonusSpent: current.bonusSpent ?? undefined,
+    }
+    const taxIncluded = isOrderTaxIncluded(currentTotals)
+    const tax = taxIncluded ? extractVat(subtotal - discount) : toNum(current.tax)
+    const bonusSpent = current.bonusSpent ?? 0
+    const total = Math.max(0, Math.round((subtotal - discount + delivery - bonusSpent + (taxIncluded ? 0 : tax)) * 100) / 100)
+
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        items,
+        subtotal,
+        discount,
+        delivery,
+        tax,
+        total,
+        deliveryMethod: input.deliveryMethod,
+        address: input.address,
+        city: input.city,
+        postalCode: input.postalCode ?? null,
+      },
+    })
+
+    await appendServerAudit(tx, request, admin, {
+        action: 'order.updated', entityType: 'order', entityId: orderId,
+        entityTitle: `${current.firstName} ${current.lastName}`.trim(),
+        before: { items: current.items, subtotal: oldSubtotal, total: toNum(current.total), address: current.address },
+        after: { items, subtotal, total, address: input.address },
+    })
+    return updated
+  })
+
+  return mapDbToServerOrder(row)
 }

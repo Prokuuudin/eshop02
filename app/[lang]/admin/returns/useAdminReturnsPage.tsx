@@ -10,6 +10,7 @@ import {
 } from '@/lib/returns-store';
 import { useOrders, type Order } from '@/lib/orders-store';
 import { useTranslation } from '@/lib/use-translation';
+import { adminFetchJson, reportAdminError } from '@/lib/admin-ui-errors';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
 
@@ -22,12 +23,11 @@ function useAdminReturnsPageState() {
     const { orders } = useOrders();
 
     useEffect(() => {
-        fetch('/api/returns?take=200')
-            .then((r) => r.json())
+        adminFetchJson<{ returns?: Array<Parameters<typeof mapServerReturn>[0]> }>('/api/returns?take=200')
             .then(({ returns: dbReturns }) => {
                 if (Array.isArray(dbReturns)) setReturns(dbReturns.map(mapServerReturn));
             })
-            .catch(() => {});
+            .catch((error) => reportAdminError(error, 'Возвраты'));
     }, [setReturns]);
     const { language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { logAdminAction } from '@/lib/admin-log-store'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 type PromoCodeItem = {
   id: string
@@ -31,6 +32,7 @@ const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
 })
 
 export default function AdminDiscountsPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const [items, setItems] = useState<PromoCodeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -134,7 +136,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
 
   async function handleDelete(id: string) {
     const target = items.find((i) => i.id === id)
-    if (!confirm('Удалить промокод?')) return
+    const decision = await confirmAction({ title: 'Удалить промокод?', description: 'Код перестанет применяться к новым заказам. Действие необратимо.', affected: [target?.code ?? id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
     await fetch(`/api/admin/promo-codes/${id}`, { method: 'DELETE' })
     logAdminAction('promo.deleted', { type: 'promo', id, title: target?.code })
     await load()

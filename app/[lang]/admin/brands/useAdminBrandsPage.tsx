@@ -8,6 +8,7 @@ import type {
     BrandManufacturerInfo,
 } from '@/lib/brands-config';
 import { useTranslation } from '@/lib/use-translation';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 type NewBrandDraft = {
     id: string;
@@ -49,6 +50,7 @@ const normalizeDescription = (ru: string, en: string, lv: string): LocalizedBran
 };
 
 function useAdminBrandsPageState() {
+    const confirmAction = useAdminConfirm();
     const { t, language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -270,16 +272,14 @@ function useAdminBrandsPageState() {
     };
 
     const handleDeleteBrand = async (brandId: string) => {
-        const confirmed = window.confirm(
-            tl(
+        const decision = await confirmAction({ title: tl(
                 'admin.brands.msg.deleteConfirmWithId',
                 'Удалить бренд {id}?',
                 'Delete brand {id}?',
                 'Dzest zimolu {id}?',
                 { id: brandId }
-            )
-        );
-        if (!confirmed) return;
+            ), description: 'Бренд будет удалён из каталога. Проверьте связанные товары перед продолжением.', affected: [brandId], confirmText: brandId, requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
 
         const next = brands.filter((brand) => brand.id !== brandId);
         await saveBrands(

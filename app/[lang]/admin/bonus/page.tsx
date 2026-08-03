@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminStore } from '@/lib/admin-store'
 import { useOrders } from '@/lib/orders-store'
-import { readUsers, adjustUserBonusPoints, type User } from '@/lib/auth'
+import { type User } from '@/lib/auth'
 import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
+import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 
 export default function AdminBonusPage(): React.ReactElement {
   const { t } = useTranslation()
@@ -31,13 +32,23 @@ export default function AdminBonusPage(): React.ReactElement {
   const [balancesOpen, setBalancesOpen] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) setUsers(readUsers().filter((u) => u.platformRole !== 'admin'))
-    })
-    return () => {
-      cancelled = true
+    const controller = new AbortController()
+    const load = async (): Promise<void> => {
+      const loaded: User[] = []
+      let skip = 0
+      for (;;) {
+        const response = await fetch(`/api/admin/users?skip=${skip}&take=100`, { cache: 'no-store', signal: controller.signal })
+        if (!response.ok) throw new Error(`users_load_failed:${response.status}`)
+        const payload = await response.json() as { users?: Array<Omit<User, 'password'>>; total?: number }
+        const page = (payload.users ?? []).map((user) => ({ ...user, password: '' }))
+        loaded.push(...page)
+        if (loaded.length >= (payload.total ?? loaded.length) || page.length < 100) break
+        skip += page.length
+      }
+      setUsers(loaded.filter((user) => user.platformRole !== 'admin'))
     }
+    void load().catch(() => { if (!controller.signal.aborted) { setUsers([]); reportAdminPartial('Настройки доступны, но список клиентов не загрузился.', 'Бонусная программа') } })
+    return () => controller.abort()
   }, [])
 
   // Load the admin-authoritative config directly — the shared useAdminStore value may
@@ -47,24 +58,34 @@ export default function AdminBonusPage(): React.ReactElement {
     fetch('/api/admin/bonus-config')
       .then((r) => (r.ok ? r.json() : null))
       .then((config) => { if (config) setDraft(config) })
-      .catch(() => {})
+      .catch((error) => reportAdminError(error, 'Настройки бонусной программы'))
   }, [])
 
-  const saveSettings = () => {
-    updateBonusProgram(draft)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
+  const saveSettings = async () => {
+    try {
+      const authoritative = await updateBonusProgram(draft)
+      setDraft(authoritative)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch {
+      setSaved(false)
+    }
   }
 
-  const applyAdjustment = (userId: string, sign: 1 | -1) => {
+  const applyAdjustment = async (userId: string, sign: 1 | -1) => {
     const raw = adjustDelta[userId] ?? ''
     const amount = parseInt(raw, 10)
     if (!raw || isNaN(amount) || amount <= 0) return
 
-    const result = adjustUserBonusPoints(userId, sign * amount)
-    if (result.success) {
-      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, bonusPoints: result.newBalance } : u))
-      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.newBalance} баллов` }))
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/bonus`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta: sign * amount }),
+    })
+    const result = await response.json().catch(() => null) as { user?: { bonusPoints: number } } | null
+    if (response.ok && result?.user) {
+      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, bonusPoints: result.user!.bonusPoints } : u))
+      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.user!.bonusPoints} баллов` }))
       setAdjustDelta((prev) => ({ ...prev, [userId]: '' }))
       setTimeout(() => setAdjustMsg((prev) => ({ ...prev, [userId]: '' })), 2500)
     }

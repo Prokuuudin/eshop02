@@ -5,10 +5,12 @@ const {
   settingFindUniqueMock,
   settingUpsertMock,
   requireAdminMock,
+  transactionMock,
 } = vi.hoisted(() => ({
   settingFindUniqueMock: vi.fn(),
   settingUpsertMock: vi.fn(),
   requireAdminMock: vi.fn(),
+  transactionMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
@@ -18,8 +20,10 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: settingFindUniqueMock,
       upsert: settingUpsertMock,
     },
+    $transaction: transactionMock,
   },
 }))
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({
   requireAdmin: requireAdminMock,
 }))
@@ -38,6 +42,9 @@ const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admi
 
 beforeEach(() => {
   vi.clearAllMocks()
+  transactionMock.mockImplementation((callback) => callback({
+    keyValueSetting: { findUnique: settingFindUniqueMock, upsert: settingUpsertMock },
+  }))
 })
 
 describe('GET /api/admin/locale-config', () => {

@@ -8,6 +8,7 @@ import type {
     LocalizedLabel,
 } from '@/lib/categories-config';
 import { useTranslation } from '@/lib/use-translation';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 type NewCategoryDraft = {
     id: string;
@@ -59,6 +60,7 @@ const normalizeLabels = (ru: string, en: string, lv: string, fallback: string): 
 };
 
 function useAdminCategoriesPageState() {
+    const confirmAction = useAdminConfirm();
     const { language, t } = useTranslation();
     const l = React.useCallback(
         (ru: string, en: string, lv: string) =>
@@ -417,16 +419,14 @@ function useAdminCategoriesPageState() {
         const category = categories.find((item) => item.id === categoryId);
         if (!category) return;
 
-        const confirmed = window.confirm(
-            tl(
+        const decision = await confirmAction({ title: tl(
                 'admin.categories.confirm.moveToTrash',
                 'ÐŸÐµÑ€ÐµÐ¼ÐµÑÑ‚Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð² ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ?',
                 'Move category {id} to trash?',
                 'Parvietot kategoriju {id} uz grozu?',
                 { id: categoryId }
-            )
-        );
-        if (!confirmed) return;
+            ), description: 'Категория исчезнет из активного каталога и будет перемещена в корзину.', affected: [categoryId], requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
 
         const nextCategories = categories.filter((item) => item.id !== categoryId);
         const nextDeletedCategories = [
@@ -478,16 +478,14 @@ function useAdminCategoriesPageState() {
     };
 
     const handleDeleteCategoryForever = async (categoryId: string) => {
-        const confirmed = window.confirm(
-            tl(
+        const decision = await confirmAction({ title: tl(
                 'admin.categories.confirm.deleteForever',
                 'Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð¸Ð· ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñ‹ Ð½Ð°Ð²ÑÐµÐ³Ð´Ð°?',
                 'Delete category {id} from trash permanently?',
                 'Neatgriezeniski dzest kategoriju {id} no groza?',
                 { id: categoryId }
-            )
-        );
-        if (!confirmed) return;
+            ), description: 'Категория будет удалена без возможности восстановления.', affected: [categoryId], confirmText: categoryId, requireReason: true, destructive: true });
+        if (!decision.confirmed) return;
 
         const nextDeletedCategories = deletedCategories.filter((item) => item.id !== categoryId);
         await saveConfig(

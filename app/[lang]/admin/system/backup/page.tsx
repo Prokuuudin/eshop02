@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 const INCLUDED_FILES = [
   { name: 'orders.json', label: 'Заказы' },
@@ -29,6 +30,7 @@ function countEntries(value: unknown): string {
 }
 
 export default function AdminBackupPage(): React.ReactElement {
+  const confirmAction = useAdminConfirm()
   const [lastDownload, setLastDownload] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
@@ -56,7 +58,7 @@ export default function AdminBackupPage(): React.ReactElement {
       const a = document.createElement('a')
       a.href = url
       const date = new Date().toISOString().slice(0, 10)
-      a.download = `backup-${date}.json`
+      a.download = `configuration-export-${date}.json`
       a.click()
       URL.revokeObjectURL(url)
 
@@ -94,7 +96,8 @@ export default function AdminBackupPage(): React.ReactElement {
 
   async function handleRestore() {
     if (!previewFiles) return
-    if (!confirm('Восстановление перезапишет текущие данные. Продолжить?')) return
+    const decision = await confirmAction({ title: 'Восстановить резервную копию?', description: 'Текущие данные будут перезаписаны содержимым выбранной копии. Операцию нельзя отменить.', affected: Object.keys(previewFiles), confirmText: 'ВОССТАНОВИТЬ', requireReason: true, destructive: true })
+    if (!decision.confirmed) return
 
     setRestoring(true)
     setRestoreResult(null)
@@ -102,7 +105,7 @@ export default function AdminBackupPage(): React.ReactElement {
       const res = await fetch('/api/admin/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: previewFiles }),
+        body: JSON.stringify({ files: previewFiles, confirmConfigurationRestore: true }),
       })
       const data = await res.json()
       if (data.ok) {
@@ -123,6 +126,9 @@ export default function AdminBackupPage(): React.ReactElement {
   return (
     <AdminGate>
       <main className="w-full py-4 space-y-8">
+        <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Этот раздел экспортирует только файловые настройки и контент. Он не копирует PostgreSQL, заказы, пользователей, счета или медиаданные и не заменяет PITR/резервную копию провайдера БД.
+        </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Резервное копирование</h1>
           <Button variant="outline" asChild>

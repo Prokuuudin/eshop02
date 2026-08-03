@@ -82,8 +82,8 @@ describe('invoices store localOnly', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('createInvoice without the flag still syncs to the server', () => {
-    useInvoicesStore.getState().createInvoice({
+  it('createInvoice without the flag requires an authoritative server invoice', async () => {
+    const result = useInvoicesStore.getState().createInvoice({
       companyId: 'real_co',
       orderId: 'real_order',
       subtotal: 1,
@@ -95,6 +95,7 @@ describe('invoices store localOnly', () => {
       dueDate: new Date(),
       items: [],
     })
+    await expect(result).rejects.toThrow('Invoice creation returned no invoice')
     expect(fetch).toHaveBeenCalled()
   })
 })

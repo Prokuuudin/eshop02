@@ -6,6 +6,7 @@ export type AdminLogAction =
   | 'order.status_changed'
   | 'order.bulk_status_changed'
   | 'order.note_saved'
+  | 'order.updated'
   | 'product.price_changed'
   | 'product.stock_changed'
   | 'product.deleted'
@@ -35,6 +36,7 @@ export type AdminLogEntry = {
 }
 
 export const ACTION_LABELS: Record<AdminLogAction, string> = {
+  'order.updated':             'Редактирование заказа',
   'order.status_changed':      'Смена статуса заказа',
   'order.bulk_status_changed': 'Массовая смена статуса',
   'order.note_saved':          'Заметка к заказу',
@@ -109,21 +111,6 @@ export const useAdminLogStore = create<AdminLogStore>()(
 
         // Sync to DB — fire-and-forget
         // Only send fields the server accepts; id/adminEmail/adminName/at are server-generated
-        if (typeof window !== 'undefined') {
-          fetch('/api/admin/audit-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: entry.action,
-              entityType: entry.entityType,
-              entityId: entry.entityId,
-              entityTitle: entry.entityTitle,
-              before: entry.before,
-              after: entry.after,
-              details: entry.details,
-            }),
-          }).catch(() => {})
-        }
       },
 
       clear: (olderThanDays) => {
@@ -131,9 +118,6 @@ export const useAdminLogStore = create<AdminLogStore>()(
         set((state) => ({
           entries: state.entries.filter((e) => new Date(e.at).getTime() >= cutoff),
         }))
-        if (typeof window !== 'undefined') {
-          fetch(`/api/admin/audit-log?olderThanDays=${olderThanDays}`, { method: 'DELETE' }).catch(() => {})
-        }
       },
 
       setEntries: (entries) => set({ entries }),

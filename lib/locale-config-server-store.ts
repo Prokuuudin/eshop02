@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { DEFAULT_LOCALE_CONFIG, TIMEZONES, type LocaleConfig, type SupportedTimezone } from '@/lib/locale-config'
 import type { Language } from '@/data/translations'
+import type { ExtendedTransactionClient } from '@/lib/prisma'
 
 const LOCALE_CONFIG_KEY = 'locale-config'
 const LANGUAGES: Language[] = ['ru', 'en', 'lv']
@@ -27,9 +28,9 @@ function normalize(input?: Partial<LocaleConfig> | null): LocaleConfig {
   }
 }
 
-export async function getLocaleConfig(): Promise<LocaleConfig> {
+export async function getLocaleConfig(db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<LocaleConfig> {
   try {
-    const row = await prisma.keyValueSetting.findUnique({ where: { key: LOCALE_CONFIG_KEY } })
+    const row = await db.keyValueSetting.findUnique({ where: { key: LOCALE_CONFIG_KEY } })
     if (!row) return DEFAULT_LOCALE_CONFIG
     return normalize(row.value as Partial<LocaleConfig>)
   } catch {
@@ -37,11 +38,11 @@ export async function getLocaleConfig(): Promise<LocaleConfig> {
   }
 }
 
-export async function saveLocaleConfig(input: Partial<LocaleConfig>): Promise<LocaleConfig> {
-  const existing = await getLocaleConfig()
+export async function saveLocaleConfig(input: Partial<LocaleConfig>, db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<LocaleConfig> {
+  const existing = await getLocaleConfig(db)
   const next = normalize({ ...existing, ...input })
 
-  await prisma.keyValueSetting.upsert({
+  await db.keyValueSetting.upsert({
     where: { key: LOCALE_CONFIG_KEY },
     create: { key: LOCALE_CONFIG_KEY, value: next as unknown as Prisma.InputJsonValue },
     update: { value: next as unknown as Prisma.InputJsonValue },

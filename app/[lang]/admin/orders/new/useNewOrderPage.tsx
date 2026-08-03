@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOrders, type DeliveryMethod } from '@/lib/orders-store';
-import { readUsers } from '@/lib/auth';
 import { formatEuro } from '@/lib/utils';
 import { logAdminAction } from '@/lib/admin-log-store';
 import { useAdminStore } from '@/lib/admin-store';
+import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +31,13 @@ type PromoResult = {
     code: string;
     discountPct: number;
     minOrder: number;
+};
+
+type CustomerSuggestion = {
+    id: string;
+    email: string;
+    name?: string | null;
+    phone?: string | null;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -72,6 +79,7 @@ function useNewOrderPageState() {
     const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [showEmailList, setShowEmailList] = useState(false);
+    const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([]);
 
     // ── Items
     const [items, setItems] = useState<LineItem[]>([]);
@@ -108,7 +116,7 @@ function useNewOrderPageState() {
             .then((d: { data?: { products?: CatalogProduct[] } }) =>
                 setCatalog(d.data?.products ?? [])
             )
-            .catch(() => {});
+            .catch((error) => reportAdminError(error, 'Каталог для нового заказа'));
 
         fetch('/api/admin/promo-codes')
             .then((r) => r.json())
@@ -123,24 +131,33 @@ function useNewOrderPageState() {
                     );
                 }
             })
-            .catch(() => {});
+            .catch(() => reportAdminPartial('Заказ можно создать, но проверка промокодов временно недоступна.', 'Новый заказ'));
     }, []);
 
     // ── Customer lookup ───────────────────────────────────────────────────────
 
-    const emailSuggestions = useMemo(() => {
-        if (!email.trim()) return [];
-        try {
-            const users = readUsers();
-            return users
-                .filter((u) => u.email.toLowerCase().includes(email.toLowerCase()))
-                .slice(0, 5);
-        } catch {
-            return [];
-        }
+    useEffect(() => {
+        const query = email.trim();
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            if (!query) {
+                setCustomerSuggestions([]);
+                return;
+            }
+            fetch(`/api/admin/users?search=${encodeURIComponent(query)}&take=5`, { cache: 'no-store', signal: controller.signal })
+                .then((response) => response.ok ? response.json() : null)
+                .then((payload: { users?: CustomerSuggestion[] } | null) => setCustomerSuggestions(payload?.users ?? []))
+                .catch(() => { if (!controller.signal.aborted) setCustomerSuggestions([]); });
+        }, query ? 200 : 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
     }, [email]);
 
-    const fillCustomer = (user: ReturnType<typeof readUsers>[number]) => {
+    const emailSuggestions = customerSuggestions;
+
+    const fillCustomer = (user: CustomerSuggestion) => {
         setEmail(user.email);
         const parts = (user.name ?? '').split(' ');
         setFirstName(parts[0] ?? '');

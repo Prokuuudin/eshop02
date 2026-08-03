@@ -67,7 +67,9 @@ describe('Stripe webhook idempotency transaction', () => {
     ])
 
     expect(results).toEqual([true, false])
-    expect(orderUpdate).toHaveBeenCalledTimes(1)
+    // One guarded reservation transition plus one canonical payment update,
+    // both executed only by the first delivery of the event.
+    expect(orderUpdate).toHaveBeenCalledTimes(2)
     expect(ledger.processedEventIds).toEqual(['evt_same'])
     expect(ledger.orders['1001']).toMatchObject({
       paymentStatus: 'paid',

@@ -3,6 +3,10 @@ import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { translations } from '@/data/translations'
 import AdminGate from '@/components/admin/AdminGate'
+import AdminPermissionGate from '@/components/admin/AdminPermissionGate'
+import AdminOperationalDataSync from '@/components/admin/AdminOperationalDataSync'
+import AdminErrorCenter from '@/components/admin/AdminErrorCenter'
+import AdminConfirmProvider from '@/components/admin/AdminConfirmProvider'
 import { getAdminAccessLevel, getServerUser, hasAdminUsersInDb } from '@/lib/server-auth'
 import { resolveLanguage } from '@/lib/i18n-routing'
 
@@ -10,8 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const language = resolveLanguage((await params).lang)
   const t = translations[language]
   return {
-    title: `${t['admin.title'] ?? 'Admin panel'} | Eshop`,
-    description: t['meta.adminDescription'] ?? 'Administrative panel of Eshop',
+    title: `${t['admin.title'] ?? 'Admin panel'} | Hairshop-Pro`,
+    description: t['meta.adminDescription'] ?? 'Administrative panel of Hairshop-Pro',
     robots: { index: false, follow: false },
     alternates: { canonical: '/admin' }
   }
@@ -31,9 +35,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <AdminGate access="partial">
-      <div className="mx-auto w-full max-w-7xl px-4 py-4">
-        <section>{children}</section>
-      </div>
+      <AdminConfirmProvider><AdminPermissionGate>
+        <AdminOperationalDataSync />
+        <AdminErrorCenter />
+        <div className="mx-auto w-full max-w-7xl px-4 py-4">
+          <section>{children}</section>
+        </div>
+      </AdminPermissionGate></AdminConfirmProvider>
     </AdminGate>
   )
 }

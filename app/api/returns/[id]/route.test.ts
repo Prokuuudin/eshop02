@@ -18,6 +18,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'

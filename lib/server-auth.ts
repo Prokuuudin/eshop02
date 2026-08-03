@@ -6,6 +6,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { User as PrismaUser } from '@/generated/prisma/client'
 import { SESSION_COOKIE } from '@/lib/auth-constants'
+import {
+  getPermissionAccessLevel,
+  hasAdminPermission,
+  type AdminPermission,
+} from '@/lib/admin-permissions'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
@@ -28,6 +33,7 @@ export type ServerUser = {
   avatarUrl?: string
   bonusPoints: number
   mustChangePassword: boolean
+  mfaEnabled?: boolean
   createdAt: string
 }
 
@@ -47,6 +53,7 @@ export function mapDbToServerUser(u: PrismaUser): ServerUser {
     avatarUrl: u.avatarUrl ?? undefined,
     bonusPoints: u.bonusPoints,
     mustChangePassword: u.mustChangePassword,
+    mfaEnabled: u.mfaEnabled,
     createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
   }
 }
@@ -131,9 +138,18 @@ export async function getServerUser(options: { allowPasswordChangeRequired?: boo
  *   // gate is the admin ServerUser here
  */
 export async function requireAdmin(): Promise<ServerUser | NextResponse> {
+  return requireAdminPermission('users.manage')
+}
+
+export async function requireAdminPermission(
+  permission: AdminPermission,
+): Promise<ServerUser | NextResponse> {
   const user = await getServerUser()
-  if (!user || user.platformRole !== 'admin') {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+  if (!hasAdminPermission(user, permission)) {
+    return NextResponse.json({ error: 'forbidden', permission }, { status: 403 })
   }
   return user
 }
@@ -145,10 +161,7 @@ export type AdminAccessLevel = 'admin' | 'manager' | 'none'
  * the DB-backed ServerUser — safe to use for real (server-side) authorization.
  */
 export function getAdminAccessLevel(user: ServerUser | null): AdminAccessLevel {
-  if (!user) return 'none'
-  if (user.platformRole === 'admin') return 'admin'
-  if (user.teamRole === 'manager' || user.teamRole === 'admin') return 'manager'
-  return 'none'
+  return getPermissionAccessLevel(user)
 }
 
 export async function hasAdminUsersInDb(): Promise<boolean> {

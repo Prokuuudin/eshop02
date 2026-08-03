@@ -6,6 +6,7 @@ import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { formatEuro } from '@/lib/utils'
+import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,16 +39,16 @@ function normalizeTitle(t: string): string {
 export default function DuplicatesPage(): React.ReactElement {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [filter, setFilter] = useState<'all' | 'title' | 'sku'>('all')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    fetch('/api/admin/products')
-      .then((r) => r.json())
+    adminFetchJson<{ data?: { products?: CatalogProduct[] } }>('/api/admin/products')
       .then((data: { data?: { products?: CatalogProduct[] } }) => {
         setProducts(data.data?.products ?? [])
       })
-      .catch(() => {})
+      .catch((error) => setLoadError(classifyAdminError(error, 'Каталог').message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -130,6 +131,8 @@ export default function DuplicatesPage(): React.ReactElement {
 
         {loading ? (
           <div className="py-16 text-center text-sm text-gray-400">Загрузка каталога...</div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-xl border border-red-300 bg-red-50 px-5 py-8 text-center text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
         ) : groups.length === 0 ? (
           <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 px-5 py-8 text-center">
             <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">Дубликатов не найдено</p>

@@ -38,6 +38,8 @@ function makeSession(platformRole: string) {
       email: 'a@b.c',
       platformRole,
       teamRole: undefined as string | undefined,
+      companyId: undefined as string | undefined,
+      pkLast3: undefined as string | undefined,
       approvalRequired: false,
       auditLoggingEnabled: false,
       bonusPoints: 0,
@@ -124,6 +126,31 @@ describe('restricted onboarding session', () => {
       mustChangePassword: true,
     })
   })
+
+  it('grants full access for a verified individual card+PK login, marked passwordChangeSoft, without exposing the raw code', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer')
+    session.user.mustChangePassword = true
+    session.user.pkLast3 = 'X9Z'
+    sessionFindUniqueMock.mockResolvedValue(session)
+
+    const result = await getServerUser()
+    expect(result).not.toBeNull()
+    expect(result?.mustChangePassword).toBe(true)
+    expect(result?.passwordChangeSoft).toBe(true)
+    expect((result as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
+  })
+
+  it('keeps the hard block for a B2B shared-password session even if pkLast3 is set', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer')
+    session.user.mustChangePassword = true
+    session.user.pkLast3 = 'X9Z'
+    session.user.companyId = 'company_1'
+    sessionFindUniqueMock.mockResolvedValue(session)
+
+    expect(await getServerUser()).toBeNull()
+  })
 })
 
 function makeServerUser(overrides: Partial<ServerUser> = {}): ServerUser {
@@ -135,6 +162,7 @@ function makeServerUser(overrides: Partial<ServerUser> = {}): ServerUser {
     auditLoggingEnabled: false,
     bonusPoints: 0,
     mustChangePassword: false,
+    passwordChangeSoft: false,
     createdAt: '2026-07-04T10:00:00.000Z',
     ...overrides,
   }

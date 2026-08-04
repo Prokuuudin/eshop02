@@ -1,38 +1,17 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { CompanyProfile } from '@/lib/company-store';
-import { listCompanyUsers, type TeamRole } from '@/lib/auth';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Для заявок мастеров: короткий номер от 4 до 6 цифр, уникальный среди всех карт
-const generateShortCardNumber = (companies: CompanyProfile[]): string => {
-    const existing = new Set(
-        companies.map((c) => (c.cardNumber ?? '').replace(/\D/g, '')).filter(Boolean)
-    );
-    const max = companies.reduce((acc, c) => {
-        const digits = (c.cardNumber ?? '').replace(/\D/g, '');
-        if (digits.length < 4 || digits.length > 6) return acc;
-        const n = Number(digits);
-        return isNaN(n) ? acc : Math.max(acc, n);
-    }, 999);
-    let candidate = max + 1;
-    while (existing.has(String(candidate))) candidate++;
-    return String(candidate);
-};
-
-// Заявка мастера из Neon (GET /api/admin/access-requests); certificateData
-// (картинка) на сервер не передаётся — есть только certificateName
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage'
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
   const pageState = useAdminClientBarcodesPage()
-  const { tl, formError, message, setMemberRolesDraft, roleUpdateInProgress, search, setSearch, companies, noCardRequests, filteredCompanies, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, handleApproveNoCardRequest, handleRejectNoCardRequest, resolveMemberRoleDraft, handleUpdateTeamMemberRole } = pageState
+  const { tl, formError, message, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
 return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -42,7 +21,7 @@ return (
                             {tl('admin.clientBarcodes.title', 'Клиентские баркоды', 'Client barcodes', 'Klientu barkodi')}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            {tl('admin.clientBarcodes.subtitle', 'Управление компаниями и баркодами для активации аккаунтов.', 'Manage companies and barcodes for account activation.', 'Uznemumu un barkodu parvaldiba kontu aktivizacijai.')}
+                            {tl('admin.clientBarcodes.subtitle', 'Поиск клиентов по номеру карты и выдача карт мастерам без карты.', 'Look up clients by card number and issue cards to masters without one.', 'Klientu meklēšana pēc kartes numura un karšu izsniegšana meistariem bez kartes.')}
                         </p>
                         <div className="relative mt-3 w-full max-w-sm">
                             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
@@ -158,12 +137,7 @@ return (
                                                         variant="outline"
                                                         size="sm"
                                                         className="shrink-0"
-                                                        onClick={() =>
-                                                            setNoCardDrafts((prev) => ({
-                                                                ...prev,
-                                                                [req.id]: { ...draft, cardNumber: generateShortCardNumber(companies) },
-                                                            }))
-                                                        }
+                                                        onClick={() => void regenerateCardNumber(req.id)}
                                                     >
                                                         ↺
                                                     </Button>
@@ -210,121 +184,47 @@ return (
                     )}
                 </section>
 
-                {/* ── Список клиентов ── */}
+                {/* ── Держатели карт ── */}
                 <section className="rounded-lg border border-border bg-card p-6">
                     <h2 className="text-xl font-semibold mb-4">
-                        {tl('admin.clientBarcodes.companies', 'Компании', 'Companies', 'Uznemumi')}{' '}
+                        {tl('admin.clientBarcodes.holders', 'Держатели карт', 'Card holders', 'Karšu turētāji')}{' '}
                         <span className="text-gray-400 dark:text-gray-500 font-normal text-base">
-                            {search.trim() ? `${filteredCompanies.length} / ${companies.length}` : companies.length}
+                            {search.trim() ? `${cardHolders.length} / ${cardHoldersTotal}` : cardHoldersTotal}
                         </span>
                     </h2>
 
-                    {filteredCompanies.length === 0 && (
+                    {cardHoldersLoading ? (
+                        <p className="text-sm text-muted-foreground py-4">Загрузка...</p>
+                    ) : cardHolders.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-4 text-center">
-                            Ничего не найдено по запросу «{search}»
+                            {search.trim() ? `Ничего не найдено по запросу «${search}»` : 'Держателей карт пока нет.'}
                         </p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-border text-left">
+                                        <th className="pb-2 pr-4 font-medium">Карта</th>
+                                        <th className="pb-2 pr-4 font-medium">Имя</th>
+                                        <th className="pb-2 pr-4 font-medium">Email</th>
+                                        <th className="pb-2 pr-4 font-medium">Телефон</th>
+                                        <th className="pb-2 font-medium">Бонусы</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                    {cardHolders.map((holder) => (
+                                        <tr key={holder.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                            <td className="py-2 pr-4 font-mono text-xs">{holder.cardNumber ?? '—'}</td>
+                                            <td className="py-2 pr-4">{holder.name || holder.companyName || '—'}</td>
+                                            <td className="py-2 pr-4 font-mono text-xs">{holder.email}</td>
+                                            <td className="py-2 pr-4">{holder.phone ?? '—'}</td>
+                                            <td className="py-2">{holder.bonusPoints}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
-
-                    <div className="space-y-3">
-                        {filteredCompanies.map((company) => {
-                            const companyUsers = listCompanyUsers(company.companyId);
-
-                            return (
-                                <div
-                                    key={company.companyId}
-                                    className="rounded-lg border border-border p-4"
-                                >
-                                    <div className="space-y-1">
-                                        <p className="font-semibold text-foreground">
-                                            {company.companyName}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            ID: {company.companyId}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {tl('admin.clientBarcodes.barcode', 'Баркод', 'Barcode', 'Barkods')}:{' '}
-                                            {company.cardNumber || tl('admin.clientBarcodes.notSet', 'не задан', 'not set', 'nav iestatits')}
-                                        </p>
-                                        {company.contactEmail && (
-                                            <p className="text-sm text-muted-foreground">
-                                                Email: {company.contactEmail}
-                                            </p>
-                                        )}
-                                        {company.contactPhone && (
-                                            <p className="text-sm text-muted-foreground">
-                                                Телефон: {company.contactPhone}
-                                            </p>
-                                        )}
-                                        <p className="text-sm text-muted-foreground">
-                                            {tl('admin.clientBarcodes.team', 'Команда', 'Team', 'Komanda')}:{' '}
-                                            {company.teamMembers.length}{' '}
-                                            {tl('admin.clientBarcodes.users', 'пользователей', 'users', 'lietotaji')}
-                                        </p>
-                                    </div>
-
-                                    {companyUsers.length > 0 && (
-                                        <div className="mt-4 rounded-md border border-border p-3">
-                                            <p className="text-sm font-medium text-foreground mb-3">
-                                                {tl('admin.clientBarcodes.accountsAndRoles', 'Аккаунты компании и роли', 'Company accounts and roles', 'Uznemuma konti un lomas')}
-                                            </p>
-                                            <div className="space-y-2">
-                                                {companyUsers.map((companyUser) => {
-                                                    const selectedRole = resolveMemberRoleDraft(
-                                                        companyUser.id,
-                                                        companyUser.teamRole ?? 'viewer'
-                                                    );
-                                                    const isBusy = roleUpdateInProgress === companyUser.id;
-
-                                                    return (
-                                                        <div
-                                                            key={companyUser.id}
-                                                            className="grid grid-cols-1 gap-2 rounded border border-border p-2 md:grid-cols-[1.5fr_1fr_auto] md:items-center"
-                                                        >
-                                                            <div>
-                                                                <p className="text-sm font-medium text-foreground">
-                                                                    {companyUser.name || companyUser.email}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {companyUser.email}
-                                                                </p>
-                                                            </div>
-                                                            <Select
-                                                                value={selectedRole}
-                                                                onValueChange={(value) => {
-                                                                    const role = value as TeamRole;
-                                                                    setMemberRolesDraft((prev) => ({ ...prev, [companyUser.id]: role }));
-                                                                }}
-                                                            >
-                                                                <SelectTrigger className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="viewer">viewer</SelectItem>
-                                                                    <SelectItem value="buyer">buyer</SelectItem>
-                                                                    <SelectItem value="manager">manager</SelectItem>
-                                                                    <SelectItem value="admin">admin</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                disabled={isBusy}
-                                                                onClick={() => handleUpdateTeamMemberRole(companyUser.id, companyUser.teamRole ?? 'viewer')}
-                                                            >
-                                                                {isBusy
-                                                                    ? tl('admin.clientBarcodes.saving', 'Сохраняем...', 'Saving...', 'Saglabajam...')
-                                                                    : tl('admin.clientBarcodes.changeRole', 'Сменить роль', 'Change role', 'Mainit lomu')}
-                                                            </Button>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
                 </section>
             </main>
         </AdminGate>

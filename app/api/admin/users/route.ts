@@ -37,6 +37,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const role = searchParams.get('role') || ''
     const companyId = searchParams.get('companyId') || ''
     const createdSince = searchParams.get('createdSince') || ''
+    const hasCard = searchParams.get('hasCard') === '1'
     const skip = Math.max(0, parseInt(searchParams.get('skip') || '0', 10) || 0)
     const take = Math.min(100, Math.max(1, parseInt(searchParams.get('take') || '50', 10) || 50))
 
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     }
     if (role) where.platformRole = role
     if (companyId) where.companyId = companyId
+    if (hasCard) where.cardNumber = { not: null }
     if (createdSince) {
       const date = new Date(createdSince)
       if (!Number.isNaN(date.getTime())) where.createdAt = { gte: date }

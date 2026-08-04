@@ -1,30 +1,18 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useCompanyStore, type CompanyProfile } from '@/lib/company-store';
-import {
-    getCurrentUser,
-    listCompanyUsers,
-    updateUserTeamRole,
-    type TeamRole,
-} from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 
-// Для заявок мастеров: короткий номер от 4 до 6 цифр, уникальный среди всех карт
-const generateShortCardNumber = (companies: CompanyProfile[]): string => {
-    const existing = new Set(
-        companies.map((c) => (c.cardNumber ?? '').replace(/\D/g, '')).filter(Boolean)
-    );
-    const max = companies.reduce((acc, c) => {
-        const digits = (c.cardNumber ?? '').replace(/\D/g, '');
-        if (digits.length < 4 || digits.length > 6) return acc;
-        const n = Number(digits);
-        return isNaN(n) ? acc : Math.max(acc, n);
-    }, 999);
-    let candidate = max + 1;
-    while (existing.has(String(candidate))) candidate++;
-    return String(candidate);
-};
+async function fetchNextCardNumber(): Promise<string> {
+    try {
+        const res = await fetch('/api/admin/card-request/next-number');
+        if (!res.ok) return '';
+        const data = await res.json().catch(() => null);
+        return typeof data?.cardNumber === 'string' ? data.cardNumber : '';
+    } catch {
+        return '';
+    }
+}
 
 // Заявка мастера из Neon (GET /api/admin/access-requests); certificateData
 // (картинка) на сервер не передаётся — есть только certificateName
@@ -38,6 +26,18 @@ type NoCardRequest = {
     message: string | null;
     language: string | null;
     requestedAt: string;
+};
+
+// Держатель карты — реальный клиент из Neon (User.cardNumber), не B2B-компания:
+// компаний в проде пока нет (Company пустая), все ~10700 карт висят на User
+export type CardHolder = {
+    id: string;
+    email: string;
+    name: string | null;
+    phone: string | null;
+    cardNumber: string | null;
+    bonusPoints: number;
+    companyName: string | null;
 };
 
 function useAdminClientBarcodesPageState() {
@@ -54,12 +54,34 @@ function useAdminClientBarcodesPageState() {
 
     const [formError, setFormError] = useState('');
     const [message, setMessage] = useState('');
-    const [memberRolesDraft, setMemberRolesDraft] = useState<Record<string, TeamRole>>({});
-    const [roleUpdateInProgress, setRoleUpdateInProgress] = useState<string | null>(null);
     const [search, setSearch] = useState('');
 
-    const { getCompanies } = useCompanyStore();
-    const companies = getCompanies();
+    // Список держателей карт — из Neon по /api/admin/users, фильтр по email/
+    // имени/номеру карты идёт на сервере (WHERE ... contains)
+    const [cardHolders, setCardHolders] = useState<CardHolder[]>([]);
+    const [cardHoldersTotal, setCardHoldersTotal] = useState(0);
+    const [cardHoldersLoading, setCardHoldersLoading] = useState(false);
+
+    const loadCardHolders = useCallback(async () => {
+        setCardHoldersLoading(true);
+        try {
+            const params = new URLSearchParams({ take: '50', hasCard: '1' });
+            if (search.trim()) params.set('search', search.trim());
+            const res = await fetch(`/api/admin/users?${params}`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (Array.isArray(data.users)) {
+                setCardHolders(data.users);
+                setCardHoldersTotal(data.total ?? data.users.length);
+            }
+        } catch { /* сеть — оставляем прежний список */ } finally {
+            setCardHoldersLoading(false);
+        }
+    }, [search]);
+
+    useEffect(() => {
+        queueMicrotask(() => void loadCardHolders());
+    }, [loadCardHolders]);
 
     // Заявки мастеров — из Neon, не из localStorage: клиент подаёт заявку со
     // своего браузера, локальный store админа её не видит
@@ -78,44 +100,34 @@ function useAdminClientBarcodesPageState() {
         queueMicrotask(() => void loadNoCardRequests());
     }, [loadNoCardRequests]);
 
-    const filteredCompanies = search.trim()
-        ? (() => {
-              const q = search.trim().toLowerCase();
-              return companies.filter((c) => {
-                  const users = listCompanyUsers(c.companyId);
-                  return (
-                      c.companyName.toLowerCase().includes(q) ||
-                      (c.cardNumber ?? '').toLowerCase().includes(q) ||
-                      (c.contactEmail ?? '').toLowerCase().includes(q) ||
-                      (c.contactPhone ?? '').toLowerCase().includes(q) ||
-                      (c.taxId ?? '').toLowerCase().includes(q) ||
-                      (c.registrationNumber ?? '').toLowerCase().includes(q) ||
-                      (c.city ?? '').toLowerCase().includes(q) ||
-                      (c.country ?? '').toLowerCase().includes(q) ||
-                      users.some(
-                          (u) =>
-                              (u.name ?? '').toLowerCase().includes(q) ||
-                              u.email.toLowerCase().includes(q)
-                      )
-                  );
-              });
-          })()
-        : companies;
-
     const [noCardDrafts, setNoCardDrafts] = useState<Record<string, { companyName: string; cardNumber: string }>>({});
     const [rejectNotes, setRejectNotes] = useState<Record<string, string>>({});
     const [emailBusy, setEmailBusy] = useState<Record<string, boolean>>({});
 
     const getNoCardDraft = (requestId: string, defaultName: string) => {
         if (!noCardDrafts[requestId]) {
-            const generated = generateShortCardNumber(companies);
-            setNoCardDrafts((prev) => ({
-                ...prev,
-                [requestId]: { companyName: defaultName, cardNumber: generated },
-            }));
-            return { companyName: defaultName, cardNumber: generated };
+            const draft = { companyName: defaultName, cardNumber: '' };
+            setNoCardDrafts((prev) => ({ ...prev, [requestId]: draft }));
+            void fetchNextCardNumber().then((cardNumber) => {
+                if (!cardNumber) return;
+                setNoCardDrafts((prev) =>
+                    prev[requestId] && prev[requestId].cardNumber === ''
+                        ? { ...prev, [requestId]: { ...prev[requestId], cardNumber } }
+                        : prev
+                );
+            });
+            return draft;
         }
         return noCardDrafts[requestId];
+    };
+
+    const regenerateCardNumber = async (requestId: string) => {
+        const cardNumber = await fetchNextCardNumber();
+        if (!cardNumber) return;
+        setNoCardDrafts((prev) => ({
+            ...prev,
+            [requestId]: { ...prev[requestId], cardNumber },
+        }));
     };
 
     const handleApproveNoCardRequest = async (requestId: string, email: string) => {
@@ -159,6 +171,7 @@ function useAdminClientBarcodesPageState() {
         } finally {
             setEmailBusy((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
             await loadNoCardRequests();
+            await loadCardHolders();
         }
     };
 
@@ -194,33 +207,7 @@ function useAdminClientBarcodesPageState() {
         }
     };
 
-    const resolveMemberRoleDraft = (userId: string, fallbackRole: TeamRole): TeamRole =>
-        memberRolesDraft[userId] ?? fallbackRole;
-
-    const handleUpdateTeamMemberRole = (userId: string, fallbackRole: TeamRole) => {
-        const reviewer = getCurrentUser();
-        const nextRole = resolveMemberRoleDraft(userId, fallbackRole);
-
-        setRoleUpdateInProgress(userId);
-        setFormError('');
-        setMessage('');
-
-        const result = updateUserTeamRole(userId, nextRole, reviewer);
-        if (!result.success) {
-            setFormError(
-                result.error ||
-                    tl('admin.clientBarcodes.msg.updateRoleFailed', 'Не удалось изменить роль', 'Failed to change role', 'Neizdevas nomainit lomu')
-            );
-            setRoleUpdateInProgress(null);
-            return;
-        }
-
-        setMemberRolesDraft((prev) => ({ ...prev, [userId]: nextRole }));
-        setMessage(tl('admin.clientBarcodes.msg.roleUpdated', 'Роль пользователя обновлена', 'User role updated', 'Lietotaja loma atjaunota'));
-        setRoleUpdateInProgress(null);
-    };
-
-      return { t, language, l, tl, formError, setFormError, message, setMessage, memberRolesDraft, setMemberRolesDraft, roleUpdateInProgress, setRoleUpdateInProgress, search, setSearch, getCompanies, companies, noCardRequests, setNoCardRequests, loadNoCardRequests, filteredCompanies, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, handleApproveNoCardRequest, handleRejectNoCardRequest, resolveMemberRoleDraft, handleUpdateTeamMemberRole }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(): ReturnType<typeof useAdminClientBarcodesPageState> {

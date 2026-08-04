@@ -106,9 +106,10 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
         <Providers initialLanguage={language}>
           <RouteUiEffects />
           <AuthHydrator />
-          {/* Global gate: a cardholder who hasn't set their own password yet
-              (mustChangePassword) must not be able to use any page, not just
-              /account — the shared welcome password only unlocks this modal. */}
+          {/* Global gate: a hard-blocked user (B2B shared-card / access-request
+              Welcome1! default) can't use any page but /account until they set
+              their own password. Soft-eligible card+PK users instead get a
+              dismissible banner (see PasswordChangeBanner) and aren't blocked. */}
           <AccountGuard>
             <Header />
             <main id="main-content" className="w-full pb-6">

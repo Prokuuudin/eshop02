@@ -40,9 +40,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     set({
       user,
-      // Restricted onboarding users may only set their own password. Treat them
-      // as unauthenticated everywhere else (prices, cart and account actions).
-      isAuthenticated: !!user && !user.mustChangePassword,
+      // Hard-blocked only when mustChangePassword is true AND the server
+      // didn't mark this session passwordChangeSoft (see lib/auth-types.ts).
+      isAuthenticated: !!user && !(user.mustChangePassword && !user.passwordChangeSoft),
       isAdmin: isAdminUser(user),
       isHydrated: true,
     })

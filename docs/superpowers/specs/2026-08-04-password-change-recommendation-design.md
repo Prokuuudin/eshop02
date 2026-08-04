@@ -80,37 +80,67 @@ field to the mapper alone makes it flow through automatically. The
 `register-card` route's own response (`route.ts:118`) already reuses
 `mapDbToServerUser` too, so no separate change needed there.
 
+**Correction (found during implementation, before this section's approach
+ever reached the server side):** a security review of the first
+implementation task flagged that shipping the raw `pkLast3` value to the
+client means it lands in `localStorage` (`lib/auth-storage.ts`'s
+`normalizeUser()`) alongside `cardNumber`, which is already stored there.
+Together those two values are exactly the input pair `register-card`
+accepts — so any XSS able to read `localStorage` would obtain a portable,
+session-independent credential for that card (usable from the attacker's
+own browser, replayable, outliving the current session) for as long as
+`mustChangePassword` stays true. That window is now long-lived by design
+(soft mode is meant to persist across sessions until the user gets around
+to it), which compounds the exposure relative to before this feature.
+
+The client never actually needs the raw code — only the yes/no answer to
+"is this soft or hard." Fix: compute `isPasswordChangeSoft()` **server-side
+only** (it already lives there) and expose just the derived boolean,
+`passwordChangeSoft`, on both `ServerUser` and the client `User` type,
+instead of the raw `pkLast3`. `pkLast3` itself never leaves the server.
+This changes the two bullet points above to:
+- `ServerUser` gets `passwordChangeSoft: boolean` (not `pkLast3`),
+  computed in `mapDbToServerUser()` via `isPasswordChangeSoft()` against the
+  raw Prisma `User` row (which does have `pkLast3`, `companyId`,
+  `mustChangePassword`).
+- The client `User` type gets `passwordChangeSoft?: boolean` (not
+  `pkLast3`).
+
+Every downstream consumer (`getServerUser`'s gate, `auth-store.ts`,
+`AccountGuard.tsx`) reads this one boolean directly instead of recomputing
+`isPasswordChangeSoft()` against three raw fields — simpler as well as
+safer. `isPasswordChangeSoft()` itself is unchanged and still the single
+source of truth; it just now only ever runs server-side, against the raw
+Prisma row.
+
 ## Enforcement layer changes
 
-1. **`lib/auth-store.ts`** — `isAuthenticated` becomes:
-   ```
-   isAuthenticated: !!user && !(user.mustChangePassword && !softMode(user))
-   ```
-   i.e. unauthenticated only when forced *and not* soft-eligible.
-
-2. **`lib/server-auth.ts`** (`getServerUser`) — the guard at line 124
-   becomes conditional on the same `softMode` check instead of the flag
+1. **`lib/server-auth.ts`** (`mapDbToServerUser` + `getServerUser`) —
+   `mapDbToServerUser()` computes `passwordChangeSoft: isPasswordChangeSoft(u)`
+   from the raw Prisma row (never puts `pkLast3` on `ServerUser`). The gate
+   at line 124 becomes conditional on that boolean instead of the flag
    alone:
    ```
-   if (user.mustChangePassword && !softMode(user) && !options.allowPasswordChangeRequired) return null
+   if (user.mustChangePassword && !user.passwordChangeSoft && !options.allowPasswordChangeRequired) return null
    ```
    All ~60 existing call sites (`app/api/**`) get the corrected behavior for
    free — no per-route changes.
 
+2. **`lib/auth-store.ts`** — `isAuthenticated` becomes:
+   ```
+   isAuthenticated: !!user && !(user.mustChangePassword && !user.passwordChangeSoft)
+   ```
+   i.e. unauthenticated only when forced *and not* soft-eligible.
+
 3. **`components/account/AccountGuard.tsx`** —
    ```
-   {user?.mustChangePassword && !softMode(user) && <ForceChangePasswordModal />}
-   {user?.mustChangePassword && softMode(user) && <PasswordChangeBanner />}
+   {user?.mustChangePassword && !user.passwordChangeSoft && <ForceChangePasswordModal />}
+   {user?.mustChangePassword && user.passwordChangeSoft && <PasswordChangeBanner />}
    ```
    `WelcomeModal`'s existing condition (`!user.mustChangePassword`) is left
    untouched — soft-mode users simply see it once they do change their
    password, same as today. Not worth adding a parallel welcome path for
    this.
-
-   `softMode()` becomes a small shared helper (e.g. exported from
-   `lib/auth-types.ts` or `lib/auth.ts`) so the three call sites above and
-   any future one share one definition instead of re-deriving the
-   three-field check.
 
 ## New component: `PasswordChangeBanner`
 
@@ -130,7 +160,7 @@ field to the mapper alone makes it flow through automatically. The
   `forceChangePassword()` from `lib/auth.ts` unchanged; no backend change
   needed since `/api/user/password` already skips the current-password
   check purely based on `mustChangePassword` (`route.ts:42`), independent of
-  `softMode`.
+  `passwordChangeSoft`.
 - To avoid duplicating the field-pair + validation + submit logic between
   `ForceChangePasswordModal` and the banner, extract that into a shared
   small component/hook both use. `ForceChangePasswordModal` itself is
@@ -153,8 +183,10 @@ field to the mapper alone makes it flow through automatically. The
 - `lib/server-auth.test.ts`: extend the existing `mustChangePassword`
   coverage with a case where `pkLast3` is set and `companyId` is null —
   `getServerUser()` must return the full user (not `null`) without
-  `allowPasswordChangeRequired`. Existing "must be null" case stays as
-  regression coverage for the still-hard-blocked shape.
+  `allowPasswordChangeRequired`, and its `passwordChangeSoft` must be
+  `true` while `pkLast3` itself must NOT appear on the returned object.
+  Existing "must be null" case stays as regression coverage for the still
+  hard-blocked shape.
 - `lib/auth-store.test.ts` (or add one if it doesn't exist): same
   soft/hard split for `isAuthenticated`.
 - Component test or manual verification: `AccountGuard` renders

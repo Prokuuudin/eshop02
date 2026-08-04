@@ -25,7 +25,6 @@ const patchSchema = z.object({
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   approvalRequired: z.boolean().optional(),
   auditLoggingEnabled: z.boolean().optional(),
-  mustChangePassword: z.boolean().optional(),
 }).strict()
 
 export async function GET(req: NextRequest): Promise<Response> {

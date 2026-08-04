@@ -4,14 +4,15 @@
 
 **Goal:** For individual card+PK cardholders (`register-card` route's `cardUser` branch), replace today's site-wide hard lockout (blocking modal + `isAuthenticated: false` + server session treated as logged-out) with full site access plus a dismissible recommendation banner — while every other `mustChangePassword: true` case (B2B shared `FIRST_LOGIN_PASSWORD`, access-request `Welcome1!`, admin-forced resets) keeps today's hard block byte-for-byte.
 
-**Architecture:** A single pure predicate, `isPasswordChangeSoft(user)`, decides which of the two treatments applies. It's defined once in the client/server-neutral `lib/auth-types.ts` and consumed by the three places that currently gate on `mustChangePassword` alone: the client auth store (`lib/auth-store.ts`), the server session guard (`lib/server-auth.ts`), and the account-level UI gate (`components/account/AccountGuard.tsx`). A new `pkLast3` field is threaded onto both the server (`ServerUser`) and client (`User`) user shapes so the predicate has the data it needs. The existing forced-change form is extracted into a shared `ChangePasswordFields` component so the new non-blocking banner and the still-existing blocking modal don't duplicate the input/validation/submit logic.
+**Architecture:** A single pure predicate, `isPasswordChangeSoft(user)`, decides which of the two treatments applies. It's defined once in `lib/auth-types.ts` and runs **server-side only**, against the raw Prisma `User` row. The server exposes just the derived result — `passwordChangeSoft: boolean` — on `ServerUser` and the client `User` type; the raw `pkLast3` code never leaves the server (see Task 3 — this was a correction found via security review after Tasks 1–2 first shipped it to the client). The three places that gate on `mustChangePassword` alone — the client auth store (`lib/auth-store.ts`), the server session guard (`lib/server-auth.ts`), and the account-level UI gate (`components/account/AccountGuard.tsx`) — all read that one boolean directly. The existing forced-change form is extracted into a shared `ChangePasswordFields` component so the new non-blocking banner and the still-existing blocking modal don't duplicate the input/validation/submit logic.
 
-**Tech Stack:** Next.js App Router, TypeScript, Zustand (`lib/auth-store.ts`), Prisma (`User.pkLast3`, `User.companyId` — both already exist, no migration), Vitest for unit tests.
+**Tech Stack:** Next.js App Router, TypeScript, Zustand (`lib/auth-store.ts`), Prisma (`User.pkLast3`, `User.companyId` — both already exist, no migration; `pkLast3` is read server-side only, never selected onto a client-facing type), Vitest for unit tests.
 
 ## Global Constraints
 
 - No database schema changes — `pkLast3` and `companyId` already exist on `User`.
 - The eligibility formula is exactly: `mustChangePassword && pkLast3 !== null && companyId === null`. Do not simplify to `companyId === null` alone (see spec — that would wrongly soften access-request `Welcome1!` and admin-forced resets).
+- **The raw `pkLast3` value must never reach the client** — not on `ServerUser`, not on the client `User` type, not in any API response or `localStorage` key. Only the derived boolean `passwordChangeSoft` crosses that boundary. (Correction from the original plan — see Task 3.)
 - `/api/auth/register-card`'s claim-gate (`!cardUser.mustChangePassword → 409`) is untouched.
 - `ForceChangePasswordModal`'s visible behavior for hard-blocked users (B2B, access-request) does not change — only its internals are refactored to share code with the new banner.
 - No i18n keys: `ForceChangePasswordModal` is hardcoded Russian today with no `t()` calls; the new banner and shared form follow the same existing convention.
@@ -23,112 +24,59 @@ Reference: `docs/superpowers/specs/2026-08-04-password-change-recommendation-des
 
 ### Task 1: `isPasswordChangeSoft` predicate + `pkLast3` on the client `User` type
 
+**Status: done (commit 6b0281c) — superseded by Task 3's correction below.** Left in the plan as an accurate historical record; do not re-run this task. Task 3 removes the client-side `pkLast3` field this task added.
+
 **Files:**
 - Modify: `lib/auth-types.ts`
 - Test: `lib/auth-types.test.ts` (new)
 
 **Interfaces:**
-- Produces: `isPasswordChangeSoft(user: PasswordChangeGateUser): boolean`, exported from `lib/auth-types.ts`. `PasswordChangeGateUser = { mustChangePassword?: boolean | null; pkLast3?: string | null; companyId?: string | null }`. Consumed by Tasks 3, 4, 6.
-- Produces: `User.pkLast3?: string | null` field, consumed by Tasks 2, 4, 6.
+- Produces: `isPasswordChangeSoft(user: PasswordChangeGateUser): boolean`, exported from `lib/auth-types.ts`. `PasswordChangeGateUser = { mustChangePassword?: boolean | null; pkLast3?: string | null; companyId?: string | null }`. This interface is unchanged and still current — consumed server-side only from Task 3 onward.
+- Produces: `User.pkLast3?: string | null` field — **removed by Task 3.**
 
-- [ ] **Step 1: Write the failing test**
-
-Create `lib/auth-types.test.ts`:
-
-```ts
-import { describe, it, expect } from 'vitest'
-import { isPasswordChangeSoft } from './auth-types'
-
-describe('isPasswordChangeSoft', () => {
-  it('is false when mustChangePassword is not set', () => {
-    expect(isPasswordChangeSoft({ mustChangePassword: false, pkLast3: 'ABC', companyId: null })).toBe(false)
-  })
-
-  it('is true for a verified individual card+PK login', () => {
-    expect(isPasswordChangeSoft({ mustChangePassword: true, pkLast3: 'ABC', companyId: null })).toBe(true)
-  })
-
-  it('is false when there is no personal code on file', () => {
-    expect(isPasswordChangeSoft({ mustChangePassword: true, pkLast3: null, companyId: null })).toBe(false)
-  })
-
-  it('is false for a B2B company member even if pkLast3 happens to be set', () => {
-    expect(isPasswordChangeSoft({ mustChangePassword: true, pkLast3: 'ABC', companyId: 'company_1' })).toBe(false)
-  })
-
-  it('is false for the access-request Welcome1! shape (no pkLast3, no company)', () => {
-    expect(isPasswordChangeSoft({ mustChangePassword: true, pkLast3: undefined, companyId: undefined })).toBe(false)
-  })
-})
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npx vitest run lib/auth-types.test.ts`
-Expected: FAIL — `isPasswordChangeSoft` is not exported from `./auth-types`.
-
-- [ ] **Step 3: Implement**
-
-In `lib/auth-types.ts`, add the `pkLast3` field to `User` (after the existing `cardNumber` line) and the new type + function at the end of the file:
-
-```ts
-  cardNumber?: string // Клиентская карта для входа по номеру карты
-  pkLast3?: string | null // Последние 3 символа перс. кода — см. isPasswordChangeSoft
-```
-
-```ts
-export type PasswordChangeGateUser = {
-  mustChangePassword?: boolean | null
-  pkLast3?: string | null
-  companyId?: string | null
-}
-
-// mustChangePassword is "soft" only when it came from a verified, per-person
-// card+PK login (register-card individual branch) — not from a credential
-// shared with other people (B2B FIRST_LOGIN_PASSWORD, access-request
-// Welcome1!, or an admin-forced reset). Soft accounts get full site access
-// and a dismissible recommendation instead of a blocking gate.
-export function isPasswordChangeSoft(user: PasswordChangeGateUser): boolean {
-  return Boolean(user.mustChangePassword) && user.pkLast3 != null && user.companyId == null
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npx vitest run lib/auth-types.test.ts`
-Expected: PASS (5 tests).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add lib/auth-types.ts lib/auth-types.test.ts
-git commit -m "feat(auth): add isPasswordChangeSoft eligibility predicate"
-```
+(Original steps omitted — already implemented and reviewed. See commit 6b0281c.)
 
 ---
 
 ### Task 2: Carry `pkLast3` through the client local mirror (`normalizeUser`)
 
+**Status: done (commit 096e423) — superseded by Task 3's correction below.** Left in the plan as an accurate historical record; do not re-run this task. Task 3 changes `normalizeUser()` to carry `passwordChangeSoft` instead of `pkLast3`.
+
 **Files:**
 - Modify: `lib/auth-storage.ts`
 - Test: `lib/auth.test.ts` (extend existing `registerCardUser` describe block)
 
-**Interfaces:**
-- Consumes: `User.pkLast3` from Task 1.
-- Produces: `normalizeUser()` now preserves `pkLast3` — relied on by Task 4's `isPasswordChangeSoft` calls against `getCurrentUser()`'s output, and by Task 6's UI.
+(Original steps omitted — already implemented and reviewed, then superseded. See commit 096e423 and Task 3.)
 
-`normalizeUser()` in `lib/auth-storage.ts` builds the client `User` object field-by-field from whatever the server/registration response hands it — it currently has no `pkLast3` line, so today it would be silently dropped every time `registerCardUser()` or `loginUserAuto()` writes to local storage, even after Task 1 adds the field to the type.
+---
+
+### Task 3: Correction — derive `passwordChangeSoft` server-side, stop exposing raw `pkLast3` to the client
+
+**Why this task exists:** a security review run automatically after Task 1's commit flagged that shipping the raw `pkLast3` value to the client lands it in `localStorage` (`lib/auth-storage.ts`'s `normalizeUser()`, Task 2) right alongside `cardNumber`, which is already stored there. Together those two values are exactly the input pair `POST /api/auth/register-card` accepts — so any XSS able to read `localStorage` would obtain a portable, session-independent credential for that card (replayable from the attacker's own browser, outliving the current session) for as long as `mustChangePassword` stays true. This feature makes that window long-lived by design (soft mode is meant to persist across sessions), which compounds the exposure. The client never actually needs the raw code — only the yes/no answer. This task amends Tasks 1–2's already-shipped files before anything downstream (Task 4 onward) starts consuming the raw value server-side too.
+
+**Files:**
+- Modify: `lib/auth-types.ts`
+- Modify: `lib/auth-storage.ts`
+- Modify: `lib/auth.test.ts` (replaces the "carries pkLast3" test added by Task 2)
+
+**Interfaces:**
+- Consumes: nothing new — amends Task 1/2's interfaces in place.
+- Produces: `User.passwordChangeSoft?: boolean` (replaces `User.pkLast3`, which is removed from the client type entirely — `pkLast3` must not appear anywhere in `lib/auth-types.ts`'s `User` type after this task). Consumed by Tasks 5 and 7.
+- `isPasswordChangeSoft()` and `PasswordChangeGateUser` are **unchanged** — still exported from `lib/auth-types.ts`, just consumed server-side only starting with Task 4.
 
 - [ ] **Step 1: Write the failing test**
 
-In `lib/auth.test.ts`, inside `describe('registerCardUser — server-authoritative card registration', ...)`, add (after the existing "on success, mirrors the server-created account locally..." test):
+In `lib/auth.test.ts`, find the test added by Task 2 (`'carries pkLast3 through the local mirror so the soft password-change gate works after registration'`, inside `describe('registerCardUser — server-authoritative card registration', ...)`) and **replace it entirely** with:
 
 ```ts
-  it('carries pkLast3 through the local mirror so the soft password-change gate works after registration', async () => {
+  it('carries passwordChangeSoft through the local mirror, and never stores the raw pkLast3 code', async () => {
     const serverUser = {
       id: 'u_soft_1',
       email: 'card.5678@client.local',
       mustChangePassword: true,
+      passwordChangeSoft: true,
+      // Defence-in-depth: even if a future server regression leaked this
+      // raw field, the client must never persist it.
       pkLast3: 'X9Z',
     }
     vi.mocked(fetch).mockResolvedValue({
@@ -139,53 +87,66 @@ In `lib/auth.test.ts`, inside `describe('registerCardUser — server-authoritati
 
     await registerCardUser({ cardNumber: '5678', password: '9zx' })
 
-    expect(getCurrentUser()?.pkLast3).toBe('X9Z')
+    const stored = getCurrentUser()
+    expect(stored?.passwordChangeSoft).toBe(true)
+    expect((stored as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
   })
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run lib/auth.test.ts -t "carries pkLast3"`
-Expected: FAIL — `getCurrentUser()?.pkLast3` is `undefined`.
+Run: `npx vitest run lib/auth.test.ts -t "carries passwordChangeSoft"`
+Expected: FAIL — `stored?.passwordChangeSoft` is `undefined` (not `true`).
 
 - [ ] **Step 3: Implement**
 
-In `lib/auth-storage.ts`, in `normalizeUser()`, add a line after `cardNumber: user.cardNumber,`:
+In `lib/auth-types.ts`, in the `User` type, replace the `pkLast3` line Task 1 added:
+
+```ts
+  cardNumber?: string // Клиентская карта для входа по номеру карты
+  passwordChangeSoft?: boolean // Сервер уже посчитал isPasswordChangeSoft — сырой pkLast3 клиенту не передаётся
+```
+
+(Remove the old `pkLast3?: string | null // ...` line entirely. Leave `PasswordChangeGateUser` and `isPasswordChangeSoft()` at the bottom of the file exactly as Task 1 wrote them — no change to those.)
+
+In `lib/auth-storage.ts`, in `normalizeUser()`, replace the `pkLast3` line Task 2 added:
 
 ```ts
   cardNumber: user.cardNumber,
-  pkLast3: user.pkLast3 ?? null,
+  passwordChangeSoft: user.passwordChangeSoft ?? false,
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run lib/auth.test.ts -t "carries pkLast3"`
+Run: `npx vitest run lib/auth.test.ts -t "carries passwordChangeSoft"`
 Expected: PASS.
 
-Then run the full file to confirm no regressions: `npx vitest run lib/auth.test.ts` — Expected: all PASS.
+Then run the full files to confirm no regressions:
+`npx vitest run lib/auth.test.ts` — Expected: all PASS.
+`npx vitest run lib/auth-types.test.ts` — Expected: all PASS unchanged (these tests call `isPasswordChangeSoft()` directly with a `PasswordChangeGateUser`-shaped literal, which this task does not touch).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/auth-storage.ts lib/auth.test.ts
-git commit -m "fix(auth): preserve pkLast3 through the client user mirror"
+git add lib/auth-types.ts lib/auth-storage.ts lib/auth.test.ts
+git commit -m "fix(auth): stop exposing raw pkLast3 to the client, derive passwordChangeSoft server-side"
 ```
 
 ---
 
-### Task 3: `pkLast3` on `ServerUser` + soften the `getServerUser` session gate
+### Task 4: `passwordChangeSoft` on `ServerUser` + soften the `getServerUser` session gate
 
 **Files:**
 - Modify: `lib/server-auth.ts`
 - Test: `lib/server-auth.test.ts`
 
 **Interfaces:**
-- Consumes: `isPasswordChangeSoft` from Task 1 (`lib/auth-types.ts`).
-- Produces: `ServerUser.pkLast3?: string | null`; `getServerUser()` now returns the full user (not `null`) for soft-eligible sessions even without `allowPasswordChangeRequired`. Every existing `getServerUser()` call site (~60 API routes) picks this up automatically — no per-route changes.
+- Consumes: `isPasswordChangeSoft` from `lib/auth-types.ts` (Task 1, unchanged).
+- Produces: `ServerUser.passwordChangeSoft: boolean` (the raw `pkLast3` is read from the Prisma row to compute this but is **never** added to the `ServerUser` type or returned in any response). `getServerUser()` now returns the full user (not `null`) for soft-eligible sessions even without `allowPasswordChangeRequired`. Every existing `getServerUser()` call site (~60 API routes) picks this up automatically — no per-route changes. Consumed by Tasks 5 and 7.
 
 - [ ] **Step 1: Write the failing test**
 
-In `lib/server-auth.test.ts`, first extend the `makeSession` helper (around line 32) to carry the two new fields, matching the existing style of `teamRole`:
+In `lib/server-auth.test.ts`, extend the `makeSession` helper (around line 32) to carry the two extra fields the raw Prisma row has, matching the existing style of `teamRole`:
 
 ```ts
 function makeSession(platformRole: string) {
@@ -212,7 +173,7 @@ function makeSession(platformRole: string) {
 Then add two tests inside `describe('restricted onboarding session', ...)`, after the existing test:
 
 ```ts
-  it('grants full access for a verified individual card+PK login (soft-eligible)', async () => {
+  it('grants full access for a verified individual card+PK login, marked passwordChangeSoft, without exposing the raw code', async () => {
     cookieGet.mockReturnValue({ value: 'tok' })
     const session = makeSession('customer')
     session.user.mustChangePassword = true
@@ -222,7 +183,8 @@ Then add two tests inside `describe('restricted onboarding session', ...)`, afte
     const result = await getServerUser()
     expect(result).not.toBeNull()
     expect(result?.mustChangePassword).toBe(true)
-    expect(result?.pkLast3).toBe('X9Z')
+    expect(result?.passwordChangeSoft).toBe(true)
+    expect((result as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
   })
 
   it('keeps the hard block for a B2B shared-password session even if pkLast3 is set', async () => {
@@ -240,7 +202,7 @@ Then add two tests inside `describe('restricted onboarding session', ...)`, afte
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run lib/server-auth.test.ts -t "restricted onboarding session"`
-Expected: FAIL — both new tests fail (`getServerUser()` still returns `null` for the soft case; `result?.pkLast3` is `undefined`).
+Expected: FAIL — both new tests fail (`getServerUser()` still returns `null` for the soft case; `result?.passwordChangeSoft` is `undefined`).
 
 - [ ] **Step 3: Implement**
 
@@ -252,18 +214,18 @@ In `lib/server-auth.ts`:
 import { isPasswordChangeSoft } from '@/lib/auth-types'
 ```
 
-2. Add `pkLast3` to the `ServerUser` type (after the existing `cardNumber?: string` line):
+2. Add `passwordChangeSoft` to the `ServerUser` type (after the existing `mustChangePassword: boolean` line). Do **not** add a `pkLast3` field to this type:
 
 ```ts
-  cardNumber?: string
-  pkLast3?: string | null
+  mustChangePassword: boolean
+  passwordChangeSoft: boolean
 ```
 
-3. Add the mapping in `mapDbToServerUser()` (after the existing `cardNumber: u.cardNumber ?? undefined,` line):
+3. Add the computation in `mapDbToServerUser()` (after the existing `mustChangePassword: u.mustChangePassword,` line):
 
 ```ts
-    cardNumber: u.cardNumber ?? undefined,
-    pkLast3: u.pkLast3 ?? null,
+    mustChangePassword: u.mustChangePassword,
+    passwordChangeSoft: isPasswordChangeSoft(u),
 ```
 
 4. Change the gate at line 124 from:
@@ -275,8 +237,10 @@ import { isPasswordChangeSoft } from '@/lib/auth-types'
 to:
 
 ```ts
-    if (user.mustChangePassword && !isPasswordChangeSoft(user) && !options.allowPasswordChangeRequired) return null
+    if (user.mustChangePassword && !user.passwordChangeSoft && !options.allowPasswordChangeRequired) return null
 ```
+
+(This reads the already-computed field on the mapped `user`, not a fresh call to `isPasswordChangeSoft()` — `mapDbToServerUser()` ran a few lines above this gate.)
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -292,14 +256,14 @@ git commit -m "feat(auth): soften server session gate for soft-eligible card+PK 
 
 ---
 
-### Task 4: Soften the client `isAuthenticated` gate (`lib/auth-store.ts`)
+### Task 5: Soften the client `isAuthenticated` gate (`lib/auth-store.ts`)
 
 **Files:**
 - Modify: `lib/auth-store.ts`
 - Test: `lib/auth-store.test.ts` (new)
 
 **Interfaces:**
-- Consumes: `isPasswordChangeSoft` from Task 1; `pkLast3` from Task 2 (via `getCurrentUser()`).
+- Consumes: `User.passwordChangeSoft` from Task 3 (via `getCurrentUser()`). No import of `isPasswordChangeSoft` needed here — the boolean already arrived precomputed from the server.
 - Produces: `useAuthStore` state's `isAuthenticated` is `true` for soft-eligible users — every component reading `useAuthStore((s) => s.isAuthenticated)` (cart, prices, `Categories.tsx`, etc.) picks this up automatically.
 
 - [ ] **Step 1: Write the failing test**
@@ -324,25 +288,19 @@ beforeEach(() => {
 
 describe('useAuthStore refresh — password-change gate', () => {
   it('treats a hard-blocked mustChangePassword user as unauthenticated', () => {
-    getCurrentUserMock.mockReturnValue({ id: 'u1', mustChangePassword: true, pkLast3: null, companyId: null })
+    getCurrentUserMock.mockReturnValue({ id: 'u1', mustChangePassword: true, passwordChangeSoft: false })
     useAuthStore.getState().refresh()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
   it('treats a soft-eligible card+PK user as fully authenticated', () => {
-    getCurrentUserMock.mockReturnValue({ id: 'u2', mustChangePassword: true, pkLast3: 'X9Z', companyId: null })
+    getCurrentUserMock.mockReturnValue({ id: 'u2', mustChangePassword: true, passwordChangeSoft: true })
     useAuthStore.getState().refresh()
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
 
-  it('keeps a B2B shared-password user hard-blocked even with pkLast3 set', () => {
-    getCurrentUserMock.mockReturnValue({ id: 'u3', mustChangePassword: true, pkLast3: 'X9Z', companyId: 'company_1' })
-    useAuthStore.getState().refresh()
-    expect(useAuthStore.getState().isAuthenticated).toBe(false)
-  })
-
   it('authenticates a normal user with no password-change flag', () => {
-    getCurrentUserMock.mockReturnValue({ id: 'u4', mustChangePassword: false })
+    getCurrentUserMock.mockReturnValue({ id: 'u4', mustChangePassword: false, passwordChangeSoft: false })
     useAuthStore.getState().refresh()
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
@@ -356,31 +314,25 @@ Expected: FAIL — the "soft-eligible" case gets `isAuthenticated: false` (curre
 
 - [ ] **Step 3: Implement**
 
-In `lib/auth-store.ts`, add the import:
-
-```ts
-import { isPasswordChangeSoft } from '@/lib/auth-types'
-```
-
-Change the `set({...})` call inside `refresh`:
+In `lib/auth-store.ts`, change the `set({...})` call inside `refresh` (no new import needed):
 
 ```ts
     set({
       user,
-      // Hard-blocked only when mustChangePassword is true AND it isn't a
-      // soft-eligible card+PK login (see isPasswordChangeSoft).
-      isAuthenticated: !!user && !(user.mustChangePassword && !isPasswordChangeSoft(user)),
+      // Hard-blocked only when mustChangePassword is true AND the server
+      // didn't mark this session passwordChangeSoft (see lib/auth-types.ts).
+      isAuthenticated: !!user && !(user.mustChangePassword && !user.passwordChangeSoft),
       isAdmin: isAdminUser(user),
       isHydrated: true,
     })
 ```
 
-Also update the early-return dedup check just above it, which currently only compares `mustChangePassword`, to keep it consistent with the new authentication logic (a `pkLast3`/`companyId` change without a `mustChangePassword` change can't happen in practice, so the existing comparison is still correct — no change needed there beyond leaving it as-is).
+Leave the early-return dedup check just above it (which compares `mustChangePassword`) as-is — no change needed there.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run lib/auth-store.test.ts`
-Expected: PASS (4 tests).
+Expected: PASS (3 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -391,16 +343,16 @@ git commit -m "feat(auth): soften client isAuthenticated gate for soft-eligible 
 
 ---
 
-### Task 5: Extract `ChangePasswordFields` out of `ForceChangePasswordModal`
+### Task 6: Extract `ChangePasswordFields` out of `ForceChangePasswordModal`
 
-Pure refactor — no behavior change. Moves the input/validation/submit logic out of the modal so Task 6's banner can reuse it without duplicating it.
+Pure refactor — no behavior change, unaffected by Task 3's correction. Moves the input/validation/submit logic out of the modal so Task 7's banner can reuse it without duplicating it.
 
 **Files:**
 - Create: `components/account/ChangePasswordFields.tsx`
 - Modify: `components/account/ForceChangePasswordModal.tsx`
 
 **Interfaces:**
-- Produces: `<ChangePasswordFields />` (no props) — renders the new-password/confirm inputs, client-side validation, and a submit button wired to `forceChangePassword()` from `lib/auth.ts`. Consumed by Task 6.
+- Produces: `<ChangePasswordFields />` (no props) — renders the new-password/confirm inputs, client-side validation, and a submit button wired to `forceChangePassword()` from `lib/auth.ts`. Consumed by Task 7.
 
 There is no component-test infrastructure in this repo (only `lib/**` and API-route unit tests exist) — verify this task by reading the diff carefully and via the manual check in Step 3.
 
@@ -562,15 +514,15 @@ git commit -m "refactor(account): extract ChangePasswordFields out of ForceChang
 
 ---
 
-### Task 6: `PasswordChangeBanner` + wire `AccountGuard` to the soft/hard split
+### Task 7: `PasswordChangeBanner` + wire `AccountGuard` to the soft/hard split
 
 **Files:**
 - Create: `components/account/PasswordChangeBanner.tsx`
 - Modify: `components/account/AccountGuard.tsx`
 
 **Interfaces:**
-- Consumes: `isPasswordChangeSoft` (Task 1), `ChangePasswordFields` (Task 5), `useAuthStore` (Task 4).
-- Produces: end-to-end feature — soft-eligible users now see `PasswordChangeBanner` instead of `ForceChangePasswordModal`, with full site access already granted by Tasks 3–4.
+- Consumes: `User.passwordChangeSoft` (Task 3, via `useAuthStore`), `ChangePasswordFields` (Task 6), `useAuthStore` (Task 5). No import of `isPasswordChangeSoft` needed in this file — the boolean already arrived precomputed on the user object.
+- Produces: end-to-end feature — soft-eligible users now see `PasswordChangeBanner` instead of `ForceChangePasswordModal`, with full site access already granted by Tasks 4–5.
 
 No component-test infrastructure exists in this repo for this layer; verify via Step 3's manual check.
 
@@ -647,7 +599,6 @@ Replace the full contents of `components/account/AccountGuard.tsx` with:
 'use client';
 import React from 'react';
 import { useAuthStore } from '@/lib/auth-store';
-import { isPasswordChangeSoft } from '@/lib/auth-types';
 import ForceChangePasswordModal from '@/components/account/ForceChangePasswordModal';
 import PasswordChangeBanner from '@/components/account/PasswordChangeBanner';
 import WelcomeModal from '@/components/account/WelcomeModal';
@@ -658,7 +609,7 @@ export default function AccountGuard({ children }: { children: React.ReactNode }
 
     if (!isHydrated) return null;
 
-    const soft = !!user && isPasswordChangeSoft(user);
+    const soft = !!user?.passwordChangeSoft;
 
     return (
         <>
@@ -686,6 +637,7 @@ Then, using the `verify` skill, start the dev server and check both branches liv
    - Reloading the page keeps the banner visible (not dismissed).
    - Clicking the banner's close (X) hides it; reloading the page again keeps it hidden (same tab/session).
    - Clicking "Сменить пароль" expands the two fields inline; submitting a valid new password makes the banner disappear entirely (component unmounts because `mustChangePassword` flipped to `false`).
+   - Open browser devtools → Application → Local Storage: confirm no `pkLast3` value appears anywhere in the stored `currentUser`/`users` entries (only `passwordChangeSoft: true`).
 2. **Hard path (regression check):** use an existing B2B shared-card test account (`mustChangePassword: true`, `companyId` set). Confirm the blocking `ForceChangePasswordModal` still appears exactly as before, and the rest of the site is inaccessible until the password is changed — i.e. this task introduced no regression for that branch.
 
 - [ ] **Step 4: Commit**
@@ -699,6 +651,6 @@ git commit -m "feat(account): show a dismissible banner instead of a blocking mo
 
 ## Self-Review Notes
 
-- **Spec coverage:** Eligibility formula (Task 1), `pkLast3` plumbing client+server (Tasks 1–3), `getServerUser` softening (Task 3), `isAuthenticated` softening (Task 4), `ChangePasswordFields` extraction (Task 5), `PasswordChangeBanner` + `AccountGuard` wiring + `sessionStorage` dismiss (Task 6) — every section of the 2026-08-04 design spec maps to a task.
+- **Spec coverage:** Eligibility formula (Task 1, unchanged), raw-`pkLast3`-never-reaches-client correction (Task 3), `passwordChangeSoft` plumbing server→client (Tasks 3–4), `getServerUser` softening (Task 4), `isAuthenticated` softening (Task 5), `ChangePasswordFields` extraction (Task 6), `PasswordChangeBanner` + `AccountGuard` wiring + `sessionStorage` dismiss (Task 7) — every section of the 2026-08-04 design spec (as corrected) maps to a task.
 - **Out-of-scope items from the spec** (B2B/access-request branches, `WelcomeModal` timing, `register-card` claim-gate, i18n) are deliberately untouched by every task above — confirmed no task modifies `app/api/auth/register-card/route.ts`, `app/api/admin/access-requests/**`, or `WelcomeModal.tsx`.
-- **Type consistency:** `PasswordChangeGateUser` (Task 1) fields (`mustChangePassword`, `pkLast3`, `companyId`) match the field names added to `ServerUser` (Task 3) and the client `User` type (Task 1) and used in `AccountGuard`/`auth-store` (Tasks 4, 6) — no renames across tasks.
+- **Type consistency:** `PasswordChangeGateUser` (Task 1) fields (`mustChangePassword`, `pkLast3`, `companyId`) match what `mapDbToServerUser()` reads from the raw Prisma row (Task 4) — but the *output* field name `passwordChangeSoft` (Task 3's `User` type change, Task 4's `ServerUser` change) is consistent everywhere it's consumed (Tasks 5, 7). No task after Task 3 references `user.pkLast3` on a client-facing type — verified by grep during the final review.

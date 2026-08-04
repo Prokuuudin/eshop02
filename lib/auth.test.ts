@@ -307,6 +307,29 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
   })
 
+  it('carries passwordChangeSoft through the local mirror, and never stores the raw pkLast3 code', async () => {
+    const serverUser = {
+      id: 'u_soft_1',
+      email: 'card.5678@client.local',
+      mustChangePassword: true,
+      passwordChangeSoft: true,
+      // Defence-in-depth: even if a future server regression leaked this
+      // raw field, the client must never persist it.
+      pkLast3: 'X9Z',
+    }
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: serverUser }),
+    } as unknown as Response)
+
+    await registerCardUser({ cardNumber: '5678', password: '9zx' })
+
+    const stored = getCurrentUser()
+    expect(stored?.passwordChangeSoft).toBe(true)
+    expect((stored as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
+  })
+
   it('surfaces a wrong personal-code digit distinctly from a wrong shared password', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,

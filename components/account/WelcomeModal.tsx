@@ -104,7 +104,7 @@ export default function WelcomeModal({ user }: { user: User }): React.ReactEleme
                             {filledFields.map((f) => (
                                 <li key={f.key} className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <span className="h-4 w-4 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xs">✓</span>
-                                    {f.label} заполнен
+                                    {f.label}: заполнено
                                 </li>
                             ))}
                         </ul>

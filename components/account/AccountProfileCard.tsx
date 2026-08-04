@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import type { User } from '@/lib/auth';
 
+const isInternalEmail = (email: string) => email.endsWith('@client.local');
+
 type ProfileDraft = {
     name: string;
     email: string;
@@ -141,7 +143,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                         {user.name || t('account.userDefault')}
                     </h2>
                     <p className="account-profile__email mt-1 break-all text-sm text-muted-foreground">
-                        {user.email}
+                        {isInternalEmail(user.email) ? t('account.emailNotSet', 'Email не указан') : user.email}
                     </p>
                     <p className="account-profile__phone mt-1 break-all text-sm text-muted-foreground">
                         {user.phone ? user.phone : t('account.phoneNotSet')}
@@ -210,7 +212,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             <Input
                                 id="profile-email"
                                 className="account-profile__input bg-muted text-muted-foreground cursor-not-allowed"
-                                value={user.email}
+                                value={isInternalEmail(user.email) ? t('account.emailNotSet', 'Email не указан') : user.email}
                                 readOnly
                                 disabled
                                 title={t('account.emailReadonlyHint', 'Email нельзя изменить здесь — обратитесь в поддержку')}

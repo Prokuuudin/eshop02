@@ -176,6 +176,7 @@ const enAccount: Record<string, string> = {
   'account.userDefault': 'User',
   'account.phone': 'Phone',
   'account.phoneNotSet': 'Phone not set',
+  'account.emailNotSet': 'Email not set',
   'account.password.title': 'Password',
   'account.password.hint': 'We recommend changing your password regularly',
   'account.password.change': 'Change',

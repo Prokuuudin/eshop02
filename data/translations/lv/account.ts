@@ -176,6 +176,7 @@ const lvAccount: Record<string, string> = {
   'account.userDefault': 'Lietotājs',
   'account.phone': 'Telefons',
   'account.phoneNotSet': 'Telefons nav norādīts',
+  'account.emailNotSet': 'E-pasts nav norādīts',
   'account.password.title': 'Parole',
   'account.password.hint': 'Iesakām regulāri mainīt paroli',
   'account.password.change': 'Mainīt',

@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { UserCircle2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const isInternalEmail = (email: string) => email.endsWith('@client.local');
+
 interface AccountProfileSummaryProps {
     user: {
         name?: string;
@@ -41,7 +43,7 @@ const AccountProfileSummary: React.FC<AccountProfileSummaryProps> = ({ user, t, 
                         {user.name || t('account.userDefault')}
                     </h2>
                     <p className="mt-0.5 break-all text-sm text-muted-foreground">
-                        {user.email}
+                        {isInternalEmail(user.email) ? t('account.emailNotSet', 'Email не указан') : user.email}
                     </p>
                     {user.phone && (
                         <p className="mt-0.5 text-sm text-muted-foreground">

@@ -175,6 +175,7 @@ const ruAccount: Record<string, string> = {
   'account.userDefault': 'Пользователь',
   'account.phone': 'Телефон',
   'account.phoneNotSet': 'Телефон не указан',
+  'account.emailNotSet': 'Email не указан',
   'account.password.title': 'Пароль',
   'account.password.hint': 'Рекомендуем менять пароль регулярно',
   'account.password.change': 'Изменить',

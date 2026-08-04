@@ -416,7 +416,19 @@
       "Bash(curl -sL -o /dev/null -w \"home-final: %{http_code}\\\\n\" http://localhost:3099/ru)",
       "Bash(curl -sL -o /dev/null -w \"admin-final: %{http_code}\\\\n\" http://localhost:3099/ru/admin)",
       "Bash(curl -s -o /dev/null -w \"product-page: %{http_code}\\\\n\" http://localhost:3099/ru/catalog)",
-      "Bash(taskkill //F //PID 28444)"
+      "Bash(taskkill //F //PID 28444)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" status)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" log --oneline -15)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" worktree list)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" show --stat HEAD)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\" show --stat HEAD~1)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\.claude\\\\worktrees\\\\password-change-recommendation\" log --oneline -10)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Desktop\\\\eshop02\\\\.claude\\\\worktrees\\\\password-change-recommendation\" status)",
+      "Bash(awk '/^model User/,/^}/' prisma/schema.prisma)",
+      "Bash(git -C \".claude/worktrees/password-change-recommendation\" status --short)",
+      "Bash(git -C \".claude/worktrees/password-change-recommendation\" diff -- .claude/settings.json)",
+      "Bash(git -C \".claude/worktrees/admin-totp-mfa\" status --short)",
+      "Bash(git -C \".claude/worktrees/card-pk-registration\" status --short)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

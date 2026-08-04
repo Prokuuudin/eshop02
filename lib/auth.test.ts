@@ -8,7 +8,8 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin } from './auth'
+import { getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin, forceChangePassword } from './auth'
+import { CURRENT_KEY } from './auth-storage'
 
 function makeLocalStorageMock() {
   const store = new Map<string, string>()
@@ -375,5 +376,29 @@ describe('logout — must clear the server session, not just localStorage', () =
     logout()
 
     expect(getCurrentUser()).toBeNull()
+  })
+})
+
+describe('forceChangePassword — client-side length check must match the server (MIN_LENGTH = 12)', () => {
+  beforeEach(() => {
+    localStorage.setItem(CURRENT_KEY, JSON.stringify({ id: 'u1', email: 'a@b.com' }))
+  })
+
+  it('rejects an 11-character password locally instead of letting the server 400 it', async () => {
+    const fetchMock = vi.mocked(fetch)
+
+    const result = await forceChangePassword('elevenchars')
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('12')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('accepts a 12-character password and calls the server', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) } as unknown as Response)
+
+    const result = await forceChangePassword('twelvecharspw')
+
+    expect(result.success).toBe(true)
   })
 })

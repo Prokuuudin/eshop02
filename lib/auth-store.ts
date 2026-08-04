@@ -36,7 +36,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (
         prev?.platformRole === user?.platformRole
         && prev?.mustChangePassword === user?.mustChangePassword
-        && prev?.passwordChangeSoft === user?.passwordChangeSoft
       ) return
     }
     set({

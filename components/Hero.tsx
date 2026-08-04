@@ -23,7 +23,7 @@ export default async function Hero({ language }: { language: Language }): Promis
       <div className="hero__overlay absolute inset-0 -z-10 bg-gradient-to-r from-background from-0% via-background/45 via-25% to-transparent to-48%" />
 
       <div className="hero__content relative h-full flex flex-col justify-start items-start text-left gap-4 py-10 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-xl">
-        <h1 className="hero__title text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-foreground drop-shadow-sm">
+        <h1 className="hero__title text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-[0.015em] text-foreground drop-shadow-sm">
           {t('hero.title')}
         </h1>
 

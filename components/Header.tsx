@@ -68,7 +68,7 @@ export default function Header(): React.ReactElement {
         {!isAdminPage && (
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
-            <div className="w-full border-y border-border bg-slate-50 dark:bg-gray-900">
+            <div className="w-full border-y border-border bg-gray-200 dark:bg-gray-800">
               <div className={`mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-2 transition-all duration-300 sm:px-4 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
                   <HeaderSearch />

@@ -20,7 +20,7 @@ export type User = {
 
   phone?: string
   cardNumber?: string // Клиентская карта для входа по номеру карты
-  pkLast3?: string | null // Последние 3 символа перс. кода — см. isPasswordChangeSoft
+  passwordChangeSoft?: boolean // Сервер уже посчитал isPasswordChangeSoft — сырой pkLast3 клиенту не передаётся
   avatarUrl?: string // User profile photo (base64 or URL)
   bonusPoints?: number // Accumulated bonus balance
   mustChangePassword?: boolean // Требует обязательной смены пароля при первом входе

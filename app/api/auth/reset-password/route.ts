@@ -5,7 +5,7 @@ import crypto from 'crypto'
 
 export const runtime = 'nodejs'
 
-const MIN_PASSWORD_LENGTH = 12
+const MIN_PASSWORD_LENGTH = 8
 const MAX_PASSWORD_LENGTH = 128
 const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 

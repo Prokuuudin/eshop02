@@ -46,8 +46,8 @@ export default function ResetPasswordPage(): React.ReactElement {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password.length < 12) {
-      setErrorMsg('Пароль должен быть не менее 12 символов.')
+    if (password.length < 8) {
+      setErrorMsg('Пароль должен быть не менее 8 символов.')
       return
     }
     if (password !== password2) {
@@ -72,7 +72,7 @@ export default function ResetPasswordPage(): React.ReactElement {
           json.error === 'token_expired'
             ? 'Ссылка устарела. Запросите сброс пароля заново.'
             : json.error === 'password_too_short'
-              ? 'Пароль должен быть не менее 12 символов.'
+              ? 'Пароль должен быть не менее 8 символов.'
               : 'Ссылка недействительна или уже была использована.'
         )
         setSubmitting(false)
@@ -149,7 +149,7 @@ export default function ResetPasswordPage(): React.ReactElement {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={12}
+              minLength={8}
               maxLength={128}
               className="w-full bg-card text-foreground border-border"
             />
@@ -164,7 +164,7 @@ export default function ResetPasswordPage(): React.ReactElement {
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
               required
-              minLength={12}
+              minLength={8}
               maxLength={128}
               className="w-full bg-card text-foreground border-border"
             />

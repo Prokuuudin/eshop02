@@ -62,7 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (limited) {
       return NextResponse.json({ ok: false, error: 'too_many_attempts' }, { status: 429 })
     }
-    if (!body.password || body.password.length < 12) {
+    if (!body.password || body.password.length < 8) {
       return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
     }
     if (body.password.length > MAX_PASSWORD_LENGTH) {

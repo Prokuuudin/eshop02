@@ -254,8 +254,8 @@ export const forceChangePassword = async (
 ): Promise<{ success: boolean; error?: string }> => {
     const user = getCurrentUser();
     if (!user) return { success: false, error: 'Не авторизован' };
-    if (newPassword.length < 12) {
-        return { success: false, error: 'Пароль должен быть не менее 12 символов' };
+    if (newPassword.length < 8) {
+        return { success: false, error: 'Пароль должен быть не менее 8 символов' };
     }
 
     let res: Response;

@@ -71,7 +71,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
-    if (password.length < 12) {
+    if (password.length < 8) {
       return NextResponse.json({ error: 'weak_password' }, { status: 400 })
     }
     if (password.length > 128) {

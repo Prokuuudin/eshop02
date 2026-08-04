@@ -14,8 +14,8 @@ const ERROR_TEXT: Record<string, [string, string, string]> = {
     invalid_token: ['Ссылка недействительна.', 'The link is invalid.', 'Saite nav derīga.'],
     token_expired: ['Ссылка устарела. Запросите новое приглашение.', 'The link has expired. Request a new invitation.', 'Saites derīgums ir beidzies. Pieprasiet jaunu ielūgumu.'],
     already_used: ['Приглашение уже использовано. Войдите со своим паролем.', 'This invitation was already used. Log in with your password.', 'Ielūgums jau ir izmantots. Piesakieties ar savu paroli.'],
-    weak_password: ['Пароль должен быть не короче 12 символов.', 'Password must be at least 12 characters.', 'Parolei jābūt vismaz 12 rakstzīmēm.'],
-    password_too_short: ['Пароль должен быть не короче 12 символов.', 'Password must be at least 12 characters.', 'Parolei jābūt vismaz 12 rakstzīmēm.'],
+    weak_password: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],
+    password_too_short: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],
     user_not_found: ['Аккаунт для этого приглашения не найден. Свяжитесь с администратором.', 'The account for this invitation was not found. Please contact the administrator.', 'Šī ielūguma konts nav atrasts. Lūdzu, sazinieties ar administratoru.'],
     too_many_attempts: ['Слишком много попыток. Попробуйте позже.', 'Too many attempts. Please try again later.', 'Pārāk daudz mēģinājumu. Lūdzu, mēģiniet vēlāk.'],
     server_error: ['Ошибка сервера. Попробуйте ещё раз.', 'Server error. Please try again.', 'Servera kļūda. Mēģiniet vēlreiz.'],
@@ -190,7 +190,7 @@ export default function InvitePage(): React.ReactElement {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                minLength={12}
+                                minLength={8}
                                 maxLength={128}
                                 required
                                 autoComplete="new-password"
@@ -204,7 +204,7 @@ export default function InvitePage(): React.ReactElement {
                                 type="password"
                                 value={password2}
                                 onChange={(e) => setPassword2(e.target.value)}
-                                minLength={12}
+                                minLength={8}
                                 maxLength={128}
                                 required
                                 autoComplete="new-password"

@@ -5,7 +5,7 @@ import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
-const MIN_LENGTH = 12
+const MIN_LENGTH = 8
 const MAX_LENGTH = 128
 
 // POST /api/user/password — change the signed-in user's password.

@@ -185,7 +185,7 @@ const enAccount: Record<string, string> = {
   'account.password.successMsg': 'Password changed successfully',
   'account.password.errorCurrentRequired': 'Please enter your current password',
   'account.password.errorCurrentWrong': 'Current password is incorrect',
-  'account.password.errorTooShort': 'New password must be at least 12 characters',
+  'account.password.errorTooShort': 'New password must be at least 8 characters',
   'account.password.errorMismatch': 'Passwords do not match',
   'account.password.errorServer': 'Could not change the password. Please try again later.',
   'account.emailReadonlyHint': 'Email cannot be changed here — please contact support',

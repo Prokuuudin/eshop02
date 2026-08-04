@@ -15,8 +15,8 @@ export default function ChangePasswordFields(): React.ReactElement {
 
     const handleSave = async () => {
         setError('');
-        if (next.length < 12) {
-            setError('Пароль должен быть не менее 12 символов.');
+        if (next.length < 8) {
+            setError('Пароль должен быть не менее 8 символов.');
             return;
         }
         if (next !== confirm) {
@@ -44,7 +44,7 @@ export default function ChangePasswordFields(): React.ReactElement {
                         type={showNext ? 'text' : 'password'}
                         value={next}
                         onChange={(e) => setNext(e.target.value)}
-                        placeholder="Не менее 12 символов"
+                        placeholder="Не менее 8 символов"
                         className="pr-10 bg-card"
                         autoComplete="new-password"
                     />

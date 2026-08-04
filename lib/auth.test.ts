@@ -379,25 +379,25 @@ describe('logout — must clear the server session, not just localStorage', () =
   })
 })
 
-describe('forceChangePassword — client-side length check must match the server (MIN_LENGTH = 12)', () => {
+describe('forceChangePassword — client-side length check must match the server (MIN_LENGTH = 8)', () => {
   beforeEach(() => {
     localStorage.setItem(CURRENT_KEY, JSON.stringify({ id: 'u1', email: 'a@b.com' }))
   })
 
-  it('rejects an 11-character password locally instead of letting the server 400 it', async () => {
+  it('rejects a 7-character password locally instead of letting the server 400 it', async () => {
     const fetchMock = vi.mocked(fetch)
 
-    const result = await forceChangePassword('elevenchars')
+    const result = await forceChangePassword('sevench')
 
     expect(result.success).toBe(false)
-    expect(result.error).toContain('12')
+    expect(result.error).toContain('8')
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('accepts a 12-character password and calls the server', async () => {
+  it('accepts an 8-character password and calls the server', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) } as unknown as Response)
 
-    const result = await forceChangePassword('twelvecharspw')
+    const result = await forceChangePassword('eightchr')
 
     expect(result.success).toBe(true)
   })

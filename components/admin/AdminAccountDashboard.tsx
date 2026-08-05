@@ -64,6 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
         items: [
             { label: 'Аккаунты', href: '/admin/accounts' },
             { label: 'Карты клиентов', href: '/admin/client-barcodes' },
+            { label: 'Приглашения клиентов', href: '/admin/invitations' },
             { label: 'Сегменты', href: '/admin/customers/segments' },
             { label: 'История', href: '/admin/customers/history' },
             { label: 'Рассылка уведомлений', href: '/admin/notifications/send' },

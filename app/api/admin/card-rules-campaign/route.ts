@@ -31,11 +31,18 @@ export async function GET(): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
   try {
-    const [state, totalEligible] = await Promise.all([
+    const [state, totalEligible, users] = await Promise.all([
       readCampaign(prisma),
       prisma.user.count({ where: ELIGIBLE_WHERE }),
+      // id asc — тот же порядок, в котором курсор кампании проходит получателей
+      // (см. POST ниже), иначе sent-статус по курсору будет врать
+      prisma.user.findMany({
+        where: ELIGIBLE_WHERE,
+        select: { id: true, name: true, email: true },
+        orderBy: { id: 'asc' },
+      }),
     ])
-    return NextResponse.json({ state, totalEligible })
+    return NextResponse.json({ state, totalEligible, users })
   } catch (e) {
     console.error('[card-rules-campaign GET]', e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

@@ -428,7 +428,12 @@
       "Bash(git -C \".claude/worktrees/password-change-recommendation\" status --short)",
       "Bash(git -C \".claude/worktrees/password-change-recommendation\" diff -- .claude/settings.json)",
       "Bash(git -C \".claude/worktrees/admin-totp-mfa\" status --short)",
-      "Bash(git -C \".claude/worktrees/card-pk-registration\" status --short)"
+      "Bash(git -C \".claude/worktrees/card-pk-registration\" status --short)",
+      "Bash(node .tmp_verify_admin.mjs)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@test.com\",\"password\":\"admin123\"}' -i)",
+      "Bash(curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@test.com\",\"password\":\"admin123\"}' -o /dev/null -w \"login:%{http_code}\\\\n\")",
+      "Bash(curl -s -b cookies.txt http://localhost:3000/ru/admin -o resp.html -w \"admin:%{http_code} final:%{url_effective}\\\\n\" -L)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...p.devDependencies}; console.log\\(Object.keys\\(deps\\).filter\\(k=>/virtual|window/i.test\\(k\\)\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

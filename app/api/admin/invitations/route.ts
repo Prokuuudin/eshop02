@@ -31,7 +31,7 @@ export async function GET(): Promise<Response> {
     const [holders, invitations] = await Promise.all([
       prisma.user.findMany({
         where: { cardNumber: { not: null } },
-        select: { id: true, name: true, email: true, cardNumber: true },
+        select: { id: true, name: true, email: true, phone: true, cardNumber: true },
         orderBy: { email: 'asc' },
       }),
       readInvitations(prisma),
@@ -49,6 +49,7 @@ export async function GET(): Promise<Response> {
           userId: u.id,
           name: u.name,
           email: u.email,
+          phone: u.phone,
           cardNumber: u.cardNumber,
           status,
           sentAt: inv?.sentAt ?? null,

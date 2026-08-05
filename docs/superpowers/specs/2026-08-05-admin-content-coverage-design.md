@@ -96,7 +96,7 @@ Constraint carried over from the 2026-07-14 uploads work: SVG uploads are reject
 
 ## D — Stores → registry (name/hours/phone only)
 
-`data/stores.ts` keeps `id`, `address` (all 3 languages, fixed LV text — unchanged), `geo`, and `phone` as a plain field (see note below); `name` and `hours` move to translations.
+`data/stores.ts` keeps `id`, `address` (all 3 languages, fixed LV text — unchanged), and `geo`; `name`, `hours`, and `phone` move to translations (see note below on `phone`).
 
 New translation keys per store, `stores.<id>.name`, `stores.<id>.hours1`, `.hours2`, `.hours3`, `.phone` (8 stores × 5 keys = 40 keys × 3 languages).
 

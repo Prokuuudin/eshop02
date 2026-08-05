@@ -161,10 +161,10 @@ export default function ContactPage(): React.ReactElement {
     return {
       '@type': store.id === 'riga-office' ? 'LocalBusiness' : 'Store',
       '@id': `${siteUrl}/#store-${store.id}`,
-      name: `Hairshop-Pro — ${store.name[language]}`,
+      name: `Hairshop-Pro — ${t(`stores.${store.id}.name`)}`,
       url: storeUrl,
       image: `${siteUrl}/stores/${store.id}.jpg`,
-      telephone: store.phone,
+      telephone: t(`stores.${store.id}.phone`),
       email: COMPANY.email,
       parentOrganization: { '@id': `${siteUrl}/#organization` },
       address: {

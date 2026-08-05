@@ -77,7 +77,7 @@ function lvDeliveryAddress(order: Order): { address: string; city: string } | nu
         return postal !== null && s.address.lv.includes(postal[0])
       })
   if (!store) return null
-  return { address: `${store.name.lv} — ${store.address.lv}`, city: store.city.lv }
+  return { address: `${translations.lv[`stores.${store.id}.name`]} — ${store.address.lv}`, city: store.city.lv }
 }
 
 /**

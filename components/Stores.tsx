@@ -6,7 +6,6 @@ import { getServerContent } from '@/lib/server-translation';
 
 export default async function Stores({ language }: { language: Language }): Promise<React.JSX.Element> {
     const { t } = await getServerContent(language);
-    // Используем только импортируемый stores
 
     return (
         <section className="stores py-8" id="stores">
@@ -23,22 +22,22 @@ export default async function Stores({ language }: { language: Language }): Prom
                         >
                             <Image
                                 src={`/stores/${store.id}.jpg`}
-                                alt={store.name[language]}
+                                alt={t(`stores.${store.id}.name`)}
                                 width={320}
                                 height={180}
                                 className="mb-2 rounded w-full h-40 object-cover"
                             />
-                            <h3 className="text-lg font-bold mb-1">{store.name[language]}</h3>
+                            <h3 className="text-lg font-bold mb-1">{t(`stores.${store.id}.name`)}</h3>
                             <p className="text-sm text-gray-600 mb-1">{store.address.lv}</p>
                             <p className="text-sm text-gray-600 mb-1">
-                                {t('stores.phone') ?? 'Телефон'}: {store.phone}
+                                {t('stores.phone') ?? 'Телефон'}: {t(`stores.${store.id}.phone`)}
                             </p>
                             <div className="text-sm text-gray-600">
                                 {t('stores.hours') ?? 'Время работы'}:
                                 <ul className="ml-4 list-disc">
-                                    {store.hours[language].map((h, i) => (
-                                        <li key={i}>{h}</li>
-                                    ))}
+                                    <li>{t(`stores.${store.id}.hours1`)}</li>
+                                    <li>{t(`stores.${store.id}.hours2`)}</li>
+                                    <li>{t(`stores.${store.id}.hours3`)}</li>
                                 </ul>
                             </div>
                         </article>

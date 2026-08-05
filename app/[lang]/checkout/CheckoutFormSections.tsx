@@ -99,13 +99,12 @@ type DeliverySectionProps = {
   subtotalAfterDiscount: number
   errors: Errors
   clearPickupError: () => void
-  language: 'ru' | 'en' | 'lv'
   formatCurrency: (value: number) => string
   t: Translate
 }
 
 export function DeliverySection(props: DeliverySectionProps): JSX.Element {
-  const { deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, subtotalAfterDiscount, errors, clearPickupError, language, formatCurrency, t } = props
+  const { deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, subtotalAfterDiscount, errors, clearPickupError, formatCurrency, t } = props
   return (
     <section className="checkout__section rounded-lg border border-border bg-card p-6">
       <div className="checkout__section-header mb-4 flex flex-wrap items-baseline justify-between gap-3">
@@ -127,7 +126,7 @@ export function DeliverySection(props: DeliverySectionProps): JSX.Element {
                 <label className="checkout__label mb-1 block text-sm font-medium text-foreground" htmlFor="pickup-store">{t('checkout.pickup.chooseStore')} <span className="text-red-600">*</span></label>
                 <Select value={pickupStoreId || undefined} onValueChange={(value) => { setPickupStoreId(value); clearPickupError() }}>
                   <SelectTrigger id="pickup-store" className={`checkout__select w-full ${errors.pickupStore ? 'border-red-500' : 'border-border'}`} aria-invalid={!!errors.pickupStore}><SelectValue placeholder={t('checkout.pickup.storePlaceholder')} /></SelectTrigger>
-                  <SelectContent>{stores.map((store) => <SelectItem key={store.id} value={store.id}>{store.name[language] ?? store.name.ru} — {store.address.lv}</SelectItem>)}</SelectContent>
+                  <SelectContent>{stores.map((store) => <SelectItem key={store.id} value={store.id}>{t(`stores.${store.id}.name`)} — {store.address.lv}</SelectItem>)}</SelectContent>
                 </Select>
                 <FieldError message={errors.pickupStore} />
               </div>

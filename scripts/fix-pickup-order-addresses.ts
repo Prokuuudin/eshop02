@@ -5,6 +5,7 @@
 //   npx tsx --env-file=.env.local scripts/fix-pickup-order-addresses.ts [--apply]
 import { prisma } from '../lib/prisma'
 import { stores } from '../data/stores'
+import { translations } from '../data/translations'
 
 const apply = process.argv.includes('--apply')
 
@@ -25,7 +26,7 @@ async function main() {
       console.log(`  ? #${o.id}: магазин не определён — "${o.address}"`)
       continue
     }
-    const address = `${store.name.lv} — ${store.address.lv}`
+    const address = `${translations.lv[`stores.${store.id}.name`]} — ${store.address.lv}`
     const city = store.city.lv
     if (o.address === address && o.city === city) continue
     console.log(`  ~ #${o.id}: "${o.address}" → "${address}"`)

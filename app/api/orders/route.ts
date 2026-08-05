@@ -5,6 +5,7 @@ import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
+import { translations } from '@/data/translations'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { formatDateWithPattern } from '@/lib/date-format'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
@@ -234,7 +235,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ? stores.find((s) => s.id === order.pickupStoreId)
         : undefined
     const pickupAddressPatch = pickupStore
-      ? { address: `${pickupStore.name.lv} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
+      ? { address: `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
       : {}
 
     const orderBase: Omit<ServerOrder, 'id'> = {
@@ -280,7 +281,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     sendOrderConfirmationEmail(created).catch(console.error)
     sendAdminOrderNotificationEmail(
       created,
-      pickupStore ? `${pickupStore.name.lv} — ${pickupStore.address.lv}` : undefined
+      pickupStore ? `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}` : undefined
     ).catch(console.error)
 
     if (Math.random() < 0.01) void gcRateLimitStore()

@@ -209,18 +209,14 @@ export default function CheckoutPage(): React.ReactElement {
                                                     />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {stores.map((store) => {
-                                                        const lang = language as 'ru' | 'en' | 'lv';
-                                                        return (
-                                                            <SelectItem
+                                                    {stores.map((store) => (
+                                                        <SelectItem
                                                                 key={store.id}
                                                                 value={store.id}
                                                             >
-                                                                {store.name[lang] ?? store.name.ru}{' '}
-                                                                â€” {store.address.lv}
+                                                                {t(`stores.${store.id}.name`)} — {store.address.lv}
                                                             </SelectItem>
-                                                        );
-                                                    })}
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                             {errors.pickupStore && (

@@ -2,7 +2,7 @@
 export const COMPANY = {
   name: 'SIA Miks Plus',
   legalAddress: 'Rencēnu iela 10A, Rīga, Latvija, LV-1073',
-  officeAddress: 'Rencēnu iela 10A, Rīga, Latvija',
+  officeAddress: 'Rencēnu iela 10A, Rīga, LV-1073, Latvija',
   regNumber: '40103351370',
   vatNumber: 'LV40103351370',
   bankName: 'AS Swedbank',

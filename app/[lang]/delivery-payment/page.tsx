@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { CreditCard, Truck } from 'lucide-react';
 import { getSiteUrl } from '@/lib/site-url';
 import { COMPANY } from '@/data/company';
+import { stores } from '@/data/stores';
 import { resolveLanguage, localizePath } from '@/lib/i18n-routing';
 import { getServerContent } from '@/lib/server-translation';
 import { serializeJsonLd } from '@/lib/json-ld';
@@ -83,43 +84,35 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Способы доставки
+                                    {t('deliveryPayment.methods.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content leading-6">
                                     <ul className="list-disc space-y-5 pl-5">
                                         <li>
-                                            <b>Доставка курьером по Латвии</b>
+                                            <b>{t('deliveryPayment.methods.courierLatvia.label')}</b>
                                             <ul className="mt-2 list-disc space-y-1 pl-5">
-                                                <li>Стоимость — от 10 €</li>
+                                                <li>{t('deliveryPayment.methods.courierLatvia.price')}</li>
                                             </ul>
                                             <div className="mt-2 text-xs leading-5 text-muted-foreground">
-                                                При заказе на сумму свыше 200 € доставка по Латвии
-                                                осуществляется бесплатно.
+                                                {t('deliveryPayment.methods.courierLatvia.freeNote')}
                                             </div>
                                         </li>
                                         <li>
-                                            <b>Доставка в пакоматы OMNIVA</b>
+                                            <b>{t('deliveryPayment.methods.omniva.label')}</b>
                                             <ul className="mt-2 list-disc space-y-1 pl-5">
-                                                <li>Стоимость — от 4 €</li>
-                                                <li>
-                                                    Максимальный размер посылки: 38 × 64 × 19 см
-                                                </li>
-                                                <li>Вес — до 30 кг</li>
+                                                <li>{t('deliveryPayment.methods.omniva.price')}</li>
+                                                <li>{t('deliveryPayment.methods.omniva.maxSize')}</li>
+                                                <li>{t('deliveryPayment.methods.omniva.weight')}</li>
                                             </ul>
                                         </li>
                                         <li>
-                                            <b>Самовывоз из магазинов — бесплатно</b>
+                                            <b>{t('deliveryPayment.methods.pickup.label')}</b>
                                             <div className="delivery-info__shops mt-2 text-sm">
-                                                Оплаченный заказ можно получить в одном из наших
-                                                магазинов:
+                                                {t('deliveryPayment.methods.pickup.intro')}
                                                 <ul className="mt-2 list-disc space-y-1 pl-5">
-                                                    <li>Рига — Brāļu Kaudzīšu iela 13</li>
-                                                    <li>Рига — Anniņmuižas bulvāris 82</li>
-                                                    <li>Даугавпилс — Viestura iela 68-2</li>
-                                                    <li>Лиепая — Graudu iela 43N</li>
-                                                    <li>Валмиера — Stacijas iela 17</li>
-                                                    <li>Резекне — Atbrīvošanas aleja 128</li>
-                                                    <li>Елгава — Katoļu iela 1A</li>
+                                                    {stores.map((store) => (
+                                                        <li key={store.id}>{store.city[language]} — {store.address[language]}</li>
+                                                    ))}
                                                 </ul>
                                             </div>
                                         </li>
@@ -131,47 +124,20 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Правила курьерской доставки
+                                    {t('deliveryPayment.rules.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
                                     <ul className="delivery-info__list list-disc space-y-3 pl-5 leading-6">
-                                        <li>Курьер ожидает получение заказа не более 10 минут.</li>
-                                        <li>
-                                            При получении необходимо указать имя, фамилию и
-                                            поставить подпись в накладной.
-                                        </li>
-                                        <li>
-                                            Заказ считается доставленным после подписания документов
-                                            получателем или его представителем.
-                                        </li>
-                                        <li>
-                                            При получении обязательно проверьте упаковку в
-                                            присутствии курьера. Если упаковка повреждена, это
-                                            необходимо зафиксировать в накладной.
-                                        </li>
-                                        <li>
-                                            Если получатель отсутствует по указанному адресу или
-                                            отказывается принимать заказ, повторная доставка или
-                                            переадресация оплачивается отдельно.
-                                        </li>
-                                        <li>
-                                            Доставка осуществляется по рабочим дням с 8:00 до 17:00.
-                                        </li>
-                                        <li>
-                                            Перед доставкой получатель получает SMS с информацией о
-                                            времени и адресе доставки.
-                                        </li>
-                                        <li>
-                                            Если необходимо изменить время или адрес доставки,
-                                            просьба заранее связаться с курьерской службой по
-                                            номеру, указанному в SMS.
-                                        </li>
-                                        <li>
-                                            Если получатель не отвечает на звонок курьера или адрес
-                                            меняется в день доставки, заказ переносится на следующий
-                                            рабочий день.
-                                        </li>
-                                        <li>Стоимость повторной доставки — 5 €.</li>
+                                        <li>{t('deliveryPayment.rules.item1')}</li>
+                                        <li>{t('deliveryPayment.rules.item2')}</li>
+                                        <li>{t('deliveryPayment.rules.item3')}</li>
+                                        <li>{t('deliveryPayment.rules.item4')}</li>
+                                        <li>{t('deliveryPayment.rules.item5')}</li>
+                                        <li>{t('deliveryPayment.rules.item6')}</li>
+                                        <li>{t('deliveryPayment.rules.item7')}</li>
+                                        <li>{t('deliveryPayment.rules.item8')}</li>
+                                        <li>{t('deliveryPayment.rules.item9')}</li>
+                                        <li>{t('deliveryPayment.rules.item10')}</li>
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
@@ -180,29 +146,20 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Возврат товара
+                                    {t('deliveryPayment.return.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <p className="mb-4 leading-6">
-                                        Вы можете вернуть товар в течение 14 дней с момента
-                                        получения заказа.
-                                    </p>
-                                    <div className="mb-2 font-medium">Условия возврата:</div>
+                                    <p className="mb-4 leading-6">{t('deliveryPayment.return.intro')}</p>
+                                    <div className="mb-2 font-medium">{t('deliveryPayment.return.conditionsTitle')}</div>
                                     <ul className="mb-4 list-disc space-y-2 pl-5">
-                                        <li>товар не был в использовании;</li>
-                                        <li>сохранён товарный вид;</li>
-                                        <li>сохранена оригинальная неповреждённая упаковка.</li>
+                                        <li>{t('deliveryPayment.return.condition1')}</li>
+                                        <li>{t('deliveryPayment.return.condition2')}</li>
+                                        <li>{t('deliveryPayment.return.condition3')}</li>
                                     </ul>
-                                    <p className="mb-3 leading-6">
-                                        После получения и проверки товара возврат денежных средств
-                                        будет произведён на ваш банковский счёт.
-                                    </p>
+                                    <p className="mb-3 leading-6">{t('deliveryPayment.return.refundNote')}</p>
                                     <div className="text-xs leading-5 text-gray-500">
-                                        Обратите внимание! Согласно правилам дистанционной торговли,
-                                        товары не подлежат возврату, если:
-                                        <br />• была вскрыта упаковка товара, который по
-                                        соображениям гигиены и здоровья не может быть возвращён
-                                        обратно.
+                                        {t('deliveryPayment.return.exceptionIntro')}
+                                        <br />• {t('deliveryPayment.return.exceptionItem1')}
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -211,13 +168,13 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Вопросы по доставке
+                                    {t('deliveryPayment.contacts.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-3">Свяжитесь с нашей службой поддержки:</div>
+                                    <div className="mb-3">{t('deliveryPayment.contacts.intro')}</div>
                                     <ul className="list-disc space-y-2 pl-5">
                                         <li>
-                                            Телефон:{' '}
+                                            {t('contact.phoneLabel')}:{' '}
                                             <a
                                                 href="tel:+37127067730"
                                                 className="text-blue-600 hover:underline"
@@ -226,7 +183,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </a>
                                         </li>
                                         <li>
-                                            Skype:{' '}
+                                            {t('deliveryPayment.support.skypeLabel')}:{' '}
                                             <a
                                                 href="skype:ShopForHair?chat"
                                                 className="text-blue-600 hover:underline"
@@ -235,7 +192,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </a>
                                         </li>
                                         <li>
-                                            E-mail:{' '}
+                                            {t('contact.emailLabel')}:{' '}
                                             <a
                                                 href="mailto:info@hairshop.lv"
                                                 className="text-blue-600 hover:underline"
@@ -261,40 +218,36 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Способы оплаты
+                                    {t('deliveryPayment.payment.methods.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
                                     <ul className="payment-info__list list-disc space-y-5 pl-5 leading-6">
                                         <li>
-                                            <b>Оплата банковской картой</b>
+                                            <b>{t('deliveryPayment.payment.card.label')}</b>
                                             <div className="mt-2 text-sm">
-                                                Оплата картой доступна при получении заказа в офисе
-                                                интернет-магазина:
+                                                {t('deliveryPayment.payment.card.note')}
                                                 <br />
-                                                Rencēnu iela 10A, Rīga, LV-1073
+                                                {COMPANY.officeAddress}
                                             </div>
                                         </li>
                                         <li>
-                                            <b>Оплата наличными</b>
+                                            <b>{t('deliveryPayment.payment.cash.label')}</b>
                                             <div className="mt-2 text-sm">
-                                                Оплата наличными осуществляется при получении заказа
-                                                в офисе интернет-магазина:
+                                                {t('deliveryPayment.payment.cash.note')}
                                                 <br />
-                                                Rencēnu iela 10A, Rīga, LV-1073
+                                                {COMPANY.officeAddress}
                                             </div>
                                         </li>
                                         <li>
-                                            <b>Оплата банковским переводом</b>
+                                            <b>{t('deliveryPayment.payment.transfer.label')}</b>
                                             <div className="mt-2 text-sm">
-                                                После оформления заказа на вашу электронную почту
-                                                будет отправлен счёт для оплаты.
+                                                {t('deliveryPayment.payment.transfer.note1')}
                                                 <br />
-                                                При оплате банковским переводом обязательно укажите
-                                                номер заказа в назначении платежа.
+                                                {t('deliveryPayment.payment.transfer.note2')}
                                             </div>
                                             <div className="payment-info__bank mt-3 space-y-1 rounded bg-slate-100 p-4 dark:bg-gray-700">
                                                 <div className="font-bold">
-                                                    Реквизиты для оплаты
+                                                    {t('deliveryPayment.payment.transfer.requisitesTitle')}
                                                 </div>
                                                 <div>
                                                     <b>{COMPANY.name}</b>
@@ -314,10 +267,9 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </div>
                                         </li>
                                         <li>
-                                            <b>Оплата через Lateko Līzings</b>
+                                            <b>{t('deliveryPayment.payment.leasing.label')}</b>
                                             <div className="mt-2 text-sm">
-                                                Также доступна оплата с использованием услуг Lateko
-                                                Līzings.
+                                                {t('deliveryPayment.payment.leasing.note')}
                                             </div>
                                         </li>
                                     </ul>
@@ -328,14 +280,14 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Как происходит оплата
+                                    {t('deliveryPayment.payment.how.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
                                     <ol className="list-decimal space-y-2 pl-5 leading-6">
-                                        <li>Оформите заказ на сайте.</li>
-                                        <li>Выберите способ и адрес доставки.</li>
-                                        <li>Получите счёт на указанную электронную почту.</li>
-                                        <li>Оплатите заказ выбранным способом.</li>
+                                        <li>{t('deliveryPayment.payment.how.step1')}</li>
+                                        <li>{t('deliveryPayment.payment.how.step2')}</li>
+                                        <li>{t('deliveryPayment.payment.how.step3')}</li>
+                                        <li>{t('deliveryPayment.payment.how.step4')}</li>
                                     </ol>
                                 </AccordionContent>
                             </AccordionItem>
@@ -344,26 +296,17 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Безопасность платежей
+                                    {t('deliveryPayment.payment.security.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-4 leading-6">
-                                        Все платежи на нашем сайте защищены с помощью современных
-                                        технологий шифрования (SSL/TLS).
-                                    </div>
+                                    <div className="mb-4 leading-6">{t('deliveryPayment.payment.security.intro')}</div>
                                     <ul className="mb-3 list-disc space-y-2 pl-5 leading-6">
-                                        <li>
-                                            Данные банковских карт не сохраняются и не передаются
-                                            третьим лицам.
-                                        </li>
-                                        <li>
-                                            Оплата проходит через сертифицированные платёжные шлюзы.
-                                        </li>
-                                        <li>Мы соблюдаем стандарты безопасности PCI DSS.</li>
+                                        <li>{t('deliveryPayment.payment.security.item1')}</li>
+                                        <li>{t('deliveryPayment.payment.security.item2')}</li>
+                                        <li>{t('deliveryPayment.payment.security.item3')}</li>
                                     </ul>
                                     <div className="text-xs leading-5 text-gray-500">
-                                        Если у вас возникли вопросы по безопасности платежей,
-                                        свяжитесь с нашей службой поддержки.
+                                        {t('deliveryPayment.payment.security.note')}
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
@@ -372,16 +315,13 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 className="delivery-payment__item bem-delivery-payment__item"
                             >
                                 <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
-                                    Вопросы по оплате
+                                    {t('deliveryPayment.support.title')}
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <div className="mb-3 leading-6">
-                                        Наша служба поддержки поможет решить вопросы, связанные с
-                                        оплатой заказа.
-                                    </div>
+                                    <div className="mb-3 leading-6">{t('deliveryPayment.support.intro')}</div>
                                     <ul className="list-disc space-y-2 pl-5">
                                         <li>
-                                            Телефон:{' '}
+                                            {t('contact.phoneLabel')}:{' '}
                                             <a
                                                 href="tel:+37127067730"
                                                 className="text-blue-600 hover:underline"
@@ -390,7 +330,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </a>
                                         </li>
                                         <li>
-                                            Skype:{' '}
+                                            {t('deliveryPayment.support.skypeLabel')}:{' '}
                                             <a
                                                 href="skype:ShopForHair?chat"
                                                 className="text-blue-600 hover:underline"
@@ -399,7 +339,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </a>
                                         </li>
                                         <li>
-                                            E-mail:{' '}
+                                            {t('contact.emailLabel')}:{' '}
                                             <a
                                                 href="mailto:info@hairshop.lv"
                                                 className="text-blue-600 hover:underline"

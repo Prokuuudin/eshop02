@@ -206,4 +206,92 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'image', src: '/logo-white.svg', label: 'Логотип (тёмная тема)' },
     ],
   },
+  {
+    id: 'store-riga-office',
+    title: 'Магазин — Рига Офис',
+    entries: [
+      { type: 'text', key: 'stores.riga-office.name', label: 'Название' },
+      { type: 'text', key: 'stores.riga-office.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.riga-office.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.riga-office.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.riga-office.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-imanta',
+    title: 'Магазин — Рига (Иманта)',
+    entries: [
+      { type: 'text', key: 'stores.imanta.name', label: 'Название' },
+      { type: 'text', key: 'stores.imanta.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.imanta.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.imanta.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.imanta.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-plavnieki',
+    title: 'Магазин — Рига (Плявниеки)',
+    entries: [
+      { type: 'text', key: 'stores.plavnieki.name', label: 'Название' },
+      { type: 'text', key: 'stores.plavnieki.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.plavnieki.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.plavnieki.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.plavnieki.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-daugavpils',
+    title: 'Магазин — Даугавпилс',
+    entries: [
+      { type: 'text', key: 'stores.daugavpils.name', label: 'Название' },
+      { type: 'text', key: 'stores.daugavpils.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.daugavpils.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.daugavpils.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.daugavpils.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-liepaja',
+    title: 'Магазин — Лиепая',
+    entries: [
+      { type: 'text', key: 'stores.liepaja.name', label: 'Название' },
+      { type: 'text', key: 'stores.liepaja.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.liepaja.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.liepaja.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.liepaja.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-valmiera',
+    title: 'Магазин — Валмиера',
+    entries: [
+      { type: 'text', key: 'stores.valmiera.name', label: 'Название' },
+      { type: 'text', key: 'stores.valmiera.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.valmiera.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.valmiera.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.valmiera.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-rezekne',
+    title: 'Магазин — Резекне',
+    entries: [
+      { type: 'text', key: 'stores.rezekne.name', label: 'Название' },
+      { type: 'text', key: 'stores.rezekne.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.rezekne.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.rezekne.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.rezekne.phone', label: 'Телефон' },
+    ],
+  },
+  {
+    id: 'store-jelgava',
+    title: 'Магазин — Елгава',
+    entries: [
+      { type: 'text', key: 'stores.jelgava.name', label: 'Название' },
+      { type: 'text', key: 'stores.jelgava.hours1', label: 'Часы работы — строка 1' },
+      { type: 'text', key: 'stores.jelgava.hours2', label: 'Часы работы — строка 2' },
+      { type: 'text', key: 'stores.jelgava.hours3', label: 'Часы работы — строка 3' },
+      { type: 'text', key: 'stores.jelgava.phone', label: 'Телефон' },
+    ],
+  },
 ]

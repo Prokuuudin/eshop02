@@ -7,13 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBannerContentManager } from './useBannerContentManager';
 import BannersTab from './BannersTab';
-import ContentBlocksTab from './ContentBlocksTab';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminBannersPage(): React.ReactElement {
     const state = useBannerContentManager();
-    const { banners, blocks, loading, message } = state;
+    const { banners, loading, message } = state;
 
     // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -24,10 +23,10 @@ export default function AdminBannersPage(): React.ReactElement {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                            Баннеры и блоки
+                            Баннеры
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Управление промо-баннерами и контентными блоками главной страницы.
+                            Управление промо-баннерами главной страницы.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -61,16 +60,10 @@ export default function AdminBannersPage(): React.ReactElement {
                     <Tabs defaultValue="banners">
                         <TabsList>
                             <TabsTrigger value="banners">Баннеры ({banners.length})</TabsTrigger>
-                            <TabsTrigger value="blocks">
-                                Контентные блоки ({blocks.length})
-                            </TabsTrigger>
                         </TabsList>
 
                         {/* ══════════════════════ BANNERS TAB ══════════════════════ */}
                         <BannersTab state={state} />
-
-                        {/* ══════════════════════ BLOCKS TAB ══════════════════════ */}
-                        <ContentBlocksTab state={state} />
                     </Tabs>
                 )}
             </main>

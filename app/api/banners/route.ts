@@ -12,9 +12,5 @@ export async function GET(request: NextRequest): Promise<Response> {
       .filter((b) => b.active && (!type || b.type === type))
       .sort((a, b) => a.order - b.order)
       .map((b) => ({ ...b, link: sanitizeStoredLink(b.link) })),
-    blocks: data.blocks
-      .filter((b) => b.active)
-      .sort((a, b) => a.order - b.order)
-      .map((b) => ({ ...b, link: sanitizeStoredLink(b.link) }))
   })
 }

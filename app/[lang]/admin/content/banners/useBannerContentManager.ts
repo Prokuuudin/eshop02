@@ -3,17 +3,13 @@ import { resolveLocaleText } from '@/lib/locale-text'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import {
   EMPTY_BANNER,
-  EMPTY_BLOCK,
   type Banner,
   type BannerForm,
-  type ContentBlock,
-  type ContentBlockForm,
 } from './banner-model'
 
 function useBannerContentManagerState() {
   const confirmAction = useAdminConfirm()
   const [banners, setBanners] = React.useState<Banner[]>([])
-  const [blocks, setBlocks] = React.useState<ContentBlock[]>([])
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [message, setMessage] = React.useState<{ text: string; error?: boolean } | null>(null)
@@ -22,11 +18,6 @@ function useBannerContentManagerState() {
   const [bannerForm, setBannerForm] = React.useState<BannerForm>(EMPTY_BANNER)
   const [editingBannerId, setEditingBannerId] = React.useState<string | null>(null)
   const [showBannerForm, setShowBannerForm] = React.useState(false)
-
-  // Block form state
-  const [blockForm, setBlockForm] = React.useState<ContentBlockForm>(EMPTY_BLOCK)
-  const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null)
-  const [showBlockForm, setShowBlockForm] = React.useState(false)
 
   // Image upload state
   const [uploadingBannerImage, setUploadingBannerImage] = React.useState(false)
@@ -42,9 +33,8 @@ function useBannerContentManagerState() {
     try {
       const res = await fetch('/api/admin/banners', { cache: 'no-store' })
       if (!res.ok) throw new Error()
-      const data = (await res.json()) as { banners: Banner[]; blocks: ContentBlock[] }
+      const data = (await res.json()) as { banners: Banner[] }
       setBanners(data.banners.sort((a, b) => a.order - b.order))
-      setBlocks(data.blocks.sort((a, b) => a.order - b.order))
     } catch {
       showMsg('Не удалось загрузить данные.', true)
     } finally {
@@ -209,134 +199,11 @@ function useBannerContentManagerState() {
     setShowBannerForm(false)
   }
 
-  // ── Block CRUD ────────────────────────────────────────────────────────────────
-
-  const onSaveBlock = async () => {
-    if (!blockForm.title.trim()) { showMsg('Укажите заголовок блока.', true); return }
-    setSaving(true)
-    try {
-      if (editingBlockId) {
-        const res = await fetch(`/api/admin/banners/${editingBlockId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'block', item: blockForm })
-        })
-        if (!res.ok) throw new Error()
-        showMsg('Блок сохранен.')
-      } else {
-        const res = await fetch('/api/admin/banners', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'block', item: blockForm })
-        })
-        if (!res.ok) throw new Error()
-        showMsg('Блок создан.')
-      }
-      resetBlockForm()
-      await loadData()
-    } catch {
-      showMsg('Не удалось сохранить блок.', true)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const onDeleteBlock = async (id: string) => {
-    const decision = await confirmAction({ title: 'Удалить контентный блок?', description: 'Блок и его содержимое будут удалены без возможности восстановления.', affected: [id], requireReason: true, destructive: true })
-    if (!decision.confirmed) return
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/admin/banners/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'block' })
-      })
-      if (!res.ok) throw new Error()
-      showMsg('Блок удален.')
-      await loadData()
-    } catch {
-      showMsg('Не удалось удалить блок.', true)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const onToggleBlock = async (block: ContentBlock) => {
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/admin/banners/${block.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind: 'block', item: { active: !block.active } })
-      })
-      if (!res.ok) throw new Error()
-      await loadData()
-    } catch {
-      showMsg('Не удалось изменить статус.', true)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const onMoveBlock = async (id: string, dir: 'up' | 'down') => {
-    const sorted = [...blocks]
-    const idx = sorted.findIndex((b) => b.id === id)
-    const swapIdx = dir === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= sorted.length) return
-
-    const updatedA = { ...sorted[idx], order: sorted[swapIdx].order }
-    const updatedB = { ...sorted[swapIdx], order: sorted[idx].order }
-
-    setSaving(true)
-    try {
-      await Promise.all([
-        fetch(`/api/admin/banners/${updatedA.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'block', item: { order: updatedA.order } })
-        }),
-        fetch(`/api/admin/banners/${updatedB.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'block', item: { order: updatedB.order } })
-        })
-      ])
-      await loadData()
-    } catch {
-      showMsg('Не удалось изменить порядок.', true)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const onEditBlock = (block: ContentBlock) => {
-    setEditingBlockId(block.id)
-    setBlockForm({
-      type: block.type,
-      title: block.title,
-      subtitle: block.subtitle,
-      content: block.content,
-      icon: block.icon,
-      link: block.link,
-      linkLabel: block.linkLabel,
-      bgColor: block.bgColor,
-      active: block.active
-    })
-    setShowBlockForm(true)
-  }
-
-  const resetBlockForm = () => {
-    setEditingBlockId(null)
-    setBlockForm(EMPTY_BLOCK)
-    setShowBlockForm(false)
-  }
-
-
   return {
-    banners, blocks, loading, saving, message,
+    banners, loading, saving, message,
     bannerForm, setBannerForm, editingBannerId, showBannerForm, setShowBannerForm,
-    blockForm, setBlockForm, editingBlockId, showBlockForm, setShowBlockForm,
     uploadingBannerImage, onBannerImageUpload,
     onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm,
-    onSaveBlock, onDeleteBlock, onToggleBlock, onMoveBlock, onEditBlock, resetBlockForm,
   }
 }
 

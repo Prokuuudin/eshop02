@@ -166,7 +166,6 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.marketing': 'Mārketings',
   'breadcrumb.campaigns': 'Kampaņas',
   'breadcrumb.discounts': 'Atlaides un kuponi',
-  'breadcrumb.showcases': 'Vitrīnas',
   'breadcrumb.customers': 'Klienti',
   'breadcrumb.segments': 'Segmenti',
   'breadcrumb.history': 'Vēsture',

@@ -81,7 +81,6 @@ const segmentLabelKeys: Record<string, string> = {
     marketing: 'breadcrumb.marketing',
     campaigns: 'breadcrumb.campaigns',
     discounts: 'breadcrumb.discounts',
-    showcases: 'breadcrumb.showcases',
     analytics: 'breadcrumb.analytics',
     'price-groups': 'breadcrumb.priceGroups',
     // Admin — content

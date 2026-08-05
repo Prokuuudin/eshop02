@@ -77,7 +77,6 @@ const NAV_SECTIONS: NavSection[] = [
         items: [
             { label: 'Кампании', href: '/admin/marketing/campaigns' },
             { label: 'Скидки и купоны', href: '/admin/marketing/discounts' },
-            { label: 'Подборки', href: '/admin/marketing/showcases' },
             { label: 'Прайс-листы', href: '/admin/marketing/price-groups' },
         ],
     },

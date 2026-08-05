@@ -292,7 +292,6 @@ const enAdmin: Record<string, string> = {
   'admin.sidebar.marketing': 'Marketing',
   'admin.sidebar.marketing.campaigns': 'Promo campaigns',
   'admin.sidebar.marketing.discounts': 'Discounts and coupons',
-  'admin.sidebar.marketing.showcases': 'Showcases and collections',
   'admin.sidebar.marketing.analytics': 'Promo analytics',
   'admin.sidebar.marketing.priceGroups': 'Price lists',
   'admin.sidebar.content': 'Content',

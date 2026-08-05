@@ -288,7 +288,6 @@ const ruAdmin: Record<string, string> = {
   'admin.sidebar.marketing': 'Продвижение',
   'admin.sidebar.marketing.campaigns': 'Промо-кампании',
   'admin.sidebar.marketing.discounts': 'Скидки и купоны',
-  'admin.sidebar.marketing.showcases': 'Подборки и витрины',
   'admin.sidebar.marketing.analytics': 'Аналитика промо',
   'admin.sidebar.marketing.priceGroups': 'Прайс-листы',
   'admin.sidebar.content': 'Контент',

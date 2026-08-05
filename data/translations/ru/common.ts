@@ -262,7 +262,6 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.marketing': 'Маркетинг',
   'breadcrumb.campaigns': 'Кампании',
   'breadcrumb.discounts': 'Скидки и купоны',
-  'breadcrumb.showcases': 'Подборки и витрины',
   'breadcrumb.customers': 'Клиенты',
   'breadcrumb.segments': 'Сегменты',
   'breadcrumb.history': 'История',

@@ -199,14 +199,6 @@ const articles: KnowledgeArticle[] = [
     linkLabel: 'Открыть кампании',
   },
   {
-    icon: '🛍️',
-    title: 'Подборки и витрины',
-    description:
-      'Создавайте тематические подборки, задавайте заголовки на трёх языках, slug, описание, изображение и список товаров. Активность и порядок подборок задаются в форме редактирования.',
-    href: '/admin/marketing/showcases',
-    linkLabel: 'Открыть витрины',
-  },
-  {
     icon: '✉️',
     title: 'Email-шаблоны',
     description:

@@ -165,7 +165,6 @@ const enCommon: Record<string, string> = {
   'breadcrumb.marketing': 'Marketing',
   'breadcrumb.campaigns': 'Campaigns',
   'breadcrumb.discounts': 'Discounts and coupons',
-  'breadcrumb.showcases': 'Showcases',
   'breadcrumb.customers': 'Customers',
   'breadcrumb.segments': 'Segments',
   'breadcrumb.history': 'History',

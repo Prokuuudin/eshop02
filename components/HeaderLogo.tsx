@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
+import { useSiteContent } from '@/lib/use-site-content';
 
 export default function HeaderLogo(): React.ReactElement {
     const { t } = useTranslation();
+    const { resolveImageSrc } = useSiteContent();
     return (
         <Link
             href="/"
@@ -11,7 +13,7 @@ export default function HeaderLogo(): React.ReactElement {
             style={{ height: 96, minWidth: 100, minHeight: 72 }}
         >
             <Image
-                src="/logo.svg"
+                src={resolveImageSrc('/logo.svg')}
                 alt={t('header.logoAlt')}
                 width={204}
                 height={108}
@@ -20,7 +22,7 @@ export default function HeaderLogo(): React.ReactElement {
                 className="absolute left-0 top-1/2 block h-[72px] w-auto origin-left -translate-y-1/2 scale-125 dark:hidden min-[400px]:h-[108px]"
             />
             <Image
-                src="/logo-white.svg"
+                src={resolveImageSrc('/logo-white.svg')}
                 alt={t('header.logoAlt')}
                 width={204}
                 height={108}

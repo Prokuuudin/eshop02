@@ -198,4 +198,12 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'deliveryPayment.support.skypeLabel', label: 'Лейбл «Skype»' },
     ],
   },
+  {
+    id: 'header-logo',
+    title: 'Логотип',
+    entries: [
+      { type: 'image', src: '/logo.svg', label: 'Логотип (светлая тема)' },
+      { type: 'image', src: '/logo-white.svg', label: 'Логотип (тёмная тема)' },
+    ],
+  },
 ]

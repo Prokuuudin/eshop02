@@ -18,7 +18,6 @@ import {
     BANNER_TYPE_LABELS,
     CTA_STYLE_LABELS,
     toLocaleForm,
-    type BannerType,
     type CtaStyle,
     type TextColor,
 } from './banner-model';
@@ -66,35 +65,6 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label
-                                htmlFor="admin-banner-field-1"
-                                className="text-xs text-muted-foreground"
-                            >
-                                Тип
-                            </label>
-                            <Select
-                                value={bannerForm.type}
-                                onValueChange={(v) =>
-                                    setBannerForm((f) => ({ ...f, type: v as BannerType }))
-                                }
-                            >
-                                <SelectTrigger
-                                    id="admin-banner-field-1"
-                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(Object.keys(BANNER_TYPE_LABELS) as BannerType[]).map((t) => (
-                                        <SelectItem key={t} value={t}>
-                                            {BANNER_TYPE_LABELS[t]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
                         <LocaleTextField
                             label="Заголовок * (RU / EN / LV)"
                             value={toLocaleForm(bannerForm.title)}

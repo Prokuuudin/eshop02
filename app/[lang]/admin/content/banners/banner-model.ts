@@ -1,6 +1,6 @@
 import { parseLocaleText, type LocaleText } from '@/lib/locale-text'
 
-export type BannerType = 'hero' | 'promo' | 'sale' | 'info'
+export type BannerType = 'sale'
 export type BlockType = 'announcement' | 'feature' | 'promo-strip' | 'cta' | 'info'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'
@@ -42,7 +42,7 @@ export type BannerForm = Omit<Banner, 'id' | 'order' | 'createdAt' | 'updatedAt'
 export type ContentBlockForm = Omit<ContentBlock, 'id' | 'order' | 'createdAt' | 'updatedAt'>
 
 export const EMPTY_BANNER: BannerForm = {
-  type: 'promo', title: '', subtitle: '', image: '', link: '', ctaLabel: '',
+  type: 'sale', title: '', subtitle: '', image: '', link: '', ctaLabel: '',
   ctaStyle: 'primary', bgColor: '#ffffff', textColor: 'dark', active: true,
 }
 
@@ -52,7 +52,7 @@ export const EMPTY_BLOCK: ContentBlockForm = {
 }
 
 export const BANNER_TYPE_LABELS: Record<BannerType, string> = {
-  hero: 'Главный герой', promo: 'Промо', sale: 'Скидка/Акция', info: 'Информационный',
+  sale: 'Скидка/Акция',
 }
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {

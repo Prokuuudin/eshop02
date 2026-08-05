@@ -2,7 +2,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { Banner as PrismaBanner, ContentBlock as PrismaContentBlock } from '@/generated/prisma/client'
 
-export type BannerType = 'hero' | 'promo' | 'sale' | 'info'
+export type BannerType = 'sale'
 export type BlockType = 'announcement' | 'feature' | 'promo-strip' | 'cta' | 'info'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'

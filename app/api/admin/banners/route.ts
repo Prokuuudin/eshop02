@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const maxOrder = data.banners.reduce((m, b) => Math.max(m, b.order), 0)
       const banner: Banner = {
         id: `banner-${Date.now()}`,
-        type: item.type ?? 'promo',
+        type: 'sale',
         title: item.title ?? '',
         subtitle: item.subtitle ?? '',
         image: item.image ?? '',

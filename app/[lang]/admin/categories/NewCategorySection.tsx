@@ -40,7 +40,7 @@ export default function NewCategorySection({
                 <h2 className="text-lg font-semibold text-foreground">
                     {tl(
                         'admin.categories.createTitle',
-                        'Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð½Ð¾Ð²ÑƒÑŽ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ',
+                        'Создать новую категорию',
                         'Create new category',
                         'Izveidot jaunu kategoriju'
                     )}
@@ -53,7 +53,7 @@ export default function NewCategorySection({
                                 value={newCategory.id}
                                 placeholder={tl(
                                     'admin.categories.placeholder.id',
-                                    'ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€: hair-care',
+                                    'Например: hair-care',
                                     'Example: hair-care',
                                     'Piemers: hair-care'
                                 )}
@@ -86,7 +86,7 @@ export default function NewCategorySection({
                                 value={newCategory.ru}
                                 placeholder={tl(
                                     'admin.categories.placeholder.nameRu',
-                                    'Ð£Ñ…Ð¾Ð´ Ð·Ð° Ð²Ð¾Ð»Ð¾ÑÐ°Ð¼Ð¸',
+                                    'Уход за волосами',
                                     'Hair care',
                                     'Matu kopsana'
                                 )}
@@ -131,7 +131,7 @@ export default function NewCategorySection({
                         <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                             {tl(
                                 'admin.categories.previewCard',
-                                'ÐŸÑ€ÐµÐ²ÑŒÑŽ ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ¸',
+                                'Превью карточки',
                                 'Card preview',
                                 'Kartites priekskats'
                             )}
@@ -161,7 +161,7 @@ export default function NewCategorySection({
                     <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
                         {tl(
                             'admin.categories.firstSubOptional',
-                            'ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ð¿Ð¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ (Ð¾Ð¿Ñ†Ð¸Ð¾Ð½Ð°Ð»ÑŒÐ½Ð¾)',
+                            'Первый подпункт (опционально)',
                             'First subcategory (optional)',
                             'Pirma apakskategorija (neobligata)'
                         )}
@@ -173,7 +173,7 @@ export default function NewCategorySection({
                                 value={newCategory.firstSubSlug}
                                 placeholder={tl(
                                     'admin.categories.placeholder.firstSubSlug',
-                                    'ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€: shampoo',
+                                    'Например: shampoo',
                                     'Example: shampoo',
                                     'Piemers: shampoo'
                                 )}
@@ -191,7 +191,7 @@ export default function NewCategorySection({
                                 value={newCategory.firstSubSearch}
                                 placeholder={tl(
                                     'admin.categories.placeholder.firstSubSearch',
-                                    'ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€: ÑˆÐ°Ð¼Ð¿ÑƒÐ½ÑŒ',
+                                    'Например: шампунь',
                                     'Example: shampoo',
                                     'Piemers: sampuns'
                                 )}
@@ -209,7 +209,7 @@ export default function NewCategorySection({
                                 value={newCategory.firstSubRu}
                                 placeholder={tl(
                                     'admin.categories.placeholder.firstSubRu',
-                                    'Ð¨Ð°Ð¼Ð¿ÑƒÐ½Ð¸',
+                                    'Шампуни',
                                     'Shampoos',
                                     'Sampuni'
                                 )}
@@ -265,13 +265,13 @@ export default function NewCategorySection({
                         {saving
                             ? tl(
                                   'admin.categories.saving',
-                                  'Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ðµ...',
+                                  'Сохранение...',
                                   'Saving...',
                                   'Saglabasana...'
                               )
                             : tl(
                                   'admin.categories.createButton',
-                                  'Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ',
+                                  'Создать категорию',
                                   'Create category',
                                   'Izveidot kategoriju'
                               )}

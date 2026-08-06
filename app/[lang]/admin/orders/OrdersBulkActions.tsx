@@ -31,7 +31,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
             {selectedIds.size > 0 && (
                 <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 dark:border-primary/50 bg-primary/5 dark:bg-primary/15 px-4 py-3">
                     <span className="text-sm font-medium text-primary dark:text-primary/60">
-                        Ð’Ñ‹Ð±Ñ€Ð°Ð½Ð¾: {selectedIds.size}
+                        Выбрано: {selectedIds.size}
                     </span>
                     <div className="flex items-center gap-2">
                         <Select
@@ -39,7 +39,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                             onValueChange={(v) => setBulkStatus(v as OrderStatus | '')}
                         >
                             <SelectTrigger className="rounded-lg border border-primary/50 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground">
-                                <SelectValue placeholder="Ð˜Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ ÑÑ‚Ð°Ñ‚ÑƒÑ..." />
+                                <SelectValue placeholder="Изменить статус..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {STATUS_LIST.map((s) => (
@@ -50,12 +50,12 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                             </SelectContent>
                         </Select>
                         <Button size="sm" disabled={!bulkStatus} onClick={applyBulkStatus}>
-                            ÐŸÑ€Ð¸Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ
+                            Применить
                         </Button>
                     </div>
                     <Button size="sm" variant="outline" onClick={printSelected} className="gap-1.5">
                         <Printer className="h-3.5 w-3.5" />
-                        ÐŸÐµÑ‡Ð°Ñ‚ÑŒ
+                        Печать
                     </Button>
                     <Button
                         size="sm"
@@ -63,7 +63,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                         onClick={() => setSelectedIds(new Set())}
                         className="ml-auto text-primary dark:text-primary"
                     >
-                        Ð¡Ð½ÑÑ‚ÑŒ Ð²Ñ‹Ð±Ð¾Ñ€
+                        Снять выбор
                     </Button>
                 </div>
             )}

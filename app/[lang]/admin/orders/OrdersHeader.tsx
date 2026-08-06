@@ -19,10 +19,10 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
         <>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-bold text-foreground">Ð—Ð°ÐºÐ°Ð·Ñ‹</h1>
+                    <h1 className="text-3xl font-bold text-foreground">Заказы</h1>
                     {unhandledCount > 0 && (
                         <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                            {unhandledCount} Ð½ÐµÐ¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚Ð°Ð½Ð½Ñ‹Ñ…
+                            {unhandledCount} необработанных
                         </span>
                     )}
                 </div>
@@ -32,7 +32,7 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                             size="sm"
                             className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
-                            + Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·
+                            + Создать заказ
                         </Button>
                     </Link>
                     <Button
@@ -42,7 +42,7 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        Ð—Ð°ÐºÐ°Ð·Ñ‹ (CSV)
+                        Заказы (CSV)
                     </Button>
                     <Button
                         variant="outline"
@@ -51,10 +51,10 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        ÐšÐ»Ð¸ÐµÐ½Ñ‚Ñ‹ (CSV)
+                        Клиенты (CSV)
                     </Button>
                     <Link href="/admin" className="hidden sm:block">
-                        <Button variant="outline">ÐÐ°Ð·Ð°Ð´ Ð² Ð°Ð´Ð¼Ð¸Ð½ÐºÑƒ</Button>
+                        <Button variant="outline">Назад в админку</Button>
                     </Link>
                 </div>
             </div>

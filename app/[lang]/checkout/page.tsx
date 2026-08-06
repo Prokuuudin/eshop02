@@ -91,7 +91,7 @@ export default function CheckoutPage(): React.ReactElement {
             <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
 
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Ð¤Ð¾Ñ€Ð¼Ð° */}
+                {/* Форма */}
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
                     {turnstileEnabled && (
                         <Script
@@ -306,7 +306,7 @@ export default function CheckoutPage(): React.ReactElement {
                     </div>
                 </form>
 
-                {/* Ð¡ÑƒÐ¼Ð¼Ð° Ð¸ Ð¿Ñ€Ð¾Ð¼Ð¾ÐºÐ¾Ð´ */}
+                {/* Сумма и промокод */}
                 <aside className="checkout__summary sticky top-20 h-fit">
                     <div className="bg-card rounded-lg border border-border p-6">
                         <h2 className="font-bold text-lg mb-4 text-foreground">
@@ -323,7 +323,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         className="text-sm flex justify-between"
                                     >
                                         <span>
-                                            {localizedTitle} Ã— {item.quantity}
+                                            {localizedTitle} × {item.quantity}
                                         </span>
                                         <span>{formatCurrency(unitPrice * item.quantity)}</span>
                                     </div>
@@ -356,7 +356,7 @@ export default function CheckoutPage(): React.ReactElement {
                                     className="px-3 py-2 text-sm"
                                     variant={appliedPromo ? 'outline' : 'default'}
                                 >
-                                    {appliedPromo ? 'âœ“' : t('checkout.promo.apply')}
+                                    {appliedPromo ? '✓' : t('checkout.promo.apply')}
                                 </Button>
                             </div>
                             {promoError && (
@@ -381,7 +381,7 @@ export default function CheckoutPage(): React.ReactElement {
                             )}
                         </div>
 
-                        {/* Ð‘Ð¾Ð½ÑƒÑÐ½Ñ‹Ðµ Ð±Ð°Ð»Ð»Ñ‹ */}
+                        {/* Бонусные баллы */}
                         {currentUser && (
                             <div className="checkout__bonus mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
                                 <div className="flex justify-between text-amber-800 dark:text-amber-300">
@@ -401,7 +401,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         +{adjustedBonusToEarn} {t('cart.bonus.unit')}
                                         {adjustedBonusToEarn > 0 && (
                                             <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                                (= âˆ’
+                                                (= −
                                                 {formatCurrency(pointsToEuros(adjustedBonusToEarn))}
                                                 )
                                             </span>
@@ -416,14 +416,14 @@ export default function CheckoutPage(): React.ReactElement {
                                                 onClick={() => setBonusApplied(true)}
                                                 className="checkout__bonus-apply w-full rounded border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 dark:border-amber-600"
                                             >
-                                                {t('checkout.bonus.apply')} (âˆ’
+                                                {t('checkout.bonus.apply')} (−
                                                 {formatCurrency(maxBonusDiscount)})
                                             </button>
                                         ) : (
                                             <>
                                                 <div className="checkout__bonus-applied flex items-center justify-between text-xs">
                                                     <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                                        âœ“ {t('checkout.bonus.applied')} âˆ’
+                                                        ✓ {t('checkout.bonus.applied')} −
                                                         {formatCurrency(maxBonusDiscount)}
                                                     </span>
                                                     <button
@@ -431,7 +431,7 @@ export default function CheckoutPage(): React.ReactElement {
                                                         onClick={() => setBonusApplied(false)}
                                                         className="ml-2 underline text-amber-700 dark:text-amber-400"
                                                     >
-                                                        {t('common.cancel', 'ÐžÑ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ')}
+                                                        {t('common.cancel', 'Отменить')}
                                                     </button>
                                                 </div>
                                                 <p className="checkout__bonus-earn-warning mt-1.5 text-xs text-amber-600/80 dark:text-amber-500/80">
@@ -458,13 +458,13 @@ export default function CheckoutPage(): React.ReactElement {
                                         {appliedPromo && (
                                             <span className="text-muted-foreground">
                                                 {' '}
-                                                ({appliedPromo} âˆ’{appliedPromoDiscountPct}%)
+                                                ({appliedPromo} −{appliedPromoDiscountPct}%)
                                             </span>
                                         )}
                                         :
                                     </span>
                                     <span className="font-medium">
-                                        âˆ’{formatCurrency(discount)}
+                                        −{formatCurrency(discount)}
                                     </span>
                                 </div>
                             )}
@@ -472,7 +472,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                                     <span>{t('checkout.summary.bonus')}</span>
                                     <span className="font-medium">
-                                        âˆ’{formatCurrency(bonusDiscount)}
+                                        −{formatCurrency(bonusDiscount)}
                                     </span>
                                 </div>
                             )}
@@ -498,7 +498,7 @@ export default function CheckoutPage(): React.ReactElement {
                             <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
                         </div>
 
-                        {/* Ð¡Ð¾Ð³Ð»Ð°ÑÐ¸Ðµ Ñ ÑƒÑÐ»Ð¾Ð²Ð¸ÑÐ¼Ð¸ Ð¿Ñ€ÐµÐ´Ð¾ÑÑ‚Ð°Ð²Ð»ÐµÐ½Ð¸Ñ ÑƒÑÐ»ÑƒÐ³ */}
+                        {/* Согласие с условиями предоставления услуг */}
                         <div className="checkout__terms mt-4 pt-4 border-t border-border">
                             <div className="flex items-start gap-2">
                                 <Checkbox

@@ -45,7 +45,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                         <Input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="ÐŸÐ¾Ð¸ÑÐº Ð¿Ð¾ ID, Ð¸Ð¼ÐµÐ½Ð¸, email, Ñ‚ÐµÐ»ÐµÑ„Ð¾Ð½Ñƒ..."
+                            placeholder="Поиск по ID, имени, email, телефону..."
                             className="h-9 flex-1"
                         />
                         <Search className="h-5 w-5 text-gray-400" />
@@ -59,7 +59,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Ð’ÑÐµ ÑÑ‚Ð°Ñ‚ÑƒÑÑ‹</SelectItem>
+                                <SelectItem value="all">Все статусы</SelectItem>
                                 {STATUS_LIST.map((s) => (
                                     <SelectItem key={s} value={s}>
                                         {STATUS_LABELS[s]}
@@ -72,11 +72,11 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Ð’ÑÐµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹</SelectItem>
-                                <SelectItem value="unpaid">ÐÐµ Ð¾Ð¿Ð»Ð°Ñ‡ÐµÐ½</SelectItem>
-                                <SelectItem value="pending">ÐžÐ¶Ð¸Ð´Ð°ÐµÑ‚ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹</SelectItem>
-                                <SelectItem value="paid">ÐžÐ¿Ð»Ð°Ñ‡ÐµÐ½</SelectItem>
-                                <SelectItem value="failed">ÐžÑˆÐ¸Ð±ÐºÐ° Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹</SelectItem>
+                                <SelectItem value="all">Все оплаты</SelectItem>
+                                <SelectItem value="unpaid">Не оплачен</SelectItem>
+                                <SelectItem value="pending">Ожидает оплаты</SelectItem>
+                                <SelectItem value="paid">Оплачен</SelectItem>
+                                <SelectItem value="failed">Ошибка оплаты</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
@@ -84,10 +84,10 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Ð’ÑÐµ Ð´Ð¾ÑÑ‚Ð°Ð²ÐºÐ¸</SelectItem>
-                                <SelectItem value="courier">ÐšÑƒÑ€ÑŒÐµÑ€</SelectItem>
-                                <SelectItem value="pickup">Ð¡Ð°Ð¼Ð¾Ð²Ñ‹Ð²Ð¾Ð·</SelectItem>
-                                <SelectItem value="post">ÐŸÐ¾Ñ‡Ñ‚Ð°</SelectItem>
+                                <SelectItem value="all">Все доставки</SelectItem>
+                                <SelectItem value="courier">Курьер</SelectItem>
+                                <SelectItem value="pickup">Самовывоз</SelectItem>
+                                <SelectItem value="post">Почта</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -105,9 +105,9 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                             }
                             onCheckedChange={toggleSelectAll}
                         />
-                        <span className="text-xs text-muted-foreground">Ð’Ñ‹Ð±Ñ€Ð°Ñ‚ÑŒ Ð²ÑÐµ</span>
+                        <span className="text-xs text-muted-foreground">Выбрать все</span>
                     </label>
-                    <span className="text-xs">Ð¡Ð¾Ñ€Ñ‚Ð¸Ñ€Ð¾Ð²ÐºÐ°:</span>
+                    <span className="text-xs">Сортировка:</span>
                     <button
                         type="button"
                         onClick={() => toggleSort('date')}
@@ -117,8 +117,8 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
                         }`}
                     >
-                        ÐŸÐ¾ Ð´Ð°Ñ‚Ðµ{' '}
-                        {sortField === 'date' ? (sortDir === 'desc' ? 'â†“' : 'â†‘') : ''}
+                        По дате{' '}
+                        {sortField === 'date' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                     </button>
                     <button
                         type="button"
@@ -129,11 +129,11 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
                         }`}
                     >
-                        ÐŸÐ¾ ÑÑƒÐ¼Ð¼Ðµ{' '}
-                        {sortField === 'total' ? (sortDir === 'desc' ? 'â†“' : 'â†‘') : ''}
+                        По сумме{' '}
+                        {sortField === 'total' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                     </button>
                     <span className="ml-auto text-xs text-muted-foreground">
-                        {filtered.length} Ð¸Ð· {orders.length}
+                        {filtered.length} из {orders.length}
                     </span>
                 </div>
             </div>

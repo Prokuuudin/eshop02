@@ -109,8 +109,8 @@ function useCheckoutPageState() {
         [checkoutItems]
     );
 
-    // ÐžÐ¿Ð»Ð°Ñ‚Ð° Ð¿Ñ€Ð¸ Ð¿Ð¾Ð»ÑƒÑ‡ÐµÐ½Ð¸Ð¸ Ð²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð° Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² Ð¾Ñ„Ð¸ÑÐµ (RencÄ“nu 10A) â€”
-    // Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚ÑÑ ÑÐ°Ð¼Ð¾Ð²Ñ‹Ð²Ð¾Ð· Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð¸Ð· Â«Ð Ð¸Ð³Ð° ÐžÑ„Ð¸ÑÂ».
+    // Оплата при получении возможна только в офисе (Rencēnu 10A) —
+    // требуется самовывоз именно из «Рига Офис».
     const cashUnavailable = deliveryMethod !== 'pickup' || pickupStoreId !== 'riga-office';
     if (items.length === 0) {
         return <EmptyCartView t={t} />;
@@ -172,7 +172,7 @@ function useCheckoutPageState() {
 
         if (!isCheckoutAllowedForRole) {
             showToast(
-                'Ð”Ð»Ñ Ñ€Ð¾Ð»Ð¸ Ð¼ÐµÐ½ÐµÐ´Ð¶ÐµÑ€Ð° Ð¾Ñ„Ð¾Ñ€Ð¼Ð»ÐµÐ½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð° Ð½ÐµÐ´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾',
+                'Для роли менеджера оформление заказа недоступно',
                 'error'
             );
             setIsSubmitting(false);
@@ -194,7 +194,7 @@ function useCheckoutPageState() {
         if (deliveryMethod === 'pickup' && !pickupStoreId) {
             newErrors.pickupStore = t('checkout.errors.pickupStore');
         }
-        // Ð¡Ñ‚Ñ€Ð°Ñ…Ð¾Ð²ÐºÐ° Ð¾Ñ‚ Ñ€Ð°ÑÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð° UI: Ð½Ð°Ð»Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ñ€Ð¸ ÑÐ°Ð¼Ð¾Ð²Ñ‹Ð²Ð¾Ð·Ðµ Ð¸Ð· Ð¾Ñ„Ð¸ÑÐ°.
+        // Страховка от рассинхрона UI: наличные только при самовывозе из офиса.
         if (formData.paymentMethod === 'cash' && cashUnavailable) {
             showToast(t('checkout.payment.cashNote'), 'error');
             setIsSubmitting(false);
@@ -229,10 +229,10 @@ function useCheckoutPageState() {
         const subtotalAfterDiscount = subtotal - discount;
         const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
 
-        // Catalog prices already include VAT â€” taxAmount is informational, not added to the total.
+        // Catalog prices already include VAT — taxAmount is informational, not added to the total.
         const taxAmount = extractVat(subtotalAfterDiscount);
         const grandTotal = subtotalAfterDiscount + deliveryFee;
-        // Ð¡Ð¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð² Ð±Ð°Ð»Ð»Ð°Ñ… (1 Ð±Ð°Ð»Ð» = 1 Ñ†ÐµÐ½Ñ‚); ÑÐºÐ¸Ð´ÐºÐ° â€” ÐµÐ³Ð¾ ÐµÐ²Ñ€Ð¾-ÑÐºÐ²Ð¸Ð²Ð°Ð»ÐµÐ½Ñ‚.
+        // Списание в баллах (1 балл = 1 цент); скидка — его евро-эквивалент.
         const bonusSpentPoints = bonusApplied
             ? Math.min(
                   currentUser?.bonusPoints ?? 0,
@@ -242,7 +242,7 @@ function useCheckoutPageState() {
         const bonusDiscount = pointsToEuros(bonusSpentPoints);
         const finalGrandTotal = grandTotal - bonusDiscount;
 
-        // Create order â€” the server assigns the canonical id (client counters collide across browsers)
+        // Create order — the server assigns the canonical id (client counters collide across browsers)
         const orderData = {
             createdAt: new Date(),
             items: checkoutItems.map((item) => ({
@@ -270,7 +270,7 @@ function useCheckoutPageState() {
 
         // Persist server-side first: the server generates the unique order id and
         // payment webhooks update canonical status there. If this fails, the order
-        // exists nowhere (no DB row, no confirmation email, no admin notification) â€”
+        // exists nowhere (no DB row, no confirmation email, no admin notification) —
         // checkout must stop here rather than fake a success screen.
         let orderId: string;
         try {
@@ -294,8 +294,8 @@ function useCheckoutPageState() {
                 } | null;
                 const message =
                     errorPayload?.error === 'insufficient_stock'
-                        ? 'ÐÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… Ñ‚Ð¾Ð²Ð°Ñ€Ð¾Ð² ÑƒÐ¶Ðµ Ð½ÐµÑ‚ Ð² Ð´Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ñ‡Ð½Ð¾Ð¼ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ðµ. ÐžÐ±Ð½Ð¾Ð²Ð¸Ñ‚Ðµ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.'
-                        : 'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.';
+                        ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
+                        : 'Не удалось оформить заказ. Попробуйте ещё раз.';
                 showToast(message, 'error');
                 resetTurnstile();
                 setIsSubmitting(false);
@@ -304,7 +304,7 @@ function useCheckoutPageState() {
             const payload = (await response.json()) as { orderId?: string };
             if (!payload.orderId) {
                 showToast(
-                    'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.',
+                    'Не удалось оформить заказ. Попробуйте ещё раз.',
                     'error'
                 );
                 setIsSubmitting(false);
@@ -314,7 +314,7 @@ function useCheckoutPageState() {
         } catch {
             resetTurnstile();
             showToast(
-                'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¾Ñ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ°Ð·. ÐŸÑ€Ð¾Ð²ÐµÑ€ÑŒÑ‚Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¸ Ð¿Ð¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÐµÑ‰Ñ‘ Ñ€Ð°Ð·.',
+                'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.',
                 'error'
             );
             setIsSubmitting(false);
@@ -324,7 +324,7 @@ function useCheckoutPageState() {
         const order = { id: orderId, ...orderData };
         addOrder(order);
 
-        // Ð¡ÐµÑ€Ð²ÐµÑ€ Ð´ÐµÐ±ÐµÑ‚Ð¾Ð²Ð°Ð»/ÐºÑ€ÐµÐ´Ð¸Ñ‚Ð¾Ð²Ð°Ð» Ð±Ð°Ð»Ð»Ñ‹ Ð¿Ñ€Ð¸ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ð¸ Ð·Ð°ÐºÐ°Ð·Ð° â€” Ð¿Ð¾Ð´Ñ‚ÑÐ³Ð¸Ð²Ð°ÐµÐ¼ ÑÐ²ÐµÐ¶Ð¸Ð¹ Ð±Ð°Ð»Ð°Ð½Ñ.
+        // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
         if (currentUser) {
             await syncBonusBalanceFromServer();
         }
@@ -357,7 +357,7 @@ function useCheckoutPageState() {
                         paymentProvider: 'stripe',
                     });
                     showToast(
-                        'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¾Ð½Ð»Ð°Ð¹Ð½-Ð¾Ð¿Ð»Ð°Ñ‚Ñƒ. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.',
+                        'Не удалось инициализировать онлайн-оплату. Попробуйте снова.',
                         'error'
                     );
                     setIsSubmitting(false);
@@ -371,7 +371,7 @@ function useCheckoutPageState() {
                         paymentProvider: 'stripe',
                     });
                     showToast(
-                        'ÐŸÐ»Ð°Ñ‚ÐµÐ¶Ð½Ð°Ñ ÑÐµÑÑÐ¸Ñ Ð½Ðµ Ð±Ñ‹Ð»Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð°. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.',
+                        'Платежная сессия не была создана. Попробуйте снова.',
                         'error'
                     );
                     setIsSubmitting(false);
@@ -390,7 +390,7 @@ function useCheckoutPageState() {
                     paymentProvider: 'stripe',
                 });
                 showToast(
-                    'ÐžÑˆÐ¸Ð±ÐºÐ° Ð¿Ñ€Ð¸ Ð·Ð°Ð¿ÑƒÑÐºÐµ Ð¾Ð¿Ð»Ð°Ñ‚Ñ‹. ÐŸÐ¾Ð¿Ñ€Ð¾Ð±ÑƒÐ¹Ñ‚Ðµ ÑÐ½Ð¾Ð²Ð°.',
+                    'Ошибка при запуске оплаты. Попробуйте снова.',
                     'error'
                 );
                 setIsSubmitting(false);
@@ -417,7 +417,7 @@ function useCheckoutPageState() {
                 issuedDate,
                 dueDate,
                 paidDate: undefined,
-                notes: `Ð—Ð°ÐºÐ°Ð· #${orderId} Ð¾Ñ‚ ${issuedDate.toLocaleDateString('ru-RU')}`,
+                notes: `Заказ #${orderId} от ${issuedDate.toLocaleDateString('ru-RU')}`,
             });
 
             // Log invoice creation
@@ -466,7 +466,7 @@ function useCheckoutPageState() {
             : 0;
     const subtotalAfterDiscount = subtotal - discount;
     const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-    // Catalog prices already include VAT â€” taxAmount is informational, not added to the total.
+    // Catalog prices already include VAT — taxAmount is informational, not added to the total.
     const taxAmount = extractVat(subtotalAfterDiscount);
     const grandTotal = subtotalAfterDiscount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
@@ -479,7 +479,7 @@ function useCheckoutPageState() {
         }))
     );
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
-    // ÐŸÐ¾Ñ‚Ð¾Ð»Ð¾Ðº ÑÐ¿Ð¸ÑÐ°Ð½Ð¸Ñ Ð² Ð±Ð°Ð»Ð»Ð°Ñ… (1 Ð±Ð°Ð»Ð» = 1 Ñ†ÐµÐ½Ñ‚); Ð² â‚¬ â€” Ð´Ð»Ñ ÑÑ‚Ñ€Ð¾Ðº Ð¸Ñ‚Ð¾Ð³Ð°.
+    // Потолок списания в баллах (1 балл = 1 цент); в € — для строк итога.
     const maxBonusSpendPoints = bonusApplicable
         ? Math.min(
               userBonusBalance,

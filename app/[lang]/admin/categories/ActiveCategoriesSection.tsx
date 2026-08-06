@@ -56,16 +56,16 @@ export default function ActiveCategoriesSection({
                 <h2 className="text-lg font-semibold text-foreground">
                     {tl(
                         'admin.categories.existingCatalog',
-                        'Ð¡ÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ðµ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ ÐºÐ°Ñ‚Ð°Ð»Ð¾Ð³Ð°',
+                        'Существующие категории каталога',
                         'Existing catalog categories',
-                        'EsoÅ¡Äs kataloga kategorijas'
+                        'Esošās kataloga kategorijas'
                     )}
                 </h2>
                 {loading ? (
                     <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                         {tl(
                             'admin.categories.loading',
-                            'Ð—Ð°Ð³Ñ€ÑƒÐ·ÐºÐ° ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¹...',
+                            'Загрузка категорий...',
                             'Loading categories...',
                             'Ieladejam kategorijas...'
                         )}
@@ -92,13 +92,13 @@ export default function ActiveCategoriesSection({
                                         {saving
                                             ? tl(
                                                   'admin.categories.saving',
-                                                  'Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ðµ...',
+                                                  'Сохранение...',
                                                   'Saving...',
                                                   'Saglabasana...'
                                               )
                                             : tl(
                                                   'admin.categories.saveButton',
-                                                  'Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ',
+                                                  'Сохранить',
                                                   'Save',
                                                   'Saglabat'
                                               )}
@@ -111,7 +111,7 @@ export default function ActiveCategoriesSection({
                                     >
                                         {tl(
                                             'admin.categories.resetButton',
-                                            'Ð¡Ð±Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ',
+                                            'Сбросить',
                                             'Reset',
                                             'Atiestatit'
                                         )}
@@ -124,7 +124,7 @@ export default function ActiveCategoriesSection({
                                     >
                                         {tl(
                                             'admin.categories.moveToTrashButton',
-                                            'Ð’ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ',
+                                            'В корзину',
                                             'Move to trash',
                                             'Uz grozu'
                                         )}
@@ -190,7 +190,7 @@ export default function ActiveCategoriesSection({
                                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                                         {tl(
                                             'admin.categories.previewCard',
-                                            'ÐŸÑ€ÐµÐ²ÑŒÑŽ ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ¸',
+                                            'Превью карточки',
                                             'Card preview',
                                             'Kartites priekskats'
                                         )}
@@ -220,7 +220,7 @@ export default function ActiveCategoriesSection({
                                 <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                                     {tl(
                                         'admin.categories.subcategories',
-                                        'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚Ñ‹',
+                                        'Подпункты',
                                         'Subcategories',
                                         'Apakskategorijas'
                                     )}{' '}
@@ -250,7 +250,7 @@ export default function ActiveCategoriesSection({
                                                 >
                                                     {tl(
                                                         'admin.categories.deleteButton',
-                                                        'Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ',
+                                                        'Удалить',
                                                         'Delete',
                                                         'Dzest'
                                                     )}
@@ -445,13 +445,13 @@ export default function ActiveCategoriesSection({
                                         {saving
                                             ? tl(
                                                   'admin.categories.saving',
-                                                  'Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ðµ...',
+                                                  'Сохранение...',
                                                   'Saving...',
                                                   'Saglabasana...'
                                               )
                                             : tl(
                                                   'admin.categories.addSubButton',
-                                                  'Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð¿Ð¾Ð´Ð¿ÑƒÐ½ÐºÑ‚',
+                                                  'Добавить подпункт',
                                                   'Add subcategory',
                                                   'Pievienot apakskategoriju'
                                               )}

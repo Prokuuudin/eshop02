@@ -28,7 +28,7 @@ function useAdminOrdersPageState() {
         useAdminStore();
     const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
-    // â”€â”€ Edit mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Edit mode ─────────────────────────────────────────────────────────────
     const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
     const [editItems, setEditItems] = useState<EditItem[]>([]);
     const [editAddress, setEditAddress] = useState('');
@@ -203,10 +203,10 @@ function useAdminOrdersPageState() {
         });
         logAdminAction(
             'order.bulk_status_changed',
-            { type: 'orders', id: ids.join(','), title: `${ids.length} Ð·Ð°ÐºÐ°Ð·Ð¾Ð²` },
+            { type: 'orders', id: ids.join(','), title: `${ids.length} заказов` },
             {
                 after: { status: bulkStatus },
-                details: `${ids.length} Ð·Ð°ÐºÐ°Ð·Ð¾Ð² â†’ ${bulkStatus}`,
+                details: `${ids.length} заказов → ${bulkStatus}`,
             }
         );
         setSelectedIds(new Set());
@@ -234,7 +234,7 @@ function useAdminOrdersPageState() {
                                           item.variantLabel
                                       )})</span>`
                                     : ''
-                            } Ã— ${item.quantity}</span>
+                            } × ${item.quantity}</span>
           <span>${formatEuro(item.price * item.quantity, locale)}</span>
         </div>`
                     )
@@ -254,7 +254,7 @@ function useAdminOrdersPageState() {
         )} ${escapeHtml(order.lastName)}</p>
         <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(
             order.email
-        )} Â· ${escapeHtml(order.phone)}</p>
+        )} · ${escapeHtml(order.phone)}</p>
         <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(
             order.address
         )}, ${escapeHtml(order.city)}${
@@ -267,7 +267,7 @@ function useAdminOrdersPageState() {
         ${items}
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
         <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px">
-          <span>Ð˜Ñ‚Ð¾Ð³Ð¾</span><span>${formatEuro(order.total, locale)}</span>
+          <span>Итого</span><span>${formatEuro(order.total, locale)}</span>
         </div>
       </div>`;
             })
@@ -275,7 +275,7 @@ function useAdminOrdersPageState() {
 
         const win = window.open('', '_blank', 'width=820,height=700');
         if (!win) return;
-        win.document.write(`<!DOCTYPE html><html><head><title>Ð—Ð°ÐºÐ°Ð·Ñ‹</title>
+        win.document.write(`<!DOCTYPE html><html><head><title>Заказы</title>
       <style>body{font-family:sans-serif;padding:20px;max-width:760px;margin:0 auto}@media print{body{padding:0}}</style>
       </head><body>${rows}</body></html>`);
         win.document.close();
@@ -283,7 +283,7 @@ function useAdminOrdersPageState() {
         win.print();
     };
 
-    // â”€â”€ Edit helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Edit helpers ─────────────────────────────────────────────────────────
 
     const editProductResults = useMemo(() => {
         const q = editProductSearch.trim().toLowerCase();
@@ -341,7 +341,7 @@ function useAdminOrdersPageState() {
                 ? Math.round(newSubtotal * origDiscountPct * 100) / 100
                 : order.discount;
         // Items unchanged since order creation keep that order's price model (VAT already
-        // included vs added on top) â€” detect it from the order itself, no schema flag needed.
+        // included vs added on top) — detect it from the order itself, no schema flag needed.
         const taxIncluded = isOrderTaxIncluded(order);
         const newTax = taxIncluded ? extractVat(newSubtotal - newDiscount) : order.tax;
         const newTotal = Math.max(
@@ -397,9 +397,9 @@ function useAdminOrdersPageState() {
             'order.status_changed',
             { type: 'order', id: order.id, title: `${order.firstName} ${order.lastName}` },
             {
-                details: `Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð·Ð°ÐºÐ°Ð·Ð°: ${
+                details: `Редактирование заказа: ${
                     editItems.length
-                } Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¹, Ð¸Ñ‚Ð¾Ð³Ð¾ ${newTotal.toFixed(2)} â‚¬`,
+                } позиций, итого ${newTotal.toFixed(2)} €`,
             }
         );
 
@@ -453,7 +453,7 @@ function useAdminOrdersPageState() {
         const content = rows
             .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
             .join('\n');
-        const blob = new Blob(['ï»¿' + content], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -467,19 +467,19 @@ function useAdminOrdersPageState() {
     const exportOrdersCSV = () => {
         const header = [
             'ID',
-            'Ð”Ð°Ñ‚Ð°',
-            'Ð˜Ð¼Ñ',
-            'Ð¤Ð°Ð¼Ð¸Ð»Ð¸Ñ',
+            'Дата',
+            'Имя',
+            'Фамилия',
             'Email',
-            'Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½',
-            'Ð¡Ñ‚Ð°Ñ‚ÑƒÑ',
-            'ÐžÐ¿Ð»Ð°Ñ‚Ð°',
-            'Ð”Ð¾ÑÑ‚Ð°Ð²ÐºÐ°',
-            'ÐÐ´Ñ€ÐµÑ',
-            'Ð“Ð¾Ñ€Ð¾Ð´',
-            'Ð˜Ð½Ð´ÐµÐºÑ',
-            'Ð¢Ð¾Ð²Ð°Ñ€Ñ‹',
-            'Ð¡ÑƒÐ¼Ð¼Ð°',
+            'Телефон',
+            'Статус',
+            'Оплата',
+            'Доставка',
+            'Адрес',
+            'Город',
+            'Индекс',
+            'Товары',
+            'Сумма',
         ];
         const rows = filtered.map((o) => {
             const status = getOrderStatus(o.id);
@@ -496,7 +496,7 @@ function useAdminOrdersPageState() {
                 o.address,
                 o.city,
                 o.postalCode ?? '',
-                o.items.map((i) => `${i.title} Ã—${i.quantity}`).join('; '),
+                o.items.map((i) => `${i.title} ×${i.quantity}`).join('; '),
                 o.total.toFixed(2),
             ];
         });
@@ -506,13 +506,13 @@ function useAdminOrdersPageState() {
     const exportCustomersCSV = () => {
         const seen = new Set<string>();
         const header = [
-            'Ð˜Ð¼Ñ',
-            'Ð¤Ð°Ð¼Ð¸Ð»Ð¸Ñ',
+            'Имя',
+            'Фамилия',
             'Email',
-            'Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½',
-            'Ð“Ð¾Ñ€Ð¾Ð´',
-            'Ð—Ð°ÐºÐ°Ð·Ð¾Ð²',
-            'Ð¡ÑƒÐ¼Ð¼Ð° (â‚¬)',
+            'Телефон',
+            'Город',
+            'Заказов',
+            'Сумма (€)',
         ];
         const rows: string[][] = [];
         filtered.forEach((o) => {

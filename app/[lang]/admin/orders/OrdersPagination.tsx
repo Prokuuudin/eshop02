@@ -19,7 +19,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
             {totalPages > 1 && (
                 <div className="flex items-center justify-between gap-4 pt-2">
                     <span className="text-sm text-muted-foreground">
-                        {page + 1} / {totalPages} Â· {filtered.length} Ð·Ð°ÐºÐ°Ð·Ð¾Ð²
+                        {page + 1} / {totalPages} · {filtered.length} заказов
                     </span>
                     <div className="flex items-center gap-1">
                         <Button
@@ -28,7 +28,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
                             onClick={() => setPage(0)}
                             disabled={page === 0}
                         >
-                            Â«
+                            «
                         </Button>
                         <Button
                             variant="outline"
@@ -36,7 +36,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
                             onClick={() => setPage((p) => Math.max(0, p - 1))}
                             disabled={page === 0}
                         >
-                            â€¹
+                            ‹
                         </Button>
                         {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                             const offset = Math.max(0, Math.min(page - 3, totalPages - 7));
@@ -62,7 +62,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
                             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                             disabled={page >= totalPages - 1}
                         >
-                            â€º
+                            ›
                         </Button>
                         <Button
                             variant="outline"
@@ -70,7 +70,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
                             onClick={() => setPage(totalPages - 1)}
                             disabled={page >= totalPages - 1}
                         >
-                            Â»
+                            »
                         </Button>
                     </div>
                 </div>

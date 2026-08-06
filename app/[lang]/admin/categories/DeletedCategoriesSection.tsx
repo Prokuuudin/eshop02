@@ -26,7 +26,7 @@ export default function DeletedCategoriesSection({
                 <h2 className="text-lg font-semibold text-foreground">
                     {tl(
                         'admin.categories.trashTitle',
-                        'ÐšÐ¾Ñ€Ð·Ð¸Ð½Ð° ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¹',
+                        'Корзина категорий',
                         'Categories trash',
                         'Kategoriju grozs'
                     )}{' '}
@@ -37,7 +37,7 @@ export default function DeletedCategoriesSection({
                     <p className="mt-2 text-sm text-muted-foreground">
                         {tl(
                             'admin.categories.trashEmpty',
-                            'ÐšÐ¾Ñ€Ð·Ð¸Ð½Ð° Ð¿ÑƒÑÑ‚Ð°',
+                            'Корзина пуста',
                             'Trash is empty',
                             'Grozs ir tukss'
                         )}
@@ -58,7 +58,7 @@ export default function DeletedCategoriesSection({
                                 <span className="text-xs text-muted-foreground">
                                     {tl(
                                         'admin.categories.subcategoriesCount',
-                                        'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚Ð¾Ð²',
+                                        'Подпунктов',
                                         'Subcategories',
                                         'Apakskategorijas'
                                     )}
@@ -73,7 +73,7 @@ export default function DeletedCategoriesSection({
                                     >
                                         {tl(
                                             'admin.categories.restoreButton',
-                                            'Ð’Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ',
+                                            'Восстановить',
                                             'Restore',
                                             'Atjaunot'
                                         )}
@@ -88,7 +88,7 @@ export default function DeletedCategoriesSection({
                                     >
                                         {tl(
                                             'admin.categories.deleteForeverButton',
-                                            'Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ Ð½Ð°Ð²ÑÐµÐ³Ð´Ð°',
+                                            'Удалить навсегда',
                                             'Delete forever',
                                             'Dzest neatgriezeniski'
                                         )}

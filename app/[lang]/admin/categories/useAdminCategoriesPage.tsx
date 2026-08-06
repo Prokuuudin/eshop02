@@ -94,7 +94,7 @@ function useAdminCategoriesPageState() {
         sanitizeSlug(newCategory.id) ||
         tl(
             'admin.categories.newCategoryFallback',
-            'ÐÐ¾Ð²Ð°Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ',
+            'Новая категория',
             'New category',
             'Jauna kategorija'
         );
@@ -114,7 +114,7 @@ function useAdminCategoriesPageState() {
                 setError(
                     tl(
                         'admin.categories.msg.loadFailed',
-                        'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸',
+                        'Не удалось загрузить категории',
                         'Failed to load categories',
                         'Neizdevas ieladet kategorijas'
                     )
@@ -157,7 +157,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.saveFailed',
-                    'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ ÑÐ¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ',
+                    'Не удалось сохранить изменения',
                     'Failed to save changes',
                     'Neizdevas saglabat izmainas'
                 )
@@ -216,7 +216,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.idRequired',
-                    'Ð£ÐºÐ°Ð¶Ð¸Ñ‚Ðµ ID ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸',
+                    'Укажите ID категории',
                     'Provide category ID',
                     'Noradiet kategorijas ID'
                 )
@@ -228,7 +228,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.idExists',
-                    'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ ID ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚',
+                    'Категория с таким ID уже существует',
                     'Category with this ID already exists',
                     'Kategorija ar so ID jau pastav'
                 )
@@ -269,7 +269,7 @@ function useAdminCategoriesPageState() {
             deletedCategories,
             tl(
                 'admin.categories.msg.created',
-                'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ ÑÐ¾Ð·Ð´Ð°Ð½Ð°',
+                'Категория создана',
                 'Category created',
                 'Kategorija izveidota'
             )
@@ -285,7 +285,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.subSlugRequired',
-                    'Ð£ÐºÐ°Ð¶Ð¸Ñ‚Ðµ slug Ð¿Ð¾Ð´Ð¿ÑƒÐ½ÐºÑ‚Ð°',
+                    'Укажите slug подпункта',
                     'Provide subcategory slug',
                     'Noradiet apakskategorijas slug'
                 )
@@ -300,7 +300,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.subSlugExists',
-                    'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ slug ÑƒÐ¶Ðµ ÐµÑÑ‚ÑŒ',
+                    'Подпункт с таким slug уже есть',
                     'Subcategory slug already exists',
                     'Apakskategorijas slug jau pastav'
                 )
@@ -334,7 +334,7 @@ function useAdminCategoriesPageState() {
             deletedCategories,
             tl(
                 'admin.categories.msg.subAdded',
-                'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½',
+                'Подпункт добавлен',
                 'Subcategory added',
                 'Apakskategorija pievienota'
             )
@@ -361,7 +361,7 @@ function useAdminCategoriesPageState() {
             deletedCategories,
             tl(
                 'admin.categories.msg.subRemoved',
-                'ÐŸÐ¾Ð´Ð¿ÑƒÐ½ÐºÑ‚ ÑƒÐ´Ð°Ð»ÐµÐ½',
+                'Подпункт удален',
                 'Subcategory removed',
                 'Apakskategorija dzesta'
             )
@@ -374,7 +374,7 @@ function useAdminCategoriesPageState() {
             deletedCategories,
             tl(
                 'admin.categories.msg.saved',
-                'Ð˜Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ñ‹',
+                'Изменения категории сохранены',
                 'Category changes saved',
                 'Kategorijas izmainas saglabatas'
             )
@@ -387,7 +387,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.savedVersionMissing',
-                    'ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð½Ð°Ð¹Ñ‚Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð½ÑƒÑŽ Ð²ÐµÑ€ÑÐ¸ÑŽ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¸',
+                    'Не удалось найти сохраненную версию категории',
                     'Saved category version not found',
                     'Saglabata kategorijas versija nav atrasta'
                 )
@@ -408,7 +408,7 @@ function useAdminCategoriesPageState() {
         setMessage(
             tl(
                 'admin.categories.msg.cardReset',
-                'Ð˜Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ ÐºÐ°Ñ€Ñ‚Ð¾Ñ‡ÐºÐ¸ ÑÐ±Ñ€Ð¾ÑˆÐµÐ½Ñ‹',
+                'Изменения карточки сброшены',
                 'Card changes were reset',
                 'Kartites izmainas atiestatitas'
             )
@@ -421,7 +421,7 @@ function useAdminCategoriesPageState() {
 
         const decision = await confirmAction({ title: tl(
                 'admin.categories.confirm.moveToTrash',
-                'ÐŸÐµÑ€ÐµÐ¼ÐµÑÑ‚Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð² ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ?',
+                'Переместить категорию {id} в корзину?',
                 'Move category {id} to trash?',
                 'Parvietot kategoriju {id} uz grozu?',
                 { id: categoryId }
@@ -439,7 +439,7 @@ function useAdminCategoriesPageState() {
             nextDeletedCategories,
             tl(
                 'admin.categories.msg.movedToTrash',
-                'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð° Ð² ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ',
+                'Категория перемещена в корзину',
                 'Category moved to trash',
                 'Kategorija parvietota uz grozu'
             )
@@ -454,7 +454,7 @@ function useAdminCategoriesPageState() {
             setError(
                 tl(
                     'admin.categories.msg.idExistsActive',
-                    'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ñ Ñ‚Ð°ÐºÐ¸Ð¼ ID ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚ ÑÑ€ÐµÐ´Ð¸ Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ñ…',
+                    'Категория с таким ID уже существует среди активных',
                     'Category with this ID already exists among active items',
                     'Kategorija ar so ID jau ir aktivajas'
                 )
@@ -470,7 +470,7 @@ function useAdminCategoriesPageState() {
             nextDeletedCategories,
             tl(
                 'admin.categories.msg.restored',
-                'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½Ð°',
+                'Категория восстановлена',
                 'Category restored',
                 'Kategorija atjaunota'
             )
@@ -480,7 +480,7 @@ function useAdminCategoriesPageState() {
     const handleDeleteCategoryForever = async (categoryId: string) => {
         const decision = await confirmAction({ title: tl(
                 'admin.categories.confirm.deleteForever',
-                'Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸ÑŽ {id} Ð¸Ð· ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñ‹ Ð½Ð°Ð²ÑÐµÐ³Ð´Ð°?',
+                'Удалить категорию {id} из корзины навсегда?',
                 'Delete category {id} from trash permanently?',
                 'Neatgriezeniski dzest kategoriju {id} no groza?',
                 { id: categoryId }
@@ -493,7 +493,7 @@ function useAdminCategoriesPageState() {
             nextDeletedCategories,
             tl(
                 'admin.categories.msg.deletedFromTrash',
-                'ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ñ ÑƒÐ´Ð°Ð»ÐµÐ½Ð° Ð¸Ð· ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñ‹',
+                'Категория удалена из корзины',
                 'Category removed from trash',
                 'Kategorija dzesta no groza'
             )

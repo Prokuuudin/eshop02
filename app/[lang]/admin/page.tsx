@@ -222,23 +222,16 @@ export default function AdminPage(): React.ReactElement {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {sortedCards.map((card) => {
             const isOver = dragOverId === card.id
-            return (
-              <div
-                key={card.id}
-                draggable={editMode}
-                onDragStart={() => handleDragStart(card.id)}
-                onDragOver={(e) => editMode && handleDragOver(e, card.id)}
-                onDrop={(e) => editMode && handleDrop(e, card.id)}
-                onDragEnd={handleDragEnd}
-                className={[
-                  'group flex flex-col rounded-xl border border-border border-l-4 p-5 shadow-sm transition-all',
-                  card.bg, card.border,
-                  editMode
-                    ? 'cursor-grab active:cursor-grabbing select-none'
-                    : 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600',
-                  isOver ? 'ring-2 ring-primary ring-offset-1 scale-[1.02]' : '',
-                ].join(' ')}
-              >
+            const cardClassName = [
+              'group flex flex-col rounded-xl border border-border border-l-4 p-5 shadow-sm transition-all',
+              card.bg, card.border,
+              editMode
+                ? 'cursor-grab active:cursor-grabbing select-none'
+                : 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600',
+              isOver ? 'ring-2 ring-primary ring-offset-1 scale-[1.02]' : '',
+            ].join(' ')
+            const cardContent = (
+              <>
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="text-base font-semibold text-foreground">{card.title}</p>
                   {editMode && (
@@ -247,13 +240,33 @@ export default function AdminPage(): React.ReactElement {
                 </div>
                 <p className="text-sm text-muted-foreground mb-4 leading-snug">{card.description}</p>
                 {!editMode && (
-                  <Link href={card.href} className="mt-auto">
-                    <span className="text-sm font-medium text-primary group-hover:underline">
-                      {card.linkText} →
-                    </span>
-                  </Link>
+                  <span className="mt-auto text-sm font-medium text-primary group-hover:underline">
+                    {card.linkText} →
+                  </span>
                 )}
-              </div>
+              </>
+            )
+
+            if (editMode) {
+              return (
+                <div
+                  key={card.id}
+                  draggable
+                  onDragStart={() => handleDragStart(card.id)}
+                  onDragOver={(e) => handleDragOver(e, card.id)}
+                  onDrop={(e) => handleDrop(e, card.id)}
+                  onDragEnd={handleDragEnd}
+                  className={cardClassName}
+                >
+                  {cardContent}
+                </div>
+              )
+            }
+
+            return (
+              <Link key={card.id} href={card.href} className={cardClassName}>
+                {cardContent}
+              </Link>
             )
           })}
         </div>

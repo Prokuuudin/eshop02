@@ -76,16 +76,34 @@ export const useAdminStore = create<AdminStore>()(
 
       loadOrderMeta: async (orderIds: string[]) => {
         if (!orderIds.length) return
-        try {
-          const ids = orderIds.slice(0, 200).join(',')
-          const res = await fetch(`/api/admin/order-meta?ids=${ids}`)
-          if (!res.ok) return
-          const { statuses, notes } = await res.json()
-          set((state) => ({
-            orderStatuses: { ...state.orderStatuses, ...statuses },
-            orderNotes: { ...state.orderNotes, ...notes },
-          }))
-        } catch { /* ignore */ }
+        const BATCH_SIZE = 200
+        const batches: string[][] = []
+        for (let i = 0; i < orderIds.length; i += BATCH_SIZE) {
+          batches.push(orderIds.slice(i, i + BATCH_SIZE))
+        }
+
+        const results = await Promise.all(
+          batches.map(async (batch) => {
+            try {
+              const res = await fetch(`/api/admin/order-meta?ids=${batch.join(',')}`)
+              if (!res.ok) return null
+              return (await res.json()) as { statuses: Record<string, string>; notes: Record<string, string> }
+            } catch {
+              return null
+            }
+          })
+        )
+
+        set((state) => {
+          const orderStatuses = { ...state.orderStatuses }
+          const orderNotes = { ...state.orderNotes }
+          for (const result of results) {
+            if (!result) continue
+            Object.assign(orderStatuses, result.statuses)
+            Object.assign(orderNotes, result.notes)
+          }
+          return { orderStatuses, orderNotes }
+        })
       },
 
       updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => {

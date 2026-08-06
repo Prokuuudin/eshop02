@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { sendEmail } from '@/lib/mailer'
 import { getSiteUrl } from '@/lib/site-url'
-import { isMarketingOptedOut, marketingUnsubUrl } from '@/lib/newsletter-store'
+import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
 
 export const runtime = 'nodejs'
 
@@ -65,9 +65,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     const failedEmails: string[] = []
     const baseUrl = getSiteUrl()
 
+    // Honour prior opt-outs — never mail an address that unsubscribed (GDPR Art. 7(3)).
+    const optedOut = await getMarketingOptedOutSet(recipients.map((r) => r.email))
+
     for (const recipient of recipients) {
-      // Honour prior opt-outs — never mail an address that unsubscribed (GDPR Art. 7(3)).
-      if (await isMarketingOptedOut(recipient.email)) {
+      if (optedOut.has(recipient.email.toLowerCase())) {
         skipped++
         continue
       }

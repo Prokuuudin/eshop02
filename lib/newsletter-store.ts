@@ -36,6 +36,17 @@ export async function isMarketingOptedOut(email: string): Promise<boolean> {
   return row !== null
 }
 
+/** Batched form of {@link isMarketingOptedOut} — one query for many emails instead of one per email. */
+export async function getMarketingOptedOutSet(emails: string[]): Promise<Set<string>> {
+  const lowered = emails.map((e) => e.toLowerCase())
+  const rows = await prisma.keyValueSetting.findMany({
+    where: { key: { in: lowered.map(optOutKeyFor) } },
+    select: { key: true },
+  })
+  const prefix = 'marketing:optout:'
+  return new Set(rows.map((r) => r.key.slice(prefix.length)))
+}
+
 // Forging this token only lets an attacker unsubscribe someone else (a fail-safe
 // direction — they stop receiving marketing), so a server-side HMAC over the email
 // is sufficient and needs no per-email storage. Production deliberately fails

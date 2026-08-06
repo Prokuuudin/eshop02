@@ -159,38 +159,41 @@ export default function UserMenu(): React.ReactElement {
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                             aria-label={t('userMenu.aria')}
                         >
-                            {user.avatarUrl ? (
-                                <Image
-                                    src={user.avatarUrl}
-                                    alt={user.name || 'avatar'}
-                                    width={28}
-                                    height={28}
-                                    className="rounded-full object-cover w-7 h-7 border border-border bg-white"
-                                />
-                            ) : (
-                                <svg
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-white dark:bg-gray-900">
+                                {user.avatarUrl ? (
+                                    <Image
+                                        src={user.avatarUrl}
+                                        alt={user.name || 'avatar'}
+                                        width={28}
+                                        height={28}
+                                        unoptimized
+                                        className="block h-7 w-7 object-cover"
                                     />
-                                    <path
-                                        d="M4 20c0-4 4-7 8-7s8 3 8 7"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            )}
+                                ) : (
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"
+                                            stroke="currentColor"
+                                            strokeWidth="1.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        <path
+                                            d="M4 20c0-4 4-7 8-7s8 3 8 7"
+                                            stroke="currentColor"
+                                            strokeWidth="1.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                )}
+                            </span>
                             <span className="text-sm font-medium hidden sm:inline text-foreground">
                                 {user.name || user.email.split('@')[0]}
                             </span>

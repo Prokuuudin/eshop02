@@ -406,12 +406,21 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Link
-                            href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
-                            className="text-xs text-primary hover:underline whitespace-nowrap"
-                          >
-                            Профиль →
-                          </Link>
+                          <div className="flex items-center justify-end gap-3 whitespace-nowrap">
+                            <a
+                              href={`/api/admin/customers/export?email=${encodeURIComponent(c.email)}`}
+                              download
+                              className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                            >
+                              PDF
+                            </a>
+                            <Link
+                              href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Профиль →
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -21,25 +21,57 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
 
-    // Email changes are NOT allowed here: there is no verification flow, and order access is
-    // authorized by email match (app/api/orders/[id]/route.ts). Letting a user freely set their
-    // email to a victim's order email would be an IDOR. Reject any actual change.
-    if (newEmail !== undefined && newEmail !== user.email) {
-      return NextResponse.json({ error: 'email_change_not_supported' }, { status: 400 })
+    if (newEmail !== undefined && newEmail !== user.email.toLowerCase()) {
+      const emailOwner = await prisma.user.findFirst({
+        where: {
+          email: { equals: newEmail, mode: 'insensitive' },
+          NOT: { id: user.id },
+        },
+        select: { id: true },
+      })
+      if (emailOwner) {
+        return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+      }
+
+      // SavedAddress has no userId — it's keyed by email alone. Without this check, self-service
+      // email change is an IDOR: set your email to someone else's, then GET /api/user/addresses
+      // returns their saved name/phone/address. Guest orders (order.userId === null) have the
+      // same email-only exposure via canAccessOrder's legacy fallback and are NOT covered here —
+      // that gap is still open.
+      const conflictingAddress = await prisma.savedAddress.findFirst({
+        where: { email: { equals: newEmail, mode: 'insensitive' } },
+        select: { id: true },
+      })
+      if (conflictingAddress) {
+        return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+      }
     }
 
-    // Only safe personal fields — never email, platformRole, companyId, approvalRequired etc.
+    // Only profile fields — never platformRole, companyId, approvalRequired etc.
     // cardNumber is deliberately NOT accepted here: it is a login identifier assigned at
     // registration (checked for uniqueness in auth/register-card). Letting a client set an
     // arbitrary card here would collide with a real customer's card / corrupt data.
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
+        email: newEmail,
         name: body.name !== undefined ? (body.name ?? null) : undefined,
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
       },
     })
+
+    // These are denormalized convenience fields, not the account identity. A stale legacy
+    // record must not roll back an otherwise valid profile update.
+    if (newEmail !== undefined && newEmail !== user.email) {
+      try {
+        await prisma.companyMember.updateMany({ where: { userId: user.id }, data: { email: newEmail } })
+        await prisma.savedAddress.updateMany({ where: { email: user.email }, data: { email: newEmail } })
+        await prisma.productSubscription.updateMany({ where: { userId: user.id }, data: { userEmail: newEmail } })
+      } catch (relatedUpdateError) {
+        console.error('[user/profile PATCH] related email sync failed', relatedUpdateError)
+      }
+    }
 
     return NextResponse.json({
       user: {
@@ -52,8 +84,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       },
     })
   } catch (e: unknown) {
-    const databaseError = e as { code?: string; meta?: { target?: string[] | string } }
-    if (databaseError.code === 'P2002' && databaseError.meta?.target?.includes('email')) {
+    const databaseError = e as { code?: string }
+    if (databaseError.code === 'P2002') {
       return NextResponse.json({ error: 'email_taken' }, { status: 409 })
     }
     console.error('[user/profile PATCH]', e)

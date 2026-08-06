@@ -361,6 +361,12 @@ const enAccount: Record<string, string> = {
   'account.topProducts.titleWithIcon': '🔥 Popular products',
   'account.topProducts.noData': 'No purchase data available',
   'account.topProducts.shownOfTotal': '{shown} of {total} products',
+  'account.errors.name': 'Name is required',
+  'account.errors.email': 'Email is required',
+  'account.errors.emailInvalid': 'Enter a valid email address',
+  'account.errors.emailTaken': 'This email is already in use',
+  'account.errors.sessionExpired': 'Your session has expired. Sign in again',
+  'account.errors.saveFailed': 'Could not save the profile. Please try again',
 }
 
 export default enAccount

@@ -21,7 +21,11 @@ export const useViewedProducts = create<ViewedProductsStore>()(
         })
       },
       getRecentViews: (limit = 6) => {
-        return get().products.slice(0, limit)
+        // Persisted entries may come from an older product shape or from a catalog
+        // response where role-based pricing is intentionally omitted.
+        return get().products
+          .filter((product) => product && typeof product.id === 'string' && typeof product.title === 'string')
+          .slice(0, limit)
       }
     }),
     {

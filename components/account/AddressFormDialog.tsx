@@ -48,15 +48,17 @@ function Field({
   className?: string
 }) {
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={`space-y-1.5 ${className}`}>
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={error ? 'border-red-400 focus-visible:ring-red-400' : ''}
+        className={error
+          ? 'border-red-400 focus-visible:border-red-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(248,113,113,0.10)]'
+          : 'focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]'}
       />
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs leading-4 text-red-500 dark:text-red-400">{error}</p>}
     </div>
   )
 }

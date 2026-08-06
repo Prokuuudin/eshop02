@@ -361,6 +361,12 @@ const lvAccount: Record<string, string> = {
   'account.topProducts.titleWithIcon': '🔥 Popularakie produkti',
   'account.topProducts.noData': 'Nav pirkumu datu',
   'account.topProducts.shownOfTotal': '{shown} no {total} produktiem',
+  'account.errors.name': 'Norādiet vārdu',
+  'account.errors.email': 'Norādiet e-pastu',
+  'account.errors.emailInvalid': 'Norādiet derīgu e-pasta adresi',
+  'account.errors.emailTaken': 'Šis e-pasts jau tiek izmantots',
+  'account.errors.sessionExpired': 'Sesija ir beigusies. Piesakieties vēlreiz',
+  'account.errors.saveFailed': 'Neizdevās saglabāt profilu. Mēģiniet vēlreiz',
 }
 
 export default lvAccount

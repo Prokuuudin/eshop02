@@ -27,6 +27,29 @@
     outline-offset: 2px;
 }
 
+/* Account forms use the border state itself as focus/error feedback. */
+.account-profile input:focus,
+.account-password input:focus,
+.account-password-fields input:focus,
+.address-form-dialog input:focus,
+.template-card input:focus {
+    outline: none !important;
+    border-color: rgba(59, 130, 246, 0.55) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10) !important;
+}
+
+.account-profile .phone-input .PhoneInputCountry:focus-within {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+}
+
+.account-profile .phone-input input:focus-visible {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+}
+
 .phone-input .PhoneInputCountrySelect {
     position: absolute;
     inset: 0;
@@ -567,4 +590,35 @@ body[data-scroll-locked][data-scroll-locked] {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* Unified, calm focus treatment for form fields across the application. */
+:where(
+  input:not([type]),
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  textarea,
+  select,
+  [role="combobox"]
+):focus {
+  outline: none !important;
+  border-color: rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10) !important;
+}
+
+:where(input, textarea, select, [role="combobox"])[aria-invalid="true"]:focus,
+.border-red-400:focus,
+.border-red-500:focus {
+  border-color: rgba(248, 113, 113, 0.75) !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.10) !important;
 }

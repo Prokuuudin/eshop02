@@ -104,7 +104,7 @@ function TemplateCard({
                                         if (e.key === 'Enter') saveEdit();
                                         if (e.key === 'Escape') cancelEdit();
                                     }}
-                                    className="h-8 text-sm"
+                                    className="h-8 text-sm focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                                     maxLength={60}
                                 />
                                 <Tooltip>

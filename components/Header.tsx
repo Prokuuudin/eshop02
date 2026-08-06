@@ -25,7 +25,12 @@ export default function Header(): React.ReactElement {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
+    // Separate enter/exit thresholds prevent the sticky header from oscillating when its
+    // own height change moves scrollY back and forth around a single boundary.
+    const handleScroll = () => {
+      const y = window.scrollY;
+      setScrolled((current) => current ? y > 4 : y > 24);
+    };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -37,7 +42,7 @@ export default function Header(): React.ReactElement {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`mx-auto flex w-full max-w-[1200px] items-center gap-1 px-2 transition-all duration-300 sm:px-4 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`mx-auto flex w-full max-w-[1200px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex items-center flex-shrink-0 min-w-[100px]">
             <HeaderLogo />
@@ -69,7 +74,7 @@ export default function Header(): React.ReactElement {
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="w-full border-y border-border bg-gray-200 dark:bg-gray-800">
-              <div className={`mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-2 transition-all duration-300 sm:px-4 ${scrolled ? 'py-1' : 'py-2'}`}>
+              <div className={`mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-2 transition-[padding] duration-300 sm:px-4 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
                   <HeaderSearch />
                 </div>

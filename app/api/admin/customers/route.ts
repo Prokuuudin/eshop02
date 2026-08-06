@@ -61,6 +61,28 @@ export async function GET(): Promise<Response> {
     }
   }
 
+  // A historical order may contain legacy text decoded with the wrong charset. The current
+  // account profile is authoritative for the customer's display name; order data is only a
+  // fallback for guest customers without an account.
+  const customerEmails = Array.from(map.keys())
+  if (customerEmails.length) {
+    const customersByNormalizedEmail = new Map(
+      Array.from(map.entries()).map(([storedEmail, customer]) => [storedEmail.toLowerCase(), customer]),
+    )
+    const registeredUsers = await prisma.user.findMany({
+      where: { email: { in: customerEmails, mode: 'insensitive' } },
+      select: { email: true, name: true },
+    })
+    for (const registeredUser of registeredUsers) {
+      const customer = customersByNormalizedEmail.get(registeredUser.email.toLowerCase())
+      const fullName = registeredUser.name?.trim()
+      if (!customer || !fullName) continue
+      const [firstName, ...lastNameParts] = fullName.split(/\s+/)
+      customer.firstName = firstName
+      customer.lastName = lastNameParts.join(' ')
+    }
+  }
+
   const customers = Array.from(map.values())
 
   return NextResponse.json({ customers, total: customers.length })

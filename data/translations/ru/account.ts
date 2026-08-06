@@ -360,6 +360,12 @@ const ruAccount: Record<string, string> = {
   'account.topProducts.titleWithIcon': '🔥 Популярные товары',
   'account.topProducts.noData': 'Нет данных о покупках',
   'account.topProducts.shownOfTotal': '{shown} из {total} товаров',
+  'account.errors.name': 'Укажите имя',
+  'account.errors.email': 'Укажите email',
+  'account.errors.emailInvalid': 'Укажите корректный email',
+  'account.errors.emailTaken': 'Этот email уже используется',
+  'account.errors.sessionExpired': 'Сессия истекла. Войдите в аккаунт заново',
+  'account.errors.saveFailed': 'Не удалось сохранить профиль. Попробуйте ещё раз',
 }
 
 export default ruAccount

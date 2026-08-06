@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -66,6 +66,18 @@ export default function CustomerProfilePage(): React.ReactElement {
   const { returns } = useReturnsStore()
 
   const [tab, setTab] = useState<'orders' | 'returns' | 'products'>('orders')
+  const [accountName, setAccountName] = useState<{ firstName: string; lastName: string } | null>(null)
+
+  useEffect(() => {
+    if (!email) return
+    fetch('/api/admin/customers')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
+      .then((data: { customers?: Array<{ email: string; firstName: string; lastName: string }> }) => {
+        const customer = data.customers?.find((item) => item.email.toLowerCase() === email.toLowerCase())
+        if (customer) setAccountName({ firstName: customer.firstName, lastName: customer.lastName })
+      })
+      .catch(() => {})
+  }, [email])
 
   // ── Customer orders ───────────────────────────────────────────────────────
 
@@ -89,11 +101,11 @@ export default function CustomerProfilePage(): React.ReactElement {
     const aov = totalOrders > 0 ? totalSpent / totalOrders : 0
     const lastOrderDate = customerOrders[0] ? new Date(customerOrders[0].createdAt) : null
     const segment = getSegment(totalOrders, totalSpent, lastOrderDate)
-    const firstName = customerOrders[0]?.firstName ?? ''
-    const lastName = customerOrders[0]?.lastName ?? ''
+    const firstName = accountName?.firstName ?? customerOrders[0]?.firstName ?? ''
+    const lastName = accountName?.lastName ?? customerOrders[0]?.lastName ?? ''
     const phone = customerOrders[0]?.phone ?? ''
     return { totalOrders, totalSpent, aov, lastOrderDate, segment, firstName, lastName, phone }
-  }, [customerOrders])
+  }, [accountName, customerOrders])
 
   // ── Top products ──────────────────────────────────────────────────────────
 
@@ -155,6 +167,11 @@ export default function CustomerProfilePage(): React.ReactElement {
           </div>
 
           <div className="flex gap-2">
+            <a href={`/api/admin/customers/export?email=${encodeURIComponent(email)}`} download>
+              <button type="button" className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-50 hover:text-foreground dark:hover:bg-gray-800 transition-colors">
+                Отчёт о данных клиента (PDF)
+              </button>
+            </a>
             <a href={`mailto:${email}`}>
               <button type="button" className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 Написать письмо

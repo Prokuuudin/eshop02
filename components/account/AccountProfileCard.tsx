@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import type { User } from '@/lib/auth';
+import { AvatarCropDialog } from '@/components/account/AvatarCropDialog';
 
 const isInternalEmail = (email: string) => email.endsWith('@client.local');
 
@@ -42,9 +43,11 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     tl,
 }) => {
     const nameRef = useRef<HTMLInputElement>(null);
+    const emailRef = useRef<HTMLInputElement>(null);
     const phoneWrapperRef = useRef<HTMLDivElement>(null);
     const companyRef = useRef<HTMLInputElement>(null);
     const didFocusRef = useRef(false);
+    const [avatarSource, setAvatarSource] = React.useState<string | null>(null);
 
     useLayoutEffect(() => {
         if (!isEditing) {
@@ -54,9 +57,9 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         if (didFocusRef.current || !profileDraft) return;
         didFocusRef.current = true;
 
-        // Email is read-only, so it is not a focus target.
         const candidates: Array<{ empty: boolean; focus: () => void }> = [
             { empty: !profileDraft.name?.trim(),        focus: () => nameRef.current?.focus() },
+            { empty: !profileDraft.email?.trim(),       focus: () => emailRef.current?.focus() },
             { empty: !profileDraft.phone?.trim(),       focus: () => phoneWrapperRef.current?.querySelector<HTMLInputElement>('input')?.focus() },
             { empty: !profileDraft.companyName?.trim(), focus: () => companyRef.current?.focus() },
         ];
@@ -102,37 +105,10 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const img = new window.Image();
                                     const reader = new FileReader();
-                                    reader.onload = (ev) => {
-                                        img.onload = () => {
-                                            // Создаем canvas для ресайза
-                                            const canvas = document.createElement('canvas');
-                                            const maxSize = 200;
-                                            let w = img.width;
-                                            let h = img.height;
-                                            if (w > h) {
-                                                if (w > maxSize) {
-                                                    h = Math.round(h * (maxSize / w));
-                                                    w = maxSize;
-                                                }
-                                            } else {
-                                                if (h > maxSize) {
-                                                    w = Math.round(w * (maxSize / h));
-                                                    h = maxSize;
-                                                }
-                                            }
-                                            canvas.width = w;
-                                            canvas.height = h;
-                                            const ctx = canvas.getContext('2d');
-                                            ctx?.drawImage(img, 0, 0, w, h);
-                                            // JPEG, качество 0.7
-                                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                                            onChange('avatarUrl', dataUrl);
-                                        };
-                                        img.src = ev.target?.result as string;
-                                    };
+                                    reader.onload = (ev) => setAvatarSource(ev.target?.result as string);
                                     reader.readAsDataURL(file);
+                                    e.target.value = '';
                                 }}
                             />
                         </label>
@@ -191,7 +167,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             <Input
                                 id="profile-name"
                                 ref={nameRef}
-                                className={`account-profile__input ${
+                                className={`account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${
                                     profileErrors.name
                                         ? 'account-profile__input--error border-red-500'
                                         : ''
@@ -200,7 +176,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 onChange={(e) => onChange('name', e.target.value)}
                             />
                             {profileErrors.name && (
-                                <p className="account-profile__error text-red-600 text-xs">
+                                <p className="account-profile__error mt-1.5 text-xs leading-4 text-red-600 dark:text-red-400">
                                     {profileErrors.name}
                                 </p>
                             )}
@@ -211,12 +187,16 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             </label>
                             <Input
                                 id="profile-email"
-                                className="account-profile__input bg-muted text-muted-foreground cursor-not-allowed"
-                                value={isInternalEmail(user.email) ? t('account.emailNotSet', 'Email не указан') : user.email}
-                                readOnly
-                                disabled
-                                title={t('account.emailReadonlyHint', 'Email нельзя изменить здесь — обратитесь в поддержку')}
+                                ref={emailRef}
+                                type="email"
+                                autoComplete="email"
+                                className={`account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${profileErrors.email ? 'account-profile__input--error border-red-500' : ''}`}
+                                value={activeDraft.email}
+                                onChange={(e) => onChange('email', e.target.value)}
                             />
+                            {profileErrors.email && (
+                                <p className="account-profile__error mt-1.5 text-xs leading-4 text-red-600 dark:text-red-400">{profileErrors.email}</p>
+                            )}
                         </div>
                         <div className="account-profile__field">
                             <label className="account-profile__label block text-xs text-muted-foreground mb-1">
@@ -224,13 +204,13 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             </label>
                             <div ref={phoneWrapperRef}>
                             <PhoneInput
-                                className={profileErrors.phone ? 'account-profile__input--error' : ''}
+                                className={`focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${profileErrors.phone ? 'account-profile__input--error' : ''}`}
                                 value={activeDraft.phone}
                                 onChange={(val) => onChange('phone', val)}
                             />
                             </div>
                             {profileErrors.phone && (
-                                <p className="account-profile__error text-red-600 text-xs">
+                                <p className="account-profile__error mt-1.5 text-xs leading-4 text-red-600 dark:text-red-400">
                                     {profileErrors.phone}
                                 </p>
                             )}
@@ -242,7 +222,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             <Input
                                 id="profile-company"
                                 ref={companyRef}
-                                className="account-profile__input"
+                                className="account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                                 value={activeDraft.companyName}
                                 onChange={(e) => onChange('companyName', e.target.value)}
                             />
@@ -258,6 +238,18 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                     </div>
                 </form>
             )}
+            <AvatarCropDialog
+                source={avatarSource}
+                onCancel={() => setAvatarSource(null)}
+                onApply={(dataUrl) => { onChange('avatarUrl', dataUrl); setAvatarSource(null); }}
+                labels={{
+                    title: tl('account.avatarEditor.title', 'Настройка фото', 'Adjust photo', 'Pielāgot fotoattēlu'),
+                    zoom: tl('account.avatarEditor.zoom', 'Масштаб', 'Zoom', 'Mērogs'),
+                    reset: tl('account.avatarEditor.reset', 'Сбросить', 'Reset', 'Atiestatīt'),
+                    cancel: t('common.cancel'),
+                    apply: tl('account.avatarEditor.apply', 'Применить', 'Apply', 'Lietot'),
+                }}
+            />
         </div>
     );
 };

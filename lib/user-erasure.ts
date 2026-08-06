@@ -23,6 +23,10 @@ export type UserExport = {
   subscriptions: unknown[]
   stockNotifications: unknown[]
   returnRequests: unknown[]
+  wishlist: unknown[]
+  notifications: unknown[]
+  accessRequests: unknown[]
+  invitations: unknown[]
 }
 
 /** Assembles everything the platform holds about a data subject (Art. 15/20). */
@@ -41,14 +45,16 @@ export async function exportUserData(params: {
   })
   const orderIds = orders.map((o) => o.id)
 
-  const [profile, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices] =
+  const [profile, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices,
+    wishlist, notifications, accessRequests, invitations] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id },
         select: {
           id: true, email: true, name: true, phone: true, cardNumber: true, avatarUrl: true,
           platformRole: true, companyId: true, companyName: true, teamRole: true,
-          bonusPoints: true, createdAt: true,
+          bonusPoints: true, createdAt: true, marketingConsent: true,
+          marketingConsentAt: true, privacyNoticeVersion: true, privacyAcknowledgedAt: true,
         },
       }),
       prisma.savedAddress.findMany({ where: { email: emailLower } }),
@@ -56,6 +62,24 @@ export async function exportUserData(params: {
       prisma.stockNotification.findMany({ where: { OR: [{ userId: id }, { email: emailLower }] } }),
       prisma.returnRequest.findMany({ where: { email: emailLower } }),
       orderIds.length ? prisma.invoice.findMany({ where: { orderId: { in: orderIds } } }) : Promise.resolve([]),
+      prisma.wishlistItem.findMany({ where: { userId: id }, orderBy: { addedAt: 'desc' } }),
+      prisma.userNotification.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }),
+      prisma.accessRequest.findMany({
+        where: { email: emailLower },
+        select: {
+          id: true, email: true, name: true, phone: true, companyId: true, companyName: true,
+          cardNumber: true, status: true, requestedAt: true, reviewedAt: true,
+          approvedTeamRole: true, reviewNote: true, requestType: true, message: true, language: true,
+          privacyNoticeVersion: true, privacyAcknowledgedAt: true,
+          marketingConsent: true, marketingConsentAt: true,
+        },
+        orderBy: { requestedAt: 'desc' },
+      }),
+      prisma.invitationToken.findMany({
+        where: { userId: id },
+        select: { id: true, email: true, cardNumber: true, language: true, status: true, expiresAt: true, acceptedAt: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
     ])
 
   return {
@@ -71,6 +95,10 @@ export async function exportUserData(params: {
     subscriptions,
     stockNotifications,
     returnRequests,
+    wishlist,
+    notifications,
+    accessRequests,
+    invitations,
   }
 }
 

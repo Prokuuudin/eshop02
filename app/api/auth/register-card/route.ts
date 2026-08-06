@@ -140,7 +140,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
     }
 
-    const email = `card.${cardNumber.toLowerCase()}@client.local`
+    const contactEmail = company.contactEmail?.trim().toLowerCase()
+    const contactEmailOwner = contactEmail
+      ? await prisma.user.findFirst({
+          where: { email: { equals: contactEmail, mode: 'insensitive' } },
+          select: { id: true },
+        })
+      : null
+    const email = contactEmail && !contactEmailOwner
+      ? contactEmail
+      : `card.${cardNumber.toLowerCase()}@client.local`
     const passwordHash = await hashPassword(FIRST_LOGIN_PASSWORD)
     const userId = randomUUID()
 

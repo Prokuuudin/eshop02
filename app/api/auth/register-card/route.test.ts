@@ -197,7 +197,7 @@ describe('POST /api/auth/register-card', () => {
     expect(tx.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          email: 'card.1234@client.local',
+          email: 'office@example.com',
           companyId: 'company_1',
           companyName: 'SIA MIKS PLUS',
           teamRole: 'buyer',

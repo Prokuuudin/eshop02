@@ -104,7 +104,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
     };
 
     return (
-        <section className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
+        <section className="account-password rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
             <div className="flex items-center justify-between px-5 py-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
@@ -144,7 +144,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                         type={showCurrent ? 'text' : 'password'}
                                         value={current}
                                         onChange={(e) => setCurrent(e.target.value)}
-                                        className="pr-10"
+                                        className="pr-10 focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                                         autoComplete="current-password"
                                     />
                                     <button
@@ -167,7 +167,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                         type={showNext ? 'text' : 'password'}
                                         value={next}
                                         onChange={(e) => setNext(e.target.value)}
-                                        className="pr-10"
+                                        className="pr-10 focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                                         maxLength={128}
                                         autoComplete="new-password"
                                     />
@@ -192,11 +192,12 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                     onChange={(e) => setConfirm(e.target.value)}
                                     autoComplete="new-password"
                                     onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
+                                    className="focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                                 />
                             </div>
 
                             {error && (
-                                <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+                                <p className="my-2 rounded-md bg-red-50 px-3 py-2 text-xs leading-4 text-red-600 dark:bg-red-950/30 dark:text-red-400">{error}</p>
                             )}
 
                             <div className="flex gap-2 pt-1">

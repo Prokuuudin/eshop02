@@ -33,7 +33,7 @@ export default function ChangePasswordFields(): React.ReactElement {
     };
 
     return (
-        <div className="space-y-3">
+        <div className="account-password-fields space-y-3">
             <div>
                 <label htmlFor="forced-new-password" className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                     Новый пароль
@@ -45,7 +45,7 @@ export default function ChangePasswordFields(): React.ReactElement {
                         value={next}
                         onChange={(e) => setNext(e.target.value)}
                         placeholder="Не менее 8 символов"
-                        className="pr-10 bg-card"
+                        className="pr-10 bg-card focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                         autoComplete="new-password"
                     />
                     <button
@@ -70,7 +70,7 @@ export default function ChangePasswordFields(): React.ReactElement {
                         value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         placeholder="Повторите новый пароль"
-                        className="pr-10 bg-card"
+                        className="pr-10 bg-card focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
                         autoComplete="new-password"
                         onKeyDown={(e) => { if (e.key === 'Enter') void handleSave(); }}
                     />
@@ -86,7 +86,7 @@ export default function ChangePasswordFields(): React.ReactElement {
             </div>
 
             {error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                <p className="my-2 rounded-md bg-red-50 px-3 py-2 text-sm leading-5 text-red-600 dark:bg-red-950/30 dark:text-red-400">{error}</p>
             )}
 
             <Button

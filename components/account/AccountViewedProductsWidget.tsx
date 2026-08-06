@@ -47,7 +47,7 @@ export const AccountViewedProductsWidget: React.FC = () => {
                                     {product.title}
                                 </p>
                                 <p className="text-xs text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
-                                    {(product.price / 100).toFixed(2)} €
+                                    {product.price.toFixed(2)} €
                                 </p>
                             </div>
                             <ChevronRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-sky-500 transition-colors shrink-0" />

@@ -211,7 +211,7 @@ const enCommon: Record<string, string> = {
   'breadcrumb.clientBarcodes': 'Client cards',
   'breadcrumb.content': 'Content',
   'breadcrumb.media': 'Media library',
-  'breadcrumb.banners': 'Banners and blocks',
+  'breadcrumb.banners': 'Banners',
   'breadcrumb.config': 'Configuration',
   'breadcrumb.shipping': 'Delivery and payment',
   'breadcrumb.bonus': 'Bonus program',

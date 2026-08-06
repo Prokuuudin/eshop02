@@ -297,7 +297,7 @@ const lvAdmin: Record<string, string> = {
   'admin.sidebar.content': 'Saturs',
   'admin.sidebar.content.blog': 'Blogs',
   'admin.sidebar.content.pages': 'Vietnes lapas',
-  'admin.sidebar.content.banners': 'Baneri un bloki',
+  'admin.sidebar.content.banners': 'Baneri',
   'admin.sidebar.content.media': 'Mediju biblioteka',
   'admin.sidebar.config': 'Konfiguracija',
   'admin.sidebar.config.shipping': 'Piegade un apmaksa',

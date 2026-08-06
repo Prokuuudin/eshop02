@@ -308,7 +308,7 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.clientBarcodes': 'Карты клиентов',
   'breadcrumb.content': 'Контент',
   'breadcrumb.media': 'Медиа-библиотека',
-  'breadcrumb.banners': 'Баннеры и блоки',
+  'breadcrumb.banners': 'Баннеры',
   'breadcrumb.config': 'Конфигурация',
   'breadcrumb.shipping': 'Доставка и оплата',
   'breadcrumb.bonus': 'Бонусная программа',

@@ -212,7 +212,7 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.clientBarcodes': 'Klientu kartes',
   'breadcrumb.content': 'Saturs',
   'breadcrumb.media': 'Mediju bibliotēka',
-  'breadcrumb.banners': 'Baneri un bloki',
+  'breadcrumb.banners': 'Baneri',
   'breadcrumb.config': 'Konfigurācija',
   'breadcrumb.shipping': 'Piegāde un apmaksa',
   'breadcrumb.bonus': 'Bonusu programma',

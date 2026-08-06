@@ -297,7 +297,7 @@ const enAdmin: Record<string, string> = {
   'admin.sidebar.content': 'Content',
   'admin.sidebar.content.blog': 'Blog',
   'admin.sidebar.content.pages': 'Site pages',
-  'admin.sidebar.content.banners': 'Banners and blocks',
+  'admin.sidebar.content.banners': 'Banners',
   'admin.sidebar.content.media': 'Media library',
   'admin.sidebar.config': 'Configuration',
   'admin.sidebar.config.shipping': 'Delivery and payment',

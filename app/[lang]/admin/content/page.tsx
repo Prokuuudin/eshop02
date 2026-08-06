@@ -228,7 +228,7 @@ export default function AdminContentPage(): React.ReactElement {
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/admin/content/banners">
-                            <Button variant="outline">Баннеры и блоки</Button>
+                            <Button variant="outline">Баннеры</Button>
                         </Link>
                         <Link href="/admin">
                             <Button variant="outline">Назад в админку</Button>

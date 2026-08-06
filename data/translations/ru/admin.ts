@@ -293,7 +293,7 @@ const ruAdmin: Record<string, string> = {
   'admin.sidebar.content': 'Контент',
   'admin.sidebar.content.blog': 'Блог',
   'admin.sidebar.content.pages': 'Страницы сайта',
-  'admin.sidebar.content.banners': 'Баннеры и блоки',
+  'admin.sidebar.content.banners': 'Баннеры',
   'admin.sidebar.content.media': 'Медиа-библиотека',
   'admin.sidebar.config': 'Конфигурация',
   'admin.sidebar.config.shipping': 'Доставка и оплата',

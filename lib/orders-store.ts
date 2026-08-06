@@ -31,6 +31,8 @@ export interface Order {
   paymentProvider?: 'stripe' | 'manual'
   paymentSessionId?: string
   language?: string
+  /** Владелец заказа на момент оформления; см. /api/orders/my (userId OR email). */
+  userId?: string
 }
 
 type OrdersStore = {

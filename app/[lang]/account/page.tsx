@@ -75,7 +75,13 @@ export default function AccountPage(): React.ReactElement {
             })
             .catch(() => {});
     }, [isHydrated, replaceOrders, user]);
-    const userOrders = allOrders.filter((o) => o.email === user?.email);
+    // Сервер уже связал заказ с userId при оформлении (см. /api/orders/my) — тот же
+    // match нужен и здесь: контактный email в чекауте не обязан совпадать с email
+    // аккаунта (типичный случай — карта+ПК с синтетическим card.NNNN@client.local).
+    // Фильтр по userId ИЛИ email, а не по email в одиночку.
+    const userOrders = allOrders.filter(
+        (o) => (user?.id && o.userId === user.id) || o.email.toLowerCase() === (user?.email ?? '').toLowerCase()
+    );
     const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);
     const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);
     const totalBonusSpent = userOrders.reduce((sum, o) => sum + (o.bonusSpent ?? 0), 0);

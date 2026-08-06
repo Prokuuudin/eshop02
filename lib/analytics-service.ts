@@ -35,13 +35,15 @@ export interface CompanyAnalytics extends PurchaseAnalytics {
 }
 
 /**
- * Get purchase analytics for a specific user (filtered by email).
- * Pass undefined to get store-wide analytics (admin use only).
+ * Get purchase analytics for a specific user (filtered by userId, falling back to
+ * email — checkout's contact email doesn't have to match the account email, e.g.
+ * card+PK accounts with a synthetic card.NNNN@client.local address).
+ * Pass no filters to get store-wide analytics (admin use only).
  */
-export function getUserPurchaseAnalytics(userEmail?: string): PurchaseAnalytics {
+export function getUserPurchaseAnalytics(userEmail?: string, userId?: string): PurchaseAnalytics {
   const allOrders = useOrders.getState().orders
-  const orders = userEmail
-    ? allOrders.filter((o) => o.email.toLowerCase() === userEmail.toLowerCase())
+  const orders = userEmail || userId
+    ? allOrders.filter((o) => (userId && o.userId === userId) || o.email.toLowerCase() === (userEmail ?? '').toLowerCase())
     : allOrders
 
   if (orders.length === 0) {

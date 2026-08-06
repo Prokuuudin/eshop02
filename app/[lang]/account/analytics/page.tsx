@@ -31,10 +31,10 @@ export default function AnalyticsPage(): React.ReactElement {
   }, [replaceOrders])
 
   const analytics = useMemo(
-    () => getUserPurchaseAnalytics(currentUser?.email),
+    () => getUserPurchaseAnalytics(currentUser?.email, currentUser?.id),
     // Recompute whenever the store changes; getUserPurchaseAnalytics reads it internally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orders, currentUser?.email]
+    [orders, currentUser?.email, currentUser?.id]
   )
 
   const summaryCards = [

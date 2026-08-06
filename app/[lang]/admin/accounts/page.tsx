@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCompanyStore } from '@/lib/company-store'
 import { type TeamRole } from '@/lib/auth'
 import { useTranslation } from '@/lib/use-translation'
+import { pointsToEuros } from '@/lib/bonus-program'
+import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { Search } from 'lucide-react'
 
 type DbUser = {
@@ -28,6 +30,7 @@ type DbUser = {
 
 export default function AdminAccountsPage(): React.ReactElement {
   const { t, language } = useTranslation()
+  const locale = getLocaleFromLanguage(language)
   const { getCompanies, syncFromDb } = useCompanyStore()
   const companies = getCompanies()
 
@@ -202,7 +205,12 @@ export default function AdminAccountsPage(): React.ReactElement {
                       <td className="py-2 pr-4 font-mono text-xs">{u.email}</td>
                       <td className="py-2 pr-4">{u.name ?? '—'}</td>
                       <td className="py-2 pr-4 font-mono text-xs">{u.cardNumber ?? '—'}</td>
-                      <td className="py-2 pr-4">{u.bonusPoints}</td>
+                      <td className="py-2 pr-4">
+                        {u.bonusPoints}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({formatEuro(pointsToEuros(u.bonusPoints ?? 0), locale)})
+                        </span>
+                      </td>
                       <td className="py-2 pr-4">
                         <Select value={u.platformRole} onValueChange={(v) => handleUpdateDbRole(u.id, v)}>
                           <SelectTrigger className="rounded border border-border bg-card px-2 py-1 text-xs">

@@ -143,6 +143,7 @@ export default function AccountPage(): React.ReactElement {
                                 totalEarned={totalBonusEarned}
                                 totalSpent={totalBonusSpent}
                                 t={t}
+                                locale={locale}
                             />
                         </div>
                         <div className="mt-4">

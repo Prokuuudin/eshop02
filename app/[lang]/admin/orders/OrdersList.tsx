@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { isOrderTaxIncluded } from '@/lib/tax';
 import { formatDate, formatEuro } from '@/lib/utils';
+import { pointsToEuros } from '@/lib/bonus-program';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAdminAction } from '@/lib/admin-log-store';
@@ -655,7 +656,10 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {(order.bonusSpent ?? 0) > 0 && (
                                                 <div className="flex justify-between gap-6 text-amber-700 dark:text-amber-400">
                                                     <span>Бонусы использованы</span>
-                                                    <span>−{order.bonusSpent}</span>
+                                                    <span>
+                                                        −{order.bonusSpent}
+                                                        {' '}({formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
+                                                    </span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between gap-6 font-bold text-base pt-2 border-t border-border">
@@ -676,7 +680,10 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {(order.bonusEarned ?? 0) > 0 && (
                                                 <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">
                                                     <span>Бонусов начислено</span>
-                                                    <span>+{order.bonusEarned}</span>
+                                                    <span>
+                                                        +{order.bonusEarned}
+                                                        {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>

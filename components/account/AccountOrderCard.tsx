@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { BookmarkPlus } from 'lucide-react'
 import { formatDate, formatEuro } from '@/lib/utils'
+import { pointsToEuros } from '@/lib/bonus-program'
 import type { Order } from '@/lib/orders-store'
 import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog'
 
@@ -66,11 +67,13 @@ export default function AccountOrderCard({
           {(order.bonusSpent ?? 0) > 0 && (
             <p className="mt-1 text-xs text-green-700">
               {bonusSpentLabel}: -{order.bonusSpent ?? 0}
+              {' '}(= −{formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
             </p>
           )}
           {(order.bonusEarned ?? 0) > 0 && (
             <p className="mt-1 text-xs text-primary">
               {bonusEarnedLabel}: +{order.bonusEarned ?? 0}
+              {' '}(= {formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
             </p>
           )}
         </div>

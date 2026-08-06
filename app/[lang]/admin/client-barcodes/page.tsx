@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
+import { pointsToEuros } from '@/lib/bonus-program';
+import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage'
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
   const pageState = useAdminClientBarcodesPage()
-  const { tl, formError, message, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
+  const { tl, language, formError, message, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
+  const locale = getLocaleFromLanguage(language)
 return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -218,7 +221,12 @@ return (
                                             <td className="py-2 pr-4">{holder.name || holder.companyName || '—'}</td>
                                             <td className="py-2 pr-4 font-mono text-xs">{holder.email}</td>
                                             <td className="py-2 pr-4">{holder.phone ?? '—'}</td>
-                                            <td className="py-2">{holder.bonusPoints}</td>
+                                            <td className="py-2">
+                                                {holder.bonusPoints}
+                                                <span className="ml-1 text-xs text-muted-foreground">
+                                                    ({formatEuro(pointsToEuros(holder.bonusPoints ?? 0), locale)})
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

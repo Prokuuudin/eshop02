@@ -50,6 +50,9 @@ export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: P
                 </span>
                 <span className="font-semibold text-amber-800 dark:text-amber-200">
                     {user.bonusPoints ?? 0} {t('cart.bonus.unit')}
+                    <span className="ml-1 font-normal text-amber-800/70 dark:text-amber-200/70">
+                        (= {formatEuro(pointsToEuros(user.bonusPoints ?? 0), locale)})
+                    </span>
                 </span>
             </div>
             {points > 0 ? (

@@ -357,7 +357,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                             <div className="cart-drawer__bonus rounded border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-2 py-1.5 text-xs space-y-0.5">
                                 <div className="flex justify-between text-amber-800 dark:text-amber-300">
                                     <span>{t('account.bonus.balance')}</span>
-                                    <span className="font-semibold">{userBonusBalance} {t('cart.bonus.unit')}</span>
+                                    <span className="font-semibold">
+                                        {userBonusBalance} {t('cart.bonus.unit')}
+                                        <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                                            (= {formatCurrency(pointsToEuros(userBonusBalance))})
+                                        </span>
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-amber-700 dark:text-amber-400">
                                     <span>{t('checkout.bonus.willEarn')}</span>

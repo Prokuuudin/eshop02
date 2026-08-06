@@ -1,12 +1,15 @@
 'use client';
 import React from 'react';
 import { Star } from 'lucide-react';
+import { pointsToEuros } from '@/lib/bonus-program';
+import { formatEuro } from '@/lib/utils';
 
 interface AccountBonusCardProps {
     bonusPoints: number;
     totalEarned: number;
     totalSpent: number;
     t: (key: string, fallback?: string) => string;
+    locale: string;
 }
 
 export default function AccountBonusCard({
@@ -14,6 +17,7 @@ export default function AccountBonusCard({
     totalEarned,
     totalSpent,
     t,
+    locale,
 }: AccountBonusCardProps): React.ReactElement {
     return (
         <div className="account-bonus-card rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950/30">
@@ -31,6 +35,9 @@ export default function AccountBonusCard({
                 <span className="ml-1.5 text-base font-normal text-amber-600 dark:text-amber-400">
                     {t('cart.bonus.unit', 'баллов')}
                 </span>
+                <span className="ml-1.5 text-base font-normal text-amber-600/80 dark:text-amber-400/80">
+                    (= {formatEuro(pointsToEuros(bonusPoints), locale)})
+                </span>
             </p>
 
             <div className="account-bonus-card__stats mt-3 grid grid-cols-2 gap-2 border-t border-amber-200 dark:border-amber-800 pt-3">
@@ -40,6 +47,9 @@ export default function AccountBonusCard({
                     </p>
                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                         +{totalEarned}
+                        <span className="ml-1 font-normal text-emerald-700/70 dark:text-emerald-400/70">
+                            (= {formatEuro(pointsToEuros(totalEarned), locale)})
+                        </span>
                     </p>
                 </div>
                 <div>
@@ -48,6 +58,9 @@ export default function AccountBonusCard({
                     </p>
                     <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
                         −{totalSpent}
+                        <span className="ml-1 font-normal text-amber-800/70 dark:text-amber-300/70">
+                            (= {formatEuro(pointsToEuros(totalSpent), locale)})
+                        </span>
                     </p>
                 </div>
             </div>

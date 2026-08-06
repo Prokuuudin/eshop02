@@ -85,7 +85,7 @@ export default function AdminBonusPage(): React.ReactElement {
     const result = await response.json().catch(() => null) as { user?: { bonusPoints: number } } | null
     if (response.ok && result?.user) {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, bonusPoints: result.user!.bonusPoints } : u))
-      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.user!.bonusPoints} баллов` }))
+      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.user!.bonusPoints} баллов (= ${formatEuro(pointsToEuros(result.user!.bonusPoints), 'ru-RU')})` }))
       setAdjustDelta((prev) => ({ ...prev, [userId]: '' }))
       setTimeout(() => setAdjustMsg((prev) => ({ ...prev, [userId]: '' })), 2500)
     }
@@ -147,11 +147,11 @@ export default function AdminBonusPage(): React.ReactElement {
         {/* Статистика */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Начислено всего', value: `${totalEarned} баллов`, bg: 'bg-green-50 dark:bg-green-950/20' },
-            { label: 'Списано всего', value: `${totalSpent} баллов`, bg: 'bg-rose-50 dark:bg-rose-950/20' },
+            { label: 'Начислено всего', value: `${totalEarned} баллов (${formatEuro(pointsToEuros(totalEarned), 'ru-RU')})`, bg: 'bg-green-50 dark:bg-green-950/20' },
+            { label: 'Списано всего', value: `${totalSpent} баллов (${formatEuro(pointsToEuros(totalSpent), 'ru-RU')})`, bg: 'bg-rose-50 dark:bg-rose-950/20' },
             { label: 'Заказов с бонусами', value: ordersWithBonus, bg: 'bg-blue-50 dark:bg-blue-950/20' },
             { label: 'Активных пользователей', value: usersWithBalance, bg: 'bg-purple-50 dark:bg-purple-950/20' },
-            { label: 'Суммарный баланс', value: `${totalBalance} баллов`, bg: 'bg-amber-50 dark:bg-amber-950/20' },
+            { label: 'Суммарный баланс', value: `${totalBalance} баллов (${formatEuro(pointsToEuros(totalBalance), 'ru-RU')})`, bg: 'bg-amber-50 dark:bg-amber-950/20' },
           ].map(({ label, value, bg }) => (
             <div key={label} className={`${bg} rounded-xl border border-border p-4 shadow-sm`}>
               <p className="text-xs text-muted-foreground">{label}</p>
@@ -349,6 +349,9 @@ export default function AdminBonusPage(): React.ReactElement {
                           <td className="py-2 pr-4">
                             <span className={`font-semibold ${(user.bonusPoints ?? 0) > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'}`}>
                               {user.bonusPoints ?? 0} баллов
+                              <span className="ml-1 font-normal opacity-70">
+                                ({formatEuro(pointsToEuros(user.bonusPoints ?? 0), 'ru-RU')})
+                              </span>
                             </span>
                           </td>
                           <td className="py-2">
@@ -409,7 +412,9 @@ export default function AdminBonusPage(): React.ReactElement {
                       <p className="text-sm font-medium truncate">{u.name || u.email}</p>
                       {u.name && <p className="text-xs text-gray-400 truncate">{u.email}</p>}
                     </div>
-                    <span className="text-sm font-semibold text-green-700 dark:text-green-400 shrink-0">{u.bonusPoints} баллов</span>
+                    <span className="text-sm font-semibold text-green-700 dark:text-green-400 shrink-0">
+                      {u.bonusPoints} баллов ({formatEuro(pointsToEuros(u.bonusPoints ?? 0), 'ru-RU')})
+                    </span>
                   </li>
                 ))}
               </ol>
@@ -447,12 +452,16 @@ export default function AdminBonusPage(): React.ReactElement {
                       <td className="py-2 pr-4 text-right">{formatEuro(o.total, 'ru-RU')}</td>
                       <td className="py-2 pr-4 text-right">
                         {(o.bonusEarned ?? 0) > 0
-                          ? <span className="text-green-700 dark:text-green-400 font-medium">+{o.bonusEarned}</span>
+                          ? <span className="text-green-700 dark:text-green-400 font-medium">
+                              +{o.bonusEarned} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusEarned ?? 0), 'ru-RU')})</span>
+                            </span>
                           : <span className="text-gray-300 dark:text-gray-600">—</span>}
                       </td>
                       <td className="py-2 text-right">
                         {(o.bonusSpent ?? 0) > 0
-                          ? <span className="text-rose-600 dark:text-rose-400 font-medium">−{o.bonusSpent}</span>
+                          ? <span className="text-rose-600 dark:text-rose-400 font-medium">
+                              −{o.bonusSpent} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusSpent ?? 0), 'ru-RU')})</span>
+                            </span>
                           : <span className="text-gray-300 dark:text-gray-600">—</span>}
                       </td>
                     </tr>

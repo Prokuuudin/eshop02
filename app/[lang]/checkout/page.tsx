@@ -388,6 +388,9 @@ export default function CheckoutPage(): React.ReactElement {
                                     <span>{t('account.bonus.balance')}</span>
                                     <span className="font-semibold">
                                         {userBonusBalance} {t('cart.bonus.unit')}
+                                        <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
+                                            (= {formatCurrency(pointsToEuros(userBonusBalance))})
+                                        </span>
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-amber-700 dark:text-amber-400">

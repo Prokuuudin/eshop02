@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Installed via `git config core.hooksPath scripts/git-hooks` (see package.json's
+# "prepare" script, which sets this automatically on `npm install`).
+npm run check:encoding || exit 1

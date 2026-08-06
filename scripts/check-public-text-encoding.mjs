@@ -1,15 +1,8 @@
-const TARGETS = [
-  'app/[lang]/blog',
-  'app/[lang]/catalog',
-  'app/[lang]/category',
-  'app/[lang]/contact',
-  'app/[lang]/stores',
-  'components/BlogCard.tsx',
-  'components/BlogSubscribeForm.tsx',
-  'components/Stores.tsx',
-  'data/company.ts',
-  'data/stores.ts',
-]
+// Whole-project source directories - not just public/SEO pages. The
+// 2026-08-06 incident (CP1252 mojibake baked into 15 files by a file-split
+// commit) hit admin/orders, admin/categories, and checkout - none of which
+// a narrower "public pages only" list would have caught.
+const TARGETS = ['app', 'components', 'lib', 'data']
 const EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.json', '.md'])
 const MOJIBAKE = /(?:Ã.|Â.|â(?:€|™|œ|ž|š|ž|‚|„)|Ð[\x80-\xBF]|Ñ[\x80-\xBF]|Ä[\x80-\xBF]|Å[\x80-\xBF])/u
 
@@ -45,5 +38,5 @@ if (failures.length > 0) {
   console.error(`Possible mojibake found:\n${failures.join('\n')}`)
   process.exitCode = 1
 } else {
-  console.log(`Encoding check passed (${files.length} SEO-critical public source files).`)
+  console.log(`Encoding check passed (${files.length} source files across app/, components/, lib/, data/).`)
 }

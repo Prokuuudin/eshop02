@@ -1,7 +1,7 @@
 'use client'
-import React, { useState, useRef, useMemo } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useOrders } from '@/lib/orders-store'
+import type { Order } from '@/lib/orders-store'
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatEuro } from '@/lib/utils'
@@ -70,8 +70,7 @@ type CardDef = {
 
 export default function AdminPage(): React.ReactElement {
   const { t, language } = useTranslation()
-  const { orders } = useOrders()
-  const { getOrderStatus, setOrderStatus, cardOrder, setCardOrder, resetCardOrder } = useAdminStore()
+  const { getOrderStatus, setOrderStatus, loadOrderMeta, cardOrder, setCardOrder, resetCardOrder } = useAdminStore()
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
   const dragId = useRef<string | null>(null)
@@ -81,35 +80,60 @@ export default function AdminPage(): React.ReactElement {
   const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en)
   const tl = (key: string, ru: string, en: string, lv: string) => t(key, l(ru, en, lv))
 
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
-  const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0
-  const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0)
-
   const [chartPeriod, setChartPeriod] = useState<'7d' | '30d' | '90d'>('30d')
-  const [chartNow] = useState(Date.now)
 
-  const chartOrders = useMemo(() => {
+  // Aggregate stat tiles + revenue chart are fetched from a dedicated,
+  // server-aggregated endpoint instead of being reduced from the full
+  // `orders` client store — that store can hold thousands of order rows,
+  // which made these four tiles take as long to appear as the full order
+  // history sync.
+  const [stats, setStats] = useState<{
+    orderCount: number
+    revenue: number
+    avgOrderValue: number
+    itemsSold: number
+    statusCounts: Record<OrderStatus, number>
+    chart: { date: string; revenue: number; orderCount: number }[]
+  } | null>(null)
+
+  useEffect(() => {
     const days = chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 90
-    const cutoff = chartNow - days * 86400000
-    return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
-  }, [orders, chartPeriod, chartNow])
+    const controller = new AbortController()
+    fetch(`/api/admin/orders/stats?days=${days}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setStats(data) })
+      .catch(() => { /* aborted or offline - tiles just keep showing a loading state */ })
+    return () => controller.abort()
+  }, [chartPeriod])
 
-  const revenueByDay = useMemo(() => {
-    const map = new Map<string, number>()
-    chartOrders.forEach((o) => {
-      const d = new Date(o.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
-      map.set(d, (map.get(d) ?? 0) + (o.total ?? 0))
-    })
-    return Array.from(map.entries())
-      .sort((a, b) => {
-        const [da, ma] = a[0].split('.').map(Number)
-        const [db, mb] = b[0].split('.').map(Number)
-        return ma !== mb ? ma - mb : da - db
+  const revenueByDay = (stats?.chart ?? []).map((d) => ({
+    label: `${d.date.slice(8, 10)}.${d.date.slice(5, 7)}`,
+    value: d.revenue,
+  }))
+  const chartPeriodRevenue = (stats?.chart ?? []).reduce((s, d) => s + d.revenue, 0)
+  const chartPeriodOrderCount = (stats?.chart ?? []).reduce((s, d) => s + d.orderCount, 0)
+
+  // Recent-orders widget: fetches only the latest handful of orders directly
+  // (same endpoint /admin/orders itself uses) instead of depending on the
+  // full, thousands-of-rows client order sync - that sync can take a long
+  // time to complete and this widget only ever showed the most recent items
+  // in a scrollable list anyway.
+  const RECENT_ORDERS_LIMIT = 10
+  const [recentOrders, setRecentOrders] = useState<Order[] | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`/api/admin/orders?take=${RECENT_ORDERS_LIMIT}&skip=0`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { orders?: Order[] } | null) => {
+        if (!data?.orders) return
+        const parsed = data.orders.map((o) => ({ ...o, createdAt: new Date(o.createdAt) }))
+        setRecentOrders(parsed)
+        void loadOrderMeta(parsed.map((o) => o.id))
       })
-      .map(([label, value]) => ({ label, value }))
-  }, [chartOrders])
-
-  const chartPeriodRevenue = chartOrders.reduce((s, o) => s + (o.total ?? 0), 0)
+      .catch(() => { /* aborted or offline - widget just keeps showing a loading state */ })
+    return () => controller.abort()
+  }, [loadOrderMeta])
 
   const statusColors: Record<OrderStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -281,26 +305,26 @@ export default function AdminPage(): React.ReactElement {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">📦 {t('admin.stats.totalOrders')}</p>
-            <p className="text-3xl font-bold mt-2 text-foreground">{orders.length}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{stats ? stats.orderCount : '—'}</p>
           </div>
           <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">💰 {t('admin.stats.totalRevenue')}</p>
-            <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(totalRevenue, locale)}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{stats ? formatEuro(stats.revenue, locale) : '—'}</p>
           </div>
           <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">💵 {t('admin.stats.averageOrder')}</p>
-            <p className="text-3xl font-bold mt-2 text-foreground">{formatEuro(avgOrderValue, locale)}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{stats ? formatEuro(stats.avgOrderValue, locale) : '—'}</p>
           </div>
           <div className="group flex flex-col bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all">
             <p className="text-muted-foreground text-sm">📋 {t('admin.stats.itemsSold')}</p>
-            <p className="text-3xl font-bold mt-2 text-foreground">{totalItems}</p>
+            <p className="text-3xl font-bold mt-2 text-foreground">{stats ? stats.itemsSold : '—'}</p>
           </div>
         </div>
 
         {/* Pending orders alert */}
         {(() => {
-          const pendingCount = orders.filter((o) => getOrderStatus(o.id) === 'pending').length
-          const confirmedCount = orders.filter((o) => getOrderStatus(o.id) === 'confirmed').length
+          const pendingCount = stats?.statusCounts.pending ?? 0
+          const confirmedCount = stats?.statusCounts.confirmed ?? 0
           const total = pendingCount + confirmedCount
           if (total === 0) return null
           return (
@@ -344,7 +368,7 @@ export default function AdminPage(): React.ReactElement {
                   {formatEuro(chartPeriodRevenue, locale)}
                 </span>
                 {' '}·{' '}
-                {chartOrders.length}{' '}
+                {chartPeriodOrderCount}{' '}
                 {l('заказов', 'orders', 'pasūtījumu')}
               </p>
             </div>
@@ -377,10 +401,19 @@ export default function AdminPage(): React.ReactElement {
 
         {/* Orders Section */}
         <div className="bg-card rounded-lg border border-border p-6">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">{t('admin.orders')}</h2>
-          {orders.length > 0 ? (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {orders.map((order) => {
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-foreground">
+              {l('Последние заказы', 'Recent orders', 'Jaunakie pasutijumi')}
+            </h2>
+            <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
+              {l('Все заказы →', 'All orders →', 'Visi pasutijumi →')}
+            </Link>
+          </div>
+          {recentOrders === null ? (
+            <p className="text-muted-foreground text-center py-8">{t('common.loading')}</p>
+          ) : recentOrders.length > 0 ? (
+            <div className="space-y-3">
+              {recentOrders.map((order) => {
                 const status = getOrderStatus(order.id)
                 const isExpanded = expandedOrder === order.id
                 return (

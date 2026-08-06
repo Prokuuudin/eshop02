@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/utils';
 import AdminGate from '@/components/admin/AdminGate';
 import { logout } from '@/lib/auth';
@@ -90,7 +92,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Slug
                                         </span>
-                                        <input
+                                        <Input
                                             value={blogForm.slug}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -108,7 +110,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Категория
                                         </span>
-                                        <input
+                                        <Input
                                             value={blogForm.category}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -126,7 +128,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Заголовок
                                         </span>
-                                        <input
+                                        <Input
                                             value={blogForm.title}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -143,7 +145,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Краткое описание
                                         </span>
-                                        <textarea
+                                        <Textarea
                                             value={blogForm.excerpt}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -160,7 +162,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Автор
                                         </span>
-                                        <input
+                                        <Input
                                             value={blogForm.author}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -177,7 +179,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Время чтения (мин)
                                         </span>
-                                        <input
+                                        <Input
                                             type="number"
                                             min={1}
                                             value={blogForm.readTime}
@@ -196,7 +198,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Обложка (путь)
                                         </span>
-                                        <input
+                                        <Input
                                             value={blogForm.image}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -214,7 +216,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <span className="block text-muted-foreground mb-1">
                                             Legacy content (опционально)
                                         </span>
-                                        <textarea
+                                        <Textarea
                                             value={blogForm.content}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -234,7 +236,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
                                             </span>
                                         </span>
-                                        <textarea
+                                        <Textarea
                                             value={blogForm.contentBlocksJson}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -261,7 +263,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             <span className="block text-muted-foreground mb-1">
                                                 Заголовок ({lang})
                                             </span>
-                                            <input
+                                            <Input
                                                 value={blogForm.translations[lang].title}
                                                 onChange={(e) =>
                                                     setBlogForm((prev) => ({
@@ -286,7 +288,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             <span className="block text-muted-foreground mb-1">
                                                 Краткое описание ({lang})
                                             </span>
-                                            <textarea
+                                            <Textarea
                                                 value={blogForm.translations[lang].excerpt}
                                                 onChange={(e) =>
                                                     setBlogForm((prev) => ({
@@ -311,7 +313,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             <span className="block text-muted-foreground mb-1">
                                                 Автор ({lang})
                                             </span>
-                                            <input
+                                            <Input
                                                 value={blogForm.translations[lang].author}
                                                 onChange={(e) =>
                                                     setBlogForm((prev) => ({
@@ -334,7 +336,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             <span className="block text-muted-foreground mb-1">
                                                 Категория ({lang})
                                             </span>
-                                            <input
+                                            <Input
                                                 value={blogForm.translations[lang].category}
                                                 onChange={(e) =>
                                                     setBlogForm((prev) => ({
@@ -359,7 +361,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             <span className="block text-muted-foreground mb-1">
                                                 Legacy content ({lang}, опционально)
                                             </span>
-                                            <textarea
+                                            <Textarea
                                                 value={blogForm.translations[lang].content}
                                                 onChange={(e) =>
                                                     setBlogForm((prev) => ({
@@ -385,7 +387,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                                     heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
                                                 </span>
                                             </span>
-                                            <textarea
+                                            <Textarea
                                                 value={
                                                     blogForm.translations[lang].contentBlocksJson
                                                 }
@@ -446,7 +448,7 @@ export default function AdminBlogPage(): React.ReactElement {
                         <div className="grid gap-4 md:grid-cols-2">
                             <label className="text-sm">
                                 <span className="mb-1 block">{tl('admin.blog.authorRole', 'Должность автора', 'Author role', 'Autora amats')}</span>
-                                <input
+                                <Input
                                     className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
                                     value={blogForm.authorRole}
                                     onChange={(event) => setBlogForm((prev) => ({ ...prev, authorRole: event.target.value }))}
@@ -454,7 +456,7 @@ export default function AdminBlogPage(): React.ReactElement {
                             </label>
                             <label className="text-sm">
                                 <span className="mb-1 block">{tl('admin.blog.authorBio', 'Экспертность автора', 'Author expertise', 'Autora kompetence')}</span>
-                                <input
+                                <Input
                                     className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
                                     value={blogForm.authorBio}
                                     onChange={(event) => setBlogForm((prev) => ({ ...prev, authorBio: event.target.value }))}

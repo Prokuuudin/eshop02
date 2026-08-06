@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import AdminGate from '@/components/admin/AdminGate'
 
 type FaqItem = {
@@ -135,12 +136,12 @@ export default function AdminFaqPage(): React.ReactElement {
 
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none select-none">🔍</span>
-          <input
+          <Input
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpenId(null) }}
             placeholder="Поиск по вопросам..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-9 pr-4 py-2.5 text-sm"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}

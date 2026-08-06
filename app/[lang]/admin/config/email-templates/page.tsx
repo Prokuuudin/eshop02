@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 type EmailTemplate = {
     id: string;
@@ -214,23 +216,23 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                             <label htmlFor="email-template-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 Тема письма
                                             </label>
-                                            <input
+                                            <Input
                                                 id="email-template-subject"
                                                 value={subject}
                                                 onChange={(e) => setSubject(e.target.value)}
-                                                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                className="text-sm"
                                             />
                                         </div>
                                         <div>
                                             <label htmlFor="email-template-body" className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 HTML-тело письма
                                             </label>
-                                            <textarea
+                                            <Textarea
                                                 id="email-template-body"
                                                 value={body}
                                                 onChange={(e) => setBody(e.target.value)}
                                                 rows={14}
-                                                className="w-full rounded-md border border-gray-200 px-3 py-2 font-mono text-xs leading-relaxed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                className="font-mono text-xs leading-relaxed"
                                             />
                                         </div>
                                         {selected.variables.length > 0 && (
@@ -280,12 +282,12 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 Отправить тестовое письмо
                                             </p>
                                             <div className="flex items-center gap-2">
-                                                <input
+                                                <Input
                                                     type="email"
                                                     placeholder="email@example.com"
                                                     value={testEmail}
                                                     onChange={(e) => { setTestEmail(e.target.value); setTestResult(null); }}
-                                                    className="flex-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                    className="h-9 flex-1 py-1.5 text-sm"
                                                 />
                                                 <button
                                                     type="button"

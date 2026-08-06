@@ -6,6 +6,7 @@ import { type Product } from '@/data/products'
 import { useRFQStore, mapServerRfq, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useToast } from '@/lib/toast-context'
 import { adminFetchJson, reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 
@@ -320,7 +321,7 @@ export default function AdminRFQPage(): React.ReactElement {
                         {rfq.status === 'quoted' ? 'Обновить котировку' : 'Отправить котировку'}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <input
+                        <Input
                           type="number"
                           min={0}
                           step={0.01}
@@ -329,7 +330,7 @@ export default function AdminRFQPage(): React.ReactElement {
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                           placeholder="Сумма, €"
                         />
-                        <input
+                        <Input
                           type="number"
                           min={1}
                           value={quoteValidDays[rfq.id] ?? '7'}
@@ -337,7 +338,7 @@ export default function AdminRFQPage(): React.ReactElement {
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                           placeholder="Действует, дней"
                         />
-                        <input
+                        <Input
                           type="text"
                           value={quoteTerms[rfq.id] ?? (rfq.quote?.terms ?? '')}
                           onChange={(e) => setQuoteTerms((p) => ({ ...p, [rfq.id]: e.target.value }))}
@@ -384,7 +385,7 @@ export default function AdminRFQPage(): React.ReactElement {
                       Добавить заметку в историю
                     </p>
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="text"
                         value={noteDraft[rfq.id] ?? ''}
                         onChange={(e) => setNoteDraft((p) => ({ ...p, [rfq.id]: e.target.value }))}

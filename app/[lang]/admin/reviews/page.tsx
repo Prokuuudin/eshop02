@@ -4,6 +4,7 @@ import React from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -322,7 +323,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                     'Veikala atbilde (publiska)'
                                                 )}
                                             </p>
-                                            <textarea
+                                            <Textarea
                                                 rows={3}
                                                 value={
                                                     replyDrafts[review.id] ??
@@ -340,7 +341,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                     'Write a reply to the customer...',
                                                     'Rakstiet atbildi klientam...'
                                                 )}
-                                                className="w-full rounded-md border border-primary/30 dark:border-primary/50 bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                                className="w-full border-primary/30 dark:border-primary/50 resize-none text-sm"
                                             />
                                             <div className="flex flex-wrap gap-2">
                                                 <Button

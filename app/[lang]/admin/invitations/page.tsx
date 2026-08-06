@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import AdminGate from '@/components/admin/AdminGate';
 import { useTranslation } from '@/lib/use-translation';
 
@@ -560,11 +561,10 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 <thead className="sticky top-0 bg-card z-10">
                                     <tr className="border-b border-border text-left text-muted-foreground">
                                         <th className="py-2 pr-2 pl-1 font-medium w-8">
-                                            <input
-                                                type="checkbox"
+                                            <Checkbox
                                                 checked={allPageHoldersSelected}
                                                 disabled={pageSelectableHolderIds.length === 0 || bulkBusy}
-                                                onChange={(e) => toggleSelectMany(pageSelectableHolderIds, e.target.checked)}
+                                                onCheckedChange={(checked) => toggleSelectMany(pageSelectableHolderIds, checked)}
                                                 aria-label={l('Выбрать все на странице', 'Select all on page', 'Atlasīt visus lapā')}
                                             />
                                         </th>
@@ -590,11 +590,10 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                         <tr key={h.userId} className="border-b border-border/50">
                                             <td className="py-2 pr-2 pl-1">
                                                 {h.status !== 'accepted' && (
-                                                    <input
-                                                        type="checkbox"
+                                                    <Checkbox
                                                         checked={selectedIds.has(h.userId)}
                                                         disabled={bulkBusy}
-                                                        onChange={() => toggleSelect(h.userId)}
+                                                        onCheckedChange={() => toggleSelect(h.userId)}
                                                         aria-label={l('Выбрать', 'Select', 'Atlasīt')}
                                                     />
                                                 )}

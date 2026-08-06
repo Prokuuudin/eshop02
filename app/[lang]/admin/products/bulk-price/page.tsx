@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 type Product = {
     id: string;
@@ -166,13 +167,13 @@ export default function BulkPricePage(): React.ReactElement {
                         </div>
                         <div>
                             <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-gray-500">Значение</label>
-                            <input
+                            <Input
                                 id="bulk-price-value"
                                 type="number"
                                 value={value}
                                 onChange={(e) => setValue(e.target.value)}
                                 placeholder={MODE_OPTIONS.find((o) => o.value === mode)?.placeholder}
-                                className="w-40 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                className="w-40 text-sm"
                             />
                         </div>
                         <label htmlFor="bulk-price-save-old" className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -207,12 +208,12 @@ export default function BulkPricePage(): React.ReactElement {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <input
+                    <Input
                         type="text"
                         placeholder="Поиск по названию, бренду, SKU..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="min-w-[240px] flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        className="min-w-[240px] flex-1 text-sm"
                     />
                     <Select value={catFilter || 'all'} onValueChange={(v) => setCatFilter(v === 'all' ? '' : v)}>
                         <SelectTrigger className="rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">

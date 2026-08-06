@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface ProductTableProps {
     products: Product[];
@@ -50,7 +51,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
         if (e.key === 'Escape') setEditing(null)
     }
 
-    const cellCls = 'px-2 py-1 w-24 rounded border border-primary/50 dark:border-primary bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary'
+    const cellCls = 'h-8 px-2 py-1 w-24 border-primary/50 dark:border-primary text-sm'
 
     return (
         <div className="overflow-x-auto">
@@ -105,7 +106,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 </td>
                                 <td className="p-3 align-middle">
                                     {isEditingPrice ? (
-                                        <input
+                                        <Input
                                             ref={(element) => element?.focus()}
                                             type="number"
                                             min={0}
@@ -129,7 +130,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 </td>
                                 <td className="p-3 align-middle">
                                     {isEditingStock ? (
-                                        <input
+                                        <Input
                                             ref={(element) => element?.focus()}
                                             type="number"
                                             min={0}

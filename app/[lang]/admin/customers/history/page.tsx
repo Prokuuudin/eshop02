@@ -119,20 +119,20 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
           </Select>
           <div className="flex items-center gap-2 text-sm">
             <label htmlFor="customer-history-date-from" className="text-muted-foreground">От:</label>
-            <input
+            <Input
               id="customer-history-date-from"
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(0) }}
-              className="border rounded-md px-2 py-1.5 text-sm bg-background"
+              className="h-8 w-auto px-2 py-1.5 text-sm"
             />
             <label htmlFor="customer-history-date-to" className="text-muted-foreground">До:</label>
-            <input
+            <Input
               id="customer-history-date-to"
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(0) }}
-              className="border rounded-md px-2 py-1.5 text-sm bg-background"
+              className="h-8 w-auto px-2 py-1.5 text-sm"
             />
           </div>
         </div>

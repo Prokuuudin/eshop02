@@ -5,6 +5,7 @@ import Image from 'next/image';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -308,7 +309,7 @@ export default function NewOrderPage(): React.ReactElement {
                                             {/* Unit price override */}
                                             <div className="flex items-center gap-1 shrink-0">
                                                 <span className="text-xs text-gray-400">€</span>
-                                                <input
+                                                <Input
                                                     type="number"
                                                     min={0}
                                                     step={0.01}
@@ -319,7 +320,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                             parseFloat(e.target.value)
                                                         )
                                                     }
-                                                    className="w-20 rounded border border-border bg-card px-2 py-1 text-sm text-center tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    className="h-8 w-20 px-2 py-1 text-sm text-center tabular-nums"
                                                     title="Цена за единицу (можно изменить)"
                                                 />
                                             </div>
@@ -566,12 +567,12 @@ export default function NewOrderPage(): React.ReactElement {
 
                         {/* Notes */}
                         <Section title="Заметка менеджера">
-                            <textarea
+                            <Textarea
                                 rows={3}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Внутренний комментарий (клиент не видит)..."
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full resize-none text-sm"
                             />
                         </Section>
 

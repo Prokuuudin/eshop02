@@ -7,6 +7,8 @@ import { formatDate, formatEuro } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { logAdminAction } from '@/lib/admin-log-store';
 import {
     DELIVERY_LABELS,
@@ -206,7 +208,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     Адрес доставки
                                                 </p>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                    <input
+                                                    <Input
                                                         value={editAddress}
                                                         onChange={(e) =>
                                                             setEditAddress(e.target.value)
@@ -214,7 +216,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         placeholder="Адрес"
                                                         className="sm:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                                     />
-                                                    <input
+                                                    <Input
                                                         value={editPostalCode}
                                                         onChange={(e) =>
                                                             setEditPostalCode(e.target.value)
@@ -222,7 +224,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         placeholder="Индекс"
                                                         className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                                     />
-                                                    <input
+                                                    <Input
                                                         value={editCity}
                                                         onChange={(e) =>
                                                             setEditCity(e.target.value)
@@ -345,7 +347,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                                 {/* Add product search */}
                                                 <div className="relative">
-                                                    <input
+                                                    <Input
                                                         value={editProductSearch}
                                                         onChange={(e) =>
                                                             setEditProductSearch(e.target.value)
@@ -737,7 +739,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                 — клиент не видит
                                             </span>
                                         </p>
-                                        <textarea
+                                        <Textarea
                                             rows={3}
                                             value={noteDrafts[order.id] ?? getOrderNote(order.id)}
                                             onChange={(e) =>
@@ -747,7 +749,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                 }))
                                             }
                                             placeholder="Внутренний комментарий: статус пересылки, договорённости с клиентом..."
-                                            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                            className="w-full resize-none text-sm"
                                         />
                                         <div className="flex items-center gap-3 mt-2">
                                             <Button

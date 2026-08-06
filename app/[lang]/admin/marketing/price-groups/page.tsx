@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { Input } from '@/components/ui/input';
 import { formatEuro } from '@/lib/utils';
 
 type PriceGroup = {
@@ -35,7 +36,7 @@ function GroupForm({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                     <div className="mb-1 block text-xs text-gray-500">Название *</div>
-                    <input
+                    <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
@@ -46,7 +47,7 @@ function GroupForm({
                     <div className="mb-1 block text-xs text-gray-500">
                         Множитель цены (1.0 = без скидки, 0.8 = −20%)
                     </div>
-                    <input
+                    <Input
                         type="number"
                         step="0.01"
                         min="0.01"
@@ -58,7 +59,7 @@ function GroupForm({
             </div>
             <div>
                 <div className="mb-1 block text-xs text-gray-500">Описание</div>
-                <input
+                <Input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
@@ -267,7 +268,7 @@ export default function PriceGroupsPage(): ReactElement {
                                 <h2 className="font-semibold text-gray-800 dark:text-gray-200">
                                     Цены для группы «{activeGroup.name}»
                                 </h2>
-                                <input
+                                <Input
                                     type="text"
                                     placeholder="Поиск товара..."
                                     value={productSearch}
@@ -344,7 +345,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                 </td>
                                                 <td className="px-4 py-2.5">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <input
+                                                        <Input
                                                             type="number"
                                                             min={0}
                                                             placeholder="цена"

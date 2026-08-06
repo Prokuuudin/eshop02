@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import type { CustomerRow as ApiCustomerRow } from '@/app/api/admin/customers/route'
 
@@ -288,13 +289,13 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       </div>
 
                       {bTab === 'edit' ? (
-                        <textarea
+                        <Textarea
                           id="broadcast-body"
                           rows={7}
                           value={bBody}
                           onChange={(e) => setBBody(e.target.value)}
                           placeholder={'Здравствуйте, {first_name}!\n\nПишем вам по поводу...'}
-                          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full resize-none text-sm"
                         />
                       ) : (
                         <div className="rounded-lg border border-border bg-muted p-4 min-h-[176px]">

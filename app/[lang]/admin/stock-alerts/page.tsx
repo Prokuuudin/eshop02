@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
 type Product = {
@@ -140,12 +141,12 @@ export default function StockAlertsPage(): React.ReactElement {
                     </div>
                     <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
                         <span className="text-sm text-muted-foreground">Порог:</span>
-                        <input
+                        <Input
                             type="number"
                             min={0}
                             value={thresholdInput}
                             onChange={(e) => setThresholdInput(e.target.value)}
-                            className="w-16 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                            className="h-8 w-16 px-2 py-1 text-sm"
                         />
                         <button
                             type="button"
@@ -176,12 +177,12 @@ export default function StockAlertsPage(): React.ReactElement {
                         )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                        <input
+                        <Input
                             type="email"
                             placeholder="admin@example.com"
                             value={alertEmail}
                             onChange={(e) => { setAlertEmail(e.target.value); setAlertResult(null); }}
-                            className="flex-1 min-w-[220px] rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground"
+                            className="h-9 flex-1 min-w-[220px] py-1.5 text-sm"
                         />
                         <button
                             type="button"
@@ -213,12 +214,12 @@ export default function StockAlertsPage(): React.ReactElement {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <input
+                    <Input
                         type="text"
                         placeholder="Поиск по названию, бренду, SKU..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="min-w-[240px] flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        className="min-w-[240px] flex-1 text-sm"
                     />
                     <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
                         {(

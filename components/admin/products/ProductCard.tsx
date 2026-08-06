@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Bell, Pencil, Trash2 } from 'lucide-react';
 import { useStockNotifyStore } from '@/lib/stock-notify-store';
 
@@ -118,12 +119,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             {/* Управление остатком */}
             <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-muted/50">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">Остаток:</span>
-                <input
+                <Input
                     type="number"
                     min={0}
                     value={stock}
                     onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 h-6 text-xs text-center rounded border border-gray-300 dark:border-gray-600 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-16 h-6 px-1 text-xs text-center"
                 />
                 <button
                     type="button"

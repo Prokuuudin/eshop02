@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
 import { pointsToEuros } from '@/lib/bonus-program';
@@ -153,14 +154,14 @@ return (
                                                 Комментарий к отказу{' '}
                                                 <span className="text-gray-400 dark:text-gray-500">(необязательно — будет добавлен в письмо)</span>
                                             </label>
-                                            <textarea
+                                            <Textarea
                                                 value={rejectNotes[req.id] ?? ''}
                                                 onChange={(e) =>
                                                     setRejectNotes((prev) => ({ ...prev, [req.id]: e.target.value }))
                                                 }
                                                 rows={2}
                                                 placeholder="Например: предоставленный документ не является действующим сертификатом..."
-                                                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                                className="w-full resize-none text-sm"
                                             />
                                         </div>
                                         <div className="flex gap-2">

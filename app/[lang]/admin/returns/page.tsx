@@ -14,6 +14,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { logAdminAction } from '@/lib/admin-log-store';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
 
@@ -144,7 +146,7 @@ export default function AdminReturnsPage(): React.ReactElement {
 
                     {/* Order lookup */}
                     <div className="flex gap-2">
-                        <input
+                        <Input
                             type="text"
                             value={formOrderId}
                             onChange={(e) => setFormOrderId(e.target.value)}
@@ -169,25 +171,25 @@ export default function AdminReturnsPage(): React.ReactElement {
 
                     {/* Customer info */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <input
+                        <Input
                             value={formFirstName}
                             onChange={(e) => setFormFirstName(e.target.value)}
                             placeholder="Имя *"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
-                        <input
+                        <Input
                             value={formLastName}
                             onChange={(e) => setFormLastName(e.target.value)}
                             placeholder="Фамилия"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
-                        <input
+                        <Input
                             value={formEmail}
                             onChange={(e) => setFormEmail(e.target.value)}
                             placeholder="Email *"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
-                        <input
+                        <Input
                             value={formPhone}
                             onChange={(e) => setFormPhone(e.target.value)}
                             placeholder="Телефон"
@@ -212,7 +214,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <input
+                        <Input
                             type="number"
                             min={0}
                             value={formRefund}
@@ -220,7 +222,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                             placeholder="Сумма возврата (€) *"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
-                        <input
+                        <Input
                             value={formComment}
                             onChange={(e) => setFormComment(e.target.value)}
                             placeholder="Комментарий клиента"
@@ -253,7 +255,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         <p className="text-xs text-muted-foreground shrink-0">
                                             {formatEuro(item.price, locale)}
                                         </p>
-                                        <input
+                                        <Input
                                             type="number"
                                             min={0}
                                             max={99}
@@ -281,7 +283,7 @@ export default function AdminReturnsPage(): React.ReactElement {
             {/* Filters */}
             <div className="bg-card rounded-xl border border-border p-4 space-y-3">
                 <div className="flex flex-wrap gap-3">
-                    <input
+                    <Input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -574,7 +576,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             </div>
                                         )}
 
-                                        <textarea
+                                        <Textarea
                                             rows={2}
                                             value={resolutionDraft[ret.id] ?? ''}
                                             onChange={(e) =>
@@ -584,7 +586,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                 }))
                                             }
                                             placeholder="Добавьте комментарий к решению..."
-                                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                                            className="w-full resize-none text-sm"
                                         />
 
                                         <div className="flex flex-wrap gap-2">

@@ -303,7 +303,7 @@ export default function StockAlertsPage(): React.ReactElement {
                                             {p.category}
                                         </td>
                                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                            {p.price.toLocaleString('ru-RU')} ₽
+                                            €{p.price.toLocaleString('ru-RU')}
                                         </td>
                                         <td className="px-4 py-3">
                                             <StockBadge stock={p.stock} threshold={threshold} />

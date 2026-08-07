@@ -212,6 +212,7 @@ export const BRANDS: Brand[] = [
   { id: 'serical', name: 'SERICAL', logo: '/brands-distribution/serical.svg', isDistributor: true, description: { ru: 'Итальянский бренд средств по восстановлению поврежденных волос.', en: 'Italian brand of products for restoring damaged hair.', lv: 'Itāļu zīmols bojātu matu atjaunošanai.' } },
   { id: 'sibel', name: 'SIBEL', logo: '/brands/sibel.png' },
   { id: 'silcare', name: 'SILCARE', logo: '/brands/silcare.png' },
+  { id: 'smooth', name: 'SMOOTH', logo: '/brands-distribution/smooth.svg', isDistributor: true },
   { id: 'snails', name: 'SNAILS', logo: '/brands/snails.jpeg' },
   { id: 'st-tropez', name: 'ST.TROPEZ', logo: '/brands-distribution/sttropez.svg', isDistributor: true, description: { ru: 'ST Tropez Премиальный бренд автозагаров. Новые стандарты ухода за кожей – легкое сияния кожи без участия солнца.', en: 'ST Tropez is a premium self-tanning brand. New standards of skin care – easy glow without the sun.', lv: 'ST Tropez – premium klases paštonējošais zīmols. Jauni ādas kopšanas standarti – viegls mirdzums bez saules.' } },
   { id: 'staleks', name: 'STALEKS', logo: '/brands/new-brand.svg' },

@@ -59,7 +59,7 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
             <Reveal><Brands /></Reveal>
             <SaleSection />
             <Reveal><ProductRequestSection /></Reveal>
-            <main className="w-full py-6">
+            <main className="w-full">
                 <Reveal><HomeRetailBanner /></Reveal>
                 <Reveal><AboutSection language={language} /></Reveal>
             </main>

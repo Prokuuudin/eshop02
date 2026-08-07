@@ -7,7 +7,7 @@ import { getServerContent } from '@/lib/server-translation';
 export default async function AboutSection({ language }: { language: Language }): Promise<React.JSX.Element> {
   const { t } = await getServerContent(language);
   return (
-    <section id="about" className="max-w-[1200px] mx-auto w-full px-4 py-10 mb-10">
+    <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-6">
       <h1 className="text-4xl font-bold mb-6 text-foreground">{t('about.title')}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>

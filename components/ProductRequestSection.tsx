@@ -113,7 +113,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
   }
 
   return (
-    <section className={embedded ? 'product-request mb-12' : 'product-request py-10'} id="product-request">
+    <section className={embedded ? 'product-request mb-12' : 'product-request pt-6'} id="product-request">
       {turnstileEnabled && (
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
       )}
@@ -145,7 +145,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
         </div>
 
         {expanded && (
-          <div id="product-request-card" className="product-request__card rounded-lg border bg-card p-4 md:p-6 mt-4">
+          <div id="product-request-card" className="product-request__card mt-4 rounded-lg border bg-card p-4 md:p-5">
             {submitted ? (
               <div
                 aria-live="polite"
@@ -183,7 +183,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                     required
                   />
                 </div>
-                <div className="product-request__field grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="product-request__field grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
                     <label htmlFor="product-request-name" className="product-request__label block text-sm font-medium mb-1 text-foreground">
                       {t('contact.name')}
@@ -215,31 +215,16 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                       required
                     />
                   </div>
-                </div>
-                <div className="product-request__field">
-                  <span className="product-request__label block text-sm font-medium mb-1 text-foreground">
-                    {t('home.productRequest.phone')}
-                  </span>
-                  <PhoneInput
-                    value={formData.phone}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))}
-                    placeholder={t('home.productRequest.phonePlaceholder')}
-                  />
-                </div>
-                <div className="product-request__field">
-                  <label htmlFor="product-request-comment" className="product-request__label block text-sm font-medium mb-1 text-foreground">
-                    {t('home.productRequest.comment')}
-                  </label>
-                  <Textarea
-                    id="product-request-comment"
-                    name="comment"
-                    value={formData.comment}
-                    onChange={handleChange}
-                    className="bg-background text-foreground border-border"
-                    placeholder={t('home.productRequest.commentPlaceholder')}
-                    rows={3}
-                    maxLength={2000}
-                  />
+                  <div>
+                    <span className="product-request__label block text-sm font-medium mb-1 text-foreground">
+                      {t('home.productRequest.phone')}
+                    </span>
+                    <PhoneInput
+                      value={formData.phone}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))}
+                      placeholder={t('home.productRequest.phonePlaceholder')}
+                    />
+                  </div>
                 </div>
                 {turnstileEnabled && (
                   <div className="product-request__captcha pt-1">
@@ -254,16 +239,35 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
                     {submitError}
                   </div>
                 )}
-                <Button
-                  type="submit"
-                  className="product-request__submit w-full sm:w-auto"
-                  disabled={submitting || (turnstileEnabled && !turnstileToken)}
-                >
-                  {submitting ? t('contact.sending') : t('home.productRequest.send')}
-                </Button>
-                <p className="product-request__note text-xs text-muted-foreground">
-                  {t('home.productRequest.note')}
-                </p>
+                <div className="product-request__actions grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="product-request__field sm:col-span-2">
+                    <label htmlFor="product-request-comment" className="product-request__label block text-sm font-medium mb-1 text-foreground">
+                      {t('home.productRequest.comment')}
+                    </label>
+                    <Textarea
+                      id="product-request-comment"
+                      name="comment"
+                      value={formData.comment}
+                      onChange={handleChange}
+                      className="bg-background text-foreground border-border"
+                      placeholder={t('home.productRequest.commentPlaceholder')}
+                      rows={2}
+                      maxLength={2000}
+                    />
+                  </div>
+                  <div className="flex flex-col justify-between gap-2 sm:pt-6">
+                    <p className="product-request__note text-xs leading-snug text-muted-foreground">
+                      {t('home.productRequest.note')}
+                    </p>
+                    <Button
+                      type="submit"
+                      className="product-request__submit w-full"
+                      disabled={submitting || (turnstileEnabled && !turnstileToken)}
+                    >
+                      {submitting ? t('contact.sending') : t('home.productRequest.send')}
+                    </Button>
+                  </div>
+                </div>
               </form>
             )}
           </div>

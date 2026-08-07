@@ -27,7 +27,7 @@ export default function SaleSection(): React.ReactElement {
 
     if (!products.length && !banner) {
         return (
-            <section id="sale" className="sale-section py-8">
+            <section id="sale" className="sale-section pt-6">
                 <div className="mx-auto w-full max-w-[1200px] px-4">
                     <Newsletter compact />
                 </div>
@@ -36,7 +36,7 @@ export default function SaleSection(): React.ReactElement {
     }
 
     return (
-        <section id="sale" className="sale-section py-8">
+        <section id="sale" className="sale-section pt-6">
             <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">

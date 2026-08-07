@@ -21,7 +21,7 @@ export default function Categories(): React.ReactElement | null {
     const isHydrated = useAuthStore((s) => s.isHydrated);
 
     if (!isHydrated || !isAuthenticated) return null;
-    const sectionClassName = 'categories py-8 relative z-30 overflow-visible';
+    const sectionClassName = 'categories pt-6 relative z-30 overflow-visible';
     const gridClassName =
         'categories__grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 overflow-visible';
     const itemWithDropdownClassName =

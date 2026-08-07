@@ -25,7 +25,7 @@ export default function BestsellersSection(): React.ReactElement | null {
     if (!products.length) return null;
 
     return (
-        <section className="bestsellers py-8">
+        <section className="bestsellers pt-6">
             <div className="mx-auto w-full max-w-[1200px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">

@@ -83,7 +83,7 @@ export default function Brands(): React.ReactElement {
   }, []);
 
   return (
-    <section className="brands py-6 sm:py-8" id="brands">
+    <section className="brands pt-6" id="brands">
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
 
         <div className="mb-4 sm:mb-5">

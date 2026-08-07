@@ -69,7 +69,7 @@ export default function Newsletter({ compact = false }: { compact?: boolean }): 
               onChange={(e) => setEmail(e.target.value)}
               aria-label={t('newsletter.emailAria')}
             />
-            <Button type="submit">{t('newsletter.subscribe')}</Button>
+            <Button type="submit" className="hover:shadow-lg">{t('newsletter.subscribe')}</Button>
           </div>
 
           <div className="newsletter__consent flex items-start gap-2">

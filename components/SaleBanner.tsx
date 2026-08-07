@@ -81,7 +81,7 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
                         asChild
                         size="lg"
                         variant={CTA_VARIANT[banner.ctaStyle] ?? 'default'}
-                        className="sale-banner__cta w-full lg:w-auto"
+                        className="sale-banner__cta w-full lg:w-auto hover:shadow-lg"
                     >
                         <Link href={banner.link}>{ctaLabel}</Link>
                     </Button>

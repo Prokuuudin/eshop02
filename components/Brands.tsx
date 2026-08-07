@@ -46,16 +46,36 @@ export default function Brands(): React.ReactElement {
 
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const [hasOverflow, setHasOverflow] = React.useState(false);
+  const [maxHeight, setMaxHeight] = React.useState<number | 'none'>(COLLAPSED_MAX_HEIGHT);
 
   React.useEffect(() => {
     const measure = () => {
       const el = listRef.current;
-      if (el) setHasOverflow(el.scrollHeight > COLLAPSED_MAX_HEIGHT + 1);
+      if (!el) return;
+      setHasOverflow(el.scrollHeight > COLLAPSED_MAX_HEIGHT + 1);
+      if (showAll) setMaxHeight(el.scrollHeight);
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [brands, language]);
+  }, [brands, language, showAll]);
+
+  const handleToggle = () => {
+    const el = listRef.current;
+    if (!el) { setShowAll((prev) => !prev); return; }
+    if (!showAll) {
+      setMaxHeight(el.scrollHeight);
+      setShowAll(true);
+    } else {
+      setMaxHeight(el.scrollHeight);
+      requestAnimationFrame(() => setMaxHeight(COLLAPSED_MAX_HEIGHT));
+      setShowAll(false);
+    }
+  };
+
+  const handleListTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+    if (e.propertyName === 'max-height' && showAll) setMaxHeight('none');
+  };
 
   React.useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 800);
@@ -98,8 +118,9 @@ export default function Brands(): React.ReactElement {
               <div className="brands__list-clip relative">
                 <div
                   ref={listRef}
-                  className={`brands__list flex flex-wrap gap-x-6 gap-y-3 ${showAll ? '' : 'overflow-hidden'}`}
-                  style={showAll ? undefined : { maxHeight: COLLAPSED_MAX_HEIGHT }}
+                  onTransitionEnd={handleListTransitionEnd}
+                  className="brands__list flex flex-wrap gap-x-6 gap-y-3 overflow-hidden transition-[max-height] duration-500 ease-in-out"
+                  style={{ maxHeight: maxHeight === 'none' ? 'none' : `${maxHeight}px` }}
                 >
                   {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
                     <div key={letter} className="brands__letter-group flex flex-wrap items-center gap-x-2 gap-y-2">
@@ -117,21 +138,21 @@ export default function Brands(): React.ReactElement {
                     </div>
                   ))}
                 </div>
-                {!showAll && hasOverflow && (
+                {hasOverflow && (
                   <div
                     aria-hidden="true"
-                    className="brands__fade pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/70 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_45%,transparent)]"
+                    className={`brands__fade pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/70 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_45%,transparent)] transition-opacity duration-500 ease-in-out ${showAll ? 'opacity-0' : 'opacity-100'}`}
                   />
                 )}
               </div>
               {hasOverflow && (
-                <div className={`brands__toggle-row relative flex justify-center ${showAll ? 'mt-4' : '-mt-6'}`}>
+                <div className={`brands__toggle-row relative flex justify-center transition-[margin] duration-500 ease-in-out ${showAll ? 'mt-4' : '-mt-6'}`}>
                   <Button
                     variant="outline"
                     size="sm"
                     className="brands__toggle"
                     aria-expanded={showAll}
-                    onClick={() => setShowAll((prev) => !prev)}
+                    onClick={handleToggle}
                   >
                     {showAll ? t('brands.hide') : t('brands.more')}
                   </Button>

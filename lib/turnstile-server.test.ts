@@ -9,11 +9,11 @@ afterEach(() => {
 })
 
 describe('Turnstile configuration', () => {
-  it('fails closed in production when both keys are absent', () => {
+  it('disables in production when both keys are absent', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', '')
     vi.stubEnv('TURNSTILE_SECRET_KEY', '')
-    expect(() => isTurnstileRequired()).toThrow(TurnstileConfigurationError)
+    expect(isTurnstileRequired()).toBe(false)
   })
 
   it.each([

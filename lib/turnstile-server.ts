@@ -10,14 +10,15 @@ export class TurnstileConfigurationError extends Error {
 }
 
 /**
- * Production is always fail-closed. Outside production, Turnstile may be disabled by
- * leaving both keys empty, but a partial configuration is still rejected.
+ * Turnstile is opt-in: leaving both keys empty disables it (checkout/contact/access-requests
+ * stay open, no CAPTCHA gate). A partial configuration (only one of the two keys set) is always
+ * rejected — that's a real misconfiguration, not an intentional "disabled" state.
  */
 export function isTurnstileRequired(): boolean {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? ''
   const secretKey = process.env.TURNSTILE_SECRET_KEY?.trim() ?? ''
   const partiallyConfigured = Boolean(siteKey) !== Boolean(secretKey)
-  if (partiallyConfigured || (process.env.NODE_ENV === 'production' && (!siteKey || !secretKey))) {
+  if (partiallyConfigured) {
     throw new TurnstileConfigurationError()
   }
   return Boolean(siteKey && secretKey)

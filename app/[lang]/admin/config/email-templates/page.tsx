@@ -119,9 +119,9 @@ export default function EmailTemplatesPage(): React.ReactElement {
                     <h1 className="text-2xl font-bold text-foreground">
                         Редактор email-шаблонов
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         Настройка текстов для транзакционных писем. Используйте{' '}
-                        <code className="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-800">
+                        <code className="rounded bg-muted px-1 py-0.5 text-xs">
                             {'{{variable}}'}
                         </code>{' '}
                         для подстановки данных.
@@ -130,16 +130,16 @@ export default function EmailTemplatesPage(): React.ReactElement {
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-1">
-                        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                            <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-                                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="overflow-hidden rounded-xl border border-border bg-card">
+                            <div className="border-b border-border px-4 py-3">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Шаблоны
                                 </h2>
                             </div>
                             {loading ? (
-                                <div className="py-8 text-center text-sm text-gray-400">Загрузка...</div>
+                                <div className="py-8 text-center text-sm text-muted-foreground">Загрузка...</div>
                             ) : (
-                                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                                <ul className="divide-y divide-border">
                                     {templates.map((t) => (
                                         <li key={t.id}>
                                             <button
@@ -160,7 +160,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 >
                                                     {t.name}
                                                 </p>
-                                                <p className="mt-0.5 truncate text-xs text-gray-400">
+                                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
                                                     {t.subject}
                                                 </p>
                                             </button>
@@ -173,17 +173,17 @@ export default function EmailTemplatesPage(): React.ReactElement {
 
                     <div className="lg:col-span-2">
                         {!selected ? (
-                            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400 dark:border-gray-700">
+                            <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
                                 Выберите шаблон для редактирования
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between gap-4">
-                                    <h2 className="font-semibold text-gray-800 dark:text-gray-200">
+                                    <h2 className="font-semibold text-foreground">
                                         {selected.name}
                                     </h2>
                                     <div className="flex gap-2">
-                                        <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+                                        <div className="flex rounded-lg border border-border bg-card p-1">
                                             <button
                                                 type="button"
                                                 onClick={() => setTab('edit')}
@@ -236,7 +236,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                             />
                                         </div>
                                         {selected.variables.length > 0 && (
-                                            <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                                            <div className="rounded-lg bg-muted px-3 py-2">
                                                 <p className="mb-1 text-xs font-medium text-muted-foreground">
                                                     Доступные переменные:
                                                 </p>
@@ -265,7 +265,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 <button
                                                     type="button"
                                                     onClick={reset}
-                                                    className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+                                                    className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-gray-50"
                                                 >
                                                     Отменить
                                                 </button>
@@ -308,7 +308,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                     Не удалось отправить. Проверьте настройки SMTP.
                                                 </p>
                                             )}
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs text-muted-foreground">
                                                 Используются тестовые данные вместо переменных.
                                                 {!process.env.NEXT_PUBLIC_SMTP_CONFIGURED && ' SMTP настраивается через переменные окружения.'}
                                             </p>
@@ -316,13 +316,13 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
-                                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
-                                            <span className="text-xs text-gray-500">Тема: </span>
-                                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                        <div className="rounded-md border border-border bg-muted px-3 py-2">
+                                            <span className="text-xs text-muted-foreground">Тема: </span>
+                                            <span className="text-sm font-medium text-foreground">
                                                 {renderPreview(subject, selected.variables)}
                                             </span>
                                         </div>
-                                        <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+                                        <div className="rounded-xl border border-border bg-card p-6">
                                             <div
                                                 className="prose prose-sm max-w-none dark:prose-invert"
                                                 dangerouslySetInnerHTML={{
@@ -330,7 +330,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 }}
                                             />
                                         </div>
-                                        <p className="text-xs text-gray-400">
+                                        <p className="text-xs text-muted-foreground">
                                             Превью использует тестовые данные для подстановки переменных
                                         </p>
                                     </div>

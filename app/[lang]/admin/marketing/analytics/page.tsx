@@ -99,7 +99,7 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
         {promoOrders.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-2">
             <p className="text-muted-foreground font-medium">Заказов с промокодами пока нет</p>
-            <p className="text-gray-400 dark:text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               Когда покупатели начнут использовать промокоды при оформлении заказов, здесь появится статистика.
             </p>
             <Link href="/admin/marketing/discounts" className="inline-block mt-2 text-sm text-primary hover:underline">
@@ -113,7 +113,7 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
               <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Заказов с промокодом</p>
                 <p className="text-3xl font-bold text-foreground">{stats.totalWithPromo}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">из {stats.totalOrders} всего</p>
+                <p className="text-xs text-muted-foreground mt-1">из {stats.totalOrders} всего</p>
               </div>
               <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Сумма скидок</p>
@@ -126,7 +126,7 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
               <div className="rounded-xl border border-border bg-card p-5">
                 <p className="text-xs text-muted-foreground mb-1">Конверсия промо</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.conversionRate.toFixed(1)}%</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">заказов используют промокод</p>
+                <p className="text-xs text-muted-foreground mt-1">заказов используют промокод</p>
               </div>
             </div>
 
@@ -145,13 +145,13 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
                       <th className="px-5 py-3 font-medium">Средний чек</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tbody className="divide-y divide-border">
                     {codeStats.map((row) => (
                       <tr key={row.code} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
                         <td className="px-5 py-3 font-mono font-semibold text-foreground">{row.code}</td>
-                        <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{row.count}</td>
+                        <td className="px-5 py-3 text-foreground">{row.count}</td>
                         <td className="px-5 py-3 text-primary font-medium">{formatEur(row.totalDiscount)}</td>
-                        <td className="px-5 py-3 text-gray-700 dark:text-gray-300">{formatEur(row.avgOrder)}</td>
+                        <td className="px-5 py-3 text-foreground">{formatEur(row.avgOrder)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -172,7 +172,7 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
                     return (
                       <div key={row.cat} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-700 dark:text-gray-300 font-medium">{row.label}</span>
+                          <span className="text-foreground font-medium">{row.label}</span>
                           <span className="text-muted-foreground">{row.count} ед. &middot; {formatEur(row.totalDiscount)}</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -193,12 +193,12 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-semibold text-foreground">Последние заказы с промокодом</h2>
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="divide-y divide-border">
                 {recentPromoOrders.map((order) => (
                   <div key={order.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/30">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{order.email}</span>
+                      <span className="text-sm text-foreground">{order.email}</span>
                     </div>
                     <div className="flex items-center gap-4 flex-wrap text-sm">
                       <span className="font-mono font-semibold text-primary">{order.promoCode}</span>

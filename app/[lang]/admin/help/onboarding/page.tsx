@@ -251,7 +251,7 @@ export default function AdminOnboardingPage(): React.ReactElement {
         {/* Progress */}
         <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span className="text-sm font-medium text-foreground">
               Прогресс: {done} из {total}
             </span>
             <Button variant="outline" size="sm" onClick={reset}>Сбросить прогресс</Button>
@@ -272,12 +272,12 @@ export default function AdminOnboardingPage(): React.ReactElement {
         {/* Steps */}
         {groups.map((group) => (
           <div key={group} className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-muted/50">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+            <div className="px-5 py-3 border-b border-border bg-muted/50">
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                 {groupLabels[group]}
               </h2>
             </div>
-            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            <ul className="divide-y divide-border">
               {steps.filter((s) => s.group === group).map((step) => {
                 const isDone = checked.has(step.id)
                 return (

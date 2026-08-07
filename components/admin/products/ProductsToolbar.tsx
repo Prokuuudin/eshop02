@@ -55,14 +55,14 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                     placeholder={placeholder}
                     className="h-9 flex-1"
                 />
-                <IconSearch className="w-5 h-5 text-gray-400" />
+                <IconSearch className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
                     {translations[language]['catalog.search'] || 'Поиск'}
                 </span>
             </div>
             <div className="hidden md:block h-8 border-l border-border mx-2" />
             <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+                <span className="text-sm text-foreground font-medium">
                     {(translations[language]['admin.productsPage.viewModeTitle'] || 'Выбор вида') +
                         ':'}
                 </span>
@@ -85,7 +85,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
             </div>
             <div className="hidden md:block h-8 border-l border-border mx-2" />
             <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+                <span className="text-sm text-foreground font-medium">
                     {(translations[language]['admin.productsPage.archiveTitleShort'] ||
                         'Удаленные товары') + ':'}
                 </span>
@@ -109,7 +109,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                             )}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl w-full rounded-2xl p-8 bg-card shadow-2xl border border-gray-100 dark:border-gray-800">
+                    <DialogContent className="max-w-2xl w-full rounded-2xl p-8 bg-card shadow-2xl border border-border">
                         <DialogHeader className="flex flex-row items-center justify-between mb-4 p-0">
                             <DialogTitle className="text-2xl font-bold text-foreground">
                                 {translations[language]['admin.productsPage.archiveTitle'] ||

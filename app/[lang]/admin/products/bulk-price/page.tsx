@@ -136,19 +136,19 @@ export default function BulkPricePage(): React.ReactElement {
                     <h1 className="text-2xl font-bold text-foreground">
                         Массовый редактор цен
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         Выберите товары и примените изменение цены
                     </p>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-                    <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <div className="rounded-xl border border-border bg-card p-4">
+                    <h2 className="mb-3 text-sm font-semibold text-foreground">
                         Настройка изменения
                     </h2>
                     <div className="flex flex-wrap items-end gap-4">
                         <div>
-                            <p className="mb-1 block text-xs text-gray-500">Тип изменения</p>
-                            <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
+                            <p className="mb-1 block text-xs text-muted-foreground">Тип изменения</p>
+                            <div className="flex rounded-lg border border-border bg-muted p-1">
                                 {MODE_OPTIONS.map((opt) => (
                                     <button
                                         key={opt.value}
@@ -166,7 +166,7 @@ export default function BulkPricePage(): React.ReactElement {
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-gray-500">Значение</label>
+                            <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-muted-foreground">Значение</label>
                             <Input
                                 id="bulk-price-value"
                                 type="number"
@@ -176,7 +176,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 className="w-40 text-sm"
                             />
                         </div>
-                        <label htmlFor="bulk-price-save-old" className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <label htmlFor="bulk-price-save-old" className="flex items-center gap-2 text-sm text-foreground">
                             <Checkbox
                                 id="bulk-price-save-old"
                                 checked={saveOldPrice}
@@ -216,7 +216,7 @@ export default function BulkPricePage(): React.ReactElement {
                         className="min-w-[240px] flex-1 text-sm"
                     />
                     <Select value={catFilter || 'all'} onValueChange={(v) => setCatFilter(v === 'all' ? '' : v)}>
-                        <SelectTrigger className="rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+                        <SelectTrigger className="rounded-md border border-border px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -228,17 +228,17 @@ export default function BulkPricePage(): React.ReactElement {
                             ))}
                         </SelectContent>
                     </Select>
-                    <span className="flex items-center text-sm text-gray-500">
+                    <span className="flex items-center text-sm text-muted-foreground">
                         Выбрано: {selected.size} из {filtered.length}
                     </span>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                <div className="overflow-x-auto rounded-xl border border-border bg-card">
                     {loading ? (
-                        <div className="py-16 text-center text-sm text-gray-400">Загрузка...</div>
+                        <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                            <thead className="border-b border-border bg-muted">
                                 <tr>
                                     <th className="w-10 px-4 py-3">
                                         <Checkbox
@@ -266,7 +266,7 @@ export default function BulkPricePage(): React.ReactElement {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            <tbody className="divide-y divide-border">
                                 {filtered.map((p) => {
                                     const newPrice = preview(p);
                                     const isSelected = selected.has(p.id);
@@ -289,11 +289,11 @@ export default function BulkPricePage(): React.ReactElement {
                                                 />
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div className="font-medium text-gray-800 dark:text-gray-200">
+                                                <div className="font-medium text-foreground">
                                                     {p.title}
                                                 </div>
                                                 {p.sku && (
-                                                    <div className="text-xs text-gray-400">{p.sku}</div>
+                                                    <div className="text-xs text-muted-foreground">{p.sku}</div>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 text-muted-foreground">
@@ -302,7 +302,7 @@ export default function BulkPricePage(): React.ReactElement {
                                             <td className="px-4 py-3 capitalize text-muted-foreground">
                                                 {p.category}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                                            <td className="px-4 py-3 text-right text-foreground">
                                                 {formatMoney(p.price)}
                                             </td>
                                             <td className="px-4 py-3 text-right">
@@ -319,7 +319,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                         {formatMoney(newPrice)}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-300 dark:text-gray-600">—</span>
+                                                    <span className="text-muted-foreground">—</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 text-right text-muted-foreground">

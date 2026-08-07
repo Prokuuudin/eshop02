@@ -305,7 +305,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     />
                                 ) : (
                                     <div
-                                        className="h-16 w-24 rounded flex-shrink-0 flex items-center justify-center text-xs text-gray-400"
+                                        className="h-16 w-24 rounded flex-shrink-0 flex items-center justify-center text-xs text-muted-foreground"
                                         style={{ backgroundColor: banner.bgColor }}
                                     >
                                         Нет фото

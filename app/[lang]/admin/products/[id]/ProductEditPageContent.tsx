@@ -30,8 +30,8 @@ export default function ProductEditPageContent({
                         >
                             ← Все товары
                         </Link>
-                        <span className="text-gray-400">/</span>
-                        <span className="text-sm text-gray-500 truncate">{productTitle}</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="text-sm text-muted-foreground truncate">{productTitle}</span>
                     </div>
                     <h1 className="text-2xl font-bold mb-6">
                         Редактирование: {productTitle}

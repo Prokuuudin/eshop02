@@ -162,7 +162,7 @@ export default function AdminAccountsPage(): React.ReactElement {
               {tl('admin.accounts.dbUsers', 'Пользователи в БД', 'Users in DB', 'Lietotaji DB')} ({dbTotal})
             </h2>
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 className="pl-8 w-56"
                 placeholder={tl('admin.accounts.searchPlaceholder', 'Email, имя, карта...', 'Email, name, card...', 'E-pasts, vards, karte...')}
@@ -199,7 +199,7 @@ export default function AdminAccountsPage(): React.ReactElement {
                     <th className="pb-2 font-medium">Компания</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <tbody className="divide-y divide-border">
                   {dbUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <td className="py-2 pr-4 font-mono text-xs">{u.email}</td>

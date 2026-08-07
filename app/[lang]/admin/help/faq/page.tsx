@@ -135,7 +135,7 @@ export default function AdminFaqPage(): React.ReactElement {
         </div>
 
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none select-none">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none select-none">🔍</span>
           <Input
             type="text"
             value={query}
@@ -145,7 +145,7 @@ export default function AdminFaqPage(): React.ReactElement {
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xs">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xs">
               ✕
             </button>
           )}
@@ -157,7 +157,7 @@ export default function AdminFaqPage(): React.ReactElement {
               Ничего не найдено по запросу «{query}»
             </div>
           ) : (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            <ul className="divide-y divide-border">
               {filtered.map((item) => {
                 const isOpen = openId === item.id
                 return (

@@ -478,7 +478,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         }`}
                     >
                         {l('С картой', 'With a card', 'Ar karti')}{' '}
-                        <span className="text-gray-400 dark:text-gray-500 font-normal">{holders.length}</span>
+                        <span className="text-muted-foreground font-normal">{holders.length}</span>
                     </button>
                     <button
                         type="button"
@@ -490,7 +490,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         }`}
                     >
                         {l('Без карты', 'Without a card', 'Bez kartes')}{' '}
-                        <span className="text-gray-400 dark:text-gray-500 font-normal">{totalEligible.toLocaleString('ru-RU')}</span>
+                        <span className="text-muted-foreground font-normal">{totalEligible.toLocaleString('ru-RU')}</span>
                     </button>
                 </div>
 
@@ -500,7 +500,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-xl font-semibold text-foreground">
                             {l('Клиенты с картой', 'Clients with a card', 'Klienti ar karti')}{' '}
-                            <span className="text-gray-400 dark:text-gray-500 font-normal text-base">
+                            <span className="text-muted-foreground font-normal text-base">
                                 {normalizedSearch ? `${filteredHolders.length} / ${holders.length}` : holders.length}
                             </span>
                         </h2>
@@ -709,7 +709,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <h2 className="text-xl font-semibold text-foreground">
                             {l('Клиенты без карты', 'Clients without a card', 'Klienti bez kartes')}{' '}
-                            <span className="text-gray-400 dark:text-gray-500 font-normal text-base">
+                            <span className="text-muted-foreground font-normal text-base">
                                 {normalizedEligibleSearch ? `${filteredEligible.length} / ${eligibleUsers.length}` : eligibleUsers.length}
                             </span>
                         </h2>

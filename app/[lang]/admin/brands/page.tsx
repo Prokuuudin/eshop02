@@ -49,7 +49,7 @@ export default function AdminBrandsPage(): React.ReactElement {
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                <div className="rounded-lg border border-border bg-card p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h1 className="text-2xl font-bold text-foreground">
@@ -92,7 +92,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                             )}
                             className="h-9 flex-1"
                         />
-                        <Search className="h-5 w-5 text-gray-400" />
+                        <Search className="h-5 w-5 text-muted-foreground" />
                         <span className="whitespace-nowrap text-sm text-muted-foreground">
                             {tl('admin.brands.search', 'Поиск', 'Search', 'Meklet')}
                         </span>
@@ -199,7 +199,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                 }))
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                            <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -240,7 +240,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                 }))
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                            <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -281,7 +281,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                 }))
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                            <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -406,7 +406,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                     </label>
                                 </div>
 
-                                <div className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
+                                <div className="rounded-lg border border-border bg-card p-2">
                                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                                         {tl(
                                             'admin.brands.cardPreview',
@@ -415,7 +415,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                             'Kartites priekskats'
                                         )}
                                     </p>
-                                    <div className="rounded border border-gray-200 p-3 dark:border-gray-700">
+                                    <div className="rounded border border-border p-3">
                                         <div className="relative mx-auto h-12 w-24">
                                             <Image
                                                 unoptimized
@@ -472,7 +472,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                     </h2>
 
                     {loading ? (
-                        <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                        <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                             {tl(
                                 'admin.brands.loading',
                                 'Загрузка брендов...',
@@ -481,7 +481,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                             )}
                         </div>
                     ) : filteredBrands.length === 0 ? (
-                        <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                        <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                             {tl(
                                 'admin.brands.noResults',
                                 'Бренды не найдены',
@@ -493,7 +493,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                         filteredBrands.map((brand) => (
                             <article
                                 key={brand.id}
-                                className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                                className="rounded-lg border border-border bg-card p-4"
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div>
@@ -586,7 +586,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                     updateBrand(brand.id, { popular: v === 'yes' })
                                                 }
                                             >
-                                                <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                                <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -626,7 +626,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                     })
                                                 }
                                             >
-                                                <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                                <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -666,7 +666,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                     })
                                                 }
                                             >
-                                                <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                                                <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -763,7 +763,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                         </label>
                                     </div>
 
-                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+                                    <div className="rounded-lg border border-border bg-muted p-2 dark:bg-gray-800/40">
                                         <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                                             {tl(
                                                 'admin.brands.cardPreview',
@@ -772,7 +772,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                 'Kartites priekskats'
                                             )}
                                         </p>
-                                        <div className="rounded border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+                                        <div className="rounded border border-border bg-white p-3 dark:bg-gray-900">
                                             <div className="relative mx-auto h-12 w-24">
                                                 <Image
                                                     unoptimized
@@ -801,7 +801,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                     <Accordion type="single" collapsible>
                                         <AccordionItem
                                             value="legal"
-                                            className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                                            className="border border-border rounded-lg overflow-hidden"
                                         >
                                             <AccordionTrigger className="px-4 py-2 text-sm font-medium hover:no-underline hover:bg-gray-50 dark:hover:bg-gray-800/50 [&>svg]:shrink-0">
                                                 <span className="flex items-center gap-2">

@@ -28,7 +28,7 @@ return (
                             {tl('admin.clientBarcodes.subtitle', 'Поиск клиентов по номеру карты и выдача карт мастерам без карты.', 'Look up clients by card number and issue cards to masters without one.', 'Klientu meklēšana pēc kartes numura un karšu izsniegšana meistariem bez kartes.')}
                         </p>
                         <div className="relative mt-3 w-full max-w-sm">
-                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <Input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -84,7 +84,7 @@ return (
                                                 {req.phone && (
                                                     <p className="text-sm text-muted-foreground">Телефон: {req.phone}</p>
                                                 )}
-                                                <p className="text-sm text-gray-400 dark:text-gray-500">
+                                                <p className="text-sm text-muted-foreground">
                                                     {new Date(req.requestedAt).toLocaleString('ru-RU')}
                                                 </p>
                                             </div>
@@ -93,7 +93,7 @@ return (
                                                     href={`/api/admin/access-requests/${encodeURIComponent(req.id)}/certificate`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                                    className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
                                                 >
                                                     📄 {req.certificateName}
                                                 </a>
@@ -152,7 +152,7 @@ return (
                                         <div className="pt-1">
                                             <label className="text-sm text-muted-foreground block mb-1">
                                                 Комментарий к отказу{' '}
-                                                <span className="text-gray-400 dark:text-gray-500">(необязательно — будет добавлен в письмо)</span>
+                                                <span className="text-muted-foreground">(необязательно — будет добавлен в письмо)</span>
                                             </label>
                                             <Textarea
                                                 value={rejectNotes[req.id] ?? ''}
@@ -192,7 +192,7 @@ return (
                 <section className="rounded-lg border border-border bg-card p-6">
                     <h2 className="text-xl font-semibold mb-4">
                         {tl('admin.clientBarcodes.holders', 'Держатели карт', 'Card holders', 'Karšu turētāji')}{' '}
-                        <span className="text-gray-400 dark:text-gray-500 font-normal text-base">
+                        <span className="text-muted-foreground font-normal text-base">
                             {search.trim() ? `${cardHolders.length} / ${cardHoldersTotal}` : cardHoldersTotal}
                         </span>
                     </h2>
@@ -215,7 +215,7 @@ return (
                                         <th className="pb-2 font-medium">Бонусы</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tbody className="divide-y divide-border">
                                     {cardHolders.map((holder) => (
                                         <tr key={holder.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                             <td className="py-2 pr-4 font-mono text-xs">{holder.cardNumber ?? '—'}</td>

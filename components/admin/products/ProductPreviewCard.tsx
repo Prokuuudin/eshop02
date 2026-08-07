@@ -49,7 +49,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 <button
                     type="button"
                     aria-label="Добавить в избранное"
-                    className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white/95 p-2 text-gray-700 shadow-sm transition hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200 dark:hover:border-pink-500 dark:hover:text-pink-400"
+                    className="inline-flex items-center justify-center rounded-full border border-border bg-white/95 p-2 text-foreground shadow-sm transition hover:border-pink-300 hover:text-pink-600 dark:bg-gray-900/95 dark:hover:border-pink-500 dark:hover:text-pink-400"
                     tabIndex={-1}
                 >
                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +73,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                             loading="lazy"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted text-gray-400 text-xs">
+                        <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-xs">
                             Нет изображения
                         </div>
                     )}
@@ -93,7 +93,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                     <div>
                         <div className="product-card__price text-lg font-semibold">{formatEuro(displayPrice)}</div>
                         {displayOldPrice && (
-                            <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
+                            <div className="product-card__price--old text-sm line-through text-muted-foreground">
                                 {formatEuro(displayOldPrice)}
                             </div>
                         )}

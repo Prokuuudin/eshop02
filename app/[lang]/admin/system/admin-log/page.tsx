@@ -207,11 +207,11 @@ export default function AdminLogPage(): React.ReactElement {
         ) : loadState === 'error' ? (
           <div role="alert" className="rounded-xl border border-red-300 bg-red-50 py-10 text-center text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
         ) : entries.length === 0 ? (
-          <div className="rounded-xl border border-border py-16 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
             Действия пока не зарегистрированы. Лог наполнится после первых операций в админке.
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-xl border border-border py-10 text-center text-sm text-gray-400 dark:text-gray-500">
+          <div className="rounded-xl border border-border py-10 text-center text-sm text-muted-foreground">
             Нет событий по заданным фильтрам
           </div>
         ) : (
@@ -228,7 +228,7 @@ export default function AdminLogPage(): React.ReactElement {
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Детали</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                <tbody className="divide-y divide-border">
                   {pageItems.map((entry) => (
                     <>
                       <tr
@@ -240,8 +240,8 @@ export default function AdminLogPage(): React.ReactElement {
                           {fmtDate(entry.at)}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-xs font-medium text-gray-800 dark:text-gray-200">{entry.adminName ?? entry.adminEmail}</p>
-                          {entry.adminName && <p className="text-xs text-gray-400">{entry.adminEmail}</p>}
+                          <p className="text-xs font-medium text-foreground">{entry.adminName ?? entry.adminEmail}</p>
+                          {entry.adminName && <p className="text-xs text-muted-foreground">{entry.adminEmail}</p>}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${actionBadgeCls(entry.action)}`}>
@@ -249,8 +249,8 @@ export default function AdminLogPage(): React.ReactElement {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-sm text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{entry.entityTitle ?? entry.entityId}</p>
-                          <p className="text-xs text-gray-400 font-mono">{entry.entityType}:{entry.entityId.slice(0, 12)}</p>
+                          <p className="text-sm text-foreground truncate max-w-[180px]">{entry.entityTitle ?? entry.entityId}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{entry.entityType}:{entry.entityId.slice(0, 12)}</p>
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {(entry.before || entry.after) ? (
@@ -271,11 +271,11 @@ export default function AdminLogPage(): React.ReactElement {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                               <div>
                                 <p className="font-semibold text-muted-foreground mb-1">ID события</p>
-                                <code className="font-mono text-gray-700 dark:text-gray-300">{entry.id}</code>
+                                <code className="font-mono text-foreground">{entry.id}</code>
                               </div>
                               <div>
                                 <p className="font-semibold text-muted-foreground mb-1">Тип / ID объекта</p>
-                                <code className="font-mono text-gray-700 dark:text-gray-300">{entry.entityType} / {entry.entityId}</code>
+                                <code className="font-mono text-foreground">{entry.entityType} / {entry.entityId}</code>
                               </div>
                               {entry.before && (
                                 <div>
@@ -296,7 +296,7 @@ export default function AdminLogPage(): React.ReactElement {
                               {entry.details && (
                                 <div className="md:col-span-2">
                                   <p className="font-semibold text-muted-foreground mb-1">Детали</p>
-                                  <p className="text-gray-700 dark:text-gray-300">{entry.details}</p>
+                                  <p className="text-foreground">{entry.details}</p>
                                 </div>
                               )}
                             </div>

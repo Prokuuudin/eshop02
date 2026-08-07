@@ -22,7 +22,7 @@ export default function DeletedCategoriesSection({
           } = state;
     return (
         <>
-            <section className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+            <section className="rounded-lg border border-border bg-card p-4">
                 <h2 className="text-lg font-semibold text-foreground">
                     {tl(
                         'admin.categories.trashTitle',
@@ -47,9 +47,9 @@ export default function DeletedCategoriesSection({
                         {deletedCategories.map((category) => (
                             <div
                                 key={`trash-${category.id}`}
-                                className="flex flex-wrap items-center gap-2 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700"
+                                className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2"
                             >
-                                <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                <span className="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
                                     {category.id}
                                 </span>
                                 <span className="text-sm text-foreground">

@@ -163,7 +163,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                     )}
 
                     {foundOrder && (
-                        <div className="rounded-lg border border-border bg-card p-3 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="rounded-lg border border-border bg-card p-3 text-sm text-foreground">
                             Найден заказ · {foundOrder.firstName} {foundOrder.lastName} ·{' '}
                             {formatEuro(foundOrder.total, locale)}
                         </div>
@@ -236,7 +236,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                             <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
                                 Возвращаемые товары
                             </p>
-                            <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700 bg-card">
+                            <div className="rounded-lg border border-border divide-y divide-border bg-card">
                                 {formItems.map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-3 px-3 py-2.5">
                                         {item.image && (
@@ -346,7 +346,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                             >
                                 <div className="flex-1 min-w-0 space-y-1.5">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-mono text-xs text-gray-400 dark:text-gray-500">
+                                        <span className="font-mono text-xs text-muted-foreground">
                                             {ret.id}
                                         </span>
                                         <span
@@ -395,13 +395,13 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             onClick={() =>
                                                 void navigator.clipboard.writeText(ret.id)
                                             }
-                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Скопировать ID
                                         </button>
                                         <a
                                             href={`mailto:${ret.email}`}
-                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Написать клиенту
                                         </a>
@@ -427,7 +427,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         )}
                                         <Link
                                             href="/admin/orders"
-                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Открыть заказы
                                         </Link>
@@ -437,7 +437,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {/* Customer */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Клиент
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
@@ -452,7 +452,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             {ret.phone && (
                                                 <a
                                                     href={`tel:${ret.phone}`}
-                                                    className="block text-sm text-gray-700 dark:text-gray-300 hover:underline"
+                                                    className="block text-sm text-foreground hover:underline"
                                                 >
                                                     {ret.phone}
                                                 </a>
@@ -461,13 +461,13 @@ export default function AdminReturnsPage(): React.ReactElement {
 
                                         {/* Order */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Заказ
                                             </p>
-                                            <p className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">
+                                            <p className="font-mono text-xs text-foreground break-all">
                                                 {ret.orderId}
                                             </p>
-                                            <div className="pt-1 border-t border-gray-100 dark:border-gray-800">
+                                            <div className="pt-1 border-t border-border">
                                                 <p className="text-xs text-muted-foreground">
                                                     Причина возврата
                                                 </p>
@@ -480,7 +480,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                     <p className="text-xs text-muted-foreground">
                                                         Комментарий клиента
                                                     </p>
-                                                    <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                                                    <p className="text-sm text-foreground italic">
                                                         «{ret.comment}»
                                                     </p>
                                                 </div>
@@ -489,7 +489,7 @@ export default function AdminReturnsPage(): React.ReactElement {
 
                                         {/* Dates */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Даты
                                             </p>
                                             <div>
@@ -519,7 +519,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             <p className="text-sm font-semibold text-foreground mb-2">
                                                 Возвращаемые товары
                                             </p>
-                                            <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700">
+                                            <div className="rounded-lg border border-border divide-y divide-border">
                                                 {ret.items.map((item, idx) => (
                                                     <div
                                                         key={idx}
@@ -571,7 +571,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         </p>
 
                                         {ret.resolution && (
-                                            <div className="rounded-lg bg-muted border border-border px-3 py-2 text-sm text-gray-700 dark:text-gray-300 italic">
+                                            <div className="rounded-lg bg-muted border border-border px-3 py-2 text-sm text-foreground italic">
                                                 {ret.resolution}
                                             </div>
                                         )}

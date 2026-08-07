@@ -121,7 +121,7 @@ export default function AdminLocalePage(): React.ReactElement {
             </div>
 
             <div className="max-w-xs space-y-1">
-              <label htmlFor="admin-locale-field-1" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="admin-locale-field-1" className="block text-sm font-medium text-foreground">
                 Язык по умолчанию
               </label>
               <Select
@@ -150,7 +150,7 @@ export default function AdminLocalePage(): React.ReactElement {
               </p>
             </div>
             <div className="max-w-xs">
-              <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+              <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">
                 EUR — Евро (€)
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function AdminLocalePage(): React.ReactElement {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label htmlFor="admin-locale-field-2" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-2" className="block text-sm font-medium text-foreground">
                   Формат даты
                 </label>
                 <Select
@@ -187,7 +187,7 @@ export default function AdminLocalePage(): React.ReactElement {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="admin-locale-field-3" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-3" className="block text-sm font-medium text-foreground">
                   Часовой пояс (для писем)
                 </label>
                 <Select
@@ -219,7 +219,7 @@ export default function AdminLocalePage(): React.ReactElement {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label htmlFor="admin-locale-field-4" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <label htmlFor="admin-locale-field-4" className="block text-sm font-medium text-foreground">
                   Расположение символа
                 </label>
                 <Select
@@ -240,7 +240,7 @@ export default function AdminLocalePage(): React.ReactElement {
               </div>
 
               <div className="space-y-1">
-                <p className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                <p className="block text-sm font-medium text-foreground">
                   Превью цены
                 </p>
                 <div className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground">

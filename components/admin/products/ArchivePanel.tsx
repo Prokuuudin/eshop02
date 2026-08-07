@@ -10,12 +10,12 @@ interface ArchivePanelProps {
 
 const ArchivePanel: React.FC<ArchivePanelProps> = ({ archiveItems, onRestore, onDelete }) => (
     <div className="admin-products__archive-panel">
-        <p className="text-xs text-gray-500 mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
             Здесь хранятся товары, удалённые из каталога. Вы можете восстановить их или удалить
             навсегда.
         </p>
         {archiveItems.length === 0 ? (
-            <p className="text-xs text-gray-400">Корзина пуста</p>
+            <p className="text-xs text-muted-foreground">Корзина пуста</p>
         ) : (
             archiveItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-2 border p-2 mb-1 rounded">

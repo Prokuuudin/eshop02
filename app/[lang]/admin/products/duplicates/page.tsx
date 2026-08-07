@@ -130,7 +130,7 @@ export default function DuplicatesPage(): React.ReactElement {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400">Загрузка каталога...</div>
+          <div className="py-16 text-center text-sm text-muted-foreground">Загрузка каталога...</div>
         ) : loadError ? (
           <div role="alert" className="rounded-xl border border-red-300 bg-red-50 px-5 py-8 text-center text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
         ) : groups.length === 0 ? (
@@ -165,7 +165,7 @@ export default function DuplicatesPage(): React.ReactElement {
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
+              <p className="text-xs text-muted-foreground ml-auto">
                 {products.length} товаров проверено
               </p>
             </div>
@@ -211,19 +211,19 @@ export default function DuplicatesPage(): React.ReactElement {
                           <p className="text-xs text-muted-foreground">{group.reasonLabel}</p>
                         </div>
                       </div>
-                      <span className="text-gray-400 text-xs shrink-0">{isOpen ? '▲' : '▼'}</span>
+                      <span className="text-muted-foreground text-xs shrink-0">{isOpen ? '▲' : '▼'}</span>
                     </button>
 
                     {/* Products in group */}
                     {isOpen && (
-                      <div className="divide-y divide-gray-100 dark:divide-gray-800 bg-card">
+                      <div className="divide-y divide-border bg-card">
                         {group.products.map((p, i) => (
                           <div key={p.id} className="flex items-center gap-4 px-5 py-3">
                             {/* Image */}
                             <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border">
                               {p.image
                                 ? <Image unoptimized src={p.image} alt={p.title} width={48} height={48} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center text-xs text-gray-300 dark:text-gray-600">нет</div>
+                                : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">нет</div>
                               }
                             </div>
 

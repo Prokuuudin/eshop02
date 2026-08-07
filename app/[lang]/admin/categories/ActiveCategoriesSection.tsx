@@ -62,7 +62,7 @@ export default function ActiveCategoriesSection({
                     )}
                 </h2>
                 {loading ? (
-                    <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                    <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                         {tl(
                             'admin.categories.loading',
                             'Загрузка категорий...',
@@ -74,7 +74,7 @@ export default function ActiveCategoriesSection({
                     categories.map((category) => (
                         <article
                             key={category.id}
-                            className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                            className="rounded-lg border border-border bg-card p-4"
                         >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
@@ -186,7 +186,7 @@ export default function ActiveCategoriesSection({
                                     </AccessibleLabel>
                                 </div>
 
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+                                <div className="rounded-lg border border-border bg-muted p-2 dark:bg-gray-800/40">
                                     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                                         {tl(
                                             'admin.categories.previewCard',
@@ -195,7 +195,7 @@ export default function ActiveCategoriesSection({
                                             'Kartites priekskats'
                                         )}
                                     </p>
-                                    <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                                    <div className="overflow-hidden rounded-md border border-border bg-card">
                                         <Image
                                             src={category.image.trim() || '/categories/new.jpg'}
                                             alt={category.labels[language] || category.id}
@@ -216,8 +216,8 @@ export default function ActiveCategoriesSection({
                                 </div>
                             </div>
 
-                            <div className="mt-4 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-700">
-                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                            <div className="mt-4 rounded-md border border-dashed border-border p-3">
+                                <p className="text-xs font-semibold text-foreground">
                                     {tl(
                                         'admin.categories.subcategories',
                                         'Подпункты',
@@ -231,10 +231,10 @@ export default function ActiveCategoriesSection({
                                     {category.subcategories.map((subcategory) => (
                                         <div
                                             key={`${category.id}-${subcategory.slug}`}
-                                            className="rounded border border-gray-200 p-2 dark:border-gray-700"
+                                            className="rounded border border-border p-2"
                                         >
                                             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                <span className="text-xs font-medium text-foreground">
                                                     {subcategory.slug}
                                                 </span>
                                                 <Button

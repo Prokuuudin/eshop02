@@ -58,18 +58,18 @@ const ProductTable: React.FC<ProductTableProps> = ({
             <table className="admin-products__table min-w-full border border-border rounded-lg">
                 <thead>
                     <tr className="bg-muted">
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Картинка</th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Название</th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">ID / SKU</th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">Картинка</th>
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">Название</th>
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">ID / SKU</th>
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">
                             Цена, €
-                            {onQuickSave && <span className="ml-1 text-xs font-normal text-gray-400">(клик)</span>}
+                            {onQuickSave && <span className="ml-1 text-xs font-normal text-muted-foreground">(клик)</span>}
                         </th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">
                             Остаток
-                            {onQuickSave && <span className="ml-1 text-xs font-normal text-gray-400">(клик)</span>}
+                            {onQuickSave && <span className="ml-1 text-xs font-normal text-muted-foreground">(клик)</span>}
                         </th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700 dark:text-gray-200">Действия</th>
+                        <th className="p-3 text-left font-semibold text-sm text-foreground">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,22 +87,22 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                     <div className="w-12 h-12 rounded overflow-hidden bg-white flex items-center justify-center shrink-0">
                                         {product.image
                                             ? <Image unoptimized src={product.image} alt={product.title} width={48} height={48} className="object-contain w-full h-full" />
-                                            : <span className="text-xs text-gray-400">—</span>
+                                            : <span className="text-xs text-muted-foreground">—</span>
                                         }
                                     </div>
                                 </td>
                                 <td className="p-3 align-middle max-w-xs font-medium text-foreground">
                                     <span className="truncate block">{product.title}</span>
-                                    <span className="text-xs text-gray-400 dark:text-gray-500">{product.brand}</span>
+                                    <span className="text-xs text-muted-foreground">{product.brand}</span>
                                     {product.isActive === false && (
-                                        <span className="inline-block mt-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                        <span className="inline-block mt-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
                                             Скрыт
                                         </span>
                                     )}
                                 </td>
                                 <td className="p-3 align-middle">
                                     <span className="block text-xs text-muted-foreground font-mono">{product.id}</span>
-                                    {product.sku && <span className="block text-xs text-gray-400 dark:text-gray-500 font-mono">{product.sku}</span>}
+                                    {product.sku && <span className="block text-xs text-muted-foreground font-mono">{product.sku}</span>}
                                 </td>
                                 <td className="p-3 align-middle">
                                     {isEditingPrice ? (
@@ -164,7 +164,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                 </tbody>
             </table>
             {products.length === 0 && (
-                <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 mt-4">
+                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground mt-4">
                     Нет результатов поиска
                 </div>
             )}

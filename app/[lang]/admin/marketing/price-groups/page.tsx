@@ -35,16 +35,16 @@ function GroupForm({
         <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                    <div className="mb-1 block text-xs text-gray-500">Название *</div>
+                    <div className="mb-1 block text-xs text-muted-foreground">Название *</div>
                     <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        className="w-full rounded-md border border-border px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100"
                         placeholder="напр. Оптовый"
                     />
                 </div>
                 <div>
-                    <div className="mb-1 block text-xs text-gray-500">
+                    <div className="mb-1 block text-xs text-muted-foreground">
                         Множитель цены (1.0 = без скидки, 0.8 = −20%)
                     </div>
                     <Input
@@ -53,21 +53,21 @@ function GroupForm({
                         min="0.01"
                         value={multiplier}
                         onChange={(e) => setMultiplier(e.target.value)}
-                        className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                        className="w-full rounded-md border border-border px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100"
                     />
                 </div>
             </div>
             <div>
-                <div className="mb-1 block text-xs text-gray-500">Описание</div>
+                <div className="mb-1 block text-xs text-muted-foreground">Описание</div>
                 <Input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100"
                     placeholder="Краткое описание группы"
                 />
             </div>
             <div>
-                <div className="mb-1 block text-xs text-gray-500">Цвет метки</div>
+                <div className="mb-1 block text-xs text-muted-foreground">Цвет метки</div>
                 <div className="flex gap-2">
                     {COLOR_OPTIONS.map((c) => (
                         <button
@@ -101,7 +101,7 @@ function GroupForm({
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+                    className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-gray-50"
                 >
                     Отмена
                 </button>
@@ -145,7 +145,7 @@ export default function PriceGroupsPage(): ReactElement {
                         <h1 className="text-2xl font-bold text-foreground">
                             Прайс-листы по группам
                         </h1>
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             Управление ценовыми группами клиентов и индивидуальными ценами
                         </p>
                     </div>
@@ -160,7 +160,7 @@ export default function PriceGroupsPage(): ReactElement {
 
                 {showCreate && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/10">
-                        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <h2 className="mb-3 text-sm font-semibold text-foreground">
                             Новая ценовая группа
                         </h2>
                         <GroupForm onSave={handleCreate} onCancel={() => setShowCreate(false)} />
@@ -168,7 +168,7 @@ export default function PriceGroupsPage(): ReactElement {
                 )}
 
                 {loading ? (
-                    <div className="py-12 text-center text-sm text-gray-400">Загрузка...</div>
+                    <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {groups.map((g) => {
@@ -212,7 +212,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                         className="h-3 w-3 rounded-full"
                                                         style={{ background: g.color }}
                                                     />
-                                                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                                    <span className="font-semibold text-foreground">
                                                         {g.name}
                                                     </span>
                                                 </div>
@@ -223,7 +223,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                             e.stopPropagation();
                                                             setEditingId(g.id);
                                                         }}
-                                                        className="rounded p-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                                                        className="rounded p-1 text-xs text-muted-foreground hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
                                                     >
                                                         Ред.
                                                     </button>
@@ -239,7 +239,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p className="mt-1 text-xs text-gray-500">
+                                            <p className="mt-1 text-xs text-muted-foreground">
                                                 {g.description}
                                             </p>
                                             <div className="mt-3 flex items-center justify-between">
@@ -249,7 +249,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                 >
                                                     {discountLabel(g.multiplier)}
                                                 </span>
-                                                <span className="text-xs text-gray-400">
+                                                <span className="text-xs text-muted-foreground">
                                                     {groupOverrides.length} перeopределений
                                                 </span>
                                             </div>
@@ -262,10 +262,10 @@ export default function PriceGroupsPage(): ReactElement {
                 )}
 
                 {activeGroup && (
-                    <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                        <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+                    <div className="rounded-xl border border-border bg-card">
+                        <div className="border-b border-border px-4 py-3">
                             <div className="flex items-center justify-between">
-                                <h2 className="font-semibold text-gray-800 dark:text-gray-200">
+                                <h2 className="font-semibold text-foreground">
                                     Цены для группы «{activeGroup.name}»
                                 </h2>
                                 <Input
@@ -273,10 +273,10 @@ export default function PriceGroupsPage(): ReactElement {
                                     placeholder="Поиск товара..."
                                     value={productSearch}
                                     onChange={(e) => setProductSearch(e.target.value)}
-                                    className="w-56 rounded-md border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                    className="w-56 rounded-md border border-border px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100"
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 Базовый множитель: ×{activeGroup.multiplier} (
                                 {discountLabel(activeGroup.multiplier)}). Укажите индивидуальную
                                 цену для отдельных товаров.
@@ -284,7 +284,7 @@ export default function PriceGroupsPage(): ReactElement {
                         </div>
                         <div className="max-h-[480px] overflow-auto">
                             <table className="w-full text-sm">
-                                <thead className="sticky top-0 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                                <thead className="sticky top-0 border-b border-border bg-muted">
                                     <tr>
                                         <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
                                             Товар
@@ -303,7 +303,7 @@ export default function PriceGroupsPage(): ReactElement {
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tbody className="divide-y divide-border">
                                     {filteredProducts.map((p) => {
                                         const ov = overrides.find(
                                             (o) =>
@@ -319,10 +319,10 @@ export default function PriceGroupsPage(): ReactElement {
                                                 className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                                             >
                                                 <td className="px-4 py-2.5">
-                                                    <div className="font-medium text-gray-800 dark:text-gray-200">
+                                                    <div className="font-medium text-foreground">
                                                         {p.title}
                                                     </div>
-                                                    <div className="text-xs text-gray-400">
+                                                    <div className="text-xs text-muted-foreground">
                                                         {p.brand}
                                                     </div>
                                                 </td>
@@ -338,7 +338,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                             {formatEuro(ov.price, 'ru-RU')}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-300 dark:text-gray-600">
+                                                        <span className="text-muted-foreground">
                                                             —
                                                         </span>
                                                     )}
@@ -356,7 +356,7 @@ export default function PriceGroupsPage(): ReactElement {
                                                                     [key]: e.target.value,
                                                                 }))
                                                             }
-                                                            className="w-24 rounded-md border border-gray-200 px-2 py-1 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                                            className="w-24 rounded-md border border-border px-2 py-1 text-xs dark:bg-gray-800 dark:text-gray-100"
                                                         />
                                                         <button
                                                             type="button"

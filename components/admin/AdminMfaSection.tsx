@@ -137,7 +137,7 @@ export default function AdminMfaSection(): React.ReactElement {
 
     if (loadError && !status) {
         return (
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
                     <ShieldOff className="h-5 w-5 text-red-600 dark:text-red-400" />
                     <h2 className="text-sm font-semibold text-foreground">Двухфакторная аутентификация</h2>
@@ -155,7 +155,7 @@ export default function AdminMfaSection(): React.ReactElement {
     }
 
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="mb-3 flex items-center gap-2">
                 {status!.enabled ? (
                     <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />

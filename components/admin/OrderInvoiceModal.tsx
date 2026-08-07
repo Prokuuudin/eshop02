@@ -65,7 +65,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
           <h3 className="text-lg font-semibold text-foreground">
             Счёт по заказу #{order.id}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
         </div>
 
         {/* Language selector: LV — стандарт, EN — по запросу покупателя */}

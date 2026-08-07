@@ -146,7 +146,7 @@ function KpiCard({
     return (
         <Link
             href={href}
-            className="group flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
+            className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:border-gray-300 hover:shadow-sm dark:hover:border-gray-600"
         >
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}>
                 <Icon className="h-6 w-6" />
@@ -154,9 +154,9 @@ function KpiCard({
             <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <p className="mt-0.5 text-xl font-bold text-foreground">{value}</p>
-                {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+                {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500 dark:text-gray-600" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500" />
         </Link>
     );
 }
@@ -233,7 +233,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
     return (
         <div className="space-y-8">
             {/* Profile hero */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white shadow-sm">
                         {user.avatarUrl ? (
@@ -251,7 +251,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                     <div>
                         <p className="text-sm text-muted-foreground">
                             {greeting},{' '}
-                            <span className="text-gray-400 dark:text-gray-500">{currentDate}</span>
+                            <span className="text-muted-foreground">{currentDate}</span>
                         </p>
                         <h1 className="text-xl font-bold text-foreground">
                             {user.name || user.email}
@@ -264,7 +264,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                 <div className="flex flex-wrap gap-2">
                     <Link
                         href="/account/profile"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                         Редактировать профиль
                     </Link>
@@ -305,7 +305,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
 
             {/* KPI cards */}
             <div>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Сводка
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -351,7 +351,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
 
             {/* Quick navigation */}
             <div>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     Быстрый доступ
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -360,7 +360,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         return (
                             <div
                                 key={section.title}
-                                className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                                className="rounded-2xl border border-border bg-card p-4"
                             >
                                 <div className="mb-3 flex items-center gap-2">
                                     <div
@@ -368,7 +368,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                                     >
                                         <Icon className="h-4 w-4" />
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    <span className="text-sm font-semibold text-foreground">
                                         {section.title}
                                     </span>
                                 </div>
@@ -377,7 +377,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
-                                                className="block rounded-md px-2 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                                className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                                             >
                                                 {item.label}
                                             </Link>

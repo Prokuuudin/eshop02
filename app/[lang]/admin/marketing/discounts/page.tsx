@@ -267,7 +267,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center">
             <p className="text-muted-foreground text-sm">Промокодов пока нет.</p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
+            <p className="text-muted-foreground text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

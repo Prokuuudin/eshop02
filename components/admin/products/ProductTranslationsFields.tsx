@@ -28,7 +28,7 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                     </div>
                     <div>
                         <label htmlFor="product-translation-ingredients" className="block text-sm font-medium mb-1">Состав (INCI)</label>
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-muted-foreground mb-1">
                             Один на все языки — таб «Состав» на странице товара; пустое поле = таб скрыт
                         </p>
                         <Textarea id="product-translation-ingredients"
@@ -38,7 +38,7 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                     </div>
                     <div>
                         <label htmlFor="product-translation-application" className="block text-sm font-medium mb-1">Применение</label>
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-muted-foreground mb-1">
                             Таб «Применение» на странице товара; пустое поле = таб скрыт
                         </p>
                         <Textarea id="product-translation-application"
@@ -48,7 +48,7 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                     </div>
                     <div>
                         <label htmlFor="product-translation-warnings" className="block text-sm font-medium mb-1">Предостережения</label>
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-muted-foreground mb-1">
                             Таб «Предостережения» на странице товара; пустое поле = таб скрыт
                         </p>
                         <Textarea id="product-translation-warnings"
@@ -59,7 +59,7 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                 </div>
 
                 <h3 className="add-product__section-subtitle mt-4">Характеристики-карточки (feature1–4)</h3>
-                <p className="text-xs text-gray-500 mb-2">Отображаются в блоке преимуществ на странице товара</p>
+                <p className="text-xs text-muted-foreground mb-2">Отображаются в блоке преимуществ на странице товара</p>
                 <div className="add-product__fields-grid">
                     <div>
                         <label htmlFor="product-translation-feature1" className="block text-sm font-medium mb-1">Feature 1</label>

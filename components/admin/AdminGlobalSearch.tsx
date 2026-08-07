@@ -205,8 +205,8 @@ export default function AdminGlobalSearch(): React.ReactElement {
         <div className="rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
 
           {/* Input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-            <Search className="h-5 w-5 text-gray-400 shrink-0" />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <Search className="h-5 w-5 text-muted-foreground shrink-0" />
             <input
               ref={inputRef}
               value={query}
@@ -216,14 +216,14 @@ export default function AdminGlobalSearch(): React.ReactElement {
               className="flex-1 bg-transparent text-base text-foreground placeholder:text-gray-400 outline-none"
             />
             {query && (
-              <button type="button" onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <button type="button" onClick={() => setQuery('')} className="text-muted-foreground hover:text-gray-700 dark:hover:text-gray-200">
                 <X className="h-4 w-4" />
               </button>
             )}
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-xs text-gray-400 border border-border rounded px-1.5 py-0.5 cursor-pointer font-mono hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 cursor-pointer font-mono hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Esc
             </button>
@@ -232,13 +232,13 @@ export default function AdminGlobalSearch(): React.ReactElement {
           {/* Results */}
           <div className="max-h-[60vh] overflow-y-auto py-2">
             {showHint && (
-              <p className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
                 Начните вводить для поиска по всей админке
               </p>
             )}
 
             {isEmpty && (
-              <p className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
                 Ничего не найдено по запросу «{query}»
               </p>
             )}
@@ -249,7 +249,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
                 <div key={group.label}>
                   <div className="flex items-center gap-2 px-4 py-1.5">
                     <Icon className={`h-3.5 w-3.5 ${group.color}`} />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {group.label}
                     </span>
                   </div>
@@ -277,7 +277,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{item.sub}</p>
                         </div>
                         {isSelected && (
-                          <span className="shrink-0 self-center text-xs text-gray-400">↵</span>
+                          <span className="shrink-0 self-center text-xs text-muted-foreground">↵</span>
                         )}
                       </button>
                     )
@@ -289,7 +289,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
 
           {/* Footer hint */}
           {allItems.length > 0 && (
-            <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-2 flex gap-4 text-xs text-gray-400 dark:text-gray-500">
+            <div className="border-t border-border px-4 py-2 flex gap-4 text-xs text-muted-foreground">
               <span><kbd className="font-mono">↑↓</kbd> навигация</span>
               <span><kbd className="font-mono">↵</kbd> открыть</span>
               <span><kbd className="font-mono">Esc</kbd> закрыть</span>

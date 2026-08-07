@@ -70,10 +70,10 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-sm font-medium text-foreground">
                   {EVENT_LABELS[ev.type]}
                 </p>
-                <time className="text-xs text-gray-400 dark:text-gray-500 shrink-0 tabular-nums">
+                <time className="text-xs text-muted-foreground shrink-0 tabular-nums">
                   {formatDate(ev.at, 'ru-RU')}
                 </time>
               </div>
@@ -246,7 +246,7 @@ export default function AdminRFQPage(): React.ReactElement {
               >
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{rfq.id}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{rfq.id}</span>
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[rfq.status]}`}>
                       {STATUS_LABELS[rfq.status]}
                     </span>
@@ -271,34 +271,34 @@ export default function AdminRFQPage(): React.ReactElement {
                       {formatEuro(rfq.quote.totalPrice, 'ru-RU')}
                     </p>
                   )}
-                  <p className="text-xs text-gray-400">{isExpanded ? '▲' : '▼'}</p>
+                  <p className="text-xs text-muted-foreground">{isExpanded ? '▲' : '▼'}</p>
                 </div>
               </button>
 
               {/* Expanded content */}
               {isExpanded && (
-                <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-5 space-y-6">
+                <div className="border-t border-border px-5 py-5 space-y-6">
 
                   {/* Items */}
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Состав заявки</p>
-                    <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Состав заявки</p>
+                    <div className="rounded-lg border border-border divide-y divide-border">
                       {rfq.items.map((item, idx) => {
                         const product = products.find((p) => p.id === item.productId)
                         return (
                           <div key={idx} className="flex items-center justify-between px-3 py-2.5 gap-3">
                             <div className="min-w-0">
-                              <p className="text-sm text-gray-800 dark:text-gray-200 truncate">
+                              <p className="text-sm text-foreground truncate">
                                 {product?.title ?? item.productId}
                               </p>
                               {product?.sku && (
-                                <p className="text-xs text-gray-400 font-mono">{product.sku}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
                               )}
                             </div>
                             <div className="shrink-0 text-right">
                               <p className="text-sm text-muted-foreground">{item.quantity} шт</p>
                               {product?.price && (
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground">
                                   Прайс: {formatEuro(product.price * item.quantity, 'ru-RU')}
                                 </p>
                               )}
@@ -317,7 +317,7 @@ export default function AdminRFQPage(): React.ReactElement {
                   {/* Quote form (only if not accepted/rejected) */}
                   {rfq.status !== 'accepted' && rfq.status !== 'rejected' && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
                         {rfq.status === 'quoted' ? 'Обновить котировку' : 'Отправить котировку'}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -381,7 +381,7 @@ export default function AdminRFQPage(): React.ReactElement {
 
                   {/* Add note */}
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                       Добавить заметку в историю
                     </p>
                     <div className="flex gap-2">
@@ -406,7 +406,7 @@ export default function AdminRFQPage(): React.ReactElement {
 
                   {/* Timeline */}
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-4">
                       История событий
                     </p>
                     <Timeline events={rfq.timeline} />

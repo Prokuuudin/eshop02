@@ -35,7 +35,7 @@ const LOC = 'ru-RU';
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {title}
             </h2>
             {children}
@@ -178,7 +178,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                         {u.email}
                                                     </p>
                                                     {u.name && (
-                                                        <p className="text-xs text-gray-400">
+                                                        <p className="text-xs text-muted-foreground">
                                                             {u.name}
                                                             {u.phone ? ` · ${u.phone}` : ''}
                                                         </p>
@@ -235,7 +235,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                 key={p.id}
                                                 type="button"
                                                 onClick={() => addProduct(p)}
-                                                className="w-full text-left px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                                                className="w-full text-left px-3 py-2.5 hover:bg-primary/5 dark:hover:bg-primary/10 flex items-center gap-3 border-b border-border last:border-0"
                                             >
                                                 {p.image && (
                                                     <Image
@@ -251,7 +251,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                     <p className="text-sm font-medium text-foreground truncate">
                                                         {p.title}
                                                     </p>
-                                                    <p className="text-xs text-gray-400">
+                                                    <p className="text-xs text-muted-foreground">
                                                         {p.brand}
                                                         {p.sku ? ` · ${p.sku}` : ''}
                                                     </p>
@@ -278,7 +278,7 @@ export default function NewOrderPage(): React.ReactElement {
 
                             {/* Added items */}
                             {items.length === 0 ? (
-                                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+                                <p className="text-sm text-muted-foreground text-center py-4">
                                     Начните вводить название товара чтобы добавить его в заказ
                                 </p>
                             ) : (
@@ -302,13 +302,13 @@ export default function NewOrderPage(): React.ReactElement {
                                                 <p className="text-sm font-medium text-foreground truncate">
                                                     {item.product.title}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-muted-foreground">
                                                     {item.product.brand}
                                                 </p>
                                             </div>
                                             {/* Unit price override */}
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <span className="text-xs text-gray-400">€</span>
+                                                <span className="text-xs text-muted-foreground">€</span>
                                                 <Input
                                                     type="number"
                                                     min={0}
@@ -361,7 +361,7 @@ export default function NewOrderPage(): React.ReactElement {
                                             <button
                                                 type="button"
                                                 onClick={() => removeItem(item.product.id)}
-                                                className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
+                                                className="text-muted-foreground hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
                                             >
                                                 ×
                                             </button>
@@ -392,7 +392,7 @@ export default function NewOrderPage(): React.ReactElement {
                                             <button
                                                 type="button"
                                                 onClick={removePromo}
-                                                className="text-gray-400 hover:text-red-500 text-xl leading-none"
+                                                className="text-muted-foreground hover:text-red-500 text-xl leading-none"
                                             >
                                                 ×
                                             </button>
@@ -451,7 +451,7 @@ export default function NewOrderPage(): React.ReactElement {
                                     <p className="text-xs font-medium text-muted-foreground">
                                         Ручная скидка, %
                                         {promoResult && (
-                                            <span className="text-gray-400 ml-1">
+                                            <span className="text-muted-foreground ml-1">
                                                 (применяется большее из двух)
                                             </span>
                                         )}
@@ -591,7 +591,7 @@ export default function NewOrderPage(): React.ReactElement {
                     {/* ── Right: order summary (sticky) ── */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
-                            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                                 Сводка заказа
                             </h2>
 
@@ -613,7 +613,7 @@ export default function NewOrderPage(): React.ReactElement {
                                             key={item.product.id}
                                             className="flex justify-between text-sm gap-2"
                                         >
-                                            <span className="truncate text-gray-700 dark:text-gray-300 flex-1">
+                                            <span className="truncate text-foreground flex-1">
                                                 {item.product.title} ×{item.quantity}
                                             </span>
                                             <span className="shrink-0 text-foreground tabular-nums">
@@ -625,7 +625,7 @@ export default function NewOrderPage(): React.ReactElement {
                             )}
 
                             {items.length > 0 && (
-                                <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 text-sm">
+                                <div className="border-t border-border pt-3 space-y-1.5 text-sm">
                                     <div className="flex justify-between text-muted-foreground">
                                         <span>Товары</span>
                                         <span className="tabular-nums">
@@ -695,7 +695,7 @@ export default function NewOrderPage(): React.ReactElement {
                             </Button>
 
                             {items.length === 0 && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                                <p className="text-xs text-muted-foreground text-center">
                                     Добавьте товары чтобы создать заказ
                                 </p>
                             )}

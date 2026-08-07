@@ -232,7 +232,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                     <label className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             contentBlocks JSON
-                                            <span className="ml-2 text-xs text-gray-400">
+                                            <span className="ml-2 text-xs text-muted-foreground">
                                                 heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
                                             </span>
                                         </span>
@@ -383,7 +383,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
                                                 contentBlocks JSON ({lang}, опционально)
-                                                <span className="ml-2 text-xs text-gray-400">
+                                                <span className="ml-2 text-xs text-muted-foreground">
                                                     heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
                                                 </span>
                                             </span>

@@ -65,7 +65,7 @@ function StackedBarChart({
   const chartW = Math.max(600, data.length * (barW + gap) + 44)
 
   if (data.length === 0) {
-    return <p className="py-12 text-center text-sm text-gray-400">Нет данных</p>
+    return <p className="py-12 text-center text-sm text-muted-foreground">Нет данных</p>
   }
 
   return (
@@ -266,7 +266,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {/* Metric toggle */}
-            <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex rounded-lg border border-border bg-card p-1">
               {(['revenue', 'qty'] as const).map((m) => (
                 <button
                   key={m}
@@ -283,7 +283,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
               ))}
             </div>
             {/* Period toggle */}
-            <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex rounded-lg border border-border bg-card p-1">
               {PERIOD_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -326,15 +326,15 @@ export default function SalesBreakdownPage(): React.ReactElement {
           {/* Top-10 products */}
           <div className={sectionCls}>
             <div className={headerCls + ' flex items-center justify-between'}>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h2 className="text-sm font-semibold text-foreground">
                 Топ-10 товаров · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
               </h2>
-              <span className="text-xs text-gray-400">из {uniqueProducts}</span>
+              <span className="text-xs text-muted-foreground">из {uniqueProducts}</span>
             </div>
             {topProducts.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-400">Нет данных за период</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных за период</p>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="divide-y divide-border">
                 {topProducts.map((p, i) => {
                   const val = metric === 'revenue' ? p.revenue : p.qty
                   const valStr = metric === 'revenue' ? fmt(p.revenue) : `${p.qty} шт`
@@ -342,15 +342,15 @@ export default function SalesBreakdownPage(): React.ReactElement {
                     <div key={i} className="px-5 py-3">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-5 shrink-0 text-xs font-mono text-gray-400">{i + 1}</span>
+                          <span className="w-5 shrink-0 text-xs font-mono text-muted-foreground">{i + 1}</span>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{p.title}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{p.brand}</p>
+                            <p className="truncate text-sm font-medium text-foreground">{p.title}</p>
+                            <p className="text-xs text-muted-foreground">{p.brand}</p>
                           </div>
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="text-sm font-semibold text-primary">{valStr}</p>
-                          <p className="text-xs text-gray-400">{pct(metric === 'revenue' ? p.revenue : p.qty, metric === 'revenue' ? totalRevenue : totalQty)}</p>
+                          <p className="text-xs text-muted-foreground">{pct(metric === 'revenue' ? p.revenue : p.qty, metric === 'revenue' ? totalRevenue : totalQty)}</p>
                         </div>
                       </div>
                       <HBar value={val} max={topProductMax} color="#6366f1" />
@@ -364,15 +364,15 @@ export default function SalesBreakdownPage(): React.ReactElement {
           {/* Top brands */}
           <div className={sectionCls}>
             <div className={headerCls + ' flex items-center justify-between'}>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h2 className="text-sm font-semibold text-foreground">
                 Топ бренды · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
               </h2>
-              <span className="text-xs text-gray-400">{topBrands.length} брендов</span>
+              <span className="text-xs text-muted-foreground">{topBrands.length} брендов</span>
             </div>
             {topBrands.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-400">Нет данных за период</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных за период</p>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="divide-y divide-border">
                 {topBrands.map((b, i) => {
                   const val = metric === 'revenue' ? b.revenue : b.qty
                   const valStr = metric === 'revenue' ? fmt(b.revenue) : `${b.qty} шт`
@@ -380,12 +380,12 @@ export default function SalesBreakdownPage(): React.ReactElement {
                     <div key={i} className="px-5 py-2.5">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-5 shrink-0 text-xs font-mono text-gray-400">{i + 1}</span>
-                          <span className="truncate text-sm text-gray-800 dark:text-gray-200">{b.brand}</span>
+                          <span className="w-5 shrink-0 text-xs font-mono text-muted-foreground">{i + 1}</span>
+                          <span className="truncate text-sm text-foreground">{b.brand}</span>
                         </div>
                         <div className="shrink-0 text-right">
                           <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{valStr}</span>
-                          <span className="ml-1.5 text-xs text-gray-400">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
+                          <span className="ml-1.5 text-xs text-muted-foreground">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
                         </div>
                       </div>
                       <HBar value={val} max={topBrandMax} color="#10b981" />
@@ -403,10 +403,10 @@ export default function SalesBreakdownPage(): React.ReactElement {
           {/* Category summary */}
           <div className={sectionCls}>
             <div className={headerCls}>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">По категориям</h2>
+              <h2 className="text-sm font-semibold text-foreground">По категориям</h2>
             </div>
             {categorySummary.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-400">Нет данных</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных</p>
             ) : (
               <div className={bodyPad + ' space-y-3'}>
                 {categorySummary.map((c) => {
@@ -418,13 +418,13 @@ export default function SalesBreakdownPage(): React.ReactElement {
                       <div className="flex items-center justify-between text-sm mb-1">
                         <div className="flex items-center gap-2">
                           <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: color }} />
-                          <span className="text-gray-700 dark:text-gray-300">{CAT_LABELS[c.cat] ?? c.cat}</span>
+                          <span className="text-foreground">{CAT_LABELS[c.cat] ?? c.cat}</span>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="font-semibold text-foreground">
                             {metric === 'revenue' ? fmt(c.revenue) : `${c.qty} шт`}
                           </span>
-                          <span className="ml-1.5 text-xs text-gray-400">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
+                          <span className="ml-1.5 text-xs text-muted-foreground">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
                         </div>
                       </div>
                       <HBar value={val} max={max} color={color} />
@@ -438,7 +438,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
           {/* Stacked bar: category dynamics by month */}
           <div className={sectionCls + ' lg:col-span-2'}>
             <div className={headerCls}>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <h2 className="text-sm font-semibold text-foreground">
                 Динамика по категориям · {metric === 'revenue' ? 'выручка по месяцам' : 'продажи по месяцам'}
               </h2>
             </div>

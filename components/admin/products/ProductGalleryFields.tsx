@@ -55,7 +55,7 @@ const ProductGalleryFields: React.FC = () => {
                 </div>
                 <div>
                     <p className="block text-sm font-medium mb-2">Демо-видео</p>
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-xs text-muted-foreground mb-2">
                         Показываются в галерее на странице товара (mp4/webm или ссылка на видео)
                     </p>
                     <div className="flex flex-col gap-2">

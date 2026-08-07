@@ -48,7 +48,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                             placeholder="Поиск по ID, имени, email, телефону..."
                             className="h-9 flex-1"
                         />
-                        <Search className="h-5 w-5 text-gray-400" />
+                        <Search className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="grid grid-cols-3 sm:contents gap-2">
                         <Select

@@ -89,14 +89,14 @@ export default function AbcSection(): ReactElement {
             <p className="text-xl font-bold text-foreground">
               {formatEuro(revenue[g], 'ru-RU')}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {total > 0 ? Math.round((revenue[g] / total) * 100) : 0}% выручки
             </p>
           </button>
         ))}
       </div>
 
-      <div className="text-xs text-gray-400 dark:text-gray-500 -mt-2">
+      <div className="text-xs text-muted-foreground -mt-2">
         A — 80% выручки · B — следующие 15% · C — оставшиеся 5%
       </div>
 
@@ -115,10 +115,10 @@ export default function AbcSection(): ReactElement {
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">Группа</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-card">
+          <tbody className="divide-y divide-border bg-card">
             {filtered.map((r) => (
               <tr key={r.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${GRADE_STYLES[r.grade].row}`}>
-                <td className="px-4 py-2.5 text-gray-400 tabular-nums">{rows.indexOf(r) + 1}</td>
+                <td className="px-4 py-2.5 text-muted-foreground tabular-nums">{rows.indexOf(r) + 1}</td>
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/admin/products/${r.id}`}
@@ -128,7 +128,7 @@ export default function AbcSection(): ReactElement {
                   </Link>
                 </td>
                 <td className="px-4 py-2.5 text-muted-foreground">{r.brand}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-gray-700 dark:text-gray-300">{r.qty}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{r.qty}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums font-medium text-foreground">
                   {formatEuro(r.revenue, 'ru-RU')}
                 </td>
@@ -150,7 +150,7 @@ export default function AbcSection(): ReactElement {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-10 text-center text-sm text-gray-400">Нет товаров в группе {filter}</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">Нет товаров в группе {filter}</div>
         )}
       </div>
     </div>

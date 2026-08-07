@@ -293,7 +293,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
                         checked={form.targetCategories.includes(cat.value)}
                         onCheckedChange={() => toggleCategory(cat.value)}
                       />
-                      <span className="text-gray-700 dark:text-gray-300">{cat.label}</span>
+                      <span className="text-foreground">{cat.label}</span>
                     </label>
                   ))}
                 </div>
@@ -314,7 +314,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center">
             <p className="text-muted-foreground text-sm">Кампаний пока нет.</p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">Нажмите «+ Новая кампания», чтобы создать первую.</p>
+            <p className="text-muted-foreground text-xs mt-1">Нажмите «+ Новая кампания», чтобы создать первую.</p>
           </div>
         ) : (
           <div className="space-y-3">

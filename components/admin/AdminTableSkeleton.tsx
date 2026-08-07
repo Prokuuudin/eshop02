@@ -18,7 +18,7 @@ export default function AdminTableSkeleton({ rows = 5, cols = 4 }: AdminTableSke
       </div>
 
       {/* Data rows */}
-      <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      <div className="divide-y divide-border">
         {Array.from({ length: rows }, (_, rowIdx) => (
           <div key={rowIdx} className="flex items-center gap-4 px-5 py-4">
             {Array.from({ length: cols }, (_, colIdx) => (

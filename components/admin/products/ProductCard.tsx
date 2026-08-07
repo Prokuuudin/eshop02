@@ -56,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
     const imageUrl = product.image || product.images?.[0];
 
     return (
-        <article className="admin-product-card flex flex-col rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <article className="admin-product-card flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {/* Packshot целиком на белой подложке, как в витринной карточке:
                 исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="admin-product-card__image relative h-40 bg-white flex items-center justify-center overflow-hidden">
@@ -70,7 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                         className="object-contain w-full h-full p-2"
                     />
                 ) : (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">Нет фото</span>
+                    <span className="text-xs text-muted-foreground">Нет фото</span>
                 )}
                 {/* Бейджи поверх изображения */}
                 {product.badges && product.badges.length > 0 && (
@@ -93,9 +93,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
 
             {/* Информация */}
             <div className="admin-product-card__body flex flex-col flex-1 p-3 gap-1">
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-mono leading-none">
+                <p className="text-[11px] text-muted-foreground font-mono leading-none">
                     {product.id}
-                    {product.sku && <span className="ml-1 text-gray-300 dark:text-gray-600">· {product.sku}</span>}
+                    {product.sku && <span className="ml-1 text-muted-foreground">· {product.sku}</span>}
                 </p>
                 <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 mt-0.5">
                     {product.title}
@@ -109,7 +109,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                         {product.price.toFixed(2)} €
                     </span>
                     {product.oldPrice && product.oldPrice > product.price && (
-                        <span className="text-xs line-through text-gray-400">
+                        <span className="text-xs line-through text-muted-foreground">
                             {product.oldPrice.toFixed(2)} €
                         </span>
                     )}
@@ -117,7 +117,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             </div>
 
             {/* Управление остатком */}
-            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-muted/50">
+            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/50">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">Остаток:</span>
                 <Input
                     type="number"
@@ -146,7 +146,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             </div>
 
             {/* Кнопки действий */}
-            <div className="admin-product-card__actions flex border-t border-gray-100 dark:border-gray-700">
+            <div className="admin-product-card__actions flex border-t border-border">
                 <button
                     type="button"
                     onClick={onEdit}

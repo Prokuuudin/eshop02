@@ -272,7 +272,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">Выбор вида:</span>
+            <span className="text-sm text-foreground font-medium">Выбор вида:</span>
             <Button
               size="sm"
               variant={view === 'grid' ? 'default' : 'outline'}
@@ -330,7 +330,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
                   <h2 className="text-sm font-semibold text-foreground mb-0.5 group-hover:text-primary dark:group-hover:text-primary/80 transition-colors">{article.title}</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">{article.description}</p>
                 </div>
-                <svg className="flex-shrink-0 w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary/80 transition-colors" viewBox="0 0 16 16" fill="none">
+                <svg className="flex-shrink-0 w-4 h-4 text-muted-foreground group-hover:text-primary/80 transition-colors" viewBox="0 0 16 16" fill="none">
                   <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>

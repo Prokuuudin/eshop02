@@ -207,7 +207,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             </div>
 
             {/* User list */}
-            <div className="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-gray-100 dark:divide-gray-800">
+            <div className="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
               {usersLoading ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
                   {t('common.loading')}

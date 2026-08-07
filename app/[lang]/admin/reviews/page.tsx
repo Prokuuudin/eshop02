@@ -55,7 +55,7 @@ export default function AdminReviewsPage(): React.ReactElement {
     return (
         <AdminGate>
             <main className="w-full space-y-3 text-foreground">
-                <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                <div className="rounded-lg border border-border bg-card p-4">
                     <h1 className="text-2xl font-bold">
                         {l('Отзывы: модерация', 'Reviews: moderation', 'Atsauksmes: moderacija')}
                     </h1>
@@ -82,7 +82,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                             value={status}
                             onValueChange={(v) => setStatus(v as 'all' | ReviewStatus)}
                         >
-                            <SelectTrigger className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800">
+                            <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -99,9 +99,9 @@ export default function AdminReviewsPage(): React.ReactElement {
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700">
+                    <div className="mt-3 rounded-md border border-border px-3 py-2">
                         <div className="flex flex-wrap items-center gap-2">
-                            <label className="inline-flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200">
+                            <label className="inline-flex items-center gap-2 text-xs text-foreground">
                                 <Checkbox
                                     checked={allVisibleSelected}
                                     onCheckedChange={(checked) =>
@@ -170,7 +170,7 @@ export default function AdminReviewsPage(): React.ReactElement {
 
                 <div className="space-y-2">
                     {loading && (
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
                             {l('Загрузка отзывов...', 'Loading reviews...', 'Ielade atsauksmes...')}
                         </div>
                     )}
@@ -183,7 +183,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                             return (
                                 <article
                                     key={review.id}
-                                    className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+                                    className="rounded-lg border border-border bg-card p-3"
                                 >
                                     <div className="flex flex-wrap items-start gap-2">
                                         <label
@@ -201,10 +201,10 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                 }
                                             />
                                         </label>
-                                        <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                        <span className="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
                                             {review.id}
                                         </span>
-                                        <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                        <span className="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
                                             {l('Товар', 'Product', 'Produkts')}: {review.productId}
                                         </span>
                                         <span
@@ -232,7 +232,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                             {l('Оценка', 'Rating', 'Vertejums')}: {review.rating} ·{' '}
                                             {l('Полезно', 'Helpful', 'Noderigi')}: {review.helpful}
                                         </p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+                                        <p className="text-sm text-foreground whitespace-pre-wrap">
                                             {review.text}
                                         </p>
                                     </div>
@@ -307,7 +307,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                     'Veikala atbilde'
                                                 )}
                                             </p>
-                                            <p className="text-xs text-gray-700 dark:text-gray-300">
+                                            <p className="text-xs text-foreground">
                                                 {review.adminReply.text}
                                             </p>
                                         </div>
@@ -388,7 +388,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                         })}
 
                     {!loading && filteredClientSide.length === 0 && (
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
                             {l(
                                 'Отзывы не найдены.',
                                 'No reviews found.',

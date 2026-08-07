@@ -66,7 +66,7 @@ export const GRADE_STYLES: Record<AbcGrade, { badge: string; row: string }> = {
 
 export function Empty({ text }: { text: string }): ReactElement {
     return (
-        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500 rounded-xl border border-border">
+        <div className="py-16 text-center text-sm text-muted-foreground rounded-xl border border-border">
             {text}
         </div>
     );

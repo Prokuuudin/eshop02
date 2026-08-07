@@ -66,7 +66,7 @@ export default function SeoSection(): ReactElement {
     }, [products, issueFilter]);
 
     if (loading)
-        return <div className="py-16 text-center text-sm text-gray-400">Загрузка каталога...</div>;
+        return <div className="py-16 text-center text-sm text-muted-foreground">Загрузка каталога...</div>;
 
     const allOk = products.length > 0 && counts.all === 0;
 
@@ -148,7 +148,7 @@ export default function SeoSection(): ReactElement {
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y divide-border">
                             {filtered.map((p) => (
                                 <tr
                                     key={p.id}
@@ -211,7 +211,7 @@ export default function SeoSection(): ReactElement {
             )}
 
             {products.length > 0 && (
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-muted-foreground">
                     Всего в каталоге: {products.length} товаров · Заполнены корректно:{' '}
                     {products.length - counts.all}
                 </p>

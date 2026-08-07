@@ -96,7 +96,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                 >
                                     <div className="flex-1 min-w-0 space-y-1.5">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-mono text-xs text-gray-400 dark:text-gray-500">
+                                            <span className="font-mono text-xs text-muted-foreground">
                                                 {order.id}
                                             </span>
                                             <span
@@ -149,7 +149,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             onClick={() =>
                                                 void navigator.clipboard.writeText(order.id)
                                             }
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Скопировать ID
                                         </button>
@@ -176,7 +176,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         )}
                                         <a
                                             href={`mailto:${order.email}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Написать клиенту
                                         </a>
@@ -189,7 +189,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         </button>
                                         <a
                                             href={`tel:${order.phone}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Позвонить
                                         </a>
@@ -204,7 +204,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                             {/* Address */}
                                             <div className="space-y-2">
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                     Адрес доставки
                                                 </p>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -237,7 +237,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                             {/* Delivery method */}
                                             <div className="space-y-2">
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                     Способ доставки
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
@@ -265,10 +265,10 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                             {/* Items */}
                                             <div className="space-y-2">
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                     Позиции заказа
                                                 </p>
-                                                <div className="rounded-lg border border-border divide-y divide-gray-100 dark:divide-gray-800 bg-card">
+                                                <div className="rounded-lg border border-border divide-y divide-border bg-card">
                                                     {editItems.map((item) => (
                                                         <div
                                                             key={item.lineKey}
@@ -285,16 +285,16 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                                 />
                                                             )}
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-sm text-gray-800 dark:text-gray-200 truncate">
+                                                                <p className="text-sm text-foreground truncate">
                                                                     {item.title}
                                                                 </p>
                                                                 {item.variantLabel && (
-                                                                    <p className="text-xs text-gray-400 truncate">
+                                                                    <p className="text-xs text-muted-foreground truncate">
                                                                         {item.variantLabel}
                                                                     </p>
                                                                 )}
                                                             </div>
-                                                            <span className="text-xs text-gray-400 shrink-0">
+                                                            <span className="text-xs text-muted-foreground shrink-0">
                                                                 €{item.price.toFixed(2)}
                                                             </span>
                                                             <div className="flex items-center gap-1 shrink-0">
@@ -337,7 +337,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                                 onClick={() =>
                                                                     editUpdateQty(item.lineKey, 0)
                                                                 }
-                                                                className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 text-lg leading-none shrink-0"
+                                                                className="text-muted-foreground hover:text-red-500 dark:hover:text-red-400 text-lg leading-none shrink-0"
                                                             >
                                                                 ×
                                                             </button>
@@ -364,7 +364,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                                     onClick={() =>
                                                                         editAddProduct(p)
                                                                     }
-                                                                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-primary/5 dark:hover:bg-primary/10 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                                                                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-primary/5 dark:hover:bg-primary/10 border-b border-border last:border-0"
                                                                 >
                                                                     {p.image && (
                                                                         <Image
@@ -380,7 +380,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                                         <p className="text-sm text-foreground truncate">
                                                                             {p.title}
                                                                         </p>
-                                                                        <p className="text-xs text-gray-400">
+                                                                        <p className="text-xs text-muted-foreground">
                                                                             {p.brand}
                                                                             {p.sku
                                                                                 ? ` · ${p.sku}`
@@ -489,7 +489,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {/* Customer */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Клиент
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
@@ -503,7 +503,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             </a>
                                             <a
                                                 href={`tel:${order.phone}`}
-                                                className="block text-sm text-gray-700 dark:text-gray-300 hover:underline"
+                                                className="block text-sm text-foreground hover:underline"
                                             >
                                                 {order.phone}
                                             </a>
@@ -511,14 +511,14 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                         {/* Delivery */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Доставка
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
                                                 {DELIVERY_LABELS[order.deliveryMethod] ??
                                                     order.deliveryMethod}
                                             </p>
-                                            <div className="text-sm text-gray-700 dark:text-gray-300 space-y-0.5">
+                                            <div className="text-sm text-foreground space-y-0.5">
                                                 <p>{order.address}</p>
                                                 {order.postalCode && (
                                                     <p>Индекс: {order.postalCode}</p>
@@ -529,7 +529,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                                         {/* Payment */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Оплата
                                             </p>
                                             <div className="flex items-center gap-2">
@@ -539,7 +539,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     {PAYMENT_LABELS[payStatus]}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <p className="text-sm text-foreground">
                                                 {order.paymentMethod}
                                             </p>
                                             {order.paymentProvider && (
@@ -551,7 +551,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                 </p>
                                             )}
                                             {order.paymentSessionId && (
-                                                <div className="pt-1 border-t border-gray-100 dark:border-gray-800">
+                                                <div className="pt-1 border-t border-border">
                                                     <p className="text-xs text-muted-foreground mb-0.5">
                                                         Session ID
                                                     </p>
@@ -568,7 +568,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         <p className="text-sm font-semibold text-foreground mb-2">
                                             Состав заказа
                                         </p>
-                                        <div className="rounded-lg border border-border divide-y divide-gray-200 dark:divide-gray-700">
+                                        <div className="rounded-lg border border-border divide-y divide-border">
                                             {order.items.map((item) => (
                                                 <div
                                                     key={item.lineKey}
@@ -735,7 +735,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     <div className="pt-2 border-t border-border">
                                         <p className="text-sm font-semibold text-foreground mb-2">
                                             Заметка менеджера
-                                            <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+                                            <span className="ml-2 text-xs font-normal text-muted-foreground">
                                                 — клиент не видит
                                             </span>
                                         </p>
@@ -785,7 +785,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             </Button>
                                             {getOrderNote(order.id) &&
                                                 noteDrafts[order.id] === undefined && (
-                                                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                                                    <span className="text-xs text-muted-foreground">
                                                         Заметка сохранена
                                                     </span>
                                                 )}

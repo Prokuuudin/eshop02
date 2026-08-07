@@ -137,7 +137,7 @@ export default function AdminImportPage(): React.ReactElement {
                         </a>
                     </div>
                     <div className="rounded-md bg-muted border border-border p-3">
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
+                        <p className="text-xs font-medium text-foreground mb-1">
                             Колонки в CSV:
                         </p>
                         <p className="text-xs text-muted-foreground leading-relaxed font-mono">
@@ -147,7 +147,7 @@ export default function AdminImportPage(): React.ReactElement {
                             {', '}
                             {ALL_COLS.slice(REQUIRED_COLS.length).join(', ')}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Красным — обязательные. Остальные — необязательные, можно не включать в
                             файл. Для <code>badges</code> используйте разделитель <code>;</code>{' '}
                             (например: <code>sale;new</code>). Категории:{' '}
@@ -162,7 +162,7 @@ export default function AdminImportPage(): React.ReactElement {
 
                     {/* Step 1: Upload */}
                     <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <p className="text-sm font-medium text-foreground">
                             1. Выберите файл
                         </p>
                         <div className="flex items-center gap-3 flex-wrap">
@@ -171,7 +171,7 @@ export default function AdminImportPage(): React.ReactElement {
                             </Button>
                             {fileName && (
                                 <>
-                                    <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+                                    <span className="text-sm text-foreground font-medium">
                                         {fileName}
                                     </span>
                                     <span className="text-sm text-muted-foreground">
@@ -206,7 +206,7 @@ export default function AdminImportPage(): React.ReactElement {
                     {/* Column check */}
                     {rows.length > 0 && (
                         <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                            <p className="text-sm font-medium text-foreground">
                                 Обнаруженные колонки:
                             </p>
                             <div className="flex flex-wrap gap-1.5">
@@ -240,7 +240,7 @@ export default function AdminImportPage(): React.ReactElement {
                     {/* Step 2: Mode */}
                     {canImport && (
                         <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                            <p className="text-sm font-medium text-foreground">
                                 2. Режим импорта
                             </p>
                             <div className="space-y-2">
@@ -257,7 +257,7 @@ export default function AdminImportPage(): React.ReactElement {
                                             onChange={() => onModeChange(m)}
                                             className="mt-0.5"
                                         />
-                                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                                        <span className="text-sm text-foreground">
                                             <strong className="capitalize">{m}</strong> —{' '}
                                             {MODE_LABELS[m]}
                                         </span>
@@ -271,7 +271,7 @@ export default function AdminImportPage(): React.ReactElement {
                     {canImport && !result && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                <p className="text-sm font-medium text-foreground">
                                     3. Предпросмотр
                                 </p>
                                 <Button
@@ -289,7 +289,7 @@ export default function AdminImportPage(): React.ReactElement {
                             </div>
 
                             {!previewResult && !previewing && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                     Нажмите «Проверить файл» — мы сравним CSV с каталогом и покажем
                                     что будет создано, обновлено или пропущено.
                                 </p>
@@ -310,7 +310,7 @@ export default function AdminImportPage(): React.ReactElement {
                                             </span>
                                         )}
                                         {previewResult.summary.skip > 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 font-medium">
+                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-muted text-muted-foreground font-medium">
                                                 Пропустить: {previewResult.summary.skip}
                                             </span>
                                         )}
@@ -352,7 +352,7 @@ export default function AdminImportPage(): React.ReactElement {
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                            <tbody className="divide-y divide-border">
                                                 {previewResult.rows.map((row) => {
                                                     const style = ACTION_STYLES[row.action];
                                                     return (
@@ -367,7 +367,7 @@ export default function AdminImportPage(): React.ReactElement {
                                                                     : 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
                                                             ].join(' ')}
                                                         >
-                                                            <td className="px-3 py-2 text-gray-400 dark:text-gray-500 tabular-nums">
+                                                            <td className="px-3 py-2 text-muted-foreground tabular-nums">
                                                                 {row.rowNum}
                                                             </td>
                                                             <td className="px-3 py-2 whitespace-nowrap">
@@ -384,7 +384,7 @@ export default function AdminImportPage(): React.ReactElement {
                                                                     </span>
                                                                 )}
                                                             </td>
-                                                            <td className="px-3 py-2 text-gray-700 dark:text-gray-200 max-w-[200px]">
+                                                            <td className="px-3 py-2 text-foreground max-w-[200px]">
                                                                 {row.action === 'error' ? (
                                                                     <span className="text-red-600 dark:text-red-400">
                                                                         {row.error}
@@ -404,7 +404,7 @@ export default function AdminImportPage(): React.ReactElement {
                                                             <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">
                                                                 {row.stock || '—'}
                                                             </td>
-                                                            <td className="px-3 py-2 text-gray-400 dark:text-gray-500 font-mono whitespace-nowrap">
+                                                            <td className="px-3 py-2 text-muted-foreground font-mono whitespace-nowrap">
                                                                 {row.sku || '—'}
                                                             </td>
                                                         </tr>
@@ -421,7 +421,7 @@ export default function AdminImportPage(): React.ReactElement {
                     {/* Step 4: Run — only after preview */}
                     {canImport && previewResult && !result && (
                         <div className="pt-3 border-t border-border flex items-center gap-3 flex-wrap">
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 w-full">
+                            <p className="text-sm font-medium text-foreground w-full">
                                 4. Запустить импорт
                             </p>
                             <Button

@@ -29,7 +29,7 @@ const ProductBasicFields: React.FC = () => {
             <div className="add-product__fields-grid">
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-id">
-                        ID {isEdit && <span className="text-gray-400 text-xs">(нельзя изменить)</span>}
+                        ID {isEdit && <span className="text-muted-foreground text-xs">(нельзя изменить)</span>}
                     </label>
                     <Input
                         id="add-product-id"

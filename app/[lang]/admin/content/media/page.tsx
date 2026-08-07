@@ -160,7 +160,7 @@ export default function AdminMediaPage(): React.ReactElement {
 
                     {/* Sort */}
                     <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                        <SelectTrigger className="h-8 rounded-lg border border-border bg-card px-2 text-xs text-gray-700 dark:text-gray-300">
+                        <SelectTrigger className="h-8 rounded-lg border border-border bg-card px-2 text-xs text-foreground">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -196,7 +196,7 @@ export default function AdminMediaPage(): React.ReactElement {
                         </button>
                     </div>
 
-                    <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">
+                    <span className="text-xs text-muted-foreground ml-1">
                         {displayed.length} из {files.length}
                     </span>
                 </div>
@@ -227,7 +227,7 @@ export default function AdminMediaPage(): React.ReactElement {
                 )}
 
                 {loading ? (
-                    <div className="py-16 text-center text-sm text-gray-400">Загрузка...</div>
+                    <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
                 ) : files.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-border p-12 text-center">
                         <p className="text-sm text-muted-foreground mb-3">
@@ -238,7 +238,7 @@ export default function AdminMediaPage(): React.ReactElement {
                         </Button>
                     </div>
                 ) : displayed.length === 0 ? (
-                    <div className="py-10 text-center text-sm text-gray-400">Ничего не найдено</div>
+                    <div className="py-10 text-center text-sm text-muted-foreground">Ничего не найдено</div>
                 ) : (
                     <div className="flex gap-4 items-start">
                         {/* Main area */}
@@ -318,19 +318,19 @@ export default function AdminMediaPage(): React.ReactElement {
                                                                 className="w-full h-full object-cover"
                                                             />
                                                         ) : (
-                                                            <span className="text-2xl font-bold text-gray-300 dark:text-gray-600 uppercase">
+                                                            <span className="text-2xl font-bold text-muted-foreground uppercase">
                                                                 {file.ext}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <div className="p-2 text-left">
                                                         <p
-                                                            className="text-xs text-gray-700 dark:text-gray-200 truncate leading-tight"
+                                                            className="text-xs text-foreground truncate leading-tight"
                                                             title={file.name}
                                                         >
                                                             {file.name}
                                                         </p>
-                                                        <p className="text-xs text-gray-400 mt-0.5">
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
                                                             {fmtBytes(file.size)}
                                                         </p>
                                                     </div>
@@ -361,7 +361,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                                 <th className="px-3 py-2.5"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                        <tbody className="divide-y divide-border">
                                             {displayed.map((file) => {
                                                 const isChecked = checkedNames.has(file.name);
                                                 const isSelected = selected?.name === file.name;
@@ -401,11 +401,11 @@ export default function AdminMediaPage(): React.ReactElement {
                                                                         className="h-8 w-8 rounded object-cover shrink-0"
                                                                     />
                                                                 ) : (
-                                                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold text-gray-400 uppercase shrink-0">
+                                                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground uppercase shrink-0">
                                                                         {file.ext}
                                                                     </div>
                                                                 )}
-                                                                <span className="truncate text-gray-800 dark:text-gray-200 max-w-xs">
+                                                                <span className="truncate text-foreground max-w-xs">
                                                                     {file.name}
                                                                 </span>
                                                             </div>
@@ -443,7 +443,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                                                             );
                                                                         })
                                                                 }
-                                                                className="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                                                className="text-xs text-muted-foreground hover:text-gray-700 dark:hover:text-gray-200"
                                                             >
                                                                 {copied === file.path
                                                                     ? '✓'
@@ -469,7 +469,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                     <button
                                         type="button"
                                         onClick={() => setSelected(null)}
-                                        className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none ml-2 shrink-0"
+                                        className="text-muted-foreground hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none ml-2 shrink-0"
                                     >
                                         ×
                                     </button>
@@ -487,7 +487,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                             className="w-full h-full object-contain"
                                         />
                                     ) : (
-                                        <span className="text-4xl font-bold text-gray-300 dark:text-gray-600 uppercase">
+                                        <span className="text-4xl font-bold text-muted-foreground uppercase">
                                             {selected.ext}
                                         </span>
                                     )}
@@ -509,7 +509,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                     const usedIn = usageMap.get(selected.path);
                                     if (!usedIn?.length)
                                         return (
-                                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                                            <p className="text-xs text-muted-foreground">
                                                 Не используется в товарах
                                             </p>
                                         );
@@ -535,7 +535,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                 {/* Path copy */}
                                 <div className="space-y-1.5">
                                     <p className="text-xs text-muted-foreground">Путь:</p>
-                                    <code className="block text-xs bg-muted rounded px-2 py-1.5 break-all text-gray-800 dark:text-gray-200">
+                                    <code className="block text-xs bg-muted rounded px-2 py-1.5 break-all text-foreground">
                                         {selected.path}
                                     </code>
                                     <Button
@@ -558,7 +558,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                                <div className="flex flex-col gap-2 pt-1 border-t border-border">
                                     <a
                                         href={selected.path}
                                         target="_blank"

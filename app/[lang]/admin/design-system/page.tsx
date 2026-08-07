@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         {title}
       </h2>
       {children}
@@ -31,20 +31,20 @@ function Token({ name, bg, text, border }: { name: string; bg: string; text?: st
       <div
         className={`h-14 w-full rounded-lg border ${border ?? 'border-transparent'} ${bg}`}
       />
-      <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 leading-tight">{name}</p>
-      {text && <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight font-mono">{text}</p>}
+      <p className="text-[11px] font-medium text-foreground leading-tight">{name}</p>
+      {text && <p className="text-[10px] text-muted-foreground leading-tight font-mono">{text}</p>}
     </div>
   )
 }
 
 function TypeRow({ size, tailwind, weight, sample }: { size: string; tailwind: string; weight: string; sample: string }) {
   return (
-    <div className="flex items-baseline gap-6 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+    <div className="flex items-baseline gap-6 py-2 border-b border-border last:border-0">
       <div className="w-24 shrink-0">
-        <span className="text-[11px] font-mono text-gray-400">{tailwind}</span>
+        <span className="text-[11px] font-mono text-muted-foreground">{tailwind}</span>
       </div>
-      <div className="w-16 shrink-0 text-[11px] text-gray-400">{size}</div>
-      <div className="w-24 shrink-0 text-[11px] text-gray-400">{weight}</div>
+      <div className="w-16 shrink-0 text-[11px] text-muted-foreground">{size}</div>
+      <div className="w-24 shrink-0 text-[11px] text-muted-foreground">{weight}</div>
       <p className={`${tailwind} text-foreground leading-tight`}>{sample}</p>
     </div>
   )
@@ -60,7 +60,7 @@ export default function DesignSystemPage(): React.ReactElement {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Eshop</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Eshop</p>
             <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
             <p className="mt-2 text-sm text-muted-foreground max-w-xl">
               Визуальный справочник токенов, компонентов и паттернов проекта.
@@ -79,7 +79,7 @@ export default function DesignSystemPage(): React.ReactElement {
           <p className="text-sm text-muted-foreground">Семантические токены Shadcn/ui — используются через CSS-переменные и Tailwind-классы.</p>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Базовые поверхности</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Базовые поверхности</p>
             <div className="flex flex-wrap gap-4">
               <Token name="background" bg="bg-background" text="--background" border="border-border" />
               <Token name="foreground" bg="bg-foreground" text="--foreground" />
@@ -91,7 +91,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Акцентные</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Акцентные</p>
             <div className="flex flex-wrap gap-4">
               <Token name="primary" bg="bg-primary" text="--primary" />
               <Token name="secondary" bg="bg-secondary" text="--secondary" border="border-border" />
@@ -102,7 +102,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Проектные цвета (hardcoded Tailwind)</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Проектные цвета (hardcoded Tailwind)</p>
             <div className="flex flex-wrap gap-4">
               <Token name="primary" bg="bg-primary" text="links, focus" />
               <Token name="primary/5" bg="bg-primary/5" text="hero bg" border="border-border" />
@@ -117,7 +117,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Chart tokens</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Chart tokens</p>
             <div className="flex flex-wrap gap-4">
               <Token name="chart-1" bg="bg-[hsl(var(--chart-1))]" text="--chart-1" />
               <Token name="chart-2" bg="bg-[hsl(var(--chart-2))]" text="--chart-2" />
@@ -137,10 +137,10 @@ export default function DesignSystemPage(): React.ReactElement {
           <Card>
             <CardContent className="pt-4 px-5 pb-5">
               <div className="mb-3 flex gap-8">
-                <span className="text-[11px] font-mono text-gray-400 w-24">class</span>
-                <span className="text-[11px] text-gray-400 w-16">size</span>
-                <span className="text-[11px] text-gray-400 w-24">weight</span>
-                <span className="text-[11px] text-gray-400">sample</span>
+                <span className="text-[11px] font-mono text-muted-foreground w-24">class</span>
+                <span className="text-[11px] text-muted-foreground w-16">size</span>
+                <span className="text-[11px] text-muted-foreground w-24">weight</span>
+                <span className="text-[11px] text-muted-foreground">sample</span>
               </div>
               <TypeRow tailwind="text-xs"   size="12px" weight="regular" sample="Вспомогательный текст, метки" />
               <TypeRow tailwind="text-sm"   size="14px" weight="regular" sample="Основной интерфейсный текст" />
@@ -159,7 +159,7 @@ export default function DesignSystemPage(): React.ReactElement {
             {(['font-thin','font-light','font-normal','font-medium','font-semibold','font-bold','font-extrabold','font-black'] as const).map(w => (
               <div key={w} className="rounded-lg border border-border bg-card p-3 text-center">
                 <p className={`text-lg ${w} text-foreground`}>Aa</p>
-                <p className="text-[10px] font-mono text-gray-400 mt-1">{w}</p>
+                <p className="text-[10px] font-mono text-muted-foreground mt-1">{w}</p>
               </div>
             ))}
           </div>
@@ -172,7 +172,7 @@ export default function DesignSystemPage(): React.ReactElement {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
             <div>
-              <p className="text-xs text-gray-400 mb-3 font-medium">Spacing scale (×4px base)</p>
+              <p className="text-xs text-muted-foreground mb-3 font-medium">Spacing scale (×4px base)</p>
               <div className="space-y-2.5">
                 {[
                   { w: 'w-1',  label: '1 · 4px' },
@@ -187,7 +187,7 @@ export default function DesignSystemPage(): React.ReactElement {
                   { w: 'w-20', label: '20 · 80px' },
                 ].map(s => (
                   <div key={s.w} className="flex items-center gap-3">
-                    <span className="w-20 text-[11px] font-mono text-gray-400 shrink-0">{s.label}</span>
+                    <span className="w-20 text-[11px] font-mono text-muted-foreground shrink-0">{s.label}</span>
                     <div className={`h-3.5 rounded-sm bg-primary/25 ${s.w}`} />
                   </div>
                 ))}
@@ -195,7 +195,7 @@ export default function DesignSystemPage(): React.ReactElement {
             </div>
 
             <div>
-              <p className="text-xs text-gray-400 mb-3 font-medium">Border radius</p>
+              <p className="text-xs text-muted-foreground mb-3 font-medium">Border radius</p>
               <div className="space-y-3">
                 {[
                   { cls: 'rounded-none', label: 'none · 0px' },
@@ -208,12 +208,12 @@ export default function DesignSystemPage(): React.ReactElement {
                 ].map(r => (
                   <div key={r.cls} className="flex items-center gap-4">
                     <div className={`w-12 h-8 bg-primary/20 border border-primary/30 shrink-0 ${r.cls}`} />
-                    <span className="text-[11px] font-mono text-gray-500">{r.label}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{r.label}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="text-xs text-gray-400 mt-6 mb-3 font-medium">Shadows</p>
+              <p className="text-xs text-muted-foreground mt-6 mb-3 font-medium">Shadows</p>
               <div className="space-y-3">
                 {[
                   { cls: 'shadow-sm',  label: 'shadow-sm' },
@@ -224,7 +224,7 @@ export default function DesignSystemPage(): React.ReactElement {
                 ].map(s => (
                   <div key={s.cls} className="flex items-center gap-4">
                     <div className={`w-12 h-8 bg-card rounded-lg shrink-0 ${s.cls}`} />
-                    <span className="text-[11px] font-mono text-gray-500">{s.label}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground">{s.label}</span>
                   </div>
                 ))}
               </div>
@@ -239,7 +239,7 @@ export default function DesignSystemPage(): React.ReactElement {
         <Section title="4 · Buttons">
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Variants</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Variants</p>
             <div className="flex flex-wrap gap-3 items-center">
               <Button variant="default">Default</Button>
               <Button variant="secondary">Secondary</Button>
@@ -251,7 +251,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Sizes</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Sizes</p>
             <div className="flex flex-wrap gap-3 items-center">
               <Button size="sm">Small</Button>
               <Button size="default">Default</Button>
@@ -261,7 +261,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">States</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">States</p>
             <div className="flex flex-wrap gap-3 items-center">
               <Button>Normal</Button>
               <Button disabled>Disabled</Button>
@@ -296,7 +296,7 @@ export default function DesignSystemPage(): React.ReactElement {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
             <div className="space-y-3">
-              <p className="text-xs text-gray-400 font-medium">Input states</p>
+              <p className="text-xs text-muted-foreground font-medium">Input states</p>
               <div className="space-y-2">
                 <Input placeholder="Default placeholder" />
                 <Input defaultValue="Filled value" />
@@ -311,7 +311,7 @@ export default function DesignSystemPage(): React.ReactElement {
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-gray-400 font-medium">Textarea</p>
+              <p className="text-xs text-muted-foreground font-medium">Textarea</p>
               <Textarea placeholder="Введите текст..." className="min-h-[120px]" />
               <Textarea disabled placeholder="Disabled textarea" />
             </div>
@@ -319,7 +319,7 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 mb-3 font-medium">Controls</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Controls</p>
             <div className="flex flex-wrap gap-6 items-center">
               <label htmlFor="ds-check-1" className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox id="ds-check-1" />
@@ -431,7 +431,7 @@ export default function DesignSystemPage(): React.ReactElement {
             <div className="rounded-md border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
               ℹ Информация — нейтральное сообщение.
             </div>
-            <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+            <div className="rounded-md border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
               — Нейтральная подсказка без цветового акцента.
             </div>
           </div>
@@ -456,7 +456,7 @@ export default function DesignSystemPage(): React.ReactElement {
         <Separator />
 
         {/* ── Footer ────────────────────────────────────────────────── */}
-        <div className="text-xs text-gray-400 dark:text-gray-600 pb-6">
+        <div className="text-xs text-muted-foreground pb-6">
           Eshop Design System · Tailwind CSS + Shadcn/ui · system-ui · generated from live components
         </div>
 

@@ -11,7 +11,7 @@ interface ProductListProps {
 const ProductList: React.FC<ProductListProps> = ({ products, onEditProduct, onDeleteProduct }) => {
     if (products.length === 0) {
         return (
-            <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+            <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
                 Нет результатов поиска
             </div>
         );

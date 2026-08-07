@@ -402,20 +402,20 @@ export default function AdminContentPage(): React.ReactElement {
 
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                <p className="text-xs font-medium text-foreground">
                                                     Было (Текущее на сайте)
                                                 </p>
-                                                <div className="min-h-[96px] rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                                                <div className="min-h-[96px] rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground whitespace-pre-wrap">
                                                     {currentText ||
                                                         'Значение для этого ключа пока не найдено.'}
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                <p className="text-xs font-medium text-foreground">
                                                     Стало (После сохранения)
                                                 </p>
-                                                <div className="min-h-[96px] rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                                                <div className="min-h-[96px] rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground whitespace-pre-wrap">
                                                     {nextText ||
                                                         'Пусто. Если сохранить, override будет удален.'}
                                                 </div>
@@ -478,7 +478,7 @@ export default function AdminContentPage(): React.ReactElement {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="space-y-2">
-                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                <p className="text-xs font-medium text-foreground">
                                                     Было (Исходный src)
                                                 </p>
                                                 {imageFrom.trim() ? (
@@ -509,7 +509,7 @@ export default function AdminContentPage(): React.ReactElement {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                                                <p className="text-xs font-medium text-foreground">
                                                     Стало (Новый src)
                                                 </p>
                                                 {imageTo.trim() ? (

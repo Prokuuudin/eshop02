@@ -259,7 +259,7 @@ export default function AdminPage(): React.ReactElement {
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="text-base font-semibold text-foreground">{card.title}</p>
                   {editMode && (
-                    <span className="text-gray-400 dark:text-gray-500 mt-0.5 shrink-0 text-lg leading-none">⠿</span>
+                    <span className="text-muted-foreground mt-0.5 shrink-0 text-lg leading-none">⠿</span>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-4 leading-snug">{card.description}</p>
@@ -393,7 +393,7 @@ export default function AdminPage(): React.ReactElement {
           {revenueByDay.length > 0 ? (
             <RevenueBarChart data={revenueByDay} />
           ) : (
-            <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+            <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">
               {l('Нет заказов за выбранный период', 'No orders for selected period', 'Nav pasūtījumu izvēlētajam periodam')}
             </div>
           )}

@@ -276,18 +276,18 @@ export default function AdminBonusPage(): React.ReactElement {
                         <p className="text-green-700 dark:text-green-400 font-medium">
                           Начислено: <strong>{calcEligible ? calcEarnedCapped : 0} баллов</strong>
                           {draft.maxEarnPerOrder > 0 && calcEligible && calcEarned > draft.maxEarnPerOrder && (
-                            <span className="ml-1 text-gray-500 font-normal">(обрезано с {calcEarned} баллов лимитом)</span>
+                            <span className="ml-1 text-muted-foreground font-normal">(обрезано с {calcEarned} баллов лимитом)</span>
                           )}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} баллов (1 балл = 1 цент){draft.maxEarnPerOrder > 0 ? `, лимит ${draft.maxEarnPerOrder} баллов` : ''}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-700 dark:text-gray-300 font-medium">
+                        <p className="text-foreground font-medium">
                           Макс. списать: <strong>{calcMaxSpend} баллов</strong> (−€{pointsToEuros(calcMaxSpend).toFixed(2)})
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           €{calcAmount} × {draft.maxSpendPercent}% = {calcMaxSpend} баллов, 1 балл = 1 цент
                           {draft.minPointsToSpend > 0 && ` · минимум на балансе для списания: ${draft.minPointsToSpend} баллов`}
                         </p>
@@ -325,7 +325,7 @@ export default function AdminBonusPage(): React.ReactElement {
                 className="h-8 text-sm w-full max-w-sm"
               />
               {users.length === 0 ? (
-                <p className="text-sm text-gray-500">Пользователи не найдены</p>
+                <p className="text-sm text-muted-foreground">Пользователи не найдены</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -338,13 +338,13 @@ export default function AdminBonusPage(): React.ReactElement {
                     </thead>
                     <tbody>
                       {filteredUsers.length === 0 && (
-                        <tr><td colSpan={3} className="py-4 text-sm text-gray-400">Ничего не найдено</td></tr>
+                        <tr><td colSpan={3} className="py-4 text-sm text-muted-foreground">Ничего не найдено</td></tr>
                       )}
                       {filteredUsers.map((user, idx) => (
                         <tr key={user.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted'}>
                           <td className="py-2 pr-4">
                             <p className="font-medium">{user.name || user.email}</p>
-                            {user.name && <p className="text-xs text-gray-500">{user.email}</p>}
+                            {user.name && <p className="text-xs text-muted-foreground">{user.email}</p>}
                           </td>
                           <td className="py-2 pr-4">
                             <span className={`font-semibold ${(user.bonusPoints ?? 0) > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'}`}>
@@ -391,8 +391,8 @@ export default function AdminBonusPage(): React.ReactElement {
             <h2 className="text-lg font-semibold mb-3">Сегментация по балансу</h2>
             <div className="space-y-2">
               {segments.map((s) => (
-                <div key={s.label} className="rounded-lg border border-gray-100 dark:border-gray-800 px-4 py-2 flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{s.label}</span>
+                <div key={s.label} className="rounded-lg border border-border px-4 py-2 flex items-center justify-between">
+                  <span className="text-sm text-foreground">{s.label}</span>
                   <span className="font-semibold text-foreground">{s.count} польз.</span>
                 </div>
               ))}
@@ -402,15 +402,15 @@ export default function AdminBonusPage(): React.ReactElement {
           <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
             <h2 className="text-lg font-semibold mb-3">Топ-5 по балансу</h2>
             {top5.length === 0 ? (
-              <p className="text-sm text-gray-400">Ни у кого нет баллов</p>
+              <p className="text-sm text-muted-foreground">Ни у кого нет баллов</p>
             ) : (
               <ol className="space-y-2">
                 {top5.map((u, i) => (
                   <li key={u.id} className="flex items-center gap-3">
-                    <span className="w-6 text-center text-sm font-bold text-gray-400">{i + 1}</span>
+                    <span className="w-6 text-center text-sm font-bold text-muted-foreground">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{u.name || u.email}</p>
-                      {u.name && <p className="text-xs text-gray-400 truncate">{u.email}</p>}
+                      {u.name && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
                     </div>
                     <span className="text-sm font-semibold text-green-700 dark:text-green-400 shrink-0">
                       {u.bonusPoints} баллов ({formatEuro(pointsToEuros(u.bonusPoints ?? 0), 'ru-RU')})
@@ -426,7 +426,7 @@ export default function AdminBonusPage(): React.ReactElement {
         <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
           <h2 className="text-lg font-semibold mb-3">История операций</h2>
           {bonusOrders.length === 0 ? (
-            <p className="text-sm text-gray-400">Операций с бонусами пока не было</p>
+            <p className="text-sm text-muted-foreground">Операций с бонусами пока не было</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -447,7 +447,7 @@ export default function AdminBonusPage(): React.ReactElement {
                       </td>
                       <td className="py-2 pr-4">
                         <p className="font-medium">{o.firstName} {o.lastName}</p>
-                        <p className="text-xs text-gray-400">{o.email}</p>
+                        <p className="text-xs text-muted-foreground">{o.email}</p>
                       </td>
                       <td className="py-2 pr-4 text-right">{formatEuro(o.total, 'ru-RU')}</td>
                       <td className="py-2 pr-4 text-right">
@@ -455,14 +455,14 @@ export default function AdminBonusPage(): React.ReactElement {
                           ? <span className="text-green-700 dark:text-green-400 font-medium">
                               +{o.bonusEarned} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusEarned ?? 0), 'ru-RU')})</span>
                             </span>
-                          : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="py-2 text-right">
                         {(o.bonusSpent ?? 0) > 0
                           ? <span className="text-rose-600 dark:text-rose-400 font-medium">
                               −{o.bonusSpent} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusSpent ?? 0), 'ru-RU')})</span>
                             </span>
-                          : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                          : <span className="text-muted-foreground">—</span>}
                       </td>
                     </tr>
                   ))}

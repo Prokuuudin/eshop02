@@ -135,11 +135,11 @@ export default function StockAlertsPage(): React.ReactElement {
                         <h1 className="text-2xl font-bold text-foreground">
                             Алерты низкого остатка
                         </h1>
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             Товары с критически низким или нулевым остатком
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
                         <span className="text-sm text-muted-foreground">Порог:</span>
                         <Input
                             type="number"
@@ -159,12 +159,12 @@ export default function StockAlertsPage(): React.ReactElement {
                 </div>
 
                 {/* Email alert */}
-                <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 p-4 space-y-3">
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
                             <p className="text-sm font-semibold text-foreground">Email-отчёт об остатках</p>
                             {lastSent && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Последняя отправка: {lastSent}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Последняя отправка: {lastSent}</p>
                             )}
                         </div>
                         {alertResult?.ok && (
@@ -193,7 +193,7 @@ export default function StockAlertsPage(): React.ReactElement {
                             {alertSending ? 'Отправка...' : `Отправить отчёт (${outCount + lowCount} позиций)`}
                         </button>
                     </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                         Письмо содержит все товары с нулевым остатком и остатком ≤ {threshold} шт.
                     </p>
                 </div>
@@ -207,8 +207,8 @@ export default function StockAlertsPage(): React.ReactElement {
                         <p className="text-xs text-amber-600 dark:text-amber-400">Мало (≤ {threshold})</p>
                         <p className="mt-1 text-3xl font-bold text-amber-700 dark:text-amber-300">{lowCount}</p>
                     </div>
-                    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-                        <p className="text-xs text-gray-500">Всего товаров</p>
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <p className="text-xs text-muted-foreground">Всего товаров</p>
                         <p className="mt-1 text-3xl font-bold text-foreground">{products.length}</p>
                     </div>
                 </div>
@@ -221,7 +221,7 @@ export default function StockAlertsPage(): React.ReactElement {
                         onChange={(e) => setSearch(e.target.value)}
                         className="min-w-[240px] flex-1 text-sm"
                     />
-                    <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="flex rounded-lg border border-border bg-card p-1">
                         {(
                             [
                                 { value: 'low', label: `Мало (${lowCount})` },
@@ -245,11 +245,11 @@ export default function StockAlertsPage(): React.ReactElement {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                <div className="overflow-x-auto rounded-xl border border-border bg-card">
                     {loading ? (
-                        <div className="py-16 text-center text-sm text-gray-400">Загрузка...</div>
+                        <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
                     ) : filtered.length === 0 ? (
-                        <div className="py-16 text-center text-sm text-gray-400">
+                        <div className="py-16 text-center text-sm text-muted-foreground">
                             {filter === 'low'
                                 ? 'Нет товаров с низким остатком'
                                 : filter === 'out'
@@ -258,7 +258,7 @@ export default function StockAlertsPage(): React.ReactElement {
                         </div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                            <thead className="border-b border-border bg-muted">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         Товар
@@ -283,7 +283,7 @@ export default function StockAlertsPage(): React.ReactElement {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            <tbody className="divide-y divide-border">
                                 {filtered.map((p) => (
                                     <tr
                                         key={p.id}
@@ -295,15 +295,15 @@ export default function StockAlertsPage(): React.ReactElement {
                                                   : ''
                                         }`}
                                     >
-                                        <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
+                                        <td className="px-4 py-3 font-medium text-foreground">
                                             {p.title}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">{p.brand}</td>
-                                        <td className="px-4 py-3 text-gray-500">{p.sku ?? '—'}</td>
+                                        <td className="px-4 py-3 text-muted-foreground">{p.sku ?? '—'}</td>
                                         <td className="px-4 py-3 capitalize text-muted-foreground">
                                             {p.category}
                                         </td>
-                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                        <td className="px-4 py-3 text-foreground">
                                             €{p.price.toLocaleString('ru-RU')}
                                         </td>
                                         <td className="px-4 py-3">

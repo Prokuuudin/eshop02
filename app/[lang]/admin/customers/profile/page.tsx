@@ -50,7 +50,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
-      {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -126,7 +126,7 @@ export default function CustomerProfilePage(): React.ReactElement {
     return (
       <AdminGate>
         <main className="w-full py-4 text-center">
-          <p className="text-gray-500">Email клиента не указан.</p>
+          <p className="text-muted-foreground">Email клиента не указан.</p>
           <Link href="/admin/customers/segments" className="text-primary hover:underline text-sm mt-2 inline-block">
             ← К сегментам
           </Link>
@@ -223,7 +223,7 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'orders' && (
           <div className="space-y-3">
             {customerOrders.length === 0 && (
-              <div className="py-10 text-center text-sm text-gray-400">Заказов нет</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">Заказов нет</div>
             )}
             {customerOrders.map((order) => {
               const status = getOrderStatus(order.id)
@@ -233,7 +233,7 @@ export default function CustomerProfilePage(): React.ReactElement {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs text-gray-400">{order.id}</span>
+                        <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
                         <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${ORDER_STATUS_COLORS[status]}`}>
                           {ORDER_STATUS_LABELS[status] ?? status}
                         </span>
@@ -255,7 +255,7 @@ export default function CustomerProfilePage(): React.ReactElement {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-lg font-bold text-foreground">{formatEuro(order.total, LOC)}</p>
-                      <p className="text-xs text-gray-400">{order.paymentMethod}</p>
+                      <p className="text-xs text-muted-foreground">{order.paymentMethod}</p>
                       <Link
                         href={`/admin/orders?q=${encodeURIComponent(order.id)}`}
                         className="text-xs text-primary hover:underline mt-1 inline-block"
@@ -274,15 +274,15 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'returns' && (
           <div className="space-y-3">
             {customerReturns.length === 0 && (
-              <div className="py-10 text-center text-sm text-gray-400">Возвратов нет</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">Возвратов нет</div>
             )}
             {customerReturns.map((ret) => (
               <div key={ret.id} className="rounded-xl border border-border bg-card px-5 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-gray-400">{ret.id}</span>
-                      <span className="text-xs rounded-full px-2 py-0.5 font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      <span className="font-mono text-xs text-muted-foreground">{ret.id}</span>
+                      <span className="text-xs rounded-full px-2 py-0.5 font-medium bg-muted text-foreground">
                         {ret.status}
                       </span>
                     </div>
@@ -306,21 +306,21 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'products' && (
           <div className="space-y-2">
             {topProducts.length === 0 && (
-              <div className="py-10 text-center text-sm text-gray-400">Нет данных</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">Нет данных</div>
             )}
             {topProducts.map((p, i) => (
               <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3">
                 {p.image && <Image unoptimized src={p.image} alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-cover shrink-0" />}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="text-sm text-gray-400 w-5 shrink-0 tabular-nums">{i + 1}</span>
+                  <span className="text-sm text-muted-foreground w-5 shrink-0 tabular-nums">{i + 1}</span>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
-                    <p className="text-xs text-gray-400">{p.brand}</p>
+                    <p className="text-xs text-muted-foreground">{p.brand}</p>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-semibold text-foreground">{formatEuro(p.revenue, LOC)}</p>
-                  <p className="text-xs text-gray-400">{p.qty} шт</p>
+                  <p className="text-xs text-muted-foreground">{p.qty} шт</p>
                 </div>
               </div>
             ))}

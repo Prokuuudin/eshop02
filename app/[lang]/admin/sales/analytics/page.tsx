@@ -67,10 +67,10 @@ function BarChart({
 
 function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
             <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
-            {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+            {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
         </div>
     );
 }
@@ -173,7 +173,7 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                         <h1 className="text-2xl font-bold text-foreground">
                             Аналитика продаж
                         </h1>
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             {filteredOrders.length} заказов за период
                         </p>
                     </div>
@@ -184,7 +184,7 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                     >
                         Товары и категории →
                     </Link>
-                    <div className="flex rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="flex rounded-lg border border-border bg-card p-1">
                         {PERIOD_OPTIONS.map((opt) => (
                             <button
                                 key={opt.value}
@@ -211,23 +211,23 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-                        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <h2 className="mb-4 text-sm font-semibold text-foreground">
                             Выручка по дням
                         </h2>
                         {revenueByDay.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
                         ) : (
                             <BarChart data={revenueByDay} color="#059669" />
                         )}
                     </div>
 
-                    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-                        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <h2 className="mb-4 text-sm font-semibold text-foreground">
                             Количество заказов по дням
                         </h2>
                         {ordersByDay.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
                         ) : (
                             <BarChart data={ordersByDay} color="#3b82f6" />
                         )}
@@ -235,23 +235,23 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                        <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-                            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="rounded-xl border border-border bg-card">
+                        <div className="border-b border-border px-4 py-3">
+                            <h2 className="text-sm font-semibold text-foreground">
                                 Топ товаров по выручке
                             </h2>
                         </div>
                         {topProducts.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
                         ) : (
-                            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                            <div className="divide-y divide-border">
                                 {topProducts.map((p, i) => (
                                     <div key={i} className="flex items-center gap-3 px-4 py-2.5">
-                                        <span className="w-5 shrink-0 text-xs text-gray-400">{i + 1}</span>
-                                        <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
+                                        <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
+                                        <span className="flex-1 truncate text-sm text-foreground">
                                             {p.title}
                                         </span>
-                                        <span className="shrink-0 text-xs text-gray-500">×{p.qty}</span>
+                                        <span className="shrink-0 text-xs text-muted-foreground">×{p.qty}</span>
                                         <span className="w-24 shrink-0 text-right text-sm font-medium text-emerald-600">
                                             {formatMoney(p.revenue)}
                                         </span>
@@ -261,23 +261,23 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                         )}
                     </div>
 
-                    <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                        <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-                            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="rounded-xl border border-border bg-card">
+                        <div className="border-b border-border px-4 py-3">
+                            <h2 className="text-sm font-semibold text-foreground">
                                 Выручка по категориям
                             </h2>
                         </div>
                         {topCategories.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-gray-400">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
                         ) : (
-                            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                            <div className="divide-y divide-border">
                                 {topCategories.map((c, i) => {
                                     const maxRev = topCategories[0]?.revenue ?? 1;
                                     const pct = Math.round((c.revenue / maxRev) * 100);
                                     return (
                                         <div key={i} className="px-4 py-2.5">
                                             <div className="mb-1 flex items-center justify-between">
-                                                <span className="text-sm capitalize text-gray-700 dark:text-gray-300">
+                                                <span className="text-sm capitalize text-foreground">
                                                     {c.cat}
                                                 </span>
                                                 <span className="text-sm font-medium text-emerald-600">

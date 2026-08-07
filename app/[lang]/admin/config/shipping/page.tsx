@@ -168,7 +168,7 @@ export default function AdminShippingPage(): React.ReactElement {
                       key={key}
                       className="rounded-md border border-border p-3 space-y-3"
                     >
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      <p className="text-sm font-medium text-foreground">
                         {DELIVERY_NAMES[key] ?? key}
                       </p>
 
@@ -249,7 +249,7 @@ export default function AdminShippingPage(): React.ReactElement {
                       key={key}
                       className="rounded-md border border-border p-3"
                     >
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
+                      <p className="text-sm font-medium text-foreground mb-3">
                         {PAYMENT_NAMES[key] ?? key}
                       </p>
 

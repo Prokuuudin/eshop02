@@ -193,7 +193,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
               {(['VIP', 'Постоянный', 'Новый', 'Неактивный'] as Segment[]).map((seg) => (
                 <div key={seg} className={`rounded-lg border p-4 ${SEGMENT_CARD_COLORS[seg]}`}>
                   <div className="text-2xl font-bold text-foreground">{counts[seg]}</div>
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-0.5">{seg}</div>
+                  <div className="text-sm font-medium text-foreground mt-0.5">{seg}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{SEGMENT_DESCRIPTIONS[seg]}</div>
                 </div>
               ))}
@@ -242,7 +242,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       {activeTab !== 'Все' && ` · ${activeTab}`}
                     </span>
                   </div>
-                  <span className="text-gray-400 text-xs">{showBroadcast ? '▲ Свернуть' : '▼ Развернуть'}</span>
+                  <span className="text-muted-foreground text-xs">{showBroadcast ? '▲ Свернуть' : '▼ Развернуть'}</span>
                 </button>
 
                 {showBroadcast && (
@@ -255,7 +255,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         {activeTab !== 'Все' && ` клиентов сегмента «${activeTab}»`}
                         {activeTab === 'Все' && ' (все клиенты)'}
                       </span>
-                      <span className="text-gray-300 dark:text-gray-600">·</span>
+                      <span className="text-muted-foreground">·</span>
                       <span>Переменные: <code className="bg-muted px-1 rounded">{'{first_name}'}</code> <code className="bg-muted px-1 rounded">{'{last_name}'}</code> <code className="bg-muted px-1 rounded">{'{email}'}</code></span>
                     </div>
 
@@ -301,18 +301,18 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         <div className="rounded-lg border border-border bg-muted p-4 min-h-[176px]">
                           {bBody ? (
                             <div className="space-y-1">
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
-                                Тема: <span className="text-gray-700 dark:text-gray-300">{renderPreview(bSubject, SAMPLE_VARS) || '—'}</span>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                Тема: <span className="text-foreground">{renderPreview(bSubject, SAMPLE_VARS) || '—'}</span>
                               </p>
-                              <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                              <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                                 {renderPreview(bBody, SAMPLE_VARS)}
                               </div>
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
                                 {UNSUBSCRIBE_TEXT}
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-gray-400 dark:text-gray-500">Введите текст письма в редакторе</p>
+                            <p className="text-sm text-muted-foreground">Введите текст письма в редакторе</p>
                           )}
                         </div>
                       )}
@@ -336,7 +336,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         }
                       />
                       {!bSubject.trim() || !bBody.trim() ? (
-                        <span className="text-xs text-gray-400">Заполните тему и текст</span>
+                        <span className="text-xs text-muted-foreground">Заполните тему и текст</span>
                       ) : null}
                     </div>
 
@@ -382,7 +382,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tbody className="divide-y divide-border">
                     {filtered.map((c) => (
                       <tr key={c.email} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="px-4 py-3 text-foreground">
@@ -394,8 +394,8 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                           </Link>
                         </td>
                         <td className="px-4 py-3 text-foreground">{c.firstName} {c.lastName}</td>
-                        <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{c.totalOrders}</td>
-                        <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">€{c.totalSpent.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-foreground">{c.totalOrders}</td>
+                        <td className="px-4 py-3 text-right text-foreground">€{c.totalSpent.toFixed(2)}</td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {c.lastOrderDate
                             ? new Date(c.lastOrderDate).toLocaleDateString('ru-RU')

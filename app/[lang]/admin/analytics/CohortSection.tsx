@@ -70,7 +70,7 @@ export default function CohortSection(): ReactElement {
           <p className="text-sm text-muted-foreground">
             Строки — месяц первой покупки когорты. Столбцы — месяцев с момента первой покупки.
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             М+0 = месяц первой покупки, М+1 = следующий месяц и т.д.
           </p>
         </div>
@@ -116,8 +116,8 @@ export default function CohortSection(): ReactElement {
               const size = cohortSizes.get(cohort) ?? 0
 
               return (
-                <tr key={cohort} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap sticky left-0 bg-card z-10 border-r border-border">
+                <tr key={cohort} className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap sticky left-0 bg-card z-10 border-r border-border">
                     {monthLabel(cohort)}
                   </td>
                   <td className="px-3 py-2 text-center text-muted-foreground font-medium">

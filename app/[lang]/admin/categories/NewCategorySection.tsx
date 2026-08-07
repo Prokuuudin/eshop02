@@ -127,7 +127,7 @@ export default function NewCategorySection({
                         </AccessibleLabel>
                     </div>
 
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/40">
+                    <div className="rounded-lg border border-border bg-muted p-2 dark:bg-gray-800/40">
                         <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                             {tl(
                                 'admin.categories.previewCard',
@@ -136,7 +136,7 @@ export default function NewCategorySection({
                                 'Kartites priekskats'
                             )}
                         </p>
-                        <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <div className="overflow-hidden rounded-md border border-border bg-card">
                             <Image
                                 src={newCategory.image.trim() || '/categories/new.jpg'}
                                 alt={newCategoryPreviewLabel}
@@ -157,8 +157,8 @@ export default function NewCategorySection({
                     </div>
                 </div>
 
-                <div className="mt-3 rounded-md border border-dashed border-gray-300 p-3 dark:border-gray-700">
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                <div className="mt-3 rounded-md border border-dashed border-border p-3">
+                    <p className="text-xs font-medium text-foreground">
                         {tl(
                             'admin.categories.firstSubOptional',
                             'Первый подпункт (опционально)',

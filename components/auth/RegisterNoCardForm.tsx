@@ -28,7 +28,6 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [marketingConsent, setMarketingConsent] = useState(false);
     const {
         enabled: turnstileEnabled,
         token: turnstileToken,
@@ -61,7 +60,6 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
                 language: language as 'ru' | 'en' | 'lv',
                 turnstileToken,
                 privacyAcknowledged: true,
-                marketingConsent,
             });
 
             if (!result.success) {
@@ -109,7 +107,7 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
     return (
         <form
             onSubmit={handleSubmit}
-            className="register-form space-y-3 bg-card p-3 rounded-lg"
+            className="register-form space-y-2.5 bg-card p-2.5 rounded-lg"
         >
             {turnstileEnabled && (
                 <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
@@ -120,40 +118,54 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
             <p className="register-form__hint text-sm text-muted-foreground">
                 {t('auth.registerNoCardHint', 'Пришлите свои данные и сертификат/лицензию мастера — администратор выдаст вам номер карты и пароль.')}
             </p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+                <div className="register-form__field">
+                    <label className="register-form__label block mb-1 text-sm text-foreground">
+                        {t('auth.name')}
+                    </label>
+                    <Input
+                        className="register-form__input"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={t('auth.namePlaceholder')}
+                        required
+                    />
+                </div>
+                <div className="register-form__field">
+                    <label className="register-form__label block mb-1 text-sm text-foreground">
+                        {t('auth.email')}
+                    </label>
+                    <Input
+                        className="register-form__input"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={t('auth.emailPlaceholder')}
+                        required
+                    />
+                </div>
+                <div className="register-form__field">
+                    <label className="register-form__label block mb-1 text-sm text-foreground">
+                        {t('auth.phone', 'Телефон')}
+                    </label>
+                    <PhoneInput
+                        value={phone}
+                        onChange={(val) => setPhone(val)}
+                        required
+                    />
+                </div>
+            </div>
             <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.name')}
+                <label className="register-form__label block mb-1 whitespace-nowrap text-sm text-foreground">
+                    {t('auth.message', 'Комментарий для администратора')}
                 </label>
                 <Input
                     className="register-form__input"
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('auth.namePlaceholder')}
-                    required
-                />
-            </div>
-            <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.email')}
-                </label>
-                <Input
-                    className="register-form__input"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('auth.emailPlaceholder')}
-                    required
-                />
-            </div>
-            <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.phone', 'Телефон')}
-                </label>
-                <PhoneInput
-                    value={phone}
-                    onChange={(val) => setPhone(val)}
-                    required
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder={t('auth.messagePlaceholder')}
                 />
             </div>
             <div className="register-form__field">
@@ -177,7 +189,7 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
                     className="sr-only"
                     onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
                 />
-                <div className={`register-form__file-upload w-full rounded-lg border-2 border-dashed px-4 py-4 transition-colors ${
+                <div className={`register-form__file-upload w-full rounded-lg border-2 border-dashed px-3 py-2.5 transition-colors ${
                     certificate
                         ? 'border-primary/70 bg-primary/5 dark:border-primary dark:bg-primary/15'
                         : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800'
@@ -204,7 +216,7 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
                                 <button
                                     type="button"
                                     onClick={() => galleryRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
                                 >
                                     <Upload className="w-4 h-4" />
                                     {t('auth.uploadFromGallery')}
@@ -212,48 +224,27 @@ export default function RegisterNoCardForm({ onClose }: Props): React.ReactEleme
                                 <button
                                     type="button"
                                     onClick={() => cameraRef.current?.click()}
-                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
+                                    className="flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:border-primary/70 hover:text-primary dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary/80 transition-colors"
                                 >
                                     <Camera className="w-4 h-4" />
                                     {t('auth.takePhoto')}
                                 </button>
                             </div>
-                            <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
+                            <p className="mt-1 text-center text-xs text-gray-400 dark:text-gray-500">
                                 {t('auth.certificateFormats')}
                             </p>
                         </>
                     )}
                 </div>
             </div>
-            <div className="register-form__field">
-                <label className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.message', 'Комментарий для администратора')}
-                </label>
-                <Input
-                    className="register-form__input"
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder={t('auth.messagePlaceholder')}
-                />
-            </div>
             {turnstileEnabled && <div ref={setTurnstileContainer} className="mb-2" />}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs leading-snug text-muted-foreground">
                 {t('auth.privacyAcknowledgement', 'Отправляя форму, вы подтверждаете, что ознакомились с')}{' '}
                 <Link href="/privacy" className="underline text-foreground">
                     {t('footer.privacy', 'Политикой конфиденциальности')}
                 </Link>
                 . {t('auth.privacyPurpose', 'Данные и сертификат используются для рассмотрения заявки на клиентскую карту.')}
             </p>
-            <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(e) => setMarketingConsent(e.target.checked)}
-                    className="mt-0.5"
-                />
-                <span>{t('auth.marketingConsent', 'Я хочу получать новости и специальные предложения по электронной почте (необязательно).')}</span>
-            </label>
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={submitting || (turnstileEnabled && !turnstileToken)}>
                     {submitting

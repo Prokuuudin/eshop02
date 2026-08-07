@@ -17,7 +17,7 @@ export default function RegisterSwitcher({ onClose }: Props): React.ReactElement
 
     return (
         <div className="register-switcher max-w-md mx-auto">
-            <div className="register-switcher__type-selector flex justify-center gap-2 mb-4">
+            <div className="register-switcher__type-selector flex justify-center gap-2 mb-3">
                 <Button
                     className="register-switcher__type-btn"
                     variant={hasCard ? 'default' : 'outline'}

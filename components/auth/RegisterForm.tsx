@@ -21,7 +21,6 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [marketingConsent, setMarketingConsent] = useState(false);
 
     const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
         card_not_found: t('auth.cardNotFound'),
@@ -57,7 +56,6 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
             password,
             name: name.trim() || undefined,
             privacyAcknowledged: true,
-            marketingConsent,
         });
         setLoading(false);
 
@@ -167,16 +165,6 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
                 </Link>
                 .
             </p>
-            <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(e) => setMarketingConsent(e.target.checked)}
-                    className="mt-0.5"
-                />
-                <span>{t('auth.marketingConsent', 'Я хочу получать новости и специальные предложения по электронной почте (необязательно).')}</span>
-            </label>
-
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={loading}>
                     {t('auth.confirm')}

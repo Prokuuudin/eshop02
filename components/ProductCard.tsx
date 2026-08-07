@@ -130,7 +130,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                         {!isHydrated ? (
                             // Neutral placeholder until auth is known — avoids the login/price flash.
                             <div className="h-7 w-20 rounded bg-muted animate-pulse" />
-                        ) : isAuthenticated ? (
+                        ) : isAuthenticated && Number.isFinite(displayPrice) ? (
                             <>
                                 <div className="flex items-baseline gap-2">
                                     <div className="product-card__price text-lg font-semibold">

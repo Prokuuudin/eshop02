@@ -24,8 +24,8 @@ export default async function Hero({ language }: { language: Language }): Promis
 
       <div className="hero__content relative h-full flex max-w-3xl flex-col items-start justify-start gap-4 px-4 py-10 text-left sm:px-6 sm:py-12 lg:px-8">
         <h1
-          className="hero__title text-3xl font-extrabold tracking-[0.015em] text-foreground drop-shadow-sm sm:text-4xl md:text-5xl"
-          style={{ lineHeight: 1.25 }}
+          className="hero__title font-extrabold tracking-[0.015em] text-foreground drop-shadow-sm"
+          style={{ fontSize: 'clamp(1.5rem, 7vw, 3rem)', lineHeight: 1.25 }}
         >
           {t('hero.title')}
         </h1>

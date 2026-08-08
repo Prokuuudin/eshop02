@@ -63,8 +63,8 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     .filter(Boolean);
   const rawSearch = params.search?.trim() || '';
 
-  const minPriceValue = params.minPrice ? Number.parseInt(params.minPrice, 10) : NaN;
-  const maxPriceValue = params.maxPrice ? Number.parseInt(params.maxPrice, 10) : NaN;
+  const minPriceValue = params.minPrice ? Number(params.minPrice) : NaN;
+  const maxPriceValue = params.maxPrice ? Number(params.maxPrice) : NaN;
 
   const minPrice = Number.isFinite(minPriceValue) ? String(minPriceValue) : '';
   const maxPrice = Number.isFinite(maxPriceValue) ? String(maxPriceValue) : '';

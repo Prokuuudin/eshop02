@@ -57,6 +57,8 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     maxPrice: initialFilters?.maxPrice ?? '',
     order: initialFilters?.order ?? ''
   });
+  const filterSignature = JSON.stringify(filters)
+  const previousFilterSignatureRef = React.useRef(filterSignature)
 
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(() => {
     if (typeof window === 'undefined') return 'grid'
@@ -120,6 +122,13 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
     const nextBrands = filters.brands.join(',')
+    const filtersChanged = previousFilterSignatureRef.current !== filterSignature
+    previousFilterSignatureRef.current = filterSignature
+
+    // A filtered result can have fewer pages than the current unfiltered
+    // catalog. Return to the first page after an interactive filter change so
+    // the server does not respond with notFound() for an out-of-range page.
+    if (filtersChanged) params.delete('page')
 
     if (nextBrands) {
       params.set('brands', nextBrands)
@@ -167,7 +176,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     if (nextQuery === currentQuery || (!nextQuery && !currentQuery)) return
 
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false })
-  }, [baseCategory, filters.brands, filters.group, filters.subcat, filters.onSale, filters.minPrice, filters.maxPrice, filters.order, pathname, router, searchParams])
+  }, [baseCategory, filterSignature, filters.brands, filters.group, filters.subcat, filters.onSale, filters.minPrice, filters.maxPrice, filters.order, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
   const activeSubcat = filters.subcat

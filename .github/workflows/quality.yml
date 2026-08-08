@@ -15,6 +15,7 @@ jobs:
           node-version: '22.13.0'
           cache: npm
       - run: npm ci
+      - run: npx prisma generate
       - run: npm run typecheck
       - run: npm run audit:architecture
       - run: npm run test:unit
@@ -32,6 +33,7 @@ jobs:
           node-version: '22.13.0'
           cache: npm
       - run: npm ci
+      - run: npx prisma generate
       - run: npx playwright install --with-deps webkit
       - if: env.DATABASE_URL != ''
         run: npx playwright test e2e/accessibility.spec.ts --project=mobile-webkit
@@ -53,6 +55,7 @@ jobs:
           node-version: '22.13.0'
           cache: npm
       - run: npm ci
+      - run: npx prisma generate
       - if: env.DATABASE_URL != ''
         run: npx next build --webpack
       - if: env.DATABASE_URL != ''

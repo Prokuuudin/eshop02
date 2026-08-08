@@ -55,7 +55,7 @@ export default function HeaderActions({
   }
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="header__right flex items-center gap-3">
+      <div className="header__right flex items-center gap-1">
       {!hideLangSwitcher && (
         <Suspense fallback={null}>
           <LanguageSwitcher />

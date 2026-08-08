@@ -12,6 +12,7 @@ import ProductFilter from './ProductFilter'
 import { LayoutGrid, List, X } from 'lucide-react'
 import ProductListRow from './ProductListRow'
 import { SUBCATEGORIES_BY_ID } from '@/data/categories'
+import type { CatalogFacets } from '@/lib/initial-catalog-products'
 
 type ProductsFilters = {
   group: string
@@ -30,13 +31,14 @@ type ProductsProps = {
   initialSubcat?: string
   baseCategory?: string
   serverPagination?: boolean
+  facets?: CatalogFacets
 }
 
 const isProductOnSale = (product: Product): boolean => {
   return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
-export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false }: ProductsProps): React.ReactElement {
+export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets }: ProductsProps): React.ReactElement {
   const { t, language } = useTranslation();
   const [products, setProducts] = React.useState<Product[]>(initialProducts ?? [])
   const [productsLoading, setProductsLoading] = React.useState(initialProducts === undefined)
@@ -306,6 +308,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
               onFilter={setFilters}
               initialFilters={filters}
               products={searchMatchedProducts}
+              facets={facets}
             />
           </aside>
           <div className="w-full lg:w-3/4">

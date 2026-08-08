@@ -98,3 +98,91 @@ export async function getInitialCatalogProducts({
     totalPages,
   }
 }
+
+export type CatalogFacets = {
+  groupCounts: Record<string, number>
+  subcatCounts: Record<string, number>
+  onSaleCount: number
+  availableBrands: string[]
+  brandCounts: Record<string, number>
+}
+
+type CatalogFacetFilters = Omit<InitialCatalogFilters, 'order' | 'page'>
+
+/**
+ * Sidebar filter counts, computed over the whole matching catalog (not the
+ * current 24-item page). Each count mirrors the "what if I changed just this
+ * one facet, keeping the others as they are" semantics the filter UI uses —
+ * see the matching getCountByFilters call sites in ProductFilter.tsx.
+ */
+export async function getCatalogFacets({
+  language,
+  category,
+  subcategory,
+  brands = [],
+  search = '',
+  minPrice,
+  maxPrice,
+  onSale = false,
+}: CatalogFacetFilters): Promise<CatalogFacets> {
+  const products = await getMergedProducts()
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+
+  const matchesSearch = (product: Product): boolean => {
+    if (!normalizedSearch) return true
+    const searchable = [localizedTitle(product, language), product.title, product.brand]
+      .join(' ')
+      .toLocaleLowerCase()
+    return searchable.includes(normalizedSearch)
+  }
+  const matchesPrice = (product: Product): boolean =>
+    (minPrice === undefined || product.price >= minPrice) && (maxPrice === undefined || product.price <= maxPrice)
+  const matchesBrandsList = (product: Product, list: string[]): boolean =>
+    list.length === 0 || list.includes(brandSlug(product.brand))
+
+  // Group counts: vary group (subcat cleared), keep onSale/brands/price/search as-is.
+  const groupBase = products.filter(
+    (p) => matchesSearch(p) && matchesPrice(p) && matchesBrandsList(p, brands) && (!onSale || isProductOnSale(p))
+  )
+  const groupCounts: Record<string, number> = { '': groupBase.length }
+  for (const p of groupBase) {
+    groupCounts[p.category] = (groupCounts[p.category] ?? 0) + 1
+  }
+
+  // Subcat counts: keep current group, vary subcat, keep other filters.
+  const subcatBase = groupBase.filter((p) => !category || p.category === category)
+  const subcatCounts: Record<string, number> = { '': subcatBase.length }
+  for (const p of subcatBase) {
+    if (!p.subcategory) continue
+    subcatCounts[p.subcategory] = (subcatCounts[p.subcategory] ?? 0) + 1
+  }
+
+  // onSale count: keep group/subcat/brands/price/search, force onSale true.
+  const onSaleBase = products.filter(
+    (p) =>
+      matchesSearch(p) &&
+      matchesPrice(p) &&
+      matchesBrandsList(p, brands) &&
+      (!category || p.category === category) &&
+      (!subcategory || p.subcategory === subcategory)
+  )
+  const onSaleCount = onSaleBase.filter(isProductOnSale).length
+
+  // Brand facet: base = group/subcat/onSale/price/search, brand selection itself ignored.
+  const brandBase = products.filter(
+    (p) =>
+      matchesSearch(p) &&
+      matchesPrice(p) &&
+      (!onSale || isProductOnSale(p)) &&
+      (!category || p.category === category) &&
+      (!subcategory || p.subcategory === subcategory)
+  )
+  const availableBrands = Array.from(new Set(brandBase.map((p) => brandSlug(p.brand))))
+  const brandCounts: Record<string, number> = {}
+  for (const brandId of availableBrands) {
+    const nextBrands = brands.includes(brandId) ? [brandId] : [...brands, brandId]
+    brandCounts[brandId] = brandBase.filter((p) => nextBrands.includes(brandSlug(p.brand))).length
+  }
+
+  return { groupCounts, subcatCounts, onSaleCount, availableBrands, brandCounts }
+}

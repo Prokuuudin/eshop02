@@ -22,6 +22,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { useBrandsConfig } from '@/lib/use-brands-config'
 import { brandSlug } from '@/lib/brand-slug'
+import type { CatalogFacets } from '@/lib/initial-catalog-products'
 
 const getBrandName = (brandId: string, brands: Array<{ id: string; name: string }>): string => {
   const brand = brands.find(b => b.id === brandId)
@@ -42,9 +43,10 @@ type ProductFilterProps = {
   onFilter: (filters: ProductFiltersState) => void
   initialFilters?: Partial<ProductFiltersState>
   products?: Product[]
+  facets?: CatalogFacets
 }
 
-export default function ProductFilter({ onFilter, initialFilters = {}, products }: ProductFilterProps): React.ReactElement {
+export default function ProductFilter({ onFilter, initialFilters = {}, products, facets }: ProductFilterProps): React.ReactElement {
       const handleBrandChange = (brandId: string) => {
         if (brands.includes(brandId)) {
           onFilter({ group, subcat, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order });
@@ -65,9 +67,12 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   const { categories } = useCategoriesConfig()
   const { brands: configuredBrands } = useBrandsConfig()
   const availableBrands = React.useMemo(() => {
-    const ids = Array.from(new Set(sourceProducts.map((product) => brandSlug(product.brand))));
+    // Without server facets, fall back to brands seen in the currently loaded
+    // products (correct only when the full matching set is already local,
+    // e.g. non-paginated pages).
+    const ids = facets ? [...facets.availableBrands] : Array.from(new Set(sourceProducts.map((product) => brandSlug(product.brand))));
     return ids.sort((a, b) => getBrandName(a, configuredBrands).localeCompare(getBrandName(b, configuredBrands), language));
-  }, [sourceProducts, configuredBrands, language]);
+  }, [facets, sourceProducts, configuredBrands, language]);
   // Controlled filter values from props
   const group = initialFilters.group ?? '';
   const subcat = initialFilters.subcat ?? '';
@@ -130,6 +135,17 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
 
     return sourceProducts.filter((product) => matchesFilters(product, nextFilters)).length
   }
+
+  // Prefer server-computed facet counts (whole matching catalog) when available;
+  // fall back to the local product-array count otherwise (non-paginated pages
+  // where the full matching set is already loaded client-side).
+  const groupCount = (id: string): number =>
+    facets ? (facets.groupCounts[id] ?? 0) : getCountByFilters({ group: id, subcat: '' })
+  const subcatCount = (slug: string): number =>
+    facets ? (facets.subcatCounts[slug] ?? 0) : getCountByFilters({ subcat: slug })
+  const onSaleCount = (): number => (facets ? facets.onSaleCount : getCountByFilters({ onSale: true }))
+  const brandCount = (brandId: string, nextBrands: string[]): number =>
+    facets ? (facets.brandCounts[brandId] ?? 0) : getCountByFilters({ brands: nextBrands })
 
   const activeFilters: Array<{ id: string; label: string; onRemove: () => void }> = [];
   if (group) {
@@ -194,13 +210,13 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
         <label className="block text-sm mb-1 text-foreground">{t('categories.title')}</label>
         <Select value={group || 'all'} onValueChange={(value) => onFilter({ group: value === 'all' ? '' : value, subcat: '', onSale, brands, minPrice, maxPrice, order })}>
           <SelectTrigger className="w-full bg-card text-foreground border-border">
-            <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ group: '' })})`} />
+            <SelectValue placeholder={`${t('common.viewAll')} (${groupCount('')})`} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ group: '', subcat: '' })})</SelectItem>
+            <SelectItem value="all">{t('common.viewAll')} ({groupCount('')})</SelectItem>
             {categories.map((g) => (
               <SelectItem key={g.id} value={g.id}>
-                {g.titleKey ? t(g.titleKey, g.labels[language]) : g.labels[language]} ({getCountByFilters({ group: g.id, subcat: '' })})
+                {g.titleKey ? t(g.titleKey, g.labels[language]) : g.labels[language]} ({groupCount(g.id)})
               </SelectItem>
             ))}
           </SelectContent>
@@ -213,13 +229,13 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
           </label>
           <Select value={subcat || 'all'} onValueChange={(value) => onFilter({ group, subcat: value === 'all' ? '' : value, onSale, brands, minPrice, maxPrice, order })}>
             <SelectTrigger className="w-full bg-card text-foreground border-border">
-              <SelectValue placeholder={`${t('common.viewAll')} (${getCountByFilters({ subcat: '' })})`} />
+              <SelectValue placeholder={`${t('common.viewAll')} (${subcatCount('')})`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('common.viewAll')} ({getCountByFilters({ subcat: '' })})</SelectItem>
+              <SelectItem value="all">{t('common.viewAll')} ({subcatCount('')})</SelectItem>
               {groupSubcategories.map((sub) => (
                 <SelectItem key={sub.slug} value={sub.slug}>
-                  {sub.key ? t(sub.key, sub.labels[language]) : sub.labels[language]} ({getCountByFilters({ subcat: sub.slug })})
+                  {sub.key ? t(sub.key, sub.labels[language]) : sub.labels[language]} ({subcatCount(sub.slug)})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -229,7 +245,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
       <div>
         <Checkbox
           className="w-full"
-          label={`${t('categories.onSale')} (${getCountByFilters({ onSale: true })})`}
+          label={`${t('categories.onSale')} (${onSaleCount()})`}
           checked={onSale}
           onCheckedChange={(checked) => onFilter({ group, subcat, onSale: checked, brands, minPrice, maxPrice, order })}
         />
@@ -255,7 +271,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
               const nextBrands = brands.includes(brandId)
                 ? [brandId]
                 : [...brands, brandId]
-              const brandCount = getCountByFilters({ brands: nextBrands })
+              const count = brandCount(brandId, nextBrands)
 
               return (
                 <DropdownMenuCheckboxItem
@@ -265,7 +281,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
                   onSelect={(event) => event.preventDefault()}
                   onCheckedChange={() => handleBrandChange(brandId)}
                 >
-                  {getBrandName(brandId, configuredBrands)} ({brandCount})
+                  {getBrandName(brandId, configuredBrands)} ({count})
                 </DropdownMenuCheckboxItem>
               )
             })}

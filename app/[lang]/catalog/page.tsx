@@ -7,7 +7,7 @@ import { getSiteUrl } from '@/lib/site-url'
 import { translations } from '@/data/translations'
 import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
 import { buildPublicPageMetadata } from '@/lib/page-metadata'
-import { getInitialCatalogProducts } from '@/lib/initial-catalog-products'
+import { getCatalogFacets, getInitialCatalogProducts } from '@/lib/initial-catalog-products'
 import { serializeJsonLd } from '@/lib/json-ld'
 
 export const revalidate = 3600
@@ -76,7 +76,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   const parsedPage = Number.parseInt(params.page ?? '1', 10);
   const pageNumber = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-  const initialCatalog = await getInitialCatalogProducts({
+  const catalogQuery = {
     language,
     category: category || undefined,
     subcategory: params.subcat?.trim() || undefined,
@@ -85,9 +85,12 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     minPrice: Number.isFinite(minPriceValue) ? minPriceValue : undefined,
     maxPrice: Number.isFinite(maxPriceValue) ? maxPriceValue : undefined,
     onSale,
-    order: order || undefined,
-    page: pageNumber,
-  });
+  };
+
+  const [initialCatalog, facets] = await Promise.all([
+    getInitialCatalogProducts({ ...catalogQuery, order: order || undefined, page: pageNumber }),
+    getCatalogFacets(catalogQuery),
+  ]);
 
   if (pageNumber > initialCatalog.totalPages) notFound();
 
@@ -130,6 +133,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
         <Products
           key={catalogPath}
           initialProducts={initialCatalog.products}
+          facets={facets}
           initialSearch={rawSearch}
           initialSubcat={params.subcat?.trim() || ''}
           initialFilters={{

@@ -75,7 +75,9 @@ export default function Products({ initialProducts, initialFilters, initialSearc
         prev.subcat !== initialSubcat ||
         prev.brands.join('|') !== (initialFilters?.brands ?? []).join('|') ||
         prev.minPrice !== (initialFilters?.minPrice ?? '') ||
-        prev.maxPrice !== (initialFilters?.maxPrice ?? '')
+        prev.maxPrice !== (initialFilters?.maxPrice ?? '') ||
+        prev.onSale !== (initialFilters?.onSale ?? false) ||
+        prev.order !== (initialFilters?.order ?? '')
       ) {
         return {
           ...prev,
@@ -83,12 +85,14 @@ export default function Products({ initialProducts, initialFilters, initialSearc
           subcat: initialSubcat,
           brands: initialFilters?.brands ?? [],
           minPrice: initialFilters?.minPrice ?? '',
-          maxPrice: initialFilters?.maxPrice ?? ''
+          maxPrice: initialFilters?.maxPrice ?? '',
+          onSale: initialFilters?.onSale ?? false,
+          order: initialFilters?.order ?? ''
         };
       }
       return prev;
     }));
-  }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice]);
+  }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice, initialFilters?.onSale, initialFilters?.order]);
 
   React.useEffect(() => {
     if (serverPagination) return
@@ -124,6 +128,18 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     // Keep backward compatibility but normalize URL to the new plural param.
     params.delete('brand')
 
+    if (filters.onSale) params.set('onSale', '1')
+    else params.delete('onSale')
+
+    if (filters.minPrice) params.set('minPrice', filters.minPrice)
+    else params.delete('minPrice')
+
+    if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
+    else params.delete('maxPrice')
+
+    if (filters.order) params.set('order', filters.order)
+    else params.delete('order')
+
     // cat/subcat живут в URL: иначе router.replace после смены категории в
     // сайдбаре откатил бы выбор через navigation-sync (initialFilters из URL).
     if (baseCategory && filters.group !== baseCategory) {
@@ -149,7 +165,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     if (nextQuery === currentQuery || (!nextQuery && !currentQuery)) return
 
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false })
-  }, [baseCategory, filters.brands, filters.group, filters.subcat, pathname, router, searchParams])
+  }, [baseCategory, filters.brands, filters.group, filters.subcat, filters.onSale, filters.minPrice, filters.maxPrice, filters.order, pathname, router, searchParams])
 
   const normalizedSearch = initialSearch.trim().toLowerCase();
   const activeSubcat = filters.subcat
@@ -202,10 +218,15 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     searchMatchedProducts.filter(p => {
       const groupOk = !filters.group || p.category === filters.group;
       const subcatOk = !filters.subcat || p.subcategory === filters.subcat;
-      const onSaleOk = !filters.onSale || isProductOnSale(p);
+      // Price fields are stripped from the payload for guests (see
+      // redactProductPrices) — p.price is undefined for them at runtime even
+      // though the type says number. Server-side filtering already applied
+      // onSale/min/max before redaction, so trust it rather than exclude.
+      const priceHidden = p.price === undefined;
+      const onSaleOk = !filters.onSale || priceHidden || isProductOnSale(p);
       const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));
-      const minOk = !filters.minPrice || p.price >= Number(filters.minPrice);
-      const maxOk = !filters.maxPrice || p.price <= Number(filters.maxPrice);
+      const minOk = !filters.minPrice || priceHidden || p.price >= Number(filters.minPrice);
+      const maxOk = !filters.maxPrice || priceHidden || p.price <= Number(filters.maxPrice);
       return groupOk && subcatOk && onSaleOk && brandOk && minOk && maxOk;
     }), filters.order
   );

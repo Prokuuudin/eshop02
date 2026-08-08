@@ -100,14 +100,19 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products 
   }
 
   const matchesFilters = (product: Product, current: ProductFiltersState): boolean => {
+    // Price fields are stripped from the payload for guests (see
+    // redactProductPrices) — product.price is undefined for them at runtime
+    // even though the type says number. Trust server-side filtering instead
+    // of excluding the product from counts/results.
+    const priceHidden = product.price === undefined
     const matchCategory = !current.group || product.category === current.group
     const matchSubcat = !current.subcat || product.subcategory === current.subcat
-    const matchOnSale = !current.onSale || isProductOnSale(product)
+    const matchOnSale = !current.onSale || priceHidden || isProductOnSale(product)
     const matchBrand = current.brands.length === 0 || current.brands.includes(brandSlug(product.brand))
     const minValue = current.minPrice ? Number(current.minPrice) : null
     const maxValue = current.maxPrice ? Number(current.maxPrice) : null
-    const matchMinPrice = minValue === null || product.price >= minValue
-    const matchMaxPrice = maxValue === null || product.price <= maxValue
+    const matchMinPrice = minValue === null || priceHidden || product.price >= minValue
+    const matchMaxPrice = maxValue === null || priceHidden || product.price <= maxValue
 
     return matchCategory && matchSubcat && matchOnSale && matchBrand && matchMinPrice && matchMaxPrice
   }

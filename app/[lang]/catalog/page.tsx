@@ -22,7 +22,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const isPaginated = pageNumber > 1
   const hasFilters = Boolean(
     query.cat || query.subcat || query.brands || query.brand
-    || query.minPrice || query.maxPrice || query.search
+    || query.minPrice || query.maxPrice || query.search || query.onSale
   )
   const pageTitle = `${t['nav.catalog'] ?? 'Catalog'}${isPaginated ? ` — ${pageNumber}` : ''} | Hairshop-Pro`
   const pageDescription = t['meta.catalogDescription'] ?? 'Catalog of professional cosmetics and equipment'
@@ -43,6 +43,8 @@ type PageProps = {
     brand?: string
     minPrice?: string
     maxPrice?: string
+    onSale?: string
+    order?: string
     search?: string
     page?: string
   }>
@@ -66,6 +68,10 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
 
   const minPrice = Number.isFinite(minPriceValue) ? String(minPriceValue) : '';
   const maxPrice = Number.isFinite(maxPriceValue) ? String(maxPriceValue) : '';
+  const onSale = params.onSale === '1';
+  const order = ['price-asc', 'price-desc', 'name-asc', 'name-desc'].includes(params.order ?? '')
+    ? (params.order as string)
+    : '';
 
   const parsedPage = Number.parseInt(params.page ?? '1', 10);
   const pageNumber = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -78,6 +84,8 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     search: rawSearch,
     minPrice: Number.isFinite(minPriceValue) ? minPriceValue : undefined,
     maxPrice: Number.isFinite(maxPriceValue) ? maxPriceValue : undefined,
+    onSale,
+    order: order || undefined,
     page: pageNumber,
   });
 
@@ -91,6 +99,8 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   if (brands.length > 0) urlParams.set('brands', brands.join(','));
   if (params.minPrice) urlParams.set('minPrice', params.minPrice);
   if (params.maxPrice) urlParams.set('maxPrice', params.maxPrice);
+  if (onSale) urlParams.set('onSale', '1');
+  if (order) urlParams.set('order', order);
   if (pageNumber > 1) urlParams.set('page', String(pageNumber));
 
   const query = urlParams.toString();
@@ -126,7 +136,9 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
             group: category,
             brands,
             minPrice,
-            maxPrice
+            maxPrice,
+            onSale,
+            order
           }}
           serverPagination
         />

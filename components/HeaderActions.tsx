@@ -8,6 +8,10 @@ import { useCart } from '@/lib/cart-store';
 import { useWishlist } from '@/lib/wishlist-store';
 import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Heart, ShoppingCart } from 'lucide-react';
+
+const headerActionClass = 'relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-foreground transition-colors hover:border-border hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+const headerBadgeClass = 'pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground';
 
 export default function HeaderActions({
   onCartOpen,
@@ -60,23 +64,16 @@ export default function HeaderActions({
       {!hideUserMenu && <UserMenu />}
       <Tooltip>
         <TooltipTrigger asChild>
-          <Link href="/wishlist" aria-label={t('nav.wishlist')} className="relative inline-flex">
-            <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-accent hover:text-accent-foreground">
-              <svg className="h-7 w-7 text-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12 21s-6.716-4.348-9.193-8.027C.664 9.763 1.35 5.39 5.09 3.8c2.037-.867 4.368-.279 5.91 1.47 1.542-1.749 3.873-2.337 5.91-1.47 3.74 1.59 4.426 5.963 2.283 9.173C18.716 16.652 12 21 12 21z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {wishlistCount > 0 && (
-                <Badge className="pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pink-600 px-1 text-[10px] font-semibold leading-none text-white">
-                  {wishlistCountLabel}
-                </Badge>
-              )}
-            </span>
+          <Link href="/wishlist" aria-label={t('nav.wishlist')} className={headerActionClass}>
+            <Heart
+              aria-hidden="true"
+              className={`h-[22px] w-[22px] stroke-[1.8] ${wishlistCount > 0 ? 'fill-current' : ''}`}
+            />
+            {wishlistCount > 0 && (
+              <Badge className={headerBadgeClass}>
+                {wishlistCountLabel}
+              </Badge>
+            )}
           </Link>
         </TooltipTrigger>
         <TooltipContent>{t('nav.wishlist')}</TooltipContent>
@@ -88,18 +85,18 @@ export default function HeaderActions({
               onClick={onCartOpen}
               variant="ghost"
               size="icon"
-              className="header__cart relative text-foreground"
+              className={`header__cart ${headerActionClass}`}
               aria-label={t('header.openCartAria')}
             >
               <span className={cartBumping ? 'animate-cart-bump inline-flex' : 'inline-flex'}>
-                <svg className="h-8 w-8 text-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 6h15l-1.5 9h-12L6 6z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="10" cy="20" r="1.2" fill="currentColor" />
-                  <circle cx="18" cy="20" r="1.2" fill="currentColor" />
-                </svg>
+                <ShoppingCart
+                  aria-hidden="true"
+                  strokeWidth={1.8}
+                  style={{ width: 23, height: 23 }}
+                />
               </span>
               {cartCount > 0 && (
-                <Badge className={`header__cart-badge pointer-events-none absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white ${cartBumping ? 'animate-cart-bump' : ''}`}>
+                <Badge className={`header__cart-badge ${headerBadgeClass} ${cartBumping ? 'animate-cart-bump' : ''}`}>
                   {cartCountLabel}
                 </Badge>
               )}

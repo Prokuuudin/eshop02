@@ -242,7 +242,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   return (
     <section className="products py-8">
       <div className="w-full px-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className="products__title text-2xl font-semibold text-foreground">{t('nav.catalog', 'Catalog')}</h2>
             {activeSubcat && (

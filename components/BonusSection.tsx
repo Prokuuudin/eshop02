@@ -5,6 +5,7 @@ import { Star, CreditCard, TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
 import { useAdminStore } from '@/lib/admin-store';
 import { getCurrentUser } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
 
 const STEPS = [
     {
@@ -46,10 +47,10 @@ export default function BonusSection(): React.ReactElement | null {
 
                 {/* Header */}
                 <div className="bonus-section__header text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/40 mb-4">
-                        <Star className="w-7 h-7 text-amber-500 fill-amber-400" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0088C4] dark:bg-white mb-4">
+                        <Star className="w-7 h-7 text-white dark:text-[#0088C4] fill-white dark:fill-[#0088C4]" />
                     </div>
-                    <h2 className="bonus-section__title text-2xl sm:text-3xl font-bold text-foreground mb-3">
+                    <h2 className="bonus-section__title text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                         {t('bonus.section.title')}
                     </h2>
                     <p className="bonus-section__subtitle text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
@@ -75,15 +76,15 @@ export default function BonusSection(): React.ReactElement | null {
                         return (
                             <div
                                 key={idx}
-                                className="bonus-section__step relative rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-6 flex flex-col gap-3"
+                                className="bonus-section__step relative rounded-lg border border-border bg-card shadow-sm p-6 flex flex-col gap-3"
                             >
                                 {/* Step number */}
-                                <span className="bonus-section__step-number absolute top-4 right-4 text-xs font-bold text-amber-300 dark:text-amber-700 select-none">
+                                <span className="bonus-section__step-number absolute top-4 right-4 text-xs font-bold text-muted-foreground/40 select-none">
                                     {idx + 1}
                                 </span>
 
-                                <div className="bonus-section__step-icon w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                                    <Icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                <div className="bonus-section__step-icon w-10 h-10 rounded-xl bg-[#0088C4] dark:bg-white flex items-center justify-center">
+                                    <Icon className="w-5 h-5 text-white dark:text-[#0088C4]" />
                                 </div>
 
                                 <h3 className="bonus-section__step-title font-semibold text-foreground">
@@ -95,7 +96,7 @@ export default function BonusSection(): React.ReactElement | null {
                                 </p>
 
                                 {badge && (
-                                    <span className="bonus-section__step-badge mt-auto inline-block self-start rounded-full bg-amber-200 dark:bg-amber-800/60 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-200">
+                                    <span className="bonus-section__step-badge mt-auto inline-block self-start rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground">
                                         {badge}
                                     </span>
                                 )}
@@ -107,12 +108,11 @@ export default function BonusSection(): React.ReactElement | null {
                 {/* CTA — только для неавторизованных */}
                 {!currentUser && (
                     <div className="bonus-section__cta text-center">
-                        <Link
-                            href="/account"
-                            className="bonus-section__cta-btn inline-flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold px-7 py-3 transition-colors text-sm shadow-sm"
-                        >
-                            <Star className="w-4 h-4 fill-white" />
-                            {t('bonus.section.cta')}
+                        <Link href="/account">
+                            <Button variant="default" size="lg" className="bonus-section__cta-btn gap-2 px-7">
+                                <Star className="w-4 h-4 fill-current" />
+                                {t('bonus.section.cta')}
+                            </Button>
                         </Link>
                     </div>
                 )}

@@ -39,13 +39,13 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
 }) => (
     <section
         id="orders-history"
-        className="account-orders-section rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:p-6"
+        className="account-orders-section overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
     >
-        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-2xl font-bold text-foreground">
+        <div className="flex flex-col gap-4 border-b border-gray-100 bg-gray-50/70 px-4 py-5 dark:border-gray-800 dark:bg-gray-950/30 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 {t('account.myOrders')}
             </h2>
-            <div className="inline-flex w-full rounded-2xl bg-gray-100 p-1 dark:bg-gray-800 md:w-auto">
+            <div className="grid w-full grid-cols-3 rounded-xl bg-gray-200/70 p-1 dark:bg-gray-800 md:w-auto">
                 <button
                     type="button"
                     className={getOrderFilterButtonClasses('all')}
@@ -89,7 +89,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
         </div>
         {userOrders.length > 0 ? (
             filteredOrders.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                <div className="space-y-4 p-4 sm:p-6">
                     {filteredOrders.map((order) => (
                         <AccountOrderCard
                             key={order.id}
@@ -110,7 +110,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
                     ))}
                 </div>
             ) : (
-                <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
+                <div className="m-4 rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700 sm:m-6">
                     <p className="text-sm text-muted-foreground">
                         {tl(
                             'account.page.noOrdersForFilter',
@@ -122,7 +122,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
                 </div>
             )
         ) : (
-            <div className="text-center py-12">
+            <div className="px-4 py-12 text-center sm:px-6">
                 <p className="text-muted-foreground mb-4">{t('account.noOrders')}</p>
                 <Link href="/catalog">
                     <Button>{t('account.startShopping')}</Button>

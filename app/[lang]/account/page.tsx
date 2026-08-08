@@ -155,6 +155,16 @@ export default function AccountPage(): React.ReactElement {
                         <div className="mt-4">
                             <AccountSummaryCards summaryCards={summaryCards} />
                         </div>
+                        {!isAdmin && (
+                            <div className="mt-4">
+                                <AccountViewedProductsWidget />
+                            </div>
+                        )}
+                        {!isAdmin && (
+                            <div className="mt-4">
+                                <AccountSubscriptionsSection />
+                            </div>
+                        )}
                     </aside>
                     <div className="space-y-6 xl:col-span-8">
                         <AccountNotificationsSection />
@@ -162,9 +172,7 @@ export default function AccountPage(): React.ReactElement {
                             {!isAdmin && <AccountAddressesWidget />}
                             {!isAdmin && <AccountTemplatesWidget />}
                             {!isAdmin && <AccountWishlistWidget />}
-                            {!isAdmin && <AccountViewedProductsWidget />}
                         </AccountToolsSection>
-                        {!isAdmin && <AccountSubscriptionsSection />}
                         {!isAdmin && <AccountStockNotificationsSection />}
                         {!isAdmin && <AccountReturnsSection />}
                         {!isAdmin && <AccountReviewsSection />}

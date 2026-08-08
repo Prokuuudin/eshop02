@@ -37,6 +37,14 @@ export const E2E_ADMIN: E2eUserFixture = {
   auditLoggingEnabled: true
 }
 
+export const E2E_CUSTOMER: E2eUserFixture = {
+  id: 'u_e2e_customer_fixture',
+  email: 'e2e-customer@hairshop-pro.lv.local',
+  password: 'StrongPass123',
+  name: 'E2E Customer',
+  platformRole: 'customer'
+}
+
 /** Настоящая серверная сессия: кука eshop_session сохраняется в контексте. */
 export const loginAs = async (page: Page, fixture: E2eUserFixture): Promise<void> => {
   const response = await page.request.post('/api/auth/sync', {
@@ -50,7 +58,7 @@ export const fetchRealProduct = async (
   page: Page,
   category = 'hair'
 ): Promise<Record<string, unknown> & { id: string; title: string }> => {
-  const response = await page.request.get(`/api/products?category=${category}`)
+  const response = await page.request.get(`/api/products?category=${category}&skip=0&take=50`)
   const payload = (await response.json()) as { data?: { products?: Array<Record<string, unknown>> } }
   const products = payload.data?.products ?? []
   const product = products.find((p) => (p.stock as number) > 0 && (p.price as number) >= 20) ?? products[0]

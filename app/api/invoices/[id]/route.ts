@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getInvoiceById, updateInvoiceInDb } from '@/lib/invoices-data-store'
 import { getServerUser } from '@/lib/server-auth'
 
 // Fields a non-admin may update on their own invoice. `status` is deliberately
-// excluded — a buyer must not be able to set their own invoice to `paid`/`cancelled`.
+// excluded נa buyer must not be able to set their own invoice to `paid`/`cancelled`.
 const ALLOWED_UPDATE_FIELDS = new Set(['notes'])
+const ALLOWED_ADMIN_UPDATE_FIELDS = new Set(['status', 'paidDate', 'notes'])
+const INVOICE_STATUSES = new Set(['draft', 'issued', 'paid', 'overdue', 'cancelled'])
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
@@ -21,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ invoice })
   } catch (e) {
-    console.error('[invoices/:id GET]', e)
+    logApiError("[invoices/:id GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -42,16 +45,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const rawUpdates = await req.json()
 
     // Non-admins restricted to safe fields only
-    const updates = user.platformRole === 'admin'
-      ? rawUpdates
-      : Object.fromEntries(
-          Object.entries(rawUpdates).filter(([k]) => ALLOWED_UPDATE_FIELDS.has(k))
-        )
+    const allowedFields = user.platformRole === 'admin' ? ALLOWED_ADMIN_UPDATE_FIELDS : ALLOWED_UPDATE_FIELDS
+    const updates = Object.fromEntries(
+      Object.entries(rawUpdates).filter(([key]) => allowedFields.has(key))
+    )
+    if ('status' in updates && !INVOICE_STATUSES.has(String(updates.status))) {
+      return NextResponse.json({ error: 'invalid_status' }, { status: 400 })
+    }
 
     const updated = await updateInvoiceInDb(id, updates)
     return NextResponse.json({ invoice: updated })
   } catch (e) {
-    console.error('[invoices/:id PATCH]', e)
+    logApiError("[invoices/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

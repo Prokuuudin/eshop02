@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
@@ -41,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return NextResponse.json({ company })
   } catch (e) {
-    console.error('[companies/:id PATCH]', e)
+    logApiError("[companies/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -57,7 +58,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     await prisma.company.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[companies/:id DELETE]', e)
+    logApiError("[companies/:id DELETE]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

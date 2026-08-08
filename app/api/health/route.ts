@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logOperationalEvent } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,10 +14,15 @@ export async function GET(): Promise<Response> {
 
     return NextResponse.json({ status: 'ok', db: 'ok', latencyMs, ts })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'unknown'
+    logOperationalEvent({
+      event: 'health_db_failed',
+      level: 'error',
+      alert: true,
+      ts,
+    }, e)
     return NextResponse.json(
-      { status: 'degraded', db: 'error', error: message, ts },
-      { status: 200 } // 200 so uptime monitor distinguishes "app up, DB down" from "app down"
+      { status: 'degraded', db: 'error', ts },
+      { status: 503 }
     )
   }
 }

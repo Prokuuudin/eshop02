@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { getDeletedProductsArchive, restoreDeletedProduct } from '@/lib/product-overrides-store'
@@ -25,7 +26,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     const archive = await getDeletedProductsArchive()
     return successResponse({ products: result.products, archive })
   } catch (error) {
-    console.error('Admin products restore POST error:', error)
+    logApiError("Admin products restore POST error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

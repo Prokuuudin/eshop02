@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { prisma } from '@/lib/prisma'
@@ -122,7 +123,9 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true, created: userIds.length, emailsSent, emailsFailed })
   } catch (err) {
-    console.error('[admin/notifications/send]', err)
+    logApiError("[admin/notifications/send]", err)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

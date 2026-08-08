@@ -88,11 +88,12 @@ export default function AdminBlogPage(): React.ReactElement {
 
                             <TabsContent value="base">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label className="text-sm">
+                                    <label htmlFor="blog-slug" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
                                             Slug
                                         </span>
                                         <Input
+                                            id="blog-slug"
                                             value={blogForm.slug}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -106,11 +107,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm">
+                                    <label htmlFor="blog-category" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
                                             Категория
                                         </span>
                                         <Input
+                                            id="blog-category"
                                             value={blogForm.category}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -124,11 +126,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm md:col-span-2">
+                                    <label htmlFor="blog-title" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             Заголовок
                                         </span>
                                         <Input
+                                            id="blog-title"
                                             value={blogForm.title}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -141,11 +144,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm md:col-span-2">
+                                    <label htmlFor="blog-excerpt" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             Краткое описание
                                         </span>
                                         <Textarea
+                                            id="blog-excerpt"
                                             value={blogForm.excerpt}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -158,11 +162,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm">
+                                    <label htmlFor="blog-author" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
                                             Автор
                                         </span>
                                         <Input
+                                            id="blog-author"
                                             value={blogForm.author}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -175,11 +180,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm">
+                                    <label htmlFor="blog-read-time" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
                                             Время чтения (мин)
                                         </span>
                                         <Input
+                                            id="blog-read-time"
                                             type="number"
                                             min={1}
                                             value={blogForm.readTime}
@@ -194,11 +200,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm md:col-span-2">
+                                    <label htmlFor="blog-image" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             Обложка (путь)
                                         </span>
                                         <Input
+                                            id="blog-image"
                                             value={blogForm.image}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -212,11 +219,12 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm md:col-span-2">
+                                    <label htmlFor="blog-content" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             Legacy content (опционально)
                                         </span>
                                         <Textarea
+                                            id="blog-content"
                                             value={blogForm.content}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({
@@ -229,7 +237,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label className="text-sm md:col-span-2">
+                                    <label htmlFor="blog-content-blocks" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
                                             contentBlocks JSON
                                             <span className="ml-2 text-xs text-muted-foreground">
@@ -237,6 +245,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                             </span>
                                         </span>
                                         <Textarea
+                                            id="blog-content-blocks"
                                             value={blogForm.contentBlocksJson}
                                             onChange={(e) =>
                                                 setBlogForm((prev) => ({

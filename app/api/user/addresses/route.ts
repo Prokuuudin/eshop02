@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -15,7 +16,7 @@ export async function GET(): Promise<Response> {
     })
     return NextResponse.json({ addresses })
   } catch (e) {
-    console.error('[user/addresses GET]', e)
+    logApiError("[user/addresses GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     let saved
     if (clientId) {
-      // Verify ownership before allowing update — prevent IDOR
+      // Verify ownership before allowing update נprevent IDOR
       const existing = await prisma.savedAddress.findUnique({ where: { id: clientId } })
       if (existing && existing.email !== user.email) {
         return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         update: data,
       })
     } else {
-      // New address — always generate id server-side
+      // New address נalways generate id server-side
       saved = await prisma.savedAddress.create({
         data: { id: randomUUID(), email: user.email, ...data },
       })
@@ -70,7 +71,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ address: saved })
   } catch (e) {
-    console.error('[user/addresses POST]', e)
+    logApiError("[user/addresses POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

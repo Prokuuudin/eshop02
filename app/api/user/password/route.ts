@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser, hashPassword, verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
@@ -8,7 +9,7 @@ export const runtime = 'nodejs'
 const MIN_LENGTH = 8
 const MAX_LENGTH = 128
 
-// POST /api/user/password — change the signed-in user's password.
+// POST /api/user/password נchange the signed-in user's password.
 // Auth is server-authoritative (bcrypt hash in DB): the old localStorage-only
 // flows never actually changed the password. This is the single source of truth.
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!user) return NextResponse.json({ error: 'user_not_found' }, { status: 404 })
 
     // Forced first-login change (mustChangePassword): the user is session-authenticated
-    // and has no meaningful "current" password beyond the shared default — skip the check.
+    // and has no meaningful "current" password beyond the shared default נskip the check.
     // Everyone else must prove the current password before it can be replaced.
     if (!user.mustChangePassword) {
       const valid = await verifyPassword(currentPassword, user.passwordHash)
@@ -67,7 +68,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return res
   } catch (e) {
-    console.error('[user/password POST]', e)
+    logApiError("[user/password POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

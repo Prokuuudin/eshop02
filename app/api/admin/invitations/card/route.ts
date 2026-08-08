@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
@@ -39,7 +40,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true, userId: user.id })
   } catch (e) {
-    console.error('[admin/invitations/card POST]', e)
+    logApiError("[admin/invitations/card POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

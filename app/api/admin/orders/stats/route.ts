@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 
@@ -81,7 +82,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       })),
     })
   } catch (e) {
-    console.error('[admin/orders/stats GET]', e)
+    logApiError("[admin/orders/stats GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

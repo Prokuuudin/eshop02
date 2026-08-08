@@ -38,6 +38,25 @@ describe('acquireSyncLock', () => {
     expect(valueArg.runId).toBe('run-42')
     expect(new Date(valueArg.lockedUntil).getTime()).toBeGreaterThan(Date.now())
   })
+
+  it('allows only one concurrent ERP run to acquire the lock', async () => {
+    let held = false
+    const db = {
+      $queryRawUnsafe: vi.fn(async () => {
+        if (held) return []
+        held = true
+        return [{ key: 'sync-run-lock' }]
+      }),
+      $executeRawUnsafe: vi.fn(),
+    } as unknown as ExtendedPrismaClient
+
+    const results = await Promise.all([
+      acquireSyncLock(db, 'run-a', 30_000),
+      acquireSyncLock(db, 'run-b', 30_000),
+    ])
+
+    expect(results.sort()).toEqual([false, true])
+  })
 })
 
 describe('releaseSyncLock', () => {

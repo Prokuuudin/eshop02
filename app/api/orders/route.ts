@@ -10,6 +10,7 @@ import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { formatDateWithPattern } from '@/lib/date-format'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
+import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -138,6 +139,7 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLa
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const correlationId = getCorrelationId(req)
   try {
     let captchaRequired: boolean
     try {
@@ -278,16 +280,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     })
 
-    sendOrderConfirmationEmail(created).catch(console.error)
+    logOperationalEvent({
+      event: 'order_created',
+      correlationId,
+      orderId: created.id,
+      paymentProvider: created.paymentProvider,
+      paymentStatus: created.paymentStatus,
+      itemCount: created.items.length,
+      total: created.total,
+    })
+
+    sendOrderConfirmationEmail(created).catch((error) => logOperationalEvent({
+      event: 'order_customer_email_failed', level: 'error', alert: true, correlationId, orderId: created.id,
+    }, error))
     sendAdminOrderNotificationEmail(
       created,
       pickupStore ? `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}` : undefined
-    ).catch(console.error)
+    ).catch((error) => logOperationalEvent({
+      event: 'order_admin_email_failed', level: 'error', alert: true, correlationId, orderId: created.id,
+    }, error))
 
     if (Math.random() < 0.01) void gcRateLimitStore()
 
     return NextResponse.json({ success: true, orderId: created.id })
   } catch (error) {
+    logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {
       return NextResponse.json(
         { error: 'insufficient_stock', items: error.items },
@@ -300,7 +317,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (error instanceof PromoCodeUsageLimitError) {
       return NextResponse.json({ error: 'promo_code_usage_limit' }, { status: 409 })
     }
-    console.error('Orders API POST error:', error)
     return NextResponse.json({ error: 'Failed to persist order' }, { status: 500 })
   }
 }

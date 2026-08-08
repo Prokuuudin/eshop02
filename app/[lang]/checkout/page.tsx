@@ -38,7 +38,7 @@ export default function CheckoutPage(): React.ReactElement {
     >;
     const {
             t,
-            language,
+            language: _language,
             currentUser,
             formatCurrency,
             formData,

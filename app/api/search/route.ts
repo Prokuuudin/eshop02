@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { toNum } from '@/lib/decimal'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -67,12 +68,13 @@ export async function GET(req: NextRequest): Promise<Response> {
        FROM "Product"
        WHERE "isDeleted" = false
          AND "isActive" = true
-         AND similarity(
-               COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
-               $1
-             ) > 0.1
+         AND (
+               COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,'')
+             ) <-> $1 < 0.9
          ${whereCategory}
-       ORDER BY similarity DESC
+       ORDER BY (
+         COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,'')
+       ) <-> $1
        LIMIT $2`,
       ...params
     )
@@ -89,7 +91,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ products })
   } catch (e) {
-    console.error('[api/search]', e)
+    logApiError("[api/search]", e)
     return NextResponse.json({ products: [] })
   }
 }
+
+

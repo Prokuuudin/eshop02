@@ -32,8 +32,8 @@ type CustomerDetailsSectionProps = {
   t: Translate
 }
 
-function FieldError({ message }: { message?: string }): JSX.Element | null {
-  return message ? <p className="checkout__field-error mt-1 text-xs text-red-600">{message}</p> : null
+function FieldError({ id, message }: { id: string; message?: string }): JSX.Element | null {
+  return message ? <p id={id} role="alert" className="checkout__field-error mt-1 text-xs text-red-600">{message}</p> : null
 }
 
 export function CustomerDetailsSection({ formData, setFormData, errors, onChange, t }: CustomerDetailsSectionProps): JSX.Element {
@@ -45,40 +45,40 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
       <h2 className="checkout__section-title mb-4 text-lg font-bold">{t('checkout.delivery.title')}</h2>
       <div className="checkout__field-grid grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="checkout__field">
-          <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.firstName')} <span className="text-red-600">*</span></label>
-          <Input name="firstName" value={formData.firstName} onChange={onChange} placeholder={t('checkout.firstName')} className={fieldClass(!!errors.firstName)} aria-required="true" aria-invalid={!!errors.firstName} />
-          <FieldError message={errors.firstName} />
+          <label htmlFor="checkout-first-name" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.firstName')} <span className="text-red-600">*</span></label>
+          <Input id="checkout-first-name" name="firstName" value={formData.firstName} onChange={onChange} placeholder={t('checkout.firstName')} className={fieldClass(!!errors.firstName)} aria-required="true" aria-invalid={!!errors.firstName} aria-describedby={errors.firstName ? 'checkout-first-name-error' : undefined} />
+          <FieldError id="checkout-first-name-error" message={errors.firstName} />
         </div>
         <div className="checkout__field">
-          <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.lastName')} <span className="text-red-600">*</span></label>
-          <Input name="lastName" value={formData.lastName} onChange={onChange} placeholder={t('checkout.lastName')} className={fieldClass(!!errors.lastName)} aria-required="true" aria-invalid={!!errors.lastName} />
-          <FieldError message={errors.lastName} />
+          <label htmlFor="checkout-last-name" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.lastName')} <span className="text-red-600">*</span></label>
+          <Input id="checkout-last-name" name="lastName" value={formData.lastName} onChange={onChange} placeholder={t('checkout.lastName')} className={fieldClass(!!errors.lastName)} aria-required="true" aria-invalid={!!errors.lastName} aria-describedby={errors.lastName ? 'checkout-last-name-error' : undefined} />
+          <FieldError id="checkout-last-name-error" message={errors.lastName} />
         </div>
       </div>
       <div className="checkout__field mt-4">
-        <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.email')} <span className="text-red-600">*</span></label>
-        <Input type="email" name="email" value={formData.email} onChange={onChange} placeholder={t('checkout.email')} className={fieldClass(!!errors.email)} aria-required="true" aria-invalid={!!errors.email} />
-        <FieldError message={errors.email} />
+        <label htmlFor="checkout-email" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.email')} <span className="text-red-600">*</span></label>
+        <Input id="checkout-email" type="email" name="email" value={formData.email} onChange={onChange} placeholder={t('checkout.email')} className={fieldClass(!!errors.email)} aria-required="true" aria-invalid={!!errors.email} aria-describedby={errors.email ? 'checkout-email-error' : undefined} />
+        <FieldError id="checkout-email-error" message={errors.email} />
       </div>
       <div className="checkout__field mt-4">
         <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.phone')} <span className="text-red-600">*</span></label>
         <PhoneInput value={formData.phone} onChange={(phone) => setFormData((previous) => ({ ...previous, phone }))} aria-required="true" aria-invalid={!!errors.phone} />
-        <FieldError message={errors.phone} />
+        <FieldError id="checkout-phone-error" message={errors.phone} />
       </div>
       <div className="checkout__field mt-4">
-        <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.address')} <span className="text-red-600">*</span></label>
-        <Input name="address" value={formData.address} onChange={onChange} placeholder={t('checkout.address')} className={fieldClass(!!errors.address)} aria-required="true" aria-invalid={!!errors.address} />
-        <FieldError message={errors.address} />
+        <label htmlFor="checkout-address" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.address')} <span className="text-red-600">*</span></label>
+        <Input id="checkout-address" name="address" value={formData.address} onChange={onChange} placeholder={t('checkout.address')} className={fieldClass(!!errors.address)} aria-required="true" aria-invalid={!!errors.address} aria-describedby={errors.address ? 'checkout-address-error' : undefined} />
+        <FieldError id="checkout-address-error" message={errors.address} />
       </div>
       <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="checkout__field">
-          <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.city')} <span className="text-red-600">*</span></label>
-          <Input name="city" value={formData.city} onChange={onChange} placeholder={t('checkout.city')} className={fieldClass(!!errors.city)} aria-required="true" aria-invalid={!!errors.city} />
-          <FieldError message={errors.city} />
+          <label htmlFor="checkout-city" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.city')} <span className="text-red-600">*</span></label>
+          <Input id="checkout-city" name="city" value={formData.city} onChange={onChange} placeholder={t('checkout.city')} className={fieldClass(!!errors.city)} aria-required="true" aria-invalid={!!errors.city} aria-describedby={errors.city ? 'checkout-city-error' : undefined} />
+          <FieldError id="checkout-city-error" message={errors.city} />
         </div>
         <div className="checkout__field">
-          <label className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.postalCode')}</label>
-          <Input name="postalCode" value={formData.postalCode} onChange={onChange} placeholder={t('checkout.postalCode')} className={fieldClass(false)} />
+          <label htmlFor="checkout-postal-code" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.postalCode')}</label>
+          <Input id="checkout-postal-code" name="postalCode" value={formData.postalCode} onChange={onChange} placeholder={t('checkout.postalCode')} className={fieldClass(false)} />
         </div>
       </div>
     </section>
@@ -128,7 +128,7 @@ export function DeliverySection(props: DeliverySectionProps): JSX.Element {
                   <SelectTrigger id="pickup-store" className={`checkout__select w-full ${errors.pickupStore ? 'border-red-500' : 'border-border'}`} aria-invalid={!!errors.pickupStore}><SelectValue placeholder={t('checkout.pickup.storePlaceholder')} /></SelectTrigger>
                   <SelectContent>{stores.map((store) => <SelectItem key={store.id} value={store.id}>{t(`stores.${store.id}.name`)} — {store.address.lv}</SelectItem>)}</SelectContent>
                 </Select>
-                <FieldError message={errors.pickupStore} />
+                <FieldError id="checkout-pickup-store-error" message={errors.pickupStore} />
               </div>
             )}
           </div>

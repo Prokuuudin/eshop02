@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { sendEmail } from '@/lib/mailer'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -153,9 +154,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         </div>`
       )
     } catch (err) {
-      console.error('[contact] sendEmail error:', err)
+      logApiError("[contact] sendEmail error:", err)
     }
   }
 
   return NextResponse.json({ ok: true })
 }
+
+
+
+
+

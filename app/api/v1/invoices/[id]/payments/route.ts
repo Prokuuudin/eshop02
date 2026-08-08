@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-helpers'
 import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { logAuditAction } from '@/lib/audit-log-store'
@@ -53,7 +54,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       201,
     )
   } catch (error) {
-    console.error('API Error:', error)
+    logApiError("API Error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

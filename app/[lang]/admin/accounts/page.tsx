@@ -219,7 +219,6 @@ export default function AdminAccountsPage(): React.ReactElement {
                           <SelectContent>
                             <SelectItem value="customer">customer</SelectItem>
                             <SelectItem value="admin">admin</SelectItem>
-                            <SelectItem value="b2b">b2b</SelectItem>
                           </SelectContent>
                         </Select>
                       </td>

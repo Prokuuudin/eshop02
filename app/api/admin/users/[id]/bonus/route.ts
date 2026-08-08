@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
@@ -50,7 +51,9 @@ export async function POST(
     if (!updated) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     return NextResponse.json({ user: updated })
   } catch (error) {
-    console.error('[admin/users/:id/bonus POST]', error)
+    logApiError("[admin/users/:id/bonus POST]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

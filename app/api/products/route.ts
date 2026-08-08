@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { getMergedProducts, getDbProductsPaginated } from '@/lib/product-overrides-store'
+import { getDbProductsPaginated } from '@/lib/product-overrides-store'
 import { getServerUser } from '@/lib/server-auth'
 import { redactProductPrices } from '@/lib/product-price-visibility'
 
@@ -11,23 +12,17 @@ export async function GET(req: NextRequest): Promise<Response> {
     const canSeePrices = Boolean(await getServerUser())
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category') ?? undefined
-    const skipParam = searchParams.get('skip')
-    const takeParam = searchParams.get('take')
-
-    if (skipParam !== null || takeParam !== null) {
-      const skip = skipParam ? Math.max(0, parseInt(skipParam, 10)) : undefined
-      const take = takeParam ? Math.min(200, Math.max(1, parseInt(takeParam, 10))) : undefined
-      const result = await getDbProductsPaginated({ category, skip, take })
-      return successResponse(canSeePrices ? result : redactProductPrices(result))
+    const rawSkip = Number(searchParams.get('skip') ?? '0')
+    const rawTake = Number(searchParams.get('take') ?? '50')
+    if (!Number.isInteger(rawSkip) || rawSkip < 0 || !Number.isInteger(rawTake) || rawTake < 1 || rawTake > 200) {
+      return errorResponse('Invalid pagination', 400)
     }
-
-    const products = await getMergedProducts()
-    const filtered = category ? products.filter((p) => p.category === category) : products
-    return successResponse({
-      products: canSeePrices ? filtered : redactProductPrices(filtered),
-    })
+    const result = await getDbProductsPaginated({ category, skip: rawSkip, take: rawTake })
+    return successResponse(canSeePrices ? result : redactProductPrices(result))
   } catch (error) {
-    console.error('Public products GET error:', error)
+    logApiError("Public products GET error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

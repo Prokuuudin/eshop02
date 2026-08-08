@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { getAllReviews, type ReviewModerationStatus } from '@/lib/reviews-data-store'
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return successResponse({ reviews: filtered })
   } catch (error) {
-    console.error('Admin reviews GET error:', error)
+    logApiError("Admin reviews GET error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
@@ -98,7 +99,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     return successResponse({ ids: targetIds, status, updatedCount })
   } catch (error) {
-    console.error('Admin reviews PATCH error:', error)
+    logApiError("Admin reviews PATCH error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
@@ -139,7 +140,9 @@ export async function DELETE(req: NextRequest): Promise<Response> {
 
     return successResponse({ ids: targetIds, deletedCount })
   } catch (error) {
-    console.error('Admin reviews DELETE error:', error)
+    logApiError("Admin reviews DELETE error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/lib/toast-context'
 import { adminFetchJson, reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
+import { fetchAllProducts } from '@/lib/client-products'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -113,8 +114,8 @@ export default function AdminRFQPage(): React.ReactElement {
   const { showToast } = useToast()
 
   React.useEffect(() => {
-    adminFetchJson<{ data?: { products?: Product[] } }>('/api/products', { cache: 'no-store' })
-      .then((p: { data?: { products?: Product[] } }) => setLoadedProducts(p.data?.products ?? []))
+    fetchAllProducts()
+      .then(setLoadedProducts)
       .catch(() => { setLoadedProducts([]); reportAdminPartial('RFQ загружены, но названия и цены товаров недоступны.', 'RFQ') })
   }, [])
 

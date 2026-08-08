@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { mapDbToProduct } from '@/lib/product-overrides-store'
 import { isProductOnSale } from '@/data/products'
@@ -28,7 +29,9 @@ export async function GET(): Promise<Response> {
       products: canSeePrices ? products : redactProductPrices(products),
     })
   } catch (err) {
-    console.error('sale products error', err)
+    logApiError("sale products error", err)
     return NextResponse.json({ products: [] })
   }
 }
+
+

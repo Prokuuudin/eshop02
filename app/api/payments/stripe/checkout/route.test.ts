@@ -44,6 +44,14 @@ beforeEach(() => {
 })
 
 describe('POST /api/payments/stripe/checkout', () => {
+  it('fails closed before order or Stripe work when the secret is missing', async () => {
+    delete process.env.STRIPE_SECRET_KEY
+    const response = await POST(request())
+    expect(response.status).toBe(500)
+    expect(getServerOrderById).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+  })
+
   it('reuses the currently open Checkout Session instead of creating a duplicate', async () => {
     vi.mocked(getOrderPaymentStatus).mockResolvedValue({
       orderId: 'order-1', paymentStatus: 'pending', sessionId: 'cs_active',

@@ -5,6 +5,7 @@ import { canAccessOrder, getServerOrderById, type ServerOrder } from '@/lib/orde
 import { getServerUser } from '@/lib/server-auth'
 import { getSiteUrl } from '@/lib/site-url'
 import { guardOrigin } from '@/lib/api-guard'
+import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -71,6 +72,7 @@ function buildLineItems(order: ServerOrder) {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const correlationId = getCorrelationId(req)
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
@@ -163,13 +165,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       replaceSession: true,
     })
 
+    logOperationalEvent({
+      event: 'stripe_checkout_created',
+      correlationId,
+      orderId,
+      sessionId: session.id,
+      amountExpected: targetTotalCents,
+    })
+
     return NextResponse.json({
       url: session.url,
       sessionId: session.id,
       amountExpected: targetTotalCents
     })
   } catch (error) {
-    console.error('Stripe checkout session error:', error)
+    logOperationalEvent({ event: 'stripe_checkout_failed', level: 'error', alert: true, correlationId }, error)
     return NextResponse.json({ error: 'Failed to initialize payment session' }, { status: 500 })
   }
 }

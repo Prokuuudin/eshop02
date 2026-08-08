@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
 import { createStripeClient } from '@/lib/stripe-client'
 import { getOrderPaymentBySessionId, saveOrderPaymentStatus } from '@/lib/stripe-payment-store'
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       // A Stripe session can only update the order it was actually created for.
       // Accept the logged-in owner/admin, or (for guest orders) the person who
-      // actually paid on Stripe's own checkout page — never an arbitrary caller
+      // actually paid on Stripe's own checkout page נnever an arbitrary caller
       // who merely knows/guesses the sequential orderId.
       const canWrite =
         !!order &&
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           paymentSessionId: session.id
         })
       } else {
-        console.warn('Stripe verify: refused to update order not owned by caller/session', { orderId })
+        logOperationalEvent({ event: 'stripe_verify_ownership_refused', level: 'warn', orderId })
       }
     }
 
@@ -119,7 +120,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       orderId
     })
   } catch (error) {
-    console.error('Stripe verify session error:', error)
+    logApiError("Stripe verify session error:", error)
     return NextResponse.json({ error: 'Failed to verify payment session' }, { status: 500 })
   }
 }
+
+
+

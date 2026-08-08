@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (error) {
-    console.error('[v1/orders GET]', error)
+    logApiError("[v1/orders GET]", error)
     return errorResponse('Internal server error', 500)
   }
 }
@@ -180,7 +181,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (error instanceof InsufficientStockError) {
       return errorResponse(`Insufficient stock for: ${error.items.join(', ')}`, 409)
     }
-    console.error('[v1/orders POST]', error)
+    logApiError("[v1/orders POST]", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

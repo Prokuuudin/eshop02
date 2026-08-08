@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
@@ -33,11 +34,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         return NextResponse.json({ error: 'email_taken' }, { status: 409 })
       }
 
-      // SavedAddress has no userId — it's keyed by email alone. Without this check, self-service
+      // SavedAddress has no userId נit's keyed by email alone. Without this check, self-service
       // email change is an IDOR: set your email to someone else's, then GET /api/user/addresses
       // returns their saved name/phone/address. Guest orders (order.userId === null) have the
-      // same email-only exposure via canAccessOrder's legacy fallback and are NOT covered here —
-      // that gap is still open.
+      // same email-only exposure via canAccessOrder's legacy fallback and are NOT covered here ׊      // that gap is still open.
       const conflictingAddress = await prisma.savedAddress.findFirst({
         where: { email: { equals: newEmail, mode: 'insensitive' } },
         select: { id: true },
@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
     }
 
-    // Only profile fields — never platformRole, companyId, approvalRequired etc.
+    // Only profile fields נnever platformRole, companyId, approvalRequired etc.
     // cardNumber is deliberately NOT accepted here: it is a login identifier assigned at
     // registration (checked for uniqueness in auth/register-card). Letting a client set an
     // arbitrary card here would collide with a real customer's card / corrupt data.
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         await prisma.savedAddress.updateMany({ where: { email: user.email }, data: { email: newEmail } })
         await prisma.productSubscription.updateMany({ where: { userId: user.id }, data: { userEmail: newEmail } })
       } catch (relatedUpdateError) {
-        console.error('[user/profile PATCH] related email sync failed', relatedUpdateError)
+        logApiError("[user/profile PATCH] related email sync failed", relatedUpdateError)
       }
     }
 
@@ -88,7 +88,12 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (databaseError.code === 'P2002') {
       return NextResponse.json({ error: 'email_taken' }, { status: 409 })
     }
-    console.error('[user/profile PATCH]', e)
+    logApiError("[user/profile PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

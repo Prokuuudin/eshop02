@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -22,7 +23,7 @@ export async function PATCH(
 
     return NextResponse.json({ member })
   } catch (e) {
-    console.error('[companies/:id/members/:userId PATCH]', e)
+    logApiError("[companies/:id/members/:userId PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -41,7 +42,9 @@ export async function DELETE(
     await prisma.companyMember.deleteMany({ where: { companyId, userId } })
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[companies/:id/members/:userId DELETE]', e)
+    logApiError("[companies/:id/members/:userId DELETE]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

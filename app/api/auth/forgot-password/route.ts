@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
@@ -124,9 +125,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     await sendEmail(email, subject, html)
   } catch (err) {
-    console.error('[forgot-password] sendEmail error:', err)
+    logApiError("[forgot-password] sendEmail error:", err)
   }
 
   // Always 200 — don't reveal whether email exists
   return NextResponse.json({ ok: true })
 }
+
+
+
+
+

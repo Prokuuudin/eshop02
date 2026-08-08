@@ -10,6 +10,7 @@ import { formatDate, formatEuro } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/lib/toast-context'
+import { fetchAllProducts } from '@/lib/client-products'
 
 type DraftItem = {
   productId: string
@@ -41,10 +42,7 @@ export default function RequestQuotePage(): React.ReactElement {
   React.useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products', { cache: 'no-store' })
-        if (!response.ok) throw new Error('failed')
-        const payload = (await response.json()) as { data?: { products?: Product[] } }
-        const nextProducts = payload.data?.products ?? []
+        const nextProducts = await fetchAllProducts()
         setProducts(nextProducts)
         setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
           ? { ...item, productId: nextProducts[0]?.id ?? '' }

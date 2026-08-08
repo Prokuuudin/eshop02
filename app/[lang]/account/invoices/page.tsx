@@ -39,8 +39,8 @@ export default function InvoicesPage(): React.ReactElement {
   const invoices = companyId ? getInvoicesByCompany(companyId) : []
 
   useEffect(() => {
-    if (companyId) void hydrateInvoicesFromServer(companyId)
-  }, [companyId])
+    if (companyId && !isDemoSession) void hydrateInvoicesFromServer(companyId)
+  }, [companyId, isDemoSession])
 
   // Calculate statistics before branching so hook order stays stable.
   const stats = (() => {
@@ -95,7 +95,7 @@ export default function InvoicesPage(): React.ReactElement {
   const handleSeedDemoB2B = (): void => {
     setIsSeedingDemo(true)
     seedDemoB2BData()
-    window.location.reload()
+    setIsSeedingDemo(false)
   }
 
   const handleResetDemoB2B = (): void => {

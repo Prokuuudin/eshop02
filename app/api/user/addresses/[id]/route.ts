@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -22,7 +23,9 @@ export async function DELETE(
     await prisma.savedAddress.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[user/addresses/:id DELETE]', e)
+    logApiError("[user/addresses/:id DELETE]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

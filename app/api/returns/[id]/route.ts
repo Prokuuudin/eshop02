@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
@@ -28,7 +29,7 @@ export async function GET(
       return: { ...ret, createdAt: ret.createdAt.toISOString(), resolvedAt: ret.resolvedAt?.toISOString() ?? null },
     })
   } catch (e) {
-    console.error('[returns/:id GET]', e)
+    logApiError("[returns/:id GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -107,7 +108,9 @@ export async function PATCH(
       return: { ...updated, createdAt: updated.createdAt.toISOString(), resolvedAt: updated.resolvedAt?.toISOString() ?? null },
     })
   } catch (e) {
-    console.error('[returns/:id PATCH]', e)
+    logApiError("[returns/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

@@ -20,10 +20,8 @@ test('demo B2B invoices flow loads dashboard and resets back to fallback', async
     .poll(async () => page.evaluate(() => window.localStorage.getItem('eshop_current_user')))
     .toContain('u_demo_b2b_manager')
 
-  await page.reload()
-
-  // Имя компании больше не выводится на странице счетов — признак demo-режима
-  // теперь баннер
+  // Demo invoices live in the in-memory store by design and must be asserted
+  // in the same document in which the local-only demo state was seeded.
   await expect(page.getByText('Demo B2B режим активен')).toBeVisible()
   await expect(page.getByText(/INV-2026-001000/i)).toBeVisible()
   await expect(page.getByText(/INV-2026-001001/i)).toBeVisible()

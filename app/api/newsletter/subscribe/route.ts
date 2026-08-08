@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { subscribeToNewsletter } from '@/lib/newsletter-store'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 
@@ -41,7 +42,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     await subscribeToNewsletter(email)
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('[newsletter/subscribe]', error)
+    logApiError("[newsletter/subscribe]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
 }
+
+

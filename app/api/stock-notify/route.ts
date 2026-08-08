@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -69,7 +70,9 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ id: sub.id })
   } catch (e) {
-    console.error('[stock-notify POST]', e)
+    logApiError("[stock-notify POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

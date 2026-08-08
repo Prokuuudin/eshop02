@@ -1,18 +1,19 @@
 import { test, expect, type Page } from '@playwright/test'
-import { fetchRealProduct, titlePattern } from './helpers'
+import { E2E_CUSTOMER, fetchRealProduct, loginAs, titlePattern } from './helpers'
 
 // Избранное auth-gated: гостю клик по сердечку открывает AuthGateDialog
 // (модал прячет хедер через aria-hidden) — тест работает залогиненным.
 const seedAuthedState = async (page: Page): Promise<void> => {
+  await loginAs(page, E2E_CUSTOMER)
+  await page.request.delete('/api/wishlist')
   await page.addInitScript(() => {
     window.localStorage.clear()
     window.sessionStorage.clear()
     window.localStorage.setItem(
       'eshop_current_user',
       JSON.stringify({
-        id: 'u_wishlist_e2e',
-        email: 'wishlist-e2e@hairshop-pro.lv.local',
-        password: 'secret',
+        id: 'u_e2e_customer_fixture',
+        email: 'e2e-customer@hairshop-pro.lv.local',
         platformRole: 'customer'
       })
     )
@@ -37,7 +38,7 @@ test('wishlist add, header badge, and remove flow works', async ({ page }) => {
   await expect(addButton).toBeVisible()
   await addButton.click()
 
-  const wishlistLink = page.getByRole('link', { name: /Избранное|Wishlist|Favorīti/i }).first()
+  const wishlistLink = page.locator('a[href="/wishlist"]').first()
   await expect(wishlistLink).toBeVisible()
   await expect(wishlistLink).toContainText('1')
 

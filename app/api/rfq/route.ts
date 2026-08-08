@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { hasAdminPermission } from '@/lib/admin-permissions'
+import { parseOffsetPagination } from '@/lib/pagination'
 
 export const runtime = 'nodejs'
 
@@ -11,8 +13,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
     const { searchParams } = req.nextUrl
-    const skip = parseInt(searchParams.get('skip') || '0', 10) || 0
-    const take = Math.min(200, parseInt(searchParams.get('take') || '100', 10) || 100)
+    const { skip, take } = parseOffsetPagination(searchParams)
 
     const where = hasAdminPermission(user, 'rfq.read')
       ? {}
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       total,
     })
   } catch (e) {
-    console.error('[rfq GET]', e)
+    logApiError("[rfq GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -78,7 +79,9 @@ export async function POST(req: NextRequest): Promise<Response> {
       request: { ...rfq, createdAt: rfq.createdAt.toISOString(), updatedAt: rfq.updatedAt.toISOString() },
     })
   } catch (e) {
-    console.error('[rfq POST]', e)
+    logApiError("[rfq POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

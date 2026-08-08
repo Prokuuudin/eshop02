@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { logApiError } from '@/lib/observability'
 import { NextRequest, NextResponse } from 'next/server'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { markReviewHelpful } from '@/lib/reviews-data-store'
@@ -56,7 +57,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (Math.random() < 0.01) void gcRateLimitStore()
     return response
   } catch (error) {
-    console.error('Review helpful POST error:', error)
+    logApiError("Review helpful POST error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

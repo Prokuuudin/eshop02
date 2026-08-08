@@ -7,46 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import AdminGate from '@/components/admin/AdminGate';
 import { useTranslation } from '@/lib/use-translation';
-
-type Holder = {
-    userId: string;
-    name: string | null;
-    email: string;
-    phone: string | null;
-    cardNumber: string;
-    status: 'none' | 'sent' | 'accepted' | 'expired' | 'error';
-    sentAt: string | null;
-    inviteUrl: string | null;
-};
-
-const isTechEmail = (email: string) => email.toLowerCase().endsWith('@client.local');
-
-type CampaignState = {
-    sentCount: number;
-    errorCount: number;
-    cursor: string | null;
-    lastRunAt: string | null;
-    finished: boolean;
-    runningSince: string | null;
-};
-
-type EligibleUser = {
-    id: string;
-    name: string | null;
-    email: string;
-};
-
-type HolderSortKey = 'name' | 'email' | 'cardNumber' | 'status';
-type EligibleSortKey = 'name' | 'email' | 'status';
-type SortDir = 'asc' | 'desc';
-
-const compareStr = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-
-const HOLDER_STATUS_RANK: Record<Holder['status'], number> = { none: 0, sent: 1, accepted: 2, expired: 3, error: 4 };
-
-const PAGE_SIZE = 50;
-// Сервер принимает максимум INVITE_BATCH_SIZE id за запрос (lib/invitations.ts)
-const INVITE_BATCH = 20;
+import { compareInvitationText as compareStr, HOLDER_STATUS_RANK, INVITATIONS_PAGE_SIZE as PAGE_SIZE, INVITE_BATCH_SIZE as INVITE_BATCH, isTechEmail, type CampaignState, type EligibleSortKey, type EligibleUser, type Holder, type HolderSortKey, type SortDir } from './invitation-models';
 
 export default function AdminInvitationsPage(): React.ReactElement {
     const { language } = useTranslation();

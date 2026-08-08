@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
@@ -6,6 +7,7 @@ import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
+import { parseOffsetPagination } from '@/lib/pagination'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -38,8 +40,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const companyId = searchParams.get('companyId') || ''
     const createdSince = searchParams.get('createdSince') || ''
     const hasCard = searchParams.get('hasCard') === '1'
-    const skip = Math.max(0, parseInt(searchParams.get('skip') || '0', 10) || 0)
-    const take = Math.min(100, Math.max(1, parseInt(searchParams.get('take') || '50', 10) || 50))
+    const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
 
     const where: Record<string, unknown> = {}
 
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ users: mapped, total })
   } catch (e) {
-    console.error('[admin/users GET]', e)
+    logApiError("[admin/users GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -228,7 +229,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })
     }
-    console.error('[admin/users PATCH]', e)
+    logApiError("[admin/users PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

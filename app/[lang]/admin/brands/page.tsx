@@ -22,30 +22,15 @@ import {
 } from '@/components/ui/select';
 
 import { useAdminBrandsPage } from './useAdminBrandsPage';
+import BrandLegalSection from './BrandLegalSection';
 
 export default function AdminBrandsPage(): React.ReactElement {
     const pageState = useAdminBrandsPage();
     const {
-            tl,
-            loading,
-            saving,
-            message,
-            error,
-            newBrand,
-            setNewBrand,
-            search,
-            setSearch,
-            filteredBrands,
-            updateBrand,
-            updateBrandDescription,
-            updateBrandManufacturer,
-            updateBrandDistributor,
-            handleCreateBrand,
-            handleSaveBrand,
-            handleResetBrand,
-            handleDeleteBrand,
-            newBrandTitle,
-          } = pageState;
+      tl, loading, saving, message, error, newBrand, setNewBrand, search, setSearch,
+      filteredBrands, updateBrand, updateBrandDescription, handleCreateBrand,
+      handleSaveBrand, handleResetBrand, handleDeleteBrand, newBrandTitle,
+    } = pageState;
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-4">
@@ -248,7 +233,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                     {tl(
                                                         'admin.brands.option.no',
                                                         'Нет',
-                                                        'No',
+'No',
                                                         'Ne'
                                                     )}
                                                 </SelectItem>
@@ -498,7 +483,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div>
                                         <h3 className="text-base font-semibold text-foreground">
-                                            {brand.name}
+{brand.name}
                                         </h3>
                                         <p className="text-xs text-muted-foreground">{brand.id}</p>
                                     </div>
@@ -748,7 +733,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                 {tl(
                                                     'admin.brands.field.descriptionLv',
                                                     'Описание LV',
-                                                    'Description LV',
+'Description LV',
                                                     'Apraksts LV'
                                                 )}
                                             </span>
@@ -797,213 +782,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                     </div>
                                 </div>
 
-                                <div className="admin-brands__legal-section mt-3">
-                                    <Accordion type="single" collapsible>
-                                        <AccordionItem
-                                            value="legal"
-                                            className="border border-border rounded-lg overflow-hidden"
-                                        >
-                                            <AccordionTrigger className="px-4 py-2 text-sm font-medium hover:no-underline hover:bg-gray-50 dark:hover:bg-gray-800/50 [&>svg]:shrink-0">
-                                                <span className="flex items-center gap-2">
-                                                    {tl(
-                                                        'admin.brands.field.manufacturerSection',
-                                                        'Производитель / Дистрибьютор (EU)',
-                                                        'Manufacturer / Distributor (EU)',
-                                                        'Ražotājs / Izplatītājs (ES)'
-                                                    )}
-                                                    {(brand.manufacturer?.name ||
-                                                        brand.manufacturer?.address ||
-                                                        brand.manufacturer?.email ||
-                                                        brand.distributor?.name ||
-                                                        brand.distributor?.address ||
-                                                        brand.distributor?.email) && (
-                                                        <span
-                                                            className="inline-block h-2 w-2 rounded-full bg-green-500"
-                                                            title={tl(
-                                                                'admin.brands.field.hasData',
-                                                                'Данные заполнены',
-                                                                'Data filled',
-                                                                'Dati aizpildīti'
-                                                            )}
-                                                        />
-                                                    )}
-                                                </span>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-4 pb-4 pt-2">
-                                                <div className="grid gap-4">
-                                                    <div className="admin-brands__manufacturer-group">
-                                                        <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                            {tl(
-                                                                'admin.brands.field.manufacturer',
-                                                                'Производитель',
-                                                                'Manufacturer',
-                                                                'Ražotājs'
-                                                            )}
-                                                        </p>
-                                                        <div className="admin-brands__legal-fields grid gap-2 md:grid-cols-3">
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.mfgName',
-                                                                        'Полное наименование',
-                                                                        'Full name',
-                                                                        'Pilns nosaukums'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.manufacturer?.name ||
-                                                                        ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandManufacturer(
-                                                                            brand.id,
-                                                                            { name: e.target.value }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.mfgAddress',
-                                                                        'Почтовый адрес',
-                                                                        'Postal address',
-                                                                        'Pasta adrese'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.manufacturer
-                                                                            ?.address || ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandManufacturer(
-                                                                            brand.id,
-                                                                            {
-                                                                                address:
-                                                                                    e.target.value,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.mfgEmail',
-                                                                        'E-mail',
-                                                                        'E-mail',
-                                                                        'E-pasts'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.manufacturer?.email ||
-                                                                        ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandManufacturer(
-                                                                            brand.id,
-                                                                            {
-                                                                                email: e.target
-                                                                                    .value,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                    <div className="admin-brands__distributor-group">
-                                                        <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                            {tl(
-                                                                'admin.brands.field.distributor',
-                                                                'Дистрибьютор в ЕС',
-                                                                'EU Distributor',
-                                                                'ES Izplatītājs'
-                                                            )}
-                                                        </p>
-                                                        <div className="admin-brands__legal-fields grid gap-2 md:grid-cols-3">
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.distName',
-                                                                        'Наименование',
-                                                                        'Name',
-                                                                        'Nosaukums'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.distributor?.name ||
-                                                                        ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandDistributor(
-                                                                            brand.id,
-                                                                            { name: e.target.value }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.distAddress',
-                                                                        'Почтовый адрес',
-                                                                        'Postal address',
-                                                                        'Pasta adrese'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.distributor
-                                                                            ?.address || ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandDistributor(
-                                                                            brand.id,
-                                                                            {
-                                                                                address:
-                                                                                    e.target.value,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                            <label className="text-xs">
-                                                                <span className="mb-1 block text-muted-foreground">
-                                                                    {tl(
-                                                                        'admin.brands.field.distEmail',
-                                                                        'E-mail',
-                                                                        'E-mail',
-                                                                        'E-pasts'
-                                                                    )}
-                                                                </span>
-                                                                <Input
-                                                                    value={
-                                                                        brand.distributor?.email ||
-                                                                        ''
-                                                                    }
-                                                                    onChange={(e) =>
-                                                                        updateBrandDistributor(
-                                                                            brand.id,
-                                                                            {
-                                                                                email: e.target
-                                                                                    .value,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                </div>
+                                <BrandLegalSection brand={brand} state={pageState} />
                             </article>
                         ))
                     )}
@@ -1012,3 +791,4 @@ export default function AdminBrandsPage(): React.ReactElement {
         </AdminGate>
     );
 }
+

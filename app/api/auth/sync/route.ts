@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } })
 
-    // Account must already exist — created only via /api/auth/register-card (real card)
+    // Account must already exist נcreated only via /api/auth/register-card (real card)
     // or an admin invite. This route logs in; it must never double as self-registration.
     if (!existing) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
     await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
-    // Password verified — update only safe personal fields
+    // Password verified נupdate only safe personal fields
     // cardNumber is deliberately excluded: it is a login identifier assigned
     // only by verified registration or an administrative workflow.
     await prisma.user.update({
@@ -76,8 +77,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return res
   } catch (e) {
-    console.error('[auth/sync]', e)
+    logApiError("[auth/sync]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+
 

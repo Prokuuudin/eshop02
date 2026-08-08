@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getServerUser } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[notifications/send-email]', err)
+    logApiError("[notifications/send-email]", err)
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
@@ -95,3 +96,5 @@ function escHtml(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
 }
+
+

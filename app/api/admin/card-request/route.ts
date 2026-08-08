@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -125,9 +126,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ok: false, code: 'unknown_action' }, { status: 400 })
     }
   } catch (err) {
-    console.error('[card-request] sendEmail error:', err)
+    logApiError("[card-request] sendEmail error:", err)
     return NextResponse.json({ ok: false, code: 'email_failed' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
 }
+
+
+
+
+

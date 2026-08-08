@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const user = await prisma.user.findUnique({ where: { id: inv.userId }, select: { name: true } })
     return NextResponse.json({ ok: true, email: inv.email, name: user?.name ?? '', cardNumber: inv.cardNumber })
   } catch (error) {
-    console.error('[auth/invite GET]', error)
+    logApiError("[auth/invite GET]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
 }
@@ -131,7 +132,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return res
   } catch (error) {
-    console.error('[auth/invite POST]', error)
+    logApiError("[auth/invite POST]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
 }
+
+

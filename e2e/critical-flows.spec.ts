@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import { BRANDS } from '../data/brands'
+import { E2E_CUSTOMER, loginAs } from './helpers'
 
 // Сидим корзину РЕАЛЬНЫМ товаром из Neon: демо-товары (p1-p16) удалены из БД,
 // а POST /api/orders проверяет сток на сервере и отвечает 409 на неизвестный id.
 const seedCartWithOneItem = async (page: Page): Promise<{ title: string }> => {
-  const response = await page.request.get('/api/products?category=hair')
+  await loginAs(page, E2E_CUSTOMER)
+  const response = await page.request.get('/api/products?category=hair&skip=0&take=50')
   const payload = (await response.json()) as { data?: { products?: Array<Record<string, unknown>> } }
   const products = payload.data?.products ?? []
   const product = products.find((p) => (p.stock as number) > 0 && (p.price as number) >= 20) ?? products[0]
@@ -12,6 +14,14 @@ const seedCartWithOneItem = async (page: Page): Promise<{ title: string }> => {
 
   const cartItem = { ...product, quantity: 1, lineKey: product.id }
   await page.addInitScript((item) => {
+    window.localStorage.setItem(
+      'eshop_current_user',
+      JSON.stringify({
+        id: 'u_e2e_customer_fixture',
+        email: 'e2e-customer@hairshop-pro.lv.local',
+        platformRole: 'customer'
+      })
+    )
     window.localStorage.setItem(
       'cart-store',
       JSON.stringify({ state: { items: [item] }, version: 0 })
@@ -59,16 +69,16 @@ test('checkout submit redirects to order details page', async ({ page }) => {
   test.setTimeout(90_000)
 
   await seedCartWithOneItem(page)
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      'eshop_current_user',
-      JSON.stringify({
-        id: 'u_retail_e2e',
-        email: 'retail-e2e@hairshop-pro.lv.local',
-        password: 'secret',
-        platformRole: 'customer'
-      })
-    )
+  await page.route('**/api/orders', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, orderId: 'mocked-bank' })
+    })
   })
   await page.goto('/checkout')
 
@@ -100,18 +110,6 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
   test.setTimeout(90_000)
 
   await seedCartWithOneItem(page)
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      'eshop_current_user',
-      JSON.stringify({
-        id: 'u_retail_card_e2e',
-        email: 'retail-card-e2e@hairshop-pro.lv.local',
-        password: 'secret',
-        platformRole: 'customer'
-      })
-    )
-  })
-
   await page.route('**/api/orders', async (route) => {
     if (route.request().method() !== 'POST') {
       await route.continue()
@@ -150,6 +148,44 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
     })
   })
 
+  await page.route('**/api/payments/status?*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ paymentStatus: 'paid', sessionId: 'cs_test_mocked_123' })
+    })
+  })
+
+  await page.route('**/api/orders/mocked', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        order: {
+          id: 'mocked',
+          createdAt: new Date().toISOString(),
+          items: [],
+          subtotal: 39,
+          tax: 6.77,
+          delivery: 5,
+          deliveryMethod: 'courier',
+          paymentMethod: 'card',
+          discount: 0,
+          total: 44,
+          firstName: 'Ivan',
+          lastName: 'Petrov',
+          email: 'ivan.petrov@example.com',
+          phone: '+37120000000',
+          address: 'Brivibas iela 1',
+          city: 'Riga',
+          paymentStatus: 'pending',
+          paymentProvider: 'stripe',
+          paymentSessionId: 'cs_test_mocked_123'
+        }
+      })
+    })
+  })
+
   await page.goto('/checkout')
 
   const checkoutForm = page.locator('main form:has(input[name="firstName"])').first()
@@ -173,7 +209,7 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
 
   await checkoutForm.locator('button[type="submit"]').first().click()
 
-  await page.waitForURL(/\/order\/.*payment=success/, { timeout: 60000 })
+  await expect.poll(() => page.url(), { timeout: 60000 }).toMatch(/\/order\/.*payment=success/)
   await expect(page).toHaveURL(/session_id=cs_test_mocked_123/)
   await expect(page.getByText(/Проверяем оплату|Ожидает подтверждения|Оплачено/)).toBeVisible({ timeout: 15000 })
 })
@@ -181,7 +217,7 @@ test('checkout card flow redirects through mocked stripe and shows paid status',
 test('review form shows an error when the server rejects the submission', async ({ page }) => {
   // Регрессия: catch в handleSubmit только сбрасывал submitted — при 500 форма
   // молча оставалась на экране без какого-либо фидбека пользователю.
-  const response = await page.request.get('/api/products?category=hair')
+  const response = await page.request.get('/api/products?category=hair&skip=0&take=50')
   const payload = (await response.json()) as { data?: { products?: Array<{ id: string }> } }
   const productId = payload.data?.products?.[0]?.id
   expect(productId).toBeTruthy()
@@ -291,17 +327,7 @@ test('brands anchor navigation works from header and stays correct after reload'
 
 // Categories.tsx намеренно скрыт от гостей — сабкатегорийные тесты сидят юзера.
 const seedCatalogUser = (page: import('@playwright/test').Page) =>
-  page.addInitScript(() => {
-    window.localStorage.setItem(
-      'eshop_current_user',
-      JSON.stringify({
-        id: 'u_subcat_e2e',
-        email: 'subcat-e2e@hairshop-pro.lv.local',
-        password: 'secret',
-        platformRole: 'customer'
-      })
-    )
-  })
+  loginAs(page, E2E_CUSTOMER)
 
 test('category subcategory selection applies subcat filter in catalog URL', async ({ page }) => {
   await seedCatalogUser(page)
@@ -405,8 +431,8 @@ test('category dropdown item All clears subcat and keeps category filter', async
   await expect(allLink).toBeVisible()
   await allLink.click()
 
-  await page.waitForURL(/\/catalog\?cat=hair$/)
-  await expect(page).toHaveURL(/\/catalog\?cat=hair$/)
+  await page.waitForURL(/\/category\/hair$/)
+  await expect(page).toHaveURL(/\/category\/hair$/)
 
   // Инфинит-скролл показывает 12 карточек в обоих случаях — сравнение
   // количества карточек ничего не говорит; признак сброса — чип исчез.

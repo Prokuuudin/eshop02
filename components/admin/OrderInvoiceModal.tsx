@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template'
 import { useToast } from '@/lib/toast-context'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
 const LANG_LABELS: Record<InvoiceLang, string> = { lv: '🇱🇻 LV', en: '🇺🇸 EN' }
 
@@ -21,8 +22,6 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const { showToast } = useToast()
-
-  if (!open) return null
 
   const handlePreview = async () => {
     const titles = await fetchInvoiceTitles(order.items, lang)
@@ -58,24 +57,29 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
   }
 
   return (
-    <div className="fixed inset-0 z-modal flex items-center justify-center">
-      <button type="button" aria-label="Закрыть окно счёта" className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 bg-card rounded-xl shadow-xl border border-border w-full max-w-md p-6 space-y-5">
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
+      <DialogContent className="max-w-md p-6">
+        <DialogDescription className="sr-only">
+          Настройки языка, предпросмотра и отправки счёта клиенту
+        </DialogDescription>
+        <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">
+          <DialogTitle className="text-lg font-semibold text-foreground">
             Счёт по заказу #{order.id}
-          </h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
+          </DialogTitle>
+          <button type="button" onClick={onClose} aria-label="Закрыть окно счёта" className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
         </div>
 
         {/* Language selector: LV — стандарт, EN — по запросу покупателя */}
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Язык счёта</p>
+          <p id="invoice-language-label" className="text-sm text-muted-foreground mb-2">Язык счёта</p>
           <div className="flex gap-2">
             {(['lv', 'en'] as InvoiceLang[]).map((l) => (
               <button
                 key={l}
                 type="button"
+                aria-pressed={lang === l}
+                aria-labelledby="invoice-language-label"
                 onClick={() => setLang(l)}
                 className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   lang === l
@@ -91,8 +95,9 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
 
         {/* Email field */}
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Email получателя</p>
+          <label htmlFor="invoice-recipient-email" className="block text-sm text-muted-foreground mb-2">Email получателя</label>
           <Input
+            id="invoice-recipient-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -117,7 +122,8 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
             {sent ? '✓ Отправлено' : sending ? 'Отправка...' : 'Отправить'}
           </Button>
         </div>
-      </div>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

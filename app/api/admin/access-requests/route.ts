@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
+import { parseOffsetPagination } from '@/lib/pagination'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -13,8 +15,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     const { searchParams } = req.nextUrl
     const status = searchParams.get('status') || undefined
-    const skip = parseInt(searchParams.get('skip') || '0', 10) || 0
-    const take = Math.min(200, parseInt(searchParams.get('take') || '100', 10) || 100)
+    const { skip, take } = parseOffsetPagination(searchParams)
 
     const where = status ? { status } : {}
     const [requests, total] = await Promise.all([
@@ -38,7 +39,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ requests, total })
   } catch (e) {
-    console.error('[admin/access-requests GET]', e)
+    logApiError("[admin/access-requests GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

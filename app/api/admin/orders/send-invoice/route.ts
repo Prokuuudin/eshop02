@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { buildInvoiceHtml, type InvoiceLang } from '@/lib/invoice-template'
 import { sendEmail } from '@/lib/mailer'
@@ -67,9 +68,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     await sendEmail(email, subject, html)
   } catch (err) {
-    console.error('[send-invoice] error:', err)
+    logApiError("[send-invoice] error:", err)
     return NextResponse.json({ ok: false, code: 'send_failed' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
 }
+
+
+
+
+

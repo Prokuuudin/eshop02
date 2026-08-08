@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getInvoicesByCompany, createInvoiceInDb } from '@/lib/invoices-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { getServerOrderById, canAccessOrder } from '@/lib/orders-data-store'
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const invoices = await getInvoicesByCompany(companyId)
     return NextResponse.json({ invoices })
   } catch (e) {
-    console.error('[invoices GET]', e)
+    logApiError("[invoices GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -34,8 +35,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
     }
 
-    // Money must come from the authoritative order, never from the client — otherwise a
-    // buyer could self-issue an invoice with a fabricated total (e.g. €0.01) at checkout.
+    // Money must come from the authoritative order, never from the client נotherwise a
+    // buyer could self-issue an invoice with a fabricated total (e.g. 0.01) at checkout.
     const order = await getServerOrderById(String(body.orderId))
     if (!order) {
       return NextResponse.json({ error: 'order_not_found' }, { status: 400 })
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       invoiceNumber: String(body.invoiceNumber),
       companyId,
       orderId: order.id,
-      // Authoritative amounts from the order — client values are ignored.
+      // Authoritative amounts from the order נclient values are ignored.
       subtotal: order.subtotal,
       taxAmount: order.tax,
       total: order.total,
@@ -79,7 +80,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     })
     return NextResponse.json({ invoice })
   } catch (e) {
-    console.error('[invoices POST]', e)
+    logApiError("[invoices POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

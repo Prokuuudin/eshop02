@@ -120,6 +120,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
             {/* Drawer panel */}
             <div
                 data-testid="cart-drawer-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cart-drawer-title"
+                aria-hidden={!isOpen}
                 className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-drawer bg-card shadow-lg flex flex-col transition-transform duration-300 ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
@@ -128,7 +132,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">
                     <div className="flex items-baseline gap-3">
-                        <h2 className="text-lg font-semibold text-foreground">
+                        <h2 id="cart-drawer-title" className="text-lg font-semibold text-foreground">
                             {t('cart.title')}
                         </h2>
                         <button

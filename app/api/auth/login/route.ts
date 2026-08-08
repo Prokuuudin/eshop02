@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import {
   verifyPassword,
@@ -69,12 +70,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!valid) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
-    // Successful login — reset attempt counter
+    // Successful login נreset attempt counter
     await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
 
     if (user.platformRole === 'admin' && user.mfaEnabled) {
       const challengeToken = randomBytes(32).toString('hex')
-      // Clear any prior challenges for this user first — otherwise every login attempt
+      // Clear any prior challenges for this user first נotherwise every login attempt
       // (even ones that never get followed up) leaves a row behind, and a user with
       // several outstanding challenges could sidestep /verify's per-token attempt limit
       // by just logging in again for a fresh token.
@@ -101,7 +102,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return res
   } catch (e) {
-    console.error('[auth/login]', e)
+    logApiError("[auth/login]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { logOperationalEvent } from '@/lib/observability'
 
 function createTransport() {
   if (!process.env.SMTP_HOST) {
@@ -43,6 +44,7 @@ type SendEmailOptions = {
   /** Absolute URL that unsubscribes the recipient. Adds RFC 8058 one-click headers
    *  so mail clients can surface a native "Unsubscribe" control for marketing mail. */
   listUnsubscribeUrl?: string
+  correlationId?: string
 }
 
 export async function sendEmail(
@@ -59,8 +61,13 @@ export async function sendEmail(
 
   const transport = createTransport()
   if (!transport) {
-    console.log('[mailer] SMTP_HOST not set — printing email to console')
-    console.log(`TO: ${to}\nSUBJECT: ${subject}\n${html}`)
+    logOperationalEvent({
+      event: 'smtp_send_skipped',
+      level: 'warn',
+      correlationId: options.correlationId,
+      reason: 'smtp_not_configured',
+      recipientCount: to.split(',').filter(Boolean).length,
+    })
     return
   }
   const message = {
@@ -75,11 +82,20 @@ export async function sendEmail(
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       await transport.sendMail(message)
+      logOperationalEvent({ event: 'smtp_send_succeeded', correlationId: options.correlationId, attempt })
       return
     } catch (error) {
       lastError = error
       const responseCode = (error as { responseCode?: number }).responseCode
       const transient = responseCode === undefined || (responseCode >= 400 && responseCode < 500)
+      logOperationalEvent({
+        event: attempt === 3 || !transient ? 'smtp_send_failed' : 'smtp_send_retry',
+        level: attempt === 3 || !transient ? 'error' : 'warn',
+        alert: attempt === 3 || !transient,
+        correlationId: options.correlationId,
+        attempt,
+        responseCode,
+      }, error)
       if (!transient || attempt === 3) break
       await new Promise((resolve) => setTimeout(resolve, attempt * 500))
     }

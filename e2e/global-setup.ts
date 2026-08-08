@@ -1,7 +1,7 @@
 import { config } from 'dotenv'
 import { neon } from '@neondatabase/serverless'
 import bcrypt from 'bcryptjs'
-import { E2E_ADMIN, E2E_MANAGER } from './helpers'
+import { E2E_ADMIN, E2E_CUSTOMER, E2E_MANAGER } from './helpers'
 
 /**
  * /admin охраняется серверной DB-сессией (app/admin/layout.tsx →
@@ -14,7 +14,7 @@ export default async function globalSetup(): Promise<void> {
   const sql = neon(process.env.DATABASE_URL as string)
   const passwordHash = await bcrypt.hash(E2E_MANAGER.password, 10)
 
-  for (const fixture of [E2E_MANAGER, E2E_ADMIN]) {
+  for (const fixture of [E2E_MANAGER, E2E_ADMIN, E2E_CUSTOMER]) {
     await sql`
       INSERT INTO "User" (
         id, email, "passwordHash", name, "platformRole", "teamRole",
@@ -27,7 +27,8 @@ export default async function globalSetup(): Promise<void> {
         ${fixture.approvalRequired ?? false}, ${fixture.auditLoggingEnabled ?? false},
         false, 0, now(), now()
       )
-      ON CONFLICT (email) DO UPDATE SET
+      ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
         "passwordHash" = EXCLUDED."passwordHash",
         "platformRole" = EXCLUDED."platformRole",
         "teamRole" = EXCLUDED."teamRole",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { readCertificate, parseDataUrl } from '@/lib/certificate-store'
@@ -33,7 +34,12 @@ export async function GET(
       },
     })
   } catch (e) {
-    console.error('[admin/access-requests/:id/certificate GET]', e)
+    logApiError("[admin/access-requests/:id/certificate GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

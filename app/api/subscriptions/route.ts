@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -29,7 +30,7 @@ export async function GET(): Promise<Response> {
       })),
     })
   } catch (e) {
-    console.error('[subscriptions GET]', e)
+    logApiError("[subscriptions GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     const interval = body.interval as SubscriptionInterval
 
-    // Always generate id server-side — never trust client-supplied id
+    // Always generate id server-side נnever trust client-supplied id
     const sub = await prisma.productSubscription.create({
       data: {
         id: randomUUID(),
@@ -94,7 +95,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ subscriptionId: sub.id }, { status: 201 })
   } catch (e) {
-    console.error('[subscriptions POST]', e)
+    logApiError("[subscriptions POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

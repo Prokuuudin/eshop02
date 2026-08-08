@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getOrderPaymentStatus } from '@/lib/stripe-payment-store'
 import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -34,7 +35,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       source: serverOrder?.paymentStatus ? 'order' : 'stripe-store'
     })
   } catch (error) {
-    console.error('Payment status GET error:', error)
+    logApiError("Payment status GET error:", error)
     return NextResponse.json({ error: 'Failed to get payment status' }, { status: 500 })
   }
 }
+
+

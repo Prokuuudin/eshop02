@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { parseOffsetPagination } from '@/lib/pagination'
+import { returnRequestSchema } from '@/lib/api-schemas'
 
 export const runtime = 'nodejs'
 
 type ReturnItem = { productId: string; quantity: number }
 type OrderItem = { id: string; price: number; quantity: number }
-
-const ALLOWED_REASONS = new Set([
-  'defective', 'wrong_item', 'changed_mind', 'not_as_described', 'damaged', 'other',
-])
 
 class ReturnValidationError extends Error {
   constructor(readonly error: string, readonly status: number, readonly productId?: string) {
@@ -32,8 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    const skip = parseInt(req.nextUrl.searchParams.get('skip') || '0', 10) || 0
-    const take = Math.min(200, parseInt(req.nextUrl.searchParams.get('take') || '100', 10) || 100)
+    const { skip, take } = parseOffsetPagination(req.nextUrl.searchParams)
     const where = user.platformRole === 'admin' ? {} : { email: user.email }
     const [returns, total] = await Promise.all([
       prisma.returnRequest.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
@@ -48,7 +46,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       total,
     })
   } catch (error) {
-    console.error('[returns GET]', error)
+    logApiError("[returns GET]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -58,23 +56,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-    const body = (await req.json()) as {
-      orderId?: string; reason?: string; comment?: string; items?: ReturnItem[]
-      firstName?: string; lastName?: string; phone?: string
-    }
-    if (!body.orderId || !body.reason || !Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
-    }
-    if (!ALLOWED_REASONS.has(body.reason)) {
-      return NextResponse.json({ error: 'invalid_reason' }, { status: 400 })
-    }
+    const parsed = returnRequestSchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) return NextResponse.json({ error: 'invalid_return_request', issues: parsed.error.issues }, { status: 400 })
+    const body = parsed.data
 
     // Combining duplicate rows closes the `same product twice in one request` bypass.
     const requested = new Map<string, number>()
     for (const item of body.items) {
-      if (!item.productId || !Number.isInteger(item.quantity) || item.quantity < 1) {
-        return NextResponse.json({ error: 'invalid_item' }, { status: 400 })
-      }
       requested.set(item.productId, (requested.get(item.productId) ?? 0) + item.quantity)
     }
     const items = [...requested].map(([productId, quantity]) => ({ productId, quantity }))
@@ -131,7 +119,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         { status: error.status },
       )
     }
-    console.error('[returns POST]', error)
+    logApiError("[returns POST]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

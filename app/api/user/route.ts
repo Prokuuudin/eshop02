@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { anonymizeUser } from '@/lib/user-erasure'
 import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
-// GDPR Art. 17 — right to erasure. Implemented as anonymisation: orders/invoices are
+// GDPR Art. 17 נright to erasure. Implemented as anonymisation: orders/invoices are
 // retained (tax/accounting) with their personal fields blanked, the account is scrubbed
 // and permanently locked, and the session is cleared.
 export async function DELETE(req: NextRequest): Promise<Response> {
@@ -19,7 +20,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     }
 
-    // Admins can't self-erase — it would orphan the platform's only admin and the
+    // Admins can't self-erase נit would orphan the platform's only admin and the
     // audit trail. They must be handled out-of-band.
     if (user.platformRole === 'admin') {
       return NextResponse.json({ error: 'admin_cannot_self_delete' }, { status: 403 })
@@ -38,7 +39,12 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     })
     return res
   } catch (e) {
-    console.error('[user DELETE]', e)
+    logApiError("[user DELETE]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { isOrderTaxIncluded } from '@/lib/tax';
 import { formatDate, formatEuro } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { Button } from '@/components/ui/button';
@@ -10,57 +9,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { logAdminAction } from '@/lib/admin-log-store';
-import {
-    DELIVERY_LABELS,
-    EDIT_DELIVERY_COSTS,
-    PAYMENT_COLORS,
-    PAYMENT_LABELS,
-    STATUS_COLORS,
-    STATUS_LABELS,
-    STATUS_LIST,
-} from './order-config';
+import { DELIVERY_LABELS, EDIT_DELIVERY_COSTS, PAYMENT_COLORS, PAYMENT_LABELS, STATUS_COLORS, STATUS_LABELS, STATUS_LIST } from './order-config';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
+import { calculateOrderEditSummary } from './order-edit-summary';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersList({ state }: { state: OrdersState }): React.ReactElement {
     const {
-            orders,
-            getOrderStatus,
-            setOrderStatus,
-            getOrderNote,
-            setOrderNote,
-            noteDrafts,
-            setNoteDrafts,
-            editingOrderId,
-            editItems,
-            editAddress,
-            setEditAddress,
-            editCity,
-            setEditCity,
-            editPostalCode,
-            setEditPostalCode,
-            editDelivery,
-            setEditDelivery,
-            editProductSearch,
-            setEditProductSearch,
-            editSaving,
-            locale,
-            expandedOrder,
-            setExpandedOrder,
-            selectedIds,
-            setInvoiceOrder,
-            filtered,
-            pageItems,
-            toggleSelect,
-            editProductResults,
-            startEdit,
-            cancelEdit,
-            saveEdit,
-            editUpdateQty,
-            editAddProduct,
-          } = state;
+      orders, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
+      editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity, editPostalCode,
+      setEditPostalCode, editDelivery, setEditDelivery, editProductSearch, setEditProductSearch,
+      editSaving, locale, expandedOrder, setExpandedOrder, selectedIds, setInvoiceOrder, filtered,
+      pageItems, toggleSelect, editProductResults, startEdit, cancelEdit, saveEdit, editUpdateQty, editAddProduct,
+    } = state;
     return (
         <>
             <div className="space-y-3">
@@ -400,29 +363,8 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {/* Recalculated summary */}
                                             {editItems.length > 0 &&
                                                 (() => {
-                                                    const newSub = editItems.reduce(
-                                                        (s, i) => s + i.price * i.quantity,
-                                                        0
-                                                    );
-                                                    const newDel =
-                                                        EDIT_DELIVERY_COSTS[editDelivery] ?? 0;
-                                                    const origPct =
-                                                        order.subtotal > 0
-                                                            ? order.discount / order.subtotal
-                                                            : 0;
-                                                    const newDisc =
-                                                        order.promoCode && origPct > 0
-                                                            ? Math.round(newSub * origPct * 100) /
-                                                              100
-                                                            : order.discount;
-                                                    const taxIncluded = isOrderTaxIncluded(order);
-                                                    const newTotal = Math.max(
-                                                        0,
-                                                        newSub -
-                                                            newDisc +
-                                                            newDel +
-                                                            (taxIncluded ? 0 : order.tax)
-                                                    );
+                                                    const { subtotal: newSub, delivery: newDel, discount: newDisc, total: newTotal } =
+                                                        calculateOrderEditSummary(order, editItems, editDelivery);
                                                     return (
                                                         <div className="flex justify-end">
                                                             <div className="text-sm space-y-1 min-w-[220px]">

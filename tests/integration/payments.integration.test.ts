@@ -125,6 +125,7 @@ describe('Stripe payment integration', () => {
       data: {
         object: {
           id: 'cs_1001',
+          payment_status: 'paid',
           payment_intent: 'pi_1001',
           metadata: { orderId: '1001' },
           customer_details: { email: 'buyer@example.com' },
@@ -163,6 +164,7 @@ describe('Stripe payment integration', () => {
       data: {
         object: {
           id: 'cs_1001',
+          payment_status: 'paid',
           payment_intent: 'pi_1001',
           metadata: { orderId: '1001' },
           customer_details: { email: 'buyer@example.com' },

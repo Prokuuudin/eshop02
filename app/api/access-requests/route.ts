@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/server-auth'
@@ -157,12 +158,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (Math.random() < 0.01) {
       void gcRateLimitStore()
       void cleanupExpiredCertificates(prisma).catch((error) =>
-        console.error('[access-requests] certificate retention cleanup failed', error)
+        logApiError("[access-requests] certificate retention cleanup failed", error)
       )
     }
     return NextResponse.json({ id: requestId }, { status: 201 })
   } catch (error) {
-    console.error('[access-requests POST]', error)
+    logApiError("[access-requests POST]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

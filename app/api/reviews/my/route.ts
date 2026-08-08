@@ -1,4 +1,5 @@
 import { errorResponse, successResponse } from '@/lib/api-helpers'
+import { logApiError } from '@/lib/observability'
 import { getReviewsByAuthor } from '@/lib/reviews-data-store'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -17,7 +18,12 @@ export async function GET(): Promise<Response> {
     const reviews = await getReviewsByAuthor(author)
     return successResponse({ reviews })
   } catch (error) {
-    console.error('Reviews my GET error:', error)
+    logApiError("Reviews my GET error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+
+
+
+

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { getServerOrderById } from '@/lib/orders-data-store'
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ statuses, notes })
   } catch (e) {
-    console.error('[admin/order-meta GET]', e)
+    logApiError("[admin/order-meta GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         try {
           await sendOrderStatusEmail(orderId, status)
         } catch (emailError) {
-          console.error('[admin/order-meta status email]', emailError)
+          logApiError("[admin/order-meta status email]", emailError)
           return NextResponse.json({ ok: true, warning: 'status_saved_email_failed' }, { status: 202 })
         }
       }
@@ -206,7 +207,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[admin/order-meta POST]', e)
+    logApiError("[admin/order-meta POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

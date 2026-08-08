@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createStripeClient } from '@/lib/stripe-client'
 import { applyStripePaymentEvent } from '@/lib/stripe-payment-store'
 import { getServerOrderById } from '@/lib/orders-data-store'
+import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -19,21 +20,13 @@ async function sessionMatchesOrderAmount(orderId: string, session: Stripe.Checko
   const currencyOk = (session.currency ?? '').toLowerCase() === 'eur'
   const amountOk = session.amount_total === expectedCents
 
-  if (!currencyOk || !amountOk) {
-    console.error('Stripe webhook amount mismatch — refusing to mark order paid', {
-      orderId,
-      sessionId: session.id,
-      expectedCents,
-      amountTotal: session.amount_total,
-      currency: session.currency,
-    })
-    return false
-  }
+  if (!currencyOk || !amountOk) return false
 
   return true
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const correlationId = getCorrelationId(req)
   try {
     const secretKey = process.env.STRIPE_SECRET_KEY
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -46,6 +39,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const signature = req.headers.get('stripe-signature')
 
     if (!signature) {
+      logOperationalEvent({ event: 'stripe_webhook_signature_missing', level: 'warn', alert: true, correlationId })
       return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
     }
 
@@ -57,7 +51,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const orderId = session.metadata?.orderId
 
       if (orderId) {
+        // `completed` describes the Checkout UI lifecycle, not necessarily a
+        // settled payment (notably for asynchronous payment methods). Only
+        // Stripe's authoritative paid state may settle the order.
+        if (session.payment_status !== 'paid') {
+          logOperationalEvent({
+            event: 'stripe_checkout_completed_unpaid',
+            level: 'warn',
+            alert: true,
+            correlationId,
+            orderId,
+            sessionId: session.id,
+            paymentStatus: session.payment_status,
+          })
+          return NextResponse.json({ received: true, paymentPending: true })
+        }
+
         if (!(await sessionMatchesOrderAmount(orderId, session))) {
+          logOperationalEvent({
+            event: 'stripe_webhook_amount_mismatch',
+            level: 'error',
+            alert: true,
+            correlationId,
+            orderId,
+            sessionId: session.id,
+          })
           return NextResponse.json({ received: true, amountMismatch: true })
         }
 
@@ -71,6 +89,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         })
 
         if (!applied) return NextResponse.json({ received: true, idempotent: true })
+        logOperationalEvent({ event: 'stripe_payment_applied', correlationId, orderId, sessionId: session.id, stripeEventId: event.id })
       }
     }
 
@@ -89,12 +108,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         })
 
         if (!applied) return NextResponse.json({ received: true, idempotent: true })
+        logOperationalEvent({ event: 'stripe_payment_failed', level: 'warn', alert: true, correlationId, orderId, sessionId: session.id, stripeEventId: event.id })
       }
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Stripe webhook error:', error)
+    logOperationalEvent({ event: 'stripe_webhook_failed', level: 'error', alert: true, correlationId }, error)
     return NextResponse.json({ error: 'Invalid Stripe webhook payload' }, { status: 400 })
   }
 }

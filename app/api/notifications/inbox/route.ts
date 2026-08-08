@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getServerUser } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 
@@ -35,7 +36,9 @@ export async function GET(_req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ notifications })
   } catch (err) {
-    console.error('[notifications/inbox]', err)
+    logApiError("[notifications/inbox]", err)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

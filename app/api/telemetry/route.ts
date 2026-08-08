@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { redactTelemetryText } from '@/lib/telemetry-redaction'
+import { logOperationalEvent } from '@/lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -26,12 +28,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     if (body.type === 'vitals') {
       // Low volume (one set per page load); log for aggregation in the hosting dashboard.
-      console.log('[web-vitals]', JSON.stringify({
+      logOperationalEvent({ event: 'web_vital',
         name: MAX(body.name, 40),
         value: typeof body.value === 'number' ? Math.round(body.value * 1000) / 1000 : null,
         rating: MAX(body.rating, 20),
-        path: MAX(body.path, 200),
-      }))
+        path: redactTelemetryText(body.path, 200),
+      })
       return NextResponse.json({ ok: true })
     }
 
@@ -39,11 +41,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       // Errors can spam — cap per IP so a broken client can't flood the logs.
       const rl = await checkRateLimit(`telemetry-error:${clientIp(req)}`)
       if (rl.limited) return NextResponse.json({ ok: true, throttled: true })
-      console.error('[client-error]', JSON.stringify({
-        message: MAX(body.message, 500),
-        stack: MAX(body.stack, 2000),
-        path: MAX(body.path, 200),
-      }))
+      logOperationalEvent({ event: 'client_error', level: 'error',
+        message: redactTelemetryText(body.message, 500),
+        stack: redactTelemetryText(body.stack, 2000),
+        path: redactTelemetryText(body.path, 200),
+      })
       return NextResponse.json({ ok: true })
     }
 

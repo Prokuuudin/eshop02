@@ -61,7 +61,7 @@ export default function HeaderActions({
       <Tooltip>
         <TooltipTrigger asChild>
           <Link href="/wishlist" aria-label={t('nav.wishlist')} className="relative inline-flex">
-            <Button variant="ghost" size="icon" className="relative text-foreground">
+            <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-accent hover:text-accent-foreground">
               <svg className="h-7 w-7 text-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   d="M12 21s-6.716-4.348-9.193-8.027C.664 9.763 1.35 5.39 5.09 3.8c2.037-.867 4.368-.279 5.91 1.47 1.542-1.749 3.873-2.337 5.91-1.47 3.74 1.59 4.426 5.963 2.283 9.173C18.716 16.652 12 21 12 21z"
@@ -76,7 +76,7 @@ export default function HeaderActions({
                   {wishlistCountLabel}
                 </Badge>
               )}
-            </Button>
+            </span>
           </Link>
         </TooltipTrigger>
         <TooltipContent>{t('nav.wishlist')}</TooltipContent>

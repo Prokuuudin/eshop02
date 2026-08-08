@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { getDeletedProductsArchive, purgeDeletedProductArchive } from '@/lib/product-overrides-store'
@@ -13,7 +14,7 @@ export async function GET(): Promise<Response> {
     const archive = await getDeletedProductsArchive()
     return successResponse({ archive })
   } catch (error) {
-    console.error('Admin products archive GET error:', error)
+    logApiError("Admin products archive GET error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
@@ -37,7 +38,9 @@ export async function DELETE(req: NextRequest): Promise<Response> {
 
     return successResponse({ archive: result.archive })
   } catch (error) {
-    console.error('Admin products archive DELETE error:', error)
+    logApiError("Admin products archive DELETE error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

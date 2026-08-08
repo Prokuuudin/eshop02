@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -61,7 +62,9 @@ export async function PATCH(
       },
     })
   } catch (e) {
-    console.error('[subscriptions/:id PATCH]', e)
+    logApiError("[subscriptions/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

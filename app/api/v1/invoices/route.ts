@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { getInvoicesByCompany } from '@/lib/invoices-data-store'
 
@@ -59,7 +60,9 @@ export async function GET(req: NextRequest): Promise<Response> {
       },
     })
   } catch (error) {
-    console.error('API Error:', error)
+    logApiError("API Error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+

@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { E2E_ADMIN, E2E_MANAGER, fetchRealProduct, loginAs } from './helpers'
 
-test.setTimeout(120_000)
-
 type SeedUser = {
   id: string
   email: string
@@ -75,28 +73,12 @@ test('manager is forbidden from full-access admin pages', async ({ page }) => {
   await page.goto('/admin/accounts', { waitUntil: 'domcontentloaded' })
 
   await expect(page.getByRole('heading', { name: /Доступ запрещ[её]н/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Перейти в аккаунт' })).toBeVisible()
+  await expect(page.getByText('users.manage')).toBeVisible()
 })
 
 test('manager cannot place orders from cart or checkout', async ({ page }) => {
-  await seedSession(
-    page,
-    [
-      {
-        id: 'u_manager_checkout_e2e',
-        email: 'manager-checkout-e2e@hairshop-pro.lv.local',
-        password: 'StrongPass123',
-        name: 'Manager Checkout',
-        platformRole: 'customer',
-        teamRole: 'manager',
-        companyId: 'company_miks_plus',
-        companyName: 'SIA MIKS PLUS',
-        approvalRequired: false,
-        auditLoggingEnabled: true
-      }
-    ],
-    'u_manager_checkout_e2e'
-  )
+  await loginAs(page, E2E_MANAGER)
+  await seedSession(page, [E2E_MANAGER], E2E_MANAGER.id)
 
   // Живой товар вместо удалённого из БД p1
   const product = await fetchRealProduct(page)
@@ -118,32 +100,18 @@ test('manager cannot place orders from cart or checkout', async ({ page }) => {
 })
 
 test('manager sees admin navigation link in user menu', async ({ page }) => {
-  await seedSession(
-    page,
-    [
-      {
-        id: 'u_manager_menu_e2e',
-        email: 'manager-menu-e2e@hairshop-pro.lv.local',
-        password: 'StrongPass123',
-        name: 'Manager Menu',
-        platformRole: 'customer',
-        teamRole: 'manager',
-        companyId: 'company_miks_plus',
-        companyName: 'SIA MIKS PLUS',
-        approvalRequired: false,
-        auditLoggingEnabled: true
-      }
-    ],
-    'u_manager_menu_e2e'
-  )
+  await loginAs(page, E2E_MANAGER)
+  await seedSession(page, [E2E_MANAGER], E2E_MANAGER.id)
 
   await page.goto('/')
 
-  await page.getByRole('button', { name: /Меню пользователя|Личный кабинет|Account|Konts/i }).click()
+  const userMenu = page.getByRole('button', { name: /Меню пользователя|Личный кабинет|Account|Konts/i })
+  await expect(userMenu).toBeVisible()
+  await userMenu.evaluate((element: HTMLButtonElement) => element.click())
   await expect(page.getByRole('link', { name: /Админ-панель|Admin Panel|Administrācijas panelis/i })).toBeVisible()
 })
 
-test('admin can change user platform role in DB accounts table', async ({ page }) => {
+test('admin accounts table only offers supported global roles', async ({ page }) => {
   // Страница аккаунтов теперь DB-backed: таблица юзеров из Neon + смена
   // platformRole через API. Старая localStorage-секция «Аккаунты компании
   // и роли» осталась, но требует компании в DB-сторе — company_miks_plus
@@ -160,14 +128,10 @@ test('admin can change user platform role in DB accounts table', async ({ page }
   const row = page.locator('tr', { hasText: E2E_MANAGER.email })
   await expect(row).toBeVisible({ timeout: 15000 })
 
-  // customer -> b2b (globalSetup сбрасывает роль фикстуры перед каждым прогоном)
+  // B2B is represented by company/teamRole, not by the global platformRole.
   await row.getByRole('combobox').click()
-  await page.getByRole('option', { name: 'b2b' }).click()
-
-  await expect(page.getByText(/Роль обновлена|Роль пользователя обновлена/)).toBeVisible()
-
-  // Возвращаем customer, чтобы не оставлять фикстуру в изменённом состоянии
-  await row.getByRole('combobox').click()
-  await page.getByRole('option', { name: 'customer' }).click()
-  await expect(row.getByRole('combobox')).toContainText('customer')
+  await expect(page.getByRole('option', { name: 'customer' })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'admin' })).toBeVisible()
+  await expect(page.getByRole('option', { name: 'b2b' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
 })

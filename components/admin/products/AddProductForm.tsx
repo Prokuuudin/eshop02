@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -25,16 +25,11 @@ import ProductBulkPricingFields from './ProductBulkPricingFields';
 import ProductPicker from './ProductPicker';
 import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
+import { ProductFormModeContext } from './ProductFormModeContext';
 
 import './AddProductForm.css';
 
 // Контекст режима формы — используется в дочерних компонентах (напр., ProductBasicFields)
-interface ProductFormModeContextValue {
-    isEdit: boolean;
-}
-const ProductFormModeContext = createContext<ProductFormModeContextValue>({ isEdit: false });
-export const useProductFormMode = (): ProductFormModeContextValue => useContext(ProductFormModeContext);
-
 const emptyDefaults: AddProductFormValues = {
     id: '',
     sku: '',

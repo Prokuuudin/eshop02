@@ -12,7 +12,7 @@ import {
 import { AddProductFormValues } from './productFormSchema';
 import { CATEGORY_CARDS } from '@/data/categories';
 import { useTranslation } from '@/lib/i18n-context';
-import { useProductFormMode } from './AddProductForm';
+import { useProductFormMode } from './ProductFormModeContext';
 
 const ProductBasicFields: React.FC = () => {
     const {

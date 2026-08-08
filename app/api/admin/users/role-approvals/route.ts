@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { z } from 'zod'
 import { guardOrigin } from '@/lib/api-guard'
@@ -74,7 +75,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })
     }
-    console.error('[admin/users/role-approvals POST]', error)
+    logApiError("[admin/users/role-approvals POST]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { getServerUser } from '@/lib/server-auth'
 import { exportUserData } from '@/lib/user-erasure'
 import { createUserExportPdf } from '@/lib/user-export-pdf'
 
 export const runtime = 'nodejs'
 
-// GDPR Art. 15/20 — a readable report of the data held about the data subject.
+// GDPR Art. 15/20 נa readable report of the data held about the data subject.
 export async function GET(): Promise<Response> {
   try {
     const user = await getServerUser()
@@ -23,7 +24,12 @@ export async function GET(): Promise<Response> {
       },
     })
   } catch (e) {
-    console.error('[user/export GET]', e)
+    logApiError("[user/export GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

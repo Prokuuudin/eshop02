@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
 import { sendEmail } from '@/lib/mailer'
 
@@ -83,7 +84,12 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[returns/notify]', err)
+    logApiError("[returns/notify]", err)
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
+
+
+
+
+

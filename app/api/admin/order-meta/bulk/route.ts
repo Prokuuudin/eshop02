@@ -1,4 +1,5 @@
 import { appendServerAudit } from '@/lib/server-audit'
+import { logApiError } from '@/lib/observability'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
@@ -88,7 +89,9 @@ export async function POST(req: NextRequest): Promise<Response> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'bulk_status_failed'
     const status = message === 'order_not_found' ? 404 : message.startsWith('invalid_') ? 409 : 500
-    if (status === 500) console.error('[admin/order-meta/bulk]', error)
+    if (status === 500) logApiError("[admin/order-meta/bulk]", error)
     return NextResponse.json({ error: message }, { status })
   }
 }
+
+

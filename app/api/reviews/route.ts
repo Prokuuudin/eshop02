@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { createReview, getProductPublicReviews, getProductReviewStats } from '@/lib/reviews-data-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return successResponse({ reviews, stats })
   } catch (error) {
-    console.error('Reviews GET error:', error)
+    logApiError("Reviews GET error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
@@ -90,7 +91,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return successResponse({ review }, 201)
   } catch (error) {
-    console.error('Reviews POST error:', error)
+    logApiError("Reviews POST error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+
+
+
+

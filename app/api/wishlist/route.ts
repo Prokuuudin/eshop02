@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -14,7 +15,7 @@ export async function GET(): Promise<Response> {
 
     return NextResponse.json({ productIds: items.map((i) => i.productId) })
   } catch (e) {
-    console.error('[wishlist GET]', e)
+    logApiError("[wishlist GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[wishlist POST]', e)
+    logApiError("[wishlist POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -57,7 +58,9 @@ export async function DELETE(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[wishlist DELETE]', e)
+    logApiError("[wishlist DELETE]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+

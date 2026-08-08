@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
@@ -44,7 +45,7 @@ export async function GET(): Promise<Response> {
     ])
     return NextResponse.json({ state, totalEligible, users })
   } catch (e) {
-    console.error('[card-rules-campaign GET]', e)
+    logApiError("[card-rules-campaign GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         await sendEmail(u.email, subject, html)
         state.sentCount++
       } catch (err) {
-        console.error('[card-rules-campaign] sendEmail failed for', u.email, err)
+        logApiError('card_rules_campaign_email_failed', err)
         state.errorCount++
       }
       processed++
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ state, processed })
   } catch (e) {
-    console.error('[card-rules-campaign POST]', e)
+    logApiError("[card-rules-campaign POST]", e)
     // Сохраняем продвинутый cursor/sentCount — иначе повторный POST перешлёт тот же батч
     try {
       if (state) {
@@ -146,3 +147,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+

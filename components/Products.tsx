@@ -13,6 +13,7 @@ import { LayoutGrid, List, X } from 'lucide-react'
 import ProductListRow from './ProductListRow'
 import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 import type { CatalogFacets } from '@/lib/initial-catalog-products'
+import { fetchAllProducts } from '@/lib/client-products'
 
 type ProductsFilters = {
   group: string
@@ -103,11 +104,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
 
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products', { cache: 'no-store' })
-        if (!response.ok) throw new Error('failed')
-
-        const payload = (await response.json()) as { data?: { products?: Product[] } }
-        setProducts(payload.data?.products ?? [])
+        setProducts(await fetchAllProducts())
       } catch {
         setProducts([])
         setProductsWarning('Не удалось загрузить товары из API')

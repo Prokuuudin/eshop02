@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     // Non-admin can only decrease their own balance (spend bonus points)
-    // Positive delta (earning) is server-only — tied to orders/refunds, not client-controlled
+    // Positive delta (earning) is server-only נtied to orders/refunds, not client-controlled
     if (caller.platformRole !== 'admin' && delta > 0) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
@@ -45,12 +46,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ newBalance })
   } catch (e) {
-    console.error('[user/bonus POST]', e)
+    logApiError("[user/bonus POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
 
-// GET — return current balance from DB
+// GET נreturn current balance from DB
 export async function GET(): Promise<Response> {
   try {
     const user = await getServerUser()
@@ -59,7 +60,12 @@ export async function GET(): Promise<Response> {
     const row = await prisma.user.findUnique({ where: { id: user.id }, select: { bonusPoints: true } })
     return NextResponse.json({ bonusPoints: row?.bonusPoints ?? 0 })
   } catch (e) {
-    console.error('[user/bonus GET]', e)
+    logApiError("[user/bonus GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

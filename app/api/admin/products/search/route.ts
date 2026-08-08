@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
@@ -70,7 +71,12 @@ export async function GET(req: NextRequest): Promise<Response> {
     })
     return successResponse({ products: rows.map(toItem) })
   } catch (error) {
-    console.error('Admin product search error:', error)
+    logApiError("Admin product search error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
+
+
+
+
+

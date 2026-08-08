@@ -96,4 +96,36 @@ describe('order stock transaction integration', () => {
     expect(state.orders).toEqual([])
     expect(state.stock).toEqual({ p1: 5, p2: 0 })
   })
+
+  it('allows only one of two concurrent checkouts to claim the last unit', async () => {
+    state.stock = { p1: 1 }
+    const oneItemOrder = {
+      ...baseOrder,
+      items: [{ ...baseOrder.items[0], quantity: 1 }],
+      subtotal: 10,
+      total: 10,
+    }
+
+    let transactionTail = Promise.resolve()
+    prismaMock.$transaction.mockImplementation((operation: (tx: ReturnType<typeof transactionClient>) => unknown) => {
+      const current = transactionTail.then(async () => {
+        const draft = structuredClone(state)
+        const result = await operation(transactionClient(draft))
+        state.stock = draft.stock
+        state.orders = draft.orders
+        return result
+      })
+      transactionTail = current.then(() => undefined, () => undefined)
+      return current
+    })
+
+    const results = await Promise.allSettled([
+      createServerOrder(oneItemOrder),
+      createServerOrder(oneItemOrder),
+    ])
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
+    expect(state.stock.p1).toBe(0)
+  })
 })

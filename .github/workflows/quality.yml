@@ -1,0 +1,65 @@
+name: Quality Gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  static-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run audit:architecture
+      - run: npm run test:unit
+      - run: npm run test:erp:performance
+
+  accessibility-webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - if: env.DATABASE_URL != ''
+        run: npx playwright test e2e/accessibility.spec.ts --project=mobile-webkit
+
+  performance-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      LOAD_BASE_URL: http://localhost:3000
+      LOAD_CONCURRENCY: 5
+      LOAD_REQUESTS: 20
+      LOAD_P95_BUDGET_MS: 2000
+      LOAD_MAX_ERROR_RATE: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - if: env.DATABASE_URL != ''
+        run: npx next build --webpack
+      - if: env.DATABASE_URL != ''
+        run: |
+          npm start &
+          for attempt in {1..60}; do
+            curl --fail --silent http://localhost:3000/api/health && break
+            sleep 2
+          done
+          npm run test:load:smoke

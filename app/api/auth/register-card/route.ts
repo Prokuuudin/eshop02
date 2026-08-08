@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
@@ -9,7 +10,7 @@ import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { normalizeSubmittedCode } from '@/lib/personal-code'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
-// Best-effort "was this you?" notice — an attacker could have guessed the
+// Best-effort "was this you?" notice נan attacker could have guessed the
 // 3-character personal code, so this activation might not be the real owner.
 // Never let a mail failure break the response the browser is waiting on.
 async function notifyCardActivated(email: string | null | undefined, name: string, cardNumber: string): Promise<void> {
@@ -18,7 +19,7 @@ async function notifyCardActivated(email: string | null | undefined, name: strin
     const { subject, html } = buildCardActivatedEmail({ name, cardNumber })
     await sendEmail(email, subject, html)
   } catch (e) {
-    console.error('[auth/register-card] activation notice failed', e)
+    logApiError("[auth/register-card] activation notice failed", e)
   }
 }
 
@@ -34,22 +35,22 @@ function getClientIp(req: NextRequest): string {
 }
 
 /**
- * Registers/activates a cardholder against a real card number — the only
+ * Registers/activates a cardholder against a real card number נthe only
  * server-authoritative path for "register with client card" (RegisterForm).
  * Two cardholder shapes exist and are checked in order:
  *
- *  1. An individual already has a User row with this cardNumber — either a
+ *  1. An individual already has a User row with this cardNumber נeither a
  *     dormant ERP import (Klienti.xlsx, see scripts/import-client-cards.ts)
  *     or a company member created by this route before. Verified against
- *     `pkLast3` — the last 3 characters of that person's personal code, or
+ *     `pkLast3` נthe last 3 characters of that person's personal code, or
  *     for a card issued to a legal entity, their company registration
- *     number — sourced from the client database, unique per cardholder
+ *     number נsourced from the client database, unique per cardholder
  *     (never a value shared across cards). `mustChangePassword` tells us
  *     whether they've already picked their own password (then this card is
  *     "taken"); `pkLast3 === null` means this card has no code on file at
  *     all (routed to the manual no-card request flow client-side).
  *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
- *     team member claiming a shared company card) — create one, gated by
+ *     team member claiming a shared company card) נcreate one, gated by
  *     the shared FIRST_LOGIN_PASSWORD mailed to the company contact.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Per-IP limiting alone doesn't stop a targeted attempt to guess one
-    // specific card's 3-character personal code from a fresh IP — cap
+    // specific card's 3-character personal code from a fresh IP נcap
     // attempts per card too.
     const cardRl = await checkRateLimit(`register-card:card:${cardNumber}`, { windowMs: 60 * 60 * 1000, maxAttempts: 5 })
     if (cardRl.limited) {
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'card_not_found' }, { status: 404 })
     }
     if (!FIRST_LOGIN_PASSWORD) {
-      console.error('[auth/register-card] FIRST_LOGIN_PASSWORD is not configured')
+      logApiError('auth_register_card_not_configured')
       return NextResponse.json({ error: 'registration_not_configured' }, { status: 503 })
     }
     if (password !== FIRST_LOGIN_PASSWORD) {
@@ -187,7 +188,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
 
     // The user's own email is the synthetic card.<number>@client.local
-    // placeholder, not a real inbox — notify the company's contact address.
+    // placeholder, not a real inbox נnotify the company's contact address.
     await notifyCardActivated(company.contactEmail, user.name ?? '', cardNumber)
     const token = await createSession(user.id)
 
@@ -204,7 +205,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if ((e as { code?: string })?.code === 'P2002') {
       return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
     }
-    console.error('[auth/register-card]', e)
+    logApiError("[auth/register-card]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+

@@ -10,6 +10,8 @@ const normalizeWebServerCommand = (command: string): string => {
 }
 
 const rawWebServerCommand = process.env.PLAYWRIGHT_WEB_SERVER_COMMAND
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3005'
+const skipWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER === '1'
 const webServerCommand = rawWebServerCommand
   ? normalizeWebServerCommand(rawWebServerCommand)
   : (fs.existsSync('.next/BUILD_ID') ? 'npx next start -p 3005' : 'npx next dev --webpack -p 3005')
@@ -23,7 +25,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3005',
+    baseURL,
     trace: 'on-first-retry'
   },
   projects: [
@@ -34,11 +36,15 @@ export default defineConfig({
     {
       name: 'mobile-chromium',
       use: { ...devices['Pixel 7'] }
+    },
+    {
+      name: 'mobile-webkit',
+      use: { ...devices['iPhone 15'] }
     }
   ],
-  webServer: {
+  webServer: skipWebServer ? undefined : {
     command: webServerCommand,
-    url: 'http://localhost:3005',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000
   }

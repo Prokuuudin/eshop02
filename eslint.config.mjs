@@ -57,6 +57,10 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ['app/api/**/route.ts'],
+    rules: { 'no-console': 'error' },
+  },
   globalIgnores([
     '.next/**',
     '.agents/**',

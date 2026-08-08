@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -164,7 +165,7 @@ export async function PATCH(
           where: { tokenHash: hashInviteToken(token), status: 'sent' },
           data: { status: 'error' },
         })
-        console.error('[admin/access-requests/:id PATCH] invitation email failed', emailError)
+        logApiError("[admin/access-requests/:id PATCH] invitation email failed", emailError)
         return NextResponse.json(
           { request: result.request, cardNumber, userId: result.targetUserId, emailStatus: 'error' },
           { status: 502 },
@@ -183,7 +184,12 @@ export async function PATCH(
     await deleteCertificate(prisma, id)
     return NextResponse.json({ request: updated })
   } catch (e) {
-    console.error('[admin/access-requests/:id PATCH]', e)
+    logApiError("[admin/access-requests/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

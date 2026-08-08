@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
@@ -39,7 +40,7 @@ export async function GET(): Promise<Response> {
   const gate = await requireAdminPermission('catalog.read')
   if (gate instanceof NextResponse) return gate
   try { return successResponse({ products: await getAdminProducts() }) }
-  catch (error) { console.error('Admin products GET error:', error); return errorResponse('Internal server error', 500) }
+  catch (error) { logApiError("Admin products GET error:", error); return errorResponse('Internal server error', 500) }
 }
 
 export async function PUT(req: NextRequest): Promise<Response> {
@@ -75,7 +76,7 @@ export async function PUT(req: NextRequest): Promise<Response> {
     return successResponse({ product: mapDbToProduct(updated), products: await getAdminProducts() })
   } catch (error) {
     const response = mutationError(error); if (response) return response
-    console.error('Admin products PUT error:', error); return errorResponse('Internal server error', 500)
+    logApiError("Admin products PUT error:", error); return errorResponse('Internal server error', 500)
   }
 }
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     return successResponse({ product: mapDbToProduct(created), products: await getAdminProducts() })
   } catch (error) {
     const response = mutationError(error); if (response) return response
-    console.error('Admin products POST error:', error); return errorResponse('Internal server error', 500)
+    logApiError("Admin products POST error:", error); return errorResponse('Internal server error', 500)
   }
 }
 
@@ -110,5 +111,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     const result = body.permanently === true ? await deleteProductAny(id) : await resetProductOverride(id)
     if (!result.success) return errorResponse(result.error, 400)
     return successResponse({ products: result.products })
-  } catch (error) { console.error('Admin products DELETE error:', error); return errorResponse('Internal server error', 500) }
+  } catch (error) { logApiError("Admin products DELETE error:", error); return errorResponse('Internal server error', 500) }
 }
+
+

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
@@ -59,7 +60,7 @@ export async function GET(): Promise<Response> {
       }),
     })
   } catch (e) {
-    console.error('[admin/invitations GET]', e)
+    logApiError("[admin/invitations GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         await sendEmail(user.email, subject, html)
       } catch (err) {
-        console.error('[admin/invitations POST] sendEmail failed for', user.email, err)
+        logApiError('admin_invitations_email_failed', err)
         status = 'error'
         failedTokens.push(r.token)
       }
@@ -150,7 +151,11 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ results })
   } catch (e) {
-    console.error('[admin/invitations POST]', e)
+    logApiError("[admin/invitations POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { hasAdminPermission } from '@/lib/admin-permissions'
@@ -26,7 +27,7 @@ export async function GET(
       request: { ...rfq, createdAt: rfq.createdAt.toISOString(), updatedAt: rfq.updatedAt.toISOString() },
     })
   } catch (e) {
-    console.error('[rfq/:id GET]', e)
+    logApiError("[rfq/:id GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
@@ -60,7 +61,7 @@ export async function PATCH(
       // Users can only append notes
       if ('notes' in body) data.notes = body.notes
       if ('timeline' in body) {
-        // Only allow appending — don't let client overwrite existing timeline
+        // Only allow appending נdon't let client overwrite existing timeline
         const existing = (rfq.timeline as { at: string; type: string }[]) ?? []
         const incoming = Array.isArray(body.timeline) ? body.timeline : []
         const newEvents = incoming.filter(
@@ -87,7 +88,12 @@ export async function PATCH(
       request: { ...updated, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() },
     })
   } catch (e) {
-    console.error('[rfq/:id PATCH]', e)
+    logApiError("[rfq/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
+
+
+
+
+

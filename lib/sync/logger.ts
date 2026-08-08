@@ -9,11 +9,11 @@ export class SyncLogger {
   private count = 0
 
   info(message: string, data?: Record<string, unknown>): void {
-    console.log(JSON.stringify({ level: 'info', message, ...data, ts: new Date().toISOString() }))
+    logOperationalEvent({ event: 'erp_sync_event', message, ...data })
   }
 
   error(message: string, data?: Record<string, unknown>): void {
-    console.error(JSON.stringify({ level: 'error', message, ...data, ts: new Date().toISOString() }))
+    logOperationalEvent({ event: 'erp_sync_failed', level: 'error', alert: true, message, ...data })
   }
 
   recordBatchError(batch: number, err: unknown, productIds?: string[]): void {
@@ -35,3 +35,4 @@ export class SyncLogger {
     return this.errors
   }
 }
+import { logOperationalEvent } from '@/lib/observability'

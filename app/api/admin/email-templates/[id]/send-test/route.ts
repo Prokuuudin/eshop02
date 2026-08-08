@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { sendEmail } from '@/lib/mailer'
@@ -58,7 +59,12 @@ export async function POST(
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[send-test]', err)
+    logApiError("[send-test]", err)
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
+
+
+
+
+

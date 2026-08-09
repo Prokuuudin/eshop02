@@ -1,7 +1,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { IconClose } from '@/components/ui/icon-close';
+import { IconX } from '@/components/ui/icon-x';
 import type { UseImageZoomResult } from '@/hooks/useImageZoom';
 
 // Swiper тянет за собой ~130 KB — грузим только когда лайтбокс реально открыт
@@ -99,9 +99,9 @@ export const ProductImageLightbox: React.FC<ProductImageLightboxProps> = ({
                     <button
                         type="button"
                         aria-label="Закрыть увеличенное изображение"
-                        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+                        className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
                     >
-                        <IconClose width={28} height={28} />
+                        <IconX width={20} height={20} />
                     </button>
                 </DialogClose>
                 <div className="h-full w-full p-2 sm:p-4">

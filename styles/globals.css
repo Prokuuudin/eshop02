@@ -200,23 +200,6 @@
     margin-top: 0 !important;
     min-height: 0;
 }
-.product-lightbox-swiper .swiper-button-prev,
-.product-lightbox-swiper .swiper-button-next {
-    width: 44px;
-    height: 44px;
-    border-radius: 9999px;
-    background: hsl(var(--card) / 0.9);
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-    color: hsl(var(--foreground));
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-}
-.product-lightbox-swiper .swiper-button-prev:hover,
-.product-lightbox-swiper .swiper-button-next:hover {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-color: hsl(var(--primary));
-}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

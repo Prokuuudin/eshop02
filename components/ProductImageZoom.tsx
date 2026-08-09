@@ -92,14 +92,14 @@ export const ProductImageLightbox: React.FC<ProductImageLightboxProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 aria-describedby={undefined}
-                className="product-detail__zoom-lightbox block h-[80vh] max-h-[700px] w-[92vw] max-w-3xl gap-0 rounded-lg border bg-white p-0 motion-reduce:animate-none"
+                className="product-detail__zoom-lightbox block h-[80vh] max-h-[700px] w-[92vw] max-w-3xl gap-0 rounded-lg border bg-muted p-0 motion-reduce:animate-none"
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 <DialogClose asChild>
                     <button
                         type="button"
                         aria-label="Закрыть увеличенное изображение"
-                        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md"
+                        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
                     >
                         <IconClose width={28} height={28} />
                     </button>

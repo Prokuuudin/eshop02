@@ -92,7 +92,7 @@ export const ProductImageLightbox: React.FC<ProductImageLightboxProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 aria-describedby={undefined}
-                className="product-detail__zoom-lightbox left-0 top-0 block h-dvh w-screen max-w-none translate-x-0 translate-y-0 gap-0 rounded-none border-0 bg-white p-0 sm:rounded-none motion-reduce:animate-none"
+                className="product-detail__zoom-lightbox block h-[80vh] max-h-[700px] w-[92vw] max-w-3xl gap-0 rounded-lg border bg-white p-0 motion-reduce:animate-none"
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 <DialogClose asChild>
@@ -104,7 +104,7 @@ export const ProductImageLightbox: React.FC<ProductImageLightboxProps> = ({
                         <IconClose width={28} height={28} />
                     </button>
                 </DialogClose>
-                <div className="h-full w-full p-2 sm:p-8">
+                <div className="h-full w-full p-2 sm:p-4">
                     {open && images.length > 0 && (
                         <ProductLightboxSwiper
                             images={images}

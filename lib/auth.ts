@@ -4,7 +4,6 @@ import { normalizeCardNumber } from '@/lib/card-number';
 import type { TeamRole, User } from './auth-types';
 import {
     CURRENT_KEY,
-    findUserByEmail,
     normalizeEmail,
     normalizeUser,
     notifyAuthChanged,
@@ -37,40 +36,29 @@ export const hasAdminUsers = (): boolean => {
     return readUsers().some((user) => user.platformRole === 'admin');
 };
 
-export const registerAdminUser = (
+export const registerAdminUser = async (
     email: string,
     password: string,
     name?: string
-): { success: boolean; error?: string } => {
-    const users = readUsers();
-
-    if (users.some((user) => user.platformRole === 'admin')) {
-        return { success: false, error: 'Администратор уже создан' };
+): Promise<{ success: boolean; error?: string; adminAlreadyExists?: boolean }> => {
+    try {
+        const res = await fetch('/api/auth/admin-setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizeEmail(email), password, name }),
+        });
+        if (!res.ok) {
+            return res.status === 409
+                ? { success: false, error: 'Администратор уже создан', adminAlreadyExists: true }
+                : { success: false, error: 'Не удалось создать администратора. Попробуйте позже.' };
+        }
+        const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } };
+        if (!payload.user) return { success: false, error: 'Не удалось загрузить аккаунт' };
+        applyLoggedInUser(payload.user);
+        return { success: true };
+    } catch {
+        return { success: false, error: 'Сервер недоступен. Попробуйте позже.' };
     }
-
-    const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) {
-        return { success: false, error: 'Укажите email администратора' };
-    }
-
-    if (findUserByEmail(users, normalizedEmail)) {
-        return { success: false, error: 'Пользователь с таким email уже существует' };
-    }
-
-    const adminUser: User = {
-        id: `u_${Date.now()}`,
-        email: normalizedEmail,
-        password,
-        name: name?.trim() || 'Administrator',
-        platformRole: 'admin',
-        auditLoggingEnabled: true,
-    };
-
-    writeUsers([...users, adminUser]);
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(adminUser));
-    notifyAuthChanged();
-
-    return { success: true };
 };
 
 // Клиентские submit/approve/reject-функции заявок удалены: заявки подаются
@@ -367,6 +355,20 @@ function applyLoggedInUser(rawUser: Partial<User> & { id: string; email: string 
     notifyAuthChanged();
 }
 
+/** Mirrors the user belonging to the existing server session into client state. */
+export async function syncCurrentSessionUser(): Promise<boolean> {
+    try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        if (!res.ok) return false;
+        const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } };
+        if (!payload.user) return false;
+        applyLoggedInUser(payload.user);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Authenticates against the server (bcrypt-verified, rate-limited) — the client
  * never decides whether a password is correct. `identifier` may be an email or
@@ -384,7 +386,6 @@ export const loginUserAuto = async (
     password: string
 ): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; challengeToken?: string }> => {
     const trimmed = identifier.trim();
-    const isEmail = trimmed.includes('@');
 
     let res: Response;
     try {
@@ -406,7 +407,7 @@ export const loginUserAuto = async (
     if (!res.ok) {
         return {
             success: false,
-            error: isEmail ? 'Неверный email или пароль' : 'Неверный номер карты или пароль',
+            error: 'Неверные данные для входа',
         };
     }
 

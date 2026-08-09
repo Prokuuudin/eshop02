@@ -26,6 +26,7 @@ export default function LoginForm({
     const [setupRequired] = useState(() => !hasAdminUsers());
     const [showPassword, setShowPassword] = useState(false);
     const confirmed = searchParams.get('confirmed') === '1';
+    const adminLogin = searchParams.get('admin') === '1';
     const [submitting, setSubmitting] = useState(false);
     const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
     const [mfaCode, setMfaCode] = useState('');
@@ -113,7 +114,7 @@ export default function LoginForm({
             {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
             <div>
                 <label htmlFor="login-identifier" className="block mb-1 text-sm text-foreground">
-                    {t('auth.clientCardNumber', 'Номер карты')}
+                    {adminLogin ? t('adminSetup.fieldEmail', 'Email') : t('auth.clientCardNumber', 'Номер карты')}
                 </label>
                 <Input
                     id="login-identifier"
@@ -121,8 +122,8 @@ export default function LoginForm({
                     className="bg-card text-foreground border-border"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder={t('auth.cardNumberPlaceholder', '0000')}
-                    maxLength={20}
+                    placeholder={adminLogin ? 'name@example.com' : t('auth.cardNumberPlaceholder', '0000')}
+                    maxLength={adminLogin ? 254 : 64}
                     required
                 />
             </div>

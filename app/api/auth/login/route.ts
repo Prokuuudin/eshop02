@@ -62,7 +62,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       : await prisma.user.findFirst({
           where: { cardNumber: { equals: lookupValue, mode: 'insensitive' } },
         })
-    if (!user || !user.passwordHash) {
+    // Email is an administrator-only login identifier. Customer accounts must
+    // authenticate with their assigned card number even when they have an email.
+    if (!user || !user.passwordHash || (isEmail && user.platformRole !== 'admin')) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
 
@@ -106,7 +108,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 
 
 

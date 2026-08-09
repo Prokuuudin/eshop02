@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { loginUserAuto } from '@/lib/auth';
+import { syncCurrentSessionUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 
 type Stage = 'loading' | 'form' | 'submitting' | 'done' | 'error';
@@ -88,9 +88,11 @@ export default function InvitePage(): React.ReactElement {
                 setStage('form');
                 return;
             }
-            // Полный клиентский логин (zustand-сторы + серверная сессия)
-            const login = await loginUserAuto(json.email ?? email, password);
-            if (!login.success) {
+            // POST /api/auth/invite already created the server session. Mirror
+            // that verified session locally without attempting email login:
+            // customer email is deliberately not a valid login identifier.
+            const sessionSynced = await syncCurrentSessionUser();
+            if (!sessionSynced) {
                 // Аккаунт активирован на сервере; клиентский логин не удался —
                 // отправляем на страницу входа вместо ложного «залогинен»
                 setLoginFailed(true);

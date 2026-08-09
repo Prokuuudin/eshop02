@@ -48,7 +48,7 @@ describe('POST /api/auth/login', () => {
   })
 
   it('resets both counters after successful authentication', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1', email: 'user@test.com', passwordHash: 'hash' } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin' } as never)
     vi.mocked(verifyPassword).mockResolvedValue(true)
 
     const res = await POST(makeRequest())
@@ -57,6 +57,18 @@ describe('POST /api/auth/login', () => {
     expect(resetRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
     expect(resetRateLimit).toHaveBeenCalledWith('login:email:user@test.com')
     expect(createSession).toHaveBeenCalledWith('u1')
+  })
+
+  it('rejects customer login by email without checking the password', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'customer1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer',
+    } as never)
+
+    const res = await POST(makeRequest())
+
+    expect(res.status).toBe(401)
+    expect(verifyPassword).not.toHaveBeenCalled()
+    expect(createSession).not.toHaveBeenCalled()
   })
 
   it('finds a real-email account directly by normalized cardNumber', async () => {

@@ -30,7 +30,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const user = await getServerUser()
   if (getAdminAccessLevel(user) === 'none') {
     const adminExists = await hasAdminUsersInDb()
-    redirect(adminExists ? '/auth/login' : '/auth/admin-setup')
+    redirect(adminExists ? '/auth/login?admin=1' : '/auth/admin-setup')
   }
 
   return (

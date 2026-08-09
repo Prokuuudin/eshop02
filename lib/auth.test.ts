@@ -85,7 +85,7 @@ describe('loginUserAuto — server-authoritative login', () => {
     const res = await loginUserAuto('someone@example.com', 'wrong-password')
 
     expect(res.success).toBe(false)
-    expect(res.error).toMatch(/email или пароль/)
+    expect(res.error).toBe('Неверные данные для входа')
     expect(getCurrentUser()).toBeNull()
   })
 

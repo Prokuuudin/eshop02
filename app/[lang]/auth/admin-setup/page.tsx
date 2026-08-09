@@ -29,11 +29,11 @@ export default function AdminSetupPage(): React.ReactElement {
         }
 
         if (hasAdminUsers()) {
-            router.replace('/auth/login');
+            router.replace('/auth/login?admin=1');
         }
     }, [router]);
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
 
         if (password.length < 8) {
@@ -47,9 +47,13 @@ export default function AdminSetupPage(): React.ReactElement {
         }
 
         setBusy(true);
-        const result = registerAdminUser(email, password, name);
+        const result = await registerAdminUser(email, password, name);
 
         if (!result.success) {
+            if (result.adminAlreadyExists) {
+                router.replace('/auth/login?admin=1');
+                return;
+            }
             setBusy(false);
             setError(result.error || t('adminSetup.errorCreateFailed'));
             return;

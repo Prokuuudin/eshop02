@@ -1,11 +1,8 @@
 'use client';
 import React from 'react';
-import Link from 'next/link';
 import { Star, CreditCard, TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
 import { useAdminStore } from '@/lib/admin-store';
-import { getCurrentUser } from '@/lib/auth';
-import { Button } from '@/components/ui/button';
 
 const STEPS = [
     {
@@ -37,7 +34,6 @@ const STEPS = [
 export default function BonusSection(): React.ReactElement | null {
     const { t } = useTranslation();
     const { bonusProgram } = useAdminStore();
-    const currentUser = getCurrentUser();
 
     if (!bonusProgram.enabled) return null;
 
@@ -105,17 +101,6 @@ export default function BonusSection(): React.ReactElement | null {
                     })}
                 </div>
 
-                {/* CTA — только для неавторизованных */}
-                {!currentUser && (
-                    <div className="bonus-section__cta text-center">
-                        <Link href="/account">
-                            <Button variant="default" size="lg" className="bonus-section__cta-btn gap-2 px-7">
-                                <Star className="w-4 h-4 fill-current" />
-                                {t('bonus.section.cta')}
-                            </Button>
-                        </Link>
-                    </div>
-                )}
             </div>
         </section>
     );

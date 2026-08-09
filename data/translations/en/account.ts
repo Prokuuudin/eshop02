@@ -77,6 +77,7 @@ const enAccount: Record<string, string> = {
   'auth.login': 'Login',
   'auth.register': 'Submit access request',
   'auth.registerButton': 'Request access',
+  'auth.openRegistration': 'Register',
   'auth.logout': 'Logout',
   'auth.email': 'Email',
   'auth.password': 'Password',

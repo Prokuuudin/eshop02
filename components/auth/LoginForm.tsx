@@ -11,11 +11,11 @@ import { useTranslation } from '@/lib/use-translation';
 export default function LoginForm({
     onSuccess,
     onForgotPassword,
-    onClose,
+    onRegister,
 }: {
     onSuccess?: () => void;
     onForgotPassword?: () => void;
-    onClose?: () => void;
+    onRegister?: () => void;
 }): React.ReactElement {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -179,9 +179,9 @@ export default function LoginForm({
                 <Button type="submit" className="flex-1">
                     {t('auth.login')}
                 </Button>
-                {onClose && (
-                    <Button type="button" variant="outline" onClick={onClose}>
-                        {t('common.close')}
+                {onRegister && (
+                    <Button type="button" variant="outline" onClick={onRegister}>
+                        {t('auth.openRegistration', 'Зарегистрироваться')}
                     </Button>
                 )}
             </div>

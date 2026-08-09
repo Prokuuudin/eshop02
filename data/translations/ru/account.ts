@@ -77,6 +77,7 @@ const ruAccount: Record<string, string> = {
   'auth.login': 'Вход',
   'auth.register': 'Отправить заявку на доступ',
   'auth.registerButton': 'Запросить доступ',
+  'auth.openRegistration': 'Зарегистрироваться',
   'auth.logout': 'Выход',
   'auth.email': 'Email',
   'auth.password': 'Пароль',

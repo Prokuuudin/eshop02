@@ -6,12 +6,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
 import LoginForm from '@/components/auth/LoginForm'
 import RegisterSwitcher from '@/components/auth/RegisterSwitcher'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
+import { X } from 'lucide-react'
 
 type View = 'gate' | 'login' | 'register' | 'forgot'
 
@@ -43,6 +45,13 @@ export default function AuthGateDialog({ open, onOpenChange }: Props): React.Rea
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="auth-gate-dialog sm:max-w-sm">
+        {view === 'login' && (
+          <DialogClose asChild>
+            <button type="button" className="absolute right-4 top-4 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={t('common.close')}>
+              <X className="h-5 w-5" />
+            </button>
+          </DialogClose>
+        )}
         <DialogHeader>
           <DialogTitle>{title[view]}</DialogTitle>
         </DialogHeader>
@@ -68,7 +77,7 @@ export default function AuthGateDialog({ open, onOpenChange }: Props): React.Rea
             <LoginForm
               onSuccess={handleLoginSuccess}
               onForgotPassword={() => setView('forgot')}
-              onClose={() => setView('gate')}
+              onRegister={() => setView('register')}
             />
           </div>
         )}

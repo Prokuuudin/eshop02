@@ -77,6 +77,7 @@ const lvAccount: Record<string, string> = {
   'auth.login': 'Pieslēgties',
   'auth.register': 'Nosūtīt piekļuves pieprasījumu',
   'auth.registerButton': 'Pieprasīt piekļuvi',
+  'auth.openRegistration': 'Reģistrēties',
   'auth.logout': 'Iziet',
   'auth.email': 'E-pasts',
   'auth.password': 'Parole',

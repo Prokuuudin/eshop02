@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '.
 import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
 import ForgotPasswordForm from './auth/ForgotPasswordForm'
+import { X } from 'lucide-react'
 
 type Props = {
   isOpen: boolean
@@ -29,6 +30,10 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
     setLoginOpen(false);
     setForgotOpen(false);
     onClose();
+  };
+  const handleOpenRegisterFromLogin = () => {
+    setLoginOpen(false);
+    setRegisterOpen(true);
   };
   const menuLinkClass =
     'inline-flex w-full items-center rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/80/15 dark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60';
@@ -186,35 +191,48 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
           )}
         </div>
 
-        <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+        <Dialog
+          open={loginOpen || forgotOpen || registerOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setLoginOpen(false);
+              setForgotOpen(false);
+              setRegisterOpen(false);
+            }
+          }}
+        >
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('auth.login')}</DialogTitle>
-            </DialogHeader>
-            <LoginForm
-              onSuccess={handleLoginSuccess}
-              onForgotPassword={() => { setLoginOpen(false); setForgotOpen(true); }}
-            />
             <DialogClose asChild>
-              <Button variant="outline" className="mt-4 w-full">{t('common.close')}</Button>
+              <button type="button" className="absolute right-4 top-4 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={t('common.close')}>
+                <X className="h-5 w-5" />
+              </button>
             </DialogClose>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
-            </DialogHeader>
-            <ForgotPasswordForm />
-            <DialogClose asChild>
-              <Button variant="outline" className="mt-4 w-full">{t('common.close')}</Button>
-            </DialogClose>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-          <DialogContent>
-            <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
-            <RegisterSwitcher onClose={() => { setRegisterOpen(false); onClose(); }} />
+            {loginOpen && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{t('auth.login')}</DialogTitle>
+                </DialogHeader>
+                <LoginForm
+                  onSuccess={handleLoginSuccess}
+                  onForgotPassword={() => { setLoginOpen(false); setForgotOpen(true); }}
+                  onRegister={handleOpenRegisterFromLogin}
+                />
+              </>
+            )}
+            {forgotOpen && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
+                </DialogHeader>
+                <ForgotPasswordForm />
+              </>
+            )}
+            {registerOpen && (
+              <>
+                <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
+                <RegisterSwitcher onClose={() => { setRegisterOpen(false); onClose(); }} />
+              </>
+            )}
           </DialogContent>
         </Dialog>
 

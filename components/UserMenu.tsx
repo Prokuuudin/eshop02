@@ -14,6 +14,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { Button } from './ui/button';
 import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { X } from 'lucide-react';
 
 import Image from 'next/image';
 import RegisterSwitcher from './auth/RegisterSwitcher';
@@ -50,6 +51,11 @@ export default function UserMenu(): React.ReactElement {
         setForgotOpen(true);
     };
 
+    const handleOpenRegisterFromLogin = (): void => {
+        setLoginOpen(false);
+        setRegisterOpen(true);
+    };
+
     const handleLogout = () => {
         logout();
         router.push('/');
@@ -75,39 +81,50 @@ export default function UserMenu(): React.ReactElement {
 
     // Диалоги логина/регистрации монтируются всегда, чтобы открываться из любой точки
     const dialogs = (
-        <>
-            <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{t('auth.login')}</DialogTitle>
-                    </DialogHeader>
+        <Dialog
+            open={loginOpen || forgotOpen || registerOpen}
+            onOpenChange={(open) => {
+                if (!open) {
+                    setLoginOpen(false);
+                    setForgotOpen(false);
+                    setRegisterOpen(false);
+                }
+            }}
+        >
+            <DialogContent>
+                <DialogClose asChild>
+                    <button type="button" className="absolute right-4 top-4 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={t('common.close')}>
+                        <X className="h-5 w-5" />
+                    </button>
+                </DialogClose>
+                {loginOpen && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>{t('auth.login')}</DialogTitle>
+                        </DialogHeader>
                     <LoginForm
                         onSuccess={handleLoginSuccess}
                         onForgotPassword={handleOpenForgotPassword}
-                        onClose={() => setLoginOpen(false)}
+                        onRegister={handleOpenRegisterFromLogin}
                     />
-                </DialogContent>
-            </Dialog>
-            <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
-                    </DialogHeader>
-                    <ForgotPasswordForm />
-                    <DialogClose asChild>
-                        <Button variant="outline" className="mt-4 w-full">
-                            {t('common.close')}
-                        </Button>
-                    </DialogClose>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-                <DialogContent>
+                    </>
+                )}
+                {forgotOpen && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
+                        </DialogHeader>
+                        <ForgotPasswordForm />
+                    </>
+                )}
+                {registerOpen && (
+                    <>
                     <DialogTitle className="sr-only">{t('auth.register')}</DialogTitle>
                     <RegisterSwitcher onClose={() => setRegisterOpen(false)} />
-                </DialogContent>
-            </Dialog>
-        </>
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
     );
 
     if (!user) {

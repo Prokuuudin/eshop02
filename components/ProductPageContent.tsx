@@ -7,6 +7,8 @@ import { ProductBulkPricing } from '@/components/ProductBulkPricing';
 import { ProductRelatedList } from '@/components/ProductRelatedList';
 import { ProductBenefits } from '@/components/ProductBenefits';
 import ProductRequestSection from '@/components/ProductRequestSection';
+import { ProductStoreAvailability } from '@/components/ProductStoreAvailability';
+import type { WarehouseAvailability } from '@/lib/warehouse-availability';
 
 import React, { useEffect } from 'react';
 import type { JSX } from 'react';
@@ -25,9 +27,14 @@ type Props = {
     oftenBoughtTogether: Product[];
     manufacturer?: BrandManufacturerInfo;
     distributor?: BrandManufacturerInfo;
+    warehouseAvailability: {
+        available: boolean;
+        updatedAt: string | null;
+        stores: WarehouseAvailability[];
+    };
 };
 
-export default function ProductPageContent({ product, relatedProducts, oftenBoughtTogether, manufacturer, distributor }: Props): JSX.Element {
+export default function ProductPageContent({ product, relatedProducts, oftenBoughtTogether, manufacturer, distributor, warehouseAvailability }: Props): JSX.Element {
     const {
         t,
         language,
@@ -99,6 +106,10 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                                 displayOldPrice={displayOldPrice}
                                 priceLocale={priceLocale}
                                 minOrderQuantity={minOrderQuantity}
+                            />
+                            <ProductStoreAvailability
+                                language={language}
+                                {...warehouseAvailability}
                             />
                         </div>
                         <div className="order-5 md:order-none">

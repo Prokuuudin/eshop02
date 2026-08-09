@@ -14,6 +14,7 @@ import { getServerUser } from '@/lib/server-auth';
 import { redactProductPrices } from '@/lib/product-price-visibility';
 import { getProductPublicReviews } from '@/lib/reviews-data-store';
 import { buildPublicPageMetadata } from '@/lib/page-metadata';
+import { getProductWarehouseAvailability } from '@/lib/warehouse-availability';
 
 const COPURCHASE = copurchaseData as Record<string, string[]>;
 
@@ -73,9 +74,10 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
     const product = mergedProducts.find((p) => p.id === id);
     if (!product) notFound();
 
-    const [serverUser, approvedReviews] = await Promise.all([
+    const [serverUser, approvedReviews, warehouseAvailability] = await Promise.all([
         getServerUser(),
         getProductPublicReviews(product.id),
+        getProductWarehouseAvailability(product.id, language),
     ]);
     const canSeePrices = Boolean(serverUser);
 
@@ -176,6 +178,7 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
                 oftenBoughtTogether={visibleBoughtTogether}
                 manufacturer={manufacturer}
                 distributor={distributor}
+                warehouseAvailability={warehouseAvailability}
             />
         </>
     );

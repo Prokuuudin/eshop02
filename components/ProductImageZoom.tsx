@@ -1,7 +1,11 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { IconClose } from '@/components/ui/icon-close';
 import type { UseImageZoomResult } from '@/hooks/useImageZoom';
+
+// Swiper тянет за собой ~130 KB — грузим только когда лайтбокс реально открыт
+const ProductLightboxSwiper = dynamic(() => import('./ProductLightboxSwiper'), { ssr: false });
 
 type ZoomLensProps = Pick<UseImageZoomResult, 'lensRef' | 'visible'>;
 type ZoomPaneProps = Pick<
@@ -61,30 +65,31 @@ export const ProductZoomPane: React.FC<ZoomPaneProps> = ({
     </div>
 );
 
+export interface ProductImageLightboxProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    images: string[];
+    hiResImages?: string[];
+    activeIndex: number;
+    onIndexChange: (index: number) => void;
+    title: string;
+}
+
 /**
- * Полноэкранный просмотр для touch-устройств (открывается тапом по превью).
- * Панорамирование — нативный скролл контейнера, без кастомных жестов.
+ * Полноэкранная галерея товара: открывается кликом/тапом по превью,
+ * пролистывание остальных фото — свайпом (touch), стрелками или клавиатурой.
  */
-export const ProductImageLightbox: React.FC<{ zoom: UseImageZoomResult; title: string }> = ({
-    zoom,
+export const ProductImageLightbox: React.FC<ProductImageLightboxProps> = ({
+    open,
+    onOpenChange,
+    images,
+    hiResImages,
+    activeIndex,
+    onIndexChange,
     title,
 }) => {
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-
-    // Стартуем с центра увеличенной картинки — как правило, там сам товар
-    const centerScroll = React.useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-        el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
-    }, []);
-
-    React.useEffect(() => {
-        if (zoom.lightboxOpen) requestAnimationFrame(centerScroll);
-    }, [zoom.lightboxOpen, centerScroll]);
-
     return (
-        <Dialog open={zoom.lightboxOpen} onOpenChange={zoom.setLightboxOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 aria-describedby={undefined}
                 className="product-detail__zoom-lightbox left-0 top-0 block h-dvh w-screen max-w-none translate-x-0 translate-y-0 gap-0 rounded-none border-0 bg-white p-0 sm:rounded-none motion-reduce:animate-none"
@@ -94,22 +99,21 @@ export const ProductImageLightbox: React.FC<{ zoom: UseImageZoomResult; title: s
                     <button
                         type="button"
                         aria-label="Закрыть увеличенное изображение"
-                        className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md"
+                        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md"
                     >
                         <IconClose width={28} height={28} />
                     </button>
                 </DialogClose>
-                <div ref={scrollRef} className="h-full w-full overflow-auto overscroll-contain">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={zoom.paneSrc}
-                        alt={title}
-                        draggable={false}
-                        className="max-w-none"
-                        style={{ width: `${zoom.zoomFactor * 100}%` }}
-                        onLoad={centerScroll}
-                        onError={zoom.onPaneImgError}
-                    />
+                <div className="h-full w-full p-2 sm:p-8">
+                    {open && images.length > 0 && (
+                        <ProductLightboxSwiper
+                            images={images}
+                            hiResImages={hiResImages}
+                            title={title}
+                            initialIndex={activeIndex}
+                            onIndexChange={onIndexChange}
+                        />
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

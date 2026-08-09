@@ -68,7 +68,15 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                         onPaneImgError={zoom.onPaneImgError}
                     />
                 )}
-                <ProductImageLightbox zoom={zoom} title={title} />
+                <ProductImageLightbox
+                    open={zoom.lightboxOpen}
+                    onOpenChange={zoom.setLightboxOpen}
+                    images={images}
+                    hiResImages={hiResImages}
+                    activeIndex={activeImage}
+                    onIndexChange={setActiveImage}
+                    title={title}
+                />
             </div>
             {images.length > 1 && (
                 <div className="product-detail__thumbs mt-3 overflow-x-auto">

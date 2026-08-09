@@ -41,7 +41,6 @@ export interface UseImageZoomResult {
         onPointerMove: React.PointerEventHandler<HTMLDivElement>;
         onPointerLeave: React.PointerEventHandler<HTMLDivElement>;
         onPointerCancel: React.PointerEventHandler<HTMLDivElement>;
-        onPointerDown: React.PointerEventHandler<HTMLDivElement>;
         onClick: React.MouseEventHandler<HTMLDivElement>;
     };
     /** Вешается на onLoad превью-<Image> — без natural-размеров letterbox не посчитать */
@@ -74,7 +73,6 @@ export function useImageZoom({
     const pointerInsideRef = React.useRef(false);
     const lastPointRef = React.useRef<Point | null>(null);
     const rafRef = React.useRef<number | null>(null);
-    const lastPointerTypeRef = React.useRef('');
 
     const [mounted, setMounted] = React.useState(false);
     const [visible, setVisible] = React.useState(false);
@@ -199,14 +197,10 @@ export function useImageZoom({
     const onPointerLeave: React.PointerEventHandler<HTMLDivElement> = () => stop();
     const onPointerCancel: React.PointerEventHandler<HTMLDivElement> = () => stop();
 
-    const onPointerDown: React.PointerEventHandler<HTMLDivElement> = (event) => {
-        lastPointerTypeRef.current = event.pointerType;
-    };
-
-    // Тап на touch-устройстве открывает полноэкранный просмотр; клик мыши
-    // игнорируем — на desktop работает hover-зум
+    // Клик (мышь или тап) открывает полноэкранную галерею; hover-зум остаётся
+    // отдельным способом разглядеть деталь без открытия модалки
     const onClick: React.MouseEventHandler<HTMLDivElement> = () => {
-        if (disabled || lastPointerTypeRef.current !== 'touch') return;
+        if (disabled) return;
         setLightboxOpen(true);
     };
 
@@ -237,7 +231,6 @@ export function useImageZoom({
             onPointerMove,
             onPointerLeave,
             onPointerCancel,
-            onPointerDown,
             onClick,
         },
         onImageLoad,

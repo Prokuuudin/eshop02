@@ -184,6 +184,39 @@
         z-index: 40;
     }
 }
+
+/* Полноэкранная галерея товара (ProductImageLightbox) — крупные стрелки для
+   touch, точки поверх фото (переопределяем static/min-height из общего
+   .swiper-pagination — там он для карточек-каруселей в потоке, тут нужен
+   абсолютный оверлей). */
+.product-lightbox-swiper,
+.product-lightbox-swiper .swiper-wrapper,
+.product-lightbox-swiper .swiper-slide {
+    height: 100%;
+}
+.product-lightbox-swiper .swiper-pagination {
+    position: absolute !important;
+    bottom: 12px !important;
+    margin-top: 0 !important;
+    min-height: 0;
+}
+.product-lightbox-swiper .swiper-button-prev,
+.product-lightbox-swiper .swiper-button-next {
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    background: hsl(var(--card) / 0.9);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    color: hsl(var(--foreground));
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.product-lightbox-swiper .swiper-button-prev:hover,
+.product-lightbox-swiper .swiper-button-next:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

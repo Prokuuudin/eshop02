@@ -42,7 +42,7 @@ export default function Header(): React.ReactElement {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 lg:pl-4 lg:pr-0 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex items-center flex-shrink-0 min-w-[100px]">
             <HeaderLogo />
@@ -74,11 +74,11 @@ export default function Header(): React.ReactElement {
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="w-full border-y border-border bg-gray-200 dark:bg-gray-800">
-              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-2 px-2 transition-[padding] duration-300 sm:px-4 ${scrolled ? 'py-1' : 'py-2'}`}>
-                <div className="order-2 md:order-none basis-full md:flex-1 min-w-0 max-w-xl mx-auto">
+              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-2 px-4 transition-[padding] duration-300 sm:px-6 lg:pl-8 lg:pr-0 ${scrolled ? 'py-1' : 'py-2'}`}>
+                <div className="order-2 min-w-0 basis-full md:order-none md:flex-1 max-w-xl">
                   <HeaderSearch />
                 </div>
-                <div className="hidden shrink-0 items-center gap-1 md:flex">
+                <div className="hidden shrink-0 items-center gap-1 md:ml-auto md:flex">
                   <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.instagram')} className="rounded-md p-2 text-[#0088C4] transition-colors hover:bg-black/5 hover:text-pink-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-pink-400">
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
                   </a>
@@ -89,7 +89,7 @@ export default function Header(): React.ReactElement {
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
                   </a>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                <div className="flex flex-shrink-0 items-center gap-2">
                   <UserMenu />
                   <HeaderActions onCartOpen={() => setCartDrawerOpen(true)} hideLangSwitcher hideUserMenu />
                 </div>

@@ -1,6 +1,7 @@
 import { Button } from './ui/button';
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 
@@ -8,8 +9,8 @@ export default async function AboutSection({ language }: { language: Language })
   const { t } = await getServerContent(language);
   return (
     <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-6">
-      <h1 className="text-4xl font-bold mb-6 text-foreground">{t('about.title')}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <h1 className="mb-4 text-center text-xl font-semibold text-foreground sm:mb-5 sm:text-2xl">{t('about.title')}</h1>
+      <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(260px,340px)_minmax(0,1fr)]">
         <div>
           <h2 className="text-2xl font-bold mb-3 text-foreground">{t('about.welcome.title')}</h2>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
@@ -26,6 +27,15 @@ export default async function AboutSection({ language }: { language: Language })
               {t('about.storesButton')}
             </Button>
           </Link>
+        </div>
+        <div className="relative mx-auto h-[440px] w-full max-w-[340px] sm:h-[520px]">
+          <Image
+            src="/girl3-silhouette.png"
+            alt=""
+            fill
+            sizes="(min-width: 768px) 340px, min(340px, 100vw)"
+            className="object-contain object-center"
+          />
         </div>
         <div>
           <h2 className="text-2xl font-bold mb-3 text-foreground">{t('about.why.title')}</h2>

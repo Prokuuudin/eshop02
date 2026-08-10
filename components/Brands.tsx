@@ -83,10 +83,10 @@ export default function Brands(): React.ReactElement {
   }, []);
 
   return (
-    <section className="brands pt-6" id="brands">
+    <section className="brands pt-12 md:pt-16" id="brands">
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
 
-        <div className="mb-4 sm:mb-5">
+        <div className="mb-4 text-center sm:mb-5">
           <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.popular')}</h2>
         </div>
         <div className="brands__grid mb-4 grid grid-cols-2 gap-2 rounded-lg bg-white p-3 sm:grid-cols-4 sm:gap-3 sm:p-5 md:grid-cols-5 lg:grid-cols-6">
@@ -108,7 +108,7 @@ export default function Brands(): React.ReactElement {
 
         {GROUP_ENTRIES.length > 0 && (
           <>
-            <div className="mb-4 sm:mb-5">
+            <div className="mb-4 text-center sm:mb-5">
               <h2 className="brands__title text-xl font-semibold sm:text-2xl">
                 {t('brands.alphabeticalTitle')}{' '}
                 <span className="brands__count font-normal text-muted-foreground">({brands.length})</span>

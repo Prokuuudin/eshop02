@@ -113,7 +113,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
           <AccountGuard>
             <Header />
             <main id="main-content" className="w-full pb-6">
-              <div className="mx-auto mt-2 w-full max-w-[1200px] px-4">
+              <div className="mx-auto mt-2 w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
                 <AppBreadcrumbs />
               </div>
               <RouteTransition>{children}</RouteTransition>

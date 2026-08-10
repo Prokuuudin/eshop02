@@ -20,16 +20,42 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
   const [lang, setLang] = useState<InvoiceLang>('lv')
   const [email, setEmail] = useState(order.email)
   const [sending, setSending] = useState(false)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
   const [sent, setSent] = useState(false)
   const { showToast } = useToast()
 
   const handlePreview = async () => {
-    const titles = await fetchInvoiceTitles(order.items, lang)
-    const html = buildInvoiceHtml(order, titles, lang)
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
+    const previewWindow = window.open('', '_blank')
+    if (!previewWindow) {
+      showToast('Разрешите всплывающие окна, чтобы открыть PDF', 'error')
+      return
+    }
+
+    setGeneratingPdf(true)
+    try {
+      const [{ jsPDF }, titles] = await Promise.all([
+        import('jspdf'),
+        fetchInvoiceTitles(order.items, lang),
+      ])
+      const html = buildInvoiceHtml(order, titles, lang)
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+
+      await pdf.html(html, {
+        margin: [8, 8, 8, 8],
+        autoPaging: 'text',
+        width: 194,
+        windowWidth: 794,
+      })
+
+      const url = URL.createObjectURL(pdf.output('blob'))
+      previewWindow.location.href = url
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      previewWindow.close()
+      showToast('Не удалось сформировать PDF', 'error')
+    } finally {
+      setGeneratingPdf(false)
+    }
   }
 
   const handleSend = async () => {
@@ -111,8 +137,9 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
             variant="outline"
             className="flex-1"
             onClick={handlePreview}
+            disabled={generatingPdf}
           >
-            Предпросмотр
+            {generatingPdf ? 'Формирование PDF...' : 'Предпросмотр PDF'}
           </Button>
           <Button
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"

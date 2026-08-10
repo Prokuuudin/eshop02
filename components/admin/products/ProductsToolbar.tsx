@@ -25,7 +25,7 @@ interface ProductsToolbarProps {
     setViewMode: (mode: string) => void;
     language?: Language;
     archiveCount?: number;
-    onToggleArchive?: () => void;
+    onToggleArchive?: (open: boolean) => void;
     archiveOpen?: boolean;
     archiveItems?: ArchivedProductRecord[];
     onRestoreArchive?: (id: string) => void;
@@ -46,20 +46,28 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
     onDeleteArchive,
 }) => {
     const placeholder = translations[language]['admin.products.searchPlaceholder'] || '';
+    const [searchDraft, setSearchDraft] = React.useState(searchQuery);
+
+    const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        onSearchChange(searchDraft.trim());
+    };
     return (
         <div className="admin-products__toolbar mt-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
-            <div className="flex items-center gap-2 w-full md:w-[480px]">
+            <form className="flex items-center gap-2 w-full md:w-[480px]" role="search" onSubmit={submitSearch}>
                 <Input
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
+                    type="search"
+                    value={searchDraft}
+                    onChange={(e) => setSearchDraft(e.target.value)}
                     placeholder={placeholder}
+                    aria-label={placeholder || 'Поиск товаров'}
                     className="h-9 flex-1"
                 />
-                <IconSearch className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                <Button type="submit" size="sm" variant="outline" className="shrink-0">
+                    <IconSearch className="mr-2 h-4 w-4" />
                     {translations[language]['catalog.search'] || 'Поиск'}
-                </span>
-            </div>
+                </Button>
+            </form>
             <div className="hidden md:block h-8 border-l border-border mx-2" />
             <div className="flex items-center gap-2">
                 <span className="text-sm text-foreground font-medium">
@@ -89,7 +97,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                     {(translations[language]['admin.productsPage.archiveTitleShort'] ||
                         'Удаленные товары') + ':'}
                 </span>
-                <Dialog open={archiveOpen} onOpenChange={onToggleArchive}>
+                <Dialog open={archiveOpen} onOpenChange={(open) => onToggleArchive?.(open)}>
                     <DialogTrigger asChild>
                         <Button
                             size="sm"

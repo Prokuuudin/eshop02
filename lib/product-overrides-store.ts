@@ -81,6 +81,39 @@ export const getAdminProducts = cache(async (): Promise<Product[]> => {
     return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides);
 });
 
+export async function getAdminProductsPaginated(opts: {
+    search?: string;
+    skip: number;
+    take: number;
+}): Promise<{ products: Product[]; total: number }> {
+    const search = opts.search?.trim();
+    const where: Prisma.ProductWhereInput = {
+        isDeleted: false,
+        ...(search
+            ? {
+                OR: [
+                    { id: { contains: search, mode: 'insensitive' } },
+                    { sku: { contains: search, mode: 'insensitive' } },
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { brand: { contains: search, mode: 'insensitive' } },
+                    { category: { contains: search, mode: 'insensitive' } },
+                ],
+            }
+            : {}),
+    };
+    const [rows, total, overrides] = await Promise.all([
+        prisma.product.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip: opts.skip,
+            take: opts.take,
+        }),
+        prisma.product.count({ where }),
+        getProductOverrides().catch(() => ({})),
+    ]);
+    return { products: mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), total };
+}
+
 const OVERRIDES_KEY = 'product-overrides';
 
 export const getProductOverrides = async (): Promise<Record<string, ProductOverride>> => {

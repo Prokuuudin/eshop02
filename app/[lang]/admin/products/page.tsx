@@ -46,7 +46,7 @@ export default function AdminProductsPage(): React.ReactElement {
                             setViewMode={(mode) => admin.setViewMode(mode as 'cards' | 'list')}
                             language={language}
                             archiveCount={admin.archiveItems.length}
-                            onToggleArchive={() => setArchiveOpen((v) => !v)}
+                            onToggleArchive={setArchiveOpen}
                             archiveOpen={archiveOpen}
                             archiveItems={admin.archiveItems}
                             onRestoreArchive={admin.handleRestoreProduct}
@@ -62,7 +62,11 @@ export default function AdminProductsPage(): React.ReactElement {
                                     ? t('admin.productsPage.cardsTitle')
                                     : t('admin.productsPage.listTitle')}
                             </h2>
-                            {admin.viewMode === 'cards' ? (
+                            {admin.loading ? (
+                                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground" role="status">
+                                    Загрузка товаров…
+                                </div>
+                            ) : admin.viewMode === 'cards' ? (
                                 <ProductList
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
@@ -89,11 +93,17 @@ export default function AdminProductsPage(): React.ReactElement {
                                     }}
                                     onQuickSave={async (id, changes) => {
                                         const product = admin.products.find((p) => p.id === id)
-                                        await fetch('/api/admin/products', {
+                                        if (!product?.revision) {
+                                            throw new Error('Не удалось определить версию товара')
+                                        }
+                                        const response = await fetch('/api/admin/products', {
                                             method: 'PUT',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ id, changes }),
+                                            body: JSON.stringify({ id, revision: product.revision, changes }),
                                         })
+                                        if (!response.ok) {
+                                            throw new Error('Не удалось сохранить изменения товара')
+                                        }
                                         await admin.reload()
                                         if (changes.price !== undefined) {
                                             logAdminAction('product.price_changed', {
@@ -107,6 +117,18 @@ export default function AdminProductsPage(): React.ReactElement {
                                         }
                                     }}
                                 />
+                            )}
+                            {!admin.loading && admin.hasMore && (
+                                <div className="mt-6 flex justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => void admin.loadMore()}
+                                        disabled={admin.loadingMore}
+                                        className="rounded-md border border-border bg-card px-5 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                        {admin.loadingMore ? 'Загрузка…' : `Показать ещё (${admin.products.length} из ${admin.total})`}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>

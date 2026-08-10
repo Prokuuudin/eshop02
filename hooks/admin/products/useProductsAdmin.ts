@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from 'react';
 import type { Product } from '@/data/products';
 import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
 import type { NewProductDraft } from '@/types/product-admin';
@@ -28,12 +28,21 @@ type ProductsAdminResult = {
   message: string;
   error: string;
   reload: () => Promise<void>;
+  loadMore: () => Promise<void>;
+  hasMore: boolean;
+  loadingMore: boolean;
+  total: number;
 };
+
+const PRODUCTS_PAGE_SIZE = 24;
 
 export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
   const [baseProducts, setBaseProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [creating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
@@ -53,20 +62,35 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [archiveItems, setArchiveItems] = useState<ArchivedProductRecord[]>([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const requestSequence = useRef(0);
 
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
+  const loadProducts = useCallback(async (pageToLoad = 1, append = false) => {
+    const requestId = ++requestSequence.current;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    setError('');
     try {
-      const res = await fetch('/api/admin/products', { cache: 'no-store' });
-      const json = (await res.json()) as ApiEnvelope<{ products: Product[] }>;
+      const params = new URLSearchParams({
+        page: String(pageToLoad),
+        limit: String(PRODUCTS_PAGE_SIZE),
+      });
+      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      const res = await fetch(`/api/admin/products?${params}`, { cache: 'no-store' });
+      const json = (await res.json()) as ApiEnvelope<{ products: Product[]; total: number }>;
       if (!res.ok || 'error' in json) throw new Error('failed_to_load_products');
-      setBaseProducts(json.data.products);
+      if (requestId !== requestSequence.current) return;
+      setBaseProducts((current) => append ? [...current, ...json.data.products] : json.data.products);
+      setTotal(json.data.total);
+      setPage(pageToLoad);
     } catch {
+      if (requestId !== requestSequence.current) return;
       setError(t('admin.productsPage.msg.loadApiFailed', 'Failed to load products from API'));
     } finally {
-      setLoading(false);
+      if (requestId !== requestSequence.current) return;
+      if (append) setLoadingMore(false);
+      else setLoading(false);
     }
-  }, [t]);
+  }, [searchQuery, t]);
 
   const loadArchive = useCallback(async () => {
     try {
@@ -82,31 +106,12 @@ export function useProductsAdmin(): ProductsAdminResult {
   useEffect(() => {
     queueMicrotask(() => {
       void loadProducts();
-      void loadArchive();
     });
-  }, [loadProducts, loadArchive]);
+  }, [loadProducts]);
 
-  const filteredProducts = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    if (!normalizedQuery) return baseProducts;
-    return baseProducts.filter((product) => {
-      const values = [
-        product.id,
-        product.sku,
-        product.title,
-        product.brand,
-        product.category,
-        ...Object.values(
-          Object.fromEntries(
-            Object.entries(product.technicalSpecs || {}).filter(([key]) => key !== '__variantGroupsJson')
-          )
-        ),
-      ]
-        .filter(Boolean)
-        .map((v) => String(v).toLowerCase());
-      return values.some((v) => v.includes(normalizedQuery));
-    });
-  }, [searchQuery, baseProducts]);
+  useEffect(() => {
+    queueMicrotask(() => void loadArchive());
+  }, [loadArchive]);
 
   const handleDeleteProduct = async (product: Product) => {
     setSavingId(product.id);
@@ -119,7 +124,7 @@ export function useProductsAdmin(): ProductsAdminResult {
       });
       const json = (await res.json()) as ApiEnvelope<{ products: Product[] }>;
       if (!res.ok || 'error' in json) throw new Error('failed');
-      setBaseProducts(json.data.products);
+      await loadProducts(1);
       await loadArchive();
       setMessage(t('admin.productsPage.msg.movedToTrash', 'Product {id} moved to trash', { id: product.id }));
     } catch {
@@ -140,7 +145,7 @@ export function useProductsAdmin(): ProductsAdminResult {
       });
       const json = (await res.json()) as ApiEnvelope<{ products: Product[]; archive: ArchivedProductRecord[] }>;
       if (!res.ok || 'error' in json) throw new Error('failed');
-      setBaseProducts(json.data.products);
+      await loadProducts(1);
       setArchiveItems(json.data.archive);
       setMessage(t('admin.productsPage.msg.restored', 'Product {id} restored', { id }));
     } catch {
@@ -173,7 +178,7 @@ export function useProductsAdmin(): ProductsAdminResult {
   const handleCreateProduct = () => {};
 
   return {
-    products: filteredProducts,
+    products: baseProducts,
     viewMode,
     setViewMode,
     searchQuery,
@@ -192,6 +197,10 @@ export function useProductsAdmin(): ProductsAdminResult {
     purgingArchiveId,
     message,
     error,
-    reload: loadProducts,
+    reload: () => loadProducts(1),
+    loadMore: () => loadProducts(page + 1, true),
+    hasMore: baseProducts.length < total,
+    loadingMore,
+    total,
   };
 }

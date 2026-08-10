@@ -3,7 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { applyProductOverride, deleteProductAny, getAdminProducts, resetProductOverride, type ProductOverride } from '@/lib/product-overrides-store'
+import { applyProductOverride, deleteProductAny, getAdminProducts, getAdminProductsPaginated, resetProductOverride, type ProductOverride } from '@/lib/product-overrides-store'
 import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping'
 import { createProductRequestSchema, updateProductRequestSchema } from '@/lib/product-mutation-schema'
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
@@ -36,10 +36,24 @@ function mutationError(error: unknown): Response | null {
   return null
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response> {
   const gate = await requireAdminPermission('catalog.read')
   if (gate instanceof NextResponse) return gate
-  try { return successResponse({ products: await getAdminProducts() }) }
+  try {
+    const pageParam = req.nextUrl.searchParams.get('page')
+    const limitParam = req.nextUrl.searchParams.get('limit')
+    if (!pageParam && !limitParam && !req.nextUrl.searchParams.has('q')) {
+      return successResponse({ products: await getAdminProducts() })
+    }
+    const page = Math.max(1, Number.parseInt(pageParam ?? '1', 10) || 1)
+    const limit = Math.min(100, Math.max(1, Number.parseInt(limitParam ?? '24', 10) || 24))
+    const result = await getAdminProductsPaginated({
+      search: req.nextUrl.searchParams.get('q') ?? undefined,
+      skip: (page - 1) * limit,
+      take: limit,
+    })
+    return successResponse({ ...result, page, limit, hasMore: page * limit < result.total })
+  }
   catch (error) { logApiError("Admin products GET error:", error); return errorResponse('Internal server error', 500) }
 }
 
@@ -113,5 +127,4 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     return successResponse({ products: result.products })
   } catch (error) { logApiError("Admin products DELETE error:", error); return errorResponse('Internal server error', 500) }
 }
-
 

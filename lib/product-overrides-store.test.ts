@@ -28,6 +28,7 @@ import {
   mergeProductsWithOverrides,
   getProductOverrides,
   getAdminProducts,
+  getAdminProductsPaginated,
   upsertProductOverride,
   resetProductOverride,
   restoreDeletedProduct,
@@ -184,6 +185,30 @@ describe('getAdminProducts', () => {
     expect(result).toHaveLength(1)
     expect(result[0].price).toBe(100)
     expect(result[0].title).toBe('Base title')
+  })
+})
+
+describe('getAdminProductsPaginated', () => {
+  it('applies the page bounds and searches the indexed product fields in the database', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.count).mockResolvedValue(73)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const result = await getAdminProductsPaginated({ search: 'shampoo', skip: 24, take: 24 })
+
+    expect(result).toEqual({ products: [], total: 73 })
+    expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      skip: 24,
+      take: 24,
+      orderBy: { createdAt: 'desc' },
+      where: expect.objectContaining({
+        isDeleted: false,
+        OR: expect.arrayContaining([
+          { title: { contains: 'shampoo', mode: 'insensitive' } },
+          { sku: { contains: 'shampoo', mode: 'insensitive' } },
+        ]),
+      }),
+    }))
   })
 })
 

@@ -42,14 +42,11 @@ export default function BonusSection(): React.ReactElement | null {
             <div className="bonus-section__inner max-w-[1200px] mx-auto">
 
                 {/* Header */}
-                <div className="bonus-section__header text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0088C4] dark:bg-white mb-4">
-                        <Star className="w-7 h-7 text-white dark:text-[#0088C4] fill-white dark:fill-[#0088C4]" />
-                    </div>
-                    <h2 className="bonus-section__title text-2xl sm:text-3xl font-semibold text-foreground mb-3">
+                <div className="bonus-section__header mb-4 text-center sm:mb-5">
+                    <h2 className="bonus-section__title text-xl font-semibold sm:text-2xl">
                         {t('bonus.section.title')}
                     </h2>
-                    <p className="bonus-section__subtitle text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
+                    <p className="bonus-section__subtitle mx-auto mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
                         {t('bonus.section.subtitle')}
                     </p>
                 </div>
@@ -72,27 +69,23 @@ export default function BonusSection(): React.ReactElement | null {
                         return (
                             <div
                                 key={idx}
-                                className="bonus-section__step relative rounded-lg border border-border bg-card shadow-sm p-6 flex flex-col gap-3"
+                                className="bonus-section__step flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm"
                             >
-                                {/* Step number */}
-                                <span className="bonus-section__step-number absolute top-4 right-4 text-xs font-bold text-muted-foreground/40 select-none">
-                                    {idx + 1}
-                                </span>
-
-                                <div className="bonus-section__step-icon w-10 h-10 rounded-xl bg-[#0088C4] dark:bg-white flex items-center justify-center">
-                                    <Icon className="w-5 h-5 text-white dark:text-[#0088C4]" />
+                                <div className="flex items-center gap-3">
+                                    <div className="bonus-section__step-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0088C4] dark:bg-white">
+                                        <Icon className="h-5 w-5 text-white dark:text-[#0088C4]" />
+                                    </div>
+                                    <h3 className="bonus-section__step-title font-semibold text-foreground">
+                                        {t(step.titleKey)}
+                                    </h3>
                                 </div>
-
-                                <h3 className="bonus-section__step-title font-semibold text-foreground">
-                                    {t(step.titleKey)}
-                                </h3>
 
                                 <p className="bonus-section__step-desc text-sm text-muted-foreground leading-relaxed">
                                     {t(step.descKey)}
                                 </p>
 
                                 {badge && (
-                                    <span className="bonus-section__step-badge mt-auto inline-block self-start rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground">
+                                    <span className="bonus-section__step-badge mt-auto inline-block self-start px-3 py-1 text-xs font-bold text-foreground">
                                         {badge}
                                     </span>
                                 )}

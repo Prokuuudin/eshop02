@@ -27,8 +27,10 @@ export default async function FAQSection({ language }: { language: Language }): 
   return (
     <section className="py-6" id="faq">
       <div className="max-w-[1200px] mx-auto px-4">
-        <h2 className="text-2xl font-semibold text-foreground mb-2">{t('faq.site.title')}</h2>
-        <p className="text-sm text-muted-foreground mb-6">{t('faq.site.subtitle')}</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">{t('faq.site.title')}</h2>
+          <p className="text-sm text-muted-foreground mb-6">{t('faq.site.subtitle')}</p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="rounded-lg border bg-card px-4 md:px-6">

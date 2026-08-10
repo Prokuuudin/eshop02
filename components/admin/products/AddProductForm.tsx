@@ -201,7 +201,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductBasicFields />
                             <ProductPricingFields />
                             <ProductInventoryFields />
-                            <ProductGalleryFields />
+                            <ProductGalleryFields productId={isEdit ? productId : undefined} />
                             <ProductTechSpecsFields />
                             <ProductVariantGroupsFields />
                             <ProductCertificatesFields />

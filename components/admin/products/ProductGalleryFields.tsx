@@ -5,8 +5,9 @@ import { useFormContext, useFieldArray } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductFormValues } from './productFormSchema';
+import ProductImageCropTool from './ProductImageCropTool';
 
-const ProductGalleryFields: React.FC = () => {
+const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) => {
     const { register, control, formState: { errors } } = useFormContext<AddProductFormValues>();
     const { fields, append, remove } = useFieldArray({ control, name: 'images' as never });
     const videos = useFieldArray({ control, name: 'demoVideo' });
@@ -27,6 +28,7 @@ const ProductGalleryFields: React.FC = () => {
                     {errors.image?.message && (
                         <div className="text-red-500 text-xs mt-1">{errors.image.message}</div>
                     )}
+                    {productId && <ProductImageCropTool productId={productId} />}
                 </div>
                 <div>
                     <p className="block text-sm font-medium mb-2">Галерея</p>

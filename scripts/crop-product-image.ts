@@ -28,13 +28,10 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import sharp from 'sharp'
 import fs from 'fs'
 import path from 'path'
-import { deriveHiResSrc } from '../lib/image-hires'
+import { cropProductImage, loadProductImage } from '../lib/product-image-crop'
 
-const PADDING_RATIO = 0.06 // запас вокруг найденного bbox, доля от его размера
-const MAX_DIMENSION = 1600 // не раздуваем сверх разумного веб-размера
 const PREVIEW_DIR = path.join(__dirname, '..', 'scratch-crop-preview')
 
 type Args = { brand?: string; sku?: string; id?: string; apply: boolean }
@@ -53,109 +50,17 @@ function parseArgs(): Args {
   }
 }
 
-function resolveSourceUrl(url: string): string {
-  return deriveHiResSrc(url) ?? url
-}
-
-async function fetchBuffer(url: string): Promise<Buffer> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`)
-  return Buffer.from(await res.arrayBuffer())
-}
-
-type Bbox = { left: number; top: number; width: number; height: number }
-
-async function findContentBbox(buf: Buffer): Promise<{ bbox: Bbox | null; canvasW: number; canvasH: number }> {
-  const img = sharp(buf).ensureAlpha()
-  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true })
-  const { width: w, height: h, channels: ch } = info
-
-  // Есть ли реальная прозрачность (а не просто добавленный ensureAlpha=255 везде)?
-  let hasRealAlpha = false
-  for (let i = 3; i < data.length; i += ch) {
-    if (data[i] < 250) { hasRealAlpha = true; break }
+async function cropOne(
+  url: string,
+  label: string,
+  readMediaAsset: (name: string) => Promise<Buffer | null>,
+): Promise<{ buffer: Buffer; skipped: boolean; reason?: string }> {
+  const original = await loadProductImage(url, readMediaAsset)
+  const result = await cropProductImage(original)
+  if (!result.skipped && result.crop) {
+    console.log(`  ${label}: ${result.sourceWidth}x${result.sourceHeight} -> bbox ${result.crop.width}x${result.crop.height} @ (${result.crop.left},${result.crop.top}) [${((result.fillRatio ?? 0) * 100).toFixed(0)}% -> ~100%]`)
   }
-
-  let minX = w, minY = h, maxX = -1, maxY = -1
-
-  if (hasRealAlpha) {
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const a = data[(y * w + x) * ch + 3]
-        if (a > 10) {
-          if (x < minX) minX = x
-          if (x > maxX) maxX = x
-          if (y < minY) minY = y
-          if (y > maxY) maxY = y
-        }
-      }
-    }
-  } else {
-    // Непрозрачный фон: берём цвет фона по 4 углам, ищем пиксели, заметно
-    // отличающиеся от него (порог по манхэттенскому расстоянию каналов RGB).
-    const corner = (x: number, y: number) => {
-      const i = (y * w + x) * ch
-      return [data[i], data[i + 1], data[i + 2]]
-    }
-    const corners = [corner(0, 0), corner(w - 1, 0), corner(0, h - 1), corner(w - 1, h - 1)]
-    const bg = [0, 1, 2].map((c) => Math.round(corners.reduce((s, p) => s + p[c], 0) / 4))
-    const THRESHOLD = 40
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = (y * w + x) * ch
-        const dist = Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2])
-        if (dist > THRESHOLD) {
-          if (x < minX) minX = x
-          if (x > maxX) maxX = x
-          if (y < minY) minY = y
-          if (y > maxY) maxY = y
-        }
-      }
-    }
-  }
-
-  if (maxX < minX || maxY < minY) return { bbox: null, canvasW: w, canvasH: h }
-
-  const contentW = maxX - minX + 1
-  const contentH = maxY - minY + 1
-  const padX = Math.round(contentW * PADDING_RATIO)
-  const padY = Math.round(contentH * PADDING_RATIO)
-  const left = Math.max(0, minX - padX)
-  const top = Math.max(0, minY - padY)
-  const right = Math.min(w, maxX + 1 + padX)
-  const bottom = Math.min(h, maxY + 1 + padY)
-
-  return { bbox: { left, top, width: right - left, height: bottom - top }, canvasW: w, canvasH: h }
-}
-
-async function cropOne(url: string, label: string): Promise<{ buffer: Buffer; skipped: boolean; reason?: string }> {
-  const sourceUrl = resolveSourceUrl(url)
-  const original = await fetchBuffer(sourceUrl)
-  const { bbox, canvasW, canvasH } = await findContentBbox(original)
-
-  if (!bbox) {
-    return { buffer: original, skipped: true, reason: 'контент не найден (пустое/однотонное фото?)' }
-  }
-
-  const fillRatio = (bbox.width * bbox.height) / (canvasW * canvasH)
-  if (fillRatio > 0.9) {
-    return { buffer: original, skipped: true, reason: `уже плотно (${(fillRatio * 100).toFixed(0)}% кадра), пропускаю` }
-  }
-
-  console.log(
-    `  ${label}: ${canvasW}x${canvasH} -> bbox ${bbox.width}x${bbox.height} @ (${bbox.left},${bbox.top}) [${(fillRatio * 100).toFixed(0)}% -> ~100%]`
-  )
-
-  let pipeline = sharp(original).extract(bbox)
-  if (Math.max(bbox.width, bbox.height) > MAX_DIMENSION) {
-    pipeline = pipeline.resize({
-      width: bbox.width >= bbox.height ? MAX_DIMENSION : undefined,
-      height: bbox.height > bbox.width ? MAX_DIMENSION : undefined,
-      withoutEnlargement: true,
-    })
-  }
-  const buffer = await pipeline.png({ compressionLevel: 9 }).toBuffer()
-  return { buffer, skipped: false }
+  return { buffer: result.buffer, skipped: result.skipped, reason: result.reason }
 }
 
 async function main() {
@@ -193,7 +98,10 @@ async function main() {
 
   const results: { originalUrl: string; buffer: Buffer; skipped: boolean; reason?: string }[] = []
   for (let i = 0; i < urls.length; i++) {
-    const r = await cropOne(urls[i], `фото ${i + 1}/${urls.length}`)
+    const r = await cropOne(urls[i], `фото ${i + 1}/${urls.length}`, async (name) => {
+      const asset = await prisma.mediaAsset.findUnique({ where: { name }, select: { data: true } })
+      return asset ? Buffer.from(asset.data) : null
+    })
     if (r.skipped) console.log(`  фото ${i + 1}: ${r.reason}`)
     results.push({ originalUrl: urls[i], ...r })
   }

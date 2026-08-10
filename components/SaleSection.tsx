@@ -55,7 +55,7 @@ export default function SaleSection(): React.ReactElement {
                         </Link>
                     </div>
                 </div>
-                <div className="sale-section__feature-wrap relative mb-6">
+                <div className="sale-section__feature-wrap relative pt-8 mb-6">
                     {banner && (
                         <Image
                             src="/girl1.png"

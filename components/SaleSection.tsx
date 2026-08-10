@@ -28,7 +28,7 @@ export default function SaleSection(): React.ReactElement {
     if (!products.length && !banner) {
         return (
             <section id="sale" className="sale-section pt-6">
-                <div className="mx-auto w-full max-w-[1200px] px-4">
+                <div className="mx-auto w-full max-w-[1440px] px-4">
                     <Newsletter compact />
                 </div>
             </section>
@@ -37,7 +37,7 @@ export default function SaleSection(): React.ReactElement {
 
     return (
         <section id="sale" className="sale-section pt-6">
-            <div className="mx-auto w-full max-w-[1200px] px-4">
+            <div className="mx-auto w-full max-w-[1440px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <div>
@@ -55,21 +55,27 @@ export default function SaleSection(): React.ReactElement {
                         </Link>
                     </div>
                 </div>
-                {banner && (
-                    <div className="sale-section__banner relative mb-4 md:mt-16">
+                <div className="sale-section__feature-wrap relative mb-6">
+                    {banner && (
                         <Image
                             src="/girl1.png"
                             alt=""
                             aria-hidden="true"
                             width={483}
                             height={176}
-                            className="sale-section__girl pointer-events-none select-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none md:block"
+                            className="sale-section__girl pointer-events-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none select-none md:block"
                         />
-                        <SaleBanner banner={banner} contentClassName="md:pl-40" />
+                    )}
+                    <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
+                        {banner && (
+                            <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
+                                <SaleBanner banner={banner} contentClassName="md:pl-40" />
+                            </div>
+                        )}
+                        <div className={`sale-section__newsletter h-full [&_.newsletter__inner]:h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
+                            <Newsletter compact embedded />
+                        </div>
                     </div>
-                )}
-                <div className="sale-section__newsletter mb-6">
-                    <Newsletter compact />
                 </div>
             </div>
             {products.length > 0 && (

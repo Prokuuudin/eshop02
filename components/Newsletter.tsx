@@ -5,7 +5,7 @@ import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 
-export default function Newsletter({ compact = false }: { compact?: boolean }): React.ReactElement {
+export default function Newsletter({ compact = false, embedded = false }: { compact?: boolean; embedded?: boolean }): React.ReactElement {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
@@ -50,7 +50,7 @@ export default function Newsletter({ compact = false }: { compact?: boolean }): 
     <div
       className={
         compact
-          ? 'newsletter__inner newsletter__inner--compact bg-white rounded-lg p-4 border flex flex-col md:flex-row md:items-center gap-3 md:gap-6'
+          ? `newsletter__inner newsletter__inner--compact bg-white p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${embedded ? '' : 'rounded-lg border'}`
           : 'newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6'
       }
     >

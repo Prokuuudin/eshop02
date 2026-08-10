@@ -119,7 +119,9 @@
 
 /* Стрелки навигации — круглая подложка в стиле карточек (as WishlistButton). */
 .bestsellers-swiper .swiper-button-prev,
-.bestsellers-swiper .swiper-button-next {
+.bestsellers-swiper .swiper-button-next,
+.bestsellers-button-prev,
+.bestsellers-button-next {
     width: 40px;
     height: 40px;
     border-radius: 9999px;
@@ -130,7 +132,9 @@
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 .bestsellers-swiper .swiper-button-prev:hover,
-.bestsellers-swiper .swiper-button-next:hover {
+.bestsellers-swiper .swiper-button-next:hover,
+.bestsellers-button-prev:hover,
+.bestsellers-button-next:hover {
     /* Полностью непрозрачная заливка — полупрозрачный hover терялся на
        светлых участках фото товара. */
     background: hsl(var(--primary));
@@ -138,7 +142,9 @@
     border-color: hsl(var(--primary));
 }
 .bestsellers-swiper .swiper-button-prev svg,
-.bestsellers-swiper .swiper-button-next svg {
+.bestsellers-swiper .swiper-button-next svg,
+.bestsellers-button-prev svg,
+.bestsellers-button-next svg {
     width: 16px;
     height: 16px;
 }
@@ -182,6 +188,36 @@
         clip-path: inset(-24px 0 -200px 0);
         position: relative;
         z-index: 40;
+    }
+
+}
+
+.bestsellers-button-prev,
+.bestsellers-button-next {
+    position: absolute;
+    top: var(--swiper-navigation-top-offset, 50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+}
+
+.bestsellers-button-prev {
+    left: 0;
+}
+
+.bestsellers-button-next {
+    right: 0;
+}
+
+@media (min-width: 1024px) {
+    .bestsellers-button-prev {
+        left: -12px;
+    }
+
+    .bestsellers-button-next {
+        right: -12px;
     }
 }
 

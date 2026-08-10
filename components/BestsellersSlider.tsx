@@ -6,15 +6,33 @@ import "swiper/css/navigation"
 import "swiper/css/pagination"
 import type { Product } from "../data/products"
 import ProductCard from "./ProductCard"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 export default function BestsellersSlider({ products }: { products: Product[] }): React.ReactElement {
   const bestsellers = products
   return (
     <div className="w-full flex justify-center mb-8">
-      <div className="w-full">
+      <div className="bestsellers-slider relative w-full">
+        <button
+          type="button"
+          className="bestsellers-button-prev"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="bestsellers-button-next"
+          aria-label="Next slide"
+        >
+          <ChevronRight aria-hidden="true" />
+        </button>
         <Swiper
           className="bestsellers-swiper"
           modules={[Navigation, Pagination]}
-          navigation
+          navigation={{
+            prevEl: '.bestsellers-button-prev',
+            nextEl: '.bestsellers-button-next',
+          }}
           pagination={{ clickable: true }}
           spaceBetween={16}
           slidesPerView={6}

@@ -38,7 +38,7 @@ export default function Categories(): React.ReactElement | null {
 
     return (
         <section className={sectionClassName}>
-            <div className="mx-auto w-full max-w-[1200px] px-4">
+            <div className="mx-auto w-full max-w-[1440px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
                     <h2 className="categories__title text-2xl font-semibold text-foreground">
                         {t('categories.title')}

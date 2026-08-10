@@ -17,7 +17,7 @@ export default function BestsellersSlider({ products }: { products: Product[] })
           navigation
           pagination={{ clickable: true }}
           spaceBetween={16}
-          slidesPerView={5}
+          slidesPerView={6}
           breakpoints={{
             0: {
               slidesPerView: 1,
@@ -32,7 +32,7 @@ export default function BestsellersSlider({ products }: { products: Product[] })
               spaceBetween: 16,
             },
             1200: {
-              slidesPerView: 5,
+              slidesPerView: 6,
               spaceBetween: 16,
             },
           }}

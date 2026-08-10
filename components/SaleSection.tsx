@@ -71,18 +71,18 @@ export default function SaleSection(): React.ReactElement {
                 <div className="sale-section__newsletter mb-6">
                     <Newsletter compact />
                 </div>
-                {products.length > 0 && (
-                    <>
-                        <h3 className="sale-section__products-title text-xl font-semibold text-foreground mb-4">
-                            {t('sale.allProducts')}{' '}
-                            <span className="text-muted-foreground font-normal">({products.length})</span>
-                        </h3>
-                        <Reveal>
-                            <BestsellersSlider products={products} />
-                        </Reveal>
-                    </>
-                )}
             </div>
+            {products.length > 0 && (
+                <div className="mx-auto w-full max-w-[1440px] px-4">
+                    <h3 className="sale-section__products-title text-xl font-semibold text-foreground mb-4">
+                        {t('sale.allProducts')}{' '}
+                        <span className="text-muted-foreground font-normal">({products.length})</span>
+                    </h3>
+                    <Reveal>
+                        <BestsellersSlider products={products} />
+                    </Reveal>
+                </div>
+            )}
         </section>
     );
 }

@@ -21,6 +21,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { useTranslation } from '@/lib/use-translation';
 import { useAuthStore } from '@/lib/auth-store';
 import { hasAdminPermission, permissionForAdminPath } from '@/lib/admin-permissions';
@@ -296,6 +302,9 @@ export default function AdminHeaderNav(): React.ReactElement {
             ),
         }))
         .filter((section) => section.items.length > 0);
+    const activeMobileSection = visibleSections.find((section) =>
+        section.items.some((item) => isActive(pathname, item.href))
+    )?.title;
 
     return (
         <div className="mx-auto w-fit max-w-full rounded-2xl bg-white/95 p-2 shadow-sm dark:bg-gray-900/95">
@@ -312,31 +321,54 @@ export default function AdminHeaderNav(): React.ReactElement {
                             <ChevronDown className="h-4 w-4 opacity-70" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="max-h-[70vh] min-w-[260px] overflow-y-auto">
-                        {visibleSections.map((section, index) => (
-                            <div key={section.title}>
-                                {index > 0 && <div className="my-1 h-px bg-border" />}
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                    {tr(section.title)}
-                                </div>
-                                {section.items.map((item) => {
-                                    const active = isActive(pathname, item.href);
-                                    return (
-                                        <DropdownMenuItem
-                                            key={`mobile-${section.title}-${item.title}`}
-                                            asChild
-                                            className={`h-11 ${
-                                                active
+                    <DropdownMenuContent align="start" className="max-h-[75vh] w-[min(340px,calc(100vw-24px))] overflow-y-auto p-2">
+                        <Accordion
+                            key={pathname}
+                            type="single"
+                            collapsible
+                            defaultValue={activeMobileSection}
+                            className="space-y-1"
+                        >
+                            {visibleSections.map((section) => {
+                                const Icon = section.icon;
+                                const sectionActive = section.items.some((item) => isActive(pathname, item.href));
+
+                                return (
+                                    <AccordionItem key={section.title} value={section.title} className="rounded-md border border-border">
+                                        <AccordionTrigger
+                                            className={`min-h-11 rounded-md px-3 py-2.5 hover:no-underline ${
+                                                sectionActive
                                                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
-                                                    : ''
+                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                                             }`}
                                         >
-                                            <Link href={item.href}>{tr(item.title)}</Link>
-                                        </DropdownMenuItem>
-                                    );
-                                })}
-                            </div>
-                        ))}
+                                            <span className="flex items-center gap-2">
+                                                <Icon className="h-4 w-4" />
+                                                {tr(section.title)}
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="space-y-1 px-1 pb-1 pt-1">
+                                            {section.items.map((item) => {
+                                                const active = isActive(pathname, item.href);
+                                                return (
+                                                    <DropdownMenuItem
+                                                        key={`mobile-${section.title}-${item.title}`}
+                                                        asChild
+                                                        className={`min-h-11 pl-8 ${
+                                                            active
+                                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                                                : ''
+                                                        }`}
+                                                    >
+                                                        <Link href={item.href}>{tr(item.title)}</Link>
+                                                    </DropdownMenuItem>
+                                                );
+                                            })}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                );
+                            })}
+                        </Accordion>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

@@ -5,6 +5,7 @@ import {
   splitName,
   mergeEmptyAddressFields,
   buildSaveBackAddress,
+  buildPrefillFallback,
 } from './checkout-address-prefill'
 import type { SavedAddress } from './saved-addresses-store'
 
@@ -132,6 +133,103 @@ describe('buildSaveBackAddress', () => {
       address: 'Brivibas 1',
       city: 'Riga',
       postalCode: 'LV-1010',
+    })
+  })
+})
+
+describe('buildPrefillFallback', () => {
+  const saved: SavedAddress = {
+    id: 'checkout_default_user_123',
+    firstName: 'SavedFirst',
+    lastName: 'SavedLast',
+    email: 'a@b.com',
+    phone: '+37120000001',
+    address: 'Krasta 5',
+    city: 'Riga',
+    postalCode: 'LV-1019',
+  }
+
+  it('omits email when the user email is a synthetic @client.local address (saved-address branch)', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37100000000', email: 'card.1234@client.local' },
+      saved,
+      false
+    )
+    expect(result.email).toBeUndefined()
+  })
+
+  it('omits email when the user email is a synthetic @client.local address (profile branch)', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37100000000', email: 'card.1234@client.local' },
+      undefined,
+      false
+    )
+    expect(result.email).toBeUndefined()
+  })
+
+  it('returns the real email unchanged when it is not synthetic', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37100000000', email: 'real@example.com' },
+      saved,
+      false
+    )
+    expect(result.email).toBe('real@example.com')
+  })
+
+  it('uses the saved address fields when saved is present and there is no explicit address selection', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37100000000', email: 'real@example.com' },
+      saved,
+      false
+    )
+    expect(result).toEqual({
+      firstName: 'SavedFirst',
+      lastName: 'SavedLast',
+      phone: '+37120000001',
+      address: 'Krasta 5',
+      city: 'Riga',
+      postalCode: 'LV-1019',
+      email: 'real@example.com',
+    })
+  })
+
+  it('falls back to "" for a missing postalCode on the saved address', () => {
+    const savedNoPostal: SavedAddress = { ...saved, postalCode: undefined as unknown as string }
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37100000000', email: 'real@example.com' },
+      savedNoPostal,
+      false
+    )
+    expect(result.postalCode).toBe('')
+  })
+
+  it('falls through to the profile branch when an explicit address was selected via query params, ignoring the saved address entirely', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37199999999', email: 'real@example.com' },
+      saved,
+      true
+    )
+    expect(result.firstName).toBe('Ivan')
+    expect(result.lastName).toBe('Petrov')
+    expect(result.phone).toBe('+37199999999')
+    expect(result.city).toBeUndefined()
+    expect(result.address).toBeUndefined()
+    expect(result.postalCode).toBeUndefined()
+    expect(result).not.toHaveProperty('city', saved.city)
+    expect(result.email).toBe('real@example.com')
+  })
+
+  it('uses the profile branch when there is no saved address at all', () => {
+    const result = buildPrefillFallback(
+      { name: 'Ivan Petrov', phone: '+37199999999', email: 'real@example.com' },
+      undefined,
+      false
+    )
+    expect(result).toEqual({
+      firstName: 'Ivan',
+      lastName: 'Petrov',
+      phone: '+37199999999',
+      email: 'real@example.com',
     })
   })
 })

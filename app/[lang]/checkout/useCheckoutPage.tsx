@@ -27,10 +27,9 @@ import { useTurnstile } from '@/lib/use-turnstile';
 import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
 import {
     pickPrefillAddress,
-    splitName,
     mergeEmptyAddressFields,
     buildSaveBackAddress,
-    type CheckoutAddressFields,
+    buildPrefillFallback,
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 
@@ -77,21 +76,8 @@ function useCheckoutPageState() {
         void hydrateSavedAddressesFromServer(currentUser.email, replaceForEmail).then(() => {
             if (cancelled) return;
             const saved = pickPrefillAddress(getByEmail(currentUser.email), currentUser.id);
-            const fallback: Partial<CheckoutAddressFields> = saved
-                ? {
-                      firstName: saved.firstName,
-                      lastName: saved.lastName,
-                      phone: saved.phone,
-                      address: saved.address,
-                      city: saved.city,
-                      postalCode: saved.postalCode ?? '',
-                      email: currentUser.email,
-                  }
-                : {
-                      ...splitName(currentUser.name),
-                      phone: currentUser.phone ?? '',
-                      email: currentUser.email,
-                  };
+            const hasExplicitAddress = !!searchParams.get('address');
+            const fallback = buildPrefillFallback(currentUser, saved, hasExplicitAddress);
             setFormData((prev) => ({ ...prev, ...mergeEmptyAddressFields(prev, fallback) }));
         });
         return () => {

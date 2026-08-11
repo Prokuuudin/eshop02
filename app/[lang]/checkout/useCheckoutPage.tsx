@@ -24,6 +24,13 @@ import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
 import { burstConfetti } from '@/lib/confetti';
 import { useTurnstile } from '@/lib/use-turnstile';
+import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
+import {
+    pickPrefillAddress,
+    splitName,
+    mergeEmptyAddressFields,
+    type CheckoutAddressFields,
+} from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 
 const validateEmail = (email: string): boolean => {
@@ -41,6 +48,7 @@ function useCheckoutPageState() {
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
     const { getCompany, syncFromDb } = useCompanyStore();
+    const { getByEmail, upsertForEmail, replaceForEmail } = useSavedAddresses();
 
     React.useEffect(() => {
         void syncFromDb();
@@ -59,6 +67,37 @@ function useCheckoutPageState() {
         postalCode: searchParams.get('postalCode') ?? '',
         paymentMethod: 'card',
     }));
+
+    // Prefill from the user's saved address / profile, but never clobber a field
+    // that's already filled (e.g. from a "Use this address" query-param link above).
+    React.useEffect(() => {
+        if (!currentUser?.email || !currentUser?.id) return;
+        let cancelled = false;
+        void hydrateSavedAddressesFromServer(currentUser.email, replaceForEmail).then(() => {
+            if (cancelled) return;
+            const saved = pickPrefillAddress(getByEmail(currentUser.email), currentUser.id);
+            const fallback: Partial<CheckoutAddressFields> = saved
+                ? {
+                      firstName: saved.firstName,
+                      lastName: saved.lastName,
+                      phone: saved.phone,
+                      address: saved.address,
+                      city: saved.city,
+                      postalCode: saved.postalCode ?? '',
+                      email: currentUser.email,
+                  }
+                : {
+                      ...splitName(currentUser.name),
+                      phone: currentUser.phone ?? '',
+                      email: currentUser.email,
+                  };
+            setFormData((prev) => ({ ...prev, ...mergeEmptyAddressFields(prev, fallback) }));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.id, currentUser?.email]);
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
         return method === 'courier' || method === 'pickup' || method === 'post'

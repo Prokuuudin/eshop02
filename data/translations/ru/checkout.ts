@@ -141,6 +141,8 @@ const ruCheckout: Record<string, string> = {
   'order.bonusEarned': 'Начислено бонусов',
   'order.downloadInvoice': 'Скачать счёт (PDF) (LV)',
   'order.downloadInvoiceEn': 'Скачать счёт (PDF) (EN)',
+  'order.generatingInvoice': 'Формирование PDF…',
+  'order.invoiceDownloadFailed': 'Не удалось сформировать PDF. Попробуйте ещё раз.',
   'order.share': 'Поделиться',
   'order.shareText': 'hairshop-pro.lv — заказ №{orderId}, сумма {total}',
   'order.shareEmail': 'Email',

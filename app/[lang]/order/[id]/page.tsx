@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 import ShareOrderButton from '@/components/ShareOrderButton';
+import { LoaderCircle } from 'lucide-react';
 
 type PageProps = {
     params: Promise<{
@@ -20,7 +21,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, order, locale, paymentCheckPending, retryingPayment, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
+  const { t, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
 return (
         <main className="w-full px-4 py-12">
             <div className="max-w-4xl mx-auto">
@@ -328,11 +329,17 @@ return (
 
                             <div className="space-y-2">
                                 <div className="flex items-stretch gap-2">
-                                    <Button className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('lv')}>{t('order.downloadInvoice')}</Button>
+                                    <Button className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('lv')} disabled={downloadingInvoiceLang !== null}>
+                                        {downloadingInvoiceLang === 'lv' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                        {downloadingInvoiceLang === 'lv' ? t('order.generatingInvoice') : t('order.downloadInvoice')}
+                                    </Button>
                                     <ShareOrderButton order={order} invoiceLang="lv" />
                                 </div>
                                 <div className="flex items-stretch gap-2">
-                                    <Button variant="outline" className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('en')}>{t('order.downloadInvoiceEn')}</Button>
+                                    <Button variant="outline" className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('en')} disabled={downloadingInvoiceLang !== null}>
+                                        {downloadingInvoiceLang === 'en' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                        {downloadingInvoiceLang === 'en' ? t('order.generatingInvoice') : t('order.downloadInvoiceEn')}
+                                    </Button>
                                     <ShareOrderButton order={order} invoiceLang="en" />
                                 </div>
                                 {order.paymentStatus === 'paid' && (

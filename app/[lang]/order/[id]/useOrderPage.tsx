@@ -33,6 +33,7 @@ function useOrderPageState({ params }: PageProps) {
         () => searchParams.get('payment') === 'success' && Boolean(searchParams.get('session_id'))
     );
     const [retryingPayment, setRetryingPayment] = React.useState(false);
+    const [downloadingInvoiceLang, setDownloadingInvoiceLang] = React.useState<InvoiceLang | null>(null);
     const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const { showToast } = useToast();
 
@@ -373,18 +374,26 @@ function useOrderPageState({ params }: PageProps) {
     };
 
     const handleDownloadInvoice = async (invoiceLang: InvoiceLang): Promise<void> => {
-        const titles = await fetchInvoiceTitles(order.items, invoiceLang);
-        const html = buildInvoiceHtml(order, titles, invoiceLang);
-        const blob = await buildInvoicePdfBlob(html);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = invoicePdfFileName(order.id, invoiceLang);
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        if (downloadingInvoiceLang !== null) return;
+        setDownloadingInvoiceLang(invoiceLang);
+        try {
+            const titles = await fetchInvoiceTitles(order.items, invoiceLang);
+            const html = buildInvoiceHtml(order, titles, invoiceLang);
+            const blob = await buildInvoicePdfBlob(html);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = invoicePdfFileName(order.id, invoiceLang);
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch {
+            showToast(t('order.invoiceDownloadFailed'), 'error');
+        } finally {
+            setDownloadingInvoiceLang(null);
+        }
     };
 
-      return { id, searchParams, t, language, getOrder, updateOrderPayment, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, paymentCheckPending, setPaymentCheckPending, retryingPayment, setRetryingPayment, returnDialogOpen, setReturnDialogOpen, showToast, applyOrderPaymentUpdate, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleRetryPayment, handleDownloadInvoice }
+      return { id, searchParams, t, language, getOrder, updateOrderPayment, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, paymentCheckPending, setPaymentCheckPending, retryingPayment, setRetryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, showToast, applyOrderPaymentUpdate, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleRetryPayment, handleDownloadInvoice }
 }
 
 export function useOrderPage({ params }: PageProps): ReturnType<typeof useOrderPageState> {

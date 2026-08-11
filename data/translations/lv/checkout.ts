@@ -141,6 +141,8 @@ const lvCheckout: Record<string, string> = {
   'order.bonusEarned': 'Saņemtie bonusi',
   'order.downloadInvoice': 'Lejupielādēt rēķinu (PDF) (LV)',
   'order.downloadInvoiceEn': 'Lejupielādēt rēķinu (PDF) (EN)',
+  'order.generatingInvoice': 'PDF izveide…',
+  'order.invoiceDownloadFailed': 'Neizdevās izveidot PDF. Lūdzu, mēģiniet vēlreiz.',
   'order.share': 'Kopīgot',
   'order.shareText': 'hairshop-pro.lv — pasūtījums Nr.{orderId}, summa {total}',
   'order.shareEmail': 'E-pasts',

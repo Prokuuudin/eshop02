@@ -141,6 +141,8 @@ const enCheckout: Record<string, string> = {
   'order.bonusEarned': 'Bonuses earned',
   'order.downloadInvoice': 'Download invoice (PDF) (LV)',
   'order.downloadInvoiceEn': 'Download invoice (PDF) (EN)',
+  'order.generatingInvoice': 'Generating PDF…',
+  'order.invoiceDownloadFailed': 'Could not generate the PDF. Please try again.',
   'order.share': 'Share',
   'order.shareText': 'hairshop-pro.lv — order #{orderId}, total {total}',
   'order.shareEmail': 'Email',

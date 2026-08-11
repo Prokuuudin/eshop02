@@ -1,6 +1,30 @@
 /** Creates a real A4 PDF from invoice HTML. Canvas rendering preserves Latvian
  * diacritics and translated product names without relying on PDF base fonts. */
 export async function buildInvoicePdfBlob(html: string): Promise<Blob> {
+  const cached = pdfCache.get(html)
+  if (cached) return cached
+
+  const pending = renderInvoicePdfBlob(html).catch((error: unknown) => {
+    pdfCache.delete(html)
+    throw error
+  })
+  pdfCache.set(html, pending)
+  trimPdfCache()
+  return pending
+}
+
+const pdfCache = new Map<string, Promise<Blob>>()
+const MAX_CACHED_PDFS = 4
+
+function trimPdfCache(): void {
+  while (pdfCache.size > MAX_CACHED_PDFS) {
+    const oldestKey = pdfCache.keys().next().value
+    if (oldestKey === undefined) return
+    pdfCache.delete(oldestKey)
+  }
+}
+
+async function renderInvoicePdfBlob(html: string): Promise<Blob> {
   const renderHtml = await inlineInvoiceLogo(html)
   const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
     import('jspdf'),
@@ -12,12 +36,12 @@ export async function buildInvoicePdfBlob(html: string): Promise<Blob> {
     const body = frame.contentDocument?.body
     if (!body) throw new Error('Invoice preview document is unavailable')
     const canvas = await html2canvas(body, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
-      windowWidth: 900,
-      width: 900,
+      windowWidth: 794,
+      width: 794,
       height: body.scrollHeight,
     })
     return canvasToA4Pdf(canvas, jsPDF)
@@ -29,7 +53,7 @@ export async function buildInvoicePdfBlob(html: string): Promise<Blob> {
 async function createInvoiceFrame(html: string): Promise<HTMLIFrameElement> {
   const frame = document.createElement('iframe')
   frame.setAttribute('aria-hidden', 'true')
-  frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:900px;height:1200px;border:0;opacity:0;pointer-events:none'
+  frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none'
   document.body.appendChild(frame)
 
   await new Promise<void>((resolve, reject) => {
@@ -44,7 +68,7 @@ async function createInvoiceFrame(html: string): Promise<HTMLIFrameElement> {
   await Promise.all(images.map(async (image) => {
     if (!image.complete) await image.decode()
   }))
-  frame.style.height = `${Math.max(doc.body.scrollHeight, 1200)}px`
+  frame.style.height = `${Math.max(doc.body.scrollHeight, 1123)}px`
   return frame
 }
 
@@ -104,7 +128,7 @@ async function rasterizeSvg(svg: string): Promise<string> {
     await image.decode()
 
     // The source is very large; invoice display needs only a compact header logo.
-    const width = 482
+    const width = 320
     const height = Math.round(width * image.naturalHeight / image.naturalWidth)
     const canvas = document.createElement('canvas')
     canvas.width = width

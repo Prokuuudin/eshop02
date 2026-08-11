@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 import ShareOrderButton from '@/components/ShareOrderButton';
-import { LoaderCircle } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
 
@@ -30,12 +30,16 @@ return (
         <main className="w-full px-4 py-5 sm:py-8">
             <div className="max-w-4xl mx-auto">
                 {/* Success message */}
-                <div className="mb-4 text-center sm:mb-6">
-                    <div className="mb-1 text-4xl sm:mb-2 sm:text-5xl">✓</div>
-                    <h1 className="mb-1 text-2xl font-bold text-foreground sm:text-3xl">
-                        {t('order.successTitle')}
-                    </h1>
-                    <p className="text-sm text-muted-foreground sm:text-base">
+                <div className="mb-3 text-center sm:mb-4">
+                    <div className="flex items-center justify-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                            <Check className="h-8 w-8 stroke-[2.5]" aria-hidden="true" />
+                        </div>
+                        <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
+                            {t('order.successTitle')}
+                        </h1>
+                    </div>
+                    <p className="mt-1 text-center text-sm leading-snug text-muted-foreground sm:text-base">
                         {t('order.successDescription')}
                     </p>
                 </div>

@@ -14,6 +14,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { useToast } from '@/lib/toast-context';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
+import { buildInvoicePdfBlob, invoicePdfFileName } from '@/lib/invoice-pdf';
 import { buildShareChannelUrl } from '@/lib/share-order';
 import type { Order } from '@/lib/orders-store';
 
@@ -46,11 +47,12 @@ export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButto
     React.useEffect(() => {
         let cancelled = false;
         fetchInvoiceTitles(order.items, invoiceLang)
-            .then((titles) => {
+            .then(async (titles) => {
                 if (cancelled) return;
                 const html = buildInvoiceHtml(order, titles, invoiceLang);
-                const fileName = `invoice-${order.id}${invoiceLang === 'en' ? '-en' : ''}.html`;
-                setInvoiceFile(new File([html], fileName, { type: 'text/html;charset=utf-8' }));
+                const pdfBlob = await buildInvoicePdfBlob(html);
+                if (cancelled) return;
+                setInvoiceFile(new File([pdfBlob], invoicePdfFileName(order.id, invoiceLang), { type: 'application/pdf' }));
             })
             .catch(() => {
                 // Pre-fetch failed (e.g. offline) — native share below just falls

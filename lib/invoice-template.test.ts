@@ -37,14 +37,20 @@ describe('buildInvoiceHtml', () => {
   it('matches the reference invoice sections and adds the amount in words', () => {
     const html = buildInvoiceHtml(order)
     expect(html).toContain('Pasūtījuma numurs: #1001')
+    expect(html).toContain('Pasūtījuma datums: 18.07.2026')
+    expect(html).not.toContain('Pasūtījuma datums: 18.07.2026.')
     expect(html).toContain('Preču izsniedzējs')
+    expect(html).toContain('Nosaukums')
+    expect(html).toContain('Artikuls')
     expect(html).toContain('Maksātājs')
     expect(html).toContain('Saņēmējs')
     expect(html).toContain('Maksāšanas veids: Apmaksa ar karti')
-    expect(html).toContain('Kopā bez PVN</td><td>41,32 €')
+    expect(html).toContain('Kopā bez PVN</td><td>41.32 €')
     expect(html).toContain('Apmaksājot, lūdzu, norādiet rēķina numuru: 1001')
     expect(html).toContain('Rēķins sagatavots elektroniskā veidā un ir autorizēts 100000001')
     expect(html).toContain('Summa vārdiem: Piecdesmit pieci eiro un 00 centi')
+    expect(html).toContain('Nodokļu maksātāja kods: LV 40103351370')
+    expect(html).toContain('Konts: LV 66 HABA 0551 0366 0410 7')
   })
 
   it('converts euro totals to Latvian and English words', () => {
@@ -59,7 +65,7 @@ describe('buildInvoiceHtml', () => {
     })
     expect(html).toContain('<html lang="lv">')
     expect(html).toContain('RĒĶINS')
-    expect(html).toContain('PVN (21%)')
+    expect(html).toContain('PVN 21%')
     expect(html).toContain('šampūns krāsotiem matiem')
     expect(html).not.toContain('шампунь')
   })
@@ -67,16 +73,16 @@ describe('buildInvoiceHtml', () => {
   it('renders order amounts as real euros, not divided by 100', () => {
     const html = buildInvoiceHtml(order)
     // order.total is already whole-euro decimal (Decimal(12,2) in the DB) — 55, not 5500.
-    expect(html).toContain('55,00 €')
-    expect(html).toContain('50,00 €')
-    expect(html).not.toContain('0,55 €')
+    expect(html).toContain('55.00 €')
+    expect(html).toContain('50.00 €')
+    expect(html).not.toContain('0.55 €')
   })
 
   it('includes seller requisites with Latvian address', () => {
     const html = buildInvoiceHtml(order)
     expect(html).toContain('SIA MIKS PLUS')
     expect(html).toContain('Rencēnu iela 10A, Rīga, Latvija, LV-1073')
-    expect(html).toContain('LV40103351370')
+    expect(html).toContain('LV 40103351370')
   })
 
   it('falls back to the snapshot title when no Latvian title is known', () => {

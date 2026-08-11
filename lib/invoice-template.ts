@@ -23,17 +23,17 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     date: 'Datums',
     seller: 'Pārdevējs',
     buyer: 'Pircējs',
-    product: 'Prece',
+    product: 'Nosaukums',
     qty: 'Daudzums',
     price: 'Cena',
     amount: 'Summa',
     subtotal: 'Starpsumma',
     delivery: 'Piegāde',
     discount: 'Atlaide',
-    tax: 'PVN (21%)',
+    tax: 'PVN 21%',
     total: 'KOPĀ',
     phone: 'Tālr.',
-    sku: 'Art.',
+    sku: 'Artikuls',
     thankyou: 'Paldies par pasūtījumu!',
     orderNumber: 'Pasūtījuma numurs', orderDate: 'Pasūtījuma datums', supplier: 'Preču izsniedzējs',
     supplierName: 'Preču piegādātājs', taxCode: 'Nodokļu maksātāja kods', address: 'Adrese',
@@ -72,7 +72,22 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
 }
 
 function eur(value: number): string {
-  return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+  return `${value.toFixed(2)} €`
+}
+
+function formatVatNumber(): string {
+  return `LV ${COMPANY.regNumber}`
+}
+
+function formatIban(value: string): string {
+  return value.replace(/^(LV)(\d{2})([A-Z]{4})(\d{4})(\d{4})(\d{4})(\d)$/, '$1 $2 $3 $4 $5 $6 $7')
+}
+
+function formatInvoiceDate(value: Date | string): string {
+  const date = new Date(value)
+  return [date.getDate(), date.getMonth() + 1, date.getFullYear()]
+    .map((part, index) => index < 2 ? String(part).padStart(2, '0') : String(part))
+    .join('.')
 }
 
 const LV_ONES = ['', 'viens', 'divi', 'trīs', 'četri', 'pieci', 'seši', 'septiņi', 'astoņi', 'deviņi']
@@ -127,8 +142,10 @@ function paymentLabel(method: string, lang: InvoiceLang): string {
 }
 
 function deliveryLabel(order: Order, address: string, city: string): string {
-  if (order.deliveryMethod === 'pickup') return `${city}, ${address}`
-  return [city, address, order.postalCode].filter(Boolean).join(', ')
+  const destination = [city, address, order.deliveryMethod === 'pickup' ? '' : order.postalCode].filter(Boolean).join(', ')
+  if (order.deliveryMethod === 'pickup') return `Saņemšana veikalā, ${destination}`
+  if (order.deliveryMethod === 'post') return `Omniva pakomāts, ${destination}`
+  return `Kurjers, ${destination}`
 }
 
 /**
@@ -158,10 +175,11 @@ function lvDeliveryAddress(order: Order): { address: string; city: string } | nu
 export function buildInvoiceHtml(
   order: Order,
   titles?: Record<string, string>,
-  lang: InvoiceLang = 'lv'
+  lang: InvoiceLang = 'lv',
+  assetBaseUrl = ''
 ): string {
   const L = LABELS[lang]
-  const date = new Date(order.createdAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'lv-LV')
+  const date = formatInvoiceDate(order.createdAt)
   const pickup = lvDeliveryAddress(order)
   const buyerAddress = pickup?.address ?? order.address
   const buyerCity = pickup?.city ?? order.city
@@ -179,7 +197,7 @@ export function buildInvoiceHtml(
     .join('')
 
   const discountRow = order.discount > 0
-    ? `<tr><td colspan="3" style="padding:4px 12px;text-align:right;color:#555">${L.discount}</td><td style="padding:4px 12px;text-align:right;color:#dc2626">−${eur(order.discount)}</td></tr>`
+    ? `<tr><td>${L.discount}</td><td>−${eur(order.discount)}</td></tr>`
     : ''
 
   const taxAmount = displayOrderTax(order)
@@ -190,6 +208,7 @@ export function buildInvoiceHtml(
   const customerAddress = [buyerAddress, buyerCity, !pickup ? order.postalCode : ''].filter(Boolean).map(esc).join(', ')
   const created = new Date(order.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')
   const words = amountInWords(order.total, lang)
+  const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/logo.svg`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -205,11 +224,12 @@ export function buildInvoiceHtml(
   .items th,.items td,.notes th,.notes td{border:1px solid #444;padding:5px}.items th,.notes th{background:#ccc;text-align:center;font-weight:normal}.items td:nth-child(2){text-align:center}.items td:nth-child(n+3){white-space:nowrap}
   .totals{width:330px;margin-left:auto}.totals td{padding:3px}.totals td:last-child{text-align:right}.total-row td{font-weight:bold}.words{margin-top:8px;text-align:right;font-weight:bold}
   .payment-info{margin-top:30px;line-height:1.5}.notes{margin-top:6px}
+  @media print{body{padding:0}.top img{print-color-adjust:exact}}
 </style>
 </head>
 <body>
-<div class="top"><div><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img src="/logo.svg" alt="hairshop.lv"/></div>
-<div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: ${COMPANY.name.toUpperCase()}<br/>${L.taxCode}: ${COMPANY.vatNumber}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>Bank: ${COMPANY.bankName}, SWIFT: ${COMPANY.swift}<br/>Konts: ${COMPANY.bankAccount}</div></div></div>
+<div class="top"><div><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img src="${esc(logoUrl)}" alt="hairshop.lv"/></div>
+<div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: ${COMPANY.name.toUpperCase()}<br/>${L.taxCode}: ${formatVatNumber()}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>Bank: ${COMPANY.bankName}, SWIFT: ${COMPANY.swift}<br/>Konts: ${formatIban(COMPANY.bankAccount)}</div></div></div>
 <div class="parties"><div class="line"><div class="section-title">${L.payer}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</div><div class="line"><div class="section-title">${L.recipient}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</div></div>
 <div class="section-title">${L.products}</div>
 <table class="items">

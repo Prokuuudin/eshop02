@@ -5,6 +5,7 @@ import { Order } from '@/lib/orders-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template'
+import { buildInvoicePdfBlob } from '@/lib/invoice-pdf'
 import { useToast } from '@/lib/toast-context'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
@@ -33,21 +34,9 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
 
     setGeneratingPdf(true)
     try {
-      const [{ jsPDF }, titles] = await Promise.all([
-        import('jspdf'),
-        fetchInvoiceTitles(order.items, lang),
-      ])
+      const titles = await fetchInvoiceTitles(order.items, lang)
       const html = buildInvoiceHtml(order, titles, lang)
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-
-      await pdf.html(html, {
-        margin: [8, 8, 8, 8],
-        autoPaging: 'text',
-        width: 194,
-        windowWidth: 794,
-      })
-
-      const url = URL.createObjectURL(pdf.output('blob'))
+      const url = URL.createObjectURL(await buildInvoicePdfBlob(html))
       previewWindow.location.href = url
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch {

@@ -8,6 +8,7 @@ import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
+import { buildInvoicePdfBlob, invoicePdfFileName } from '@/lib/invoice-pdf';
 import { useToast } from '@/lib/toast-context';
 
 type PageProps = {
@@ -374,11 +375,11 @@ function useOrderPageState({ params }: PageProps) {
     const handleDownloadInvoice = async (invoiceLang: InvoiceLang): Promise<void> => {
         const titles = await fetchInvoiceTitles(order.items, invoiceLang);
         const html = buildInvoiceHtml(order, titles, invoiceLang);
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blob = await buildInvoicePdfBlob(html);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `invoice-${order.id}${invoiceLang === 'en' ? '-en' : ''}.html`;
+        a.download = invoicePdfFileName(order.id, invoiceLang);
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     };

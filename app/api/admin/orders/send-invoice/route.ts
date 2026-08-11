@@ -5,6 +5,7 @@ import { buildInvoiceHtml, type InvoiceLang } from '@/lib/invoice-template'
 import { sendEmail } from '@/lib/mailer'
 import { getServerOrderById } from '@/lib/orders-data-store'
 import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const subject = lang === 'en' ? `Invoice for order #${order.id}` : `Rēķins pasūtījumam #${order.id}`
-  const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang)
+  const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang, getSiteUrl())
 
   try {
     await sendEmail(email, subject, html)
@@ -74,7 +75,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
 
 
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildInvoiceHtml } from './invoice-template'
+import { amountInWords, buildInvoiceHtml } from './invoice-template'
 import type { Order } from './orders-store'
 
 const order = {
@@ -34,6 +34,25 @@ const order = {
 } as unknown as Order
 
 describe('buildInvoiceHtml', () => {
+  it('matches the reference invoice sections and adds the amount in words', () => {
+    const html = buildInvoiceHtml(order)
+    expect(html).toContain('Pasūtījuma numurs: #1001')
+    expect(html).toContain('Preču izsniedzējs')
+    expect(html).toContain('Maksātājs')
+    expect(html).toContain('Saņēmējs')
+    expect(html).toContain('Maksāšanas veids: Apmaksa ar karti')
+    expect(html).toContain('Kopā bez PVN</td><td>41,32 €')
+    expect(html).toContain('Apmaksājot, lūdzu, norādiet rēķina numuru: 1001')
+    expect(html).toContain('Rēķins sagatavots elektroniskā veidā un ir autorizēts 100000001')
+    expect(html).toContain('Summa vārdiem: Piecdesmit pieci eiro un 00 centi')
+  })
+
+  it('converts euro totals to Latvian and English words', () => {
+    expect(amountInWords(16.14)).toBe('Sešpadsmit eiro un 14 centi')
+    expect(amountInWords(1021.05)).toBe('Viens tūkstotis divdesmit viens eiro un 05 centi')
+    expect(amountInWords(16.14, 'en')).toBe('Sixteen euros and 14 cents')
+  })
+
   it('renders entirely in Latvian regardless of order snapshot language', () => {
     const html = buildInvoiceHtml(order, {
       '12483': 'KALLOS KJMN ARGAN šampūns krāsotiem matiem 5000ml',
@@ -55,7 +74,7 @@ describe('buildInvoiceHtml', () => {
 
   it('includes seller requisites with Latvian address', () => {
     const html = buildInvoiceHtml(order)
-    expect(html).toContain('SIA Miks Plus')
+    expect(html).toContain('SIA MIKS PLUS')
     expect(html).toContain('Rencēnu iela 10A, Rīga, Latvija, LV-1073')
     expect(html).toContain('LV40103351370')
   })

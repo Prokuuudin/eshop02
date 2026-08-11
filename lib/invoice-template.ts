@@ -35,6 +35,13 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     phone: 'Tālr.',
     sku: 'Art.',
     thankyou: 'Paldies par pasūtījumu!',
+    orderNumber: 'Pasūtījuma numurs', orderDate: 'Pasūtījuma datums', supplier: 'Preču izsniedzējs',
+    supplierName: 'Preču piegādātājs', taxCode: 'Nodokļu maksātāja kods', address: 'Adrese',
+    payer: 'Maksātājs', recipient: 'Saņēmējs', name: 'Vārds, uzvārds', email: 'E-pasts',
+    paymentMethod: 'Maksāšanas veids', deliveryMethod: 'Piegādes veids', products: 'Preces',
+    amountWords: 'Summa vārdiem', paymentReference: 'Apmaksājot, lūdzu, norādiet rēķina numuru',
+    electronic: 'Rēķins sagatavots elektroniskā veidā un ir autorizēts', notes: 'Piezīmes',
+    created: 'Izveidota', note: 'Piezīme', paymentWarning: 'Ja rēķins netiks apmaksāts 3 darba dienu laikā, mēs būsim spiesti anulēt Jūsu pasūtījumu. Ja Jums rodas jautājumi, lūdzam sazināties ar mums pa e-pastu info@hairshop.lv.',
   },
   en: {
     invoice: 'INVOICE',
@@ -54,11 +61,74 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     phone: 'Phone',
     sku: 'SKU',
     thankyou: 'Thank you for your order!',
+    orderNumber: 'Order number', orderDate: 'Order date', supplier: 'Goods supplier',
+    supplierName: 'Supplier', taxCode: 'Tax registration number', address: 'Address',
+    payer: 'Payer', recipient: 'Recipient', name: 'Name', email: 'Email',
+    paymentMethod: 'Payment method', deliveryMethod: 'Delivery method', products: 'Products',
+    amountWords: 'Amount in words', paymentReference: 'When paying, please specify the invoice number',
+    electronic: 'This invoice was prepared electronically and is authorised', notes: 'Notes',
+    created: 'Created', note: 'Note', paymentWarning: 'If the invoice is not paid within 3 business days, we will have to cancel your order. If you have any questions, please contact us at info@hairshop.lv.',
   },
 }
 
 function eur(value: number): string {
   return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+}
+
+const LV_ONES = ['', 'viens', 'divi', 'trīs', 'četri', 'pieci', 'seši', 'septiņi', 'astoņi', 'deviņi']
+const LV_TEENS = ['desmit', 'vienpadsmit', 'divpadsmit', 'trīspadsmit', 'četrpadsmit', 'piecpadsmit', 'sešpadsmit', 'septiņpadsmit', 'astoņpadsmit', 'deviņpadsmit']
+const LV_TENS = ['', '', 'divdesmit', 'trīsdesmit', 'četrdesmit', 'piecdesmit', 'sešdesmit', 'septiņdesmit', 'astoņdesmit', 'deviņdesmit']
+const EN_ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
+const EN_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+
+function lvUnder1000(n: number): string {
+  const parts: string[] = []
+  if (n >= 100) { const h = Math.floor(n / 100); parts.push(h === 1 ? 'simts' : `${LV_ONES[h]} simti`); n %= 100 }
+  if (n >= 20) { parts.push(LV_TENS[Math.floor(n / 10)]); n %= 10 }
+  else if (n >= 10) { parts.push(LV_TEENS[n - 10]); n = 0 }
+  if (n) parts.push(LV_ONES[n])
+  return parts.join(' ')
+}
+
+function enUnder1000(n: number): string {
+  const parts: string[] = []
+  if (n >= 100) { parts.push(`${EN_ONES[Math.floor(n / 100)]} hundred`); n %= 100 }
+  if (n >= 20) { parts.push(EN_TENS[Math.floor(n / 10)]); n %= 10 }
+  if (n) parts.push(EN_ONES[n])
+  return parts.join(' ')
+}
+
+export function amountInWords(value: number, lang: InvoiceLang = 'lv'): string {
+  const centsTotal = Math.round(Math.max(0, value) * 100)
+  let euros = Math.floor(centsTotal / 100)
+  const cents = centsTotal % 100
+  const groups: string[] = []
+  let scale = 0
+  while (euros > 0) {
+    const group = euros % 1000
+    if (group) {
+      const lvSingular = group % 10 === 1 && group % 100 !== 11
+      const scaleWord = lang === 'en'
+        ? ['', 'thousand', 'million'][scale]
+        : scale === 1 ? (lvSingular ? 'tūkstotis' : 'tūkstoši') : scale === 2 ? (lvSingular ? 'miljons' : 'miljoni') : ''
+      groups.unshift(`${lang === 'lv' ? lvUnder1000(group) : enUnder1000(group)} ${scaleWord ?? ''}`.trim())
+    }
+    euros = Math.floor(euros / 1000); scale++
+  }
+  const words = groups.join(' ') || (lang === 'lv' ? 'nulle' : 'zero')
+  return lang === 'lv'
+    ? `${words.charAt(0).toUpperCase()}${words.slice(1)} eiro un ${String(cents).padStart(2, '0')} ${cents % 10 === 1 && cents % 100 !== 11 ? 'cents' : 'centi'}`
+    : `${words.charAt(0).toUpperCase()}${words.slice(1)} euros and ${String(cents).padStart(2, '0')} cents`
+}
+
+function paymentLabel(method: string, lang: InvoiceLang): string {
+  const labels: Record<string, [string, string]> = { bank: ['Apmaksa ar pārskaitījumu', 'Bank transfer'], card: ['Apmaksa ar karti', 'Card payment'], cash: ['Apmaksa skaidrā naudā', 'Cash'] }
+  return labels[method]?.[lang === 'lv' ? 0 : 1] ?? method
+}
+
+function deliveryLabel(order: Order, address: string, city: string): string {
+  if (order.deliveryMethod === 'pickup') return `${city}, ${address}`
+  return [city, address, order.postalCode].filter(Boolean).join(', ')
 }
 
 /**
@@ -101,13 +171,9 @@ export function buildInvoiceHtml(
       const localTitle = titles?.[item.id] || translations[lang][`products.${item.id}.title`] || item.title
       const unitPrice = eur(item.price)
       const lineTotal = eur(item.price * item.quantity)
-      const sku = item.sku ? `<br/><small style="color:#888">${L.sku}: ${esc(item.sku)}</small>` : ''
       return `
         <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee">${esc(localTitle)}${sku}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${unitPrice}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">${lineTotal}</td>
+          <td>${esc(localTitle)}</td><td>${esc(item.sku ?? '')}</td><td>${unitPrice}</td><td>${item.quantity}</td><td>${lineTotal}</td>
         </tr>`
     })
     .join('')
@@ -117,71 +183,39 @@ export function buildInvoiceHtml(
     : ''
 
   const taxAmount = displayOrderTax(order)
+  const goodsWithoutVat = Math.max(0, order.subtotal - order.discount) / 1.21
+
+  const invoiceNumber = esc(order.id)
+  const customer = `${esc(order.firstName)} ${esc(order.lastName)}`
+  const customerAddress = [buyerAddress, buyerCity, !pickup ? order.postalCode : ''].filter(Boolean).map(esc).join(', ')
+  const created = new Date(order.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')
+  const words = amountInWords(order.total, lang)
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${L.invoice} INV-${esc(order.id)}</title>
+<title>${L.invoice} ${invoiceNumber}</title>
 <style>
-  body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;margin:0;padding:32px;background:#fff}
+  @page{size:A4;margin:14mm} body{font-family:"Times New Roman",serif;font-size:13px;color:#111;margin:0;padding:24px;background:#fff;max-width:900px;margin-inline:auto}
   table{border-collapse:collapse;width:100%}
-  .header-table td{vertical-align:top;padding:0 0 24px}
-  .meta{color:#555;font-size:12px;line-height:1.8}
-  th{background:#f5f5f5;padding:8px 12px;text-align:left;font-size:12px;font-weight:600;border-bottom:2px solid #e5e5e5}
-  th:last-child,td:last-child{text-align:right}
-  th:nth-child(2),td:nth-child(2){text-align:center}
-  .totals td{padding:4px 12px}
-  .total-row td{font-weight:700;font-size:14px;border-top:2px solid #1a1a1a;padding-top:8px}
-  .footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.top img{width:105px;height:auto}
+  .supplier{border:1px solid #555;padding:12px;margin-bottom:26px}.supplier-grid,.parties{display:grid;grid-template-columns:1fr 1fr;gap:28px}.parties{margin:0 6px 34px}.line{line-height:1.55}.section-title{font-weight:bold;margin-bottom:4px}
+  .items th,.items td,.notes th,.notes td{border:1px solid #444;padding:5px}.items th,.notes th{background:#ccc;text-align:center;font-weight:normal}.items td:nth-child(2){text-align:center}.items td:nth-child(n+3){white-space:nowrap}
+  .totals{width:330px;margin-left:auto}.totals td{padding:3px}.totals td:last-child{text-align:right}.total-row td{font-weight:bold}.words{margin-top:8px;text-align:right;font-weight:bold}
+  .payment-info{margin-top:30px;line-height:1.5}.notes{margin-top:6px}
 </style>
 </head>
 <body>
-<table class="header-table">
-  <tr>
-    <td style="width:50%">
-      <h1 style="margin:0 0 4px;font-size:22px;letter-spacing:2px">${L.invoice}</h1>
-      <div class="meta">
-        ${L.number}: <strong>INV-${esc(order.id)}</strong><br/>
-        ${L.date}: ${date}
-      </div>
-    </td>
-    <td style="text-align:right">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#888;margin-bottom:4px">${L.seller}</div>
-      <strong style="font-size:16px">${COMPANY.name}</strong><br/>
-      <span class="meta">
-        ${COMPANY.legalAddress}<br/>
-        Reģ. Nr. ${COMPANY.regNumber}<br/>
-        PVN Nr. ${COMPANY.vatNumber}<br/>
-        ${COMPANY.bankName}, ${COMPANY.swift}<br/>
-        ${COMPANY.bankAccount}<br/>
-        ${L.phone}: ${COMPANY.phone}<br/>
-        ${COMPANY.email}
-      </span>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#888;margin-bottom:4px">${L.buyer}</div>
-      <div>
-        <strong>${esc(order.firstName)} ${esc(order.lastName)}</strong><br/>
-        ${esc(order.email)}<br/>
-        ${L.phone}: ${esc(order.phone)}<br/>
-        ${buyerAddress ? esc(buyerAddress) + ', ' : ''}${esc(buyerCity)}${!pickup && order.postalCode ? ' ' + esc(order.postalCode) : ''}
-      </div>
-    </td>
-    <td></td>
-  </tr>
-</table>
-
-<table>
+<div class="top"><div><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img src="/logo.svg" alt="hairshop.lv"/></div>
+<div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: ${COMPANY.name.toUpperCase()}<br/>${L.taxCode}: ${COMPANY.vatNumber}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>Bank: ${COMPANY.bankName}, SWIFT: ${COMPANY.swift}<br/>Konts: ${COMPANY.bankAccount}</div></div></div>
+<div class="parties"><div class="line"><div class="section-title">${L.payer}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</div><div class="line"><div class="section-title">${L.recipient}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</div></div>
+<div class="section-title">${L.products}</div>
+<table class="items">
   <thead>
     <tr>
-      <th style="width:50%">${L.product}</th>
-      <th style="width:10%">${L.qty}</th>
-      <th style="width:20%">${L.price}</th>
-      <th style="width:20%">${L.amount}</th>
+      <th style="width:45%">${L.product}</th><th style="width:15%">${L.sku}</th><th style="width:15%">${L.price}</th><th style="width:10%">${L.qty}</th><th style="width:15%">${L.amount}</th>
     </tr>
   </thead>
   <tbody>
@@ -189,15 +223,14 @@ export function buildInvoiceHtml(
   </tbody>
 </table>
 
-<table class="totals" style="margin-top:0;width:320px;margin-left:auto">
-  <tr><td style="color:#555">${L.subtotal}</td><td style="text-align:right">${eur(order.subtotal)}</td></tr>
+<table class="totals">
+  <tr><td>${lang === 'lv' ? 'Kopā bez PVN' : 'Goods excl. VAT'}</td><td>${eur(goodsWithoutVat)}</td></tr>
   ${discountRow}
-  <tr><td style="color:#555">${L.delivery}</td><td style="text-align:right">${eur(order.delivery)}</td></tr>
-  <tr><td style="color:#555">${L.tax}</td><td style="text-align:right">${eur(taxAmount)}</td></tr>
-  <tr class="total-row"><td>${L.total}</td><td style="text-align:right">${eur(order.total)}</td></tr>
+  <tr><td>${L.delivery}</td><td>${eur(order.delivery)}</td></tr><tr><td>${L.tax}</td><td>${eur(taxAmount)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}</td><td>${eur(order.total)}</td></tr>
 </table>
-
-<div class="footer">${L.thankyou}</div>
+<div class="words">${L.amountWords}: ${esc(words)}</div>
+<div class="payment-info"><strong>${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<br/><strong>${L.notes}</strong></div>
+<table class="notes"><thead><tr><th style="width:30%">${L.created}</th><th>${L.note}</th></tr></thead><tbody><tr><td>${created}</td><td></td></tr></tbody></table>
 </body>
 </html>`
 }

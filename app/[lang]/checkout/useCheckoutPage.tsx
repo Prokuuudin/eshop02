@@ -24,6 +24,13 @@ import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
 import { burstConfetti } from '@/lib/confetti';
 import { useTurnstile } from '@/lib/use-turnstile';
+import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
+import {
+    pickPrefillAddress,
+    mergeEmptyAddressFields,
+    buildSaveBackAddress,
+    buildPrefillFallback,
+} from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 
 const validateEmail = (email: string): boolean => {
@@ -41,6 +48,7 @@ function useCheckoutPageState() {
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
     const { getCompany, syncFromDb } = useCompanyStore();
+    const { getByEmail, upsertForEmail, replaceForEmail } = useSavedAddresses();
 
     React.useEffect(() => {
         void syncFromDb();
@@ -59,6 +67,24 @@ function useCheckoutPageState() {
         postalCode: searchParams.get('postalCode') ?? '',
         paymentMethod: 'card',
     }));
+
+    // Prefill from the user's saved address / profile, but never clobber a field
+    // that's already filled (e.g. from a "Use this address" query-param link above).
+    React.useEffect(() => {
+        if (!currentUser?.email || !currentUser?.id) return;
+        let cancelled = false;
+        void hydrateSavedAddressesFromServer(currentUser.email, replaceForEmail).then(() => {
+            if (cancelled) return;
+            const saved = pickPrefillAddress(getByEmail(currentUser.email), currentUser.id);
+            const hasExplicitAddress = !!searchParams.get('address');
+            const fallback = buildPrefillFallback(currentUser, saved, hasExplicitAddress);
+            setFormData((prev) => ({ ...prev, ...mergeEmptyAddressFields(prev, fallback) }));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.id, currentUser?.email]);
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
         return method === 'courier' || method === 'pickup' || method === 'post'
@@ -323,6 +349,13 @@ function useCheckoutPageState() {
 
         const order = { id: orderId, ...orderData };
         addOrder(order);
+
+        // Silently keep the address book in sync so next checkout prefills from it.
+        // Fixed id → repeat orders update the same row instead of piling up duplicates.
+        const addressToSave = buildSaveBackAddress(currentUser, formData);
+        if (addressToSave) {
+            upsertForEmail(addressToSave.email, addressToSave);
+        }
 
         // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
         if (currentUser) {

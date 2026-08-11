@@ -8,6 +8,7 @@ import { pointsToEuros } from '@/lib/bonus-program';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 import ShareOrderButton from '@/components/ShareOrderButton';
 import { LoaderCircle } from 'lucide-react';
+import { COMPANY } from '@/data/company';
 
 type PageProps = {
     params: Promise<{
@@ -22,6 +23,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
   const { t, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
+  const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
 return (
         <main className="w-full px-4 py-12">
             <div className="max-w-4xl mx-auto">
@@ -336,7 +338,7 @@ return (
                                     <ShareOrderButton order={order} invoiceLang="lv" />
                                 </div>
                                 <div className="flex items-stretch gap-2">
-                                    <Button variant="outline" className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('en')} disabled={downloadingInvoiceLang !== null}>
+                                    <Button className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('en')} disabled={downloadingInvoiceLang !== null}>
                                         {downloadingInvoiceLang === 'en' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                         {downloadingInvoiceLang === 'en' ? t('order.generatingInvoice') : t('order.downloadInvoiceEn')}
                                     </Button>
@@ -366,7 +368,16 @@ return (
                     <h3 className="font-bold mb-2 text-foreground">
                         {t('order.helpTitle')}
                     </h3>
-                    <p className="text-gray-700 dark:text-gray-300 mb-4">{t('order.helpText')}</p>
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">
+                        {t('order.helpWrite')}{' '}
+                        <a className="font-medium text-primary underline underline-offset-2 hover:no-underline" href={`mailto:${COMPANY.email}`}>
+                            {COMPANY.email}
+                        </a>{' '}
+                        {t('order.helpOrCall')}{' '}
+                        <a className="font-medium text-primary underline underline-offset-2 hover:no-underline" href={`tel:${COMPANY.phone}`}>
+                            {displayPhone}
+                        </a>
+                    </p>
                     <p className="text-sm text-muted-foreground">
                         {t('order.workHours')}
                     </p>

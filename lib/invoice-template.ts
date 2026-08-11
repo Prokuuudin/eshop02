@@ -42,6 +42,7 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     amountWords: 'Summa vārdiem', paymentReference: 'Apmaksājot, lūdzu, norādiet rēķina numuru',
     electronic: 'Rēķins sagatavots elektroniskā veidā un ir autorizēts', notes: 'Piezīmes',
     created: 'Izveidota', note: 'Piezīme', paymentWarning: 'Ja rēķins netiks apmaksāts 3 darba dienu laikā, mēs būsim spiesti anulēt Jūsu pasūtījumu. Ja Jums rodas jautājumi, lūdzam sazināties ar mums pa e-pastu info@hairshop.lv.',
+    bank: 'Banka',
   },
   en: {
     invoice: 'INVOICE',
@@ -68,6 +69,7 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     amountWords: 'Amount in words', paymentReference: 'When paying, please specify the invoice number',
     electronic: 'This invoice was prepared electronically and is authorised', notes: 'Notes',
     created: 'Created', note: 'Note', paymentWarning: 'If the invoice is not paid within 3 business days, we will have to cancel your order. If you have any questions, please contact us at info@hairshop.lv.',
+    bank: 'Bank',
   },
 }
 
@@ -148,6 +150,11 @@ function deliveryLabel(order: Order, address: string, city: string): string {
   return `Kurjers, ${destination}`
 }
 
+function normalizeInvoiceLocation(value: string, lang: InvoiceLang): string {
+  if (lang !== 'lv') return value
+  return value.replace(/Riga/gi, 'Rīga').replace(/Рига/gi, 'Rīga')
+}
+
 /**
  * Для pickup-заказов в address/city лежит снимок адреса магазина на языке
  * оформления (в старых заказах — русский). Резолвим магазин по pickupStoreId,
@@ -176,13 +183,13 @@ export function buildInvoiceHtml(
   order: Order,
   titles?: Record<string, string>,
   lang: InvoiceLang = 'lv',
-  _assetBaseUrl = ''
+  assetBaseUrl = ''
 ): string {
   const L = LABELS[lang]
   const date = formatInvoiceDate(order.createdAt)
   const pickup = lvDeliveryAddress(order)
-  const buyerAddress = pickup?.address ?? order.address
-  const buyerCity = pickup?.city ?? order.city
+  const buyerAddress = normalizeInvoiceLocation(pickup?.address ?? order.address, lang)
+  const buyerCity = normalizeInvoiceLocation(pickup?.city ?? order.city, lang)
 
   const itemRows = order.items
     .map((item) => {
@@ -208,6 +215,7 @@ export function buildInvoiceHtml(
   const customerAddress = [buyerAddress, buyerCity, !pickup ? order.postalCode : ''].filter(Boolean).map(esc).join(', ')
   const created = new Date(order.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')
   const words = amountInWords(order.total, lang)
+  const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/invoice-logo.png`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -216,21 +224,20 @@ export function buildInvoiceHtml(
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${L.invoice} ${invoiceNumber}</title>
 <style>
-  @page{size:A4;margin:14mm} *{box-sizing:border-box} body{font-family:"Times New Roman",serif;font-size:13px;line-height:1.35;color:#111;margin:0;padding:24px;background:#fff;max-width:900px;margin-inline:auto}
+  @page{size:A4;margin:14mm} *{box-sizing:border-box} body{font-family:"Times New Roman",serif;font-size:15px;line-height:1.35;color:#111;margin:0;padding:24px;background:#fff;max-width:900px;margin-inline:auto}
   table{border-collapse:collapse;width:100%}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;min-height:62px;margin-bottom:16px;padding:2px 2px 0}.top-meta{line-height:1.25}
-  .brand-logo{position:relative;display:flex;align-items:center;justify-content:center;width:122px;height:52px;font-family:Arial,sans-serif;font-size:18px;font-weight:700;letter-spacing:-1px}.brand-logo::before{content:"";position:absolute;left:45px;top:2px;width:48px;height:48px;border-radius:50%;background:#0088c4}.brand-logo span{position:relative;z-index:1}.brand-logo .dark{color:#4b5563}.brand-logo .light{color:#fff}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;min-height:82px;margin-bottom:16px;padding:2px 2px 0}.top-meta{line-height:1.3}.order-number{font-size:19px}.brand-logo{display:block;width:190px;height:auto;margin-top:0}
   .supplier{border:1px solid #555;padding:12px 14px;margin-bottom:26px}.supplier-grid,.parties{display:grid;grid-template-columns:1fr 1fr;gap:34px}.supplier-grid{margin-top:5px}.parties{margin:0 6px 32px}.line{line-height:1.6;padding:0 6px}.section-title{font-weight:bold;margin-bottom:5px}
-  .items{table-layout:fixed}.items th,.items td,.notes th,.notes td{border:1px solid #444;padding:7px 8px;line-height:1.25;vertical-align:middle}.items th,.notes th{background:#ccc;text-align:center;font-weight:normal}.items td:nth-child(2){text-align:center}.items td:nth-child(3),.items td:nth-child(4),.items td:nth-child(5){text-align:right;white-space:nowrap}.items td:nth-child(4){text-align:center}
+  .items{table-layout:fixed}.items th,.items td,.notes th,.notes td{border:1px solid #444;padding:7px 8px;line-height:1.25;text-align:center;vertical-align:middle}.items th,.notes th{background:#ccc;font-weight:normal}.items td:nth-child(2),.items td:nth-child(3),.items td:nth-child(4),.items td:nth-child(5){white-space:nowrap}
   .totals{width:340px;margin:3px 0 0 auto}.totals td{padding:3px 4px;line-height:1.35}.totals td:first-child{text-align:right}.totals td:last-child{width:105px;text-align:right;white-space:nowrap}.total-row td{font-weight:bold;padding-top:5px}.words{margin-top:10px;text-align:right;font-weight:bold;line-height:1.4}
-  .payment-info{margin-top:30px;line-height:1.55}.payment-info strong{display:inline-block;margin-bottom:2px}.notes-title{margin-top:2px}.notes{margin-top:6px}.notes td{height:27px}
-  @media print{body{padding:0}.brand-logo::before{print-color-adjust:exact}}
+  .seller-name{display:inline-block;margin-bottom:2px;font-size:18px;font-weight:700}.method-line{display:inline-block;font-weight:700;line-height:1.4}.payment-info{margin-top:30px;line-height:1.55}.payment-reference{display:inline-block;margin-bottom:2px;font-size:18px;font-weight:700}.notes-title{margin-top:2px}.notes{margin-top:6px}.notes td{height:29px}
+  @media print{body{padding:0}}
 </style>
 </head>
 <body>
-<div class="top"><div class="top-meta"><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><div class="brand-logo" aria-label="hairshop.lv"><span class="dark">hair</span><span class="light">shop.</span><span class="dark">lv</span></div></div>
-<div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: ${COMPANY.name.toUpperCase()}<br/>${L.taxCode}: ${formatVatNumber()}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>Bank: ${COMPANY.bankName}, SWIFT: ${COMPANY.swift}<br/>Konts: ${formatIban(COMPANY.bankAccount)}</div></div></div>
-<div class="parties"><div class="line"><div class="section-title">${L.payer}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</div><div class="line"><div class="section-title">${L.recipient}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</div></div>
+<div class="top"><div class="top-meta"><strong class="order-number">${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img class="brand-logo" src="${esc(logoUrl)}" alt="hairshop-pro.lv"/></div>
+<div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: <strong class="seller-name">${COMPANY.name.toUpperCase()}</strong><br/>${L.taxCode}: ${formatVatNumber()}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>${L.bank}: ${COMPANY.bankName}<br/>Konts: ${formatIban(COMPANY.bankAccount)}<br/>SWIFT: ${COMPANY.swift}</div></div></div>
+<div class="parties"><div class="line"><div class="section-title">${L.payer}:</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}<br/><br/><strong class="method-line">${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</strong></div><div class="line"><div class="section-title">${L.recipient}:</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}<br/><br/><strong class="method-line">${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</strong></div></div>
 <div class="section-title">${L.products}</div>
 <table class="items">
   <thead>
@@ -249,7 +256,7 @@ export function buildInvoiceHtml(
   <tr><td>${L.delivery}:</td><td>${eur(order.delivery)}</td></tr><tr><td>${L.tax}:</td><td>${eur(taxAmount)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}:</td><td>${eur(order.total)}</td></tr>
 </table>
 <div class="words">${L.amountWords}: ${esc(words)}</div>
-<div class="payment-info"><strong>${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>
+<div class="payment-info"><strong class="payment-reference">${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>
 <table class="notes"><thead><tr><th style="width:30%">${L.created}</th><th>${L.note}</th></tr></thead><tbody><tr><td>${created}</td><td></td></tr></tbody></table>
 </body>
 </html>`

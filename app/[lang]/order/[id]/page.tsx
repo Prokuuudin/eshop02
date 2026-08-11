@@ -9,6 +9,7 @@ import ReturnRequestDialog from '@/components/ReturnRequestDialog';
 import ShareOrderButton from '@/components/ShareOrderButton';
 import { LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
+import { formatOrderAddressLatvian } from '@/lib/order-address';
 
 type PageProps = {
     params: Promise<{
@@ -24,26 +25,27 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
   const { t, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
+  const displayAddress = formatOrderAddressLatvian(order)
 return (
-        <main className="w-full px-4 py-12">
+        <main className="w-full px-4 py-5 sm:py-8">
             <div className="max-w-4xl mx-auto">
                 {/* Success message */}
-                <div className="text-center mb-8">
-                    <div className="text-6xl mb-4">✓</div>
-                    <h1 className="text-3xl font-bold mb-2 text-foreground">
+                <div className="mb-4 text-center sm:mb-6">
+                    <div className="mb-1 text-4xl sm:mb-2 sm:text-5xl">✓</div>
+                    <h1 className="mb-1 text-2xl font-bold text-foreground sm:text-3xl">
                         {t('order.successTitle')}
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm text-muted-foreground sm:text-base">
                         {t('order.successDescription')}
                     </p>
                 </div>
 
                 {/* Order details */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
                     {/* Main info */}
-                    <div className="md:col-span-2 space-y-6">
+                    <div className="order-2 space-y-4 md:order-1 md:col-span-2 md:space-y-5">
                         {/* Order ID and date */}
-                        <div className="bg-card rounded-lg border border-border p-6">
+                        <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-1">
@@ -60,7 +62,7 @@ return (
                                     </p>
                                 </div>
                             </div>
-                            <div className="mt-4">
+                            <div className="mt-3">
                                 <span
                                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
                                         status
@@ -69,10 +71,8 @@ return (
                                     {getStatusLabel(status)}
                                 </span>
                             </div>
-                        </div>
-
-                        <div className="bg-card rounded-lg border border-border p-6">
-                            <h2 className="font-bold text-lg mb-4 text-foreground">
+                            <div className="mt-4 border-t border-border pt-4">
+                            <h2 className="mb-3 text-lg font-bold text-foreground">
                                 {t('order.timelineTitle')}
                             </h2>
                             {status === 'cancelled' ? (
@@ -80,7 +80,7 @@ return (
                                     {t('order.status.cancelled')}
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {timelineSteps.map((step, index) => {
                                         const done = index <= currentStatusIndex;
                                         const isCurrent = index === currentStatusIndex;
@@ -111,11 +111,10 @@ return (
                                     })}
                                 </div>
                             )}
-                        </div>
-
-                        {/* Delivery info */}
-                        <div className="bg-card rounded-lg border border-border p-6">
-                            <h2 className="font-bold text-lg mb-4 text-foreground">
+                            </div>
+                            {/* Delivery info */}
+                            <div className="mt-4 border-t border-border pt-4">
+                            <h2 className="mb-3 text-lg font-bold text-foreground">
                                 {t('order.deliveryAddress')}
                             </h2>
                             <div className="space-y-2 text-gray-700 dark:text-gray-300">
@@ -125,16 +124,8 @@ return (
                                 </p>
                                 <p>
                                     <span className="font-medium">{t('order.address')}:</span>{' '}
-                                    {order.address}, {order.city}
+                                    {displayAddress}
                                 </p>
-                                {order.postalCode && (
-                                    <p>
-                                        <span className="font-medium">
-                                            {t('order.postalCode')}:
-                                        </span>{' '}
-                                        {order.postalCode}
-                                    </p>
-                                )}
                                 <p>
                                     <span className="font-medium">{t('order.phone')}:</span>{' '}
                                     {order.phone}
@@ -144,11 +135,9 @@ return (
                                     {order.email}
                                 </p>
                             </div>
-                        </div>
-
-                        {/* Delivery and payment */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-card rounded-lg border border-border p-6">
+                            {/* Delivery and payment */}
+                            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:gap-4">
+                            <div className="min-w-0 pr-2">
                                 <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.deliveryMethod')}
                                 </h3>
@@ -156,7 +145,7 @@ return (
                                     {getDeliveryLabel(order.deliveryMethod)}
                                 </p>
                             </div>
-                            <div className="bg-card rounded-lg border border-border p-6">
+                            <div className="min-w-0 border-l border-border pl-4">
                                 <h3 className="font-bold mb-2 text-foreground">
                                     {t('order.paymentMethod')}
                                 </h3>
@@ -185,18 +174,20 @@ return (
                                     </Button>
                                 )}
                             </div>
+                            </div>
+                        </div>
                         </div>
 
                         {/* Items */}
-                        <div className="bg-card rounded-lg border border-border p-6">
-                            <h2 className="font-bold text-lg mb-4 text-foreground">
+                        <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+                            <h2 className="mb-3 text-lg font-bold text-foreground">
                                 {t('order.itemsInOrder')}
                             </h2>
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {order.items.map((item) => (
                                     <div
                                         key={item.lineKey}
-                                        className="flex gap-4 pb-4 border-b border-border last:border-b-0"
+                                        className="flex gap-3 border-b border-border pb-3 last:border-b-0"
                                     >
                                         <Link
                                             href={`/product/${item.id}`}
@@ -243,12 +234,12 @@ return (
                     </div>
 
                     {/* Summary sidebar */}
-                    <div className="md:col-span-1">
-                        <div className="bg-card rounded-lg border border-border p-6 sticky top-24">
-                            <h2 className="font-bold text-lg mb-4 text-foreground">
+                    <div className="order-1 md:order-2 md:col-span-1">
+                        <div className="sticky top-24 rounded-lg border border-border bg-card p-4 sm:p-5">
+                            <h2 className="mb-3 text-lg font-bold text-foreground">
                                 {t('order.summaryTitle')}
                             </h2>
-                            <div className="space-y-2 text-sm mb-4 pb-4 border-b border-border text-gray-700 dark:text-gray-300">
+                            <div className="mb-3 space-y-1.5 border-b border-border pb-3 text-sm text-gray-700 dark:text-gray-300">
                                 <div className="flex justify-between">
                                     <span>{t('order.items')}:</span>
                                     <span className="font-medium text-foreground">
@@ -297,7 +288,7 @@ return (
                                     </span>
                                 </div>
                             </div>
-                            <div className="mb-4 text-lg font-bold flex justify-between border-b border-border pb-4 text-foreground">
+                            <div className="mb-3 flex justify-between border-b border-border pb-3 text-lg font-bold text-foreground">
                                 <span>{t('order.total')}:</span>
                                 <span className="text-primary">
                                     {formatCurrency(order.total)}
@@ -364,7 +355,7 @@ return (
                 </div>
 
                 {/* Help section */}
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center dark:border-blue-800 dark:bg-blue-900/30 sm:p-5">
                     <h3 className="font-bold mb-2 text-foreground">
                         {t('order.helpTitle')}
                     </h3>

@@ -13,6 +13,7 @@ import { DELIVERY_LABELS, EDIT_DELIVERY_COSTS, PAYMENT_COLORS, PAYMENT_LABELS, S
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { calculateOrderEditSummary } from './order-edit-summary';
+import { formatOrderAddressLatvian } from '@/lib/order-address';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
@@ -461,11 +462,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     order.deliveryMethod}
                                             </p>
                                             <div className="text-sm text-foreground space-y-0.5">
-                                                <p>{order.address}</p>
-                                                {order.postalCode && (
-                                                    <p>Индекс: {order.postalCode}</p>
-                                                )}
-                                                <p>{order.city}</p>
+                                                <p>{formatOrderAddressLatvian(order)}</p>
                                             </div>
                                         </div>
 

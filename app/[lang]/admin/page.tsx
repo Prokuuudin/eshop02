@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { getAdminAccessLevel } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
 import { hasAdminPermission } from '@/lib/admin-permissions'
+import { formatOrderAddressLatvian } from '@/lib/order-address'
 
 function RevenueBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -441,7 +442,7 @@ export default function AdminPage(): React.ReactElement {
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
                             <p className="text-sm text-muted-foreground">{t('admin.deliveryAddress')}</p>
-                            <p className="text-sm mt-1">{order.address}, {order.city}</p>
+                            <p className="text-sm mt-1">{formatOrderAddressLatvian(order)}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">{t('checkout.delivery.method')}</p>

@@ -141,6 +141,7 @@ describe('buildInvoiceHtml', () => {
     )
     expect(html).toContain('<html lang="en">')
     expect(html).toContain('INVOICE')
+    expect(html).toContain('Goods supplier:</div>')
     expect(html).toContain('VAT (21%)')
     expect(html).toContain('shampoo for coloured hair')
     expect(html).not.toContain('шампунь')

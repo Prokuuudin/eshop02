@@ -29,6 +29,7 @@ import {
     pickPrefillAddress,
     splitName,
     mergeEmptyAddressFields,
+    buildSaveBackAddress,
     type CheckoutAddressFields,
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
@@ -362,6 +363,13 @@ function useCheckoutPageState() {
 
         const order = { id: orderId, ...orderData };
         addOrder(order);
+
+        // Silently keep the address book in sync so next checkout prefills from it.
+        // Fixed id → repeat orders update the same row instead of piling up duplicates.
+        const addressToSave = buildSaveBackAddress(currentUser, formData);
+        if (addressToSave) {
+            upsertForEmail(addressToSave.email, addressToSave);
+        }
 
         // Сервер дебетовал/кредитовал баллы при создании заказа — подтягиваем свежий баланс.
         if (currentUser) {

@@ -176,7 +176,7 @@ export function buildInvoiceHtml(
   order: Order,
   titles?: Record<string, string>,
   lang: InvoiceLang = 'lv',
-  assetBaseUrl = ''
+  _assetBaseUrl = ''
 ): string {
   const L = LABELS[lang]
   const date = formatInvoiceDate(order.createdAt)
@@ -208,7 +208,6 @@ export function buildInvoiceHtml(
   const customerAddress = [buyerAddress, buyerCity, !pickup ? order.postalCode : ''].filter(Boolean).map(esc).join(', ')
   const created = new Date(order.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')
   const words = amountInWords(order.total, lang)
-  const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/logo.svg`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -217,18 +216,19 @@ export function buildInvoiceHtml(
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${L.invoice} ${invoiceNumber}</title>
 <style>
-  @page{size:A4;margin:14mm} body{font-family:"Times New Roman",serif;font-size:13px;color:#111;margin:0;padding:24px;background:#fff;max-width:900px;margin-inline:auto}
+  @page{size:A4;margin:14mm} *{box-sizing:border-box} body{font-family:"Times New Roman",serif;font-size:13px;line-height:1.35;color:#111;margin:0;padding:24px;background:#fff;max-width:900px;margin-inline:auto}
   table{border-collapse:collapse;width:100%}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.top img{width:105px;height:auto}
-  .supplier{border:1px solid #555;padding:12px;margin-bottom:26px}.supplier-grid,.parties{display:grid;grid-template-columns:1fr 1fr;gap:28px}.parties{margin:0 6px 34px}.line{line-height:1.55}.section-title{font-weight:bold;margin-bottom:4px}
-  .items th,.items td,.notes th,.notes td{border:1px solid #444;padding:5px}.items th,.notes th{background:#ccc;text-align:center;font-weight:normal}.items td:nth-child(2){text-align:center}.items td:nth-child(n+3){white-space:nowrap}
-  .totals{width:330px;margin-left:auto}.totals td{padding:3px}.totals td:last-child{text-align:right}.total-row td{font-weight:bold}.words{margin-top:8px;text-align:right;font-weight:bold}
-  .payment-info{margin-top:30px;line-height:1.5}.notes{margin-top:6px}
-  @media print{body{padding:0}.top img{print-color-adjust:exact}}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;min-height:62px;margin-bottom:16px;padding:2px 2px 0}.top-meta{line-height:1.25}
+  .brand-logo{position:relative;display:flex;align-items:center;justify-content:center;width:122px;height:52px;font-family:Arial,sans-serif;font-size:18px;font-weight:700;letter-spacing:-1px}.brand-logo::before{content:"";position:absolute;left:45px;top:2px;width:48px;height:48px;border-radius:50%;background:#0088c4}.brand-logo span{position:relative;z-index:1}.brand-logo .dark{color:#4b5563}.brand-logo .light{color:#fff}
+  .supplier{border:1px solid #555;padding:12px 14px;margin-bottom:26px}.supplier-grid,.parties{display:grid;grid-template-columns:1fr 1fr;gap:34px}.supplier-grid{margin-top:5px}.parties{margin:0 6px 32px}.line{line-height:1.6;padding:0 6px}.section-title{font-weight:bold;margin-bottom:5px}
+  .items{table-layout:fixed}.items th,.items td,.notes th,.notes td{border:1px solid #444;padding:7px 8px;line-height:1.25;vertical-align:middle}.items th,.notes th{background:#ccc;text-align:center;font-weight:normal}.items td:nth-child(2){text-align:center}.items td:nth-child(3),.items td:nth-child(4),.items td:nth-child(5){text-align:right;white-space:nowrap}.items td:nth-child(4){text-align:center}
+  .totals{width:340px;margin:3px 0 0 auto}.totals td{padding:3px 4px;line-height:1.35}.totals td:first-child{text-align:right}.totals td:last-child{width:105px;text-align:right;white-space:nowrap}.total-row td{font-weight:bold;padding-top:5px}.words{margin-top:10px;text-align:right;font-weight:bold;line-height:1.4}
+  .payment-info{margin-top:30px;line-height:1.55}.payment-info strong{display:inline-block;margin-bottom:2px}.notes-title{margin-top:2px}.notes{margin-top:6px}.notes td{height:27px}
+  @media print{body{padding:0}.brand-logo::before{print-color-adjust:exact}}
 </style>
 </head>
 <body>
-<div class="top"><div><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img src="${esc(logoUrl)}" alt="hairshop.lv"/></div>
+<div class="top"><div class="top-meta"><strong>${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><div class="brand-logo" aria-label="hairshop.lv"><span class="dark">hair</span><span class="light">shop.</span><span class="dark">lv</span></div></div>
 <div class="supplier"><div class="section-title">${L.supplier}</div><div class="supplier-grid line"><div>${L.supplierName}: ${COMPANY.name.toUpperCase()}<br/>${L.taxCode}: ${formatVatNumber()}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>Bank: ${COMPANY.bankName}, SWIFT: ${COMPANY.swift}<br/>Konts: ${formatIban(COMPANY.bankAccount)}</div></div></div>
 <div class="parties"><div class="line"><div class="section-title">${L.payer}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</div><div class="line"><div class="section-title">${L.recipient}</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${customerAddress}<br/><br/>${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</div></div>
 <div class="section-title">${L.products}</div>
@@ -244,12 +244,12 @@ export function buildInvoiceHtml(
 </table>
 
 <table class="totals">
-  <tr><td>${lang === 'lv' ? 'Kopā bez PVN' : 'Goods excl. VAT'}</td><td>${eur(goodsWithoutVat)}</td></tr>
+  <tr><td>${lang === 'lv' ? 'Kopā bez PVN' : 'Goods excl. VAT'}:</td><td>${eur(goodsWithoutVat)}</td></tr>
   ${discountRow}
-  <tr><td>${L.delivery}</td><td>${eur(order.delivery)}</td></tr><tr><td>${L.tax}</td><td>${eur(taxAmount)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}</td><td>${eur(order.total)}</td></tr>
+  <tr><td>${L.delivery}:</td><td>${eur(order.delivery)}</td></tr><tr><td>${L.tax}:</td><td>${eur(taxAmount)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}:</td><td>${eur(order.total)}</td></tr>
 </table>
 <div class="words">${L.amountWords}: ${esc(words)}</div>
-<div class="payment-info"><strong>${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<br/><strong>${L.notes}</strong></div>
+<div class="payment-info"><strong>${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>
 <table class="notes"><thead><tr><th style="width:30%">${L.created}</th><th>${L.note}</th></tr></thead><tbody><tr><td>${created}</td><td></td></tr></tbody></table>
 </body>
 </html>`

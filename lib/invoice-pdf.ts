@@ -25,12 +25,11 @@ function trimPdfCache(): void {
 }
 
 async function renderInvoicePdfBlob(html: string): Promise<Blob> {
-  const renderHtml = await inlineInvoiceLogo(html)
   const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
     import('jspdf'),
     import('html2canvas'),
   ])
-  const frame = await createInvoiceFrame(renderHtml)
+  const frame = await createInvoiceFrame(html)
 
   try {
     const body = frame.contentDocument?.body
@@ -102,48 +101,6 @@ function canvasToA4Pdf(canvas: HTMLCanvasElement, JsPdf: JsPdfConstructor): Blob
   }
 
   return pdf.output('blob')
-}
-
-async function inlineInvoiceLogo(html: string): Promise<string> {
-  const logoMatch = html.match(/src="([^"]*\/logo\.svg)"/)
-  if (!logoMatch) return html
-
-  try {
-    const response = await fetch(logoMatch[1])
-    if (!response.ok) return removeInvoiceLogo(html)
-    const svg = await response.text()
-    const pngDataUrl = await rasterizeSvg(svg)
-    return html.replace(logoMatch[0], `src="${pngDataUrl}"`)
-  } catch {
-    // A missing logo must not prevent the customer from downloading the invoice.
-    return removeInvoiceLogo(html)
-  }
-}
-
-async function rasterizeSvg(svg: string): Promise<string> {
-  const objectUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
-  try {
-    const image = new Image()
-    image.src = objectUrl
-    await image.decode()
-
-    // The source is very large; invoice display needs only a compact header logo.
-    const width = 320
-    const height = Math.round(width * image.naturalHeight / image.naturalWidth)
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('Canvas 2D context is unavailable')
-    context.drawImage(image, 0, 0, width, height)
-    return canvas.toDataURL('image/png')
-  } finally {
-    URL.revokeObjectURL(objectUrl)
-  }
-}
-
-function removeInvoiceLogo(html: string): string {
-  return html.replace(/<img\s+[^>]*src="[^"]*\/logo\.svg"[^>]*\/?>/, '')
 }
 
 export function invoicePdfFileName(orderId: string, lang: 'lv' | 'en'): string {

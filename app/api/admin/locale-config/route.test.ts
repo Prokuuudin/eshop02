@@ -6,11 +6,13 @@ const {
   settingUpsertMock,
   requireAdminMock,
   transactionMock,
+  revalidateTagMock,
 } = vi.hoisted(() => ({
   settingFindUniqueMock: vi.fn(),
   settingUpsertMock: vi.fn(),
   requireAdminMock: vi.fn(),
   transactionMock: vi.fn(),
+  revalidateTagMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
@@ -26,6 +28,10 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({
   requireAdmin: requireAdminMock,
+}))
+vi.mock('next/cache', () => ({
+  revalidateTag: revalidateTagMock,
+  unstable_cache: (callback: unknown) => callback,
 }))
 
 import { GET, PUT } from './route'
@@ -101,6 +107,7 @@ describe('PUT /api/admin/locale-config', () => {
     expect(settingUpsertMock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { key: 'locale-config' } })
     )
+    expect(revalidateTagMock).toHaveBeenCalledWith('storefront-locale', 'max')
   })
 
   it('falls back to the default for an invalid enum value instead of persisting garbage', async () => {

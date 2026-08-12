@@ -4,6 +4,8 @@ import type { LocaleConfig } from '@/lib/locale-config'
 import { getLocaleConfig, saveLocaleConfig } from '@/lib/locale-config-server-store'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
+import { revalidateTag } from 'next/cache'
+import { STOREFRONT_CACHE_TAGS } from '@/lib/storefront-cache'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +29,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
       await appendServerAudit(tx, request, actor, { action: 'settings.locale_updated', entityType: 'setting', entityId: 'locale-config', before, after })
       return after
     })
+    revalidateTag(STOREFRONT_CACHE_TAGS.locale, 'max')
     return NextResponse.json(saved)
   } catch {
     return NextResponse.json({ error: 'failed_to_save_locale_config' }, { status: 400 })

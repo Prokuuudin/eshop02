@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from './ui/button';
 import { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
@@ -23,12 +23,26 @@ export default function WishlistButton({
     const { t } = useTranslation();
     const { showToast } = useToast();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-    const isInWishlist = useWishlist((state) => state.isInWishlist(product.id));
+    const storedIsInWishlist = useWishlist((state) => state.isInWishlist(product.id));
     const toggleItem = useWishlist((state) => state.toggleItem);
 
     const [popping, setPopping] = useState(false)
     const [authGateOpen, setAuthGateOpen] = useState(false)
     const popTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const isClient = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false
+    )
+    const isInWishlist = isClient && storedIsInWishlist
+
+    // Zustand persist restores localStorage before React hydrates this component.
+    // Keep the first client render identical to SSR, then reveal persisted state.
+    useEffect(() => {
+        return () => {
+            if (popTimerRef.current) clearTimeout(popTimerRef.current)
+        }
+    }, [])
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault()

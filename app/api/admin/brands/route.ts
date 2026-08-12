@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { STOREFRONT_CACHE_TAGS } from '@/lib/storefront-cache'
 import type { BrandsConfigPayload } from '@/lib/brands-config'
 import { getBrandsConfigFromStore, saveBrandsConfigToStore } from '@/lib/brands-server-store'
 import { prisma } from '@/lib/prisma'
@@ -33,6 +34,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
     revalidatePath('/catalog')
     revalidatePath('/brand')
     revalidatePath('/admin/brands')
+    revalidateTag(STOREFRONT_CACHE_TAGS.brands, 'max')
 
     return NextResponse.json(saved)
   } catch {

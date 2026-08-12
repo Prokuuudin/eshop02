@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '../data/products';
@@ -9,21 +9,8 @@ import SaleBanner, { type PromoBanner } from './SaleBanner';
 import Reveal from '@/components/ui/Reveal';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function SaleSection(): React.ReactElement {
+export default function SaleSection({ products, banner }: { products: Product[]; banner: PromoBanner | null }): React.ReactElement {
     const { t } = useTranslation();
-    const [products, setProducts] = useState<Product[]>([]);
-    const [banner, setBanner] = useState<PromoBanner | null>(null);
-
-    useEffect(() => {
-        fetch('/api/products/sale')
-            .then((r) => r.json())
-            .then((d) => { if (d.products?.length) setProducts(d.products) })
-            .catch(() => {});
-        fetch('/api/banners?type=sale')
-            .then((r) => r.json())
-            .then((d) => { if (d.banners?.length) setBanner(d.banners[0]) })
-            .catch(() => {});
-    }, []);
 
     if (!products.length && !banner) {
         return (

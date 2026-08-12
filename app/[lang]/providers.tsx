@@ -13,6 +13,8 @@ import { setLocaleFormatConfig } from '@/lib/utils'
 import FlyToCart from '@/components/FlyToCart'
 import CookieConsent from '@/components/CookieConsent'
 import TelemetryReporter from '@/components/TelemetryReporter'
+import type { BonusProgramConfig } from '@/lib/bonus-program'
+import type { LocaleConfig } from '@/lib/locale-config'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -37,26 +39,20 @@ function AuthStoreProvider(): null {
 // Bonus program config (rate/caps) is admin-configured but read by every guest and
 // customer page (checkout, product, account) — hydrate the real value once app-wide
 // instead of trusting whatever default is cached in this browser's localStorage.
-function BonusConfigSync(): null {
+function BonusConfigSync({ config }: { config: BonusProgramConfig }): null {
   useEffect(() => {
-    fetch('/api/bonus-config')
-      .then((r) => r.json())
-      .then((config) => useAdminStore.getState().setBonusProgram(config))
-      .catch(() => {})
-  }, [])
+    useAdminStore.getState().setBonusProgram(config)
+  }, [config])
   return null
 }
 
 // Date/price format + default-language settings are admin-configured (KV-backed) —
 // hydrate the real value once app-wide so formatDate/formatEuro (lib/utils.ts)
 // reflect it everywhere without threading a config prop through every call site.
-function LocaleConfigSync(): null {
+function LocaleConfigSync({ config }: { config: LocaleConfig }): null {
   useEffect(() => {
-    fetch('/api/locale-config')
-      .then((r) => r.json())
-      .then((config) => setLocaleFormatConfig(config))
-      .catch(() => {})
-  }, [])
+    setLocaleFormatConfig(config)
+  }, [config])
   return null
 }
 
@@ -137,17 +133,21 @@ function ChunkErrorRecovery(): null {
 export function Providers({
   children,
   initialLanguage,
+  bonusConfig,
+  localeConfig,
 }: {
   children: React.ReactNode
   initialLanguage?: Language
+  bonusConfig: BonusProgramConfig
+  localeConfig: LocaleConfig
 }): React.ReactNode {
   return (
-    <I18nProvider initialLanguage={initialLanguage}>
+    <I18nProvider initialLanguage={initialLanguage} defaultLanguage={localeConfig.defaultLanguage}>
       <ToastProvider>
         <SeedAccounts />
         <AuthStoreProvider />
-        <BonusConfigSync />
-        <LocaleConfigSync />
+        <BonusConfigSync config={bonusConfig} />
+        <LocaleConfigSync config={localeConfig} />
         <WishlistScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />

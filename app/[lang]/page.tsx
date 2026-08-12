@@ -17,6 +17,15 @@ import AboutSection from '@/components/AboutSection';
 import Reveal from '@/components/ui/Reveal';
 import { getServerContent } from '@/lib/server-translation';
 import { serializeJsonLd } from '@/lib/json-ld';
+import {
+    getCachedBestsellers,
+    getCachedBrands,
+    getCachedCategories,
+    getCachedSaleBanners,
+    getCachedSaleProducts,
+} from '@/lib/storefront-cache';
+import { getServerUser } from '@/lib/server-auth';
+import { redactProductPrices } from '@/lib/product-price-visibility';
 
 type PageProps = { params: Promise<{ lang: string }> };
 
@@ -32,7 +41,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function Home({ params }: PageProps): Promise<JSX.Element> {
     const language = resolveLanguage((await params).lang);
-    const { t } = await getServerContent(language);
+    const [{ t }, categories, brands, bestsellers, saleProducts, saleBanners, user] = await Promise.all([
+        getServerContent(language),
+        getCachedCategories(),
+        getCachedBrands(),
+        getCachedBestsellers(),
+        getCachedSaleProducts(),
+        getCachedSaleBanners(),
+        getServerUser(),
+    ]);
+    const visibleBestsellers = user ? bestsellers : redactProductPrices(bestsellers);
+    const visibleSaleProducts = user ? saleProducts : redactProductPrices(saleProducts);
     const faqIds = [1, 2, 4, 5, 6, 7, 8, 10, 11, 12];
     const faqSchema = {
         '@context': 'https://schema.org',
@@ -54,10 +73,10 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
             />
             <Hero language={language} />
             <Reveal><Benefits language={language} /></Reveal>
-            <BestsellersSection />
-            <Reveal><Categories /></Reveal>
-            <Reveal><Brands /></Reveal>
-            <SaleSection />
+            <BestsellersSection products={visibleBestsellers} />
+            <Reveal><Categories initialCategories={categories} /></Reveal>
+            <Reveal><Brands initialBrands={brands} /></Reveal>
+            <SaleSection products={visibleSaleProducts} banner={saleBanners[0] ?? null} />
             <Reveal><ProductRequestSection /></Reveal>
             <main className="w-full">
                 <Reveal><HomeRetailBanner /></Reveal>

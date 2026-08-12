@@ -2,30 +2,18 @@
 import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
-import { sanitizeStoredLink } from '@/lib/safe-link'
 import { COMPANY_CONTACT_LINES } from '@/data/company'
 import { resolveLocaleText } from '@/lib/locale-text'
 
 type FooterPromo = { title: string; link: string }
 
-export default function Footer(): React.ReactElement {
+export default function Footer({ initialPromo = null }: { initialPromo?: FooterPromo | null }): React.ReactElement {
   const { t, language } = useTranslation()
-  const [promo, setPromo] = React.useState<FooterPromo | null>(null)
+  const promo = initialPromo
 
   const cookieLabel = language === 'ru' ? 'Файлы cookie' : language === 'en' ? 'Cookies' : 'Sīkdatnes'
   const cookieSettingsLabel =
     language === 'ru' ? 'Настройки cookie' : language === 'en' ? 'Cookie settings' : 'Sīkdatņu iestatījumi'
-
-  React.useEffect(() => {
-    fetch('/api/banners?type=sale')
-      .then((r) => r.json())
-      .then((d) => {
-        const banner = d.banners?.[0]
-        if (!banner?.title) return
-        setPromo({ title: banner.title, link: sanitizeStoredLink(banner.link) || '/catalog' })
-      })
-      .catch(() => {})
-  }, [])
 
   const promoTitle = promo ? resolveLocaleText(promo.title, language) : ''
 

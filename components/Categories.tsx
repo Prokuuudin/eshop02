@@ -11,12 +11,13 @@ import {
     DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import type { CategoryConfigItem } from '@/lib/categories-config';
 
 // ...existing code...
 
-export default function Categories(): React.ReactElement | null {
+export default function Categories({ initialCategories }: { initialCategories?: CategoryConfigItem[] }): React.ReactElement | null {
     const { t, language } = useTranslation();
-    const { categories } = useCategoriesConfig();
+    const { categories } = useCategoriesConfig(initialCategories);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isHydrated = useAuthStore((s) => s.isHydrated);
 

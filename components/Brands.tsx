@@ -7,6 +7,7 @@ import { useBrandsConfig } from '@/lib/use-brands-config'
 import Link from 'next/link';
 import BrandCardSkeleton from './BrandCardSkeleton';
 import { Button } from '@/components/ui/button';
+import type { BrandConfigItem } from '@/lib/brands-config';
 
 const COLLAPSED_MAX_HEIGHT = 240;
 
@@ -22,10 +23,10 @@ function toBrandTitleCase(name: string): string {
     .replace(/(^|[\s\-.'])([a-zа-яё])/gi, (_m, sep, chr) => sep + chr.toUpperCase());
 }
 
-export default function Brands(): React.ReactElement {
+export default function Brands({ initialBrands }: { initialBrands?: BrandConfigItem[] }): React.ReactElement {
   const { t, language } = useTranslation();
   const { resolveImageSrc } = useSiteContent();
-  const { brands } = useBrandsConfig();
+  const { brands } = useBrandsConfig(initialBrands);
   const [loading, setLoading] = React.useState(false);
   const [showAll, setShowAll] = React.useState(false);
 

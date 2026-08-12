@@ -34,9 +34,10 @@ type BrandsConfigResult = {
   reload: () => Promise<void>
 }
 
-export function useBrandsConfig(): BrandsConfigResult {
-  const [brands, setBrands] = React.useState<BrandConfigItem[]>(fallbackBrands)
-  const [loading, setLoading] = React.useState(true)
+export function useBrandsConfig(initialBrands?: BrandConfigItem[]): BrandsConfigResult {
+  const hasInitialBrands = Boolean(initialBrands)
+  const [brands, setBrands] = React.useState<BrandConfigItem[]>(initialBrands ?? fallbackBrands)
+  const [loading, setLoading] = React.useState(!hasInitialBrands)
   const [error, setError] = React.useState<string | null>(null)
 
   const load = React.useCallback(async () => {
@@ -61,8 +62,9 @@ export function useBrandsConfig(): BrandsConfigResult {
   }, [])
 
   React.useEffect(() => {
+    if (hasInitialBrands) return
     queueMicrotask(() => void load())
-  }, [load])
+  }, [hasInitialBrands, load])
 
   return { brands, loading, error, reload: load }
 }

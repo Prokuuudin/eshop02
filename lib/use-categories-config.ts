@@ -25,9 +25,10 @@ type CategoriesConfigResult = {
   reload: () => Promise<void>
 }
 
-export function useCategoriesConfig(): CategoriesConfigResult {
-  const [categories, setCategories] = React.useState<CategoryConfigItem[]>(fallbackCategories)
-  const [loading, setLoading] = React.useState(true)
+export function useCategoriesConfig(initialCategories?: CategoryConfigItem[]): CategoriesConfigResult {
+  const hasInitialCategories = Boolean(initialCategories)
+  const [categories, setCategories] = React.useState<CategoryConfigItem[]>(initialCategories ?? fallbackCategories)
+  const [loading, setLoading] = React.useState(!hasInitialCategories)
   const [error, setError] = React.useState<string | null>(null)
 
   const load = React.useCallback(async () => {
@@ -52,8 +53,9 @@ export function useCategoriesConfig(): CategoriesConfigResult {
   }, [])
 
   React.useEffect(() => {
+    if (hasInitialCategories) return
     queueMicrotask(() => void load())
-  }, [load])
+  }, [hasInitialCategories, load])
 
   return { categories, loading, error, reload: load }
 }

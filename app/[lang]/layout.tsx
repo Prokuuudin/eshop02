@@ -15,6 +15,7 @@ import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 import { LANGUAGES, resolveLanguage } from '@/lib/i18n-routing'
 import { serializeJsonLd } from '@/lib/json-ld'
 import { COMPANY } from '@/data/company'
+import { getCachedBonusConfig, getCachedLocaleConfig, getCachedSaleBanners } from '@/lib/storefront-cache'
 
 type LayoutProps = {
   children: ReactNode
@@ -58,6 +59,14 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
   const { lang } = await params
   const language = resolveLanguage(lang)
   const siteUrl = getSiteUrl()
+  const [bonusConfig, localeConfig, saleBanners] = await Promise.all([
+    getCachedBonusConfig(),
+    getCachedLocaleConfig(),
+    getCachedSaleBanners(),
+  ])
+  const promo = saleBanners[0]
+    ? { title: saleBanners[0].title, link: saleBanners[0].link || '/catalog' }
+    : null
 
   const organizationSchema = {
     '@context': 'https://schema.org',
@@ -103,7 +112,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
         >
           Пропустить к содержимому / Skip to content
         </a>
-        <Providers initialLanguage={language}>
+        <Providers initialLanguage={language} bonusConfig={bonusConfig} localeConfig={localeConfig}>
           <RouteUiEffects />
           <AuthHydrator />
           {/* Global gate: a hard-blocked user (B2B shared-card / access-request
@@ -118,7 +127,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
               </div>
               <RouteTransition>{children}</RouteTransition>
             </main>
-            <Footer />
+            <Footer initialPromo={promo} />
           </AccountGuard>
         </Providers>
       </body>

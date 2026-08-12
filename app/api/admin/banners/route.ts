@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { readBannersData, writeBannersData, type Banner } from '@/lib/banners-server-store'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { STOREFRONT_CACHE_TAGS } from '@/lib/storefront-cache'
 
 export const runtime = 'nodejs'
 
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     data.banners.push(banner)
     await writeBannersData(data)
     revalidatePath('/')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
     return NextResponse.json(banner)
   } catch {
     return NextResponse.json({ error: 'failed_to_create' }, { status: 400 })

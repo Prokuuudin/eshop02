@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getCategoriesConfigFromStore } from '@/lib/categories-server-store'
-import { filterEmptySubcategories } from '@/lib/filter-empty-subcategories'
-import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getCachedCategories } from '@/lib/storefront-cache'
 
 export const runtime = 'nodejs'
 
 export async function GET(): Promise<Response> {
-  const config = await getCategoriesConfigFromStore()
-  const products = await getMergedProducts()
-  return NextResponse.json({
-    ...config,
-    categories: filterEmptySubcategories(config.categories, products)
+  return NextResponse.json({ categories: await getCachedCategories() }, {
+    headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' },
   })
 }

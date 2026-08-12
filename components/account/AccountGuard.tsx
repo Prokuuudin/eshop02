@@ -9,16 +9,14 @@ export default function AccountGuard({ children }: { children: React.ReactNode }
     const user = useAuthStore((s) => s.user);
     const isHydrated = useAuthStore((s) => s.isHydrated);
 
-    if (!isHydrated) return null;
-
     const soft = !!user?.passwordChangeSoft;
 
     return (
         <>
-            {user && user.mustChangePassword && soft && <PasswordChangeBanner userId={user.id} />}
+            {isHydrated && user && user.mustChangePassword && soft && <PasswordChangeBanner userId={user.id} />}
             {children}
-            {user?.mustChangePassword && !soft && <ForceChangePasswordModal />}
-            {user && !user.mustChangePassword && user.isNewUser && (
+            {isHydrated && user?.mustChangePassword && !soft && <ForceChangePasswordModal />}
+            {isHydrated && user && !user.mustChangePassword && user.isNewUser && (
                 <WelcomeModal user={user} />
             )}
         </>

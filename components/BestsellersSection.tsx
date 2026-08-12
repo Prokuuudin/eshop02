@@ -1,26 +1,17 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import type { Product } from '../data/products';
 import { useTranslation } from '@/lib/use-translation';
 
 // Swiper is heavy (~130 KB) and this section renders below the fold after a client
 // fetch — defer its bundle out of the initial homepage JS.
-const BestsellersSlider = dynamic(() => import('./BestsellersSlider'), { ssr: false });
+import BestsellersSlider from './BestsellersSlider';
 
 import Reveal from '@/components/ui/Reveal'
 
-export default function BestsellersSection(): React.ReactElement | null {
+export default function BestsellersSection({ products }: { products: Product[] }): React.ReactElement | null {
     const { t } = useTranslation();
-    const [products, setProducts] = useState<Product[]>([]);
-
-    useEffect(() => {
-        fetch('/api/products/bestsellers')
-            .then((r) => r.json())
-            .then((d) => { if (d.products?.length) setProducts(d.products) })
-            .catch(() => {});
-    }, []);
 
     if (!products.length) return null;
 

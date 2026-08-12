@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { readBannersData, writeBannersData, type Banner } from '@/lib/banners-server-store'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+import { STOREFRONT_CACHE_TAGS } from '@/lib/storefront-cache'
 
 export const runtime = 'nodejs'
 
@@ -22,6 +23,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     data.banners[idx] = { ...data.banners[idx], ...body.item, id, updatedAt: now }
     await writeBannersData(data)
     revalidatePath('/')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
     return NextResponse.json(data.banners[idx])
   } catch {
     return NextResponse.json({ error: 'failed_to_update' }, { status: 400 })
@@ -41,6 +43,7 @@ export async function DELETE(_request: NextRequest, { params }: Params): Promise
     data.banners.splice(bannerIdx, 1)
     await writeBannersData(data)
     revalidatePath('/')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ error: 'failed_to_delete' }, { status: 400 })

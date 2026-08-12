@@ -25,7 +25,7 @@ export default async function FAQSection({ language }: { language: Language }): 
   ]
 
   return (
-    <section className="py-6" id="faq">
+    <section className="pb-6 pt-12 md:pt-16" id="faq">
       <div className="max-w-[1200px] mx-auto px-4">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-foreground mb-2">{t('faq.site.title')}</h2>

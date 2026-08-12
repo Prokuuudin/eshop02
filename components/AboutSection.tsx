@@ -10,7 +10,7 @@ export default async function AboutSection({ language }: { language: Language })
   const { t } = await getServerContent(language);
 
   return (
-    <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-6">
+    <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-12 md:pt-16">
       <h1 className="mb-4 text-center text-xl font-semibold text-foreground sm:mb-5 sm:text-2xl">
         {t('about.welcome.title')}
       </h1>

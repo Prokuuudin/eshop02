@@ -38,7 +38,7 @@ export default function BonusSection(): React.ReactElement | null {
     if (!bonusProgram.enabled) return null;
 
     return (
-        <section id="bonus" className="bonus-section px-4 pt-6">
+        <section id="bonus" className="bonus-section px-4 pt-12 md:pt-16">
             <div className="bonus-section__inner max-w-[1200px] mx-auto">
 
                 {/* Header */}

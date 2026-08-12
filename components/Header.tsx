@@ -42,7 +42,7 @@ export default function Header(): React.ReactElement {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 lg:pl-4 lg:pr-0 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex min-w-0 flex-shrink-0 items-center">
             <HeaderLogo />
@@ -74,7 +74,7 @@ export default function Header(): React.ReactElement {
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="w-full border-y border-border bg-gray-200 dark:bg-gray-800">
-              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-2 gap-y-1 px-2 transition-[padding] duration-300 sm:gap-x-4 sm:gap-y-2 sm:px-6 lg:pl-8 lg:pr-0 ${scrolled ? 'py-1' : 'py-2'}`}>
+              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-2 gap-y-1 px-2 transition-[padding] duration-300 sm:gap-x-4 sm:gap-y-2 sm:px-6 lg:pl-8 lg:pr-4 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 min-w-0 basis-full md:order-none md:flex-1 max-w-xl">
                   <HeaderSearch />
                 </div>

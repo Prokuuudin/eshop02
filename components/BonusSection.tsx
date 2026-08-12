@@ -69,7 +69,7 @@ export default function BonusSection(): React.ReactElement | null {
                         return (
                             <div
                                 key={idx}
-                                className="bonus-section__step flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm"
+                                className="bonus-section__step flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="bonus-section__step-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0088C4] dark:bg-white">

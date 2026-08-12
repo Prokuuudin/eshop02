@@ -9,8 +9,7 @@ export default function HeaderLogo(): React.ReactElement {
     return (
         <Link
             href="/"
-            className="header__brand relative flex items-center gap-3 w-[120px] min-[400px]:w-[180px]"
-            style={{ height: 96, minWidth: 100, minHeight: 72 }}
+            className="header__brand relative flex h-[72px] w-[104px] min-w-0 items-center gap-3 min-[400px]:h-[84px] min-[400px]:w-[150px] lg:h-24 lg:w-[180px]"
         >
             <Image
                 src={resolveImageSrc('/logo.svg')}
@@ -19,7 +18,7 @@ export default function HeaderLogo(): React.ReactElement {
                 height={108}
                 priority
                 sizes="204px"
-                className="absolute left-0 top-1/2 block h-[72px] w-auto origin-left -translate-y-1/2 scale-125 dark:hidden min-[400px]:h-[108px]"
+                className="absolute left-0 top-1/2 block h-[68px] w-auto origin-left -translate-y-1/2 dark:hidden min-[400px]:h-[84px] lg:h-[108px] lg:scale-125"
             />
             <Image
                 src={resolveImageSrc('/logo-white.svg')}
@@ -28,7 +27,7 @@ export default function HeaderLogo(): React.ReactElement {
                 height={108}
                 priority
                 sizes="204px"
-                className="absolute left-0 top-1/2 hidden h-[72px] w-auto origin-left -translate-y-1/2 scale-125 dark:block min-[400px]:h-[108px]"
+                className="absolute left-0 top-1/2 hidden h-[68px] w-auto origin-left -translate-y-1/2 dark:block min-[400px]:h-[84px] lg:h-[108px] lg:scale-125"
             />
         </Link>
     );

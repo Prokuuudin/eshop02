@@ -31,7 +31,7 @@ export default function Footer(): React.ReactElement {
 
   return (
     <footer className="footer bg-slate-50 dark:bg-gray-900 border-t border-border text-gray-800 dark:text-gray-300">
-      <div className="max-w-7xl mx-auto w-full px-4 py-10">
+      <div className="max-w-7xl mx-auto w-full px-4 py-8 sm:py-10">
         <div className="footer__grid flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-8 lg:gap-10 lg:justify-between">
           <div className="footer__section footer__nav min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h4 className="footer__title font-semibold mb-3 text-foreground">{t('footer.about')}</h4>
@@ -76,7 +76,7 @@ export default function Footer(): React.ReactElement {
           </div>
         </div>
 
-        <div className="footer__bottom mt-8 flex items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
+        <div className="footer__bottom mt-6 flex flex-col items-start justify-between gap-2 border-t border-border pt-4 text-sm text-muted-foreground min-[360px]:flex-row min-[360px]:items-center sm:mt-8 sm:gap-3">
           <div className="footer__copyright min-w-0 text-left">© {new Date().getFullYear()} Hairshop-Pro. {t('footer.allRightsReserved')}</div>
           <div className="footer__socials flex shrink-0 items-center gap-1">
             <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.instagram')} className="rounded-md p-2 text-[#0088C4] transition-colors hover:bg-black/5 hover:text-pink-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-pink-400">

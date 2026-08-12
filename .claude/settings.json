@@ -583,7 +583,9 @@
       "Bash(node -e \"try{require.resolve\\('sharp'\\); console.log\\('sharp ok'\\)}catch\\(e\\){console.log\\('no sharp'\\)}\")",
       "Bash(node -e \"try{require.resolve\\('jimp'\\); console.log\\('jimp ok'\\)}catch\\(e\\){console.log\\('no jimp'\\)}\")",
       "Bash(node scratch-bbox.js)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/media/crop-22255-0.png\")"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/api/media/crop-22255-0.png\")",
+      "Bash(powershell -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*checkout-address-prefill*'\\\\'' } | Select-Object ProcessId, CommandLine')",
+      "Bash(powershell -Command \"Stop-Process -Id 19144,14704 -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; Get-Process -Id 19144,14704 -ErrorAction SilentlyContinue\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

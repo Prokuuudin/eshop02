@@ -89,7 +89,7 @@ export default function Brands(): React.ReactElement {
         <div className="mb-4 text-center sm:mb-5">
           <h2 className="brands__title text-xl font-semibold sm:text-2xl">{t('brands.popular')}</h2>
         </div>
-        <div className="brands__grid mb-4 grid grid-cols-2 gap-2 rounded-lg bg-white p-3 sm:grid-cols-4 sm:gap-3 sm:p-5 md:grid-cols-5 lg:grid-cols-6">
+        <div className="brands__grid mb-4 grid grid-cols-2 gap-2 rounded-lg bg-white p-3 min-[360px]:grid-cols-3 sm:grid-cols-4 sm:gap-3 sm:p-5 md:grid-cols-5 lg:grid-cols-6">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <BrandCardSkeleton key={i} />)
             : DISTRIBUTOR_BRANDS.map((brand) => (
@@ -123,13 +123,13 @@ export default function Brands(): React.ReactElement {
                   style={{ maxHeight: maxHeight === 'none' ? 'none' : `${maxHeight}px` }}
                 >
                   {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
-                    <div key={letter} className="brands__letter-group flex flex-wrap items-center gap-x-2 gap-y-2">
+                    <div key={letter} className="brands__letter-group flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
                       <span className={`brands__letter inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-lg font-bold text-gray-800 ${LETTER_PALETTE[index % LETTER_PALETTE.length]}`}>{letter}</span>
                       {letterBrands.map((brand) => (
                         <Link
                           key={brand.id}
                           href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                          className="brands__brand-link inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
+                          className="brands__brand-link inline-flex max-w-full items-center [overflow-wrap:anywhere] rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
                           title={brand.name}
                         >
                           {toBrandTitleCase(brand.name)}

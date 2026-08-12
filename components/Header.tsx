@@ -44,7 +44,7 @@ export default function Header(): React.ReactElement {
         {/* Верхняя строка: логотип, навигация, действия */}
           <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-2 transition-[min-height] duration-300 sm:px-4 lg:pl-4 lg:pr-0 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
-          <div className="flex items-center flex-shrink-0 min-w-[100px]">
+          <div className="flex min-w-0 flex-shrink-0 items-center">
             <HeaderLogo />
           </div>
           {/* Навигация по центру (desktop) */}
@@ -74,7 +74,7 @@ export default function Header(): React.ReactElement {
           <>
             {/* Нижняя строка: соцсети, поиск, статус/юзер/корзина */}
             <div className="w-full border-y border-border bg-gray-200 dark:bg-gray-800">
-              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-4 gap-y-2 px-4 transition-[padding] duration-300 sm:px-6 lg:pl-8 lg:pr-0 ${scrolled ? 'py-1' : 'py-2'}`}>
+              <div className={`mx-auto flex w-full max-w-[1440px] flex-wrap items-center gap-x-2 gap-y-1 px-2 transition-[padding] duration-300 sm:gap-x-4 sm:gap-y-2 sm:px-6 lg:pl-8 lg:pr-0 ${scrolled ? 'py-1' : 'py-2'}`}>
                 <div className="order-2 min-w-0 basis-full md:order-none md:flex-1 max-w-xl">
                   <HeaderSearch />
                 </div>
@@ -89,7 +89,7 @@ export default function Header(): React.ReactElement {
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
                   </a>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
+                <div className="ml-auto flex flex-shrink-0 items-center gap-1 sm:gap-2">
                   <UserMenu />
                   <HeaderActions onCartOpen={() => setCartDrawerOpen(true)} hideLangSwitcher hideUserMenu />
                 </div>

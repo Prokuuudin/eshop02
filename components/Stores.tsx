@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import { Store } from 'lucide-react';
 import { stores } from '@/data/stores';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
@@ -8,11 +9,14 @@ export default async function Stores({ language }: { language: Language }): Prom
     const { t } = await getServerContent(language);
 
     return (
-        <section className="stores py-8" id="stores">
+        <section className="stores py-10 text-foreground" id="stores">
             <div className="w-full px-4">
-                <div className="mb-4">
-                    <h2 className="stores__title text-2xl font-semibold">{t('stores.title')}</h2>
-                </div>
+                <h1 className="stores__title mb-10 flex items-center justify-center gap-3 text-center text-3xl font-bold text-foreground">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                        <Store size={26} aria-hidden="true" />
+                    </span>
+                    {t('stores.title')}
+                </h1>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {stores.map((store) => (
                         <article

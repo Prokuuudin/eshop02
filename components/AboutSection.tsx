@@ -37,7 +37,7 @@ export default async function AboutSection({ language }: { language: Language })
           <ul className="space-y-1.5 text-sm leading-snug text-gray-700 dark:text-gray-300 sm:text-base">
             {['about.why.item1', 'about.why.item2', 'about.why.item3', 'about.why.item4', 'about.why.item5'].map((key) => (
               <li key={key} className="flex gap-1.5">
-                <span aria-hidden="true" className="shrink-0 text-[#0088C4] dark:text-[#0088C4]">&#10003;</span>
+                <span aria-hidden="true" className="shrink-0 font-black text-[#0088C4] dark:text-[#0088C4]">&#10003;</span>
                 <span>{t(key)}</span>
               </li>
             ))}
@@ -50,7 +50,6 @@ export default async function AboutSection({ language }: { language: Language })
           <div className="max-w-5xl text-base leading-tight text-white/90">
             <h2 className="text-center text-xl font-bold text-amber-300 sm:text-2xl lg:whitespace-nowrap">{t('stores.title')}</h2>
             <p>{t('about.storesInfo')}</p>
-            {t('about.storesInfo2') && <p>{t('about.storesInfo2')}</p>}
           </div>
         </div>
 

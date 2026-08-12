@@ -54,7 +54,6 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'about.welcome.p2', label: 'Приветствие — абзац 2', multiline: true },
       { type: 'text', key: 'about.welcome.p3', label: 'Приветствие — абзац 3', multiline: true },
       { type: 'text', key: 'about.storesInfo', label: 'Текст о магазинах', multiline: true },
-      { type: 'text', key: 'about.storesInfo2', label: 'Текст о магазинах — абзац 2', multiline: true },
       { type: 'text', key: 'about.storesButton', label: 'Кнопка «Магазины»' },
       { type: 'text', key: 'about.why.title', label: 'Почему мы — заголовок' },
       { type: 'text', key: 'about.why.item1', label: 'Почему мы — пункт 1' },

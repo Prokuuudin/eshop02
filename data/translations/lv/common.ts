@@ -34,7 +34,6 @@ const lvCommon: Record<string, string> = {
   'common.auth': 'Autorizācija',
   'home.retailBanner.retailOnly': 'Jūs varat iegādāties tos pašus produktus par mazumtirdzniecības cenām — mūsu interneta veikalā',
   'about.storesInfo': 'Papildus interneta veikalam mums ir profesionālu veikalu tīkls visā Latvijā. Tajos varat klātienē iepazīties ar precēm, saņemt speciālista konsultāciju, uzreiz iegādāties vajadzīgo un bez papildu piegādes maksas saņemt internetā noformētu pasūtījumu.',
-  'about.storesInfo2': 'Mūsu speciālisti palīdzēs izvēlēties profesionālos līdzekļus un aprīkojumu atbilstoši jūsu vajadzībām.',
   'about.storesButton': 'Skatīt veikalus',
   'stores.phone': 'Tālrunis',
   'stores.hours': 'Darba laiks',

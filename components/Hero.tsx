@@ -23,7 +23,7 @@ export default async function Hero({ language }: { language: Language }): Promis
         />
         <div className="hero__overlay absolute inset-0 -z-10 bg-gradient-to-r from-background from-0% via-background/45 via-35% to-transparent to-60%" />
 
-        <div className="hero__content relative h-full flex max-w-3xl flex-col items-start justify-start gap-4 px-4 py-10 text-left sm:px-6 sm:py-12 lg:px-8">
+        <div className="hero__content relative h-full flex max-w-3xl flex-col items-start justify-start gap-4 py-10 text-left sm:py-12">
           <h1
             className="hero__title font-extrabold tracking-[0.015em] text-foreground drop-shadow-sm"
             style={{ fontSize: 'clamp(1.5rem, 7vw, 3rem)', lineHeight: 1.25 }}

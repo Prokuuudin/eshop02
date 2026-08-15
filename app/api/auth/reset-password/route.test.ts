@@ -17,7 +17,7 @@ vi.mock('@/lib/server-auth', () => ({
   hashPassword: hashPasswordMock,
 }))
 
-import { POST } from './route'
+import { GET, POST } from './route'
 
 const FUTURE = new Date(Date.now() + 3600_000)
 
@@ -73,6 +73,21 @@ describe('POST /api/auth/reset-password', () => {
     tokenFindUniqueMock.mockResolvedValue(null)
     const res = await POST(makeRequest({ token: 'nope', password: 'new-password-1' }))
     expect(res.status).toBe(404)
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects an expired token for both validation and password change', async () => {
+    tokenFindUniqueMock.mockResolvedValue({
+      tokenHash: 'hashed',
+      expiresAt: new Date(Date.now() - 1_000),
+      user: { id: 'u1', email: 'user@test.com' },
+    })
+
+    const validation = await GET(new NextRequest('http://localhost/api/auth/reset-password?token=expired'))
+    const reset = await POST(makeRequest({ token: 'expired', password: 'new-password-1' }))
+
+    expect(validation.status).toBe(410)
+    expect(reset.status).toBe(410)
     expect(transactionMock).not.toHaveBeenCalled()
   })
 

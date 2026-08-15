@@ -17,11 +17,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
     const body = await req.json()
     const { amount, method, reference } = body
-    if (!amount || amount <= 0) return errorResponse('Valid amount is required', 400)
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      return errorResponse('Valid amount is required', 400)
+    }
+    if (method !== undefined && (typeof method !== 'string' || method.length > 50)) {
+      return errorResponse('Invalid payment method', 400)
+    }
+    if (reference !== undefined && (typeof reference !== 'string' || reference.length > 200)) {
+      return errorResponse('Invalid payment reference', 400)
+    }
 
     const invoice = await getInvoiceById(id)
     if (!invoice || invoice.companyId !== auth.user.companyId) return errorResponse('Invoice not found', 404)
     if (invoice.status !== 'issued') return errorResponse('Can only record payments on issued invoices', 400)
+    if (amount > invoice.remainingAmount) return errorResponse('Payment exceeds remaining amount', 400)
 
     const updated = await recordPaymentInDb(id, {
       amount,
@@ -58,5 +67,4 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     return errorResponse('Internal server error', 500)
   }
 }
-
 

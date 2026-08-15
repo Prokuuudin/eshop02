@@ -46,10 +46,26 @@ export async function PATCH(
       }
       data.interval = body.interval
     }
-    if (body.quantity !== undefined) data.quantity = Math.max(1, Number(body.quantity))
-    if (body.nextOrderDate !== undefined) data.nextOrderDate = new Date(body.nextOrderDate)
-    if (body.lastOrderDate !== undefined) data.lastOrderDate = new Date(body.lastOrderDate)
-    if (body.remindedAt !== undefined) data.remindedAt = new Date(body.remindedAt)
+    if (body.quantity !== undefined) {
+      if (!Number.isSafeInteger(body.quantity) || body.quantity < 1 || body.quantity > 1000) {
+        return NextResponse.json({ error: 'invalid_quantity' }, { status: 400 })
+      }
+      data.quantity = body.quantity
+    }
+
+    for (const [field, value] of [
+      ['nextOrderDate', body.nextOrderDate],
+      ['lastOrderDate', body.lastOrderDate],
+      ['remindedAt', body.remindedAt],
+    ] as const) {
+      if (value !== undefined) {
+        const parsed = new Date(value)
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: `invalid_${field}` }, { status: 400 })
+        }
+        data[field] = parsed
+      }
+    }
 
     const updated = await prisma.productSubscription.update({ where: { id }, data })
     return NextResponse.json({
@@ -66,5 +82,4 @@ export async function PATCH(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

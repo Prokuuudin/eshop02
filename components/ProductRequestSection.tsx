@@ -118,7 +118,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
       )}
       <div className={embedded ? 'product-request__container' : 'product-request__container mx-auto w-full max-w-[1440px] px-4'}>
-        <div className="product-request__banner relative rounded-xl bg-emerald-600 dark:bg-emerald-700 px-6 py-6 md:mt-16 md:px-10 md:pl-36 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="product-request__banner relative rounded-xl bg-emerald-800 dark:bg-emerald-900 px-6 py-6 md:mt-16 md:px-10 md:pl-36 flex flex-col md:flex-row items-center justify-between gap-4">
           <Image
             src="/girl2.png"
             alt=""
@@ -129,7 +129,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
           />
           <h2 className="product-request__title text-lg md:text-xl font-bold uppercase tracking-wide text-white text-center md:text-left">
             {t('home.productRequest.title')}{' '}
-            <span className="product-request__title-accent text-amber-300">
+            <span className="product-request__title-accent text-amber-200">
               {t('home.productRequest.titleAccent')}
             </span>
           </h2>

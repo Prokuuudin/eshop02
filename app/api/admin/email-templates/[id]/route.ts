@@ -13,8 +13,22 @@ export async function PUT(
 
   try {
     const { id } = await params
-    const body = await request.json()
-    const result = await upsertTemplate(id, body)
+    const body = (await request.json()) as Record<string, unknown>
+    if (
+      (body.name !== undefined && typeof body.name !== 'string') ||
+      (body.subject !== undefined && typeof body.subject !== 'string') ||
+      (body.body !== undefined && typeof body.body !== 'string') ||
+      (body.variables !== undefined && (!Array.isArray(body.variables) || body.variables.some((v) => typeof v !== 'string')))
+    ) {
+      return NextResponse.json({ error: 'invalid_template' }, { status: 400 })
+    }
+    const updates = Object.fromEntries(
+      Object.entries(body).filter(([key]) => ['name', 'subject', 'body', 'variables'].includes(key)),
+    )
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'no_allowed_fields' }, { status: 400 })
+    }
+    const result = await upsertTemplate(id, updates)
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 })
     }

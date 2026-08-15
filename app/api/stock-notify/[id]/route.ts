@@ -17,7 +17,12 @@ export async function DELETE(
     const sub = await prisma.stockNotification.findUnique({ where: { id } })
     if (!sub) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    if (sub.userId !== user.id && sub.email !== user.email && user.platformRole !== 'admin') {
+    // Once a notification is tied to an account, userId is authoritative. Falling back to
+    // email as well would let a later account that acquires the same address delete it.
+    const ownsSubscription = sub.userId
+      ? sub.userId === user.id
+      : sub.email.toLowerCase() === user.email.toLowerCase()
+    if (!ownsSubscription && user.platformRole !== 'admin') {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -28,5 +33,4 @@ export async function DELETE(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

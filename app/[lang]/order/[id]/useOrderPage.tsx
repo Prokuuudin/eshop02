@@ -10,6 +10,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
 import { buildInvoicePdfBlob, invoicePdfFileName } from '@/lib/invoice-pdf';
 import { useToast } from '@/lib/toast-context';
+import { localizePath } from '@/lib/i18n-routing';
 
 type PageProps = {
     params: Promise<{
@@ -308,7 +309,7 @@ function useOrderPageState({ params }: PageProps) {
                     <p className="text-muted-foreground mb-6">
                         {t('order.notFoundDescription')}
                     </p>
-                    <Link href="/catalog">
+                    <Link href={localizePath('/catalog', language)}>
                         <Button>{t('order.backToCatalog')}</Button>
                     </Link>
                 </div>

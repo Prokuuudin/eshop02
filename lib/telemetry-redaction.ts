@@ -6,3 +6,5 @@ export const redactTelemetryText = (value: unknown, maxLength: number): string =
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
     .replace(/\b(?:sk|rk|whsec)_(?:live|test)?_?[A-Za-z0-9]+\b/g, '[redacted-secret]')
     .replace(/([?&](?:token|key|secret|session_id|code)=)[^&\s]+/gi, '$1[redacted]')
+    .replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [redacted]')
+    .replace(/\b((?:password|passwd|authorization|cookie|token|api[_-]?key|secret)\s*[:=]\s*)[^\s,;]+/gi, '$1[redacted]')

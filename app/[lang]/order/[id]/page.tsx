@@ -10,6 +10,7 @@ import ShareOrderButton from '@/components/ShareOrderButton';
 import { Check, LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
+import { localizePath } from '@/lib/i18n-routing';
 
 type PageProps = {
     params: Promise<{
@@ -23,7 +24,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
+  const { t, language, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
 return (
@@ -194,7 +195,7 @@ return (
                                         className="flex gap-3 border-b border-border pb-3 last:border-b-0"
                                     >
                                         <Link
-                                            href={`/product/${item.id}`}
+                                            href={localizePath(`/product/${item.id}`, language)}
                                             className="flex-shrink-0"
                                         >
                                             <Image
@@ -207,7 +208,7 @@ return (
                                         </Link>
                                         <div className="flex-1">
                                             <Link
-                                                href={`/product/${item.id}`}
+                                                href={localizePath(`/product/${item.id}`, language)}
                                                 className="hover:text-primary dark:hover:text-primary/70"
                                             >
                                                 <h3 className="font-medium text-foreground">
@@ -348,7 +349,7 @@ return (
                                         {t('returns.requestButton', 'Запросить возврат')}
                                     </Button>
                                 )}
-                                <Link href="/catalog" className="block">
+                                <Link href={localizePath('/catalog', language)} className="block">
                                     <Button variant="outline" className="w-full">
                                         {t('order.continueShopping')}
                                     </Button>

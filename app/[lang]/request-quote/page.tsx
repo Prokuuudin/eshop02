@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/lib/toast-context'
 import { fetchAllProducts } from '@/lib/client-products'
+import { useTranslation } from '@/lib/use-translation'
+import { localizePath } from '@/lib/i18n-routing'
 
 type DraftItem = {
   productId: string
@@ -18,6 +20,7 @@ type DraftItem = {
 }
 
 export default function RequestQuotePage(): React.ReactElement {
+  const { language } = useTranslation()
   const user = getCurrentUser()
   const { showToast } = useToast()
   const { createRequest, getByCompany, setStatus, setRequests } = useRFQStore()
@@ -123,7 +126,7 @@ export default function RequestQuotePage(): React.ReactElement {
         <h1 className="text-3xl font-bold text-foreground mb-4">Запросить спецпредложение</h1>
         <div className="rounded-lg border border-border p-10 text-center bg-muted">
           <p className="text-gray-700 dark:text-gray-300 mb-4">Функция доступна только для B2B-компаний.</p>
-          <Link href="/account">
+          <Link href={localizePath('/account', language)}>
             <Button variant="outline">Перейти в аккаунт</Button>
           </Link>
         </div>

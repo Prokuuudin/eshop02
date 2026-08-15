@@ -32,11 +32,11 @@ export default async function Stores({ language }: { language: Language }): Prom
                                 className="mb-2 rounded w-full h-40 object-cover"
                             />
                             <h3 className="text-lg font-bold mb-1">{t(`stores.${store.id}.name`)}</h3>
-                            <p className="text-sm text-gray-600 mb-1">{store.address.lv}</p>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="mb-1 text-sm text-slate-700 dark:text-gray-300">{store.address.lv}</p>
+                            <p className="mb-1 text-sm text-slate-700 dark:text-gray-300">
                                 {t('stores.phone') ?? 'Телефон'}: {t(`stores.${store.id}.phone`)}
                             </p>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-slate-700 dark:text-gray-300">
                                 {t('stores.hours') ?? 'Время работы'}:
                                 <ul className="ml-4 list-disc">
                                     <li>{t(`stores.${store.id}.hours1`)}</li>

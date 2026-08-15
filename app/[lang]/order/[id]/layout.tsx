@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { translations } from '@/data/translations'
-import { resolveLanguage } from '@/lib/i18n-routing'
+import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
 
 type LayoutProps = {
   children: ReactNode
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     title: interpolate(titleTemplate, { id }),
     description: interpolate(descriptionTemplate, { id }),
     robots: { index: false, follow: false },
-    alternates: { canonical: `/order/${id}` }
+    alternates: { canonical: localizePath(`/order/${id}`, language) }
   }
 }
 

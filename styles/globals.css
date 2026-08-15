@@ -634,6 +634,14 @@ body[data-scroll-locked][data-scroll-locked] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+
   .route-transition,
   .reveal,
   .toast-item,

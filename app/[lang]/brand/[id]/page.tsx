@@ -81,7 +81,7 @@ export default async function BrandPage({ params }: PageProps): Promise<React.Re
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }} />
       <div className="max-w-xl mx-auto py-8 px-4">
-        <Link href="/" className="text-primary hover:underline">← {t['meta.backToBrands'] ?? 'Back to brands'}</Link>
+        <Link href={localizePath('/', language)} className="text-primary hover:underline">← {t['meta.backToBrands'] ?? 'Back to brands'}</Link>
         <div className="flex flex-col items-center mt-6">
           <div className="w-32 h-16 relative mb-4">
             <Image src={brand.logo} alt={brand.name} fill className="object-contain" />
@@ -91,7 +91,7 @@ export default async function BrandPage({ params }: PageProps): Promise<React.Re
             {description}
           </p>
           <Link
-            href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
+            href={localizePath(`/catalog?brand=${encodeURIComponent(brand.id)}`, language)}
             className="inline-block px-4 py-2 bg-primary/5 text-primary rounded hover:bg-primary/10 transition"
           >
             {t['brands.viewAllProducts'] ?? 'View all brand products'}

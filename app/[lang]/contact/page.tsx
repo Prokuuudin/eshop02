@@ -347,8 +347,9 @@ export default function ContactPage(): React.ReactElement {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.name')}</label>
+                    <label htmlFor="contact-name" className="block text-sm font-medium mb-1 text-foreground">{t('contact.name')}</label>
                     <Input
+                      id="contact-name"
                       type="text"
                       name="name"
                       value={formData.name}
@@ -360,8 +361,9 @@ export default function ContactPage(): React.ReactElement {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.email')}</label>
+                    <label htmlFor="contact-email" className="block text-sm font-medium mb-1 text-foreground">{t('contact.email')}</label>
                     <Input
+                      id="contact-email"
                       type="email"
                       name="email"
                       value={formData.email}
@@ -372,8 +374,9 @@ export default function ContactPage(): React.ReactElement {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.subject')}</label>
+                    <label htmlFor="contact-subject" className="block text-sm font-medium mb-1 text-foreground">{t('contact.subject')}</label>
                     <Input
+                      id="contact-subject"
                       type="text"
                       name="subject"
                       value={formData.subject}
@@ -386,8 +389,9 @@ export default function ContactPage(): React.ReactElement {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-foreground">{t('contact.message')}</label>
+                    <label htmlFor="contact-message" className="block text-sm font-medium mb-1 text-foreground">{t('contact.message')}</label>
                     <Textarea
+                      id="contact-message"
                       name="message"
                       value={formData.message}
                       onChange={handleChange}

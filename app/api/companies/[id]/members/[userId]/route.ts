@@ -3,6 +3,8 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 
+const ALLOWED_MEMBER_ROLES = new Set(['viewer', 'buyer', 'manager'])
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; userId: string }> }
@@ -15,6 +17,9 @@ export async function PATCH(
 
     const { id: companyId, userId } = await params
     const { role } = await req.json()
+    if (!ALLOWED_MEMBER_ROLES.has(role)) {
+      return NextResponse.json({ error: 'invalid_role' }, { status: 400 })
+    }
 
     const member = await prisma.companyMember.update({
       where: { companyId_userId: { companyId, userId } },
@@ -46,5 +51,4 @@ export async function DELETE(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

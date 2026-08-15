@@ -22,11 +22,11 @@ import { sendEmail } from '@/lib/mailer'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
 
-function request(email = 'user@test.com') {
+function request(email = 'user@test.com', language = 'en') {
   return new NextRequest('https://shop.test/api/auth/forgot-password', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.5' },
-    body: JSON.stringify({ email, language: 'en' }),
+    body: JSON.stringify({ email, language }),
   })
 }
 
@@ -53,6 +53,40 @@ describe('POST /api/auth/forgot-password', () => {
     const data = tx.passwordResetToken.create.mock.calls[0][0].data
     expect(data.tokenHash).toBe(crypto.createHash('sha256').update(rawToken!).digest('hex'))
     expect(JSON.stringify(data)).not.toContain(rawToken!)
+    expect(data.expiresAt.getTime()).toBeGreaterThan(Date.now() + 59 * 60_000)
+    expect(data.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + 60 * 60_000)
+  })
+
+  it.each([
+    ['ru', 'Сброс пароля'],
+    ['en', 'Password reset'],
+    ['lv', 'Paroles atjaunošana'],
+  ])('renders the %s reset email with a trusted one-hour link', async (language, subjectText) => {
+    const tx = { passwordResetToken: { deleteMany: vi.fn(), create: vi.fn() } }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await POST(request('user@test.com', language))
+
+    const [, subject, html] = vi.mocked(sendEmail).mock.calls[0]
+    expect(subject).toContain(subjectText)
+    expect(html).toMatch(/https:\/\/shop\.test\/auth\/reset-password\?token=[a-f0-9]{64}/)
+    expect(html).not.toContain('203.0.113.5')
+    expect(html).not.toContain('passwordHash')
+  })
+
+  it('does not reveal whether an address exists', async () => {
+    userFindUniqueMock.mockResolvedValue(null)
+    const unknown = await POST(request('unknown@test.com'))
+    const unknownBody = await unknown.json()
+
+    userFindUniqueMock.mockResolvedValue({ id: 'u1' })
+    const tx = { passwordResetToken: { deleteMany: vi.fn(), create: vi.fn() } }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+    const known = await POST(request('user@test.com'))
+
+    expect(known.status).toBe(unknown.status)
+    expect(await known.json()).toEqual(unknownBody)
+    expect(unknownBody).toEqual({ ok: true })
   })
 
   it('rate-limits by both IP and normalized email', async () => {

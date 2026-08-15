@@ -16,7 +16,7 @@ export const ProductBadges: React.FC<Props> = ({ badges }) => {
                 <Badge className="bg-red-600 text-white">{t('product.sale')}</Badge>
             )}
             {badges.includes('new') && (
-                <Badge className="bg-green-600 text-white">{t('product.new')}</Badge>
+                <Badge className="bg-green-700 text-white">{t('product.new')}</Badge>
             )}
             {badges.includes('bestseller') && (
                 <Badge className="bg-yellow-600 text-black">{t('product.bestseller')}</Badge>

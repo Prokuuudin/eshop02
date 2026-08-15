@@ -124,10 +124,13 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 aria-modal="true"
                 aria-labelledby="cart-drawer-title"
                 aria-hidden={!isOpen}
-                className={`cart-drawer fixed right-0 top-0 h-screen w-full sm:max-w-md z-drawer bg-card shadow-lg flex flex-col transition-transform duration-300 ${
+                className={`cart-drawer fixed right-0 top-0 h-screen w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col transition-transform duration-300 ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
-                style={{ willChange: 'transform' }}
+                style={{
+                    willChange: 'transform',
+                    transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+                }}
             >
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">

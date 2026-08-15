@@ -4,9 +4,10 @@ import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
+import { localizePath } from '@/lib/i18n-routing'
 
 export default function ForgotPasswordPage(): React.ReactElement {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
 
   return (
     <main className="w-full px-4 py-12">
@@ -21,7 +22,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
         <ForgotPasswordForm />
 
         <div className="mt-5 text-sm text-center">
-          <Link href="/auth/login" className="text-primary hover:underline">
+          <Link href={localizePath('/auth/login', language)} className="text-primary hover:underline">
             {t('auth.login')}
           </Link>
         </div>

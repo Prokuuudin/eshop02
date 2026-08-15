@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog,
@@ -20,6 +20,7 @@ export function AccountDataSection(): React.ReactElement {
   const [acknowledged, setAcknowledged] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null)
 
   const handleDelete = async (): Promise<void> => {
     setDeleting(true)
@@ -59,6 +60,7 @@ export function AccountDataSection(): React.ReactElement {
           {tl('account.data.exportPdf', 'Отчёт о данных аккаунта (PDF)', 'Account data report (PDF)', 'Konta datu pārskats (PDF)')}
         </a>
         <Button
+          ref={deleteTriggerRef}
           variant="outline"
           onClick={() => { setError(null); setAcknowledged(false); setConfirmOpen(true) }}
           className="border-gray-200 bg-transparent text-muted-foreground shadow-none hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 dark:border-gray-700 dark:hover:border-red-900/70 dark:hover:bg-red-950/20 dark:hover:text-red-400"
@@ -68,7 +70,13 @@ export function AccountDataSection(): React.ReactElement {
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={(open) => { if (!deleting) setConfirmOpen(open) }}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          className="max-w-md"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            deleteTriggerRef.current?.focus()
+          }}
+        >
           <DialogHeader>
             <DialogTitle>
               {tl('account.data.confirmTitle', 'Удалить аккаунт?', 'Delete your account?', 'Dzēst kontu?')}

@@ -13,4 +13,15 @@ describe('telemetry redaction', () => {
     expect(value).not.toContain('reset-me')
     expect(value).toContain('[redacted-email]')
   })
+
+  it('removes credentials embedded in error messages and headers', () => {
+    const value = redactTelemetryText(
+      'password=secret authorization: Bearer abc.def cookie=session-value api_key=private',
+      500,
+    )
+    expect(value).not.toContain('password=secret')
+    expect(value).not.toContain('abc.def')
+    expect(value).not.toContain('session-value')
+    expect(value).not.toContain('api_key=private')
+  })
 })

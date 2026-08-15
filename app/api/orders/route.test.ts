@@ -200,4 +200,23 @@ describe('POST /api/orders — admin notification', () => {
     expect(customerCall?.[2]).not.toContain('<img')
     expect(customerCall?.[2]).toContain('&lt;img')
   })
+
+  it('renders distinct customer confirmations for ru, en and lv without recipient-list leakage', async () => {
+    delete process.env.CONTACT_TO
+    const subjects: string[] = []
+
+    for (const language of ['ru', 'en', 'lv'] as const) {
+      const email = `${language}@example.com`
+      await POST(makeRequest({ ...VALID_ORDER, language, email }))
+      await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.some(([to]) => to === email)).toBe(true))
+      const [, subject, html] = vi.mocked(sendEmail).mock.calls.find(([to]) => to === email)!
+      subjects.push(subject)
+      expect(html).toContain('1001')
+      for (const other of ['ru', 'en', 'lv'].filter((candidate) => candidate !== language)) {
+        expect(html).not.toContain(`${other}@example.com`)
+      }
+    }
+
+    expect(new Set(subjects).size).toBe(3)
+  })
 })

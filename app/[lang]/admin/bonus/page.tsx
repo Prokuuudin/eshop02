@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminStore } from '@/lib/admin-store'
 import { useOrders } from '@/lib/orders-store'
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { type User } from '@/lib/auth'
 import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
@@ -15,6 +16,7 @@ import { formatEuro } from '@/lib/utils'
 import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 
 export default function AdminBonusPage(): React.ReactElement {
+  useAdminOrdersSync()
   const { t } = useTranslation()
   const { bonusProgram, updateBonusProgram } = useAdminStore()
   const { orders } = useOrders()

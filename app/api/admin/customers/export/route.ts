@@ -15,15 +15,22 @@ export async function GET(req: NextRequest): Promise<Response> {
     const email = req.nextUrl.searchParams.get('email')?.trim().toLowerCase()
     if (!email) return NextResponse.json({ error: 'email_required' }, { status: 400 })
 
-    const customer = await prisma.user.findFirst({
+    const account = await prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
       select: { id: true, email: true, cardNumber: true },
     })
-    if (!customer) return NextResponse.json({ error: 'account_not_found' }, { status: 404 })
 
-    const data = await exportUserData({ id: customer.id, email: customer.email })
+    // Guest checkouts (no registered account) still show up in /admin/customers,
+    // grouped purely by email off their Order rows - export their order history
+    // instead of 404ing just because there's no User row to look up.
+    if (!account) {
+      const hasOrders = await prisma.order.findFirst({ where: { email }, select: { id: true } })
+      if (!hasOrders) return NextResponse.json({ error: 'account_not_found' }, { status: 404 })
+    }
+
+    const data = await exportUserData({ id: account?.id ?? null, email: account?.email ?? email })
     const exportDate = data.exportedAt.slice(0, 10)
-    const customerRef = (customer.cardNumber || customer.id).replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40)
+    const customerRef = (account?.cardNumber || account?.id || email).replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40)
 
     return new NextResponse(createUserExportPdf(data), {
       status: 200,

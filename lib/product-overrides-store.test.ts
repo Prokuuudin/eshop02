@@ -35,6 +35,7 @@ import {
   getProductOverrides,
   getAdminProducts,
   getAdminProductsPaginated,
+  getDbProductsPaginated,
   upsertProductOverride,
   resetProductOverride,
   restoreDeletedProduct,
@@ -517,5 +518,28 @@ describe('purgeDeletedProductArchive', () => {
     if (result.success) {
       expect(result.archive.map((e) => e.id)).toEqual(['p2'])
     }
+  })
+})
+
+describe('getDbProductsPaginated', () => {
+  beforeEach(() => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.count).mockResolvedValue(0)
+    settingFindUniqueMock.mockResolvedValue(null)
+  })
+
+  it('filters by id:{in:...} when ids are given, e.g. for batch wishlist lookups', async () => {
+    await getDbProductsPaginated({ ids: ['p1', 'p2'] })
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['p1', 'p2'] } }),
+      })
+    )
+  })
+
+  it('omits the id filter for a normal paginated request', async () => {
+    await getDbProductsPaginated({ skip: 0, take: 10 })
+    const call = vi.mocked(prisma.product.findMany).mock.calls[0][0] as { where: Record<string, unknown> }
+    expect(call.where).not.toHaveProperty('id')
   })
 })

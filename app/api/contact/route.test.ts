@@ -8,10 +8,14 @@ vi.mock('@/lib/turnstile-server', () => ({
   verifyTurnstile: vi.fn(),
   TurnstileConfigurationError: class TurnstileConfigurationError extends Error {},
 }))
+vi.mock('@/lib/prisma', () => ({
+  prisma: { contactMessage: { create: vi.fn(), update: vi.fn() } },
+}))
 
 import { sendEmail } from '@/lib/mailer'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired } from '@/lib/turnstile-server'
+import { prisma } from '@/lib/prisma'
 import { POST } from './route'
 
 function makeRequest(email = ' Buyer@Example.com ') {
@@ -34,6 +38,8 @@ beforeEach(() => {
   vi.mocked(isTurnstileRequired).mockReturnValue(false)
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 4, resetAt: Date.now() + 60_000 })
   vi.mocked(sendEmail).mockResolvedValue(undefined)
+  vi.mocked(prisma.contactMessage.create).mockResolvedValue({ id: 'msg-1' } as never)
+  vi.mocked(prisma.contactMessage.update).mockResolvedValue({} as never)
 })
 
 describe('POST /api/contact', () => {
@@ -52,5 +58,43 @@ describe('POST /api/contact', () => {
     const res = await POST(makeRequest())
     expect(res.status).toBe(429)
     expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('persists the message before attempting to send email, so a submission is never lost', async () => {
+    await POST(makeRequest())
+    expect(prisma.contactMessage.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: 'buyer@example.com', subject: 'Question', emailStatus: 'pending' }),
+      })
+    )
+    expect(vi.mocked(prisma.contactMessage.create).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(sendEmail).mock.invocationCallOrder[0])
+  })
+
+  it('still returns ok and records emailStatus:sent when delivery succeeds', async () => {
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+    expect(prisma.contactMessage.update).toHaveBeenCalledWith({ where: { id: 'msg-1' }, data: { emailStatus: 'sent' } })
+  })
+
+  it('still returns ok and records emailStatus:failed when SMTP throws, instead of silently losing the lead', async () => {
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error('smtp timeout'))
+    const res = await POST(makeRequest())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(prisma.contactMessage.update).toHaveBeenCalledWith({
+      where: { id: 'msg-1' },
+      data: { emailStatus: 'failed', emailError: 'smtp timeout' },
+    })
+  })
+
+  it('records emailStatus:not_configured instead of silently pretending the message was sent when no admin email is set', async () => {
+    delete process.env.CONTACT_TO
+    delete process.env.SMTP_USER
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+    expect(sendEmail).not.toHaveBeenCalled()
+    expect(prisma.contactMessage.update).toHaveBeenCalledWith({ where: { id: 'msg-1' }, data: { emailStatus: 'not_configured' } })
   })
 })

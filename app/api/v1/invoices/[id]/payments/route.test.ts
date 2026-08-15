@@ -7,7 +7,7 @@ vi.mock('@/lib/api-helpers', () => ({
   successResponse: (data: unknown, status = 200) => NextResponse.json({ success: true, data }, { status }),
 }))
 vi.mock('@/lib/invoices-data-store', () => ({ getInvoiceById: vi.fn(), recordPaymentInDb: vi.fn() }))
-vi.mock('@/lib/audit-log-store', () => ({ logAuditAction: vi.fn() }))
+vi.mock('@/lib/company-activity-log', () => ({ recordCompanyActivity: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/webhook-sender', () => ({ triggerCompanyWebhook: vi.fn() }))
 
 import { authenticateRequest } from '@/lib/api-helpers'

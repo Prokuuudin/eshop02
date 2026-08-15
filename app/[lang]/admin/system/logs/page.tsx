@@ -1,13 +1,24 @@
 ﻿'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAuditLogStore } from '@/lib/audit-log-store'
+import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
+
+type ActivityEntry = {
+  id: string
+  companyId: string
+  userId: string
+  userName: string | null
+  userEmail: string | null
+  action: string
+  details: unknown
+  timestamp: string
+}
 
 function getActionBadgeClass(action: string): string {
   if (action.startsWith('order_')) return 'bg-blue-100 text-blue-800 border-blue-200'
@@ -21,20 +32,39 @@ const PAGE_SIZE = 50
 
 export default function AdminSystemLogsPage(): React.ReactElement {
   const confirmAction = useAdminConfirm()
-  const entriesMap = useAuditLogStore((s) => s.entries)
-  const clearOldEntries = useAuditLogStore((s) => s.clearOldEntries)
+  const [entries, setEntries] = useState<ActivityEntry[]>([])
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [loadError, setLoadError] = useState('')
 
   const [actionFilter, setActionFilter] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  useEffect(() => {
+    adminFetchJson<{ entries: ActivityEntry[] }>('/api/admin/company-activity-log?take=500')
+      .then(({ entries }) => { setEntries(entries); setLoadState('ready') })
+      .catch((error) => { setLoadError(classifyAdminError(error, 'Системные логи').message); setLoadState('error') })
+  }, [])
+
+  async function reload() {
+    setLoadState('loading')
+    try {
+      const { entries } = await adminFetchJson<{ entries: ActivityEntry[] }>('/api/admin/company-activity-log?take=500')
+      setEntries(entries)
+      setLoadState('ready')
+    } catch (error) {
+      setLoadError(classifyAdminError(error, 'Системные логи').message)
+      setLoadState('error')
+    }
+  }
+
   const all = useMemo(
     () =>
-      Array.from(entriesMap.values()).sort(
+      [...entries].sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       ),
-    [entriesMap]
+    [entries]
   )
 
   const uniqueActions = useMemo(() => {
@@ -97,7 +127,14 @@ export default function AdminSystemLogsPage(): React.ReactElement {
 
   async function handleClear() {
     const decision = await confirmAction({ title: 'Удалить старые системные логи?', description: 'Все записи старше 90 дней будут удалены. Новые записи останутся доступны.', affected: ['Системные логи старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true })
-    if (decision.confirmed) clearOldEntries(90)
+    if (!decision.confirmed) return
+    try {
+      await adminFetchJson('/api/admin/company-activity-log?olderThanDays=90', { method: 'DELETE' })
+      await reload()
+    } catch (error) {
+      setLoadError(classifyAdminError(error, 'Удаление логов').message)
+      setLoadState('error')
+    }
   }
 
   return (
@@ -159,7 +196,13 @@ export default function AdminSystemLogsPage(): React.ReactElement {
         </div>
 
         {/* Table */}
-        {all.length === 0 ? (
+        {loadState === 'loading' ? (
+          <div className="text-center text-muted-foreground py-16 border rounded-lg">Загрузка…</div>
+        ) : loadState === 'error' ? (
+          <div role="alert" className="text-center py-16 border rounded-lg border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+            {loadError}
+          </div>
+        ) : all.length === 0 ? (
           <div className="text-center text-muted-foreground py-16 border rounded-lg">
             Системные логи пусты. События появятся после активности в системе.
           </div>

@@ -11,6 +11,11 @@ import {
 import { randomBytes } from 'node:crypto'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { normalizeCardNumber } from '@/lib/card-number'
+import { recordCompanyActivity } from '@/lib/company-activity-log'
+
+// A structurally valid bcrypt hash that matches no real password - used to pay the
+// same bcrypt.compare cost on the "account not found" path as on a real login attempt.
+const DUMMY_PASSWORD_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEeO0z2Q2K3z8QeYfNqL4z8s7z8jN9z8jNu'
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -64,12 +69,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         })
     // Email is an administrator-only login identifier. Customer accounts must
     // authenticate with their assigned card number even when they have an email.
-    if (!user || !user.passwordHash || (isEmail && user.platformRole !== 'admin')) {
-      return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
-    }
-
-    const valid = await verifyPassword(password, user.passwordHash)
-    if (!valid) {
+    const eligible = !!user && !!user.passwordHash && !(isEmail && user.platformRole !== 'admin')
+    // Always run a bcrypt compare, even when no matching account exists (against a
+    // fixed dummy hash) - otherwise the "account exists" path costs ~50-100ms more
+    // than "account not found", letting an attacker enumerate valid card numbers/emails
+    // purely from response timing without ever guessing a correct password.
+    const valid = await verifyPassword(password, eligible ? user!.passwordHash! : DUMMY_PASSWORD_HASH)
+    if (!eligible || !valid) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
     // Successful login נreset attempt counter
@@ -94,13 +100,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const token = await createSession(user.id)
 
+    if (user.companyId && user.auditLoggingEnabled) {
+      recordCompanyActivity({
+        companyId: user.companyId,
+        userId: user.id,
+        userName: user.name ?? undefined,
+        userEmail: user.email,
+        action: 'team_member_login',
+        ipAddress: ip,
+      }).catch((err) => logApiError('[auth/login] activity log failed', err))
+    }
+
+    // Mirror createSession()'s own per-role expiry (1 day for admins, 30 for everyone
+    // else) - the cookie used to always outlive the underlying DB session for admins
+    // by 29 days. Harmless (getServerUser() enforces the real DB expiry and deletes
+    // stale rows) but wasteful, so keep the two in sync.
+    const cookieMaxAgeSeconds = (user.platformRole === 'admin' ? 1 : 30) * 60 * 60 * 24
     const res = NextResponse.json({ user: mapDbToServerUser(user) })
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: cookieMaxAgeSeconds,
     })
     return res
   } catch (e) {

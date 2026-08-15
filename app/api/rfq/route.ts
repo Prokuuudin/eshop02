@@ -4,6 +4,21 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { hasAdminPermission } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
+import { recordCompanyActivity } from '@/lib/company-activity-log'
+import { z } from 'zod'
+import type { Prisma } from '@/generated/prisma/client'
+
+const rfqItemSchema = z.object({
+  productId: z.string().trim().min(1).max(200),
+  quantity: z.number().int().positive().max(1_000_000),
+})
+const rfqBodySchema = z.object({
+  id: z.string().trim().min(1).max(200),
+  companyId: z.string().trim().min(1).max(200).optional(),
+  items: z.array(rfqItemSchema).min(1).max(500),
+  notes: z.string().max(5_000).optional(),
+  timeline: z.array(z.unknown()).optional(),
+})
 
 export const runtime = 'nodejs'
 
@@ -45,12 +60,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-    const body = await req.json()
-    const { id, companyId, items, notes, timeline } = body
-
-    if (!id || !items) {
-      return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
+    const parsed = rfqBodySchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'invalid_rfq_body' }, { status: 400 })
     }
+    const { id, companyId, items, notes, timeline } = parsed.data
 
     // Non-admins can only create for their own company
     const resolvedCompanyId = hasAdminPermission(user, 'rfq.quote')
@@ -83,7 +97,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           items,
           notes: notes ?? '',
           status: 'pending',
-          timeline: timeline ?? [{ at: new Date().toISOString(), type: 'created' }],
+          timeline: (timeline ?? [{ at: new Date().toISOString(), type: 'created' }]) as unknown as Prisma.InputJsonValue,
           createdByUserId: user.id,
         },
       })
@@ -97,6 +111,17 @@ export async function POST(req: NextRequest): Promise<Response> {
       } else {
         throw e
       }
+    }
+
+    if (user.auditLoggingEnabled) {
+      recordCompanyActivity({
+        companyId: resolvedCompanyId,
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'rfq_created',
+        details: { rfqId: rfq.id, items: Array.isArray(items) ? items.length : 0 },
+      }).catch((err) => logApiError('[rfq POST] activity log failed', err))
     }
 
     return NextResponse.json({

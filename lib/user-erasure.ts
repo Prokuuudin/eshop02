@@ -29,9 +29,15 @@ export type UserExport = {
   invitations: unknown[]
 }
 
-/** Assembles everything the platform holds about a data subject (Art. 15/20). */
+/**
+ * Assembles everything the platform holds about a data subject (Art. 15/20).
+ * `id` is null for a guest who checked out without an account - orders,
+ * saved addresses, subscriptions, stock notifications, returns and access
+ * requests are all keyed by email too, so those still export; only the
+ * account-only tables (wishlist, notifications, invitations) come back empty.
+ */
 export async function exportUserData(params: {
-  id: string
+  id: string | null
   email: string
 }): Promise<UserExport> {
   const { id, email } = params
@@ -40,7 +46,7 @@ export async function exportUserData(params: {
   // Orders first — invoices are scoped through them so a company member's personal
   // export never dumps company-wide invoices (Invoice has no per-user key of its own).
   const orders = await prisma.order.findMany({
-    where: { OR: [{ userId: id }, { email: emailLower }] },
+    where: id ? { OR: [{ userId: id }, { email: emailLower }] } : { email: emailLower },
     orderBy: { createdAt: 'desc' },
   })
   const orderIds = orders.map((o) => o.id)
@@ -48,22 +54,24 @@ export async function exportUserData(params: {
   const [profile, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices,
     wishlist, notifications, accessRequests, invitations] =
     await Promise.all([
-      prisma.user.findUnique({
-        where: { id },
-        select: {
-          id: true, email: true, name: true, phone: true, cardNumber: true, avatarUrl: true,
-          platformRole: true, companyId: true, companyName: true, teamRole: true,
-          bonusPoints: true, createdAt: true, marketingConsent: true,
-          marketingConsentAt: true, privacyNoticeVersion: true, privacyAcknowledgedAt: true,
-        },
-      }),
+      id
+        ? prisma.user.findUnique({
+            where: { id },
+            select: {
+              id: true, email: true, name: true, phone: true, cardNumber: true, avatarUrl: true,
+              platformRole: true, companyId: true, companyName: true, teamRole: true,
+              bonusPoints: true, createdAt: true, marketingConsent: true,
+              marketingConsentAt: true, privacyNoticeVersion: true, privacyAcknowledgedAt: true,
+            },
+          })
+        : Promise.resolve({ email: emailLower, note: 'Guest checkout - no registered account' }),
       prisma.savedAddress.findMany({ where: { email: emailLower } }),
-      prisma.productSubscription.findMany({ where: { OR: [{ userId: id }, { userEmail: emailLower }] } }),
-      prisma.stockNotification.findMany({ where: { OR: [{ userId: id }, { email: emailLower }] } }),
+      prisma.productSubscription.findMany({ where: id ? { OR: [{ userId: id }, { userEmail: emailLower }] } : { userEmail: emailLower } }),
+      prisma.stockNotification.findMany({ where: id ? { OR: [{ userId: id }, { email: emailLower }] } : { email: emailLower } }),
       prisma.returnRequest.findMany({ where: { email: emailLower } }),
       orderIds.length ? prisma.invoice.findMany({ where: { orderId: { in: orderIds } } }) : Promise.resolve([]),
-      prisma.wishlistItem.findMany({ where: { userId: id }, orderBy: { addedAt: 'desc' } }),
-      prisma.userNotification.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }),
+      id ? prisma.wishlistItem.findMany({ where: { userId: id }, orderBy: { addedAt: 'desc' } }) : Promise.resolve([]),
+      id ? prisma.userNotification.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }) : Promise.resolve([]),
       prisma.accessRequest.findMany({
         where: { email: emailLower },
         select: {
@@ -75,11 +83,11 @@ export async function exportUserData(params: {
         },
         orderBy: { requestedAt: 'desc' },
       }),
-      prisma.invitationToken.findMany({
+      id ? prisma.invitationToken.findMany({
         where: { userId: id },
         select: { id: true, email: true, cardNumber: true, language: true, status: true, expiresAt: true, acceptedAt: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
-      }),
+      }) : Promise.resolve([]),
     ])
 
   return {

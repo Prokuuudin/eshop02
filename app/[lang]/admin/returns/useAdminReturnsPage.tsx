@@ -9,6 +9,7 @@ import {
     type ReturnItem,
 } from '@/lib/returns-store';
 import { useOrders, type Order } from '@/lib/orders-store';
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
 import { useTranslation } from '@/lib/use-translation';
 import { adminFetchJson, reportAdminError } from '@/lib/admin-ui-errors';
 
@@ -19,6 +20,7 @@ function generateReturnId() {
 }
 
 function useAdminReturnsPageState() {
+    useAdminOrdersSync();
     const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore();
     const { orders } = useOrders();
 

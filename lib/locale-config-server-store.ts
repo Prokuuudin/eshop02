@@ -38,15 +38,26 @@ export async function getLocaleConfig(db: Pick<ExtendedTransactionClient, 'keyVa
   }
 }
 
-export async function saveLocaleConfig(input: Partial<LocaleConfig>, db: Pick<ExtendedTransactionClient, 'keyValueSetting'> = prisma): Promise<LocaleConfig> {
-  const existing = await getLocaleConfig(db)
+// Serialize concurrent edits of this single shared row - same pattern as
+// lib/email-templates-server-store.ts, distinct lock key namespaced to this store.
+// Callers that already have an open transaction (e.g. to make the save and its audit
+// log entry atomic, see app/api/admin/locale-config/route.ts) pass it in directly so
+// the lock lives inside that same transaction, instead of nesting a second one.
+export async function saveLocaleConfigTx(tx: ExtendedTransactionClient, input: Partial<LocaleConfig>): Promise<LocaleConfig> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${LOCALE_CONFIG_KEY}))`
+  const existing = await getLocaleConfig(tx)
   const next = normalize({ ...existing, ...input })
 
-  await db.keyValueSetting.upsert({
+  await tx.keyValueSetting.upsert({
     where: { key: LOCALE_CONFIG_KEY },
     create: { key: LOCALE_CONFIG_KEY, value: next as unknown as Prisma.InputJsonValue },
     update: { value: next as unknown as Prisma.InputJsonValue },
   })
 
   return next
+}
+
+/** Top-level call with no open transaction - opens its own. */
+export async function saveLocaleConfig(input: Partial<LocaleConfig>): Promise<LocaleConfig> {
+  return prisma.$transaction((tx) => saveLocaleConfigTx(tx, input))
 }

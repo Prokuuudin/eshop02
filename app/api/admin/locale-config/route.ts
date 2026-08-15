@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import type { LocaleConfig } from '@/lib/locale-config'
-import { getLocaleConfig, saveLocaleConfig } from '@/lib/locale-config-server-store'
+import { getLocaleConfig, saveLocaleConfigTx } from '@/lib/locale-config-server-store'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { revalidateTag } from 'next/cache'
@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
     const payload = (await request.json()) as Partial<LocaleConfig>
     const saved = await prisma.$transaction(async (tx) => {
       const before = await getLocaleConfig(tx)
-      const after = await saveLocaleConfig(payload, tx)
+      const after = await saveLocaleConfigTx(tx, payload)
       await appendServerAudit(tx, request, actor, { action: 'settings.locale_updated', entityType: 'setting', entityId: 'locale-config', before, after })
       return after
     })

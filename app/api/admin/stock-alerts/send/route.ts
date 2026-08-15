@@ -20,16 +20,25 @@ const CATEGORY_LABEL: Record<string, string> = {
   nails: 'Ногти', equipment: 'Аксессуары и инструменты',
 }
 
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 function buildHtml(products: AlertProduct[], threshold: number): string {
   const outOfStock = products.filter((p) => p.stock === 0)
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= threshold)
 
   const row = (p: AlertProduct) => `
     <tr>
-      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px">${p.title}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#6b7280">${p.brand}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#9ca3af;font-family:monospace">${p.sku ?? '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#6b7280">${CATEGORY_LABEL[p.category] ?? p.category}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px">${escHtml(p.title)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#6b7280">${escHtml(p.brand)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#9ca3af;font-family:monospace">${p.sku ? escHtml(p.sku) : '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;color:#6b7280">${escHtml(CATEGORY_LABEL[p.category] ?? p.category)}</td>
       <td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;text-align:center;font-weight:600;color:${p.stock === 0 ? '#dc2626' : '#d97706'}">${p.stock === 0 ? 'Нет' : p.stock}</td>
     </tr>`
 

@@ -6,7 +6,7 @@ import { type Product } from '@/data/products'
 import { getCurrentUser } from '@/lib/auth'
 import { useRFQStore, mapServerRfq } from '@/lib/rfq-store'
 import { logAuditAction } from '@/lib/audit-log-store'
-import { formatDate, formatEuro } from '@/lib/utils'
+import { formatDate, formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/lib/toast-context'
@@ -20,7 +20,8 @@ type DraftItem = {
 }
 
 export default function RequestQuotePage(): React.ReactElement {
-  const { language } = useTranslation()
+  const { t, language } = useTranslation()
+  const locale = getLocaleFromLanguage(language)
   const user = getCurrentUser()
   const { showToast } = useToast()
   const { createRequest, getByCompany, setStatus, setRequests } = useRFQStore()
@@ -45,7 +46,9 @@ export default function RequestQuotePage(): React.ReactElement {
   React.useEffect(() => {
     const loadProducts = async () => {
       try {
-        const nextProducts = await fetchAllProducts()
+        // Bounded instead of the whole catalog (2000+ products) - this only backs a
+        // product picker dropdown, not a page that needs every SKU.
+        const nextProducts = await fetchAllProducts(undefined, 500)
         setProducts(nextProducts)
         setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
           ? { ...item, productId: nextProducts[0]?.id ?? '' }
@@ -76,7 +79,7 @@ export default function RequestQuotePage(): React.ReactElement {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!companyId) {
-      showToast('RFQ доступен только для B2B-аккаунтов', 'error')
+      showToast(t('account.requestQuote.b2bOnlyToast'), 'error')
       return
     }
 
@@ -85,7 +88,7 @@ export default function RequestQuotePage(): React.ReactElement {
       .map((item) => ({ productId: item.productId, quantity: Math.floor(item.quantity) }))
 
     if (normalized.length === 0) {
-      showToast('Добавьте хотя бы один товар', 'error')
+      showToast(t('account.requestQuote.addAtLeastOneToast'), 'error')
       return
     }
 
@@ -97,7 +100,7 @@ export default function RequestQuotePage(): React.ReactElement {
     })
 
     if (!ok) {
-      showToast('Не удалось отправить запрос. Попробуйте ещё раз.', 'error')
+      showToast(t('account.requestQuote.submitErrorToast'), 'error')
       return
     }
 
@@ -105,29 +108,35 @@ export default function RequestQuotePage(): React.ReactElement {
       logAuditAction(user.companyId, user.id, 'rfq_created', { rfqId, items: normalized.length })
     }
 
-    showToast('Запрос на спецпредложение отправлен', 'success')
+    showToast(t('account.requestQuote.submitSuccessToast'), 'success')
     setItems([{ productId: products[0]?.id || '', quantity: 10 }])
     setNotes('')
   }
 
   const acceptQuote = async (rfqId: string) => {
     const ok = await setStatus(rfqId, 'accepted')
-    showToast(ok ? 'Предложение принято' : 'Не удалось принять предложение. Попробуйте ещё раз.', ok ? 'success' : 'error')
+    showToast(
+      ok ? t('account.requestQuote.quoteAcceptedToast') : t('account.requestQuote.acceptErrorToast'),
+      ok ? 'success' : 'error'
+    )
   }
 
   const rejectQuote = async (rfqId: string) => {
     const ok = await setStatus(rfqId, 'rejected')
-    showToast(ok ? 'Предложение отклонено' : 'Не удалось отклонить предложение. Попробуйте ещё раз.', ok ? 'info' : 'error')
+    showToast(
+      ok ? t('account.requestQuote.quoteRejectedToast') : t('account.requestQuote.rejectErrorToast'),
+      ok ? 'info' : 'error'
+    )
   }
 
   if (!companyId) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-foreground mb-4">Запросить спецпредложение</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">{t('account.requestQuote.restrictedTitle')}</h1>
         <div className="rounded-lg border border-border p-10 text-center bg-muted">
-          <p className="text-gray-700 dark:text-gray-300 mb-4">Функция доступна только для B2B-компаний.</p>
+          <p className="text-gray-700 dark:text-gray-300 mb-4">{t('account.requestQuote.b2bOnlyMessage')}</p>
           <Link href={localizePath('/account', language)}>
-            <Button variant="outline">Перейти в аккаунт</Button>
+            <Button variant="outline">{t('account.requestQuote.goToAccount')}</Button>
           </Link>
         </div>
       </main>
@@ -137,7 +146,7 @@ export default function RequestQuotePage(): React.ReactElement {
   if (productsLoading) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-12">
-        <p className="text-sm text-muted-foreground">Загрузка товаров...</p>
+        <p className="text-sm text-muted-foreground">{t('account.requestQuote.loadingProducts')}</p>
       </main>
     )
   }
@@ -145,9 +154,9 @@ export default function RequestQuotePage(): React.ReactElement {
   return (
     <main className="max-w-6xl mx-auto px-4 py-10 space-y-8">
       <section>
-        <h1 className="text-3xl font-bold text-foreground">RFQ: Запрос спецпредложения</h1>
+        <h1 className="text-3xl font-bold text-foreground">{t('account.requestQuote.pageTitle')}</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Отправьте список товаров и объёмы, менеджер подготовит персональное предложение.
+          {t('account.requestQuote.pageDescription')}
         </p>
       </section>
 
@@ -175,40 +184,40 @@ export default function RequestQuotePage(): React.ReactElement {
                   value={item.quantity}
                   onChange={(e) => updateRow(index, { quantity: Number(e.target.value) })}
                   className="rounded border border-border bg-background px-3 py-2 text-base md:text-sm"
-                  placeholder="Кол-во"
+                  placeholder={t('account.requestQuote.quantityPlaceholder')}
                 />
 
                 <Button type="button" variant="outline" onClick={() => removeRow(index)} disabled={items.length === 1}>
-                  Удалить
+                  {t('common.delete')}
                 </Button>
               </div>
             ))}
           </div>
 
           <Button type="button" variant="outline" onClick={addRow}>
-            + Добавить товар
+            {t('account.requestQuote.addProduct')}
           </Button>
 
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full rounded border border-border bg-background px-3 py-2 text-sm min-h-[100px]"
-            placeholder="Комментарий к заявке: желаемые условия, сроки, требования"
+            placeholder={t('account.requestQuote.notesPlaceholder')}
           />
 
-          <Button type="submit">Отправить RFQ</Button>
+          <Button type="submit">{t('account.requestQuote.submit')}</Button>
         </form>
       </section>
 
       <section className="rounded-lg border border-border p-5 bg-card">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Мои заявки</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">{t('account.requestQuote.myRequests')}</h2>
         <div className="space-y-3">
           {rfqList.map((rfq) => (
             <div key={rfq.id} className="rounded border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium">{rfq.id}</p>
-                  <p className="text-xs text-muted-foreground">Создано: {formatDate(rfq.createdAt, 'ru-RU')}</p>
+                  <p className="text-xs text-muted-foreground">{t('account.requestQuote.createdLabel')}: {formatDate(rfq.createdAt, locale)}</p>
                 </div>
                 <span className="text-xs rounded px-2 py-1 bg-muted">{rfq.status}</span>
               </div>
@@ -218,32 +227,32 @@ export default function RequestQuotePage(): React.ReactElement {
                   const product = products.find((p) => p.id === item.productId)
                   return (
                     <li key={idx} className="text-gray-700 dark:text-gray-300">
-                      {product?.title || item.productId} - {item.quantity} шт
+                      {product?.title || item.productId} - {item.quantity} {t('account.requestQuote.unitsShort')}
                     </li>
                   )
                 })}
               </ul>
 
-              {rfq.notes && <p className="mt-2 text-sm text-muted-foreground">Комментарий: {rfq.notes}</p>}
+              {rfq.notes && <p className="mt-2 text-sm text-muted-foreground">{t('account.requestQuote.notesLabel')}: {rfq.notes}</p>}
 
               {rfq.quote && (
                 <div className="mt-3 rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3">
-                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Предложение получено</p>
-                  <p className="text-sm mt-1">Сумма: {formatEuro(rfq.quote.totalPrice, 'ru-RU')}</p>
-                  <p className="text-xs text-muted-foreground">Действительно до: {formatDate(rfq.quote.validUntil, 'ru-RU')}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Условия: {rfq.quote.terms}</p>
+                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{t('account.requestQuote.quoteReceived')}</p>
+                  <p className="text-sm mt-1">{t('account.requestQuote.amountLabel')}: {formatEuro(rfq.quote.totalPrice, locale)}</p>
+                  <p className="text-xs text-muted-foreground">{t('account.requestQuote.validUntilLabel')}: {formatDate(rfq.quote.validUntil, locale)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('account.requestQuote.termsLabel')}: {rfq.quote.terms}</p>
 
                   {rfq.status === 'quoted' && (
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" onClick={() => acceptQuote(rfq.id)}>Принять</Button>
-                      <Button size="sm" variant="outline" onClick={() => rejectQuote(rfq.id)}>Отклонить</Button>
+                      <Button size="sm" onClick={() => acceptQuote(rfq.id)}>{t('account.requestQuote.accept')}</Button>
+                      <Button size="sm" variant="outline" onClick={() => rejectQuote(rfq.id)}>{t('account.requestQuote.reject')}</Button>
                     </div>
                   )}
                 </div>
               )}
             </div>
           ))}
-          {rfqList.length === 0 && <p className="text-sm text-muted-foreground">Заявок пока нет</p>}
+          {rfqList.length === 0 && <p className="text-sm text-muted-foreground">{t('account.requestQuote.noRequestsYet')}</p>}
         </div>
       </section>
     </main>

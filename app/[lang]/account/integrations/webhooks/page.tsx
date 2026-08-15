@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { getCurrentUser } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/lib/toast-context'
+
+type ApiKeyMeta = { id: string; keyPrefix: string; createdAt: string; lastUsedAt: string | null }
 
 type WebhookEvent = 'order.created' | 'order.shipped' | 'order.cancelled' | 'payment.recorded' | 'invoice.issued'
 
@@ -53,23 +55,21 @@ export default function WebhooksPage(): React.ReactElement {
   const [selectedEvents, setSelectedEvents] = useState<WebhookEvent[]>(['order.created', 'payment.recorded'])
 
   const companyId = user?.companyId || ''
-  const apiKey = 'b2b-demo-api-key-12345'
 
-  const headers = useMemo(
-    () => ({
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'x-company-id': companyId
-    }),
-    [apiKey, companyId]
-  )
+  // The browser manages endpoints via the logged-in session cookie (authenticateRequest
+  // falls back to it when no x-api-key header is sent) — no API key needed here. The
+  // self-serve key below is a separate credential for the company's OWN backend to call
+  // the API from outside the browser, where no session cookie exists.
+  const [apiKeyMeta, setApiKeyMeta] = useState<ApiKeyMeta | null>(null)
+  const [revealedKey, setRevealedKey] = useState<string | null>(null)
+  const [keyLoading, setKeyLoading] = useState(false)
 
   const loadData = React.useCallback(async (): Promise<void> => {
     if (!companyId) return
     await Promise.resolve()
     setLoading(true)
     try {
-      const response = await fetch('/api/v1/webhooks', { headers: { 'x-api-key': apiKey, 'x-company-id': companyId } })
+      const response = await fetch('/api/v1/webhooks')
       const body = await response.json()
 
       if (!response.ok) {
@@ -83,17 +83,63 @@ export default function WebhooksPage(): React.ReactElement {
     } finally {
       setLoading(false)
     }
-  }, [apiKey, companyId, showToast])
+  }, [companyId, showToast])
+
+  const loadApiKey = React.useCallback(async (): Promise<void> => {
+    if (!companyId) return
+    try {
+      const response = await fetch('/api/account/api-keys')
+      const body = await response.json()
+      if (response.ok) setApiKeyMeta(body.key ?? null)
+    } catch {
+      // Non-critical for the page's main purpose - silently leave the key section empty.
+    }
+  }, [companyId])
 
   React.useEffect(() => {
     let cancelled = false
     queueMicrotask(() => {
-      if (!cancelled) void loadData()
+      if (!cancelled) {
+        void loadData()
+        void loadApiKey()
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [loadData])
+  }, [loadData, loadApiKey])
+
+  const generateApiKey = async () => {
+    setKeyLoading(true)
+    try {
+      const response = await fetch('/api/account/api-keys', { method: 'POST' })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Не удалось создать ключ')
+      setApiKeyMeta(body.key)
+      setRevealedKey(body.plaintext)
+      showToast('Новый API-ключ создан', 'success')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Ошибка создания ключа', 'error')
+    } finally {
+      setKeyLoading(false)
+    }
+  }
+
+  const revokeApiKey = async () => {
+    setKeyLoading(true)
+    try {
+      const response = await fetch('/api/account/api-keys', { method: 'DELETE' })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Не удалось отозвать ключ')
+      setApiKeyMeta(null)
+      setRevealedKey(null)
+      showToast('API-ключ отозван', 'success')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Ошибка отзыва ключа', 'error')
+    } finally {
+      setKeyLoading(false)
+    }
+  }
 
   const toggleEvent = (event: WebhookEvent) => {
     setSelectedEvents((prev) => {
@@ -119,7 +165,7 @@ export default function WebhooksPage(): React.ReactElement {
     try {
       const response = await fetch('/api/v1/webhooks', {
         method: 'POST',
-        headers,
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           url: url.trim(),
           events: selectedEvents,
@@ -145,10 +191,7 @@ export default function WebhooksPage(): React.ReactElement {
   const removeEndpoint = async (id: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/v1/webhooks?id=${id}`, {
-        method: 'DELETE',
-        headers: { 'x-api-key': apiKey, 'x-company-id': companyId }
-      })
+      const response = await fetch(`/api/v1/webhooks?id=${id}`, { method: 'DELETE' })
       const body = await response.json()
 
       if (!response.ok) {
@@ -180,6 +223,50 @@ export default function WebhooksPage(): React.ReactElement {
         <h1 className="text-3xl font-bold text-foreground">Webhooks интеграции</h1>
         <p className="text-sm text-muted-foreground mt-1">Компания: {companyId}</p>
       </div>
+
+      <section className="rounded-lg border border-border p-5 bg-card space-y-3">
+        <h2 className="text-lg font-semibold">API-ключ для вашей интеграции</h2>
+        <p className="text-sm text-muted-foreground">
+          Используйте этот ключ, чтобы ваша собственная система вызывала наш API снаружи (заголовок <code>x-api-key</code>). Управлять endpoint&apos;ами на этой странице можно и без ключа — здесь вы уже авторизованы.
+        </p>
+        {revealedKey && (
+          <div className="rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30 p-3 space-y-2">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+              Ключ показывается один раз — сохраните его сейчас, повторно увидеть будет нельзя.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs break-all bg-background rounded px-2 py-1.5 border border-border">{revealedKey}</code>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void navigator.clipboard.writeText(revealedKey)
+                  showToast('Ключ скопирован', 'success')
+                }}
+              >
+                Копировать
+              </Button>
+            </div>
+          </div>
+        )}
+        {apiKeyMeta ? (
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm">
+              Активный ключ: <code className="text-xs">{apiKeyMeta.keyPrefix}…</code>
+              {apiKeyMeta.lastUsedAt && (
+                <span className="text-muted-foreground"> · использован {new Date(apiKeyMeta.lastUsedAt).toLocaleDateString('ru-RU')}</span>
+              )}
+            </p>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={generateApiKey} disabled={keyLoading}>Перевыпустить</Button>
+              <Button type="button" variant="outline" size="sm" onClick={revokeApiKey} disabled={keyLoading}>Отозвать</Button>
+            </div>
+          </div>
+        ) : (
+          <Button type="button" onClick={generateApiKey} disabled={keyLoading}>Сгенерировать ключ</Button>
+        )}
+      </section>
 
       <section className="rounded-lg border border-border p-5 bg-card space-y-4">
         <h2 className="text-lg font-semibold">Добавить endpoint</h2>

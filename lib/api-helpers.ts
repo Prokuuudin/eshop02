@@ -78,7 +78,17 @@ export async function authenticateRequest(req: NextRequest): Promise<AuthResult>
   const apiKey = req.headers.get('x-api-key')
 
   if (apiKey) {
-    const entry = matchApiKey(apiKey)
+    // Static env-configured keys first (single trusted integrator / legacy demo key),
+    // then self-serve keys a company generated for itself under account/integrations.
+    // Lazy import: this file is imported by routes that never touch API-key auth at
+    // all, and `company-api-keys` pulls in `@/lib/prisma`, which connects eagerly at
+    // module load - keeping it out of the top-level import graph here avoids forcing
+    // every api-helpers consumer to have a live DATABASE_URL just to boot.
+    const entry = matchApiKey(apiKey) ?? await (async () => {
+      const { findCompanyByApiKey } = await import('@/lib/company-api-keys')
+      const issued = await findCompanyByApiKey(apiKey)
+      return issued ? { key: apiKey, companyId: issued.companyId } : null
+    })()
     if (!entry) {
       return {
         authenticated: false,

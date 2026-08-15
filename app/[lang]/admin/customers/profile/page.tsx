@@ -6,9 +6,11 @@ import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import AdminGate from '@/components/admin/AdminGate'
 import { useOrders } from '@/lib/orders-store'
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { useAdminStore } from '@/lib/admin-store'
-import { useReturnsStore } from '@/lib/returns-store'
+import type { ReturnRequest } from '@/lib/returns-store'
 import { formatDate, formatEuro } from '@/lib/utils'
+import { fetchCustomerReturns } from './fetchCustomerReturns'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,12 +63,14 @@ export default function CustomerProfilePage(): React.ReactElement {
   const searchParams = useSearchParams()
   const email = decodeURIComponent(searchParams.get('email') ?? '')
 
+  useAdminOrdersSync()
   const allOrders = useOrders((s) => s.orders)
   const { getOrderStatus, getOrderNote } = useAdminStore()
-  const { returns } = useReturnsStore()
 
   const [tab, setTab] = useState<'orders' | 'returns' | 'products'>('orders')
   const [accountName, setAccountName] = useState<{ firstName: string; lastName: string } | null>(null)
+  const [customerReturns, setCustomerReturns] = useState<ReturnRequest[]>([])
+  const [returnsLoading, setReturnsLoading] = useState(true)
 
   useEffect(() => {
     if (!email) return
@@ -79,6 +83,20 @@ export default function CustomerProfilePage(): React.ReactElement {
       .catch(() => {})
   }, [email])
 
+  // Returns are not part of the globally-hydrated store (that's only populated
+  // by the separate /admin/returns page's own effect) — fetch this customer's
+  // returns directly, scoped server-side, so the tab works cold.
+  useEffect(() => {
+    if (!email) return
+    let cancelled = false
+    setReturnsLoading(true)
+    fetchCustomerReturns(email)
+      .then((data) => { if (!cancelled) setCustomerReturns(data) })
+      .catch(() => { if (!cancelled) setCustomerReturns([]) })
+      .finally(() => { if (!cancelled) setReturnsLoading(false) })
+    return () => { cancelled = true }
+  }, [email])
+
   // ── Customer orders ───────────────────────────────────────────────────────
 
   const customerOrders = useMemo(
@@ -86,11 +104,6 @@ export default function CustomerProfilePage(): React.ReactElement {
       .filter((o) => o.email.toLowerCase() === email.toLowerCase())
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [allOrders, email]
-  )
-
-  const customerReturns = useMemo(
-    () => returns.filter((r) => r.email.toLowerCase() === email.toLowerCase()),
-    [returns, email]
   )
 
   // ── Stats ─────────────────────────────────────────────────────────────────
@@ -273,7 +286,10 @@ export default function CustomerProfilePage(): React.ReactElement {
         {/* Returns tab */}
         {tab === 'returns' && (
           <div className="space-y-3">
-            {customerReturns.length === 0 && (
+            {returnsLoading && (
+              <div className="py-10 text-center text-sm text-muted-foreground">Загрузка…</div>
+            )}
+            {!returnsLoading && customerReturns.length === 0 && (
               <div className="py-10 text-center text-sm text-muted-foreground">Возвратов нет</div>
             )}
             {customerReturns.map((ret) => (

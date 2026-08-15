@@ -1,7 +1,7 @@
 ﻿'use client'
 
-import React, { useMemo, useState } from 'react'
-import { useAuditLogStore } from '@/lib/audit-log-store'
+import React, { useEffect, useMemo, useState } from 'react'
+import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/utils'
@@ -50,21 +50,36 @@ interface AuditLogViewerProps {
   limit?: number
 }
 
+type FetchedEntry = {
+  id: string
+  companyId: string
+  userId: string
+  userName: string | null
+  userEmail: string | null
+  action: string
+  details: unknown
+  timestamp: string
+}
+
 export default function AuditLogViewer({
   companyId,
   limit = 50
 }: AuditLogViewerProps): React.ReactElement {
   const { t, language } = useTranslation()
-  const { getEntriesByCompany } = useAuditLogStore()
+  const [allEntries, setAllEntries] = useState<FetchedEntry[]>([])
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(companyId ? 'loading' : 'ready')
+  const [loadError, setLoadError] = useState('')
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [filterValue, setFilterValue] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const locale = LANGUAGE_LOCALE[language] || 'en-US'
 
-  const allEntries = useMemo(
-    () => companyId ? getEntriesByCompany(companyId) : [],
-    [companyId, getEntriesByCompany]
-  )
+  useEffect(() => {
+    if (!companyId) return
+    adminFetchJson<{ entries: FetchedEntry[] }>(`/api/account/audit-log?take=${limit}`)
+      .then(({ entries }) => { setAllEntries(entries); setLoadState('ready') })
+      .catch((error) => { setLoadError(classifyAdminError(error).message); setLoadState('error') })
+  }, [companyId, limit])
 
   const filteredEntries = useMemo(() => {
     let filtered = allEntries
@@ -91,6 +106,28 @@ export default function AuditLogViewer({
       return action
     }
     return t(key)
+  }
+
+  if (loadState === 'loading') {
+    return (
+      <Card className="p-6 bg-card border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          {t('account.auditLog.title')}
+        </h3>
+        <p className="text-muted-foreground text-center py-8">…</p>
+      </Card>
+    )
+  }
+
+  if (loadState === 'error') {
+    return (
+      <Card className="p-6 bg-card border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          {t('account.auditLog.title')}
+        </h3>
+        <p role="alert" className="text-center py-8 text-red-600 dark:text-red-400">{loadError}</p>
+      </Card>
+    )
   }
 
   if (allEntries.length === 0) {
@@ -172,9 +209,8 @@ export default function AuditLogViewer({
       <div className="space-y-2 max-h-96 overflow-y-auto">
         {filteredEntries.map((entry) => (
           (() => {
-            const description = typeof entry.details?.description === 'string'
-              ? entry.details.description
-              : undefined
+            const details = entry.details && typeof entry.details === 'object' ? entry.details as Record<string, unknown> : undefined
+            const description = typeof details?.description === 'string' ? details.description : undefined
 
             return (
           <div
@@ -220,7 +256,7 @@ export default function AuditLogViewer({
             </div>
 
             {/* Expanded details */}
-            {expandedId === entry.id && entry.details && (
+            {expandedId === entry.id && Boolean(entry.details) && (
               <div className="mt-3 p-3 bg-card rounded border border-gray-300 dark:border-gray-600">
                 <p className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words">
                   {JSON.stringify(entry.details, null, 2)}

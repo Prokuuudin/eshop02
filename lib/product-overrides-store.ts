@@ -48,11 +48,13 @@ export async function getDbProductsPaginated(opts: {
     category?: string;
     skip?: number;
     take?: number;
+    ids?: string[];
 }): Promise<{ products: Product[]; total: number }> {
     const where = {
         isDeleted: false,
         isActive: true,
         ...(opts.category ? { category: opts.category } : {}),
+        ...(opts.ids ? { id: { in: opts.ids } } : {}),
     };
     const [rows, total, overrides] = await Promise.all([
         prisma.product.findMany({

@@ -64,6 +64,7 @@ async function sendOrderStatusEmail(
   }
 
   const firstName = order.firstName ?? ''
+  const safeFirstName = escHtml(firstName)
 
   let html: string
   if (tpl) {
@@ -76,14 +77,14 @@ async function sendOrderStatusEmail(
   } else {
     const bodies: Record<typeof status, Record<string, string>> = {
       shipped: {
-        ru: `<h2>Здравствуйте, ${firstName}!</h2><p>Ваш заказ <strong>№${orderId}</strong> передан в службу доставки.</p>`,
-        en: `<h2>Hello, ${firstName}!</h2><p>Your order <strong>#${orderId}</strong> has been shipped.</p>`,
-        lv: `<h2>Labdien, ${firstName}!</h2><p>Jūsu pasūtījums <strong>№${orderId}</strong> ir nodots piegādes dienestam.</p>`,
+        ru: `<h2>Здравствуйте, ${safeFirstName}!</h2><p>Ваш заказ <strong>№${orderId}</strong> передан в службу доставки.</p>`,
+        en: `<h2>Hello, ${safeFirstName}!</h2><p>Your order <strong>#${orderId}</strong> has been shipped.</p>`,
+        lv: `<h2>Labdien, ${safeFirstName}!</h2><p>Jūsu pasūtījums <strong>№${orderId}</strong> ir nodots piegādes dienestam.</p>`,
       },
       delivered: {
-        ru: `<h2>Здравствуйте, ${firstName}!</h2><p>Ваш заказ <strong>№${orderId}</strong> доставлен. Спасибо за покупку!</p>`,
-        en: `<h2>Hello, ${firstName}!</h2><p>Your order <strong>#${orderId}</strong> has been delivered. Thank you for your purchase!</p>`,
-        lv: `<h2>Labdien, ${firstName}!</h2><p>Jūsu pasūtījums <strong>№${orderId}</strong> ir piegādāts. Paldies par pirkumu!</p>`,
+        ru: `<h2>Здравствуйте, ${safeFirstName}!</h2><p>Ваш заказ <strong>№${orderId}</strong> доставлен. Спасибо за покупку!</p>`,
+        en: `<h2>Hello, ${safeFirstName}!</h2><p>Your order <strong>#${orderId}</strong> has been delivered. Thank you for your purchase!</p>`,
+        lv: `<h2>Labdien, ${safeFirstName}!</h2><p>Jūsu pasūtījums <strong>№${orderId}</strong> ir piegādāts. Paldies par pirkumu!</p>`,
       },
     }
     html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">${bodies[status][lang]}</div>`

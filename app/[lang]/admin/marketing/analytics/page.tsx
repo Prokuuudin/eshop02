@@ -3,6 +3,7 @@ import React, { useMemo } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { useOrders } from '@/lib/orders-store'
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 
 const CATEGORY_LABELS: Record<string, string> = {
   hair: 'Волосы',
@@ -17,6 +18,7 @@ function formatEur(amount: number): string {
 }
 
 export default function AdminMarketingAnalyticsPage(): React.ReactElement {
+  useAdminOrdersSync()
   const { orders } = useOrders()
 
   const promoOrders = useMemo(() => orders.filter((o) => o.promoCode && o.promoCode.trim() !== ''), [orders])

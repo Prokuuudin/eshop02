@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { useOrders } from '@/lib/orders-store';
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
 import { formatEuro } from '@/lib/utils';
 
 type Period = '7d' | '30d' | '90d' | 'all';
@@ -76,6 +77,7 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 }
 
 export default function SalesAnalyticsPage(): React.ReactElement {
+    useAdminOrdersSync();
     const orders = useOrders((s) => s.orders);
     const [period, setPeriod] = useState<Period>('30d');
     const [now] = useState(Date.now);

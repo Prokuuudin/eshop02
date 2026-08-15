@@ -35,3 +35,23 @@ describe('GET /api/products pagination', () => {
     expect(getDbProductsPaginated).toHaveBeenCalledWith({ category: 'hair', skip: 200, take: 100 })
   })
 })
+
+describe('GET /api/products?ids= batch lookup', () => {
+  it('fetches exactly the requested ids in one call, ignoring pagination params', async () => {
+    await GET(request('?ids=p1,p2, p3'))
+    expect(getDbProductsPaginated).toHaveBeenCalledWith({ ids: ['p1', 'p2', 'p3'] })
+  })
+
+  it('rejects an empty ids param instead of silently returning everything', async () => {
+    const res = await GET(request('?ids=,,'))
+    expect(res.status).toBe(400)
+    expect(getDbProductsPaginated).not.toHaveBeenCalled()
+  })
+
+  it('caps the batch at 100 ids', async () => {
+    const many = Array.from({ length: 150 }, (_, i) => `p${i}`).join(',')
+    await GET(request(`?ids=${many}`))
+    const call = vi.mocked(getDbProductsPaginated).mock.calls[0][0]
+    expect(call.ids).toHaveLength(100)
+  })
+})

@@ -50,6 +50,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   transactionMock.mockImplementation((callback) => callback({
     keyValueSetting: { findUnique: settingFindUniqueMock, upsert: settingUpsertMock },
+    $executeRaw: vi.fn(),
   }))
 })
 

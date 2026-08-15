@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useOrders } from '@/lib/orders-store';
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
 import { isOrderTaxIncluded, extractVat } from '@/lib/tax';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
@@ -23,6 +24,7 @@ import {
 } from './order-config';
 
 function useAdminOrdersPageState() {
+    useAdminOrdersSync();
     const { orders, upsertOrder } = useOrders();
     const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } =
         useAdminStore();

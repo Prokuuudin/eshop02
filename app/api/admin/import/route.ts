@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { createHash, randomUUID } from 'node:crypto'
@@ -104,8 +104,13 @@ function rowToProduct(row: ImportRow, rowIndex: number): { product?: Product; er
   return { product }
 }
 
+const MAX_IMPORT_ROWS = 5000
+
 export async function POST(request: NextRequest): Promise<Response> {
-  const actor = await requireAdmin()
+  // Matches the nav permission table (ADMIN_PATH_PERMISSIONS maps /admin/import to
+  // catalog.update) - previously gated on users.manage, a mismatch that happened to
+  // fail closed today (no manager permission set includes either) but was wrong.
+  const actor = await requireAdminPermission('catalog.update')
   if (actor instanceof NextResponse) return actor
 
   try {
@@ -115,6 +120,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json({ error: 'rows_required' }, { status: 400 })
+    }
+    if (rows.length > MAX_IMPORT_ROWS) {
+      return NextResponse.json({ error: 'too_many_rows', max: MAX_IMPORT_ROWS }, { status: 413 })
     }
     const importId = randomUUID()
     const payloadHash = createHash('sha256').update(JSON.stringify(rows)).digest('hex')

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-helpers'
 import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
-import { logAuditAction } from '@/lib/audit-log-store'
+import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { triggerCompanyWebhook } from '@/lib/webhook-sender'
 
 export const runtime = 'nodejs'
@@ -38,12 +38,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       reference: reference || `API-${Date.now()}`,
     })
 
-    logAuditAction(auth.user.companyId, auth.user.id, 'payment_recorded', {
-      source: 'api',
-      invoiceId: id,
-      amount,
-      method,
-    })
+    recordCompanyActivity({
+      companyId: auth.user.companyId,
+      userId: auth.user.id,
+      userEmail: auth.user.email,
+      action: 'payment_recorded',
+      details: { source: 'api', invoiceId: id, amount, method },
+    }).catch((err) => logApiError('[v1 invoices payments] activity log failed', err))
 
     await triggerCompanyWebhook(auth.user.companyId, 'payment.recorded', {
       invoiceId: id,

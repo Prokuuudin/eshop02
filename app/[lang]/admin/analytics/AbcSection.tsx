@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/lib/orders-store'
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { formatEuro } from '@/lib/utils'
 import { GRADE_STYLES, type AbcGrade, type AbcRow, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
 
 export default function AbcSection(): ReactElement {
+  useAdminOrdersSync()
   const orders = useOrders((s) => s.orders)
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
 

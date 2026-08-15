@@ -310,7 +310,6 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                             )}
                                             <p className="text-xs text-muted-foreground">
                                                 Используются тестовые данные вместо переменных.
-                                                {!process.env.NEXT_PUBLIC_SMTP_CONFIGURED && ' SMTP настраивается через переменные окружения.'}
                                             </p>
                                         </div>
                                     </div>

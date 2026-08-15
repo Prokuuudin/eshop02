@@ -26,25 +26,31 @@ beforeEach(() => {
 })
 
 describe('hydrateWishlistFromServer', () => {
-  it('fetches the saved product ids, resolves them to products, and populates the store', async () => {
+  it('fetches the saved product ids and resolves them all in a single batched request', async () => {
     const product = { id: 'p1', title: 'Shampoo', brand: 'X', price: 10, category: 'hair' }
+    let productsCallCount = 0
     vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
-      if (url === '/api/wishlist') return { ok: true, json: async () => ({ productIds: ['p1'] }) } as Response
-      if (url === '/api/products/p1') return { ok: true, json: async () => ({ product }) } as Response
+      if (url === '/api/wishlist') return { ok: true, json: async () => ({ productIds: ['p1', 'p2'] }) } as Response
+      if (String(url).startsWith('/api/products?ids=')) {
+        productsCallCount += 1
+        expect(String(url)).toBe('/api/products?ids=p1,p2')
+        return { ok: true, json: async () => ({ data: { products: [product] } }) } as Response
+      }
       throw new Error(`unexpected fetch ${url}`)
     })
 
     await hydrateWishlistFromServer()
 
     const state = useWishlist.getState()
+    expect(productsCallCount).toBe(1) // one request, not one per wishlisted product
     expect(state.items).toEqual([product])
     expect(state.isInWishlist('p1')).toBe(true)
   })
 
-  it('silently drops ids for products that no longer exist', async () => {
+  it('silently drops ids for products the batch endpoint no longer returns', async () => {
     vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
       if (url === '/api/wishlist') return { ok: true, json: async () => ({ productIds: ['gone'] }) } as Response
-      if (url === '/api/products/gone') return { ok: false, status: 404 } as Response
+      if (String(url).startsWith('/api/products?ids=')) return { ok: true, json: async () => ({ data: { products: [] } }) } as Response
       throw new Error(`unexpected fetch ${url}`)
     })
 

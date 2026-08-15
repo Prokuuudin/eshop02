@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/server-auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 export const runtime = 'nodejs'
@@ -9,11 +10,23 @@ const MIN_PASSWORD_LENGTH = 8
 const MAX_PASSWORD_LENGTH = 128
 const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
 
+function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown'
+}
+
 // GET ?token=xxx — проверить токен (не удаляет)
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = request.nextUrl.searchParams.get('token')
   if (!token) {
     return NextResponse.json({ ok: false, error: 'missing_token' }, { status: 400 })
+  }
+
+  const ipLimit = await checkRateLimit(`reset-password:ip:${getClientIp(request)}`)
+  if (ipLimit.limited) {
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited', resetAt: ipLimit.resetAt },
+      { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((ipLimit.resetAt - Date.now()) / 1000))) } }
+    )
   }
 
   const record = await prisma.passwordResetToken.findUnique({
@@ -47,6 +60,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!token) {
     return NextResponse.json({ ok: false, error: 'missing_token' }, { status: 400 })
   }
+
+  const ipLimit = await checkRateLimit(`reset-password:ip:${getClientIp(request)}`)
+  if (ipLimit.limited) {
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited', resetAt: ipLimit.resetAt },
+      { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((ipLimit.resetAt - Date.now()) / 1000))) } }
+    )
+  }
+
   if (password.length < MIN_PASSWORD_LENGTH) {
     return NextResponse.json({ ok: false, error: 'password_too_short' }, { status: 400 })
   }

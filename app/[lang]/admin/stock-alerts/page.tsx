@@ -2,18 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-
-type Product = {
-    id: string;
-    title: string;
-    brand: string;
-    category: string;
-    stock: number;
-    sku?: string;
-    price: number;
-};
+import {
+    deriveStockAlertRows,
+    fetchStockAlertProducts,
+    fetchSyncedProductIds,
+    type StockAlertRow,
+} from './stockAlertsData';
 
 const STORAGE_KEY = 'admin-stock-threshold';
 const DEFAULT_THRESHOLD = 5;
@@ -40,13 +37,29 @@ function StockBadge({ stock, threshold }: { stock: number; threshold: number }) 
     );
 }
 
+// Silence = ERP-confirmed. Only the unreliable rows get a badge, so an admin scanning
+// the table sees noise flagged rather than every row decorated.
+function SyncBadge({ synced }: { synced: boolean }) {
+    if (synced) return null;
+    return (
+        <span
+            title="Остаток не подтверждён ERP-синхронизацией — может быть техническим значением-заглушкой из старого импорта (чаще всего унаследованное «10000»), а не актуальным складским остатком"
+            className="shrink-0 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+        >
+            Не подтверждено ERP
+        </span>
+    );
+}
+
 export default function StockAlertsPage(): React.ReactElement {
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setProducts] = useState<StockAlertRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
     const [thresholdInput, setThresholdInput] = useState(String(DEFAULT_THRESHOLD));
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'low' | 'out'>('low');
+    const [hideUnconfirmed, setHideUnconfirmed] = useState(false);
+    const [showCaveat, setShowCaveat] = useState(true);
     const [alertEmail, setAlertEmail] = useState('');
     const [alertSending, setAlertSending] = useState(false);
     const [alertResult, setAlertResult] = useState<{ ok: boolean; sent?: number } | null>(null);
@@ -70,9 +83,9 @@ export default function StockAlertsPage(): React.ReactElement {
     }, []);
 
     useEffect(() => {
-        fetch('/api/admin/products')
-            .then((r) => r.json())
-            .then((data: Product[]) => setProducts(Array.isArray(data) ? data : []))
+        Promise.all([fetchStockAlertProducts(), fetchSyncedProductIds()])
+            .then(([productsData, syncedIds]) => setProducts(deriveStockAlertRows(productsData, syncedIds)))
+            .catch(() => setProducts([]))
             .finally(() => setLoading(false));
     }, []);
 
@@ -110,6 +123,7 @@ export default function StockAlertsPage(): React.ReactElement {
     };
 
     const filtered = products.filter((p) => {
+        if (hideUnconfirmed && !p.synced) return false;
         if (filter === 'out' && p.stock !== 0) return false;
         if (filter === 'low' && p.stock === 0) return false;
         if (filter === 'low' && p.stock > threshold) return false;
@@ -124,8 +138,12 @@ export default function StockAlertsPage(): React.ReactElement {
         return true;
     });
 
+    // Deliberately independent of hideUnconfirmed: these totals feed the email-report
+    // count and the tab labels, and the report itself still emails every real alert
+    // (see sendAlert below) regardless of whether unconfirmed rows are hidden on screen.
     const outCount = products.filter((p) => p.stock === 0).length;
     const lowCount = products.filter((p) => p.stock > 0 && p.stock <= threshold).length;
+    const unconfirmedCount = products.filter((p) => !p.synced).length;
 
     return (
         <AdminGate access="full">
@@ -213,7 +231,23 @@ export default function StockAlertsPage(): React.ReactElement {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                {!loading && showCaveat && unconfirmedCount > 0 && (
+                    <div className="flex items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
+                        <p>
+                            <strong>{unconfirmedCount}</strong> из {products.length} товаров ещё не синхронизированы с ERP — их остаток может быть техническим значением-заглушкой, унаследованным из старого импорта (чаще всего «10000»), а не актуальным складским остатком. Такие строки помечены бейджем «Не подтверждено ERP»; включите переключатель ниже, чтобы скрыть их из таблицы.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setShowCaveat(false)}
+                            aria-label="Скрыть предупреждение"
+                            className="shrink-0 text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
                     <Input
                         type="text"
                         placeholder="Поиск по названию, бренду, SKU..."
@@ -243,6 +277,11 @@ export default function StockAlertsPage(): React.ReactElement {
                             </button>
                         ))}
                     </div>
+                    <Checkbox
+                        checked={hideUnconfirmed}
+                        onCheckedChange={setHideUnconfirmed}
+                        label={`Скрыть неподтверждённые ERP${unconfirmedCount ? ` (${unconfirmedCount})` : ''}`}
+                    />
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
@@ -250,11 +289,13 @@ export default function StockAlertsPage(): React.ReactElement {
                         <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
                     ) : filtered.length === 0 ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">
-                            {filter === 'low'
-                                ? 'Нет товаров с низким остатком'
-                                : filter === 'out'
-                                  ? 'Нет товаров с нулевым остатком'
-                                  : 'Ничего не найдено'}
+                            {hideUnconfirmed && unconfirmedCount > 0
+                                ? 'Нет подтверждённых ERP товаров, подходящих под фильтр'
+                                : filter === 'low'
+                                  ? 'Нет товаров с низким остатком'
+                                  : filter === 'out'
+                                    ? 'Нет товаров с нулевым остатком'
+                                    : 'Ничего не найдено'}
                         </div>
                     ) : (
                         <table className="w-full text-sm">
@@ -296,7 +337,10 @@ export default function StockAlertsPage(): React.ReactElement {
                                         }`}
                                     >
                                         <td className="px-4 py-3 font-medium text-foreground">
-                                            {p.title}
+                                            <div className="flex items-center gap-2">
+                                                <span>{p.title}</span>
+                                                <SyncBadge synced={p.synced} />
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">{p.brand}</td>
                                         <td className="px-4 py-3 text-muted-foreground">{p.sku ?? '—'}</td>

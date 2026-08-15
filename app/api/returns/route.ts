@@ -32,7 +32,14 @@ export async function GET(req: NextRequest): Promise<Response> {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     const { skip, take } = parseOffsetPagination(req.nextUrl.searchParams)
-    const where = user.platformRole === 'admin' ? {} : { email: user.email }
+    // Admins may scope the list to a single customer (e.g. the customer profile
+    // page's Returns tab) via ?email=. Non-admins are always scoped to their own
+    // email regardless of this param. Omitting it keeps the existing unfiltered
+    // behavior for callers like the /admin/returns page.
+    const emailFilter = req.nextUrl.searchParams.get('email')?.trim().toLowerCase() || undefined
+    const where = user.platformRole === 'admin'
+      ? (emailFilter ? { email: { equals: emailFilter, mode: 'insensitive' as const } } : {})
+      : { email: user.email }
     const [returns, total] = await Promise.all([
       prisma.returnRequest.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
       prisma.returnRequest.count({ where }),

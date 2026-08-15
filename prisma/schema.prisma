@@ -669,6 +669,47 @@ model MediaAsset {
   updatedAt DateTime @updatedAt
 }
 
+model CompanyApiKey {
+  id         String    @id
+  companyId  String    @unique
+  keyHash    String    @unique
+  keyPrefix  String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([companyId])
+}
+
+model ContactMessage {
+  id           String    @id
+  name         String
+  email        String
+  subject      String
+  message      String
+  ipAddress    String?
+  emailStatus  String    @default("pending")
+  emailError   String?
+  createdAt    DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+model CompanyActivityLog {
+  id        String   @id
+  companyId String
+  userId    String
+  userName  String?
+  userEmail String?
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
 model WebhookEndpoint {
   id        String   @id
   companyId String

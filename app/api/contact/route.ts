@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { sendEmail } from '@/lib/mailer'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { prisma } from '@/lib/prisma'
 
 type ContactPayload = {
   name: string
@@ -137,6 +139,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // Persist first so the submission survives even if the notification email
+  // fails or SMTP isn't configured — previously the only record of a lead was
+  // an outbound email, and a delivery failure silently lost it while the
+  // client was still told "sent".
+  const record = await prisma.contactMessage.create({
+    data: {
+      id: randomUUID(),
+      name: payload.name.trim(),
+      email: normalizedEmail,
+      subject: payload.subject.trim(),
+      message: payload.message.trim(),
+      ipAddress: ip,
+      emailStatus: 'pending',
+    },
+  })
+
   const adminEmail = (process.env.CONTACT_TO ?? process.env.SMTP_USER ?? '').trim()
   if (adminEmail) {
     try {
@@ -153,9 +171,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           <div style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:6px;font-size:14px;white-space:pre-wrap">${escapeHtml(payload.message.trim())}</div>
         </div>`
       )
+      await prisma.contactMessage.update({ where: { id: record.id }, data: { emailStatus: 'sent' } })
     } catch (err) {
       logApiError("[contact] sendEmail error:", err)
+      await prisma.contactMessage.update({
+        where: { id: record.id },
+        data: { emailStatus: 'failed', emailError: err instanceof Error ? err.message.slice(0, 500) : 'unknown_error' },
+      }).catch((updateErr) => logApiError('[contact] failed to record email failure', updateErr))
     }
+  } else {
+    await prisma.contactMessage.update({ where: { id: record.id }, data: { emailStatus: 'not_configured' } })
+      .catch((err) => logApiError('[contact] failed to record not_configured status', err))
   }
 
   return NextResponse.json({ ok: true })

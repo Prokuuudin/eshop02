@@ -20,9 +20,16 @@ export async function GET(): Promise<Response> {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
+  // Intentionally unbounded (no `take`): a cap here silently drops older orders
+  // from the aggregation, which undercounts exactly the customers the
+  // "Неактивный" (inactive) segment on /admin/customers/segments exists to find
+  // - their most recent order is old, so it's the first thing a recency-sorted
+  // cap would cut. At ~8.7k orders this is a single indexed scan pulling only
+  // the 5 columns actually needed, which is cheap; a DB-side groupBy was
+  // considered but can't also recover per-customer firstName/lastName from the
+  // most recent order, so aggregation stays in JS.
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 2000,
     select: {
       email: true,
       firstName: true,
@@ -35,18 +42,24 @@ export async function GET(): Promise<Response> {
   const map = new Map<string, CustomerRow>()
 
   for (const order of orders) {
-    const email = order.email
-    if (!email) continue
+    // Group by normalized email so the same person checking out with different
+    // casing (Foo@Bar.com vs foo@bar.com) collapses into one row instead of
+    // splitting totals/segment membership across two. The displayed `email`
+    // keeps the first-seen casing (orders are sorted desc, so that's the most
+    // recent order's casing).
+    const rawEmail = order.email?.trim()
+    if (!rawEmail) continue
+    const normalizedEmail = rawEmail.toLowerCase()
 
     const orderDate =
       order.createdAt instanceof Date
         ? order.createdAt.toISOString()
         : String(order.createdAt)
 
-    const existing = map.get(email)
+    const existing = map.get(normalizedEmail)
     if (!existing) {
-      map.set(email, {
-        email,
+      map.set(normalizedEmail, {
+        email: rawEmail,
         firstName: order.firstName,
         lastName: order.lastName,
         totalOrders: 1,
@@ -66,15 +79,12 @@ export async function GET(): Promise<Response> {
   // fallback for guest customers without an account.
   const customerEmails = Array.from(map.keys())
   if (customerEmails.length) {
-    const customersByNormalizedEmail = new Map(
-      Array.from(map.entries()).map(([storedEmail, customer]) => [storedEmail.toLowerCase(), customer]),
-    )
     const registeredUsers = await prisma.user.findMany({
       where: { email: { in: customerEmails, mode: 'insensitive' } },
       select: { email: true, name: true },
     })
     for (const registeredUser of registeredUsers) {
-      const customer = customersByNormalizedEmail.get(registeredUser.email.toLowerCase())
+      const customer = map.get(registeredUser.email.toLowerCase().trim())
       const fullName = registeredUser.name?.trim()
       if (!customer || !fullName) continue
       const [firstName, ...lastNameParts] = fullName.split(/\s+/)

@@ -59,7 +59,7 @@ describe('POST /api/auth/login', () => {
     expect(createSession).toHaveBeenCalledWith('u1')
   })
 
-  it('rejects customer login by email without checking the password', async () => {
+  it('rejects customer login by email, but still runs a dummy bcrypt compare (timing-safe) instead of short-circuiting', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'customer1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer',
     } as never)
@@ -67,8 +67,34 @@ describe('POST /api/auth/login', () => {
     const res = await POST(makeRequest())
 
     expect(res.status).toBe(401)
-    expect(verifyPassword).not.toHaveBeenCalled()
+    // Must still pay the bcrypt cost so an "ineligible account" response takes the
+    // same time as a "wrong password" one - an attacker can't enumerate valid
+    // card numbers/emails from response timing. Compared against the dummy hash,
+    // never the account's real one.
+    expect(verifyPassword).toHaveBeenCalledWith('Password123!', expect.not.stringMatching(/^hash$/))
     expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('when no account matches at all, still runs bcrypt against the same dummy hash used for an ineligible account', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+
+    const res = await POST(makeRequest())
+
+    expect(res.status).toBe(401)
+    expect(verifyPassword).toHaveBeenCalledTimes(1)
+    const dummyHashUsedForMissingAccount = vi.mocked(verifyPassword).mock.calls[0][1]
+
+    vi.clearAllMocks()
+    vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'customer1', email: 'user@test.com', passwordHash: 'real-hash', platformRole: 'customer',
+    } as never)
+    await POST(makeRequest())
+    const dummyHashUsedForIneligibleAccount = vi.mocked(verifyPassword).mock.calls[0][1]
+
+    // Same fixed dummy hash on both paths - the two 401 cases must be indistinguishable by timing.
+    expect(dummyHashUsedForMissingAccount).toBe(dummyHashUsedForIneligibleAccount)
+    expect(dummyHashUsedForIneligibleAccount).not.toBe('real-hash')
   })
 
   it('finds a real-email account directly by normalized cardNumber', async () => {

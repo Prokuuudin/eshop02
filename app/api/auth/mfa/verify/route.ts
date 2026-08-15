@@ -84,12 +84,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const token = await createSession(user.id)
   const res = NextResponse.json({ user: mapDbToServerUser(user) })
+  // MFA only exists on admin accounts (see login/route.ts's mfaEnabled gate), so this
+  // path is always the 1-day admin session - mirror createSession()'s own expiry
+  // instead of the 30-day default, matching the same fix in login/route.ts.
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 60 * 60 * 24 * 1,
   })
   return res
 }

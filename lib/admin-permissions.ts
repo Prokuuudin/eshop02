@@ -82,7 +82,6 @@ const ADMIN_PATH_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> 
   ['/admin/marketing', 'marketing.manage'],
   ['/admin/notifications', 'marketing.manage'],
   ['/admin/blog', 'content.manage'],
-  ['/admin/blogs', 'content.manage'],
   ['/admin/content', 'content.manage'],
   ['/admin/analytics', 'audit.read'],
   ['/admin/sales', 'audit.read'],

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { useOrders } from '@/lib/orders-store'
+import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { formatEuro } from '@/lib/utils'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -145,6 +146,7 @@ function StackedBarChart({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesBreakdownPage(): React.ReactElement {
+  useAdminOrdersSync()
   const orders = useOrders((s) => s.orders)
   const [period, setPeriod] = useState<Period>('30d')
   const [now] = useState(Date.now)

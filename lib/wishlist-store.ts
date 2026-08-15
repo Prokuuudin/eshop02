@@ -195,16 +195,15 @@ export async function hydrateWishlistFromServer(): Promise<void> {
     if (!res.ok) return
     const data = (await res.json()) as { productIds?: string[] }
     const ids = Array.isArray(data.productIds) ? data.productIds : []
-    const results = await Promise.all(
-      ids.map((id) =>
-        fetch(`/api/products/${id}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .catch(() => null)
-      )
-    )
-    const products = results
-      .map((r) => (r as { product?: Product } | null)?.product)
-      .filter((p): p is Product => !!p)
+    if (ids.length === 0) {
+      useWishlist.getState().replaceForCurrentScope([])
+      return
+    }
+    // One batched request instead of one fetch per wishlisted product.
+    const batchRes = await fetch(`/api/products?ids=${ids.map(encodeURIComponent).join(',')}`)
+    const products = batchRes.ok
+      ? ((await batchRes.json()) as { data?: { products?: Product[] } }).data?.products ?? []
+      : []
     useWishlist.getState().replaceForCurrentScope(products)
   } catch {
     // Keep whatever's already in the local store on failure.

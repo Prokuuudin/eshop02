@@ -5,6 +5,12 @@ import { appendServerAudit } from '@/lib/server-audit'
 
 export const runtime = 'nodejs'
 
+// The admin UI enforces 1-100 client-side only - a direct API call could
+// otherwise set discount=500 and, combined with server-pricing's discount
+// math, floor an order's total to €0.
+const clampDiscount = (value: unknown): number => Math.min(100, Math.max(0, Number(value) || 0))
+const clampNonNegative = (value: unknown): number => Math.max(0, Number(value) || 0)
+
 export async function GET(): Promise<Response> {
   const actor = await requireAdmin()
   if (actor instanceof NextResponse) return actor
@@ -37,10 +43,10 @@ export async function POST(request: NextRequest): Promise<Response> {
       const created = await tx.promoCode.create({ data: {
         id: `pc-${Date.now()}`,
         code,
-        discount: Number(body.discount) || 0,
-        minOrder: Number(body.minOrder) || 0,
-        maxUses: body.maxUses !== null && body.maxUses !== undefined ? Number(body.maxUses) : null,
-        usedCount: Number(body.usedCount) || 0,
+        discount: clampDiscount(body.discount),
+        minOrder: clampNonNegative(body.minOrder),
+        maxUses: body.maxUses !== null && body.maxUses !== undefined ? Math.max(0, Number(body.maxUses) || 0) : null,
+        usedCount: clampNonNegative(body.usedCount),
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
         active: body.active ?? true,
         description: body.description ?? '',

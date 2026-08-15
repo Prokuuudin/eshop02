@@ -70,7 +70,6 @@ type AdminLogStore = {
       adminName?: string
     }
   ) => void
-  clear: (olderThanDays: number) => void
   setEntries: (entries: AdminLogEntry[]) => void
 }
 
@@ -111,13 +110,6 @@ export const useAdminLogStore = create<AdminLogStore>()(
 
         // Sync to DB — fire-and-forget
         // Only send fields the server accepts; id/adminEmail/adminName/at are server-generated
-      },
-
-      clear: (olderThanDays) => {
-        const cutoff = Date.now() - olderThanDays * 86400_000
-        set((state) => ({
-          entries: state.entries.filter((e) => new Date(e.at).getTime() >= cutoff),
-        }))
       },
 
       setEntries: (entries) => set({ entries }),

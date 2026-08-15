@@ -18,9 +18,18 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 }
 
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 function interpolate(template: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
-    (html, [key, value]) => html.replaceAll(`{{${key}}}`, value),
+    (html, [key, value]) => html.replaceAll(`{{${key}}}`, escHtml(value)),
     template
   )
 }

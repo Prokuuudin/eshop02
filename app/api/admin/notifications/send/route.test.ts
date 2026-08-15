@@ -56,6 +56,16 @@ describe('POST /api/admin/notifications/send', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 when userIds exceeds the recipient cap', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    const userIds = Array.from({ length: 501 }, (_, i) => `u${i}`)
+    const res = await POST(makeRequest({ userIds, title: 'T', message: 'M', type: 'info', channel: 'app' }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('too_many_recipients')
+    expect(notificationCreateManyMock).not.toHaveBeenCalled()
+  })
+
   it('returns 400 when title is missing', async () => {
     getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
     const res = await POST(makeRequest({ userIds: ['u1'], message: 'M', type: 'info', channel: 'app' }))

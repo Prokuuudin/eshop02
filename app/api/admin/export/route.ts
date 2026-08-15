@@ -23,7 +23,14 @@ const COLUMNS: (keyof Product)[] = [
 
 function escapeCell(value: unknown): string {
   if (value === null || value === undefined) return ''
-  const str = Array.isArray(value) ? value.join(';') : String(value)
+  let str = Array.isArray(value) ? value.join(';') : String(value)
+  // CSV/formula-injection guard: Excel/Sheets treats a cell starting with
+  // =, +, -, @ (or a leading tab/CR) as a formula when the file is opened.
+  // Product fields (title, description, manufacturerName, ...) are free text
+  // and can contain these; force them to be read as text instead.
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`
+  }
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`
   }

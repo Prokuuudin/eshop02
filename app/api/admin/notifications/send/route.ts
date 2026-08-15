@@ -7,6 +7,8 @@ import { sendEmail } from '@/lib/mailer'
 
 export const runtime = 'nodejs'
 
+const MAX_RECIPIENTS = 500
+
 const ALLOWED_TYPES = ['info', 'success', 'warning', 'promo'] as const
 type AllowedType = typeof ALLOWED_TYPES[number]
 
@@ -71,6 +73,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     const link    = (rawLink && /^\/[^/]/.test(rawLink)) ? rawLink : null
 
     if (userIds.length === 0) return NextResponse.json({ error: 'no_recipients' },  { status: 400 })
+    // The email channel sends sequentially (with per-message retry/backoff in
+    // sendEmail) - an unbounded recipient list risks a serverless timeout, same
+    // reasoning as the MAX_RECIPIENTS cap on the sibling /broadcast route.
+    if (userIds.length > MAX_RECIPIENTS) {
+      return NextResponse.json({ error: 'too_many_recipients', max: MAX_RECIPIENTS }, { status: 400 })
+    }
     if (!title)               return NextResponse.json({ error: 'title_required' },  { status: 400 })
     if (!message)             return NextResponse.json({ error: 'message_required' }, { status: 400 })
 

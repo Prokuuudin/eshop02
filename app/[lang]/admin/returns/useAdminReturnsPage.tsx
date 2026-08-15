@@ -94,16 +94,14 @@ function useAdminReturnsPageState() {
             return n;
         });
         try {
+            // Recipient/order/status/amount are looked up server-side from the
+            // return record itself - only the id and an optional not-yet-saved
+            // resolution draft are sent.
             const res = await fetch('/api/admin/returns/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    to: ret.email,
-                    firstName: ret.firstName,
                     returnId: ret.id,
-                    orderId: ret.orderId,
-                    status: ret.status,
-                    refundAmount: ret.refundAmount,
                     resolution: resolutionDraft[ret.id] ?? ret.resolution,
                 }),
             });

@@ -7,6 +7,10 @@ export const runtime = 'nodejs'
 
 type Params = { params: Promise<{ id: string }> }
 
+// Mirrors the clamp in the sibling collection route - see comment there.
+const clampDiscount = (value: unknown): number => Math.min(100, Math.max(0, Number(value) || 0))
+const clampNonNegative = (value: unknown): number => Math.max(0, Number(value) || 0)
+
 export async function PUT(request: NextRequest, { params }: Params): Promise<Response> {
   const actor = await requireAdmin()
   if (actor instanceof NextResponse) return actor
@@ -25,10 +29,10 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     const updated = await prisma.$transaction(async (tx) => {
       const after = await tx.promoCode.update({ where: { id }, data: {
         ...(body.code !== undefined && { code: body.code.toUpperCase().trim() }),
-        ...(body.discount !== undefined && { discount: Number(body.discount) }),
-        ...(body.minOrder !== undefined && { minOrder: Number(body.minOrder) }),
-        ...(body.maxUses !== undefined && { maxUses: body.maxUses !== null ? Number(body.maxUses) : null }),
-        ...(body.usedCount !== undefined && { usedCount: Number(body.usedCount) }),
+        ...(body.discount !== undefined && { discount: clampDiscount(body.discount) }),
+        ...(body.minOrder !== undefined && { minOrder: clampNonNegative(body.minOrder) }),
+        ...(body.maxUses !== undefined && { maxUses: body.maxUses !== null ? Math.max(0, Number(body.maxUses) || 0) : null }),
+        ...(body.usedCount !== undefined && { usedCount: clampNonNegative(body.usedCount) }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
         ...(body.active !== undefined && { active: body.active }),
         ...(body.description !== undefined && { description: body.description }),

@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 const settingFindUniqueMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/prisma', () => {
+  const client = {
     product: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -16,8 +16,14 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: settingFindUniqueMock,
       upsert: vi.fn(),
     },
-  },
-}))
+    $executeRaw: vi.fn(),
+    // Tests don't exercise real transactional isolation - the callback just
+    // gets the same mocked client, so `tx.foo` and `prisma.foo` hit the same
+    // mock either way.
+    $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(client)),
+  }
+  return { prisma: client }
+})
 
 import { prisma } from '@/lib/prisma'
 // Every name this test file will ever need across all 6 tasks is imported once,
@@ -32,6 +38,8 @@ import {
   upsertProductOverride,
   resetProductOverride,
   restoreDeletedProduct,
+  deleteProductAny,
+  purgeDeletedProductArchive,
   type ProductOverride,
 } from '@/lib/product-overrides-store'
 import type { Product } from '@/data/products'
@@ -430,5 +438,84 @@ describe('restoreDeletedProduct', () => {
     const written = (overridesWrite![0] as { update: { value: Record<string, ProductOverride> } }).update.value
     expect(written.p1?.price).toBe(139.99)
     expect(written.p1?.stock).toBeUndefined()
+  })
+})
+
+describe('deleteProductAny', () => {
+  it('returns an error when the product does not exist', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null)
+    const result = await deleteProductAny('missing')
+    expect(result.success).toBe(false)
+  })
+
+  it('archives a synced product and marks it isDeleted inside one locked transaction', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      id: 'p1', isDeleted: false, isCustom: false,
+      title: 'Base title', brand: 'Base brand', price: 100, rating: 4, category: 'hair', stock: 10,
+    } as never)
+    settingFindUniqueMock.mockResolvedValue(null) // no pre-existing archive
+    vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.update).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await deleteProductAny('p1')
+
+    expect(result.success).toBe(true)
+    // The archive-row read/write and the isDeleted flip must happen inside
+    // the same $transaction call, guarded by the advisory lock - not as
+    // separate top-level calls a concurrent request could interleave with.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1)
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1)
+    expect(prisma.product.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { isDeleted: true } })
+
+    const archiveWrite = vi.mocked(prisma.keyValueSetting.upsert).mock.calls
+      .find((c) => (c[0] as { where: { key: string } }).where.key === 'deleted-products-archive')
+    expect(archiveWrite).toBeDefined()
+    const archived = (archiveWrite![0] as unknown as { update: { value: Array<{ id: string }> } }).update.value
+    expect(archived[0]?.id).toBe('p1')
+  })
+
+  it('hard-deletes a custom product instead of soft-deleting it', async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      id: 'custom-1', isDeleted: false, isCustom: true,
+      title: 'Custom', brand: 'Brand', price: 10, rating: 0, category: 'hair', stock: 1,
+    } as never)
+    settingFindUniqueMock.mockResolvedValue(null)
+    vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.delete).mockResolvedValue({} as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const result = await deleteProductAny('custom-1')
+
+    expect(result.success).toBe(true)
+    expect(prisma.product.delete).toHaveBeenCalledWith({ where: { id: 'custom-1' } })
+    expect(prisma.product.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('purgeDeletedProductArchive', () => {
+  it('returns an error when the id is not in the archive', async () => {
+    settingFindUniqueMock.mockResolvedValue({ key: 'deleted-products-archive', value: [], updatedAt: new Date() } as never)
+    const result = await purgeDeletedProductArchive('missing')
+    expect(result.success).toBe(false)
+  })
+
+  it('removes only the target entry from the archive', async () => {
+    settingFindUniqueMock.mockResolvedValue({
+      key: 'deleted-products-archive',
+      value: [
+        { id: 'p1', product: { id: 'p1' }, source: 'base', deletedAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'p2', product: { id: 'p2' }, source: 'base', deletedAt: '2026-01-01T00:00:00.000Z' },
+      ],
+      updatedAt: new Date(),
+    } as never)
+    vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+
+    const result = await purgeDeletedProductArchive('p1')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.archive.map((e) => e.id)).toEqual(['p2'])
+    }
   })
 })

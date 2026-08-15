@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminLogStore, mapServerLogEntry, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
-import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,11 +37,13 @@ const PAGE_SIZE = 50
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminLogPage(): React.ReactElement {
-  const confirmAction = useAdminConfirm()
   const [now] = useState(Date.now)
   const entries = useAdminLogStore((s) => s.entries)
-  const clear = useAdminLogStore((s) => s.clear)
   const setEntries = useAdminLogStore((s) => s.setEntries)
+  // Audit log is append-only by design (tamper-evident hash chain, see
+  // /api/admin/audit-log) - there is no real delete endpoint. This only hides
+  // old rows from the current view; it never touches the underlying log.
+  const [hideOlderThan90, setHideOlderThan90] = useState(false)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loadError, setLoadError] = useState('')
 
@@ -78,7 +79,9 @@ export default function AdminLogPage(): React.ReactElement {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
+    const cutoff = now - 90 * 86400_000
     return sorted.filter((e) => {
+      if (hideOlderThan90 && new Date(e.at).getTime() < cutoff) return false
       if (actionFilter && e.action !== actionFilter) return false
       if (adminFilter && e.adminEmail !== adminFilter) return false
       if (q) {
@@ -87,7 +90,7 @@ export default function AdminLogPage(): React.ReactElement {
       }
       return true
     })
-  }, [sorted, actionFilter, adminFilter, search])
+  }, [sorted, actionFilter, adminFilter, search, hideOlderThan90, now])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -142,11 +145,12 @@ export default function AdminLogPage(): React.ReactElement {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={downloadCSV}>Экспорт CSV</Button>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={async () => { const decision = await confirmAction({ title: 'Удалить старые записи аудита?', description: 'Записи старше 90 дней будут удалены. Используйте это действие только согласно retention policy.', affected: ['Audit log старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true }); if (decision.confirmed) clear(90) }}
+              onClick={() => setHideOlderThan90((v) => !v)}
+              title="Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется"
             >
-              Очистить старше 90 дней
+              {hideOlderThan90 ? 'Показать все записи' : 'Скрыть старше 90 дней'}
             </Button>
             <Button variant="outline" asChild>
               <Link href="/admin/system/logs">← Системные логи</Link>

@@ -1,5 +1,29 @@
 import { z } from 'zod'
 
+export const adminOrderCreateSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().max(100).optional().default(''),
+  phone: z.string().trim().max(32).optional().default(''),
+  items: z.array(z.object({
+    id: z.string().trim().min(1).max(200),
+    quantity: z.number().int().min(1).max(10_000),
+    // Admin-entered manual orders may override the catalog price (e.g. a
+    // negotiated discount) - unlike public checkout, which always recomputes
+    // price from the DB.
+    unitPrice: z.number().finite().min(0).max(1_000_000),
+  })).min(1).max(200),
+  deliveryMethod: z.enum(['courier', 'pickup', 'post']),
+  address: z.string().trim().max(500).optional().default(''),
+  city: z.string().trim().max(200).optional().default(''),
+  postalCode: z.string().trim().max(50).optional(),
+  paymentMethod: z.string().trim().min(1).max(100),
+  paymentStatus: z.enum(['unpaid', 'paid']).optional().default('unpaid'),
+  promoCode: z.string().trim().max(64).optional(),
+  discount: z.number().finite().min(0).max(1_000_000).optional().default(0),
+  notes: z.string().trim().max(2_000).optional(),
+}).strict()
+
 export const adminOrderUpdateSchema = z.object({
   orderId: z.string().trim().min(1).max(100),
   items: z.array(z.object({

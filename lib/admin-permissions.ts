@@ -38,7 +38,13 @@ const MANAGER_PERMISSIONS = new Set<AdminPermission>([
 export function getPermissionAccessLevel(subject: PermissionSubject): AdminAccessLevel {
   if (!subject) return 'none'
   if (subject.platformRole === 'admin') return 'admin'
-  if (subject.teamRole === 'manager' || subject.teamRole === 'admin') return 'manager'
+  // Only the literal 'manager' teamRole grants staff-level admin-panel access.
+  // 'admin' here means "owner of their own B2B company" (see CompanyMember.role
+  // and lib/auth-access.ts) — every self-service company signup (auth/invite,
+  // register-card) gets that value, so treating it as staff access would grant
+  // unscoped platform-wide orders/RFQ access to any customer who accepts a card
+  // invite. Real staff access is granted explicitly via /api/admin/users PATCH.
+  if (subject.teamRole === 'manager') return 'manager'
   return 'none'
 }
 

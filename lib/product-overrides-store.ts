@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { type Product } from '@/data/products';
-import { prisma } from '@/lib/prisma';
+import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>;
@@ -140,8 +140,17 @@ export const getDeletedProductsArchive = async (): Promise<ArchivedProductRecord
     return Array.isArray(parsed) ? parsed : [];
 };
 
-const writeDeletedProductsArchive = async (records: ArchivedProductRecord[]): Promise<void> => {
-    await prisma.keyValueSetting.upsert({
+type TxClient = ExtendedTransactionClient;
+
+const readDeletedProductsArchiveTx = async (tx: TxClient): Promise<ArchivedProductRecord[]> => {
+    const row = await tx.keyValueSetting.findUnique({ where: { key: DELETED_ARCHIVE_KEY } });
+    if (!row) return [];
+    const parsed = row.value as unknown as ArchivedProductRecord[];
+    return Array.isArray(parsed) ? parsed : [];
+};
+
+const writeDeletedProductsArchiveTx = async (tx: TxClient, records: ArchivedProductRecord[]): Promise<void> => {
+    await tx.keyValueSetting.upsert({
         where: { key: DELETED_ARCHIVE_KEY },
         create: { key: DELETED_ARCHIVE_KEY, value: records as unknown as Prisma.InputJsonValue },
         update: { value: records as unknown as Prisma.InputJsonValue },
@@ -265,6 +274,12 @@ export const deleteCustomProduct = async (
     return { success: true, products: await getAdminProducts() };
 };
 
+// All three functions below share one Postgres advisory lock keyed on the
+// archive's KV row: without it, two admins archiving/restoring *different*
+// products at nearly the same time can each read the array before either
+// writes, and the second write silently clobbers the first — losing an
+// archive record for a product that's already isDeleted in Postgres, with no
+// way to restore it short of direct DB access.
 export const deleteProductAny = async (
     productId: string
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
@@ -276,21 +291,25 @@ export const deleteProductAny = async (
 
     const targetProduct = mapDbToProduct(dbProduct);
 
-    const archive = await getDeletedProductsArchive();
-    const nextArchive = archive.filter((e) => e.id !== nextId);
-    nextArchive.unshift({
-        id: nextId,
-        product: targetProduct,
-        source: dbProduct.isCustom ? 'custom' : 'base',
-        deletedAt: new Date().toISOString(),
-    });
-    await writeDeletedProductsArchive(nextArchive);
+    await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
 
-    if (dbProduct.isCustom) {
-        await prisma.product.delete({ where: { id: nextId } });
-    } else {
-        await prisma.product.update({ where: { id: nextId }, data: { isDeleted: true } });
-    }
+        const archive = await readDeletedProductsArchiveTx(tx);
+        const nextArchive = archive.filter((e) => e.id !== nextId);
+        nextArchive.unshift({
+            id: nextId,
+            product: targetProduct,
+            source: dbProduct.isCustom ? 'custom' : 'base',
+            deletedAt: new Date().toISOString(),
+        });
+        await writeDeletedProductsArchiveTx(tx, nextArchive);
+
+        if (dbProduct.isCustom) {
+            await tx.product.delete({ where: { id: nextId } });
+        } else {
+            await tx.product.update({ where: { id: nextId }, data: { isDeleted: true } });
+        }
+    });
 
     return { success: true, products: await getAdminProducts() };
 };
@@ -301,30 +320,41 @@ export const restoreDeletedProduct = async (
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
 
-    const archive = await getDeletedProductsArchive();
-    const archived = archive.find((e) => e.id === nextId);
-    if (!archived) return { success: false, error: 'Товар не найден в архиве' };
+    const result = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
 
-    if (archived.source === 'custom') {
-        await prisma.product.create({ data: mapProductToDbCreate(archived.product, true) });
-    } else {
-        await prisma.product.update({ where: { id: nextId }, data: { isDeleted: false } });
+        const archive = await readDeletedProductsArchiveTx(tx);
+        const archived = archive.find((e) => e.id === nextId);
+        if (!archived) return { success: false as const, error: 'Товар не найден в архиве' };
 
-        const dbProduct = await prisma.product.findUnique({ where: { id: nextId } });
-        if (dbProduct) {
-            const baseProduct = mapDbToProduct(dbProduct);
-            const overridePatch = buildOverrideFromSnapshot(baseProduct, archived.product);
-            // Stock is never restored as an override — live inventory always wins,
-            // regardless of what the archived snapshot happened to hold.
-            delete overridePatch.stock;
-            if (Object.keys(overridePatch).length > 0) {
-                await upsertProductOverride(nextId, overridePatch);
+        let overridePatch: ProductOverride | null = null;
+        if (archived.source === 'custom') {
+            await tx.product.create({ data: mapProductToDbCreate(archived.product, true) });
+        } else {
+            await tx.product.update({ where: { id: nextId }, data: { isDeleted: false } });
+
+            const dbProduct = await tx.product.findUnique({ where: { id: nextId } });
+            if (dbProduct) {
+                const baseProduct = mapDbToProduct(dbProduct);
+                const patch = buildOverrideFromSnapshot(baseProduct, archived.product);
+                // Stock is never restored as an override — live inventory always wins,
+                // regardless of what the archived snapshot happened to hold.
+                delete patch.stock;
+                if (Object.keys(patch).length > 0) overridePatch = patch;
             }
         }
-    }
 
-    const nextArchive = archive.filter((e) => e.id !== nextId);
-    await writeDeletedProductsArchive(nextArchive);
+        const nextArchive = archive.filter((e) => e.id !== nextId);
+        await writeDeletedProductsArchiveTx(tx, nextArchive);
+
+        return { success: true as const, overridePatch };
+    });
+
+    if (!result.success) return result;
+
+    if (result.overridePatch) {
+        await upsertProductOverride(nextId, result.overridePatch);
+    }
 
     return { success: true, products: await getAdminProducts() };
 };
@@ -337,13 +367,17 @@ export const purgeDeletedProductArchive = async (
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
 
-    const archive = await getDeletedProductsArchive();
-    if (!archive.some((e) => e.id === nextId))
-        return { success: false, error: 'Товар не найден в архиве' };
+    return prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
 
-    const nextArchive = archive.filter((e) => e.id !== nextId);
-    await writeDeletedProductsArchive(nextArchive);
-    return { success: true, archive: nextArchive };
+        const archive = await readDeletedProductsArchiveTx(tx);
+        if (!archive.some((e) => e.id === nextId))
+            return { success: false as const, error: 'Товар не найден в архиве' };
+
+        const nextArchive = archive.filter((e) => e.id !== nextId);
+        await writeDeletedProductsArchiveTx(tx, nextArchive);
+        return { success: true as const, archive: nextArchive };
+    });
 };
 import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping';
 

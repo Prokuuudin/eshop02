@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrders, type DeliveryMethod } from '@/lib/orders-store';
+import { type DeliveryMethod } from '@/lib/orders-store';
 import { formatEuro } from '@/lib/utils';
-import { logAdminAction } from '@/lib/admin-log-store';
-import { useAdminStore } from '@/lib/admin-store';
 import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,20 +50,10 @@ const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (
 
 const LOC = 'ru-RU';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function genOrderId(): string {
-    const ts = Date.now().toString(36).toUpperCase();
-    const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
-    return `ORD-${ts}-${rnd}`;
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function useNewOrderPageState() {
     const router = useRouter();
-    const { addOrder } = useOrders();
-    const { setOrderStatus } = useAdminStore();
 
     // ── Catalog
     const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
@@ -270,7 +258,7 @@ function useNewOrderPageState() {
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const errs = validate();
         if (errs.length) {
             setErrors(errs);
@@ -279,59 +267,64 @@ function useNewOrderPageState() {
         setErrors([]);
         setSubmitting(true);
 
-        const orderId = genOrderId();
-        const now = new Date();
+        try {
+            const res = await fetch('/api/admin/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    phone: phone.trim(),
+                    items: items.map((i) => ({
+                        id: i.product.id,
+                        quantity: i.quantity,
+                        unitPrice: i.unitPrice,
+                    })),
+                    deliveryMethod,
+                    address: address.trim(),
+                    city: city.trim(),
+                    postalCode: postalCode.trim() || undefined,
+                    paymentMethod,
+                    paymentStatus,
+                    promoCode: promoResult?.code,
+                    discount,
+                    notes: notes.trim() || undefined,
+                }),
+            });
 
-        const order = {
-            id: orderId,
-            createdAt: now,
-            // CartItem = Product & { quantity } — API products carry all fields; cast is safe
-            items: items.map((i) => ({
-                ...i.product,
-                quantity: i.quantity,
-                price: i.unitPrice,
-            })) as never,
-            subtotal,
-            tax: 0,
-            delivery: deliveryCost,
-            deliveryMethod,
-            paymentMethod,
-            promoCode: promoResult?.code,
-            discount,
-            total,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: email.trim().toLowerCase(),
-            phone: phone.trim(),
-            address: address.trim() || 'Самовывоз',
-            city: city.trim() || '—',
-            postalCode: postalCode.trim() || undefined,
-            paymentStatus,
-            paymentProvider: 'manual' as const,
-        };
-
-        addOrder(order);
-        setOrderStatus(orderId, 'confirmed'); // manual orders start as confirmed
-
-        logAdminAction(
-            'product.created',
-            { type: 'order', id: orderId, title: `${firstName} ${lastName}` },
-            {
-                after: { total, items: items.length, paymentMethod },
-                details: `Ручное создание заказа на ${formatEuro(total, LOC)}${
-                    notes ? ` · ${notes.slice(0, 60)}` : ''
-                }`,
+            if (!res.ok) {
+                const body = (await res.json().catch(() => null)) as
+                    | { error?: string; items?: string[] }
+                    | null;
+                if (body?.error === 'insufficient_stock') {
+                    setErrors([`Недостаточно остатка для: ${(body.items ?? []).join(', ')}`]);
+                } else if (body?.error === 'invalid_items') {
+                    setErrors(['Некоторые товары больше недоступны — обновите список и попробуйте снова']);
+                } else if (body?.error === 'promo_code_usage_limit') {
+                    setErrors(['Лимит использования промокода исчерпан']);
+                } else if (res.status === 403) {
+                    setErrors(['Недостаточно прав для создания заказа']);
+                } else {
+                    setErrors(['Не удалось создать заказ. Попробуйте ещё раз.']);
+                }
+                return;
             }
-        );
 
-        // Save notes if any
-        if (notes.trim()) {
-            // Stored via admin-log details — also save to order notes in admin store
-            useAdminStore.getState().setOrderNote(orderId, notes.trim());
+            const data = (await res.json()) as { order: { id: string }; warning?: string };
+            if (data.warning) {
+                reportAdminPartial(
+                    'Заказ создан, но статус/заметка могли не сохраниться — проверьте вручную.',
+                    'Новый заказ'
+                );
+            }
+            router.push('/admin/orders');
+        } catch (error) {
+            reportAdminError(error, 'Создание заказа');
+            setErrors(['Ошибка сети — заказ не создан. Проверьте соединение и попробуйте снова.']);
+        } finally {
+            setSubmitting(false);
         }
-
-        setSubmitting(false);
-        router.push('/admin/orders');
     };
 
     // ─── Render ───────────────────────────────────────────────────────────────
@@ -342,8 +335,6 @@ function useNewOrderPageState() {
 
     return {
         router,
-        addOrder,
-        setOrderStatus,
         catalog,
         setCatalog,
         productSearch,

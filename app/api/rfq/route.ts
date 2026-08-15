@@ -61,19 +61,43 @@ export async function POST(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'company_required' }, { status: 400 })
     }
 
-    const rfq = await prisma.rFQRequest.upsert({
-      where: { id },
-      create: {
-        id,
-        companyId: resolvedCompanyId,
-        items,
-        notes: notes ?? '',
-        status: 'pending',
-        timeline: timeline ?? [{ at: new Date().toISOString(), type: 'created' }],
-        createdByUserId: user.id,
-      },
-      update: {},
-    })
+    // The id is client-supplied (offline-first retry pattern). Never let a
+    // colliding id upsert into - or read back - another company's RFQ,
+    // including its quote pricing.
+    const existing = await prisma.rFQRequest.findUnique({ where: { id } })
+    if (existing) {
+      if (existing.companyId !== resolvedCompanyId && !hasAdminPermission(user, 'rfq.read')) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+      }
+      return NextResponse.json({
+        request: { ...existing, createdAt: existing.createdAt.toISOString(), updatedAt: existing.updatedAt.toISOString() },
+      })
+    }
+
+    let rfq
+    try {
+      rfq = await prisma.rFQRequest.create({
+        data: {
+          id,
+          companyId: resolvedCompanyId,
+          items,
+          notes: notes ?? '',
+          status: 'pending',
+          timeline: timeline ?? [{ at: new Date().toISOString(), type: 'created' }],
+          createdByUserId: user.id,
+        },
+      })
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'P2002') {
+        const race = await prisma.rFQRequest.findUniqueOrThrow({ where: { id } })
+        if (race.companyId !== resolvedCompanyId && !hasAdminPermission(user, 'rfq.read')) {
+          return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+        }
+        rfq = race
+      } else {
+        throw e
+      }
+    }
 
     return NextResponse.json({
       request: { ...rfq, createdAt: rfq.createdAt.toISOString(), updatedAt: rfq.updatedAt.toISOString() },

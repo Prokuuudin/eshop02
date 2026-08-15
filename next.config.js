@@ -89,17 +89,21 @@ const nextConfig = {
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'none'",
-            'upgrade-insecure-requests',
+            // `next dev` serves HTTP. Upgrading localhost subresources would make the
+            // browser request CSS and images from unavailable https://localhost.
+            ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
         ].join('; ');
 
         rules.push({
             source: '/:path*',
             headers: [
                 { key: 'Content-Security-Policy', value: csp },
-                {
-                    key: 'Strict-Transport-Security',
-                    value: 'max-age=63072000; includeSubDomains; preload',
-                },
+                ...(process.env.NODE_ENV === 'production'
+                    ? [{
+                        key: 'Strict-Transport-Security',
+                        value: 'max-age=63072000; includeSubDomains; preload',
+                    }]
+                    : []),
                 { key: 'X-Content-Type-Options', value: 'nosniff' },
                 { key: 'X-Frame-Options', value: 'DENY' },
                 { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

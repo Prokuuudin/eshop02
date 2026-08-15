@@ -5,7 +5,7 @@ for (const path of ['/', '/catalog']) {
   test(`no serious accessibility violations on ${path}`, async ({ page }) => {
     await page.goto(path, { waitUntil: 'domcontentloaded' })
     const result = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze()
     expect(result.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([])
   })

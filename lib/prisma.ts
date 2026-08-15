@@ -1,5 +1,6 @@
 import { neonConfig } from '@neondatabase/serverless'
 import { PrismaNeon } from '@prisma/adapter-neon'
+import { PrismaPg } from '@prisma/adapter-pg'
 import type { ITXClientDenyList } from '@prisma/client/runtime/client'
 import ws from 'ws'
 import { PrismaClient } from '../generated/prisma/client'
@@ -19,7 +20,14 @@ function getDbUrl(): string {
 }
 
 function createPrismaClient() {
-  const adapter = new PrismaNeon({ connectionString: getDbUrl() })
+  const connectionString = getDbUrl()
+  const hostname = new URL(connectionString).hostname.toLowerCase()
+  const isLocalDatabase = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  // Neon uses WebSockets and rewrites localhost to wss://localhost/v2. Local or
+  // self-hosted PostgreSQL needs the normal TCP adapter instead.
+  const adapter = isLocalDatabase
+    ? new PrismaPg({ connectionString })
+    : new PrismaNeon({ connectionString })
   return new PrismaClient({ adapter }).$extends(moneyFieldsExtension)
 }
 

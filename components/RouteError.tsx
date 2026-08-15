@@ -29,9 +29,6 @@ export default function RouteError({
       <div className="mb-4 text-5xl">⚠️</div>
       <h1 className="mb-3 text-2xl font-bold text-foreground">{t('error.title')}</h1>
       <p className="mb-6 text-muted-foreground">{t('error.description')}</p>
-      <div className="mb-6 rounded-lg border border-border bg-muted p-3 text-left">
-        <p className="break-words font-mono text-sm text-destructive">{error.message}</p>
-      </div>
       <div className="flex flex-col justify-center gap-3 sm:flex-row">
         <Button onClick={reset} size="lg">
           🔄 {t('error.tryAgain')}

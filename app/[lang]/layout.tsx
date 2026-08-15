@@ -110,7 +110,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
         >
-          Пропустить к содержимому / Skip to content
+          Skip to content
         </a>
         <Providers initialLanguage={language} bonusConfig={bonusConfig} localeConfig={localeConfig}>
           <RouteUiEffects />

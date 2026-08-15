@@ -103,6 +103,7 @@ function useAdminReturnsPageState() {
                 body: JSON.stringify({
                     returnId: ret.id,
                     resolution: resolutionDraft[ret.id] ?? ret.resolution,
+                    language,
                 }),
             });
             setNotifyResult((prev) => ({ ...prev, [ret.id]: res.ok ? 'ok' : 'error' }));

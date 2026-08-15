@@ -1,6 +1,7 @@
 node_modules
 .backups/
 .next
+next-env.d.ts
 dist
 .env.local
 .env.*.local

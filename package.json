@@ -22,6 +22,8 @@
     "test:e2e:smoke:critical": "playwright test e2e/critical-flows.spec.ts --project=chromium",
     "test:e2e:smoke:admin": "playwright test e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts --project=chromium",
     "test:e2e:smoke:account": "playwright test e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium",
+    "test:e2e:smoke:firefox": "playwright test e2e/cross-browser-responsive.spec.ts --project=firefox --workers=1",
+    "test:email:delivery": "tsx scripts/verify-email-delivery.ts",
     "audit:security": "node scripts/security-audit.mjs",
     "audit:architecture": "node scripts/architecture-audit.mjs",
     "test:load:smoke": "node scripts/load-smoke.mjs",

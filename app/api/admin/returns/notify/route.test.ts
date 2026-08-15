@@ -104,6 +104,23 @@ describe('POST /api/admin/returns/notify', () => {
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
+  it.each([
+    ['ru', 'Статус вашей заявки на возврат'],
+    ['en', 'Your return request status'],
+    ['lv', 'Jūsu atgriešanas pieprasījuma statuss'],
+  ])('renders return mail in %s', async (language, expectedTitle) => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.returnRequest.findUnique).mockResolvedValue(RETURN_RECORD as never)
+
+    await POST(makeRequest({ returnId: 'ret-1', language }))
+
+    const [, subject, html] = vi.mocked(sendEmail).mock.calls[0]
+    expect(subject).toContain(expectedTitle)
+    expect(html).toContain(expectedTitle)
+    expect(html).toContain('ret-1')
+    expect(html).not.toContain('admin@test.com')
+  })
+
   it('records an audit entry for the notification', async () => {
     vi.mocked(requireAdmin).mockResolvedValue(ADMIN_USER as never)
     vi.mocked(prisma.returnRequest.findUnique).mockResolvedValue(RETURN_RECORD as never)

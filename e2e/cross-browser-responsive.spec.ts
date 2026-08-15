@@ -42,7 +42,6 @@ test('sticky header and cart drawer remain usable after scroll', async ({ page }
   await page.getByRole('button', { name: /открыть корзину|open cart|atvērt grozu/i }).click()
   const cart = page.getByTestId('cart-drawer-panel')
   await expect(cart).toBeVisible()
-  await expect.poll(async () => cart.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m41), { timeout: 15_000 }).toBe(0)
   const box = await cart.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x).toBeGreaterThanOrEqual(0)
@@ -82,4 +81,37 @@ test('admin product table fits and crop preview can be requested', async ({ page
   await previewButton.click()
   await expect(previewButton).toBeEnabled({ timeout: 30_000 })
   await expect(page.locator('body')).not.toContainText(/server_error|internal server error/i)
+})
+
+test('crop tool renders preview and applies the returned image to the product form', async ({ page }) => {
+  const product = await fetchRealProduct(page)
+  await loginAs(page, E2E_ADMIN)
+  await seedAdminClient(page)
+  const pixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+  let action = ''
+  await page.route('**/api/admin/products/image-crop', async (route) => {
+    const requestBody = route.request().postDataJSON() as { action?: string }
+    action = requestBody.action ?? ''
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(action === 'preview'
+        ? { data: { skipped: false, originalUrl: pixel, preview: pixel, sourceSize: { width: 800, height: 800 }, crop: { width: 640, height: 640 } } }
+        : { data: { image: '/api/media/crop-e2e.png', images: ['/api/media/crop-e2e.png'] } }),
+    })
+  })
+
+  await page.goto(`/admin/products/${product.id}`, { waitUntil: 'domcontentloaded' })
+  const previewButton = page.getByRole('button', { name: /создать превью|create preview|izveidot priekšskatījumu/i })
+  await expect(previewButton).toBeVisible({ timeout: 45_000 })
+  await previewButton.click()
+  await expect(page.locator('figure img')).toHaveCount(2)
+  await expect(page.locator('figure img').nth(1)).toBeVisible()
+  await expect(page.locator('figcaption').last()).toContainText('640×640')
+
+  const applyButton = page.getByRole('button', { name: /применить исправление|apply correction|lietot labojumu/i })
+  await applyButton.click()
+  expect(action).toBe('apply')
+  await expect(page.locator('#add-product-image')).toHaveValue('/api/media/crop-e2e.png')
+  await expect(page.locator('figure')).toHaveCount(0)
 })

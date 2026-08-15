@@ -100,7 +100,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
         updateQuantity(lineKey, quantity - 1);
     };
 
-    if (!mounted) {
+    if (!mounted || !isOpen) {
         return null;
     }
 
@@ -111,9 +111,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 type="button"
                 aria-label={t('common.close')}
                 data-testid="cart-drawer-backdrop"
-                className={`fixed inset-0 z-drawer bg-black/50 transition-opacity duration-300 ${
-                    isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                }`}
+                className="fixed inset-0 z-drawer bg-black/50 opacity-100"
                 onClick={onClose}
             />
 
@@ -123,14 +121,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="cart-drawer-title"
-                aria-hidden={!isOpen}
-                className={`cart-drawer fixed right-0 top-0 h-screen w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col transition-transform duration-300 ${
-                    isOpen ? 'translate-x-0' : 'translate-x-full'
-                }`}
-                style={{
-                    willChange: 'transform',
-                    transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-                }}
+                className="cart-drawer fixed right-0 top-0 h-screen w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col"
             >
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">

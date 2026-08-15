@@ -11,15 +11,18 @@ function createTransport() {
   if (!process.env.SMTP_FROM && !process.env.SMTP_USER && process.env.NODE_ENV === 'production') {
     throw new Error('SMTP_FROM or SMTP_USER is required in production')
   }
+  const secure = process.env.SMTP_SECURE === 'true'
+  const ignoreTLS = process.env.SMTP_IGNORE_TLS === 'true'
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === 'true',
+    secure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    requireTLS: process.env.SMTP_SECURE !== 'true',
+    requireTLS: !secure && !ignoreTLS,
+    ignoreTLS,
     connectionTimeout: 15_000,
     greetingTimeout: 15_000,
     socketTimeout: 30_000,

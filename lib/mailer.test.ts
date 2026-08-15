@@ -4,6 +4,7 @@ const sendMail = vi.fn()
 vi.mock('nodemailer', () => ({ default: { createTransport: vi.fn(() => ({ sendMail })) } }))
 vi.mock('@/lib/observability', () => ({ logOperationalEvent: vi.fn() }))
 
+import nodemailer from 'nodemailer'
 import { logOperationalEvent } from '@/lib/observability'
 import { sendEmail } from './mailer'
 
@@ -22,6 +23,20 @@ describe('mailer degradation', () => {
     await expect(sendEmail('buyer@example.test', 'Subject', '<p>Body</p>'))
       .rejects.toThrow('SMTP_HOST is required in production')
     expect(sendMail).not.toHaveBeenCalled()
+  })
+
+  it('can disable STARTTLS for a local SMTP capture service', async () => {
+    vi.stubEnv('SMTP_SECURE', 'false')
+    vi.stubEnv('SMTP_IGNORE_TLS', 'true')
+    sendMail.mockResolvedValue(undefined)
+
+    await sendEmail('buyer@example.test', 'Subject', '<p>Body</p>')
+
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(expect.objectContaining({
+      secure: false,
+      requireTLS: false,
+      ignoreTLS: true,
+    }))
   })
 
   it('alerts and surfaces a permanent SMTP failure without retrying', async () => {

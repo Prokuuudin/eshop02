@@ -1,7 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import girl3Image from '@/public/girl3.png';
 import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 import { Button } from './ui/button';
@@ -64,7 +63,7 @@ export default async function AboutSection({ language }: { language: Language })
 
         <div className="relative ml-auto h-[140px] w-full max-w-[180px] self-end sm:h-[174px] sm:max-w-[216px] lg:h-[112px] lg:max-w-[230px]">
           <Image
-            src={girl3Image}
+            src="/girl3.png"
             alt=""
             width={216}
             height={194}

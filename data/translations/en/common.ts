@@ -514,6 +514,7 @@ const enCommon: Record<string, string> = {
   'footer.youtube': 'YouTube',
   'hero.title': 'Professional products and tools for hair, skin and nail care',
   'hero.subtitle': 'Original brands, expert advice, and fast delivery nationwide.',
+  'hero.cta': 'Go to catalog',
   'newsletter.title': 'Subscribe to future discounts!',
   'newsletter.subtitle': 'Get exclusive discounts and deals first...',
   'newsletter.placeholder': 'Enter your email',

@@ -515,6 +515,7 @@ const lvCommon: Record<string, string> = {
   'footer.youtube': 'YouTube',
   'hero.title': 'Profesionāli līdzekļi un instrumenti matu, ādas un nagu kopšanai',
   'hero.subtitle': 'Oriģinālas zīmoles, eksperta padomi un ātra piegāde visā valstī.',
+  'hero.cta': 'Uz katalogu',
   'newsletter.title': 'Piesakies nākotnes atlaidēm!',
   'newsletter.subtitle': 'Saņem ekskluzīvas atlaides un izdevīgus piedāvājumus pirmais...',
   'newsletter.placeholder': 'Ievadiet savu e-pastu',

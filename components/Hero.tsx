@@ -1,6 +1,8 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { JSX } from 'react'
 import type { Language } from '@/data/translations'
+import { Button } from '@/components/ui/button'
 import { getServerContent } from '@/lib/server-translation'
 
 export default async function Hero({ language }: { language: Language }): Promise<JSX.Element> {
@@ -34,6 +36,10 @@ export default async function Hero({ language }: { language: Language }): Promis
           <p className="hero__subtitle text-sm sm:text-base text-foreground/80 drop-shadow-sm">
             {t('hero.subtitle')}
           </p>
+
+          <Link href="/catalog" className="hero__cta mt-2">
+            <Button size="lg">{t('hero.cta')}</Button>
+          </Link>
         </div>
       </section>
     </div>

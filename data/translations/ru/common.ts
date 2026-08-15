@@ -537,6 +537,7 @@ const ruCommon: Record<string, string> = {
   'footer.youtube': 'YouTube',
   'hero.title': 'Профессиональные средства и аксессуары для ухода за волосами, кожей и ногтями',
   'hero.subtitle': 'Оригинальные бренды, консультации экспертов и быстрая доставка.',
+  'hero.cta': 'Перейти в каталог',
   'benefits.fastShipping': 'Быстрая доставка',
   'benefits.fastShippingDesc': 'Доставим в течение 2-3 дней',
   'benefits.returnPolicy': 'Легкие возвраты',

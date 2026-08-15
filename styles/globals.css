@@ -311,7 +311,7 @@ html {
 
 :root {
     --header-offset: 150px;
-    --font-inter: Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    --font-sans: var(--font-instrument-sans), Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
@@ -327,7 +327,7 @@ section[id] {
 
 body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-inter);
+    font-family: var(--font-sans);
     overflow-x: clip !important;
     overflow-y: visible !important;
 }
@@ -372,6 +372,8 @@ body[data-scroll-locked][data-scroll-locked] {
         --popover-foreground: 221 39% 11%;
         --primary: 0 0% 0%;
         --primary-foreground: 0 0% 100%;
+        --brand: 198 100% 38%;
+        --brand-foreground: 0 0% 100%;
         --secondary: 220 14% 96%;
         --secondary-foreground: 221 39% 11%;
         --muted: 220 14% 96%;
@@ -399,6 +401,8 @@ body[data-scroll-locked][data-scroll-locked] {
         --popover-foreground: 220 14% 96%;
         --primary: 0 0% 98%;
         --primary-foreground: 0 0% 0%;
+        --brand: 198 100% 38%;
+        --brand-foreground: 0 0% 100%;
         --secondary: 215 28% 17%;
         --secondary-foreground: 220 14% 96%;
         --muted: 215 28% 17%;

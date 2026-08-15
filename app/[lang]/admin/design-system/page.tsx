@@ -60,7 +60,7 @@ export default function DesignSystemPage(): React.ReactElement {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Eshop</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">HairShop-Pro</p>
             <h1 className="text-3xl font-bold tracking-tight">Design System</h1>
             <p className="mt-2 text-sm text-muted-foreground max-w-xl">
               Визуальный справочник токенов, компонентов и паттернов проекта.
@@ -94,6 +94,8 @@ export default function DesignSystemPage(): React.ReactElement {
             <p className="text-xs text-muted-foreground mb-3 font-medium">Акцентные</p>
             <div className="flex flex-wrap gap-4">
               <Token name="primary" bg="bg-primary" text="--primary" />
+              <Token name="brand" bg="bg-brand" text="--brand · #0088C4" />
+              <Token name="brand foreground" bg="bg-brand-foreground" text="--brand-foreground" border="border-border" />
               <Token name="secondary" bg="bg-secondary" text="--secondary" border="border-border" />
               <Token name="muted" bg="bg-muted" text="--muted" border="border-border" />
               <Token name="accent" bg="bg-accent" text="--accent" border="border-border" />
@@ -102,11 +104,9 @@ export default function DesignSystemPage(): React.ReactElement {
           </div>
 
           <div>
-            <p className="text-xs text-muted-foreground mb-3 font-medium">Проектные цвета (hardcoded Tailwind)</p>
+            <p className="text-xs text-muted-foreground mb-3 font-medium">Дополнительные проектные цвета</p>
             <div className="flex flex-wrap gap-4">
-              <Token name="primary" bg="bg-primary" text="links, focus" />
               <Token name="primary/5" bg="bg-primary/5" text="hero bg" border="border-border" />
-              <Token name="brand #EAAC63" bg="bg-[#EAAC63]" text="header, home bg" />
               <Token name="indigo-600" bg="bg-indigo-600" text="CTA «В корзину»" />
               <Token name="pink-600" bg="bg-pink-600" text="CTA «В избранное»" />
               <Token name="amber-500" bg="bg-amber-500" text="bonus" />
@@ -132,7 +132,7 @@ export default function DesignSystemPage(): React.ReactElement {
 
         {/* ── 2. Typography ─────────────────────────────────────────── */}
         <Section title="2 · Typography">
-          <p className="text-sm text-muted-foreground">Шрифт: <span className="font-mono">Instrument Sans</span> (переменная <span className="font-mono">--font-inter</span>) · Система: Tailwind type scale.</p>
+          <p className="text-sm text-muted-foreground">Шрифт: <span className="font-mono">Instrument Sans</span> (переменные <span className="font-mono">--font-instrument-sans</span> → <span className="font-mono">--font-sans</span>) · Система: Tailwind type scale.</p>
 
           <Card>
             <CardContent className="pt-4 px-5 pb-5">
@@ -302,11 +302,11 @@ export default function DesignSystemPage(): React.ReactElement {
                 <Input defaultValue="Filled value" />
                 <Input disabled placeholder="Disabled" />
                 <Input
-                  className="border-red-400 focus-visible:ring-red-400"
+                  className="border-destructive focus-visible:border-destructive"
                   defaultValue="Error state"
                   aria-invalid
                 />
-                <p className="text-xs text-red-500">Поле обязательно для заполнения</p>
+                <p className="text-xs text-destructive">Поле обязательно для заполнения</p>
               </div>
             </div>
 
@@ -457,7 +457,7 @@ export default function DesignSystemPage(): React.ReactElement {
 
         {/* ── Footer ────────────────────────────────────────────────── */}
         <div className="text-xs text-muted-foreground pb-6">
-          Eshop Design System · Tailwind CSS + Shadcn/ui · system-ui · generated from live components
+          HairShop-Pro Design System · Tailwind CSS + Shadcn/ui · Instrument Sans · generated from live components
         </div>
 
       </main>

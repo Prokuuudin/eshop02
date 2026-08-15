@@ -12,7 +12,7 @@ export default async function Stores({ language }: { language: Language }): Prom
         <section className="stores py-10 text-foreground" id="stores">
             <div className="w-full px-4">
                 <h1 className="stores__title mb-10 flex items-center justify-center gap-3 text-center text-3xl font-bold text-foreground">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground dark:bg-white dark:text-brand">
                         <Store size={26} aria-hidden="true" />
                     </span>
                     {t('stores.title')}

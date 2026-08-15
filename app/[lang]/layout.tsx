@@ -25,6 +25,7 @@ type LayoutProps = {
 const instrumentSans = Instrument_Sans({
   subsets: ['latin', 'latin-ext'],
   display: 'swap',
+  variable: '--font-instrument-sans',
 })
 
 export function generateStaticParams(): Array<{ lang: string }> {
@@ -102,7 +103,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
 
   return (
     <html lang={language}>
-      <body className={instrumentSans.className}>
+      <body className={instrumentSans.variable}>
         <ThemeInitScript />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteSchema) }} />

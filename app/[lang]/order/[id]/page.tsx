@@ -32,7 +32,7 @@ return (
                 {/* Success message */}
                 <div className="mb-3 text-center sm:mb-4">
                     <div className="flex items-center justify-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground dark:bg-white dark:text-brand">
                             <Check className="h-8 w-8 stroke-[2.5]" aria-hidden="true" />
                         </div>
                         <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">

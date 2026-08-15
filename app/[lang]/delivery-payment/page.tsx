@@ -65,7 +65,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
             />
             <section className="mx-auto max-w-6xl px-4 py-10 text-foreground">
                 <h1 className="mb-10 flex items-center justify-center gap-3 text-center text-3xl font-bold text-foreground">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0088C4] text-white dark:bg-white dark:text-[#0088C4]">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground dark:bg-white dark:text-brand">
                         {section === 'delivery' ? <Truck size={26} aria-hidden="true" /> : <CreditCard size={26} aria-hidden="true" />}
                     </span>
                     {t(section === 'delivery' ? 'deliveryPayment.deliveryTitle' : 'deliveryPayment.paymentTitle')}

@@ -72,8 +72,8 @@ export default function BonusSection(): React.ReactElement | null {
                                 className="bonus-section__step flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="bonus-section__step-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0088C4] dark:bg-white">
-                                        <Icon className="h-5 w-5 text-white dark:text-[#0088C4]" />
+                                    <div className="bonus-section__step-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand dark:bg-white">
+                                        <Icon className="h-5 w-5 text-brand-foreground dark:text-brand" />
                                     </div>
                                     <h3 className="bonus-section__step-title font-semibold text-foreground">
                                         {t(step.titleKey)}

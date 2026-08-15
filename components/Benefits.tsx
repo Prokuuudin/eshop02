@@ -40,10 +40,10 @@ export default async function Benefits({ language }: { language: Language }): Pr
                             key={idx}
                             className="benefits__item min-w-0 p-3 sm:p-4 bg-card rounded-lg border border-border shadow-sm flex items-center gap-3 sm:gap-4"
                         >
-                            <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-[#0088C4] dark:bg-white flex items-center justify-center">
+                            <div className="benefits__icon w-10 h-10 shrink-0 rounded-full bg-brand dark:bg-white flex items-center justify-center">
                                 <span
                                     aria-hidden
-                                    className="benefits__icon-glyph block w-8 h-8 bg-white dark:bg-[#0088C4]"
+                                    className="benefits__icon-glyph block w-8 h-8 bg-brand-foreground dark:bg-brand"
                                     style={{
                                         WebkitMaskImage: `url(${resolveImageSrc(item.icon)})`,
                                         maskImage: `url(${resolveImageSrc(item.icon)})`,

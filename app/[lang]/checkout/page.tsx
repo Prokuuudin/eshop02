@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Image from 'next/image';
 import Script from 'next/script';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
@@ -21,6 +22,7 @@ import { calculatePrice } from '@/lib/customer-segmentation';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
 import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
+import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { CustomerDetailsSection } from './CheckoutFormSections';
 
 const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
@@ -39,7 +41,7 @@ export default function CheckoutPage(): React.ReactElement {
     >;
     const {
             t,
-            language: _language,
+            language,
             currentUser,
             formatCurrency,
             formData,
@@ -321,19 +323,40 @@ export default function CheckoutPage(): React.ReactElement {
                             {t('checkout.summary.title')}
                         </h2>
 
-                        <div className="space-y-2 border-b border-border pb-4 max-h-48 overflow-y-auto mb-4">
+                        <div className="checkout__summary-items space-y-3 border-b border-border pb-4 mb-4 max-h-80 overflow-y-auto pr-1">
                             {checkoutItems.map((item) => {
-                                const localizedTitle = t(`products.${item.id}.title`, item.title);
+                                const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                                 const unitPrice = calculatePrice(item, item.quantity);
                                 return (
                                     <div
                                         key={item.lineKey}
-                                        className="text-sm flex justify-between"
+                                        className="checkout__summary-item flex items-center gap-3"
                                     >
-                                        <span>
-                                            {localizedTitle} × {item.quantity}
+                                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-white">
+                                            <Image
+                                                src={item.image || '/placeholder.png'}
+                                                alt={localizedTitle}
+                                                fill
+                                                sizes="56px"
+                                                className="object-contain p-1"
+                                            />
+                                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
+                                                {item.quantity}
+                                            </span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium text-foreground">
+                                                {localizedTitle}
+                                            </p>
+                                            {item.brand && (
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {item.brand}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span className="shrink-0 text-sm font-semibold text-foreground">
+                                            {formatCurrency(unitPrice * item.quantity)}
                                         </span>
-                                        <span>{formatCurrency(unitPrice * item.quantity)}</span>
                                     </div>
                                 );
                             })}

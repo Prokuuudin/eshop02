@@ -4,6 +4,7 @@ import type { JSX } from 'react'
 import type { Language } from '@/data/translations'
 import { Button } from '@/components/ui/button'
 import { getServerContent } from '@/lib/server-translation'
+import { MoveRight } from 'lucide-react'
 
 export default async function Hero({ language }: { language: Language }): Promise<JSX.Element> {
   const { t, resolveImageSrc } = await getServerContent(language)
@@ -37,9 +38,16 @@ export default async function Hero({ language }: { language: Language }): Promis
             {t('hero.subtitle')}
           </p>
 
-          <Link href="/catalog" className="hero__cta mt-8">
-            <Button size="lg">{t('hero.cta')}</Button>
-          </Link>
+          <Button asChild className="hero__cta group mt-8 text-base">
+            <Link href="/catalog">
+              {t('hero.cta')}
+              <MoveRight
+                className="!h-3.5 !w-5 translate-y-px transition-transform duration-200 group-hover:translate-x-0.5"
+                strokeWidth={1.5}
+                aria-hidden="true"
+              />
+            </Link>
+          </Button>
         </div>
       </section>
     </div>

@@ -29,15 +29,27 @@ export default function PhoneInput({
     required,
     ...rest
 }: PhoneInputProps): React.ReactElement {
-    const e164Value = normalizePhoneInputValue(value, defaultCountry)
+    // Re-parsing on every keystroke fights the library's own AsYouType state
+    // (it stops applying defaultCountry mid-typing). Only normalize a value
+    // that came from outside this component (saved address, prefill) — skip
+    // it for a value we just emitted ourselves via onChange.
+    const [lastEmitted, setLastEmitted] = React.useState('')
+    const e164Value = value === lastEmitted
+        ? value || undefined
+        : normalizePhoneInputValue(value, defaultCountry)
+
+    const handleChange = (val: string | undefined): void => {
+        const next = val ?? ''
+        setLastEmitted(next)
+        onChange(next)
+    }
 
     return (
         <ReactPhoneInput
-            international
             defaultCountry={defaultCountry}
             flags={flags}
             value={e164Value}
-            onChange={(val) => onChange(val ?? '')}
+            onChange={handleChange}
             inputComponent={Input}
             placeholder={placeholder}
             disabled={disabled}

@@ -90,9 +90,9 @@ export default function CheckoutPage(): React.ReactElement {
         <main className="w-full px-4 py-8 text-foreground">
             <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
 
-            <div className="checkout__layout grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="checkout__layout grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Форма */}
-                <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     {turnstileEnabled && (
                         <Script
                             src={TURNSTILE_SCRIPT_SRC}

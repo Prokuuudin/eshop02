@@ -137,9 +137,10 @@ export default function CheckoutPage(): React.ReactElement {
                             }}
                             className="space-y-3"
                         >
-                            {DELIVERY_OPTIONS.map((option) => (
-                                <React.Fragment key={option.id}>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {DELIVERY_OPTIONS.map((option) => (
                                     <label
+                                        key={option.id}
                                         className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
                                         htmlFor={`delivery-${option.id}`}
                                     >
@@ -165,70 +166,70 @@ export default function CheckoutPage(): React.ReactElement {
                                             </div>
                                         </div>
                                     </label>
-                                    {option.id === 'pickup' && deliveryMethod === 'pickup' && (
-                                        <div className="checkout__pickup-store ml-8">
-                                            <label
-                                                className="block text-sm font-medium mb-1 text-foreground"
-                                                htmlFor="pickup-store"
-                                            >
-                                                {t('checkout.pickup.chooseStore')}{' '}
-                                                <span className="text-red-600">*</span>
-                                            </label>
-                                            <Select
-                                                value={pickupStoreId || undefined}
-                                                onValueChange={(value) => {
-                                                    setPickupStoreId(value);
-                                                    if (value !== 'riga-office') {
-                                                        setFormData((prev) =>
-                                                            prev.paymentMethod === 'cash'
-                                                                ? { ...prev, paymentMethod: 'card' }
-                                                                : prev
-                                                        );
-                                                    }
-                                                    if (errors.pickupStore) {
-                                                        setErrors((prev) => {
-                                                            const newErrors = { ...prev };
-                                                            delete newErrors.pickupStore;
-                                                            return newErrors;
-                                                        });
-                                                    }
-                                                }}
-                                            >
-                                                <SelectTrigger
-                                                    id="pickup-store"
-                                                    className={`w-full rounded border bg-card px-3 py-2 text-sm ${
-                                                        errors.pickupStore
-                                                            ? 'border-red-500'
-                                                            : 'border-border'
-                                                    }`}
-                                                    aria-invalid={!!errors.pickupStore}
-                                                >
-                                                    <SelectValue
-                                                        placeholder={t(
-                                                            'checkout.pickup.storePlaceholder'
-                                                        )}
-                                                    />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {stores.map((store) => (
-                                                        <SelectItem
-                                                                key={store.id}
-                                                                value={store.id}
-                                                            >
-                                                                {t(`stores.${store.id}.name`)} — {store.address.lv}
-                                                            </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.pickupStore && (
-                                                <p className="text-red-600 text-xs mt-1">
-                                                    {errors.pickupStore}
-                                                </p>
-                                            )}
-                                        </div>
+                                ))}
+                            </div>
+                            {deliveryMethod === 'pickup' && (
+                                <div className="checkout__pickup-store">
+                                    <label
+                                        className="block text-sm font-medium mb-1 text-foreground"
+                                        htmlFor="pickup-store"
+                                    >
+                                        {t('checkout.pickup.chooseStore')}{' '}
+                                        <span className="text-red-600">*</span>
+                                    </label>
+                                    <Select
+                                        value={pickupStoreId || undefined}
+                                        onValueChange={(value) => {
+                                            setPickupStoreId(value);
+                                            if (value !== 'riga-office') {
+                                                setFormData((prev) =>
+                                                    prev.paymentMethod === 'cash'
+                                                        ? { ...prev, paymentMethod: 'card' }
+                                                        : prev
+                                                );
+                                            }
+                                            if (errors.pickupStore) {
+                                                setErrors((prev) => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.pickupStore;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger
+                                            id="pickup-store"
+                                            className={`w-full rounded border bg-card px-3 py-2 text-sm ${
+                                                errors.pickupStore
+                                                    ? 'border-red-500'
+                                                    : 'border-border'
+                                            }`}
+                                            aria-invalid={!!errors.pickupStore}
+                                        >
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'checkout.pickup.storePlaceholder'
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {stores.map((store) => (
+                                                <SelectItem
+                                                        key={store.id}
+                                                        value={store.id}
+                                                    >
+                                                        {t(`stores.${store.id}.name`)} — {store.address.lv}
+                                                    </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.pickupStore && (
+                                        <p className="text-red-600 text-xs mt-1">
+                                            {errors.pickupStore}
+                                        </p>
                                     )}
-                                </React.Fragment>
-                            ))}
+                                </div>
+                            )}
                         </RadioGroup>
                     </div>
 

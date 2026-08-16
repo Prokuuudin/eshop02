@@ -40,6 +40,7 @@ export default function CheckoutPage(): React.ReactElement {
     const {
             t,
             language: _language,
+            showToast,
             currentUser,
             formatCurrency,
             formData,
@@ -128,12 +129,8 @@ export default function CheckoutPage(): React.ReactElement {
                             onValueChange={(value) => {
                                 const method = value as DeliveryMethod;
                                 setDeliveryMethod(method);
-                                if (method !== 'pickup') {
-                                    setFormData((prev) =>
-                                        prev.paymentMethod === 'cash'
-                                            ? { ...prev, paymentMethod: 'card' }
-                                            : prev
-                                    );
+                                if (method !== 'pickup' && formData.paymentMethod === 'cash') {
+                                    showToast(t('checkout.payment.cashDeliveryAlert'), 'error');
                                 }
                             }}
                             className="space-y-3"
@@ -182,12 +179,8 @@ export default function CheckoutPage(): React.ReactElement {
                                         value={pickupStoreId || undefined}
                                         onValueChange={(value) => {
                                             setPickupStoreId(value);
-                                            if (value !== 'riga-office') {
-                                                setFormData((prev) =>
-                                                    prev.paymentMethod === 'cash'
-                                                        ? { ...prev, paymentMethod: 'card' }
-                                                        : prev
-                                                );
+                                            if (value !== 'riga-office' && formData.paymentMethod === 'cash') {
+                                                showToast(t('checkout.payment.cashDeliveryAlert'), 'error');
                                             }
                                             if (errors.pickupStore) {
                                                 setErrors((prev) => {
@@ -251,34 +244,30 @@ export default function CheckoutPage(): React.ReactElement {
                             value={formData.paymentMethod}
                             onValueChange={(value) => {
                                 setFormData((prev) => ({ ...prev, paymentMethod: value }));
+                                if (value === 'cash' && cashUnavailable) {
+                                    setDeliveryMethod('pickup');
+                                    setPickupStoreId('riga-office');
+                                }
                             }}
                             className="space-y-3"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {(['card', 'bank', 'cash'] as const).map((method) => {
-                                    const disabled = method === 'cash' && cashUnavailable;
-                                    return (
-                                        <label
-                                            key={method}
-                                            className={`flex items-center p-3 border rounded border-border ${
-                                                disabled
-                                                    ? 'cursor-not-allowed opacity-50'
-                                                    : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'
-                                            }`}
-                                            htmlFor={`payment-${method}`}
-                                        >
-                                            <RadioGroupItem
-                                                id={`payment-${method}`}
-                                                value={method}
-                                                className="mr-3"
-                                                disabled={disabled}
-                                            />
-                                            <span className="font-medium flex-1">
-                                                {t(`checkout.payment.${method}`)}
-                                            </span>
-                                        </label>
-                                    );
-                                })}
+                                {(['card', 'bank', 'cash'] as const).map((method) => (
+                                    <label
+                                        key={method}
+                                        className="flex items-center p-3 border rounded border-border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                                        htmlFor={`payment-${method}`}
+                                    >
+                                        <RadioGroupItem
+                                            id={`payment-${method}`}
+                                            value={method}
+                                            className="mr-3"
+                                        />
+                                        <span className="font-medium flex-1">
+                                            {t(`checkout.payment.${method}`)}
+                                        </span>
+                                    </label>
+                                ))}
                             </div>
                             <p className="flex items-start gap-2 rounded-lg border border-primary/10 bg-primary/5 dark:border-primary/40 dark:bg-primary/15 p-3 text-sm text-muted-foreground">
                                 <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/80" />

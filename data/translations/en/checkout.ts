@@ -31,6 +31,7 @@ const enCheckout: Record<string, string> = {
   'checkout.payment.cash': 'Cash on Delivery',
   'checkout.payment.cashNote': 'Cash on delivery is available only at our office: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
   'checkout.payment.cashNoteSuffix': ' is available only at our office: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
+  'checkout.payment.cashDeliveryAlert': 'With cash on delivery, only pickup from our Rencēnu 10A office is available. Change the payment method or switch back to that address.',
   'checkout.submit': 'Place Order',
   'checkout.backToCart': 'Back to cart',
   'checkout.summary.title': 'Your Order',

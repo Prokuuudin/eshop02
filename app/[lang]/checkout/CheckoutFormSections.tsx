@@ -79,12 +79,12 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
           <FieldError id="checkout-phone-error" message={errors.phone} />
         </div>
       </div>
-      <div className="checkout__field mt-4">
-        <label htmlFor="checkout-address" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.address')} <span className="text-red-600">*</span></label>
-        <Input id="checkout-address" name="address" value={formData.address} onChange={onChange} placeholder={t('checkout.address')} className={fieldClass(!!errors.address)} aria-required="true" aria-invalid={!!errors.address} aria-describedby={errors.address ? 'checkout-address-error' : undefined} />
-        <FieldError id="checkout-address-error" message={errors.address} />
-      </div>
-      <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[2fr_1fr_1fr]">
+        <div className="checkout__field">
+          <label htmlFor="checkout-address" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.address')} <span className="text-red-600">*</span></label>
+          <Input id="checkout-address" name="address" value={formData.address} onChange={onChange} placeholder={t('checkout.address')} className={fieldClass(!!errors.address)} aria-required="true" aria-invalid={!!errors.address} aria-describedby={errors.address ? 'checkout-address-error' : undefined} />
+          <FieldError id="checkout-address-error" message={errors.address} />
+        </div>
         <div className="checkout__field">
           <label htmlFor="checkout-city" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.city')} <span className="text-red-600">*</span></label>
           <Input id="checkout-city" name="city" value={formData.city} onChange={onChange} placeholder={t('checkout.city')} className={fieldClass(!!errors.city)} aria-required="true" aria-invalid={!!errors.city} aria-describedby={errors.city ? 'checkout-city-error' : undefined} />

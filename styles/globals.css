@@ -101,6 +101,13 @@
     color: #f3f4f6;
 }
 
+/* The trigger's text color is inherited by the native <select>, but without
+   color-scheme the browser still paints its options popup with a light UI —
+   white text on white background. */
+.dark .phone-input .PhoneInputCountrySelect {
+    color-scheme: dark;
+}
+
 .dark .phone-input .PhoneInputCountrySelectArrow {
     border-top-color: #9ca3af;
 }

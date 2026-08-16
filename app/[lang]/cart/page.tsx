@@ -71,6 +71,17 @@ export default function CartPage(): React.ReactElement {
                     <Link href="/catalog">
                         <Button>{t('cart.goToCatalog')}</Button>
                     </Link>
+                    {currentUser && (
+                        <div className="cart__templates-empty mt-4">
+                            <button
+                                onClick={() => router.push('/account/templates')}
+                                className="inline-flex items-center gap-1 text-sm text-primary hover:underline dark:text-primary transition-colors"
+                            >
+                                <BookmarkPlus className="w-3.5 h-3.5" />
+                                {t('templates.useSavedTemplates')}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
             </main>

@@ -188,9 +188,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                     )}
 
                     {items.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                            {t('cart.empty')}
-                        </p>
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">{t('cart.empty')}</p>
+                            {currentUser && (
+                                <button
+                                    onClick={() => { onClose(); router.push('/account/templates'); }}
+                                    className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline dark:text-primary transition-colors"
+                                >
+                                    <BookmarkPlus className="w-3.5 h-3.5" />
+                                    {t('templates.useSavedTemplates')}
+                                </button>
+                            )}
+                        </div>
                     ) : (
                         items.map((item) => {
                             const minQuantity = getMinimumOrderQuantity(item);

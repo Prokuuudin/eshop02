@@ -251,39 +251,37 @@ export default function CheckoutPage(): React.ReactElement {
                             onValueChange={(value) => {
                                 setFormData((prev) => ({ ...prev, paymentMethod: value }));
                             }}
-                            className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                            className="space-y-3"
                         >
-                            {(['card', 'bank', 'cash'] as const).map((method) => {
-                                const disabled = method === 'cash' && cashUnavailable;
-                                return (
-                                    <label
-                                        key={method}
-                                        className={`flex items-center p-3 border rounded border-border ${
-                                            disabled
-                                                ? 'cursor-not-allowed opacity-50'
-                                                : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'
-                                        }`}
-                                        htmlFor={`payment-${method}`}
-                                    >
-                                        <RadioGroupItem
-                                            id={`payment-${method}`}
-                                            value={method}
-                                            className="mr-3"
-                                            disabled={disabled}
-                                        />
-                                        <div className="flex-1">
-                                            <div className="font-medium">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {(['card', 'bank', 'cash'] as const).map((method) => {
+                                    const disabled = method === 'cash' && cashUnavailable;
+                                    return (
+                                        <label
+                                            key={method}
+                                            className={`flex items-center p-3 border rounded border-border ${
+                                                disabled
+                                                    ? 'cursor-not-allowed opacity-50'
+                                                    : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            }`}
+                                            htmlFor={`payment-${method}`}
+                                        >
+                                            <RadioGroupItem
+                                                id={`payment-${method}`}
+                                                value={method}
+                                                className="mr-3"
+                                                disabled={disabled}
+                                            />
+                                            <span className="font-medium flex-1">
                                                 {t(`checkout.payment.${method}`)}
-                                            </div>
-                                            {method === 'cash' && (
-                                                <div className="text-sm text-muted-foreground">
-                                                    {t('checkout.payment.cashNote')}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </label>
-                                );
-                            })}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                {t('checkout.payment.cashNote')}
+                            </p>
                         </RadioGroup>
                     </div>
 

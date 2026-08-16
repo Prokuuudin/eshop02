@@ -2,6 +2,7 @@
 import React from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
+import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -279,11 +280,14 @@ export default function CheckoutPage(): React.ReactElement {
                                     );
                                 })}
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                                <strong className="font-semibold text-foreground">
-                                    {t('checkout.payment.cash')}
-                                </strong>
-                                {t('checkout.payment.cashNoteSuffix')}
+                            <p className="flex items-start gap-2 rounded-lg border border-primary/10 bg-primary/5 dark:border-primary/40 dark:bg-primary/15 p-3 text-sm text-muted-foreground">
+                                <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary/80" />
+                                <span>
+                                    <strong className="font-semibold text-foreground">
+                                        {t('checkout.payment.cash')}
+                                    </strong>
+                                    {t('checkout.payment.cashNoteSuffix')}
+                                </span>
                             </p>
                         </RadioGroup>
                     </div>

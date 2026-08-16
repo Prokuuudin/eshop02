@@ -81,9 +81,12 @@
     height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
+    border-bottom-width: 0;
     border-top: 5px solid #6b7280;
     margin-left: 2px;
     flex-shrink: 0;
+    transform: none;
+    opacity: 1;
 }
 
 .phone-input input {

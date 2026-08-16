@@ -59,6 +59,10 @@
     height: 100%;
     border: none;
     background: transparent;
+    /* Not just the invisible trigger — its native options popup inherits
+       this color too. Keep it fixed so country names stay readable
+       regardless of site theme (the popup doesn't follow our dark mode). */
+    color: #111827;
 }
 
 .phone-input .PhoneInputCountryIcon {

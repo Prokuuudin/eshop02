@@ -280,7 +280,10 @@ export default function CheckoutPage(): React.ReactElement {
                                 })}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                                {t('checkout.payment.cashNote')}
+                                <strong className="font-semibold text-foreground">
+                                    {t('checkout.payment.cash')}
+                                </strong>
+                                {t('checkout.payment.cashNoteSuffix')}
                             </p>
                         </RadioGroup>
                     </div>

@@ -30,6 +30,7 @@ const ruCheckout: Record<string, string> = {
   'checkout.payment.bank': 'Банковский перевод',
   'checkout.payment.cash': 'Оплата при получении',
   'checkout.payment.cashNote': 'Оплата при получении возможна только в офисе: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
+  'checkout.payment.cashNoteSuffix': ' возможна только в офисе: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
   'checkout.submit': 'Оформить заказ',
   'checkout.backToCart': 'Вернуться в корзину',
   'checkout.summary.title': 'Ваш заказ',

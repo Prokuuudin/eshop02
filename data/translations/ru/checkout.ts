@@ -19,7 +19,7 @@ const ruCheckout: Record<string, string> = {
   'checkout.city': 'Город',
   'checkout.postalCode': 'Почтовый индекс',
   'checkout.delivery.title': 'Доставка',
-  'checkout.prefill.hint': 'Поля заполнены вашим последним адресом — правьте свободно, изменения запомнятся для следующего заказа.',
+  'checkout.prefill.hint': 'Обратите внимание! В форме автоматически используются данные профиля или последнего заказа. При необходимости – исправьте их вручную.',
   'checkout.delivery.method': 'Способ доставки',
   'checkout.delivery.courier': 'Курьер (2-3 дня)',
   'checkout.delivery.pickup': 'Самовывоз',

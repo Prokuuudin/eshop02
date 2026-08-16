@@ -19,7 +19,7 @@ const enCheckout: Record<string, string> = {
   'checkout.city': 'City',
   'checkout.postalCode': 'Postal Code',
   'checkout.delivery.title': 'Delivery',
-  'checkout.prefill.hint': 'Fields are pre-filled from your last address — edit freely, changes are remembered for next time.',
+  'checkout.prefill.hint': 'Please note: this form automatically uses your profile or last order details. Edit them manually if needed.',
   'checkout.delivery.method': 'Delivery Method',
   'checkout.delivery.courier': 'Courier (2-3 days)',
   'checkout.delivery.pickup': 'Pickup',

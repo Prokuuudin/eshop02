@@ -19,7 +19,7 @@ const lvCheckout: Record<string, string> = {
   'checkout.city': 'Pilsēta',
   'checkout.postalCode': 'Pasta indekss',
   'checkout.delivery.title': 'Piegāde',
-  'checkout.prefill.hint': 'Lauki aizpildīti ar jūsu pēdējo adresi — labojiet brīvi, izmaiņas tiks atcerētas nākamajam pasūtījumam.',
+  'checkout.prefill.hint': 'Ņemiet vērā! Forma automātiski izmanto jūsu profila vai pēdējā pasūtījuma datus. Ja nepieciešams – labojiet tos manuāli.',
   'checkout.delivery.method': 'Piegādes veids',
   'checkout.delivery.courier': 'Kurjers (2-3 dienas)',
   'checkout.delivery.pickup': 'Saņemšana veikalā',

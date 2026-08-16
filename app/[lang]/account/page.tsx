@@ -103,7 +103,8 @@ export default function AccountPage(): React.ReactElement {
         tl,
         userOrders,
         savedAddresses,
-        totalSpent
+        totalSpent,
+        locale
     );
 
     if (!isHydrated) {

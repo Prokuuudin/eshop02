@@ -2,6 +2,7 @@ import { ShoppingBag, ClipboardList, MapPinned, Package } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Order } from '@/lib/orders-store'
 import type { SavedAddress } from '@/lib/saved-addresses-store'
+import { formatEuro } from '@/lib/utils'
 
 type AccountSummaryCard = {
     title: string
@@ -15,7 +16,8 @@ function getAccountSummaryCardsImpl(
     tl: (key: string, ru: string, en: string, lv: string) => string,
     userOrders: Array<Order & { status?: string }>,
     savedAddresses: SavedAddress[],
-    totalSpent: string | number
+    totalSpent: number,
+    locale: string
 ): AccountSummaryCard[] {
     return [
         {
@@ -41,7 +43,7 @@ function getAccountSummaryCardsImpl(
         },
         {
             title: tl('account.page.summary.turnoverTitle', 'Оборот', 'Turnover', 'Apgrozijums'),
-            value: String(totalSpent),
+            value: formatEuro(totalSpent, locale),
             caption: tl('account.page.summary.turnoverCaption', 'Сумма всех заказов', 'Total amount of all orders', 'Visu pasutijumu kopsumma'),
             icon: Package,
         },

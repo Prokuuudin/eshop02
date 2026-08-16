@@ -40,7 +40,6 @@ export default function CheckoutPage(): React.ReactElement {
     const {
             t,
             language: _language,
-            showToast,
             currentUser,
             formatCurrency,
             formData,
@@ -49,6 +48,8 @@ export default function CheckoutPage(): React.ReactElement {
             setDeliveryMethod,
             pickupStoreId,
             setPickupStoreId,
+            cashLockAlert,
+            setCashLockAlert,
             promoCode,
             setPromoCode,
             appliedPromo,
@@ -128,10 +129,12 @@ export default function CheckoutPage(): React.ReactElement {
                             value={deliveryMethod}
                             onValueChange={(value) => {
                                 const method = value as DeliveryMethod;
-                                setDeliveryMethod(method);
                                 if (method !== 'pickup' && formData.paymentMethod === 'cash') {
-                                    showToast(t('checkout.payment.cashDeliveryAlert'), 'error');
+                                    setCashLockAlert(true);
+                                    return;
                                 }
+                                setDeliveryMethod(method);
+                                setCashLockAlert(false);
                             }}
                             className="space-y-3"
                         >
@@ -178,10 +181,12 @@ export default function CheckoutPage(): React.ReactElement {
                                     <Select
                                         value={pickupStoreId || undefined}
                                         onValueChange={(value) => {
-                                            setPickupStoreId(value);
                                             if (value !== 'riga-office' && formData.paymentMethod === 'cash') {
-                                                showToast(t('checkout.payment.cashDeliveryAlert'), 'error');
+                                                setCashLockAlert(true);
+                                                return;
                                             }
+                                            setPickupStoreId(value);
+                                            setCashLockAlert(false);
                                             if (errors.pickupStore) {
                                                 setErrors((prev) => {
                                                     const newErrors = { ...prev };
@@ -222,6 +227,12 @@ export default function CheckoutPage(): React.ReactElement {
                                             {errors.pickupStore}
                                         </p>
                                     )}
+                                    {cashLockAlert && formData.paymentMethod === 'cash' && (
+                                        <p className="mt-2 flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-200">
+                                            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                                            {t('checkout.payment.cashDeliveryAlert')}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </RadioGroup>
@@ -248,6 +259,7 @@ export default function CheckoutPage(): React.ReactElement {
                                     setDeliveryMethod('pickup');
                                     setPickupStoreId('riga-office');
                                 }
+                                if (value !== 'cash') setCashLockAlert(false);
                             }}
                             className="space-y-3"
                         >

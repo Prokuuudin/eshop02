@@ -92,6 +92,7 @@ function useCheckoutPageState() {
             : 'courier';
     });
     const [pickupStoreId, setPickupStoreId] = useState('');
+    const [cashLockAlert, setCashLockAlert] = useState(false);
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
     const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
@@ -550,6 +551,8 @@ function useCheckoutPageState() {
         setDeliveryMethod,
         pickupStoreId,
         setPickupStoreId,
+        cashLockAlert,
+        setCashLockAlert,
         promoCode,
         setPromoCode,
         appliedPromo,

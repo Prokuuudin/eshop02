@@ -323,7 +323,7 @@ export default function CheckoutPage(): React.ReactElement {
                             {t('checkout.summary.title')}
                         </h2>
 
-                        <div className="checkout__summary-items space-y-3 border-b border-border pb-4 mb-4 max-h-80 overflow-y-auto pr-1">
+                        <div className="checkout__summary-items space-y-3 border-b border-border pb-4 mb-4 max-h-80 overflow-y-auto pr-3">
                             {checkoutItems.map((item) => {
                                 const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                                 const unitPrice = calculatePrice(item, item.quantity);

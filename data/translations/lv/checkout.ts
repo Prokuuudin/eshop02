@@ -29,7 +29,7 @@ const lvCheckout: Record<string, string> = {
   'checkout.payment.card': 'Banka karte',
   'checkout.payment.bank': 'Bankas pārskaitījums',
   'checkout.payment.cash': 'Skaidra nauda saņemot',
-  'checkout.payment.cashNote': 'Iespējama tikai birojā: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
+  'checkout.payment.cashNote': 'Samaksa saņemot pasūtījumu iespējama tikai birojā: SIA MIKS PLUS, Rencēnu 10A, Rīga, LV-1073',
   'checkout.submit': 'Apstiprināt pasūtījumu',
   'checkout.backToCart': 'Atpakaļ uz grozu',
   'checkout.summary.title': 'Jūsu pasūtījums',

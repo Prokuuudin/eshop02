@@ -106,6 +106,7 @@ export default function CheckoutPage(): React.ReactElement {
                         errors={errors}
                         onChange={handleChange}
                         t={t}
+                        showPrefillHint={!!currentUser}
                     />
                     {/* Delivery options */}
                     <div className="checkout__section bg-card rounded-lg border border-border p-6">

@@ -1,7 +1,8 @@
 'use client'
 
-import type { ChangeEvent, Dispatch, JSX, SetStateAction } from 'react'
+import { useState, type ChangeEvent, type Dispatch, type JSX, type SetStateAction } from 'react'
 import Link from 'next/link'
+import { Info, ChevronDown, ChevronUp } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import PhoneInput from '@/components/ui/phone-input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -30,19 +31,49 @@ type CustomerDetailsSectionProps = {
   errors: Errors
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
   t: Translate
+  showPrefillHint?: boolean
 }
 
 function FieldError({ id, message }: { id: string; message?: string }): JSX.Element | null {
   return message ? <p id={id} role="alert" className="checkout__field-error mt-1 text-xs text-red-600">{message}</p> : null
 }
 
-export function CustomerDetailsSection({ formData, setFormData, errors, onChange, t }: CustomerDetailsSectionProps): JSX.Element {
+function PrefillHint({ t }: { t: Translate }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="checkout__prefill-hint mb-4 rounded-lg border border-primary/10 bg-primary/5 dark:border-primary/40 dark:bg-primary/15 p-3">
+      <button
+        type="button"
+        className="checkout__prefill-toggle flex w-full items-center justify-between gap-2 text-left"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2 text-sm font-medium text-primary dark:text-primary/80">
+          <Info className="w-4 h-4 shrink-0" />
+          {t('checkout.prefill.toggle')}
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 text-primary/80 shrink-0" /> : <ChevronDown className="w-4 h-4 text-primary/80 shrink-0" />}
+      </button>
+      {open && (
+        <ul className="checkout__prefill-list mt-3 space-y-1.5 pl-0 text-sm text-primary/90 dark:text-primary/80 list-none">
+          <li>{t('checkout.prefill.step1')}</li>
+          <li>{t('checkout.prefill.step2')}</li>
+          <li>{t('checkout.prefill.step3')}</li>
+          <li>{t('checkout.prefill.step4')}</li>
+        </ul>
+      )}
+    </div>
+  )
+}
+
+export function CustomerDetailsSection({ formData, setFormData, errors, onChange, t, showPrefillHint }: CustomerDetailsSectionProps): JSX.Element {
   const fieldClass = (hasError: boolean): string =>
     `checkout__input w-full border-border bg-card text-foreground ${hasError ? 'border-red-500 bg-red-50 dark:bg-red-950' : ''}`
 
   return (
     <section className="checkout__section rounded-lg border border-border bg-card p-6">
       <h2 className="checkout__section-title mb-4 text-lg font-bold">{t('checkout.delivery.title')}</h2>
+      {showPrefillHint && <PrefillHint t={t} />}
       <div className="checkout__field-grid grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="checkout__field">
           <label htmlFor="checkout-first-name" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.firstName')} <span className="text-red-600">*</span></label>

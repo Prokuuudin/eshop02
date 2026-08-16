@@ -100,7 +100,7 @@ export default function WishlistButton({
                 className={`inline-flex items-center justify-center rounded-full border p-2 shadow-sm transition bg-white/95 dark:bg-gray-900/95 ${
                     isInWishlist
                         ? 'border-pink-300 text-pink-600 hover:border-gray-400 hover:text-gray-500 dark:border-pink-500 dark:text-pink-400 dark:hover:border-gray-500 dark:hover:text-gray-400'
-                        : 'border-gray-200 text-gray-700 hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:text-gray-200 dark:hover:border-pink-500 dark:hover:text-pink-400'
+                        : 'border-gray-200 text-[#0088C4] hover:border-pink-300 hover:text-pink-600 dark:border-gray-700 dark:text-[#0088C4] dark:hover:border-pink-500 dark:hover:text-pink-400'
                 } ${className}`}
             >
                 <svg

@@ -33,11 +33,11 @@ export default async function Hero({ language }: { language: Language }): Promis
             {t('hero.title')}
           </h1>
 
-          <p className="hero__subtitle text-sm sm:text-base text-foreground/80 drop-shadow-sm">
+          <p className="hero__subtitle mt-8 text-sm sm:text-base text-foreground/80 drop-shadow-sm">
             {t('hero.subtitle')}
           </p>
 
-          <Link href="/catalog" className="hero__cta mt-16">
+          <Link href="/catalog" className="hero__cta mt-8">
             <Button size="lg">{t('hero.cta')}</Button>
           </Link>
         </div>

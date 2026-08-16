@@ -3,7 +3,7 @@ import React from 'react';
 import Image from 'next/image';
 import Script from 'next/script';
 import Link from 'next/link';
-import { Info } from 'lucide-react';
+import { ClipboardCheck, Info, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -18,12 +18,13 @@ import {
 import { stores } from '@/data/stores';
 import WholesaleMinimumAlert from '@/components/WholesaleMinimumAlert';
 import { DeliveryMethod } from '@/lib/orders-store';
-import { calculatePrice } from '@/lib/customer-segmentation';
+import { calculatePrice, getMinimumOrderQuantity } from '@/lib/customer-segmentation';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
 import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { CustomerDetailsSection } from './CheckoutFormSections';
+import ConfirmActionDialog from '@/components/ConfirmActionDialog';
 
 const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
     { id: 'courier', labelKey: 'checkout.delivery.courier' },
@@ -73,6 +74,8 @@ export default function CheckoutPage(): React.ReactElement {
             renderTurnstile,
             applyBtnRef,
             checkoutItems,
+            removeItem,
+            updateQuantity,
             subtotal,
             cashUnavailable,
             handleChange,
@@ -93,7 +96,16 @@ export default function CheckoutPage(): React.ReactElement {
           } = checkoutState;
     return (
         <main className="w-full px-4 py-8 text-foreground">
-            <h1 className="checkout__title text-3xl font-bold mb-8">{t('checkout.title')}</h1>
+            <div className="mb-8 text-center">
+                <div className="flex items-center justify-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground dark:bg-white dark:text-brand">
+                        <ClipboardCheck className="h-7 w-7 stroke-[2.25]" aria-hidden="true" />
+                    </div>
+                    <h1 className="checkout__title text-xl font-bold leading-tight text-foreground sm:text-2xl">
+                        {t('checkout.title')}
+                    </h1>
+                </div>
+            </div>
 
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Форма */}
@@ -319,18 +331,62 @@ export default function CheckoutPage(): React.ReactElement {
                 {/* Сумма и промокод */}
                 <aside className="checkout__summary sticky top-20 h-fit">
                     <div className="bg-card rounded-lg border border-border p-6">
-                        <h2 className="font-bold text-lg mb-4 text-foreground">
-                            {t('checkout.summary.title')}
-                        </h2>
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <h2 className="font-bold text-lg text-foreground">
+                                {t('checkout.summary.title')}
+                            </h2>
+                            <Button asChild type="button" variant="outline" size="sm">
+                                <Link href="/catalog">
+                                    <ShoppingBag className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('checkout.items.add')}
+                                </Link>
+                            </Button>
+                        </div>
+
+                        <div className="checkout__summary-totals mb-4 hidden rounded-lg bg-muted/50 p-3 text-sm text-gray-700 dark:text-gray-300">
+                            <div className="grid grid-cols-3 items-start gap-x-4 gap-y-1.5">
+                                <div className="order-1 flex items-baseline gap-x-1 whitespace-nowrap">
+                                    <span>{t('checkout.summary.items')}</span>
+                                    <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
+                                </div>
+                                {discount > 0 && (
+                                    <div className="order-4 col-span-3 flex justify-between text-green-600">
+                                        <span>{t('checkout.summary.discount')}</span>
+                                        <span className="font-medium">−{formatCurrency(discount)}</span>
+                                    </div>
+                                )}
+                                {bonusDiscount > 0 && (
+                                    <div className="order-5 col-span-3 flex justify-between text-amber-600 dark:text-amber-400">
+                                        <span>{t('checkout.summary.bonus')}</span>
+                                        <span className="font-medium">−{formatCurrency(bonusDiscount)}</span>
+                                    </div>
+                                )}
+                                <div className="order-2 flex items-baseline gap-x-1 whitespace-nowrap">
+                                    <span>{t('checkout.summary.tax')}</span>
+                                    <span className="font-medium text-foreground">{formatCurrency(taxAmount)}</span>
+                                </div>
+                                <div className="order-3 flex items-baseline gap-x-1 whitespace-nowrap">
+                                    <span>{t('checkout.summary.delivery')}</span>
+                                    <span className="font-medium text-foreground">
+                                        {deliveryFee === 0 ? t('checkout.delivery.free') : formatCurrency(deliveryFee)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="mt-2 flex justify-between border-t border-border pt-2 text-lg font-bold">
+                                <span>{t('checkout.summary.total')}</span>
+                                <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
+                            </div>
+                        </div>
 
                         <div className="checkout__summary-items space-y-3 border-b border-border pb-4 mb-4 max-h-80 overflow-y-auto pr-3">
                             {checkoutItems.map((item) => {
                                 const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                                 const unitPrice = calculatePrice(item, item.quantity);
+                                const minQuantity = getMinimumOrderQuantity(item);
                                 return (
                                     <div
                                         key={item.lineKey}
-                                        className="checkout__summary-item flex items-center gap-3"
+                                        className="checkout__summary-item flex min-h-14 items-center gap-3"
                                     >
                                         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-white">
                                             <Image
@@ -340,30 +396,107 @@ export default function CheckoutPage(): React.ReactElement {
                                                 sizes="56px"
                                                 className="object-contain p-1"
                                             />
-                                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
-                                                {item.quantity}
-                                            </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium text-foreground">
+                                            <Link
+                                                href={`/product/${item.id}`}
+                                                className="block truncate text-sm font-medium text-foreground hover:text-primary"
+                                            >
                                                 {localizedTitle}
-                                            </p>
+                                            </Link>
                                             {item.brand && (
                                                 <p className="truncate text-xs text-muted-foreground">
                                                     {item.brand}
                                                 </p>
                                             )}
                                         </div>
-                                        <span className="shrink-0 text-sm font-semibold text-foreground">
-                                            {formatCurrency(unitPrice * item.quantity)}
-                                        </span>
+                                        <div className="ml-auto flex shrink-0 items-center gap-2">
+                                            <div className="flex items-center overflow-hidden rounded-md border border-border">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateQuantity(item.lineKey, item.quantity - 1)}
+                                                    disabled={item.quantity <= minQuantity}
+                                                    className="flex h-7 w-7 items-center justify-center hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label={`${t('checkout.items.decrease')}: ${localizedTitle}`}
+                                                >
+                                                    <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+                                                </button>
+                                                <span className="min-w-7 px-0.5 text-center text-xs font-medium" aria-live="polite">
+                                                    {item.quantity}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateQuantity(item.lineKey, item.quantity + 1)}
+                                                    className="flex h-7 w-7 items-center justify-center hover:bg-muted"
+                                                    aria-label={`${t('checkout.items.increase')}: ${localizedTitle}`}
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                                                </button>
+                                            </div>
+                                            <span className="min-w-[4.5rem] text-right text-sm font-semibold text-foreground">
+                                                {formatCurrency(unitPrice * item.quantity)}
+                                            </span>
+                                            <ConfirmActionDialog
+                                                title={t('confirm.title')}
+                                                description={t('checkout.items.removeConfirm')}
+                                                confirmLabel={t('checkout.items.removeFromOrder')}
+                                                cancelLabel={t('common.cancel')}
+                                                onConfirm={() => removeItem(item.lineKey)}
+                                                trigger={
+                                                    <button
+                                                        type="button"
+                                                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                        aria-label={`${t('checkout.items.removeFromOrder')}: ${localizedTitle}`}
+                                                        title={t('checkout.items.removeFromOrder')}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                                    </button>
+                                                }
+                                            />
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
 
+                        <div className="checkout__summary-totals mb-4 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 text-sm text-gray-700 shadow-sm dark:bg-primary/10 dark:text-gray-300">
+                            <div className="grid grid-cols-3 items-stretch gap-2">
+                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                    <span>{t('checkout.summary.items')}</span>
+                                    <span className="font-bold text-foreground">{formatCurrency(subtotal)}</span>
+                                </div>
+                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                    <span>{t('checkout.summary.tax')}</span>
+                                    <span className="font-bold text-foreground">{formatCurrency(taxAmount)}</span>
+                                </div>
+                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                    <span>{t('checkout.summary.delivery')}</span>
+                                    <span className="font-bold text-foreground">
+                                        {deliveryFee === 0 ? t('checkout.delivery.free') : formatCurrency(deliveryFee)}
+                                    </span>
+                                </div>
+                                {discount > 0 && (
+                                    <div className="col-span-3 flex justify-between text-green-600">
+                                        <span>{t('checkout.summary.discount')}</span>
+                                        <span className="font-medium">−{formatCurrency(discount)}</span>
+                                    </div>
+                                )}
+                                {bonusDiscount > 0 && (
+                                    <div className="col-span-3 flex justify-between text-amber-600 dark:text-amber-400">
+                                        <span>{t('checkout.summary.bonus')}</span>
+                                        <span className="font-medium">−{formatCurrency(bonusDiscount)}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-3 flex items-center justify-between rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-xl font-bold text-foreground">
+                                <span>{t('checkout.summary.total')}</span>
+                                <span className="text-2xl tabular-nums text-primary">{formatCurrency(finalGrandTotal)}</span>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 grid grid-cols-2 items-start gap-3 border-b border-border pb-4">
                         {/* Promo code */}
-                        <div className="mb-4 pb-4 border-b border-border">
+                        <div className="h-full rounded-md border border-border p-3">
                             <label className="block text-sm font-medium mb-2 text-foreground">
                                 {t('checkout.promo.label')}
                             </label>
@@ -377,7 +510,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         setPromoError('');
                                     }}
                                     disabled={!!appliedPromo}
-                                    className="flex-1 px-3 py-2 border rounded text-sm bg-card text-foreground border-border"
+                                    className="min-w-0 flex-1 px-3 py-2 border rounded text-sm bg-card text-foreground border-border"
                                 />
                                 <Button
                                     ref={applyBtnRef}
@@ -414,13 +547,13 @@ export default function CheckoutPage(): React.ReactElement {
 
                         {/* Бонусные баллы */}
                         {currentUser && (
-                            <div className="checkout__bonus mb-4 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
+                            <div className="checkout__bonus h-full rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm space-y-1">
                                 <div className="flex justify-between text-amber-800 dark:text-amber-300">
                                     <span>{t('account.bonus.balance')}</span>
                                     <span className="font-semibold">
                                         {userBonusBalance} {t('cart.bonus.unit')}
                                         <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                            (= {formatCurrency(pointsToEuros(userBonusBalance))})
+                                            ({formatCurrency(pointsToEuros(userBonusBalance))})
                                         </span>
                                     </span>
                                 </div>
@@ -435,7 +568,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         +{adjustedBonusToEarn} {t('cart.bonus.unit')}
                                         {adjustedBonusToEarn > 0 && (
                                             <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                                (= −
+                                                (+
                                                 {formatCurrency(pointsToEuros(adjustedBonusToEarn))}
                                                 )
                                             </span>
@@ -477,8 +610,9 @@ export default function CheckoutPage(): React.ReactElement {
                                 )}
                             </div>
                         )}
+                        </div>
 
-                        <div className="space-y-2 text-sm mb-4 pb-4 border-b border-border text-gray-700 dark:text-gray-300">
+                        <div className="hidden">
                             <div className="flex justify-between">
                                 <span>{t('checkout.summary.items')}</span>
                                 <span className="font-medium text-foreground">
@@ -527,7 +661,7 @@ export default function CheckoutPage(): React.ReactElement {
                             </div>
                         </div>
 
-                        <div className="text-lg font-bold flex justify-between">
+                        <div className="hidden">
                             <span>{t('checkout.summary.total')}</span>
                             <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
                         </div>

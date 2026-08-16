@@ -42,7 +42,7 @@ function useCheckoutPageState() {
     const { t, language } = useTranslation();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
-    const { items, replaceWithItems } = useCart();
+    const { items, removeItem, updateQuantity, replaceWithItems } = useCart();
     const { addOrder, updateOrderPayment } = useOrders();
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();
@@ -534,6 +534,8 @@ function useCheckoutPageState() {
         showToast,
         searchParams,
         items,
+        removeItem,
+        updateQuantity,
         replaceWithItems,
         addOrder,
         updateOrderPayment,

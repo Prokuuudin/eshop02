@@ -11,7 +11,6 @@ export async function GET(): Promise<NextResponse> {
     const rows = await prisma.order.findMany({
       where: { OR: [{ userId: user.id }, { email: user.email }] },
       orderBy: { createdAt: 'desc' },
-      take: 100,
     })
 
     const orders = rows.map((row) => ({
@@ -25,5 +24,4 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

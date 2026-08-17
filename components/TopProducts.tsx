@@ -42,25 +42,19 @@ export default function TopProducts({
         {topItems.map((product, index) => (
           <div
             key={product.productId}
-            className="flex items-center justify-between p-3 rounded-lg bg-muted"
+            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-lg bg-muted p-3"
           >
-            <div className="flex items-center gap-3 flex-1">
-              <div className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">
+            <div className="pt-0.5 text-lg font-bold text-gray-400 dark:text-gray-500">
                 #{index + 1}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
+            </div>
+            <div className="min-w-0">
+                <p className="whitespace-normal break-words text-sm font-medium leading-5 text-foreground">
                   {product.productTitle}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {product.quantity} {t('product.pieces')}
+                <p className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>{product.quantity} {t('product.pieces')}</span>
+                  <span className="font-semibold text-foreground">{formatEuro(product.revenue, locale)}</span>
                 </p>
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-sm font-bold text-foreground">
-                {formatEuro(product.revenue, locale)}
-              </p>
             </div>
           </div>
         ))}

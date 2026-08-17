@@ -14,6 +14,7 @@ export interface PurchaseAnalytics {
   }>
   ordersByMonth: Array<{
     month: string
+    shortMonth: string
     count: number
     revenue: number
   }>
@@ -22,6 +23,85 @@ export interface PurchaseAnalytics {
     quantity: number
     revenue: number
   }>
+}
+
+const emptyPurchaseAnalytics = (): PurchaseAnalytics => ({
+  totalOrders: 0,
+  totalSpent: 0,
+  averageOrderValue: 0,
+  totalItems: 0,
+  topProducts: [],
+  ordersByMonth: [],
+  topCategories: []
+})
+
+export function computePurchaseAnalytics(
+  orders: ReturnType<typeof useOrders.getState>['orders'],
+  locale = 'ru-RU'
+): PurchaseAnalytics {
+  if (orders.length === 0) return emptyPurchaseAnalytics()
+
+  const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0)
+  const totalItems = orders.reduce(
+    (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0
+  )
+  const averageOrderValue = totalSpent / orders.length
+
+  const productMap = new Map<string, { title: string; quantity: number; revenue: number }>()
+  const categoryMap = new Map<string, { quantity: number; revenue: number }>()
+  const monthMap = new Map<string, { label: string; shortLabel: string; count: number; revenue: number }>()
+
+  orders.forEach((order) => {
+    order.items.forEach((item) => {
+      const product = productMap.get(item.id) || { title: item.title, quantity: 0, revenue: 0 }
+      productMap.set(item.id, {
+        title: item.title,
+        quantity: product.quantity + item.quantity,
+        revenue: product.revenue + item.price * item.quantity
+      })
+
+      if (item.category) {
+        const category = categoryMap.get(item.category) || { quantity: 0, revenue: 0 }
+        categoryMap.set(item.category, {
+          quantity: category.quantity + item.quantity,
+          revenue: category.revenue + item.price * item.quantity
+        })
+      }
+    })
+
+    const date = new Date(order.createdAt)
+    if (!Number.isNaN(date.getTime())) {
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const month = monthMap.get(key) || {
+        label: new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date),
+        shortLabel: new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit' }).format(date),
+        count: 0,
+        revenue: 0
+      }
+      monthMap.set(key, {
+        ...month,
+        count: month.count + 1,
+        revenue: month.revenue + (order.total || 0)
+      })
+    }
+  })
+
+  return {
+    totalOrders: orders.length,
+    totalSpent,
+    averageOrderValue,
+    totalItems,
+    topProducts: Array.from(productMap.entries())
+      .map(([productId, data]) => ({ productId, productTitle: data.title, ...data }))
+      .sort((a, b) => b.revenue - a.revenue),
+    ordersByMonth: Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, data]) => ({ month: data.label, shortMonth: data.shortLabel, count: data.count, revenue: data.revenue })),
+    topCategories: Array.from(categoryMap.entries())
+      .map(([category, data]) => ({ category, ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+  }
 }
 
 export interface CompanyAnalytics extends PurchaseAnalytics {
@@ -40,111 +120,21 @@ export interface CompanyAnalytics extends PurchaseAnalytics {
  * card+PK accounts with a synthetic card.NNNN@client.local address).
  * Pass no filters to get store-wide analytics (admin use only).
  */
-export function getUserPurchaseAnalytics(userEmail?: string, userId?: string): PurchaseAnalytics {
+export function getUserPurchaseAnalytics(userEmail?: string, userId?: string, locale = 'ru-RU'): PurchaseAnalytics {
   const allOrders = useOrders.getState().orders
-  const orders = userEmail || userId
-    ? allOrders.filter((o) => (userId && o.userId === userId) || o.email.toLowerCase() === (userEmail ?? '').toLowerCase())
-    : allOrders
-
-  if (orders.length === 0) {
-    return {
-      totalOrders: 0,
-      totalSpent: 0,
-      averageOrderValue: 0,
-      totalItems: 0,
-      topProducts: [],
-      ordersByMonth: [],
-      topCategories: []
-    }
-  }
-
-  // Calculate basic metrics
-  const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0)
-  const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0)
-  const averageOrderValue = totalSpent / orders.length
-
-  // Group orders by product
-  const productMap = new Map<string, { title: string; quantity: number; revenue: number }>()
-  orders.forEach(order => {
-    order.items.forEach(item => {
-      const existing = productMap.get(item.id) || { title: item.title, quantity: 0, revenue: 0 }
-      productMap.set(item.id, {
-        title: item.title,
-        quantity: existing.quantity + item.quantity,
-        revenue: existing.revenue + (item.price * item.quantity)
-      })
-    })
-  })
-
-  // Top products
-  const topProducts = Array.from(productMap.entries())
-    .map(([productId, data]) => ({
-      productId,
-      productTitle: data.title,
-      quantity: data.quantity,
-      revenue: data.revenue
-    }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 10)
-
-  // Orders by month
-  const monthMap = new Map<string, { count: number; revenue: number }>()
-  orders.forEach(order => {
-    const date = new Date(order.createdAt)
-    const month = date.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
-    const existing = monthMap.get(month) || { count: 0, revenue: 0 }
-    monthMap.set(month, {
-      count: existing.count + 1,
-      revenue: existing.revenue + (order.total || 0)
-    })
-  })
-
-  const ordersByMonth = Array.from(monthMap.entries())
-    .map(([month, data]) => ({
-      month,
-      count: data.count,
-      revenue: data.revenue
-    }))
-    .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
-
-  // Top categories
-  const categoryMap = new Map<string, { quantity: number; revenue: number }>()
-  orders.forEach(order => {
-    order.items.forEach(item => {
-      if (item.category) {
-        const existing = categoryMap.get(item.category) || { quantity: 0, revenue: 0 }
-        categoryMap.set(item.category, {
-          quantity: existing.quantity + item.quantity,
-          revenue: existing.revenue + (item.price * item.quantity)
-        })
-      }
-    })
-  })
-
-  const topCategories = Array.from(categoryMap.entries())
-    .map(([category, data]) => ({
-      category,
-      quantity: data.quantity,
-      revenue: data.revenue
-    }))
-    .sort((a, b) => b.revenue - a.revenue)
-
-  return {
-    totalOrders: orders.length,
-    totalSpent,
-    averageOrderValue,
-    totalItems,
-    topProducts,
-    ordersByMonth,
-    topCategories
-  }
+  if (!userEmail && !userId) return emptyPurchaseAnalytics()
+  const normalizedEmail = userEmail?.toLowerCase()
+  const orders = allOrders.filter(
+    (order) => (userId && order.userId === userId) || (normalizedEmail && order.email.toLowerCase() === normalizedEmail)
+  )
+  return computePurchaseAnalytics(orders, locale)
 }
 
 /**
  * Get company analytics (requires company context)
  */
 export function getCompanyAnalytics(companyId: string): CompanyAnalytics {
-  const purchaseAnalytics = getUserPurchaseAnalytics()
+  const purchaseAnalytics = computePurchaseAnalytics(useOrders.getState().orders)
   const invoices = Array.from(useInvoicesStore.getState().invoices.values())
     .filter(inv => inv.companyId === companyId)
   

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { computePurchaseAnalytics as computeRealPurchaseAnalytics } from './analytics-service'
+import type { Order } from './orders-store'
 
 // ---------------------------------------------------------------------------
 // Pure computation helpers extracted from analytics-service.ts logic.
@@ -37,7 +39,7 @@ function computePurchaseAnalytics(orders: TestOrder[]) {
   }
 
   const totalSpent = orders.reduce((sum, o) => sum + (o.total || 0), 0)
-  const totalItems = orders.reduce((sum, o) => sum + o.items.length, 0)
+  const totalItems = orders.reduce((sum, o) => sum + o.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0)
   const averageOrderValue = totalSpent / orders.length
 
   const productMap = new Map<string, { title: string; quantity: number; revenue: number }>()
@@ -160,10 +162,24 @@ describe('computePurchaseAnalytics — basic metrics', () => {
     expect(result.averageOrderValue).toBe(2500)
   })
 
-  it('counts totalItems (line items, not quantities)', () => {
-    // orderA has 2 line items, orderB has 1 → total 3
+  it('counts purchased units, including quantities', () => {
+    // orderA has 3 units, orderB has 3 more
     const result = computePurchaseAnalytics([orderA, orderB])
-    expect(result.totalItems).toBe(3)
+    expect(result.totalItems).toBe(6)
+  })
+})
+
+describe('production analytics service', () => {
+  const asOrder = (order: TestOrder): Order => order as unknown as Order
+
+  it('counts quantities in the implementation used by the page', () => {
+    expect(computeRealPurchaseAnalytics([asOrder(orderA), asOrder(orderB)]).totalItems).toBe(6)
+  })
+
+  it('sorts localized month labels chronologically', () => {
+    const result = computeRealPurchaseAnalytics([asOrder(orderB), asOrder(orderA)], 'en-US')
+    expect(result.ordersByMonth.map((entry) => entry.month)).toEqual(['March 2024', 'April 2024'])
+    expect(result.ordersByMonth.map((entry) => entry.shortMonth)).toEqual(['Mar 24', 'Apr 24'])
   })
 })
 

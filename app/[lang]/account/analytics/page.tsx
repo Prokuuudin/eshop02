@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Activity, ChartNoAxesColumn, CircleDollarSign, Package, ShoppingBag, TrendingUp } from 'lucide-react'
 import { getCurrentUser } from '@/lib/auth'
 import { getUserPurchaseAnalytics } from '@/lib/analytics-service'
@@ -16,25 +16,37 @@ export default function AnalyticsPage(): React.ReactElement {
   const { language, t } = useTranslation()
   const locale = getLocaleFromLanguage(language)
   const currentUser = getCurrentUser()
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
 
   // Order history lives in the DB. Load it here too — this page must not depend on the user
   // having visited /account first (which is the only other place that hydrates the store).
   const orders = useOrders((s) => s.orders)
   const replaceOrders = useOrders((s) => s.replaceOrders)
   useEffect(() => {
-    fetch('/api/orders/my')
-      .then((r) => r.json())
-      .then(({ orders: dbOrders }) => {
-        if (Array.isArray(dbOrders)) replaceOrders(dbOrders as Order[])
+    const controller = new AbortController()
+    replaceOrders([])
+    fetch('/api/orders/my', { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Orders request failed: ${r.status}`)
+        return r.json()
       })
-      .catch(() => {})
-  }, [replaceOrders])
+      .then(({ orders: dbOrders }) => {
+        if (!Array.isArray(dbOrders)) throw new Error('Invalid orders response')
+        replaceOrders(dbOrders as Order[])
+        setLoadState('ready')
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setLoadState('error')
+      })
+    return () => controller.abort()
+  }, [replaceOrders, currentUser?.id])
 
   const analytics = useMemo(
-    () => getUserPurchaseAnalytics(currentUser?.email, currentUser?.id),
+    () => getUserPurchaseAnalytics(currentUser?.email, currentUser?.id, locale),
     // Recompute whenever the store changes; getUserPurchaseAnalytics reads it internally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orders, currentUser?.email, currentUser?.id]
+    [orders, currentUser?.email, currentUser?.id, locale]
   )
 
   const summaryCards = [
@@ -78,7 +90,16 @@ export default function AnalyticsPage(): React.ReactElement {
         />
       </div>
 
-      {analytics.totalOrders === 0 ? (
+      {loadState === 'loading' ? (
+        <div className="flex min-h-64 items-center justify-center rounded-2xl border border-border bg-card p-8 text-sm text-muted-foreground" role="status">
+          {t('common.loading')}
+        </div>
+      ) : loadState === 'error' ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200" role="alert">
+          <p className="font-semibold">{t('account.analytics.loadError')}</p>
+          <p className="mt-2 text-sm opacity-80">{t('account.analytics.loadErrorDesc')}</p>
+        </div>
+      ) : analytics.totalOrders === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center dark:border-gray-700 dark:bg-gray-800">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-gray-500 shadow-sm dark:bg-gray-900 dark:text-gray-300">
             <Activity className="h-6 w-6" />
@@ -114,20 +135,14 @@ export default function AnalyticsPage(): React.ReactElement {
           </section>
 
           <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
-            <div className="xl:col-span-4">
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
-                <TopProducts analytics={analytics} />
-              </div>
+            <div className="min-w-0 xl:col-span-4 [&>*]:h-full">
+              <TopProducts analytics={analytics} />
             </div>
-            <div className="xl:col-span-4">
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
-                <TopCategories analytics={analytics} />
-              </div>
+            <div className="min-w-0 xl:col-span-4 [&>*]:h-full">
+              <TopCategories analytics={analytics} />
             </div>
-            <div className="xl:col-span-4">
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
-                <OrderHistory analytics={analytics} />
-              </div>
+            <div className="min-w-0 xl:col-span-4 [&>*]:h-full">
+              <OrderHistory analytics={analytics} />
             </div>
           </section>
 

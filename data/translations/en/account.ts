@@ -33,6 +33,8 @@ const enAccount: Record<string, string> = {
   'account.analytics.categoriesHelp': '{count} categories',
   'account.analytics.noData': 'No purchase data',
   'account.analytics.noDataDesc': 'Your purchase history will appear here after your first order',
+  'account.analytics.loadError': 'Could not load analytics',
+  'account.analytics.loadErrorDesc': 'Refresh the page or try again later.',
   'account.analytics.statsByCategory': 'Detailed statistics by category',
   'account.analytics.colCategory': 'Category',
   'account.analytics.colItems': 'Products',

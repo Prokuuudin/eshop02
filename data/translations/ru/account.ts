@@ -33,6 +33,8 @@ const ruAccount: Record<string, string> = {
   'account.analytics.categoriesHelp': '{count} категорий',
   'account.analytics.noData': 'Нет данных о покупках',
   'account.analytics.noDataDesc': 'Ваша история покупок появится здесь после первого заказа',
+  'account.analytics.loadError': 'Не удалось загрузить аналитику',
+  'account.analytics.loadErrorDesc': 'Обновите страницу или попробуйте ещё раз позже.',
   'account.analytics.statsByCategory': 'Детальная статистика по категориям',
   'account.analytics.colCategory': 'Категория',
   'account.analytics.colItems': 'Товаров',

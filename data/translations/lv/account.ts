@@ -33,6 +33,8 @@ const lvAccount: Record<string, string> = {
   'account.analytics.categoriesHelp': '{count} kategorijas',
   'account.analytics.noData': 'Nav pirkumu datu',
   'account.analytics.noDataDesc': 'Jūsu pirkumu vēsture parādīsies šeit pēc pirmā pasūtījuma',
+  'account.analytics.loadError': 'Neizdevās ielādēt analītiku',
+  'account.analytics.loadErrorDesc': 'Atsvaidziniet lapu vai mēģiniet vēlreiz vēlāk.',
   'account.analytics.statsByCategory': 'Sīkā statistika pēc kategorijām',
   'account.analytics.colCategory': 'Kategorija',
   'account.analytics.colItems': 'Preces',

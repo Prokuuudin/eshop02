@@ -253,7 +253,7 @@ export function buildInvoiceHtml(
 <table class="totals">
   <tr><td>${lang === 'lv' ? 'Kopā bez PVN' : 'Goods excl. VAT'}:</td><td>${eur(goodsWithoutVat)}</td></tr>
   ${discountRow}
-  <tr><td>${L.delivery}:</td><td>${eur(order.delivery)}</td></tr><tr><td>${L.tax}:</td><td>${eur(taxAmount)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}:</td><td>${eur(order.total)}</td></tr>
+  <tr><td>${L.tax}:</td><td>${eur(taxAmount)}</td></tr><tr><td>${L.delivery}:</td><td>${eur(order.delivery)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}:</td><td>${eur(order.total)}</td></tr>
 </table>
 <div class="words">${L.amountWords}: ${esc(words)}</div>
 <div class="payment-info"><strong class="payment-reference">${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>

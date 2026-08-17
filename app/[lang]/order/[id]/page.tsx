@@ -196,14 +196,14 @@ return (
                                     >
                                         <Link
                                             href={localizePath(`/product/${item.id}`, language)}
-                                            className="flex-shrink-0"
+                                            className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded border border-border bg-white"
                                         >
                                             <Image
                                                 src={item.image || '/placeholder.png'}
                                                 alt={item.title}
-                                                width={80}
-                                                height={80}
-                                                className="rounded object-cover"
+                                                fill
+                                                sizes="80px"
+                                                className="object-contain p-1"
                                             />
                                         </Link>
                                         <div className="flex-1">

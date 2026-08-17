@@ -308,6 +308,37 @@ export default function CheckoutPage(): React.ReactElement {
                     </div>
 
                     {turnstileEnabled && <div ref={setTurnstileContainer} />}
+                    <div className="space-y-2">
+                    {/* Согласие размещено рядом с финальными действиями формы. */}
+                    <div className="checkout__terms rounded-lg bg-card px-1 py-1">
+                        <div className="flex items-start gap-2">
+                            <Checkbox
+                                id="checkout-terms"
+                                checked={termsAccepted}
+                                onCheckedChange={(checked) => {
+                                    setTermsAccepted(checked);
+                                    if (checked && errors.terms) {
+                                        setErrors((prev) => {
+                                            const newErrors = { ...prev };
+                                            delete newErrors.terms;
+                                            return newErrors;
+                                        });
+                                    }
+                                }}
+                                aria-required="true"
+                                aria-invalid={!!errors.terms}
+                                className="mt-0.5"
+                            />
+                            <label htmlFor="checkout-terms" className="checkout__terms-label cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                                {t('checkout.terms.prefix')}{' '}
+                                <Link href="/terms" target="_blank" className="text-primary underline hover:no-underline">
+                                    {t('checkout.terms.link')}
+                                </Link>
+                                {t('checkout.terms.suffix')}
+                            </label>
+                        </div>
+                        {errors.terms && <p className="mt-1 text-xs text-red-600">{errors.terms}</p>}
+                    </div>
                     <div className="flex gap-3">
                         <Button
                             type="submit"
@@ -326,11 +357,12 @@ export default function CheckoutPage(): React.ReactElement {
                             </Button>
                         </Link>
                     </div>
+                    </div>
                 </form>
 
                 {/* Сумма и промокод */}
                 <aside className="checkout__summary sticky top-20 h-fit">
-                    <div className="bg-card rounded-lg border border-border p-6">
+                    <div className="rounded-lg border border-border bg-card px-6 pb-3 pt-6">
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <h2 className="font-bold text-lg text-foreground">
                                 {t('checkout.summary.title')}
@@ -372,13 +404,13 @@ export default function CheckoutPage(): React.ReactElement {
                                     </span>
                                 </div>
                             </div>
-                            <div className="mt-2 flex justify-between border-t border-border pt-2 text-lg font-bold">
+                            <div className="mt-2 flex justify-between text-lg font-bold">
                                 <span>{t('checkout.summary.total')}</span>
                                 <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
                             </div>
                         </div>
 
-                        <div className="checkout__summary-items space-y-3 border-b border-border pb-4 mb-4 max-h-80 overflow-y-auto pr-3">
+                        <div className="checkout__summary-items mb-4 max-h-80 space-y-3 overflow-y-auto pr-3">
                             {checkoutItems.map((item) => {
                                 const localizedTitle = getLocalizedCartItemTitle(item, language, t);
                                 const unitPrice = calculatePrice(item, item.quantity);
@@ -494,7 +526,7 @@ export default function CheckoutPage(): React.ReactElement {
                             </div>
                         </div>
 
-                        <div className="mb-4 grid grid-cols-2 items-start gap-3 border-b border-border pb-4">
+                        <div className="grid grid-cols-2 items-start gap-3">
                         {/* Promo code */}
                         <div className="h-full rounded-md border border-border p-3">
                             <label className="block text-sm font-medium mb-2 text-foreground">
@@ -664,46 +696,6 @@ export default function CheckoutPage(): React.ReactElement {
                         <div className="hidden">
                             <span>{t('checkout.summary.total')}</span>
                             <span className="text-primary">{formatCurrency(finalGrandTotal)}</span>
-                        </div>
-
-                        {/* Согласие с условиями предоставления услуг */}
-                        <div className="checkout__terms mt-4 pt-4 border-t border-border">
-                            <div className="flex items-start gap-2">
-                                <Checkbox
-                                    id="checkout-terms"
-                                    checked={termsAccepted}
-                                    onCheckedChange={(checked) => {
-                                        setTermsAccepted(checked);
-                                        if (checked && errors.terms) {
-                                            setErrors((prev) => {
-                                                const newErrors = { ...prev };
-                                                delete newErrors.terms;
-                                                return newErrors;
-                                            });
-                                        }
-                                    }}
-                                    aria-required="true"
-                                    aria-invalid={!!errors.terms}
-                                    className="mt-0.5"
-                                />
-                                <label
-                                    htmlFor="checkout-terms"
-                                    className="checkout__terms-label text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-                                >
-                                    {t('checkout.terms.prefix')}{' '}
-                                    <Link
-                                        href="/terms"
-                                        target="_blank"
-                                        className="text-primary underline hover:no-underline"
-                                    >
-                                        {t('checkout.terms.link')}
-                                    </Link>
-                                    {t('checkout.terms.suffix')}
-                                </label>
-                            </div>
-                            {errors.terms && (
-                                <p className="text-red-600 text-xs mt-1">{errors.terms}</p>
-                            )}
                         </div>
 
                         {!wholesaleGuard.isMinimumReached && (

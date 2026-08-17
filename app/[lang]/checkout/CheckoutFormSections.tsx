@@ -50,7 +50,7 @@ function FieldError({ id, message }: { id: string; message?: string }): JSX.Elem
 
 function PrefillHint({ t }: { t: Translate }): JSX.Element {
   return (
-    <span className="checkout__prefill-hint flex min-w-0 flex-1 items-start gap-1 text-xs font-normal text-primary/80 dark:text-primary/70">
+    <span className="checkout__prefill-hint ml-auto flex max-w-md items-start gap-1.5 rounded-lg bg-muted p-2 text-xs font-normal text-muted-foreground">
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>{t('checkout.prefill.hint')}</span>
     </span>

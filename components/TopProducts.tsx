@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
 import { useTranslation } from '@/lib/use-translation'
@@ -17,7 +17,8 @@ export default function TopProducts({
 }: TopProductsProps): React.ReactElement {
   const { t, language } = useTranslation()
   const locale = getLocaleFromLanguage(language)
-  const topItems = analytics.topProducts.slice(0, limit)
+  const [visibleCount, setVisibleCount] = useState(limit)
+  const topItems = analytics.topProducts.slice(0, visibleCount)
 
   if (topItems.length === 0) {
     return (
@@ -61,10 +62,21 @@ export default function TopProducts({
       </div>
 
       <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
-        {t('account.topProducts.shownOfTotal', undefined, {
-          shown: Math.min(limit, topItems.length),
-          total: analytics.topProducts.length
-        })}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span>{t('account.topProducts.shownOfTotal', undefined, {
+            shown: topItems.length,
+            total: analytics.topProducts.length
+          })}</span>
+          {visibleCount < analytics.topProducts.length && (
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => setVisibleCount((count) => count + 5)}
+            >
+              {language === 'ru' ? 'Показать ещё 5' : language === 'lv' ? 'Rādīt vēl 5' : 'Show 5 more'}
+            </button>
+          )}
+        </div>
       </div>
     </Card>
   )

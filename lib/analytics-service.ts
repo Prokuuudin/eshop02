@@ -1,5 +1,59 @@
 import { useOrders } from '@/lib/orders-store'
 import { useInvoicesStore } from '@/lib/invoices-store'
+import type { Order } from '@/lib/orders-store'
+
+export type AnalyticsPeriod = 'month' | 'quarter' | 'year'
+
+export interface PeriodComparison {
+  currentSpent: number
+  previousSpent: number
+  currentOrders: number
+  previousOrders: number
+  spentChangePercent: number | null
+  ordersChangePercent: number | null
+}
+
+export function getPeriodComparison(
+  orders: Order[],
+  period: AnalyticsPeriod,
+  now = new Date()
+): PeriodComparison {
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const currentStart = period === 'month'
+    ? new Date(year, month, 1)
+    : period === 'quarter'
+      ? new Date(year, Math.floor(month / 3) * 3, 1)
+      : new Date(year, 0, 1)
+  const previousStart = period === 'month'
+    ? new Date(year, month - 1, 1)
+    : period === 'quarter'
+      ? new Date(currentStart.getFullYear(), currentStart.getMonth() - 3, 1)
+      : new Date(year - 1, 0, 1)
+
+  const current = orders.filter((order) => {
+    const date = new Date(order.createdAt)
+    return date >= currentStart && date <= now
+  })
+  const previous = orders.filter((order) => {
+    const date = new Date(order.createdAt)
+    return date >= previousStart && date < currentStart
+  })
+  const total = (items: Order[]): number => items.reduce((sum, order) => sum + (order.total || 0), 0)
+  const currentSpent = total(current)
+  const previousSpent = total(previous)
+  const percent = (value: number, previousValue: number): number | null =>
+    previousValue > 0 ? ((value - previousValue) / previousValue) * 100 : null
+
+  return {
+    currentSpent,
+    previousSpent,
+    currentOrders: current.length,
+    previousOrders: previous.length,
+    spentChangePercent: percent(currentSpent, previousSpent),
+    ordersChangePercent: percent(current.length, previous.length)
+  }
+}
 
 export interface PurchaseAnalytics {
   totalOrders: number

@@ -11,6 +11,7 @@ import AccountPageHero from '@/components/account/AccountPageHero'
 import TopProducts from '@/components/TopProducts'
 import TopCategories from '@/components/TopCategories'
 import OrderHistory from '@/components/OrderHistory'
+import PeriodComparison from '@/components/account/PeriodComparison'
 
 export default function AnalyticsPage(): React.ReactElement {
   const { language, t } = useTranslation()
@@ -134,6 +135,8 @@ export default function AnalyticsPage(): React.ReactElement {
             })}
           </section>
 
+          <PeriodComparison orders={orders} />
+
           <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
             <div className="min-w-0 xl:col-span-4 [&>*]:h-full">
               <TopProducts analytics={analytics} />
@@ -145,60 +148,6 @@ export default function AnalyticsPage(): React.ReactElement {
               <OrderHistory analytics={analytics} />
             </div>
           </section>
-
-          {analytics.topCategories.length > 0 && (
-            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-              <div className="border-b border-gray-200 p-6 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {t('account.analytics.statsByCategory')}
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
-                        {t('account.analytics.colCategory')}
-                      </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
-                        {t('account.analytics.colItems')}
-                      </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
-                        {t('account.analytics.colRevenue')}
-                      </th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
-                        {t('account.analytics.colShare')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analytics.topCategories.map((cat, idx) => {
-                      const percentage = (cat.revenue / analytics.totalSpent) * 100
-                      return (
-                        <tr
-                          key={idx}
-                          className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-                        >
-                          <td className="px-6 py-4 text-sm font-medium text-foreground">
-                            {cat.category}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm text-muted-foreground">
-                            {cat.quantity}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm font-semibold text-foreground">
-                            {formatEuro(cat.revenue, locale)}
-                          </td>
-                          <td className="px-6 py-4 text-right text-sm text-muted-foreground">
-                            {percentage.toFixed(1)}%
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
         </>
       )}
     </main>

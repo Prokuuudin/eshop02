@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computePurchaseAnalytics as computeRealPurchaseAnalytics } from './analytics-service'
+import { computePurchaseAnalytics as computeRealPurchaseAnalytics, getPeriodComparison } from './analytics-service'
 import type { Order } from './orders-store'
 
 // ---------------------------------------------------------------------------
@@ -180,6 +180,26 @@ describe('production analytics service', () => {
     const result = computeRealPurchaseAnalytics([asOrder(orderB), asOrder(orderA)], 'en-US')
     expect(result.ordersByMonth.map((entry) => entry.month)).toEqual(['March 2024', 'April 2024'])
     expect(result.ordersByMonth.map((entry) => entry.shortMonth)).toEqual(['Mar 24', 'Apr 24'])
+  })
+
+  it('compares a calendar month with the previous calendar month', () => {
+    const result = getPeriodComparison(
+      [asOrder(orderA), asOrder(orderB), asOrder(orderC)],
+      'month',
+      new Date(2024, 3, 15, 12)
+    )
+    expect(result.currentSpent).toBe(2000)
+    expect(result.previousSpent).toBe(8000)
+    expect(result.currentOrders).toBe(1)
+    expect(result.previousOrders).toBe(2)
+    expect(result.spentChangePercent).toBe(-75)
+    expect(result.ordersChangePercent).toBe(-50)
+  })
+
+  it('returns no percentage when the previous period has no data', () => {
+    const result = getPeriodComparison([asOrder(orderA)], 'year', new Date(2024, 6, 1))
+    expect(result.spentChangePercent).toBeNull()
+    expect(result.ordersChangePercent).toBeNull()
   })
 })
 

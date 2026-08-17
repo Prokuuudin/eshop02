@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { useOrders } from '@/lib/orders-store';
+import { useOrders, type OrderLegalDetails } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
@@ -84,6 +84,7 @@ function useOrderPageState({ params }: PageProps) {
                         paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed';
                         paymentProvider?: 'stripe' | 'manual';
                         paymentSessionId?: string;
+                        legalDetails?: OrderLegalDetails;
                     };
                 };
 

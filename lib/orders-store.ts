@@ -4,6 +4,18 @@ import { CartItem } from './cart-store'
 export type DeliveryMethod = 'courier' | 'pickup' | 'post'
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
+export type OrderLegalDetails =
+  | { customerType: 'individual'; personalCode: string }
+  | {
+      customerType: 'company'
+      companyName: string
+      regNumber: string
+      vatNumber?: string
+      legalAddress: string
+      bankName: string
+      iban: string
+    }
+
 export interface Order {
   id: string
   createdAt: Date
@@ -33,6 +45,8 @@ export interface Order {
   language?: string
   /** Владелец заказа на момент оформления; см. /api/orders/my (userId OR email). */
   userId?: string
+  /** Физ./юр. лицо, выбранное на чекауте; см. app/[lang]/checkout/CheckoutFormSections.tsx. */
+  legalDetails?: OrderLegalDetails
 }
 
 /**

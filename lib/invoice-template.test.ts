@@ -161,3 +161,80 @@ describe('buildInvoiceHtml', () => {
     expect(html).toContain('Rīgas birojs — Rencēnu iela 10a, Rīga, LV-1073, Latvija')
   })
 })
+
+describe('buildInvoiceHtml payer block', () => {
+  it('shows the personal code for an individual order', () => {
+    const html = buildInvoiceHtml({
+      ...order,
+      legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
+    } as unknown as Order)
+
+    expect(html).toContain('Personas kods: 010101-12345')
+    expect(html).toContain('Jānis Bērziņš')
+    expect(html).not.toContain('Uzņēmums')
+  })
+
+  it('shows company details instead of the personal name for a company order', () => {
+    const html = buildInvoiceHtml({
+      ...order,
+      legalDetails: {
+        customerType: 'company',
+        companyName: 'SIA Test',
+        regNumber: '40001234567',
+        vatNumber: 'LV40001234567',
+        legalAddress: 'Rencēnu iela 10A, Rīga, LV-1073',
+        bankName: 'Swedbank',
+        iban: 'LV80BANK0000435195001',
+      },
+    } as unknown as Order)
+
+    expect(html).toContain('Uzņēmums: <strong>SIA Test</strong>')
+    expect(html).toContain('Reģistrācijas numurs: 40001234567')
+    expect(html).toContain('PVN numurs: LV40001234567')
+    expect(html).toContain('Rencēnu iela 10A, Rīga, LV-1073')
+    expect(html).toContain('Swedbank')
+    expect(html).toContain('Kontaktpersona: Jānis Bērziņš')
+    expect(html).not.toContain('Personas kods')
+  })
+
+  it('omits the VAT line for a company order without a VAT number', () => {
+    const html = buildInvoiceHtml({
+      ...order,
+      legalDetails: {
+        customerType: 'company',
+        companyName: 'SIA Test',
+        regNumber: '40001234567',
+        legalAddress: 'Rencēnu iela 10A, Rīga, LV-1073',
+        bankName: 'Swedbank',
+        iban: 'LV80BANK0000435195001',
+      },
+    } as unknown as Order)
+
+    expect(html).not.toContain('PVN numurs:')
+  })
+
+  it('falls back to plain name/address for legacy orders with no legalDetails', () => {
+    const html = buildInvoiceHtml(order)
+
+    expect(html).toContain('Jānis Bērziņš')
+    expect(html).not.toContain('Personas kods')
+    expect(html).not.toContain('Uzņēmums')
+  })
+
+  it('escapes company-controlled fields', () => {
+    const html = buildInvoiceHtml({
+      ...order,
+      legalDetails: {
+        customerType: 'company',
+        companyName: '<img src=x onerror=alert(1)>',
+        regNumber: '1',
+        legalAddress: 'x',
+        bankName: 'x',
+        iban: 'x',
+      },
+    } as unknown as Order)
+
+    expect(html).not.toContain('<img src=x onerror')
+    expect(html).toContain('&lt;img src=x onerror')
+  })
+})

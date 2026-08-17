@@ -43,6 +43,8 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     electronic: 'Rēķins sagatavots elektroniskā veidā un ir autorizēts', notes: 'Piezīmes',
     created: 'Izveidota', note: 'Piezīme', paymentWarning: 'Ja rēķins netiks apmaksāts 3 darba dienu laikā, mēs būsim spiesti anulēt Jūsu pasūtījumu. Ja Jums rodas jautājumi, lūdzam sazināties ar mums pa e-pastu info@hairshop.lv.',
     bank: 'Banka',
+    personalCode: 'Personas kods', regNumber: 'Reģistrācijas numurs', vatNumber: 'PVN numurs',
+    contactPerson: 'Kontaktpersona', company: 'Uzņēmums',
   },
   en: {
     invoice: 'INVOICE',
@@ -70,6 +72,8 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     electronic: 'This invoice was prepared electronically and is authorised', notes: 'Notes',
     created: 'Created', note: 'Note', paymentWarning: 'If the invoice is not paid within 3 business days, we will have to cancel your order. If you have any questions, please contact us at info@hairshop.lv.',
     bank: 'Bank',
+    personalCode: 'Personal code', regNumber: 'Registration number', vatNumber: 'VAT number',
+    contactPerson: 'Contact person', company: 'Company',
   },
 }
 
@@ -217,6 +221,14 @@ export function buildInvoiceHtml(
   const words = amountInWords(order.total, lang)
   const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/invoice-logo.png`
 
+  // Payer identity follows what the customer picked at checkout (individual vs
+  // company) — see app/[lang]/checkout/CheckoutFormSections.tsx. The recipient
+  // block below stays the delivery contact regardless of legal entity type.
+  const legalDetails = order.legalDetails
+  const payerDetails = legalDetails?.customerType === 'company'
+    ? `${L.company}: <strong>${esc(legalDetails.companyName)}</strong><br/>${L.regNumber}: ${esc(legalDetails.regNumber)}<br/>${legalDetails.vatNumber ? `${L.vatNumber}: ${esc(legalDetails.vatNumber)}<br/>` : ''}${L.address}: ${esc(legalDetails.legalAddress)}<br/>${L.bank}: ${esc(legalDetails.bankName)}<br/>IBAN: ${esc(formatIban(legalDetails.iban))}<br/>${L.contactPerson}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}`
+    : `${L.name}: ${customer}<br/>${legalDetails?.customerType === 'individual' ? `${L.personalCode}: ${esc(legalDetails.personalCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
+
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -237,7 +249,7 @@ export function buildInvoiceHtml(
 <body>
 <div class="top"><div class="top-meta"><strong class="order-number">${L.orderNumber}: #${invoiceNumber}</strong><br/><strong>https://hairshop.lv</strong><br/><strong>${L.orderDate}: ${date}</strong></div><img class="brand-logo" src="${esc(logoUrl)}" alt="hairshop-pro.lv"/></div>
 <div class="supplier"><div class="section-title">${L.supplier}${lang === 'en' ? ':' : ''}</div><div class="supplier-grid line"><div>${L.supplierName}: <strong class="seller-name">${COMPANY.name.toUpperCase()}</strong><br/>${L.taxCode}: ${formatVatNumber()}<br/>${L.address}: ${COMPANY.legalAddress}</div><div>${L.bank}: ${COMPANY.bankName}<br/>Konts: ${formatIban(COMPANY.bankAccount)}<br/>SWIFT: ${COMPANY.swift}</div></div></div>
-<div class="parties"><div class="line"><div class="section-title">${L.payer}:</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}<br/><br/><strong class="method-line">${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</strong></div><div class="line"><div class="section-title">${L.recipient}:</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}<br/><br/><strong class="method-line">${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</strong></div></div>
+<div class="parties"><div class="line"><div class="section-title">${L.payer}:</div>${payerDetails}<br/><br/><strong class="method-line">${L.paymentMethod}: ${esc(paymentLabel(order.paymentMethod, lang))}</strong></div><div class="line"><div class="section-title">${L.recipient}:</div>${L.name}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}<br/><br/><strong class="method-line">${L.deliveryMethod}: ${esc(deliveryLabel(order, buyerAddress || '', buyerCity || ''))}</strong></div></div>
 <div class="section-title">${L.products}</div>
 <table class="items">
   <thead>

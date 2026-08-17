@@ -194,7 +194,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const legalAddress = rawLegalDetails?.legalAddress?.trim() ?? ''
       const bankName = rawLegalDetails?.bankName?.trim() ?? ''
       const iban = rawLegalDetails?.iban?.trim() ?? ''
-      if (!companyName || !regNumber || !legalAddress || !bankName || !iban) {
+      if (!companyName || !regNumber || !legalAddress) {
         return NextResponse.json({ error: 'missing_legal_details' }, { status: 400 })
       }
       if (

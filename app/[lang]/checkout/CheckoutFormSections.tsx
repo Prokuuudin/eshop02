@@ -105,14 +105,12 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
             <FieldError id="checkout-legal-address-error" message={errors.legalAddress} />
           </div>
           <div className="checkout__field">
-            <label htmlFor="checkout-bank-name" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.bankName')} <span className="text-red-600">*</span></label>
-            <Input id="checkout-bank-name" name="bankName" value={formData.bankName} onChange={onChange} placeholder={t('checkout.bankName')} className={fieldClass(!!errors.bankName)} aria-required="true" aria-invalid={!!errors.bankName} aria-describedby={errors.bankName ? 'checkout-bank-name-error' : undefined} />
-            <FieldError id="checkout-bank-name-error" message={errors.bankName} />
+            <label htmlFor="checkout-bank-name" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.bankName')}</label>
+            <Input id="checkout-bank-name" name="bankName" value={formData.bankName} onChange={onChange} placeholder={t('checkout.bankName')} className={fieldClass(false)} />
           </div>
           <div className="checkout__field sm:col-span-2">
-            <label htmlFor="checkout-iban" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.iban')} <span className="text-red-600">*</span></label>
-            <Input id="checkout-iban" name="iban" value={formData.iban} onChange={onChange} placeholder={t('checkout.iban')} className={fieldClass(!!errors.iban)} aria-required="true" aria-invalid={!!errors.iban} aria-describedby={errors.iban ? 'checkout-iban-error' : undefined} />
-            <FieldError id="checkout-iban-error" message={errors.iban} />
+            <label htmlFor="checkout-iban" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.iban')}</label>
+            <Input id="checkout-iban" name="iban" value={formData.iban} onChange={onChange} placeholder={t('checkout.iban')} className={fieldClass(false)} />
           </div>
         </div>
       )}

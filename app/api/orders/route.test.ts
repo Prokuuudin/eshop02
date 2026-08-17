@@ -235,14 +235,23 @@ describe('POST /api/orders — admin notification', () => {
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
-  it('rejects a company order missing legalAddress, bankName or iban', async () => {
+  it('rejects a company order missing legalAddress', async () => {
     const res = await POST(makeRequest({
       ...VALID_ORDER,
-      legalDetails: { ...COMPANY_LEGAL_DETAILS, iban: '' },
+      legalDetails: { ...COMPANY_LEGAL_DETAILS, legalAddress: '' },
     }))
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe('missing_legal_details')
     expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('accepts a company order without bank name and IBAN', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      legalDetails: { ...COMPANY_LEGAL_DETAILS, bankName: '', iban: '' },
+    }))
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
   })
 
   it('accepts a company order without a phone number', async () => {

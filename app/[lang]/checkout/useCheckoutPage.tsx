@@ -234,8 +234,6 @@ function useCheckoutPageState() {
             if (!formData.companyName.trim()) newErrors.companyName = t('checkout.errors.companyName');
             if (!formData.regNumber.trim()) newErrors.regNumber = t('checkout.errors.regNumber');
             if (!formData.legalAddress.trim()) newErrors.legalAddress = t('checkout.errors.legalAddress');
-            if (!formData.bankName.trim()) newErrors.bankName = t('checkout.errors.bankName');
-            if (!formData.iban.trim()) newErrors.iban = t('checkout.errors.iban');
         }
         if (!formData.firstName.trim()) newErrors.firstName = t('checkout.errors.firstName');
         if (!formData.lastName.trim()) newErrors.lastName = t('checkout.errors.lastName');

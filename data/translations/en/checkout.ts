@@ -35,7 +35,7 @@ const enCheckout: Record<string, string> = {
   'checkout.errors.iban': 'IBAN is required',
   'checkout.contactsHeading': 'Your contacts',
   'checkout.delivery.title': 'Your details',
-  'checkout.prefill.hint': 'Please note: this form automatically uses your profile or last order details. Edit them manually if needed.',
+  'checkout.prefill.hint': 'Auto-filled from your profile or last order.',
   'checkout.delivery.method': 'Delivery Method',
   'checkout.delivery.courier': 'Courier (2-3 days)',
   'checkout.delivery.pickup': 'Pickup',

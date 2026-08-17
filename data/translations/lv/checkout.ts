@@ -35,7 +35,7 @@ const lvCheckout: Record<string, string> = {
   'checkout.errors.iban': 'IBAN ir obligāts',
   'checkout.contactsHeading': 'Jūsu kontakti',
   'checkout.delivery.title': 'Jūsu dati',
-  'checkout.prefill.hint': 'Ņemiet vērā! Forma automātiski izmanto jūsu profila vai pēdējā pasūtījuma datus. Ja nepieciešams – labojiet tos manuāli.',
+  'checkout.prefill.hint': 'Aizpildīts no profila vai pēdējā pasūtījuma.',
   'checkout.delivery.method': 'Piegādes veids',
   'checkout.delivery.courier': 'Kurjers (2-3 dienas)',
   'checkout.delivery.pickup': 'Saņemšana veikalā',

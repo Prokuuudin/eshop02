@@ -50,10 +50,10 @@ function FieldError({ id, message }: { id: string; message?: string }): JSX.Elem
 
 function PrefillHint({ t }: { t: Translate }): JSX.Element {
   return (
-    <p className="checkout__prefill-hint mb-4 flex items-start gap-2 rounded-lg border border-primary/10 bg-primary/5 dark:border-primary/40 dark:bg-primary/15 p-3 text-sm text-primary/90 dark:text-primary/80">
-      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+    <span className="checkout__prefill-hint flex items-center gap-1 text-xs font-normal text-primary/80 dark:text-primary/70">
+      <Info className="w-3.5 h-3.5 shrink-0" />
       {t('checkout.prefill.hint')}
-    </p>
+    </span>
   )
 }
 
@@ -63,8 +63,10 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
 
   return (
     <section className="checkout__section rounded-lg border border-border bg-card p-6">
-      <h2 className="checkout__section-title mb-4 text-lg font-bold">{t('checkout.delivery.title')}</h2>
-      {showPrefillHint && <PrefillHint t={t} />}
+      <div className="checkout__section-header mb-4 flex flex-wrap items-baseline gap-2">
+        <h2 className="checkout__section-title text-lg font-bold">{t('checkout.delivery.title')}</h2>
+        {showPrefillHint && <PrefillHint t={t} />}
+      </div>
       <RadioGroup
         value={formData.customerType}
         onValueChange={(value) => setFormData((previous) => ({ ...previous, customerType: value as CustomerType }))}

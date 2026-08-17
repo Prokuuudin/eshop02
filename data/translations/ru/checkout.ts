@@ -35,7 +35,7 @@ const ruCheckout: Record<string, string> = {
   'checkout.errors.iban': 'IBAN обязателен',
   'checkout.contactsHeading': 'Ваши контакты',
   'checkout.delivery.title': 'Ваши данные',
-  'checkout.prefill.hint': 'Данные из профиля или последнего заказа.',
+  'checkout.prefill.hint': 'Форма автоматически использует данные профиля или последнего заказа. При необходимости – исправьте их вручную.',
   'checkout.delivery.method': 'Способ доставки',
   'checkout.delivery.courier': 'Курьер (2-3 дня)',
   'checkout.delivery.pickup': 'Самовывоз',

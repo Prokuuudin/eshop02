@@ -47,7 +47,7 @@ export default function AccountProfilePage(): React.ReactElement {
     }
 
     return (
-        <main className="w-full px-4 py-12">
+        <main className="w-full min-w-0 px-4 py-8 sm:py-12">
             <div className="mx-auto max-w-6xl">
                 <div className="mb-6">
                     <Link
@@ -67,8 +67,8 @@ export default function AccountProfilePage(): React.ReactElement {
                     {t('account.profileHint')}
                 </p>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
-                    <div className="lg:col-span-2 flex flex-col [&>*]:flex-1">
+                <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
+                    <div className="min-w-0 lg:col-span-2 flex flex-col [&>*]:flex-1">
                         <AccountProfileCard
                             user={user}
                             isEditing={profile.isEditingProfile}
@@ -86,7 +86,7 @@ export default function AccountProfilePage(): React.ReactElement {
                             tl={tl}
                         />
                     </div>
-                    <div className="lg:col-span-1 flex flex-col [&>*]:flex-1">
+                    <div className="min-w-0 lg:col-span-1 flex flex-col [&>*]:flex-1">
                         <AccountPasswordSection defaultOpen />
                     </div>
                 </div>

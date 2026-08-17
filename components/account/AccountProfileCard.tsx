@@ -36,6 +36,10 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     t,
     tl,
 }) => {
+    const fieldClass = (hasError = false): string =>
+        `account-profile__input w-full border-border bg-muted/50 text-foreground ${
+            hasError ? 'account-profile__input--error border-red-500 bg-red-50 dark:bg-red-950' : ''
+        }`;
     const nameRef = useRef<HTMLInputElement>(null);
     const emailRef = useRef<HTMLInputElement>(null);
     const phoneWrapperRef = useRef<HTMLDivElement>(null);
@@ -85,16 +89,16 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     const avatarUrl = isEditing ? activeDraft.avatarUrl : user.avatarUrl;
 
     return (
-        <div className="account-profile rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
-            <div className="account-profile__header mb-6 flex items-center gap-4 text-left">
-                <div className="account-profile__avatar flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm overflow-hidden relative">
+        <div className="account-profile h-full min-w-0 rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
+            <div className="account-profile__header mb-6 flex min-w-0 items-center gap-3 text-left sm:gap-4">
+                <div className="account-profile__avatar relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary text-primary-foreground shadow-sm sm:h-16 sm:w-16">
                     {avatarUrl ? (
                         <Image
                             src={avatarUrl}
                             alt={user.name || 'avatar'}
                             width={64}
                             height={64}
-                            className="object-cover w-16 h-16"
+                            className="h-full w-full object-cover"
                         />
                     ) : (
                         <UserCircle2 className="h-8 w-8" />
@@ -166,19 +170,15 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                         onSave();
                     }}
                 >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="account-profile__field">
-                            <label htmlFor="profile-name" className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-name" className="account-profile__label mb-1 block text-sm font-medium text-foreground">
                                 {t('account.name')}
                             </label>
                             <Input
                                 id="profile-name"
                                 ref={nameRef}
-                                className={`account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${
-                                    profileErrors.name
-                                        ? 'account-profile__input--error border-red-500'
-                                        : ''
-                                }`}
+                                className={fieldClass(!!profileErrors.name)}
                                 value={activeDraft.name}
                                 onChange={(e) => onChange('name', e.target.value)}
                             />
@@ -189,7 +189,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label htmlFor="profile-email" className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-email" className="account-profile__label mb-1 block text-sm font-medium text-foreground">
                                 Email
                             </label>
                             <Input
@@ -197,7 +197,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 ref={emailRef}
                                 type="email"
                                 autoComplete="email"
-                                className={`account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${profileErrors.email ? 'account-profile__input--error border-red-500' : ''}`}
+                                className={fieldClass(!!profileErrors.email)}
                                 value={activeDraft.email}
                                 onChange={(e) => onChange('email', e.target.value)}
                             />
@@ -206,12 +206,12 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label className="account-profile__label mb-1 block text-sm font-medium text-foreground">
                                 {t('account.phone')}
                             </label>
                             <div ref={phoneWrapperRef}>
                             <PhoneInput
-                                className={`focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)] ${profileErrors.phone ? 'account-profile__input--error' : ''}`}
+                                className={`[&_.PhoneInputCountry]:bg-muted/50 [&_input]:bg-muted/50 ${profileErrors.phone ? 'account-profile__input--error' : ''}`}
                                 value={activeDraft.phone}
                                 onChange={(val) => onChange('phone', val)}
                             />
@@ -223,56 +223,64 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             )}
                         </div>
                         <div className="account-profile__field">
-                            <label htmlFor="profile-company" className="account-profile__label block text-xs text-muted-foreground mb-1">
+                            <label htmlFor="profile-company" className="account-profile__label mb-1 block text-sm font-medium text-foreground">
                                 {t('account.company')}
                             </label>
                             <Input
                                 id="profile-company"
                                 ref={companyRef}
-                                className="account-profile__input focus-visible:border-primary/60 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.10)]"
+                                className={fieldClass()}
                                 value={activeDraft.companyName}
                                 onChange={(e) => onChange('companyName', e.target.value)}
                             />
                         </div>
                     </div>
                     <div className="my-5 border-t border-border" />
-                    <h3 className="mb-3 text-sm font-semibold text-foreground">{t('checkout.delivery.title')}</h3>
+                    <h3 className="mb-3 text-lg font-bold text-foreground">{t('checkout.delivery.title')}</h3>
                     <RadioGroup
                         value={activeDraft.customerType}
                         onValueChange={(value) => onChange('customerType', value)}
                         className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
                     >
                         {(['individual', 'company'] as const).map((type) => (
-                            <label key={type} htmlFor={`profile-customer-type-${type}`} className="flex cursor-pointer items-center rounded border border-border p-3">
+                            <label
+                                key={type}
+                                htmlFor={`profile-customer-type-${type}`}
+                                className={`flex cursor-pointer items-center rounded border p-3 transition-colors ${
+                                    activeDraft.customerType === type
+                                        ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/15'
+                                        : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'
+                                }`}
+                            >
                                 <RadioGroupItem id={`profile-customer-type-${type}`} value={type} className="mr-3" />
                                 <span className="text-sm font-medium">{t(`checkout.customerType.${type}`)}</span>
                             </label>
                         ))}
                     </RadioGroup>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <ProfileInput field="firstName" label={t('checkout.firstName')} value={activeDraft.firstName} onChange={onChange} />
-                        <ProfileInput field="lastName" label={t('checkout.lastName')} value={activeDraft.lastName} onChange={onChange} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <ProfileInput field="firstName" label={t('checkout.firstName')} value={activeDraft.firstName} onChange={onChange} inputClassName={fieldClass()} />
+                        <ProfileInput field="lastName" label={t('checkout.lastName')} value={activeDraft.lastName} onChange={onChange} inputClassName={fieldClass()} />
                         {activeDraft.customerType === 'individual' ? (
-                            <ProfileInput field="personalCode" label={t('checkout.personalCode')} value={activeDraft.personalCode} onChange={onChange} />
+                            <ProfileInput field="personalCode" label={t('checkout.personalCode')} value={activeDraft.personalCode} onChange={onChange} inputClassName={fieldClass()} />
                         ) : (
                             <>
-                                <ProfileInput field="companyName" label={t('checkout.companyName')} value={activeDraft.companyName} onChange={onChange} />
-                                <ProfileInput field="regNumber" label={t('checkout.regNumber')} value={activeDraft.regNumber} onChange={onChange} />
-                                <ProfileInput field="vatNumber" label={t('checkout.vatNumber')} value={activeDraft.vatNumber} onChange={onChange} />
-                                <ProfileInput field="legalAddress" label={t('checkout.legalAddress')} value={activeDraft.legalAddress} onChange={onChange} wide />
-                                <ProfileInput field="bankName" label={t('checkout.bankName')} value={activeDraft.bankName} onChange={onChange} />
-                                <ProfileInput field="iban" label={t('checkout.iban')} value={activeDraft.iban} onChange={onChange} />
+                                <ProfileInput field="companyName" label={t('checkout.companyName')} value={activeDraft.companyName} onChange={onChange} inputClassName={fieldClass()} />
+                                <ProfileInput field="regNumber" label={t('checkout.regNumber')} value={activeDraft.regNumber} onChange={onChange} inputClassName={fieldClass()} />
+                                <ProfileInput field="vatNumber" label={t('checkout.vatNumber')} value={activeDraft.vatNumber} onChange={onChange} inputClassName={fieldClass()} />
+                                <ProfileInput field="legalAddress" label={t('checkout.legalAddress')} value={activeDraft.legalAddress} onChange={onChange} inputClassName={fieldClass()} wide />
+                                <ProfileInput field="bankName" label={t('checkout.bankName')} value={activeDraft.bankName} onChange={onChange} inputClassName={fieldClass()} />
+                                <ProfileInput field="iban" label={t('checkout.iban')} value={activeDraft.iban} onChange={onChange} inputClassName={fieldClass()} />
                             </>
                         )}
-                        <ProfileInput field="address" label={t('checkout.address')} value={activeDraft.address} onChange={onChange} wide />
-                        <ProfileInput field="city" label={t('checkout.city')} value={activeDraft.city} onChange={onChange} />
-                        <ProfileInput field="postalCode" label={t('checkout.postalCode')} value={activeDraft.postalCode} onChange={onChange} />
+                        <ProfileInput field="address" label={t('checkout.address')} value={activeDraft.address} onChange={onChange} inputClassName={fieldClass()} wide />
+                        <ProfileInput field="city" label={t('checkout.city')} value={activeDraft.city} onChange={onChange} inputClassName={fieldClass()} />
+                        <ProfileInput field="postalCode" label={t('checkout.postalCode')} value={activeDraft.postalCode} onChange={onChange} inputClassName={fieldClass()} />
                     </div>
-                    <div className="account-profile__actions flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" type="button" onClick={onCancel}>
+                    <div className="account-profile__actions mt-5 flex flex-col-reverse gap-2 sm:flex-row">
+                        <Button className="w-full sm:w-auto" size="sm" variant="outline" type="button" onClick={onCancel}>
                             {t('common.cancel')}
                         </Button>
-                        <Button size="sm" type="submit">
+                        <Button className="w-full sm:w-auto" size="sm" type="submit">
                             {t('common.save')}
                         </Button>
                     </div>
@@ -294,13 +302,13 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     );
 };
 
-function ProfileInput({ field, label, value, onChange, wide = false }: {
-    field: string; label: string; value: string; onChange: (field: string, value: string) => void; wide?: boolean;
+function ProfileInput({ field, label, value, onChange, inputClassName, wide = false }: {
+    field: string; label: string; value: string; onChange: (field: string, value: string) => void; inputClassName: string; wide?: boolean;
 }): React.ReactElement {
     return (
         <div className={wide ? 'sm:col-span-2' : ''}>
-            <label htmlFor={`profile-${field}`} className="mb-1 block text-xs text-muted-foreground">{label}</label>
-            <Input id={`profile-${field}`} value={value} onChange={(event) => onChange(field, event.target.value)} />
+            <label htmlFor={`profile-${field}`} className="mb-1 block text-sm font-medium text-foreground">{label}</label>
+            <Input id={`profile-${field}`} className={inputClassName} placeholder={label} value={value} onChange={(event) => onChange(field, event.target.value)} />
         </div>
     );
 }

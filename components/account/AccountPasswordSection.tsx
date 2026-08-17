@@ -104,10 +104,10 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
     };
 
     return (
-        <section className="account-password rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 h-full">
-            <div className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+        <section className="account-password h-full min-w-0 rounded-lg border border-border bg-card shadow-sm">
+            <div className="flex flex-col items-stretch gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                         <Lock className="h-4 w-4" />
                     </div>
                     <div>
@@ -120,21 +120,21 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                     </div>
                 </div>
                 {!open && (
-                    <Button size="sm" variant="outline" onClick={handleOpen}>
+                    <Button className="w-full sm:w-auto" size="sm" variant="outline" onClick={handleOpen}>
                         {t('account.password.change')}
                     </Button>
                 )}
             </div>
 
             {open && (
-                <div className="border-t border-gray-100 dark:border-gray-800 px-5 pb-5 pt-4">
+                <div className="border-t border-gray-100 px-4 pb-4 pt-4 dark:border-gray-800 sm:px-5 sm:pb-5">
                     {success ? (
                         <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
                             <CheckCircle className="h-4 w-4" />
                             {t('account.password.successMsg')}
                         </div>
                     ) : (
-                        <div className="space-y-3 max-w-sm">
+                        <div className="max-w-sm space-y-3">
                             <div>
                                 <label className="block text-xs text-muted-foreground mb-1">
                                     {t('account.password.current')}
@@ -200,11 +200,11 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
                                 <p className="my-2 rounded-md bg-red-50 px-3 py-2 text-xs leading-4 text-red-600 dark:bg-red-950/30 dark:text-red-400">{error}</p>
                             )}
 
-                            <div className="flex gap-2 pt-1">
-                                <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
+                            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row">
+                                <Button className="w-full sm:w-auto" size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
                                     {t('common.cancel')}
                                 </Button>
-                                <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
+                                <Button className="w-full sm:w-auto" size="sm" onClick={() => void handleSave()} disabled={saving}>
                                     {t('common.save')}
                                 </Button>
                             </div>

@@ -47,7 +47,7 @@ export function AccountDataSection(): React.ReactElement {
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <section className="min-w-0 rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
       <h3 className="text-lg font-semibold text-foreground">
         {tl('account.data.title', 'Данные и конфиденциальность', 'Data & privacy', 'Dati un privātums')}
       </h3>
@@ -55,7 +55,7 @@ export function AccountDataSection(): React.ReactElement {
         <a
           href="/api/user/export"
           download
-          className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          className="inline-flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 sm:w-auto dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
         >
           {tl('account.data.exportPdf', 'Отчёт о данных аккаунта (PDF)', 'Account data report (PDF)', 'Konta datu pārskats (PDF)')}
         </a>
@@ -63,7 +63,7 @@ export function AccountDataSection(): React.ReactElement {
           ref={deleteTriggerRef}
           variant="outline"
           onClick={() => { setError(null); setAcknowledged(false); setConfirmOpen(true) }}
-          className="border-gray-200 bg-transparent text-muted-foreground shadow-none hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 dark:border-gray-700 dark:hover:border-red-900/70 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+          className="w-full border-gray-200 bg-transparent text-muted-foreground shadow-none hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 sm:w-auto dark:border-gray-700 dark:hover:border-red-900/70 dark:hover:bg-red-950/20 dark:hover:text-red-400"
         >
           {tl('account.data.delete', 'Удалить аккаунт', 'Delete account', 'Dzēst kontu')}
         </Button>

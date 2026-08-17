@@ -3,6 +3,22 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
+import type { CheckoutProfile } from '@/lib/auth-types'
+
+const checkoutProfileFields = ['personalCode', 'companyName', 'regNumber', 'vatNumber', 'legalAddress', 'bankName', 'iban', 'firstName', 'lastName', 'phone', 'address', 'city', 'postalCode'] as const
+
+function parseCheckoutProfile(value: unknown): CheckoutProfile | undefined {
+  if (value === undefined) return undefined
+  if (!value || typeof value !== 'object') return undefined
+  const source = value as Record<string, unknown>
+  const customerType = source.customerType === 'company' ? 'company' : 'individual'
+  const result = { customerType } as CheckoutProfile
+  for (const field of checkoutProfileFields) {
+    const fieldValue = source[field]
+    result[field] = typeof fieldValue === 'string' ? fieldValue.trim().slice(0, 300) : ''
+  }
+  return result
+}
 
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
@@ -16,6 +32,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     const body = await req.json()
+    const checkoutProfile = parseCheckoutProfile(body.checkoutProfile)
 
     const newEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined
     if (newEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
@@ -58,6 +75,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         name: body.name !== undefined ? (body.name ?? null) : undefined,
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
+        checkoutProfile,
       },
     })
 
@@ -81,6 +99,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         phone: updated.phone,
         avatarUrl: updated.avatarUrl,
         cardNumber: updated.cardNumber,
+        checkoutProfile: updated.checkoutProfile,
       },
     })
   } catch (e: unknown) {
@@ -92,7 +111,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 
 
 

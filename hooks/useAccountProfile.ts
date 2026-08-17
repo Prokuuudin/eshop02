@@ -1,16 +1,23 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { validateProfile } from '@/utils/accountValidation';
 import type { User } from '@/lib/auth';
+import type { CheckoutProfile } from '@/lib/auth-types';
 
 const isInternalEmail = (email: string) => email.endsWith('@client.local');
 
-type ProfileDraft = {
+export type ProfileDraft = {
     name: string;
     email: string;
     phone: string;
     password: string;
     companyName: string;
     avatarUrl: string;
+} & CheckoutProfile;
+
+const EMPTY_CHECKOUT_PROFILE: CheckoutProfile = {
+    customerType: 'individual', personalCode: '', companyName: '', regNumber: '', vatNumber: '',
+    legalAddress: '', bankName: '', iban: '', firstName: '', lastName: '', phone: '', address: '',
+    city: '', postalCode: '',
 };
 
 type AccountProfileResult = {
@@ -36,12 +43,17 @@ function useAccountProfileImpl(
     const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
 
     const startEditingProfile = () => {
+        const nameParts = (user?.name || '').trim().split(/\s+/, 2);
         setProfileDraft({
             name: user?.name || '',
             email: isInternalEmail(user?.email || '') ? '' : (user?.email || ''),
-            phone: user?.phone || '',
+            ...EMPTY_CHECKOUT_PROFILE,
+            firstName: nameParts[0] || '',
+            lastName: nameParts[1] || '',
+            ...user?.checkoutProfile,
+            phone: user?.checkoutProfile?.phone || user?.phone || '',
             password: '',
-            companyName: user?.companyId ? '' : (user?.companyName || ''),
+            companyName: user?.checkoutProfile?.companyName || (user?.companyId ? '' : (user?.companyName || '')),
             avatarUrl: user?.avatarUrl || '',
         });
         setProfileErrors({});
@@ -71,6 +83,22 @@ function useAccountProfileImpl(
                     email: normalizedEmail,
                     phone: profileDraft.phone,
                     avatarUrl: profileDraft.avatarUrl,
+                    checkoutProfile: {
+                        customerType: profileDraft.customerType,
+                        personalCode: profileDraft.personalCode,
+                        companyName: profileDraft.companyName,
+                        regNumber: profileDraft.regNumber,
+                        vatNumber: profileDraft.vatNumber,
+                        legalAddress: profileDraft.legalAddress,
+                        bankName: profileDraft.bankName,
+                        iban: profileDraft.iban,
+                        firstName: profileDraft.firstName,
+                        lastName: profileDraft.lastName,
+                        phone: profileDraft.phone,
+                        address: profileDraft.address,
+                        city: profileDraft.city,
+                        postalCode: profileDraft.postalCode,
+                    },
                 }),
             });
             const result = await response.json().catch(() => ({})) as { error?: string };
@@ -100,6 +128,14 @@ function useAccountProfileImpl(
             phone: profileDraft.phone,
             companyName: profileDraft.companyName,
             avatarUrl: profileDraft.avatarUrl || users[idx].avatarUrl || '',
+            checkoutProfile: {
+                customerType: profileDraft.customerType, personalCode: profileDraft.personalCode,
+                companyName: profileDraft.companyName, regNumber: profileDraft.regNumber,
+                vatNumber: profileDraft.vatNumber, legalAddress: profileDraft.legalAddress,
+                bankName: profileDraft.bankName, iban: profileDraft.iban, firstName: profileDraft.firstName,
+                lastName: profileDraft.lastName, phone: profileDraft.phone, address: profileDraft.address,
+                city: profileDraft.city, postalCode: profileDraft.postalCode,
+            },
         };
         users[idx] = updatedUser;
         writeUsers(users);

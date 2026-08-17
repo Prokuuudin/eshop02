@@ -12,6 +12,7 @@ import {
   type AdminPermission,
 } from '@/lib/admin-permissions'
 import { isPasswordChangeSoft } from '@/lib/auth-types'
+import type { CheckoutProfile } from '@/lib/auth-types'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
@@ -32,6 +33,7 @@ export type ServerUser = {
   phone?: string
   cardNumber?: string
   avatarUrl?: string
+  checkoutProfile?: CheckoutProfile
   bonusPoints: number
   mustChangePassword: boolean
   passwordChangeSoft: boolean
@@ -53,6 +55,7 @@ export function mapDbToServerUser(u: PrismaUser): ServerUser {
     phone: u.phone ?? undefined,
     cardNumber: u.cardNumber ?? undefined,
     avatarUrl: u.avatarUrl ?? undefined,
+    checkoutProfile: (u.checkoutProfile as CheckoutProfile | null) ?? undefined,
     bonusPoints: u.bonusPoints,
     mustChangePassword: u.mustChangePassword,
     passwordChangeSoft: isPasswordChangeSoft(u),

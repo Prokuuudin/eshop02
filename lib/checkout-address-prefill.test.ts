@@ -6,8 +6,40 @@ import {
   mergeEmptyAddressFields,
   buildSaveBackAddress,
   buildPrefillFallback,
+  buildCheckoutProfileFallback,
+  buildLastOrderFallback,
+  mergeEmptyCheckoutFields,
 } from './checkout-address-prefill'
 import type { SavedAddress } from './saved-addresses-store'
+
+describe('full checkout prefill', () => {
+  it('prefers already entered values and then profile values', () => {
+    const current = { firstName: 'Query name', city: '', iban: '' }
+    const result = mergeEmptyCheckoutFields(current, { firstName: 'Profile name', city: 'Riga', iban: 'LV00' })
+    expect(result).toEqual({ firstName: 'Query name', city: 'Riga', iban: 'LV00' })
+  })
+
+  it('maps the saved checkout profile and account email', () => {
+    const fallback = buildCheckoutProfileFallback({
+      email: 'anna@example.com',
+      checkoutProfile: {
+        customerType: 'company', personalCode: '', companyName: 'SIA Test', regNumber: '123',
+        vatNumber: 'LV123', legalAddress: 'Legal 1', bankName: 'Bank', iban: 'LV00',
+        firstName: 'Anna', lastName: 'Test', phone: '+3712', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001',
+      },
+    })
+    expect(fallback).toMatchObject({ email: 'anna@example.com', customerType: 'company', companyName: 'SIA Test', iban: 'LV00' })
+  })
+
+  it('extracts customer and legal details from the last order', () => {
+    const fallback = buildLastOrderFallback({
+      firstName: 'Last', lastName: 'Buyer', email: 'last@example.com', phone: '+3712',
+      address: 'Order street', city: 'Riga', postalCode: 'LV-1001',
+      legalDetails: { customerType: 'company', companyName: 'SIA Last', regNumber: '456' },
+    })
+    expect(fallback).toMatchObject({ firstName: 'Last', companyName: 'SIA Last', regNumber: '456' })
+  })
+})
 
 describe('checkoutDefaultAddressId', () => {
   it('builds a fixed id from the user id', () => {

@@ -6,16 +6,10 @@ import { Input } from '@/components/ui/input';
 import PhoneInput from '@/components/ui/phone-input';
 import type { User } from '@/lib/auth';
 import { AvatarCropDialog } from '@/components/account/AvatarCropDialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { ProfileDraft } from '@/hooks/useAccountProfile';
 
 const isInternalEmail = (email: string) => email.endsWith('@client.local');
-
-type ProfileDraft = {
-    name: string;
-    email: string;
-    phone: string;
-    companyName: string;
-    avatarUrl: string;
-};
 
 interface AccountProfileCardProps {
     user: User;
@@ -74,6 +68,19 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         phone: user.phone ?? '',
         companyName: user.companyName ?? '',
         avatarUrl: user.avatarUrl ?? '',
+        password: '',
+        customerType: user.checkoutProfile?.customerType ?? 'individual',
+        personalCode: user.checkoutProfile?.personalCode ?? '',
+        regNumber: user.checkoutProfile?.regNumber ?? '',
+        vatNumber: user.checkoutProfile?.vatNumber ?? '',
+        legalAddress: user.checkoutProfile?.legalAddress ?? '',
+        bankName: user.checkoutProfile?.bankName ?? '',
+        iban: user.checkoutProfile?.iban ?? '',
+        firstName: user.checkoutProfile?.firstName ?? '',
+        lastName: user.checkoutProfile?.lastName ?? '',
+        address: user.checkoutProfile?.address ?? '',
+        city: user.checkoutProfile?.city ?? '',
+        postalCode: user.checkoutProfile?.postalCode ?? '',
     };
     const avatarUrl = isEditing ? activeDraft.avatarUrl : user.avatarUrl;
 
@@ -228,6 +235,39 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             />
                         </div>
                     </div>
+                    <div className="my-5 border-t border-border" />
+                    <h3 className="mb-3 text-sm font-semibold text-foreground">{t('checkout.delivery.title')}</h3>
+                    <RadioGroup
+                        value={activeDraft.customerType}
+                        onValueChange={(value) => onChange('customerType', value)}
+                        className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
+                    >
+                        {(['individual', 'company'] as const).map((type) => (
+                            <label key={type} htmlFor={`profile-customer-type-${type}`} className="flex cursor-pointer items-center rounded border border-border p-3">
+                                <RadioGroupItem id={`profile-customer-type-${type}`} value={type} className="mr-3" />
+                                <span className="text-sm font-medium">{t(`checkout.customerType.${type}`)}</span>
+                            </label>
+                        ))}
+                    </RadioGroup>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <ProfileInput field="firstName" label={t('checkout.firstName')} value={activeDraft.firstName} onChange={onChange} />
+                        <ProfileInput field="lastName" label={t('checkout.lastName')} value={activeDraft.lastName} onChange={onChange} />
+                        {activeDraft.customerType === 'individual' ? (
+                            <ProfileInput field="personalCode" label={t('checkout.personalCode')} value={activeDraft.personalCode} onChange={onChange} />
+                        ) : (
+                            <>
+                                <ProfileInput field="companyName" label={t('checkout.companyName')} value={activeDraft.companyName} onChange={onChange} />
+                                <ProfileInput field="regNumber" label={t('checkout.regNumber')} value={activeDraft.regNumber} onChange={onChange} />
+                                <ProfileInput field="vatNumber" label={t('checkout.vatNumber')} value={activeDraft.vatNumber} onChange={onChange} />
+                                <ProfileInput field="legalAddress" label={t('checkout.legalAddress')} value={activeDraft.legalAddress} onChange={onChange} wide />
+                                <ProfileInput field="bankName" label={t('checkout.bankName')} value={activeDraft.bankName} onChange={onChange} />
+                                <ProfileInput field="iban" label={t('checkout.iban')} value={activeDraft.iban} onChange={onChange} />
+                            </>
+                        )}
+                        <ProfileInput field="address" label={t('checkout.address')} value={activeDraft.address} onChange={onChange} wide />
+                        <ProfileInput field="city" label={t('checkout.city')} value={activeDraft.city} onChange={onChange} />
+                        <ProfileInput field="postalCode" label={t('checkout.postalCode')} value={activeDraft.postalCode} onChange={onChange} />
+                    </div>
                     <div className="account-profile__actions flex gap-2 mt-4">
                         <Button size="sm" variant="outline" type="button" onClick={onCancel}>
                             {t('common.cancel')}
@@ -253,5 +293,16 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         </div>
     );
 };
+
+function ProfileInput({ field, label, value, onChange, wide = false }: {
+    field: string; label: string; value: string; onChange: (field: string, value: string) => void; wide?: boolean;
+}): React.ReactElement {
+    return (
+        <div className={wide ? 'sm:col-span-2' : ''}>
+            <label htmlFor={`profile-${field}`} className="mb-1 block text-xs text-muted-foreground">{label}</label>
+            <Input id={`profile-${field}`} value={value} onChange={(event) => onChange(field, event.target.value)} />
+        </div>
+    );
+}
 
 export default AccountProfileCard;

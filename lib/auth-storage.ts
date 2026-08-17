@@ -26,6 +26,7 @@ export const normalizeUser = (user: Partial<User>): User => ({
   cardNumber: user.cardNumber,
   passwordChangeSoft: user.passwordChangeSoft ?? false,
   avatarUrl: user.avatarUrl ?? '',
+  checkoutProfile: user.checkoutProfile,
   bonusPoints: user.bonusPoints ?? 350,
   mustChangePassword: user.mustChangePassword ?? false,
   isNewUser: user.isNewUser ?? false,

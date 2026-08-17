@@ -4,6 +4,23 @@ export type PlatformRole = 'customer' | 'admin'
 
 export type AdminAccessLevel = 'none' | 'manager' | 'admin'
 
+export type CheckoutProfile = {
+  customerType: 'individual' | 'company'
+  personalCode: string
+  companyName: string
+  regNumber: string
+  vatNumber: string
+  legalAddress: string
+  bankName: string
+  iban: string
+  firstName: string
+  lastName: string
+  phone: string
+  address: string
+  city: string
+  postalCode: string
+}
+
 export type User = {
   id: string
   email: string
@@ -22,6 +39,7 @@ export type User = {
   cardNumber?: string // Клиентская карта для входа по номеру карты
   passwordChangeSoft?: boolean // Сервер уже посчитал isPasswordChangeSoft — сырой pkLast3 клиенту не передаётся
   avatarUrl?: string // User profile photo (base64 or URL)
+  checkoutProfile?: CheckoutProfile
   bonusPoints?: number // Accumulated bonus balance
   mustChangePassword?: boolean // Требует обязательной смены пароля при первом входе
   isNewUser?: boolean // Новый пользователь — показать приветствие с предложением заполнить профиль

@@ -1,4 +1,5 @@
 import type { SavedAddress } from './saved-addresses-store'
+import type { CheckoutProfile } from './auth-types'
 
 export type CheckoutAddressFields = {
   firstName: string
@@ -47,6 +48,46 @@ export function mergeEmptyAddressFields(
     }
   }
   return result
+}
+
+export function mergeEmptyCheckoutFields<T extends Record<string, string>>(
+  current: T,
+  fallback: Partial<T>
+): T {
+  const result = { ...current }
+  for (const key of Object.keys(current) as Array<keyof T>) {
+    const value = fallback[key]
+    if (!result[key] && value) result[key] = value
+  }
+  return result
+}
+
+export function buildCheckoutProfileFallback(
+  user: { email: string; name?: string; phone?: string; checkoutProfile?: CheckoutProfile }
+): Partial<CheckoutProfile & { email: string }> {
+  const email = isInternalEmail(user.email) ? '' : user.email
+  return {
+    ...splitName(user.name),
+    phone: user.phone ?? '',
+    email,
+    ...user.checkoutProfile,
+  }
+}
+
+export function buildLastOrderFallback(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object') return {}
+  const order = value as Record<string, unknown>
+  const text = (field: string): string => typeof order[field] === 'string' ? order[field] : ''
+  const base: Record<string, string> = {
+    firstName: text('firstName'), lastName: text('lastName'), email: text('email'),
+    phone: text('phone'), address: text('address'), city: text('city'), postalCode: text('postalCode'),
+  }
+  if (!order.legalDetails || typeof order.legalDetails !== 'object') return base
+  const legal = order.legalDetails as Record<string, unknown>
+  for (const field of ['customerType', 'personalCode', 'companyName', 'regNumber', 'vatNumber', 'legalAddress', 'bankName', 'iban']) {
+    if (typeof legal[field] === 'string') base[field] = legal[field]
+  }
+  return base
 }
 
 // Card-registered customers get a synthetic User.email like `card.1234@client.local`

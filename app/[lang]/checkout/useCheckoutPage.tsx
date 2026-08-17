@@ -27,9 +27,11 @@ import { useTurnstile } from '@/lib/use-turnstile';
 import { useSavedAddresses, hydrateSavedAddressesFromServer } from '@/lib/saved-addresses-store';
 import {
     pickPrefillAddress,
-    mergeEmptyAddressFields,
     buildSaveBackAddress,
     buildPrefillFallback,
+    buildCheckoutProfileFallback,
+    buildLastOrderFallback,
+    mergeEmptyCheckoutFields,
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 
@@ -81,12 +83,21 @@ function useCheckoutPageState() {
     React.useEffect(() => {
         if (!currentUser?.email || !currentUser?.id) return;
         let cancelled = false;
-        void hydrateSavedAddressesFromServer(currentUser.email, replaceForEmail).then(() => {
+        void Promise.all([
+            hydrateSavedAddressesFromServer(currentUser.email, replaceForEmail),
+            fetch('/api/orders/my').then(async (response) => response.ok ? (await response.json() as { orders?: Array<Record<string, unknown>> }).orders?.[0] : undefined).catch(() => undefined),
+        ]).then(([, lastOrder]) => {
             if (cancelled) return;
             const saved = pickPrefillAddress(getByEmail(currentUser.email), currentUser.id);
             const hasExplicitAddress = !!searchParams.get('address');
-            const fallback = buildPrefillFallback(currentUser, saved, hasExplicitAddress);
-            setFormData((prev) => ({ ...prev, ...mergeEmptyAddressFields(prev, fallback) }));
+            const savedFallback = buildPrefillFallback(currentUser, saved, hasExplicitAddress);
+            const profileFallback = buildCheckoutProfileFallback(currentUser);
+            setFormData((previous) => {
+                let next = mergeEmptyCheckoutFields<CheckoutFormData>(previous, profileFallback);
+                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, savedFallback);
+                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, buildLastOrderFallback(lastOrder));
+                return next;
+            });
         });
         return () => {
             cancelled = true;

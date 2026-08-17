@@ -74,6 +74,13 @@ describe('PATCH /api/user/profile', () => {
     expect(updateArgs.data.phone).toBe('+37120000000')
   })
 
+  it('stores only normalized checkout profile fields', async () => {
+    await PATCH(makeRequest({ checkoutProfile: { customerType: 'company', companyName: '  SIA Test  ', iban: ' LV00 ', ignored: 'no' } }))
+    const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
+    expect(data.checkoutProfile).toMatchObject({ customerType: 'company', companyName: 'SIA Test', iban: 'LV00' })
+    expect(data.checkoutProfile).not.toHaveProperty('ignored')
+  })
+
   it('updates email and related user records', async () => {
     userUpdateMock.mockResolvedValue({
       id: 'u1', email: 'new@example.com', name: null, phone: null, avatarUrl: null, cardNumber: null,

@@ -58,6 +58,14 @@ function useCheckoutPageState() {
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
     const [formData, setFormData] = useState<CheckoutFormData>(() => ({
+        customerType: 'individual',
+        personalCode: '',
+        companyName: '',
+        regNumber: '',
+        vatNumber: '',
+        legalAddress: '',
+        bankName: '',
+        iban: '',
         firstName: searchParams.get('firstName') ?? '',
         lastName: searchParams.get('lastName') ?? '',
         email: searchParams.get('email') ?? '',
@@ -208,6 +216,16 @@ function useCheckoutPageState() {
 
         const newErrors: Record<string, string> = {};
 
+        if (formData.customerType === 'individual') {
+            if (!formData.personalCode.trim()) newErrors.personalCode = t('checkout.errors.personalCode');
+            if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
+        } else {
+            if (!formData.companyName.trim()) newErrors.companyName = t('checkout.errors.companyName');
+            if (!formData.regNumber.trim()) newErrors.regNumber = t('checkout.errors.regNumber');
+            if (!formData.legalAddress.trim()) newErrors.legalAddress = t('checkout.errors.legalAddress');
+            if (!formData.bankName.trim()) newErrors.bankName = t('checkout.errors.bankName');
+            if (!formData.iban.trim()) newErrors.iban = t('checkout.errors.iban');
+        }
         if (!formData.firstName.trim()) newErrors.firstName = t('checkout.errors.firstName');
         if (!formData.lastName.trim()) newErrors.lastName = t('checkout.errors.lastName');
         if (!formData.email.trim()) {
@@ -215,7 +233,6 @@ function useCheckoutPageState() {
         } else if (!validateEmail(formData.email)) {
             newErrors.email = t('checkout.errors.emailInvalid');
         }
-        if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
         if (!formData.address.trim()) newErrors.address = t('checkout.errors.address');
         if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
         if (deliveryMethod === 'pickup' && !pickupStoreId) {
@@ -269,9 +286,22 @@ function useCheckoutPageState() {
         const bonusDiscount = pointsToEuros(bonusSpentPoints);
         const finalGrandTotal = grandTotal - bonusDiscount;
 
+        const legalDetails = formData.customerType === 'company'
+            ? {
+                  customerType: 'company' as const,
+                  companyName: formData.companyName.trim(),
+                  regNumber: formData.regNumber.trim(),
+                  vatNumber: formData.vatNumber.trim() || undefined,
+                  legalAddress: formData.legalAddress.trim(),
+                  bankName: formData.bankName.trim(),
+                  iban: formData.iban.trim(),
+              }
+            : { customerType: 'individual' as const, personalCode: formData.personalCode.trim() };
+
         // Create order — the server assigns the canonical id (client counters collide across browsers)
         const orderData = {
             createdAt: new Date(),
+            legalDetails,
             items: checkoutItems.map((item) => ({
                 ...item,
                 price: calculatePrice(item, item.quantity),

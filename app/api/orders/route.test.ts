@@ -45,6 +45,7 @@ const VALID_ORDER = {
   address: 'Riga st 1',
   city: 'Riga',
   postalCode: '1001',
+  legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
   deliveryMethod: 'courier',
   paymentMethod: 'card',
   items: [
@@ -59,7 +60,7 @@ const VALID_ORDER = {
   language: 'ru',
 }
 
-function makeRequest(order = VALID_ORDER): NextRequest {
+function makeRequest(order: Record<string, unknown> = VALID_ORDER): NextRequest {
   return new NextRequest('http://localhost/api/orders', {
     method: 'POST',
     body: JSON.stringify({ order }),
@@ -190,6 +191,77 @@ describe('POST /api/orders — admin notification', () => {
   it('rejects oversized contact fields and item lists before DB work', async () => {
     const res = await POST(makeRequest({ ...VALID_ORDER, firstName: 'x'.repeat(101) }))
     expect(res.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('rejects an individual order without a personal code', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { customerType: 'individual', personalCode: '' } }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('missing_legal_details')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('defaults to individual and requires a personal code when legalDetails is omitted', async () => {
+    const { legalDetails: omitted, ...orderWithoutLegalDetails } = VALID_ORDER
+    void omitted
+    const res = await POST(makeRequest(orderWithoutLegalDetails))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('missing_legal_details')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  const COMPANY_LEGAL_DETAILS = {
+    customerType: 'company',
+    companyName: 'SIA Test',
+    regNumber: '40001234567',
+    legalAddress: 'Rencēnu 10A, Rīga, LV-1073',
+    bankName: 'Swedbank',
+    iban: 'LV80BANK0000435195001',
+  }
+
+  it('accepts a company order with required company fields but no VAT number', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: COMPANY_LEGAL_DETAILS }))
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
+  it('rejects a company order missing companyName or regNumber', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      legalDetails: { ...COMPANY_LEGAL_DETAILS, companyName: '' },
+    }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('missing_legal_details')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('rejects a company order missing legalAddress, bankName or iban', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      legalDetails: { ...COMPANY_LEGAL_DETAILS, iban: '' },
+    }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('missing_legal_details')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('accepts a company order without a phone number', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: COMPANY_LEGAL_DETAILS, phone: '' }))
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
+  it('still requires a phone number for individual orders', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, phone: '' }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('missing_contact_fields')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unrecognized customerType', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { customerType: 'bogus' } }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('invalid_legal_details')
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 

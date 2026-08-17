@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import type { NextRequest } from 'next/server'
+import { Prisma } from '@/generated/prisma/client'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
 import { toNum } from '@/lib/decimal'
@@ -21,10 +22,23 @@ type ServerOrderItem = {
   quantity: number
 }
 
+export type ServerOrderLegalDetails =
+  | { customerType: 'individual'; personalCode: string }
+  | {
+      customerType: 'company'
+      companyName: string
+      regNumber: string
+      vatNumber?: string
+      legalAddress: string
+      bankName: string
+      iban: string
+    }
+
 export type ServerOrder = {
   id: string
   createdAt: string
   items: ServerOrderItem[]
+  legalDetails?: ServerOrderLegalDetails
   subtotal: number
   tax: number
   delivery: number
@@ -121,6 +135,7 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     id: row.id,
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     items: row.items as ServerOrderItem[],
+    legalDetails: (row as Record<string, unknown>).legalDetails as ServerOrderLegalDetails ?? undefined,
     subtotal: toNum(row.subtotal),
     tax: toNum(row.tax),
     delivery: toNum(row.delivery),
@@ -154,6 +169,7 @@ function buildOrderData(order: Omit<ServerOrder, 'id'>) {
   return {
     createdAt: new Date(order.createdAt),
     items: order.items,
+    legalDetails: order.legalDetails ?? Prisma.DbNull,
     subtotal: order.subtotal,
     tax: order.tax,
     delivery: order.delivery,

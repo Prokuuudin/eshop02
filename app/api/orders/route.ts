@@ -163,10 +163,58 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const items = Array.isArray(order.items) ? order.items : []
     const email = typeof order.email === 'string' ? order.email.trim().toLowerCase() : ''
-    const requiredContactFields = [order.firstName, order.lastName, order.phone, order.address, order.city]
+
+    // Untrusted client JSON — validate as a loose bag of strings rather than the
+    // discriminated ServerOrderLegalDetails shape the rest of the codebase trusts.
+    const rawLegalDetails = order.legalDetails as Partial<{
+      customerType: string
+      personalCode: string
+      companyName: string
+      regNumber: string
+      vatNumber: string
+      legalAddress: string
+      bankName: string
+      iban: string
+    }> | undefined
+    const isCompanyOrder = rawLegalDetails?.customerType === 'company'
+
+    // Phone is only required for private customers — the real Hairshop.lv company
+    // form doesn't mark it mandatory (companies are reached via the contact email).
+    const requiredContactFields = isCompanyOrder
+      ? [order.firstName, order.lastName, order.address, order.city]
+      : [order.firstName, order.lastName, order.phone, order.address, order.city]
     if (requiredContactFields.some((value) => typeof value !== 'string' || !value.trim())) {
       return NextResponse.json({ error: 'missing_contact_fields' }, { status: 400 })
     }
+
+    if (isCompanyOrder) {
+      const companyName = rawLegalDetails?.companyName?.trim() ?? ''
+      const regNumber = rawLegalDetails?.regNumber?.trim() ?? ''
+      const vatNumber = rawLegalDetails?.vatNumber ?? ''
+      const legalAddress = rawLegalDetails?.legalAddress?.trim() ?? ''
+      const bankName = rawLegalDetails?.bankName?.trim() ?? ''
+      const iban = rawLegalDetails?.iban?.trim() ?? ''
+      if (!companyName || !regNumber || !legalAddress || !bankName || !iban) {
+        return NextResponse.json({ error: 'missing_legal_details' }, { status: 400 })
+      }
+      if (
+        companyName.length > 200 || regNumber.length > 50 || vatNumber.length > 50
+        || legalAddress.length > 300 || bankName.length > 200 || iban.length > 50
+      ) {
+        return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
+      }
+    } else if (!rawLegalDetails || rawLegalDetails.customerType === 'individual') {
+      const personalCode = rawLegalDetails?.personalCode?.trim() ?? ''
+      if (!personalCode) {
+        return NextResponse.json({ error: 'missing_legal_details' }, { status: 400 })
+      }
+      if (personalCode.length > 32) {
+        return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
+      }
+    } else {
+      return NextResponse.json({ error: 'invalid_legal_details' }, { status: 400 })
+    }
+
     const fieldTooLong =
       (order.firstName?.length ?? 0) > 100
       || (order.lastName?.length ?? 0) > 100

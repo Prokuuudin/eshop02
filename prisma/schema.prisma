@@ -376,6 +376,7 @@ model Order {
   id               String   @id
   createdAt        DateTime
   items            Json
+  legalDetails     Json?
   subtotal         Decimal  @db.Decimal(12, 2)
   tax              Decimal  @db.Decimal(12, 2)
   delivery         Decimal  @db.Decimal(12, 2)

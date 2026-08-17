@@ -319,7 +319,7 @@ return (
                                     <span className="shrink-0 text-primary">
                                         +{order.bonusEarned ?? 0}
                                         <span className="ml-1 font-normal text-primary/70">
-                                            (= {formatCurrency(pointsToEuros(order.bonusEarned ?? 0))})
+                                            ({formatCurrency(pointsToEuros(order.bonusEarned ?? 0))})
                                         </span>
                                     </span>
                                 </div>

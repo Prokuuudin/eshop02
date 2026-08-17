@@ -51,7 +51,7 @@ export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: P
                 <span className="font-semibold text-amber-800 dark:text-amber-200">
                     {user.bonusPoints ?? 0} {t('cart.bonus.unit')}
                     <span className="ml-1 font-normal text-amber-800/70 dark:text-amber-200/70">
-                        (= {formatEuro(pointsToEuros(user.bonusPoints ?? 0), locale)})
+                        ({formatEuro(pointsToEuros(user.bonusPoints ?? 0), locale)})
                     </span>
                 </span>
             </div>
@@ -61,7 +61,7 @@ export default function ProductBonusInfo({ product, quantity = 1, unitPrice }: P
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                         +{points} {t('cart.bonus.unit')}
                         <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                            (= −{formatEuro(savedEuros, locale)})
+                            (−{formatEuro(savedEuros, locale)})
                         </span>
                     </span>
                 </div>

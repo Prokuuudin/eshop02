@@ -87,7 +87,7 @@ export default function AdminBonusPage(): React.ReactElement {
     const result = await response.json().catch(() => null) as { user?: { bonusPoints: number } } | null
     if (response.ok && result?.user) {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, bonusPoints: result.user!.bonusPoints } : u))
-      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.user!.bonusPoints} баллов (= ${formatEuro(pointsToEuros(result.user!.bonusPoints), 'ru-RU')})` }))
+      setAdjustMsg((prev) => ({ ...prev, [userId]: `Баланс: ${result.user!.bonusPoints} баллов (${formatEuro(pointsToEuros(result.user!.bonusPoints), 'ru-RU')})` }))
       setAdjustDelta((prev) => ({ ...prev, [userId]: '' }))
       setTimeout(() => setAdjustMsg((prev) => ({ ...prev, [userId]: '' })), 2500)
     }

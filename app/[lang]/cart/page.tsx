@@ -349,7 +349,7 @@ export default function CartPage(): React.ReactElement {
                                     <span className="font-semibold">
                                         {userBonusBalance} {t('cart.bonus.unit')}
                                         <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                            (= {formatCurrency(pointsToEuros(userBonusBalance))})
+                                            ({formatCurrency(pointsToEuros(userBonusBalance))})
                                         </span>
                                     </span>
                                 </div>
@@ -359,7 +359,7 @@ export default function CartPage(): React.ReactElement {
                                         +{bonusToEarn} {t('cart.bonus.unit')}
                                         {bonusToEarn > 0 && (
                                             <span className="ml-1 font-normal text-amber-700/80 dark:text-amber-400/80">
-                                                (= −{formatEuro(pointsToEuros(bonusToEarn), getLocaleFromLanguage(language))})
+                                                (−{formatEuro(pointsToEuros(bonusToEarn), getLocaleFromLanguage(language))})
                                             </span>
                                         )}
                                     </span>

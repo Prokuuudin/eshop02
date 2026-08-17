@@ -36,7 +36,7 @@ export default function AccountBonusCard({
                     {t('cart.bonus.unit', 'баллов')}
                 </span>
                 <span className="ml-1.5 text-base font-normal text-amber-600/80 dark:text-amber-400/80">
-                    (= {formatEuro(pointsToEuros(bonusPoints), locale)})
+                    ({formatEuro(pointsToEuros(bonusPoints), locale)})
                 </span>
             </p>
 
@@ -48,7 +48,7 @@ export default function AccountBonusCard({
                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                         +{totalEarned}
                         <span className="ml-1 font-normal text-emerald-700/70 dark:text-emerald-400/70">
-                            (= {formatEuro(pointsToEuros(totalEarned), locale)})
+                            ({formatEuro(pointsToEuros(totalEarned), locale)})
                         </span>
                     </p>
                 </div>
@@ -59,7 +59,7 @@ export default function AccountBonusCard({
                     <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
                         −{totalSpent}
                         <span className="ml-1 font-normal text-amber-800/70 dark:text-amber-300/70">
-                            (= {formatEuro(pointsToEuros(totalSpent), locale)})
+                            ({formatEuro(pointsToEuros(totalSpent), locale)})
                         </span>
                     </p>
                 </div>

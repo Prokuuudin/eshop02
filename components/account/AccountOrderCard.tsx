@@ -67,14 +67,14 @@ export default function AccountOrderCard({
           {(order.bonusSpent ?? 0) > 0 && (
             <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
               {bonusSpentLabel}: -{order.bonusSpent ?? 0}
-              {' '}(= −{formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
+              {' '}(−{formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
             </p>
           )}
           {(order.bonusEarned ?? 0) > 0 && (
             <p className="mt-1 inline-flex items-center justify-end gap-1 text-xs font-medium text-primary">
               <Coins className="h-3.5 w-3.5" />
               {bonusEarnedLabel}: +{order.bonusEarned ?? 0}
-              {' '}(= {formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
+              {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
             </p>
           )}
         </div>

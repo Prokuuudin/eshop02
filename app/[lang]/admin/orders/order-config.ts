@@ -57,6 +57,7 @@ export const PAYMENT_LABELS: Record<string, string> = {
   unpaid: 'Не оплачен',
   pending: 'Ожидает оплаты',
   paid: 'Оплачен',
+  refunded: 'Возвращён',
   failed: 'Ошибка оплаты',
 }
 
@@ -64,6 +65,7 @@ export const PAYMENT_COLORS: Record<string, string> = {
   unpaid: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
   paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
+  refunded: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
   failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
 

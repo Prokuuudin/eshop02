@@ -89,7 +89,13 @@ function useAdminOrdersPageState() {
         }, {} as Record<OrderStatus, number>);
     }, [orders, getOrderStatus]);
 
-    const totalRevenue = useMemo(() => orders.reduce((sum, o) => sum + o.total, 0), [orders]);
+    const totalRevenue = useMemo(
+        () => orders.reduce((sum, order) => {
+            const status = getOrderStatus(order.id);
+            return status === 'shipped' || status === 'delivered' ? sum + order.total : sum;
+        }, 0),
+        [orders, getOrderStatus]
+    );
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase();

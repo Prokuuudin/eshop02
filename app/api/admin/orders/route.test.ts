@@ -28,6 +28,8 @@ vi.mock('@/lib/orders-data-store', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     order: { findMany: vi.fn(), count: vi.fn() },
+    orderStatusRecord: { findMany: vi.fn() },
+    orderNote: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     user: { findFirst: vi.fn() },
     $transaction: txMock,
@@ -37,7 +39,7 @@ vi.mock('@/lib/prisma', () => ({
 import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-store'
-import { POST } from './route'
+import { GET, POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -73,6 +75,29 @@ beforeEach(() => {
     orderStatusRecord: { create: vi.fn() },
     orderNote: { create: vi.fn() },
   }))
+})
+
+describe('GET /api/admin/orders', () => {
+  it('returns status and note metadata with the same order page', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([{
+      id: 'order-1', items: [], createdAt: new Date('2026-08-01T10:00:00Z'),
+    }] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(1)
+    vi.mocked(prisma.orderStatusRecord.findMany).mockResolvedValue([
+      { orderId: 'order-1', status: 'delivered' },
+    ] as never)
+    vi.mocked(prisma.orderNote.findMany).mockResolvedValue([
+      { orderId: 'order-1', note: 'Done' },
+    ] as never)
+
+    const response = await GET(new NextRequest('http://localhost/api/admin/orders?take=50'))
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.statuses).toEqual({ 'order-1': 'delivered' })
+    expect(body.notes).toEqual({ 'order-1': 'Done' })
+  })
 })
 
 describe('POST /api/admin/orders', () => {

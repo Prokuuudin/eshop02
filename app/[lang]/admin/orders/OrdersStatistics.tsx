@@ -21,7 +21,7 @@ export default function OrdersStatistics({ state }: { state: OrdersState }): Rea
         <>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <div className="col-span-2 md:col-span-2 rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs text-muted-foreground">Выручка</p>
+                    <p className="text-xs text-muted-foreground">Выручка выполненных заказов</p>
                     <p className="text-2xl font-bold mt-1 text-foreground">
                         {formatEuro(totalRevenue, locale)}
                     </p>

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { CartItem } from './cart-store'
 
 export type DeliveryMethod = 'courier' | 'pickup' | 'post'
-export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
+export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed'
 
 export type OrderLegalDetails =
   | { customerType: 'individual'; personalCode: string }

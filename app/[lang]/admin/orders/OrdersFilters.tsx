@@ -76,6 +76,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectItem value="unpaid">Не оплачен</SelectItem>
                                 <SelectItem value="pending">Ожидает оплаты</SelectItem>
                                 <SelectItem value="paid">Оплачен</SelectItem>
+                                <SelectItem value="refunded">Возвращён</SelectItem>
                                 <SelectItem value="failed">Ошибка оплаты</SelectItem>
                             </SelectContent>
                         </Select>

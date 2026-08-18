@@ -52,6 +52,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       }),
       prisma.order.count({ where }),
     ])
+    const orderIds = orders.map((order) => order.id)
+    const [statusRows, noteRows] = orderIds.length > 0
+      ? await Promise.all([
+          prisma.orderStatusRecord.findMany({ where: { orderId: { in: orderIds } } }),
+          prisma.orderNote.findMany({ where: { orderId: { in: orderIds } } }),
+        ])
+      : [[], []]
+    const statuses = Object.fromEntries(statusRows.map((row) => [row.orderId, row.status]))
+    const notes = Object.fromEntries(noteRows.map((row) => [row.orderId, row.note]))
 
     const damagedProductIds = productIdsForDamagedOrderItems(orders.map((row) => row.items))
     const titleRows = damagedProductIds.length > 0
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     }))
 
-    return NextResponse.json({ orders: mapped, total })
+    return NextResponse.json({ orders: mapped, total, statuses, notes })
   } catch (e) {
     logApiError("[admin/orders GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
@@ -202,4 +211,3 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-

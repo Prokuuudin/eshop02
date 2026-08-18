@@ -7,8 +7,16 @@ import { reportAdminError } from '@/lib/admin-ui-errors'
 
 const PAGE_SIZE = 200
 
-async function loadAllAdminOrders(signal: AbortSignal): Promise<Order[]> {
+type AdminOrdersPayload = {
+  orders: Order[]
+  statuses: Record<string, string>
+  notes: Record<string, string>
+}
+
+async function loadAllAdminOrders(signal: AbortSignal): Promise<AdminOrdersPayload> {
   const orders: Order[] = []
+  const statuses: Record<string, string> = {}
+  const notes: Record<string, string> = {}
   let skip = 0
 
   for (;;) {
@@ -17,11 +25,18 @@ async function loadAllAdminOrders(signal: AbortSignal): Promise<Order[]> {
       signal,
     })
     if (!response.ok) throw new Error(`orders_sync_failed:${response.status}`)
-    const payload = (await response.json()) as { orders?: Order[]; total?: number }
+    const payload = (await response.json()) as {
+      orders?: Order[]
+      total?: number
+      statuses?: Record<string, string>
+      notes?: Record<string, string>
+    }
     const page = Array.isArray(payload.orders) ? payload.orders : []
     orders.push(...page)
+    Object.assign(statuses, payload.statuses ?? {})
+    Object.assign(notes, payload.notes ?? {})
     const total = typeof payload.total === 'number' ? payload.total : orders.length
-    if (orders.length >= total || page.length < PAGE_SIZE) return orders
+    if (orders.length >= total || page.length < PAGE_SIZE) return { orders, statuses, notes }
     skip += page.length
   }
 }
@@ -37,11 +52,13 @@ function startOrdersSync(): Promise<void> {
 
   useOrders.getState().setHydrationStatus('loading')
   inFlight = loadAllAdminOrders(new AbortController().signal)
-    .then(async (orders) => {
+    .then(({ orders, statuses, notes }) => {
       useOrders.getState().replaceOrders(orders)
       useOrders.getState().setHydrationStatus('loaded')
-      useAdminStore.getState().clearOrderMeta()
-      await useAdminStore.getState().loadOrderMeta(orders.map((order) => order.id))
+      useAdminStore.setState({
+        orderStatuses: statuses as ReturnType<typeof useAdminStore.getState>['orderStatuses'],
+        orderNotes: notes,
+      })
     })
     .catch(() => {
       useOrders.getState().clearOrders()

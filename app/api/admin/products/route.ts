@@ -49,6 +49,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const limit = Math.min(100, Math.max(1, Number.parseInt(limitParam ?? '24', 10) || 24))
     const result = await getAdminProductsPaginated({
       search: req.nextUrl.searchParams.get('q') ?? undefined,
+      category: req.nextUrl.searchParams.get('category') ?? undefined,
       skip: (page - 1) * limit,
       take: limit,
     })

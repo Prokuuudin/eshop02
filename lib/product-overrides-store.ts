@@ -85,12 +85,15 @@ export const getAdminProducts = cache(async (): Promise<Product[]> => {
 
 export async function getAdminProductsPaginated(opts: {
     search?: string;
+    category?: string;
     skip: number;
     take: number;
 }): Promise<{ products: Product[]; total: number }> {
     const search = opts.search?.trim();
+    const category = opts.category?.trim();
     const where: Prisma.ProductWhereInput = {
         isDeleted: false,
+        ...(category ? { category } : {}),
         ...(search
             ? {
                 OR: [

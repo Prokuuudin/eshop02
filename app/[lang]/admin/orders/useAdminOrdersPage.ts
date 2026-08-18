@@ -78,7 +78,7 @@ function useAdminOrdersPageState() {
         null
     );
     const [bulkStatus, setBulkStatus] = useState<OrderStatus | ''>('');
-    const [page, setPage] = useState(0);
+    const [page, setPageState] = useState(0);
 
     const statsByStatus = useMemo(() => {
         return STATUS_LIST.reduce((acc, s) => {
@@ -134,18 +134,17 @@ function useAdminOrdersPageState() {
     // Reset page when filters change
     React.useEffect(() => {
         queueMicrotask(() => {
-            setPage(0);
+            setPageState(0);
             setSelectedIds(new Set());
             setBulkStatus('');
         });
     }, [search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir]);
 
-    React.useEffect(() => {
-        queueMicrotask(() => {
-            setSelectedIds(new Set());
-            setBulkStatus('');
-        });
-    }, [page]);
+    const setPage: React.Dispatch<React.SetStateAction<number>> = (nextPage) => {
+        setPageState(nextPage);
+        setSelectedIds(new Set());
+        setBulkStatus('');
+    };
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PAGE_SIZE));
     const pageItems = filtered.slice(page * ORDERS_PAGE_SIZE, (page + 1) * ORDERS_PAGE_SIZE);

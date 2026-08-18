@@ -11,7 +11,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Printer } from 'lucide-react';
-import { STATUS_LABELS, STATUS_LIST } from './order-config';
+import { STATUS_LABELS } from './order-config';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 
@@ -24,6 +24,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
             bulkStatus,
             setBulkStatus,
             applyBulkStatus,
+            availableBulkStatuses,
             printSelected,
           } = state;
     return (
@@ -42,14 +43,18 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                                 <SelectValue placeholder="Изменить статус..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {STATUS_LIST.map((s) => (
+                                {availableBulkStatuses.map((s) => (
                                     <SelectItem key={s} value={s}>
                                         {STATUS_LABELS[s]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button size="sm" disabled={!bulkStatus} onClick={applyBulkStatus}>
+                        <Button
+                            size="sm"
+                            disabled={!bulkStatus || !availableBulkStatuses.includes(bulkStatus)}
+                            onClick={applyBulkStatus}
+                        >
                             Применить
                         </Button>
                     </div>

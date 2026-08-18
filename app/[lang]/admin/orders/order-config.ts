@@ -25,6 +25,18 @@ export type EditItem = {
 
 export const STATUS_LIST: OrderStatus[] = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 
+export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
+}
+
+export function availableOrderStatuses(current: OrderStatus): OrderStatus[] {
+  return [current, ...ALLOWED_STATUS_TRANSITIONS[current]]
+}
+
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Новый',
   confirmed: 'Подтверждён',

@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { logAdminAction } from '@/lib/admin-log-store';
-import { DELIVERY_LABELS, EDIT_DELIVERY_COSTS, PAYMENT_COLORS, PAYMENT_LABELS, STATUS_COLORS, STATUS_LABELS, STATUS_LIST } from './order-config';
+import { DELIVERY_LABELS, EDIT_DELIVERY_COSTS, PAYMENT_COLORS, PAYMENT_LABELS, STATUS_COLORS, STATUS_LABELS, availableOrderStatuses } from './order-config';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { calculateOrderEditSummary } from './order-edit-summary';
@@ -19,7 +18,7 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersList({ state }: { state: OrdersState }): React.ReactElement {
     const {
-      orders, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
+      orders, hydrationStatus, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity, editPostalCode,
       setEditPostalCode, editDelivery, setEditDelivery, editProductSearch, setEditProductSearch,
       editSaving, locale, expandedOrder, setExpandedOrder, selectedIds, setInvoiceOrder, filtered,
@@ -636,7 +635,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             Изменить статус
                                         </p>
                                         <div className="flex flex-wrap gap-2">
-                                            {STATUS_LIST.map((s) => (
+                                            {availableOrderStatuses(status).map((s) => (
                                                 <Button
                                                     key={s}
                                                     size="sm"
@@ -646,23 +645,8 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                             ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                                                             : ''
                                                     }
-                                                    onClick={() => {
-                                                        const prev = getOrderStatus(order.id);
-                                                        setOrderStatus(order.id, s);
-                                                        return;
-                                                        logAdminAction(
-                                                            'order.status_changed',
-                                                            {
-                                                                type: 'order',
-                                                                id: order.id,
-                                                                title: `${order.firstName} ${order.lastName}`,
-                                                            },
-                                                            {
-                                                                before: { status: prev },
-                                                                after: { status: s },
-                                                            }
-                                                        );
-                                                    }}
+                                                    onClick={() => void setOrderStatus(order.id, s)}
+                                                    disabled={status === s}
                                                 >
                                                     {STATUS_LABELS[s]}
                                                 </Button>
@@ -704,16 +688,6 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         delete n[order.id];
                                                         return n;
                                                     });
-                                                    return;
-                                                    logAdminAction(
-                                                        'order.note_saved',
-                                                        {
-                                                            type: 'order',
-                                                            id: order.id,
-                                                            title: `${order.firstName} ${order.lastName}`,
-                                                        },
-                                                        { details: noteText }
-                                                    );
                                                 }}
                                                 disabled={
                                                     noteDrafts[order.id] === undefined ||
@@ -736,7 +710,17 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                     );
                 })}
 
-                {filtered.length === 0 && (
+                {filtered.length === 0 && hydrationStatus === 'loading' && (
+                    <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground" role="status">
+                        Загружаем заказы…
+                    </div>
+                )}
+                {filtered.length === 0 && hydrationStatus === 'error' && (
+                    <div className="rounded-xl border border-destructive/40 p-10 bg-destructive/10 text-center text-sm text-destructive" role="alert">
+                        Не удалось загрузить заказы. Обновите страницу и попробуйте ещё раз.
+                    </div>
+                )}
+                {filtered.length === 0 && hydrationStatus !== 'loading' && hydrationStatus !== 'error' && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
                         {orders.length === 0
                             ? 'Заказов пока нет'

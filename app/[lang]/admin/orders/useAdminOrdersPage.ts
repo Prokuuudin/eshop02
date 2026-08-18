@@ -4,15 +4,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useOrders } from '@/lib/orders-store';
 import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
-import { isOrderTaxIncluded, extractVat } from '@/lib/tax';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
 import { useTranslation } from '@/lib/use-translation';
-import { logAdminAction } from '@/lib/admin-log-store';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 import {
     DELIVERY_LABELS,
-    EDIT_DELIVERY_COSTS,
+    ALLOWED_STATUS_TRANSITIONS,
     ORDERS_PAGE_SIZE,
     PAYMENT_LABELS,
     STATUS_LABELS,
@@ -25,7 +23,7 @@ import {
 
 function useAdminOrdersPageState() {
     useAdminOrdersSync();
-    const { orders, upsertOrder } = useOrders();
+    const { orders, upsertOrder, hydrationStatus } = useOrders();
     const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } =
         useAdminStore();
     const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -135,8 +133,19 @@ function useAdminOrdersPageState() {
 
     // Reset page when filters change
     React.useEffect(() => {
-        queueMicrotask(() => setPage(0));
+        queueMicrotask(() => {
+            setPage(0);
+            setSelectedIds(new Set());
+            setBulkStatus('');
+        });
     }, [search, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir]);
+
+    React.useEffect(() => {
+        queueMicrotask(() => {
+            setSelectedIds(new Set());
+            setBulkStatus('');
+        });
+    }, [page]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PAGE_SIZE));
     const pageItems = filtered.slice(page * ORDERS_PAGE_SIZE, (page + 1) * ORDERS_PAGE_SIZE);
@@ -146,8 +155,14 @@ function useAdminOrdersPageState() {
         [orders, getOrderStatus]
     );
 
-    const isAllSelected = filtered.length > 0 && filtered.every((o) => selectedIds.has(o.id));
-    const isSomeSelected = filtered.some((o) => selectedIds.has(o.id));
+    const isAllSelected = pageItems.length > 0 && pageItems.every((o) => selectedIds.has(o.id));
+    const isSomeSelected = pageItems.some((o) => selectedIds.has(o.id));
+    const availableBulkStatuses = STATUS_LIST.filter((candidate) =>
+        Array.from(selectedIds).every((id) => {
+            const current = getOrderStatus(id);
+            return current === candidate || ALLOWED_STATUS_TRANSITIONS[current].includes(candidate);
+        })
+    );
 
     const toggleSelect = (id: string) => {
         setSelectedIds((prev) => {
@@ -160,14 +175,22 @@ function useAdminOrdersPageState() {
 
     const toggleSelectAll = () => {
         if (isAllSelected) {
-            setSelectedIds(new Set());
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                pageItems.forEach((order) => next.delete(order.id));
+                return next;
+            });
         } else {
-            setSelectedIds(new Set(filtered.map((o) => o.id)));
+            setSelectedIds((prev) => {
+                const next = new Set(prev);
+                pageItems.forEach((order) => next.add(order.id));
+                return next;
+            });
         }
     };
 
     const applyBulkStatus = async () => {
-        if (!bulkStatus) return;
+        if (!bulkStatus || !availableBulkStatuses.includes(bulkStatus)) return;
         const ids = Array.from(selectedIds);
         setMutationError('');
         try {
@@ -186,33 +209,9 @@ function useAdminOrdersPageState() {
             }));
             setSelectedIds(new Set());
             setBulkStatus('');
-            return;
         } catch (error) {
             setMutationError(error instanceof Error ? error.message : 'Не удалось изменить статусы');
-            return;
         }
-        ids.forEach((id) => {
-            const prev = getOrderStatus(id);
-            setOrderStatus(id, bulkStatus as OrderStatus);
-            logAdminAction(
-                'order.status_changed',
-                { type: 'order', id },
-                {
-                    before: { status: prev },
-                    after: { status: bulkStatus },
-                }
-            );
-        });
-        logAdminAction(
-            'order.bulk_status_changed',
-            { type: 'orders', id: ids.join(','), title: `${ids.length} заказов` },
-            {
-                after: { status: bulkStatus },
-                details: `${ids.length} заказов → ${bulkStatus}`,
-            }
-        );
-        setSelectedIds(new Set());
-        setBulkStatus('');
     };
 
     const printSelected = () => {
@@ -334,23 +333,6 @@ function useAdminOrdersPageState() {
     };
 
     const saveEdit = async (order: (typeof orders)[number]) => {
-        const newSubtotal = editItems.reduce((s, i) => s + i.price * i.quantity, 0);
-        const newDelivery = EDIT_DELIVERY_COSTS[editDelivery] ?? order.delivery;
-        // Keep discount proportional if it existed
-        const origDiscountPct = order.subtotal > 0 ? order.discount / order.subtotal : 0;
-        const newDiscount =
-            order.promoCode && origDiscountPct > 0
-                ? Math.round(newSubtotal * origDiscountPct * 100) / 100
-                : order.discount;
-        // Items unchanged since order creation keep that order's price model (VAT already
-        // included vs added on top) — detect it from the order itself, no schema flag needed.
-        const taxIncluded = isOrderTaxIncluded(order);
-        const newTax = taxIncluded ? extractVat(newSubtotal - newDiscount) : order.tax;
-        const newTotal = Math.max(
-            0,
-            newSubtotal - newDiscount + newDelivery + (taxIncluded ? 0 : newTax)
-        );
-
         setEditSaving(true);
         setMutationError('');
         try {
@@ -371,43 +353,11 @@ function useAdminOrdersPageState() {
             upsertOrder(payload.order as import('@/lib/orders-store').Order);
             setEditingOrderId(null);
             setEditProductSearch('');
-            return;
         } catch (error) {
             setMutationError(error instanceof Error ? error.message : 'Не удалось сохранить заказ');
-            return;
         } finally {
             setEditSaving(false);
         }
-
-        setEditSaving(true);
-        const updated = {
-            ...order,
-            items: editItems as typeof order.items,
-            address: editAddress.trim() || order.address,
-            city: editCity.trim() || order.city,
-            postalCode: editPostalCode.trim() || undefined,
-            deliveryMethod: editDelivery as typeof order.deliveryMethod,
-            subtotal: newSubtotal,
-            discount: newDiscount,
-            delivery: newDelivery,
-            tax: newTax,
-            total: newTotal,
-        };
-        upsertOrder(updated);
-
-        logAdminAction(
-            'order.status_changed',
-            { type: 'order', id: order.id, title: `${order.firstName} ${order.lastName}` },
-            {
-                details: `Редактирование заказа: ${
-                    editItems.length
-                } позиций, итого ${newTotal.toFixed(2)} €`,
-            }
-        );
-
-        setEditSaving(false);
-        setEditingOrderId(null);
-        setEditProductSearch('');
     };
 
     const editUpdateQty = (lineKey: string, qty: number) => {
@@ -537,6 +487,7 @@ function useAdminOrdersPageState() {
 
     return {
         orders,
+        hydrationStatus,
         getOrderStatus,
         setOrderStatus,
         getOrderNote,
@@ -577,6 +528,7 @@ function useAdminOrdersPageState() {
         setInvoiceOrder,
         bulkStatus,
         setBulkStatus,
+        availableBulkStatuses,
         page,
         setPage,
         statsByStatus,

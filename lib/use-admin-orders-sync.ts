@@ -73,11 +73,12 @@ function startOrdersSync(): Promise<void> {
  * mounting after the first fetch already completed — just reuses the
  * already-hydrated store instead of re-fetching.
  */
-export function useAdminOrdersSync(): void {
+export function useAdminOrdersSync(options?: { refreshIfLoaded?: boolean }): void {
+  const refreshIfLoaded = options?.refreshIfLoaded ?? false
   useEffect(() => {
     const status = useOrders.getState().hydrationStatus
-    if (status === 'idle' || status === 'error') {
+    if (status === 'idle' || status === 'error' || refreshIfLoaded) {
       void startOrdersSync()
     }
-  }, [])
+  }, [refreshIfLoaded])
 }

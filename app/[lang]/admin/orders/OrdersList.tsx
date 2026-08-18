@@ -507,9 +507,9 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             Состав заказа
                                         </p>
                                         <div className="rounded-lg border border-border divide-y divide-border">
-                                            {order.items.map((item) => (
+                                            {order.items.map((item, index) => (
                                                 <div
-                                                    key={item.lineKey}
+                                                    key={item.lineKey || `legacy:${order.id}:${index}`}
                                                     className="flex items-center gap-3 px-3 py-2.5"
                                                 >
                                                     {item.image && (

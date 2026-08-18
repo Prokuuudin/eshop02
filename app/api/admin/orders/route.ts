@@ -13,6 +13,7 @@ import {
 import { parseOffsetPagination } from '@/lib/pagination'
 import { adminOrderCreateSchema, adminOrderUpdateSchema } from '@/lib/api-schemas'
 import { appendServerAudit } from '@/lib/server-audit'
+import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 
 // Mirrors the delivery cost table shown in the admin "new order" form
 // (app/[lang]/admin/orders/new) - computed here too so a tampered client
@@ -52,8 +53,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       prisma.order.count({ where }),
     ])
 
+    const damagedProductIds = productIdsForDamagedOrderItems(orders.map((row) => row.items))
+    const titleRows = damagedProductIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: damagedProductIds } },
+          select: { id: true, title: true },
+        })
+      : []
+    const catalogTitles = new Map(titleRows.map((product) => [product.id, product.title]))
+
     const mapped = orders.map((row) => ({
       ...row,
+      items: repairOrderItemTitles(row.items, catalogTitles),
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     }))
 
@@ -191,5 +202,4 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

@@ -22,7 +22,9 @@ import {
 } from './order-config';
 
 function useAdminOrdersPageState() {
-    useAdminOrdersSync();
+    // Refresh on every visit: order status, notes and repaired legacy snapshot
+    // titles must not remain stale in the session-wide Zustand store.
+    useAdminOrdersSync({ refreshIfLoaded: true });
     const { orders, upsertOrder, hydrationStatus } = useOrders();
     const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } =
         useAdminStore();
@@ -301,9 +303,11 @@ function useAdminOrdersPageState() {
     const startEdit = (order: (typeof orders)[number]) => {
         setEditingOrderId(order.id);
         setEditItems(
-            order.items.map((i) => ({
+            order.items.map((i, index) => ({
                 id: i.id,
-                lineKey: i.lineKey,
+                // Legacy imported orders predate lineKey. Give every row a stable,
+                // unique identity so duplicate products can be edited independently.
+                lineKey: i.lineKey || `legacy:${order.id}:${index}`,
                 title: i.title,
                 price: i.price,
                 quantity: i.quantity,

@@ -139,7 +139,7 @@ const NAV_LABELS = {
         'catalog.brands': 'Бренды',
         'catalog.import': 'Импорт и обновления',
         'catalog.stockAlerts': 'Алерты остатков',
-        'catalog.bulkPrice': 'Массовые цены',
+        'catalog.bulkPrice': 'Редактор цен',
         sales: 'Продажи',
 
         'sales.orders': 'Заказы',

@@ -114,7 +114,7 @@ const isEmptyMultilang = (obj: { ru: string; en: string; lv: string }): boolean 
 
 export function mapFormValuesToProductPatch(
     values: AddProductFormValues
-): Partial<Omit<Product, 'id'>> {
+): Omit<Partial<Omit<Product, 'id'>>, 'oldPrice'> & { oldPrice?: number | null } {
     const techSpecs = values.technicalSpecs
         .filter((s) => s.key.trim() && !s.key.trim().startsWith('__'))
         .reduce<Record<string, string>>((acc, { key, value }) => {
@@ -165,7 +165,9 @@ export function mapFormValuesToProductPatch(
         titleLv: values.titleLv || undefined,
         description: values.description || undefined,
         price: values.price,
-        oldPrice: values.oldPrice || undefined,
+        // null is intentional: unlike undefined it survives JSON serialization
+        // and tells the update API to remove an accidentally set old price.
+        oldPrice: values.oldPrice && values.oldPrice > 0 ? values.oldPrice : null,
         bulkPricingTiers:
             values.bulkPricingTiers.length > 0 ? values.bulkPricingTiers : undefined,
         stock: values.stock,
@@ -234,5 +236,7 @@ export function mapFormValuesToNewProduct(values: AddProductFormValues): Product
         category: values.category as Product['category'],
         image: values.image || '',
         ...mapFormValuesToProductPatch(values),
+        // Create requests do not need the update-only null clearing marker.
+        oldPrice: values.oldPrice && values.oldPrice > 0 ? values.oldPrice : undefined,
     };
 }

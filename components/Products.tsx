@@ -61,14 +61,29 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   const filterSignature = JSON.stringify(filters)
   const previousFilterSignatureRef = React.useRef(filterSignature)
 
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(() => {
-    if (typeof window === 'undefined') return 'grid'
-    return (localStorage.getItem('catalog-view-mode') as 'grid' | 'list') ?? 'grid'
-  })
+  // The server and the first browser render must use the same mode. Reading
+  // localStorage in the state initializer makes SSR render a grid while the
+  // browser may immediately render a list, which causes a hydration mismatch.
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid')
+
+  React.useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem('catalog-view-mode')
+      if (savedMode === 'grid' || savedMode === 'list') {
+        queueMicrotask(() => setViewMode(savedMode))
+      }
+    } catch {
+      // Keep the deterministic grid default when browser storage is unavailable.
+    }
+  }, [])
 
   const handleViewMode = (mode: 'grid' | 'list') => {
     setViewMode(mode)
-    localStorage.setItem('catalog-view-mode', mode)
+    try {
+      localStorage.setItem('catalog-view-mode', mode)
+    } catch {
+      // The view still switches when browser storage is unavailable.
+    }
   }
 
   // Sync filters with initialFilters only when they actually change from navigation

@@ -14,6 +14,10 @@ describe('product mutation schemas', () => {
     expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 2, changes: { price: 9 } }).success).toBe(true)
   })
 
+  it('allows clearing an old price during an exact rollback', () => {
+    expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 2, changes: { oldPrice: null } }).success).toBe(true)
+  })
+
   it('rejects unknown fields and invalid bulk tiers', () => {
     expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 1, changes: { hacked: true } }).success).toBe(false)
     expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 1, changes: { bulkPricingTiers: [

@@ -20,6 +20,7 @@ type Product = {
 };
 
 type AdjustMode = 'percent' | 'fixed_add' | 'fixed_set';
+type OldPriceAction = 'save_current' | 'clear';
 
 type ChangeBatchItem = {
     id: string;
@@ -27,8 +28,12 @@ type ChangeBatchItem = {
     sku?: string;
     oldPrice: number;
     newPrice: number;
+    previousOldPrice?: number;
+    resultingOldPrice?: number;
     status: 'ok' | 'err';
     revision: number;
+    error?: string;
+    httpStatus?: number;
 };
 
 type ChangeBatch = {
@@ -38,13 +43,33 @@ type ChangeBatch = {
     ok: number;
     err: number;
     items: ChangeBatchItem[];
-    reverted: boolean;
+    kind: 'apply' | 'revert';
+    mode?: AdjustMode;
+    value?: number;
+    oldPriceAction?: OldPriceAction;
+    revertState: 'available' | 'partial' | 'reverted' | 'not_available';
+    remainingRevertIds?: string[];
 };
 
 type PendingAction = { type: 'apply' } | { type: 'revert'; batch: ChangeBatch };
 
 const PAGE_SIZE = 100;
 const HISTORY_LIMIT = 20;
+const UPDATE_CONCURRENCY = 8;
+
+async function mapWithConcurrency<T, R>(items: T[], worker: (item: T) => Promise<R>): Promise<R[]> {
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+    const runners = Array.from({ length: Math.min(UPDATE_CONCURRENCY, items.length) }, async () => {
+        while (nextIndex < items.length) {
+            const index = nextIndex;
+            nextIndex += 1;
+            results[index] = await worker(items[index]);
+        }
+    });
+    await Promise.all(runners);
+    return results;
+}
 
 function formatMoney(v: number) {
     return v.toLocaleString('ru-RU', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,13 +81,15 @@ function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
     return Math.max(0, value);
 }
 
-function describeChange(mode: AdjustMode, value: number, saveOldPrice: boolean): string {
+function describeChange(mode: AdjustMode, value: number, oldPriceAction: OldPriceAction): string {
+    if (!Number.isFinite(value) && oldPriceAction === 'clear') return 'Убрать зачёркнутую цену';
     const base = mode === 'percent'
         ? `${value > 0 ? '+' : ''}${value}%`
         : mode === 'fixed_add'
             ? `${value > 0 ? '+' : ''}${formatMoney(value)}`
             : `цена = ${formatMoney(value)}`;
-    return saveOldPrice ? `${base}, старая цена сохранена` : base;
+    if (oldPriceAction === 'save_current') return `${base}, старая цена зачёркнута`;
+    return `${base}, старая цена убрана`;
 }
 
 export default function BulkPricePage(): React.ReactElement {
@@ -78,9 +105,10 @@ export default function BulkPricePage(): React.ReactElement {
     const [catFilter, setCatFilter] = useState('');
     const [mode, setMode] = useState<AdjustMode>('percent');
     const [value, setValue] = useState('');
-    const [saveOldPrice, setSaveOldPrice] = useState(true);
+    const [oldPriceAction, setOldPriceAction] = useState<OldPriceAction>('save_current');
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
     const [history, setHistory] = useState<ChangeBatch[]>([]);
+    const [actionMessage, setActionMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const id = setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -115,7 +143,8 @@ export default function BulkPricePage(): React.ReactElement {
     }, [page, loadPage]);
 
     const numValue = parseFloat(value);
-    const adjustValid = value !== '' && Number.isFinite(numValue);
+    const priceAdjustmentValid = value !== '' && Number.isFinite(numValue);
+    const operationValid = priceAdjustmentValid || oldPriceAction === 'clear';
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     const toggle = (p: Product) => {
@@ -137,14 +166,14 @@ export default function BulkPricePage(): React.ReactElement {
     };
 
     const preview = (p: Product): number | null => {
-        if (!adjustValid || !selected.has(p.id)) return null;
-        return calcNewPrice(p.price, mode, numValue);
+        if (!operationValid || !selected.has(p.id)) return null;
+        return priceAdjustmentValid ? calcNewPrice(p.price, mode, numValue) : p.price;
     };
 
     const resetAdjustmentFields = () => {
         setMode('percent');
         setValue('');
-        setSaveOldPrice(true);
+        setOldPriceAction('save_current');
     };
 
     const resetAll = () => {
@@ -153,42 +182,69 @@ export default function BulkPricePage(): React.ReactElement {
         snapshots.current.clear();
     };
 
-    const putProduct = async (id: string, revision: number, changes: Record<string, unknown>): Promise<{ status: 'ok' | 'err'; revision: number }> => {
+    const getAllProducts = async (): Promise<Product[]> => {
+        const res = await fetch('/api/admin/products');
+        if (!res.ok) throw new Error('Не удалось загрузить актуальные данные товаров');
+        const json: { data?: { products?: Product[] } } = await res.json();
+        return Array.isArray(json.data?.products) ? json.data.products : [];
+    };
+
+    const putProduct = async (id: string, revision: number, changes: Record<string, unknown>): Promise<{ status: 'ok' | 'err'; revision: number; error?: string; httpStatus?: number }> => {
         try {
             const res = await fetch('/api/admin/products', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, revision, changes }),
             });
-            if (!res.ok) return { status: 'err', revision };
-            const json: { data?: { product?: { revision?: number } } } = await res.json();
+            const json: { error?: string; data?: { product?: { revision?: number } } } = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const error = res.status === 409
+                    ? 'Товар уже изменён. Обновите данные и проверьте рассчитанную цену.'
+                    : res.status === 400 && json.error === 'invalid_product'
+                        ? 'Рассчитанная цена недопустима. Допустимый диапазон: от 0 до 99 999 999,99 €.'
+                    : json.error || (res.status >= 500 ? 'Ошибка сервера. Попробуйте ещё раз.' : 'Изменение отклонено сервером.');
+                return { status: 'err', revision, error, httpStatus: res.status };
+            }
             return { status: 'ok', revision: json.data?.product?.revision ?? revision };
         } catch {
-            return { status: 'err', revision };
+            return { status: 'err', revision, error: 'Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.' };
         }
     };
 
     const applyChanges = async () => {
-        if (!adjustValid || selected.size === 0) return;
+        if (!operationValid || selected.size === 0) return;
+        setActionMessage(null);
         setPendingAction(null);
         setSaving(true);
         const targets = [...selected]
             .map((id) => snapshots.current.get(id))
             .filter((p): p is Product => p !== undefined);
-        const items: ChangeBatchItem[] = await Promise.all(
-            targets.map(async (p) => {
-                const newPrice = calcNewPrice(p.price, mode, numValue);
-                const changes: Record<string, unknown> = { price: newPrice };
-                if (saveOldPrice) changes.oldPrice = p.price;
-                const { status, revision } = await putProduct(p.id, p.revision, changes);
-                return { id: p.id, title: p.title, sku: p.sku, oldPrice: p.price, newPrice, status, revision };
-            })
-        );
+        const items = await mapWithConcurrency(targets, async (p): Promise<ChangeBatchItem> => {
+                const newPrice = priceAdjustmentValid ? calcNewPrice(p.price, mode, numValue) : p.price;
+                const changes: Record<string, unknown> = priceAdjustmentValid ? { price: newPrice } : {};
+                if (oldPriceAction === 'save_current') changes.oldPrice = p.price;
+                if (oldPriceAction === 'clear') changes.oldPrice = null;
+                const result = await putProduct(p.id, p.revision, changes);
+                return {
+                    id: p.id, title: p.title, sku: p.sku,
+                    oldPrice: p.price, newPrice,
+                    previousOldPrice: p.oldPrice,
+                    resultingOldPrice: oldPriceAction === 'save_current'
+                        ? p.price
+                        : oldPriceAction === 'clear' ? undefined : p.oldPrice,
+                    ...result,
+                };
+            });
         setSaving(false);
         const ok = items.filter((i) => i.status === 'ok').length;
         const err = items.length - ok;
         setHistory((prev) => [
-            { id: `${Date.now()}`, appliedAt: new Date(), description: describeChange(mode, numValue, saveOldPrice), ok, err, items, reverted: false },
+            {
+                id: `${Date.now()}`, appliedAt: new Date(), description: describeChange(mode, numValue, oldPriceAction),
+                ok, err, items, kind: 'apply' as const, mode,
+                value: priceAdjustmentValid ? numValue : undefined, oldPriceAction,
+                revertState: (ok > 0 ? 'available' : 'not_available') as ChangeBatch['revertState'],
+            },
             ...prev,
         ].slice(0, HISTORY_LIMIT));
         if (ok > 0) await loadPage(page);
@@ -196,23 +252,77 @@ export default function BulkPricePage(): React.ReactElement {
     };
 
     const performRevert = async (batch: ChangeBatch) => {
+        setActionMessage(null);
         setPendingAction(null);
         setSaving(true);
-        const targets = batch.items.filter((i) => i.status === 'ok');
-        const items: ChangeBatchItem[] = await Promise.all(
-            targets.map(async (item) => {
-                const { status, revision } = await putProduct(item.id, item.revision, { price: item.oldPrice, oldPrice: item.newPrice });
-                return { id: item.id, title: item.title, sku: item.sku, oldPrice: item.newPrice, newPrice: item.oldPrice, status, revision };
-            })
-        );
+        const remaining = batch.remainingRevertIds ? new Set(batch.remainingRevertIds) : null;
+        const targets = batch.items.filter((i) => i.status === 'ok' && (!remaining || remaining.has(i.id)));
+        let currentById = new Map<string, Product>();
+        try {
+            currentById = new Map((await getAllProducts()).map((product) => [product.id, product]));
+        } catch {
+            // Each item below gets an actionable loading error.
+        }
+        const items = await mapWithConcurrency(targets, async (item): Promise<ChangeBatchItem> => {
+                const current = currentById.get(item.id);
+                if (!current) {
+                    return { ...item, oldPrice: item.newPrice, newPrice: item.oldPrice, status: 'err' as const, error: 'Не удалось получить актуальное состояние товара.' };
+                }
+                if (current.price !== item.newPrice || current.oldPrice !== item.resultingOldPrice) {
+                    return {
+                        ...item, oldPrice: current.price, newPrice: item.oldPrice, revision: current.revision,
+                        status: 'err' as const, httpStatus: 409,
+                        error: 'После этой операции товар изменился. Проверьте его вручную — автоматический возврат заблокирован.',
+                    };
+                }
+                const result = await putProduct(item.id, current.revision, { price: item.oldPrice, oldPrice: null });
+                return {
+                    id: item.id, title: item.title, sku: item.sku,
+                    oldPrice: item.newPrice, newPrice: item.oldPrice,
+                    previousOldPrice: item.resultingOldPrice, resultingOldPrice: undefined,
+                    ...result,
+                };
+            });
         setSaving(false);
         const ok = items.filter((i) => i.status === 'ok').length;
         const err = items.length - ok;
+        const failedIds = items.filter((item) => item.status === 'err').map((item) => item.id);
         setHistory((prev) => [
-            { id: `${Date.now()}`, appliedAt: new Date(), description: `Откат: ${batch.description}`, ok, err, items, reverted: false },
-            ...prev.map((b) => (b.id === batch.id ? { ...b, reverted: true } : b)),
+            {
+                id: `${Date.now()}`, appliedAt: new Date(), description: `Возврат цен: ${batch.description}`,
+                ok, err, items, kind: 'revert' as const, revertState: 'not_available' as const,
+            },
+            ...prev.map((b) => b.id === batch.id ? {
+                ...b,
+                revertState: failedIds.length > 0 ? 'partial' as const : 'reverted' as const,
+                remainingRevertIds: failedIds,
+            } : b),
         ].slice(0, HISTORY_LIMIT));
         if (ok > 0) await loadPage(page);
+    };
+
+    const prepareFailedRetry = async (batch: ChangeBatch) => {
+        if (batch.kind !== 'apply' || batch.mode === undefined) return;
+        setSaving(true);
+        try {
+            const failedIds = new Set(batch.items.filter((item) => item.status === 'err').map((item) => item.id));
+            const current = (await getAllProducts()).filter((product) => failedIds.has(product.id));
+            snapshots.current = new Map(current.map((product) => [product.id, product]));
+            setSelected(new Set(current.map((product) => product.id)));
+            setMode(batch.mode);
+            setValue(batch.value === undefined ? '' : String(batch.value));
+            setOldPriceAction(batch.oldPriceAction ?? 'save_current');
+            await loadPage(page);
+            setActionMessage(
+                current.length > 0
+                    ? `Загружены актуальные данные для ${current.length} товар(ов). Проверьте новые цены в таблице и снова нажмите «Применить».`
+                    : 'Не удалось найти товары для повторной проверки. Возможно, они были удалены.'
+            );
+        } catch (error) {
+            setActionMessage(error instanceof Error ? error.message : 'Не удалось загрузить актуальные данные товаров.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const MODE_OPTIONS: { value: AdjustMode; label: string; placeholder: string }[] = [
@@ -223,10 +333,10 @@ export default function BulkPricePage(): React.ReactElement {
 
     return (
         <AdminGate access="full">
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
-                        Массовый редактор цен
+                        Редактор цен
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                         Выберите товары и примените изменение цены
@@ -269,22 +379,28 @@ export default function BulkPricePage(): React.ReactElement {
                             />
                         </div>
                         <div>
-                            <p aria-hidden className="mb-1 block text-xs text-transparent">·</p>
-                            <label htmlFor="bulk-price-save-old" className="flex h-10 items-center gap-2 text-sm text-foreground">
-                                <Checkbox
-                                    id="bulk-price-save-old"
-                                    checked={saveOldPrice}
-                                    onCheckedChange={(checked) => setSaveOldPrice(checked === true)}
-                                />
-                                Сохранить старую цену (зачёркнутая)
-                            </label>
+                            <p className="mb-1 block text-xs text-muted-foreground">Старая цена</p>
+                            <Select
+                                value={oldPriceAction}
+                                onValueChange={(next) => {
+                                    if (next === 'save_current' || next === 'clear') setOldPriceAction(next);
+                                }}
+                            >
+                                <SelectTrigger className="w-64">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="save_current">Зачеркнуть старую цену</SelectItem>
+                                    <SelectItem value="clear">Убрать старую цену</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
                             <p aria-hidden className="mb-1 block text-xs text-transparent">·</p>
                             <button
                                 type="button"
                                 onClick={() => setPendingAction({ type: 'apply' })}
-                                disabled={!adjustValid || selected.size === 0 || saving}
+                                disabled={!operationValid || selected.size === 0 || saving}
                                 className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
                             >
                                 {saving ? 'Сохранение...' : `Применить к ${selected.size} товарам`}
@@ -298,9 +414,10 @@ export default function BulkPricePage(): React.ReactElement {
                         {pendingAction?.type === 'revert' ? (
                             <>
                                 <DialogHeader>
-                                    <DialogTitle>Откатить изменение цены</DialogTitle>
+                                    <DialogTitle>Вернуть предыдущие цены</DialogTitle>
                                     <DialogDescription>
-                                        Цены {pendingAction.batch.items.filter((i) => i.status === 'ok').length} товар(ов) вернутся к значениям до изменения «{pendingAction.batch.description}». Это тоже сразу запишется в базу данных.
+                                        Будет восстановлена цена до операции «{pendingAction.batch.description}», а зачёркнутая цена будет убрана.
+                                        Если товар после неё уже менялся, автоматический возврат будет безопасно пропущен.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
@@ -314,7 +431,7 @@ export default function BulkPricePage(): React.ReactElement {
                                         onClick={() => performRevert(pendingAction.batch)}
                                         className="h-10 rounded-md bg-amber-600 px-4 text-sm font-medium text-white hover:bg-amber-700"
                                     >
-                                        Откатить
+                                        Вернуть цены
                                     </button>
                                 </DialogFooter>
                             </>
@@ -323,7 +440,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 <DialogHeader>
                                     <DialogTitle>Подтвердите изменение цены</DialogTitle>
                                     <DialogDescription>
-                                        Изменение «{describeChange(mode, numValue, saveOldPrice)}» будет применено к {selected.size} товар{selected.size === 1 ? 'у' : 'ам'} и сразу записано в базу данных. Откатить можно будет из истории изменений ниже.
+                                        Изменение «{describeChange(mode, numValue, oldPriceAction)}» будет применено к {selected.size} товар{selected.size === 1 ? 'у' : 'ам'} и сразу записано в базу данных. Вернуть прежние цены можно будет из результатов операций ниже.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
@@ -345,7 +462,42 @@ export default function BulkPricePage(): React.ReactElement {
                     </DialogContent>
                 </Dialog>
 
-                <div className="flex flex-wrap items-center gap-3">
+                {history[0] && (
+                    <div
+                        role="status"
+                        className={`rounded-xl border p-4 ${
+                            history[0].err === 0
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200'
+                                : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100'
+                        }`}
+                    >
+                        <div className="font-semibold">
+                            {history[0].kind === 'apply' ? 'Изменение цен завершено' : 'Возврат цен завершён'}
+                        </div>
+                        <p className="mt-1 text-sm">
+                            Успешно: {history[0].ok} из {history[0].items.length}.
+                            {history[0].err > 0 && ` Не удалось: ${history[0].err}. Причины указаны в результатах операции ниже.`}
+                        </p>
+                        {history[0].kind === 'apply' && history[0].err > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => prepareFailedRetry(history[0])}
+                                disabled={saving}
+                                className="mt-3 rounded-md border border-current px-3 py-1.5 text-sm font-medium disabled:opacity-40"
+                            >
+                                Обновить данные и проверить неудавшиеся товары
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {actionMessage && (
+                    <div role="status" className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                        {actionMessage}
+                    </div>
+                )}
+
+                <div className="order-2 flex flex-wrap items-center gap-3">
                     <Input
                         type="text"
                         placeholder="Поиск по названию, бренду, SKU..."
@@ -381,7 +533,7 @@ export default function BulkPricePage(): React.ReactElement {
                     </span>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <div className="order-2 overflow-x-auto rounded-xl border border-border bg-card">
                     {loading ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
                     ) : products.length === 0 ? (
@@ -473,7 +625,7 @@ export default function BulkPricePage(): React.ReactElement {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="order-2 flex items-center justify-between text-sm text-muted-foreground">
                         <button
                             type="button"
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -495,10 +647,13 @@ export default function BulkPricePage(): React.ReactElement {
                 )}
 
                 {history.length > 0 && (
-                    <div className="rounded-xl border border-border bg-card p-4">
+                    <div className="order-1 rounded-xl border border-border bg-card p-4">
                         <h2 className="mb-3 text-sm font-semibold text-foreground">
-                            История изменений (за эту сессию)
+                            Результаты операций в этой вкладке
                         </h2>
+                        <p className="mb-3 text-xs text-muted-foreground">
+                            Это оперативный список: после обновления или закрытия вкладки он исчезнет. Постоянный аудит сохраняется системой отдельно.
+                        </p>
                         <div className="space-y-2">
                             {history.map((batch, i) => (
                                 <details key={batch.id} open={i === 0} className="rounded-lg border border-border">
@@ -516,11 +671,24 @@ export default function BulkPricePage(): React.ReactElement {
                                         >
                                             Обновлено: {batch.ok}{batch.err > 0 && `, ошибок: ${batch.err}`}
                                         </span>
-                                        {batch.reverted ? (
+                                        {batch.revertState === 'reverted' ? (
                                             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                откачено
+                                                цены возвращены
                                             </span>
-                                        ) : batch.ok > 0 && (
+                                        ) : batch.revertState === 'partial' ? (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setPendingAction({ type: 'revert', batch });
+                                                }}
+                                                disabled={saving}
+                                                className="ml-auto text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
+                                            >
+                                                Повторить возврат для {batch.remainingRevertIds?.length ?? 0}
+                                            </button>
+                                        ) : batch.revertState === 'available' && batch.ok > 0 && (
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -531,7 +699,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                 disabled={saving}
                                                 className="ml-auto text-xs text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
                                             >
-                                                Откатить
+                                                Вернуть предыдущие цены
                                             </button>
                                         )}
                                     </summary>
@@ -552,8 +720,13 @@ export default function BulkPricePage(): React.ReactElement {
                                                         </td>
                                                         <td className="px-3 py-2 text-right">
                                                             <span className={item.status === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
-                                                                {item.status === 'ok' ? 'ок' : 'ошибка'}
+                                                                {item.status === 'ok' ? 'Готово' : 'Не изменено'}
                                                             </span>
+                                                            {item.error && (
+                                                                <div className="mt-1 max-w-sm text-xs text-red-700 dark:text-red-300">
+                                                                    {item.error}
+                                                                </div>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}

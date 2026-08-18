@@ -13,6 +13,12 @@ const baseProduct: Product = {
 }
 
 describe('variantGroups round-trip through technicalSpecs', () => {
+  it('uses null to explicitly clear an old price in an update', () => {
+    const values = mapProductToFormValues({ ...baseProduct, oldPrice: 15 })
+    values.oldPrice = undefined
+    expect(mapFormValuesToProductPatch(values).oldPrice).toBeNull()
+  })
+
   it('mapProductToFormValues extracts variantGroups and hides the reserved key from technicalSpecs', () => {
     const groups: VariantGroup[] = [
       { name: 'Krāsu numurs', required: true, options: [{ value: 'A-11' }] },

@@ -41,7 +41,9 @@ export const productChangesSchema = z.object({
   specVolume: shortText.optional(), specType: shortText.optional(), specCountry: shortText.optional(),
 }).strict()
 
-export const updateProductRequestSchema = z.object({ id, revision: z.number().int().positive(), changes: productChangesSchema.partial() }).strict()
+const updateProductChangesSchema = productChangesSchema.extend({ oldPrice: money.nullable().optional() })
+
+export const updateProductRequestSchema = z.object({ id, revision: z.number().int().positive(), changes: updateProductChangesSchema.partial() }).strict()
   .refine((value) => Object.keys(value.changes).length > 0, { path: ['changes'], message: 'At least one change is required' })
 
 export const createProductRequestSchema = z.object({ product: productChangesSchema.extend({ id }) }).strict()

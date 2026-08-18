@@ -76,7 +76,12 @@ export async function PUT(req: NextRequest): Promise<Response> {
       const overrides = setting?.value && typeof setting.value === 'object' && !Array.isArray(setting.value)
         ? setting.value as Record<string, ProductOverride> : {}
       const before = applyProductOverride(mapDbToProduct(current), overrides[id])
-      const mapped = mapProductToDbCreate({ ...before, ...changes }, current.isCustom)
+      const nextProduct = {
+        ...before,
+        ...changes,
+        oldPrice: changes.oldPrice === null ? undefined : (changes.oldPrice ?? before.oldPrice),
+      }
+      const mapped = mapProductToDbCreate(nextProduct, current.isCustom)
       const { id: _id, isCustom: _custom, isDeleted: _deleted, ...data } = mapped
       const result = await tx.product.updateMany({ where: { id, revision }, data: { ...data, revision: { increment: 1 } } })
       if (result.count !== 1) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
@@ -128,4 +133,3 @@ export async function DELETE(req: NextRequest): Promise<Response> {
     return successResponse({ products: result.products })
   } catch (error) { logApiError("Admin products DELETE error:", error); return errorResponse('Internal server error', 500) }
 }
-

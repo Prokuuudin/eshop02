@@ -18,7 +18,7 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
   const promoTitle = promo ? resolveLocaleText(promo.title, language) : ''
 
   return (
-    <footer className="footer bg-slate-50 dark:bg-gray-900 border-t border-border text-gray-800 dark:text-gray-300">
+    <footer className="footer bg-gray-200 dark:bg-gray-800 border-t border-border text-gray-800 dark:text-gray-300">
       <div className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:py-10">
         <div className="footer__grid flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-8 lg:gap-10 lg:justify-between">
           <div className="footer__section footer__nav min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">

@@ -282,7 +282,7 @@ export default function AdminBonusPage(): React.ReactElement {
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} баллов (1 балл = 1 цент){draft.maxEarnPerOrder > 0 ? `, лимит ${draft.maxEarnPerOrder} баллов` : ''}
+                          €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} баллов (1 балл = 1 евроцент){draft.maxEarnPerOrder > 0 ? `, лимит ${draft.maxEarnPerOrder} баллов` : ''}
                         </p>
                       </div>
                       <div>
@@ -290,7 +290,7 @@ export default function AdminBonusPage(): React.ReactElement {
                           Макс. списать: <strong>{calcMaxSpend} баллов</strong> (−€{pointsToEuros(calcMaxSpend).toFixed(2)})
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          €{calcAmount} × {draft.maxSpendPercent}% = {calcMaxSpend} баллов, 1 балл = 1 цент
+                          €{calcAmount} × {draft.maxSpendPercent}% = {calcMaxSpend} баллов, 1 балл = 1 евроцент
                           {draft.minPointsToSpend > 0 && ` · минимум на балансе для списания: ${draft.minPointsToSpend} баллов`}
                         </p>
                       </div>

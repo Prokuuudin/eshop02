@@ -397,8 +397,6 @@ const ruCommon: Record<string, string> = {
   'productNews.emptyHint': 'Подпишитесь на странице любого товара, чтобы узнавать об изменении цены, поступлении на склад и акциях.',
   'productNews.emptyCta': 'Перейти в каталог',
   'productNews.catalogCta': 'Узнавать о новостях товара',
-  'productNews.cartCta': 'Подписаться на новости товара',
-  'productNews.orderHistoryCta': 'Подписаться на новости',
   'terms.title': 'Условия предоставления услуг',
   'confirm.deleteAllNotifications': 'Удалить все уведомления? Это действие нельзя отменить.',
   'confirm.deleteSelectedNotifications': 'Удалить {count} уведомлений? Это действие нельзя отменить.',

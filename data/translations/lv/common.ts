@@ -302,8 +302,6 @@ const lvCommon: Record<string, string> = {
   'productNews.emptyHint': 'Abonējiet jebkurā preču lapā, lai uzzinātu par cenas izmaiņām, pieejamību un akcijām.',
   'productNews.emptyCta': 'Doties uz katalogu',
   'productNews.catalogCta': 'Uzzināt par preces jaunumiem',
-  'productNews.cartCta': 'Abonēt preces jaunumus',
-  'productNews.orderHistoryCta': 'Abonēt jaunumus',
   'terms.title': 'Pakalpojumu sniegšanas noteikumi',
   'confirm.deleteAllNotifications': 'Dzēst visus paziņojumus? Šo darbību nevar atcelt.',
   'confirm.deleteSelectedNotifications': 'Dzēst {count} paziņojumus? Šo darbību nevar atcelt.',

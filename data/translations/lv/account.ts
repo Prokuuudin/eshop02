@@ -398,6 +398,12 @@ const lvAccount: Record<string, string> = {
   'account.requestQuote.termsLabel': 'Nosacījumi',
   'account.requestQuote.accept': 'Pieņemt',
   'account.requestQuote.reject': 'Noraidīt',
+  'account.requestQuote.expired': 'Piedāvājuma derīguma termiņš ir beidzies. Lūdziet menedžerim atjaunotus nosacījumus.',
+  'account.requestQuote.acceptedNextStep': 'Piedāvājums ir pieņemts. Menedžeris sazināsies ar jums, lai apstiprinātu piegādi, apmaksu un pasūtījumu.',
+  'account.requestQuote.status.pending': 'Izskatīšanā',
+  'account.requestQuote.status.quoted': 'Piedāvājums saņemts',
+  'account.requestQuote.status.accepted': 'Pieņemts',
+  'account.requestQuote.status.rejected': 'Noraidīts',
   'account.requestQuote.noRequestsYet': 'Pieprasījumu vēl nav',
 }
 

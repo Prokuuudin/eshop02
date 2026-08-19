@@ -5,6 +5,9 @@ export type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected'
 export type RFQItem = {
   productId: string
   quantity: number
+  title?: string
+  sku?: string
+  listPrice?: number
 }
 
 export type RFQQuote = {
@@ -18,6 +21,7 @@ export type RFQTimelineEvent = {
   at: Date
   type: 'created' | 'quote_sent' | 'accepted' | 'rejected' | 'note'
   note?: string
+  internal?: boolean
   quotePrice?: number
   quoteTerms?: string
   quoteValidUntil?: Date
@@ -34,6 +38,9 @@ export type RFQRequest = {
   createdAt: Date
   updatedAt: Date
   createdByUserId?: string
+  companyName?: string
+  contactEmail?: string
+  contactPhone?: string
 }
 
 // Build a minimal timeline for legacy records that don't have one
@@ -67,7 +74,7 @@ type RFQStore = {
   getByCompany: (companyId: string) => RFQRequest[]
   getAll: () => RFQRequest[]
   setQuote: (id: string, quote: Omit<RFQQuote, 'createdAt'>) => Promise<boolean>
-  setStatus: (id: string, status: RFQStatus, note?: string) => Promise<boolean>
+  setStatus: (id: string, status: 'accepted' | 'rejected') => Promise<boolean>
   addNote: (id: string, note: string) => Promise<boolean>
   setRequests: (requests: RFQRequest[]) => void
 }
@@ -102,10 +109,19 @@ export const useRFQStore = create<RFQStore>()(
               companyId: input.companyId,
               items: input.items,
               notes: input.notes,
-              timeline: [{ at: now.toISOString(), type: 'created' }],
             }),
           })
           if (!res.ok) throw new Error(`create rfq failed: ${res.status}`)
+          const body = typeof res.json === 'function' ? await res.json().catch(() => null) as { request?: ServerRfqRow } | null : null
+          if (body?.request) {
+            const saved = mapServerRfq(body.request)
+            set((state) => {
+              const next = new Map(state.requests)
+              next.delete(id)
+              next.set(saved.id, saved)
+              return { requests: next }
+            })
+          }
           return { id, ok: true }
         } catch {
           set({ requests: previous })
@@ -157,13 +173,14 @@ export const useRFQStore = create<RFQStore>()(
           const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: 'quoted',
-              quote: { ...quote, validUntil: quote.validUntil instanceof Date ? quote.validUntil.toISOString() : quote.validUntil, createdAt: now.toISOString() },
-              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-            }),
+            body: JSON.stringify({ action: 'quote', quote: { ...quote, validUntil: quote.validUntil instanceof Date ? quote.validUntil.toISOString() : quote.validUntil } }),
           })
           if (!res.ok) throw new Error(`set quote failed: ${res.status}`)
+          const body = typeof res.json === 'function' ? await res.json().catch(() => null) as { request?: ServerRfqRow } | null : null
+          if (body?.request) {
+            const saved = mapServerRfq(body.request)
+            set((state) => ({ requests: new Map(state.requests).set(id, { ...saved, companyName: existing.companyName, contactEmail: existing.contactEmail, contactPhone: existing.contactPhone }) }))
+          }
           return true
         } catch {
           set({ requests: previous })
@@ -171,7 +188,7 @@ export const useRFQStore = create<RFQStore>()(
         }
       },
 
-      setStatus: async (id, status, note) => {
+      setStatus: async (id, status) => {
         const previous = get().requests
         const existing = previous.get(id)
         if (!existing) return false
@@ -179,7 +196,6 @@ export const useRFQStore = create<RFQStore>()(
         const event: RFQTimelineEvent = {
           at: now,
           type: status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'note',
-          ...(note ? { note } : {}),
         }
         const updatedTimeline = [...(existing.timeline ?? [{ at: new Date(existing.createdAt), type: 'created' }]), event]
         const next = new Map(previous)
@@ -194,12 +210,14 @@ export const useRFQStore = create<RFQStore>()(
           const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status,
-              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-            }),
+            body: JSON.stringify({ action: 'respond', decision: status }),
           })
           if (!res.ok) throw new Error(`set status failed: ${res.status}`)
+          const body = typeof res.json === 'function' ? await res.json().catch(() => null) as { request?: ServerRfqRow } | null : null
+          if (body?.request) {
+            const saved = mapServerRfq(body.request)
+            set((state) => ({ requests: new Map(state.requests).set(id, { ...saved, companyName: existing.companyName, contactEmail: existing.contactEmail, contactPhone: existing.contactPhone }) }))
+          }
           return true
         } catch {
           set({ requests: previous })
@@ -225,12 +243,14 @@ export const useRFQStore = create<RFQStore>()(
           const res = await fetch(`/api/rfq/${encodeURIComponent(id)}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              notes: note.trim(),
-              timeline: updatedTimeline.map((e) => ({ ...e, at: e.at instanceof Date ? e.at.toISOString() : e.at })),
-            }),
+            body: JSON.stringify({ action: 'add_internal_note', note: note.trim() }),
           })
           if (!res.ok) throw new Error(`add note failed: ${res.status}`)
+          const body = typeof res.json === 'function' ? await res.json().catch(() => null) as { request?: ServerRfqRow } | null : null
+          if (body?.request) {
+            const saved = mapServerRfq(body.request)
+            set((state) => ({ requests: new Map(state.requests).set(id, { ...saved, companyName: existing.companyName, contactEmail: existing.contactEmail, contactPhone: existing.contactPhone }) }))
+          }
           return true
         } catch {
           set({ requests: previous })
@@ -256,6 +276,9 @@ type ServerRfqRow = {
   createdAt: string
   updatedAt: string
   createdByUserId?: string | null
+  companyName?: string
+  contactEmail?: string
+  contactPhone?: string
 }
 
 export function mapServerRfq(row: ServerRfqRow): RFQRequest {
@@ -280,6 +303,7 @@ export function mapServerRfq(row: ServerRfqRow): RFQRequest {
       at: new Date(e.at as string),
       type: e.type as RFQTimelineEvent['type'],
       note: e.note as string | undefined,
+      internal: e.internal === true,
       quotePrice: e.quotePrice as number | undefined,
       quoteTerms: e.quoteTerms as string | undefined,
       quoteValidUntil: e.quoteValidUntil ? new Date(e.quoteValidUntil as string) : undefined,
@@ -287,5 +311,8 @@ export function mapServerRfq(row: ServerRfqRow): RFQRequest {
     createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),
     createdByUserId: row.createdByUserId ?? undefined,
+    companyName: row.companyName,
+    contactEmail: row.contactEmail,
+    contactPhone: row.contactPhone,
   }
 }

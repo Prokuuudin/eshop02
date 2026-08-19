@@ -397,6 +397,12 @@ const ruAccount: Record<string, string> = {
   'account.requestQuote.termsLabel': 'Условия',
   'account.requestQuote.accept': 'Принять',
   'account.requestQuote.reject': 'Отклонить',
+  'account.requestQuote.expired': 'Срок действия предложения истёк. Запросите обновлённые условия у менеджера.',
+  'account.requestQuote.acceptedNextStep': 'Предложение принято. Менеджер свяжется с вами для подтверждения доставки, оплаты и оформления заказа.',
+  'account.requestQuote.status.pending': 'На рассмотрении',
+  'account.requestQuote.status.quoted': 'Предложение получено',
+  'account.requestQuote.status.accepted': 'Принято',
+  'account.requestQuote.status.rejected': 'Отклонено',
   'account.requestQuote.noRequestsYet': 'Заявок пока нет',
 }
 

@@ -88,7 +88,7 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
               )}
 
               {ev.note && ev.type !== 'quote_sent' && (
-                <p className="mt-0.5 text-xs text-muted-foreground italic">{ev.note}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground italic">{ev.internal ? 'Внутренняя заметка: ' : ''}{ev.note}</p>
               )}
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function AdminRFQPage(): React.ReactElement {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [statusFilter, setStatusFilter] = useState<RFQStatus | 'all'>('all')
 
-  const { getAll, setQuote, setStatus, addNote, setRequests } = useRFQStore()
+  const { getAll, setQuote, addNote, setRequests } = useRFQStore()
   const requests = useMemo(() => getAll(), [getAll])
   const { showToast } = useToast()
 
@@ -120,10 +120,19 @@ export default function AdminRFQPage(): React.ReactElement {
   }, [])
 
   React.useEffect(() => {
-    adminFetchJson<{ requests?: Array<Parameters<typeof mapServerRfq>[0]> }>('/api/rfq?take=200')
-      .then(({ requests: dbRequests }) => {
-        if (Array.isArray(dbRequests)) setRequests(dbRequests.map(mapServerRfq))
-      })
+    const loadAll = async () => {
+      const all: Array<ReturnType<typeof mapServerRfq>> = []
+      let skip = 0
+      for (;;) {
+        const payload = await adminFetchJson<{ requests?: Array<Parameters<typeof mapServerRfq>[0]>; total?: number }>(`/api/rfq?skip=${skip}&take=200`)
+        const page = Array.isArray(payload.requests) ? payload.requests.map(mapServerRfq) : []
+        all.push(...page)
+        if (page.length < 200 || all.length >= (payload.total ?? all.length)) return all
+        skip += page.length
+      }
+    }
+    loadAll()
+      .then(setRequests)
       .catch((error) => reportAdminError(error, 'RFQ-заявки'))
   }, [setRequests])
 
@@ -150,12 +159,13 @@ export default function AdminRFQPage(): React.ReactElement {
   }
 
   const sendQuote = async (rfqId: string) => {
-    const price = parseFloat(quotePrice[rfqId] ?? '')
-    const terms = (quoteTerms[rfqId] ?? '').trim()
+    const current = requests.find((request) => request.id === rfqId)
+    const price = parseFloat(quotePrice[rfqId] ?? String(current?.quote?.totalPrice ?? ''))
+    const terms = (quoteTerms[rfqId] ?? current?.quote?.terms ?? '').trim()
     const days = parseInt(quoteValidDays[rfqId] ?? '7', 10)
     if (!price || price <= 0 || !terms) return
     const validUntil = new Date()
-    validUntil.setDate(validUntil.getDate() + Math.max(1, days || 7))
+    validUntil.setDate(validUntil.getDate() + Math.min(365, Math.max(1, days || 7)))
     const ok = await setQuote(rfqId, { totalPrice: price, terms, validUntil })
     if (!ok) {
       showToast('Не удалось отправить котировку. Попробуйте ещё раз.', 'error')
@@ -175,11 +185,6 @@ export default function AdminRFQPage(): React.ReactElement {
       return
     }
     setNoteDraft((p) => { const n = { ...p }; delete n[rfqId]; return n })
-  }
-
-  const markStatus = async (rfqId: string, status: RFQStatus) => {
-    const ok = await setStatus(rfqId, status)
-    if (!ok) showToast('Не удалось обновить статус. Попробуйте ещё раз.', 'error')
   }
 
   const STATUS_TABS: { value: RFQStatus | 'all'; label: string }[] = [
@@ -253,8 +258,11 @@ export default function AdminRFQPage(): React.ReactElement {
                     </span>
                   </div>
                   <p className="text-sm font-medium text-foreground">
-                    Компания: <span className="font-mono">{rfq.companyId}</span>
+                    Компания: <span className="font-medium">{rfq.companyName ?? rfq.companyId}</span>
                   </p>
+                  {(rfq.contactEmail || rfq.contactPhone) && (
+                    <p className="text-xs text-muted-foreground">{[rfq.contactEmail, rfq.contactPhone].filter(Boolean).join(' · ')}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Создана: {formatDate(rfq.createdAt, 'ru-RU')}
                     {rfq.timeline.length > 1 && lastEvent && (
@@ -290,17 +298,17 @@ export default function AdminRFQPage(): React.ReactElement {
                           <div key={idx} className="flex items-center justify-between px-3 py-2.5 gap-3">
                             <div className="min-w-0">
                               <p className="text-sm text-foreground truncate">
-                                {product?.title ?? item.productId}
+                                {item.title ?? product?.title ?? item.productId}
                               </p>
-                              {product?.sku && (
-                                <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                              {(item.sku ?? product?.sku) && (
+                                <p className="text-xs text-muted-foreground font-mono">{item.sku ?? product?.sku}</p>
                               )}
                             </div>
                             <div className="shrink-0 text-right">
                               <p className="text-sm text-muted-foreground">{item.quantity} шт</p>
-                              {product?.price && (
+                              {(item.listPrice ?? product?.price) !== undefined && (
                                 <p className="text-xs text-muted-foreground">
-                                  Прайс: {formatEuro(product.price * item.quantity, 'ru-RU')}
+                                  Прайс на момент запроса: {formatEuro((item.listPrice ?? product?.price ?? 0) * item.quantity, 'ru-RU')}
                                 </p>
                               )}
                             </div>
@@ -334,6 +342,7 @@ export default function AdminRFQPage(): React.ReactElement {
                         <Input
                           type="number"
                           min={1}
+                          max={365}
                           value={quoteValidDays[rfq.id] ?? '7'}
                           onChange={(e) => setQuoteValidDays((p) => ({ ...p, [rfq.id]: e.target.value }))}
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -356,26 +365,7 @@ export default function AdminRFQPage(): React.ReactElement {
                         >
                           {rfq.status === 'quoted' ? 'Обновить котировку' : 'Отправить котировку'}
                         </Button>
-                        {rfq.status === 'quoted' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => markStatus(rfq.id, 'accepted')}
-                              className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20"
-                            >
-                              Отметить как принята
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => markStatus(rfq.id, 'rejected')}
-                              className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                            >
-                              Отметить как отклонена
-                            </Button>
-                          </>
-                        )}
+                        {rfq.status === 'quoted' && <p className="self-center text-xs text-muted-foreground">Ожидается решение клиента</p>}
                       </div>
                     </div>
                   )}

@@ -10,6 +10,9 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
     },
+    product: { findMany: vi.fn().mockResolvedValue([{ id: 'p1', title: 'Product', sku: 'SKU-1', price: 10 }]) },
+    user: { findMany: vi.fn().mockResolvedValue([]) },
+    userNotification: { createMany: vi.fn() },
   },
 }))
 

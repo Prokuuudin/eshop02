@@ -398,6 +398,12 @@ const enAccount: Record<string, string> = {
   'account.requestQuote.termsLabel': 'Terms',
   'account.requestQuote.accept': 'Accept',
   'account.requestQuote.reject': 'Decline',
+  'account.requestQuote.expired': 'This offer has expired. Ask your manager for updated terms.',
+  'account.requestQuote.acceptedNextStep': 'Offer accepted. Your manager will contact you to confirm delivery, payment, and order placement.',
+  'account.requestQuote.status.pending': 'Under review',
+  'account.requestQuote.status.quoted': 'Offer received',
+  'account.requestQuote.status.accepted': 'Accepted',
+  'account.requestQuote.status.rejected': 'Declined',
   'account.requestQuote.noRequestsYet': 'No requests yet',
 }
 

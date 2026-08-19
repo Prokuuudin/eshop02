@@ -35,20 +35,28 @@ export default function RequestQuotePage(): React.ReactElement {
   const rfqList = useMemo(() => (companyId ? getByCompany(companyId) : []), [companyId, getByCompany])
 
   React.useEffect(() => {
-    fetch('/api/rfq')
-      .then((r) => r.json())
-      .then(({ requests: dbRequests }) => {
-        if (Array.isArray(dbRequests)) setRequests(dbRequests.map(mapServerRfq))
-      })
+    const loadAll = async () => {
+      const all: Array<ReturnType<typeof mapServerRfq>> = []
+      let skip = 0
+      for (;;) {
+        const response = await fetch(`/api/rfq?skip=${skip}&take=200`, { cache: 'no-store' })
+        if (!response.ok) throw new Error(`rfq_load_failed:${response.status}`)
+        const payload = await response.json() as { requests?: Array<Parameters<typeof mapServerRfq>[0]>; total?: number }
+        const page = Array.isArray(payload.requests) ? payload.requests.map(mapServerRfq) : []
+        all.push(...page)
+        if (page.length < 200 || all.length >= (payload.total ?? all.length)) return all
+        skip += page.length
+      }
+    }
+    loadAll()
+      .then(setRequests)
       .catch(() => {})
   }, [setRequests])
 
   React.useEffect(() => {
     const loadProducts = async () => {
       try {
-        // Bounded instead of the whole catalog (2000+ products) - this only backs a
-        // product picker dropdown, not a page that needs every SKU.
-        const nextProducts = await fetchAllProducts(undefined, 500)
+        const nextProducts = await fetchAllProducts()
         setProducts(nextProducts)
         setItems((prev) => prev.map((item, index) => (index === 0 && !item.productId
           ? { ...item, productId: nextProducts[0]?.id ?? '' }
@@ -128,6 +136,8 @@ export default function RequestQuotePage(): React.ReactElement {
       ok ? 'info' : 'error'
     )
   }
+
+  const statusLabel = (status: string) => t(`account.requestQuote.status.${status}`, status)
 
   if (!companyId) {
     return (
@@ -219,7 +229,7 @@ export default function RequestQuotePage(): React.ReactElement {
                   <p className="text-sm font-medium">{rfq.id}</p>
                   <p className="text-xs text-muted-foreground">{t('account.requestQuote.createdLabel')}: {formatDate(rfq.createdAt, locale)}</p>
                 </div>
-                <span className="text-xs rounded px-2 py-1 bg-muted">{rfq.status}</span>
+                <span className="text-xs rounded px-2 py-1 bg-muted">{statusLabel(rfq.status)}</span>
               </div>
 
               <ul className="mt-3 text-sm space-y-1">
@@ -227,7 +237,7 @@ export default function RequestQuotePage(): React.ReactElement {
                   const product = products.find((p) => p.id === item.productId)
                   return (
                     <li key={idx} className="text-gray-700 dark:text-gray-300">
-                      {product?.title || item.productId} - {item.quantity} {t('account.requestQuote.unitsShort')}
+                      {item.title || product?.title || item.productId} - {item.quantity} {t('account.requestQuote.unitsShort')}
                     </li>
                   )
                 })}
@@ -242,12 +252,13 @@ export default function RequestQuotePage(): React.ReactElement {
                   <p className="text-xs text-muted-foreground">{t('account.requestQuote.validUntilLabel')}: {formatDate(rfq.quote.validUntil, locale)}</p>
                   <p className="text-xs text-muted-foreground mt-1">{t('account.requestQuote.termsLabel')}: {rfq.quote.terms}</p>
 
-                  {rfq.status === 'quoted' && (
+                  {rfq.status === 'quoted' && (rfq.quote.validUntil.getTime() > Date.now() ? (
                     <div className="mt-3 flex gap-2">
                       <Button size="sm" onClick={() => acceptQuote(rfq.id)}>{t('account.requestQuote.accept')}</Button>
                       <Button size="sm" variant="outline" onClick={() => rejectQuote(rfq.id)}>{t('account.requestQuote.reject')}</Button>
                     </div>
-                  )}
+                  ) : <p className="mt-3 text-sm text-destructive">{t('account.requestQuote.expired')}</p>)}
+                  {rfq.status === 'accepted' && <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">{t('account.requestQuote.acceptedNextStep')}</p>}
                 </div>
               )}
             </div>

@@ -85,7 +85,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       try {
         await prisma.companyMember.updateMany({ where: { userId: user.id }, data: { email: newEmail } })
         await prisma.savedAddress.updateMany({ where: { email: user.email }, data: { email: newEmail } })
-        await prisma.productSubscription.updateMany({ where: { userId: user.id }, data: { userEmail: newEmail } })
       } catch (relatedUpdateError) {
         logApiError("[user/profile PATCH] related email sync failed", relatedUpdateError)
       }

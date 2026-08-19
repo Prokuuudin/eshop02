@@ -47,7 +47,7 @@ export interface ReturnRequest {
 type ReturnsStore = {
   returns: ReturnRequest[]
   addReturn: (r: ReturnRequest) => Promise<{ ok: boolean; error?: string }>
-  setReturnStatus: (id: string, status: ReturnStatus, resolution?: string) => void
+  setReturnStatus: (id: string, status: ReturnStatus, resolution?: string) => Promise<{ ok: boolean; error?: string }>
   getReturn: (id: string) => ReturnRequest | undefined
   setReturns: (returns: ReturnRequest[]) => void
 }
@@ -93,7 +93,8 @@ export const useReturnsStore = create<ReturnsStore>()((set, get) => ({
     }
   },
 
-  setReturnStatus: (id, status, resolution) => {
+  setReturnStatus: async (id, status, resolution) => {
+    const previous = get().returns
     set((state) => ({
       returns: state.returns.map((r) =>
         r.id === id
@@ -106,14 +107,28 @@ export const useReturnsStore = create<ReturnsStore>()((set, get) => ({
           : r
       ),
     }))
-    if (typeof window !== 'undefined') {
-      const resolvedAt = status !== 'pending' ? new Date().toISOString() : null
-      fetch(`/api/returns/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, ...(resolution !== undefined ? { resolution } : {}), ...(resolvedAt ? { resolvedAt } : {}) }),
-      }).catch(() => {})
+    const resolvedAt = status !== 'pending' ? new Date().toISOString() : null
+    try {
+        const response = await fetch(`/api/returns/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, ...(resolution !== undefined ? { resolution } : {}), resolvedAt }),
+        })
+        if (!response.ok) {
+          const body = await response.json().catch(() => null) as { error?: string } | null
+          set({ returns: previous })
+          return { ok: false, error: body?.error }
+        }
+        const body = await response.json().catch(() => null) as { return?: ServerReturnRow } | null
+        if (body?.return) {
+          const saved = mapServerReturn(body.return)
+          set((state) => ({ returns: state.returns.map((item) => item.id === id ? saved : item) }))
+        }
+    } catch {
+      set({ returns: previous })
+      return { ok: false }
     }
+    return { ok: true }
   },
 
   getReturn: (id) => get().returns.find((r) => r.id === id),

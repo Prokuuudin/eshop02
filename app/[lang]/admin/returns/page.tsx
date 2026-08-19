@@ -16,6 +16,7 @@ import {
 import { logAdminAction } from '@/lib/admin-log-store';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { reportAdminError } from '@/lib/admin-ui-errors';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
 
@@ -74,15 +75,10 @@ export default function AdminReturnsPage(): React.ReactElement {
             formComment,
             setFormComment,
             formRefund,
-            setFormRefund,
             formFirstName,
-            setFormFirstName,
             formLastName,
-            setFormLastName,
             formEmail,
-            setFormEmail,
             formPhone,
-            setFormPhone,
             formItems,
             formError,
             statsByStatus,
@@ -110,7 +106,7 @@ export default function AdminReturnsPage(): React.ReactElement {
             {/* Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <div className="col-span-2 rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs text-muted-foreground">Сумма к возврату</p>
+                    <p className="text-xs text-muted-foreground">Сумма всех заявок</p>
                     <p className="text-2xl font-bold mt-1 text-foreground">
                         {formatEuro(totalRefund, locale)}
                     </p>
@@ -173,25 +169,25 @@ export default function AdminReturnsPage(): React.ReactElement {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <Input
                             value={formFirstName}
-                            onChange={(e) => setFormFirstName(e.target.value)}
+                            readOnly
                             placeholder="Имя *"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Input
                             value={formLastName}
-                            onChange={(e) => setFormLastName(e.target.value)}
+                            readOnly
                             placeholder="Фамилия"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Input
                             value={formEmail}
-                            onChange={(e) => setFormEmail(e.target.value)}
+                            readOnly
                             placeholder="Email *"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Input
                             value={formPhone}
-                            onChange={(e) => setFormPhone(e.target.value)}
+                            readOnly
                             placeholder="Телефон"
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
@@ -214,14 +210,9 @@ export default function AdminReturnsPage(): React.ReactElement {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Input
-                            type="number"
-                            min={0}
-                            value={formRefund}
-                            onChange={(e) => setFormRefund(e.target.value)}
-                            placeholder="Сумма возврата (€) *"
-                            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                        />
+                        <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                            Рассчитано по заказу: {formatEuro(formRefund, locale)}
+                        </div>
                         <Input
                             value={formComment}
                             onChange={(e) => setFormComment(e.target.value)}
@@ -602,12 +593,16 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                             ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                                                             : ''
                                                     }
-                                                    onClick={() => {
-                                                        setReturnStatus(
+                                                    onClick={async () => {
+                                                        const result = await setReturnStatus(
                                                             ret.id,
                                                             s,
                                                             resolutionDraft[ret.id]
                                                         );
+                                                        if (!result.ok) {
+                                                            reportAdminError(new Error(result.error ?? 'return_update_failed'), 'Возвраты');
+                                                            return;
+                                                        }
                                                         logAdminAction(
                                                             'return.status_changed',
                                                             {

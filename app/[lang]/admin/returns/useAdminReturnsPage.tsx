@@ -19,16 +19,32 @@ function generateReturnId() {
     return `RET-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 }
 
+const RETURNS_PAGE_SIZE = 200;
+
+async function loadAllReturns(): Promise<ReturnType<typeof mapServerReturn>[]> {
+    const all: ReturnType<typeof mapServerReturn>[] = [];
+    let skip = 0;
+    for (;;) {
+        const payload = await adminFetchJson<{
+            returns?: Array<Parameters<typeof mapServerReturn>[0]>;
+            total?: number;
+        }>(`/api/returns?skip=${skip}&take=${RETURNS_PAGE_SIZE}`);
+        const page = Array.isArray(payload.returns) ? payload.returns.map(mapServerReturn) : [];
+        all.push(...page);
+        const total = typeof payload.total === 'number' ? payload.total : all.length;
+        if (all.length >= total || page.length < RETURNS_PAGE_SIZE) return all;
+        skip += page.length;
+    }
+}
+
 function useAdminReturnsPageState() {
     useAdminOrdersSync();
     const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore();
     const { orders } = useOrders();
 
     useEffect(() => {
-        adminFetchJson<{ returns?: Array<Parameters<typeof mapServerReturn>[0]> }>('/api/returns?take=200')
-            .then(({ returns: dbReturns }) => {
-                if (Array.isArray(dbReturns)) setReturns(dbReturns.map(mapServerReturn));
-            })
+        loadAllReturns()
+            .then(setReturns)
             .catch((error) => reportAdminError(error, 'Возвраты'));
     }, [setReturns]);
     const { language } = useTranslation();
@@ -48,7 +64,6 @@ function useAdminReturnsPageState() {
     const [foundOrder, setFoundOrder] = useState<Order | undefined>(undefined);
     const [formReason, setFormReason] = useState<ReturnReason>('defective');
     const [formComment, setFormComment] = useState('');
-    const [formRefund, setFormRefund] = useState('');
     const [formFirstName, setFormFirstName] = useState('');
     const [formLastName, setFormLastName] = useState('');
     const [formEmail, setFormEmail] = useState('');
@@ -68,6 +83,10 @@ function useAdminReturnsPageState() {
     const totalRefund = useMemo(
         () => returns.reduce((sum, r) => sum + r.refundAmount, 0),
         [returns]
+    );
+    const formRefund = useMemo(
+        () => formItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        [formItems]
     );
 
     const filtered = useMemo(() => {
@@ -133,7 +152,6 @@ function useAdminReturnsPageState() {
                     image: item.image,
                 }))
             );
-            setFormRefund(String(order.items[0]?.price ?? ''));
             setFormError('');
         } else {
             setFoundOrder(undefined);
@@ -148,11 +166,15 @@ function useAdminReturnsPageState() {
     };
 
     const submitReturn = async () => {
-        if (!formFirstName || !formEmail || !formRefund) {
-            setFormError('Заполните обязательные поля: имя, email, сумма возврата');
+        if (!foundOrder) {
+            setFormError('Сначала найдите существующий заказ.');
             return;
         }
         const activeItems = formItems.filter((i) => i.quantity > 0);
+        if (activeItems.length === 0) {
+            setFormError('Выберите хотя бы один товар для возврата.');
+            return;
+        }
         const result = await addReturn({
             id: generateReturnId(),
             orderId: formOrderId.trim() || '—',
@@ -161,7 +183,7 @@ function useAdminReturnsPageState() {
             reason: formReason,
             comment: formComment || undefined,
             items: activeItems,
-            refundAmount: Number(formRefund),
+            refundAmount: formRefund,
             firstName: formFirstName,
             lastName: formLastName,
             email: formEmail,
@@ -183,7 +205,6 @@ function useAdminReturnsPageState() {
         setFormEmail('');
         setFormPhone('');
         setFormComment('');
-        setFormRefund('');
         setFormItems([]);
         setFormError('');
     };
@@ -221,7 +242,6 @@ function useAdminReturnsPageState() {
         formComment,
         setFormComment,
         formRefund,
-        setFormRefund,
         formFirstName,
         setFormFirstName,
         formLastName,

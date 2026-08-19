@@ -44,9 +44,26 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.returnRequest.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
       prisma.returnRequest.count({ where }),
     ])
+    const orderIds = [...new Set(returns.map((item) => item.orderId))]
+    const orders = orderIds.length > 0
+      ? await prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, items: true } })
+      : []
+    const orderItemsById = new Map(orders.map((order) => [
+      order.id,
+      new Map((Array.isArray(order.items) ? order.items as Array<Record<string, unknown>> : []).map((item) => [String(item.id ?? ''), item])),
+    ]))
     return NextResponse.json({
       returns: returns.map((item) => ({
         ...item,
+        items: (Array.isArray(item.items) ? item.items as Array<Record<string, unknown>> : []).map((returnItem) => {
+          const orderItem = orderItemsById.get(item.orderId)?.get(String(returnItem.productId ?? ''))
+          return {
+            ...returnItem,
+            ...(orderItem && typeof orderItem.title === 'string' ? { title: orderItem.title } : {}),
+            ...(orderItem && typeof orderItem.price === 'number' ? { price: orderItem.price } : {}),
+            ...(orderItem && typeof orderItem.image === 'string' ? { image: orderItem.image } : {}),
+          }
+        }),
         createdAt: item.createdAt.toISOString(),
         resolvedAt: item.resolvedAt?.toISOString() ?? null,
       })),
@@ -83,7 +100,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
       const orderByProduct = new Map((order.items as OrderItem[]).map((item) => [item.id, item]))
       const priorReturns = await tx.returnRequest.findMany({
-        where: { orderId: body.orderId },
+        where: { orderId: body.orderId, status: { not: 'rejected' } },
         select: { items: true },
       })
       const reserved = new Map<string, number>()
@@ -109,10 +126,10 @@ export async function POST(req: NextRequest): Promise<Response> {
         data: {
           id: randomUUID(), orderId: body.orderId!, reason: body.reason!, items, refundAmount,
           comment: typeof body.comment === 'string' ? body.comment : null,
-          firstName: typeof body.firstName === 'string' ? body.firstName : (user.name ?? ''),
-          lastName: typeof body.lastName === 'string' ? body.lastName : '',
-          email: user.email,
-          phone: typeof body.phone === 'string' ? body.phone : '',
+          firstName: user.platformRole === 'admin' ? order.firstName : (user.name ?? order.firstName),
+          lastName: order.lastName,
+          email: user.platformRole === 'admin' ? order.email : user.email,
+          phone: order.phone,
           status: 'pending',
         },
       })

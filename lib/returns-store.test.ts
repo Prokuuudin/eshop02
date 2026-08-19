@@ -58,3 +58,18 @@ describe('addReturn', () => {
     expect(useReturnsStore.getState().returns).toHaveLength(0)
   })
 })
+
+describe('setReturnStatus', () => {
+  it('rolls back the optimistic status when the server rejects the update', async () => {
+    useReturnsStore.setState({ returns: [draft] })
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'server_error' }),
+    } as Response)
+
+    const result = await useReturnsStore.getState().setReturnStatus(draft.id, 'approved')
+
+    expect(result).toEqual({ ok: false, error: 'server_error' })
+    expect(useReturnsStore.getState().returns[0].status).toBe('pending')
+  })
+})

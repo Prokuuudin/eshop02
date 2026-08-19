@@ -11,11 +11,13 @@ const tx = {
 // closure, like `tx` is above via `(callback) => callback(tx)`) must itself
 // be created with vi.hoisted to avoid a TDZ ReferenceError.
 const returnRequestTop = vi.hoisted(() => ({ findMany: vi.fn(), count: vi.fn() }))
+const orderTop = vi.hoisted(() => ({ findMany: vi.fn() }))
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
     returnRequest: returnRequestTop,
+    order: orderTop,
   },
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
@@ -54,6 +56,28 @@ describe('POST /api/returns reservations', () => {
     expect(response.status).toBe(400)
     expect(tx.returnRequest.create).not.toHaveBeenCalled()
   })
+
+  it('does not reserve quantities from rejected return requests', async () => {
+    tx.returnRequest.findMany.mockResolvedValue([])
+    await POST(request([{ productId: 'p1', quantity: 1 }]))
+    expect(tx.returnRequest.findMany).toHaveBeenCalledWith({
+      where: { orderId: 'o1', status: { not: 'rejected' } },
+      select: { items: true },
+    })
+  })
+
+  it('uses the order customer identity when an admin creates the return', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ email: 'admin@example.com', name: 'Admin', platformRole: 'admin' } as never)
+    tx.order.findUnique.mockResolvedValue({
+      id: 'o1', email: 'buyer@example.com', firstName: 'Buyer', lastName: 'Person', phone: '+3711',
+      items: [{ id: 'p1', price: 10, quantity: 3 }],
+    })
+    tx.returnRequest.findMany.mockResolvedValue([])
+    await POST(request([{ productId: 'p1', quantity: 1 }]))
+    expect(tx.returnRequest.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ firstName: 'Buyer', lastName: 'Person', email: 'buyer@example.com', phone: '+3711' }),
+    })
+  })
 })
 
 describe('GET /api/returns', () => {
@@ -68,6 +92,7 @@ describe('GET /api/returns', () => {
     vi.clearAllMocks()
     returnRequestTop.findMany.mockResolvedValue([sampleRow])
     returnRequestTop.count.mockResolvedValue(1)
+    orderTop.findMany.mockResolvedValue([{ id: 'o1', items: [{ id: 'p1', title: 'Shampoo', price: 10, image: '/p.jpg' }] }])
   })
 
   it('admin with no ?email= gets the unfiltered list (existing /admin/returns behavior unchanged)', async () => {
@@ -77,6 +102,14 @@ describe('GET /api/returns', () => {
     expect(returnRequestTop.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: {} })
     )
+  })
+
+  it('enriches persisted return quantities with the historical order item snapshot', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ email: 'admin@example.com', platformRole: 'admin' } as never)
+    returnRequestTop.findMany.mockResolvedValue([{ ...sampleRow, items: [{ productId: 'p1', quantity: 1 }] }])
+    const response = await GET(new NextRequest('http://localhost/api/returns'))
+    const body = await response.json() as { returns: Array<{ items: unknown[] }> }
+    expect(body.returns[0].items).toEqual([{ productId: 'p1', quantity: 1, title: 'Shampoo', price: 10, image: '/p.jpg' }])
   })
 
   it('admin with ?email= scopes the query to that customer', async () => {

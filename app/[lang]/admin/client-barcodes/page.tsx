@@ -15,7 +15,7 @@ import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage'
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
   const pageState = useAdminClientBarcodesPage()
-  const { tl, language, formError, message, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
+  const { tl, language, formError, message, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, setClientEdits, clientSaveBusy, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
   const locale = getLocaleFromLanguage(language)
 return (
         <AdminGate>
@@ -66,13 +66,13 @@ return (
                 <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-card p-6">
                     <div className="mb-4">
                         <h2 className="text-xl font-semibold text-foreground">
-                            Заявки мастеров (без карты){' '}
+                            Заявки клиентов без карты{' '}
                             <span className="ml-1 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-sm font-medium text-amber-800 dark:text-amber-300">
                                 {noCardRequests.length}
                             </span>
                         </h2>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Мастера, приложившие сертификат через форму регистрации. Укажите название компании и сгенерируйте номер карты для выдачи.
+                            Проверьте заявку, выберите тип клиента и выдайте свободный номер карты.
                         </p>
                     </div>
 
@@ -118,6 +118,14 @@ return (
                                         )}
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                            <label htmlFor={`customer-type-${req.id}`} className="text-sm">
+                                                <span className="block mb-1 text-muted-foreground">Тип клиента</span>
+                                                <Select value={draft.customerType} onValueChange={(value: 'individual' | 'company') => setNoCardDrafts((prev) => ({ ...prev, [req.id]: { ...draft, customerType: value } }))}>
+                                                    <SelectTrigger id={`customer-type-${req.id}`}><SelectValue /></SelectTrigger>
+                                                    <SelectContent><SelectItem value="individual">Физлицо</SelectItem><SelectItem value="company">Юрлицо</SelectItem></SelectContent>
+                                                </Select>
+                                            </label>
+                                            {draft.customerType === 'company' && (
                                             <label htmlFor={`company-name-${req.id}`} className="text-sm">
                                                 <span className="block mb-1 text-muted-foreground">Название компании</span>
                                                 <Input
@@ -129,9 +137,16 @@ return (
                                                             [req.id]: { ...draft, companyName: e.target.value },
                                                         }))
                                                     }
-                                                    placeholder="Имя мастера / ИП"
+                                                    placeholder="SIA …"
                                                 />
                                             </label>
+                                            )}
+                                            {draft.customerType === 'company' && (
+                                                <label htmlFor={`registration-number-${req.id}`} className="text-sm">
+                                                    <span className="block mb-1 text-muted-foreground">Регистрационный номер</span>
+                                                    <Input id={`registration-number-${req.id}`} value={draft.registrationNumber} onChange={(e) => setNoCardDrafts((prev) => ({ ...prev, [req.id]: { ...draft, registrationNumber: e.target.value } }))} placeholder="11 цифр" inputMode="numeric" />
+                                                </label>
+                                            )}
                                             <label htmlFor={`card-number-${req.id}`} className="text-sm">
                                                 <span className="block mb-1 text-muted-foreground">Номер карты</span>
                                                 <div className="flex gap-2">
@@ -204,10 +219,11 @@ return (
                     <h2 className="text-xl font-semibold mb-4">
                         {tl('admin.clientBarcodes.holders', 'Держатели карт', 'Card holders', 'Karšu turētāji')}{' '}
                         <span className="text-muted-foreground font-normal text-base">
-                            {search.trim() ? `${cardHolders.length} / ${cardHoldersTotal}` : cardHoldersTotal}
+                            {cardHoldersTotal === 0 ? '0' : `${cardHoldersPage * 50 + 1}–${Math.min((cardHoldersPage + 1) * 50, cardHoldersTotal)} / ${cardHoldersTotal}`}
                         </span>
                     </h2>
 
+                    {cardHoldersError && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{cardHoldersError}</p>}
                     {cardHoldersLoading ? (
                         <p className="text-sm text-muted-foreground py-4">Загрузка...</p>
                     ) : cardHolders.length === 0 ? (
@@ -226,25 +242,35 @@ return (
                                         <th className="pb-2 pr-4 font-medium">Тип</th>
                                         <th className="pb-2 pr-4 font-medium">Рег. номер</th>
                                         <th className="pb-2 font-medium">Бонусы</th>
+                                        <th className="pb-2 font-medium">Действие</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {cardHolders.map((holder) => (
+                                    {cardHolders.map((holder) => {
+                                        const edit = getClientEdit(holder)
+                                        return (
                                         <tr key={holder.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                             <td className="py-2 pr-4 font-mono text-xs">{holder.cardNumber ?? '—'}</td>
                                             <td className="py-2 pr-4">{holder.name || holder.companyName || '—'}</td>
                                             <td className="py-2 pr-4 font-mono text-xs">{holder.email}</td>
                                             <td className="py-2 pr-4">{holder.phone ?? '—'}</td>
-                                            <td className="py-2 pr-4">{holder.customerType === 'company' ? 'Юрлицо' : 'Физлицо'}</td>
-                                            <td className="py-2 pr-4 font-mono text-xs">{holder.customerType === 'company' ? holder.registrationNumber ?? '—' : '—'}</td>
+                                            <td className="py-2 pr-4">
+                                                <Select value={edit.customerType} onValueChange={(value: 'individual' | 'company') => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, customerType: value } }))}>
+                                                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                                                    <SelectContent><SelectItem value="individual">Физлицо</SelectItem><SelectItem value="company">Юрлицо</SelectItem></SelectContent>
+                                                </Select>
+                                            </td>
+                                            <td className="py-2 pr-4"><Input className="min-w-32 font-mono text-xs" disabled={edit.customerType !== 'company'} value={edit.customerType === 'company' ? edit.registrationNumber : ''} onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, registrationNumber: e.target.value } }))} placeholder="11 цифр" /></td>
                                             <td className="py-2">
                                                 {holder.bonusPoints}
                                                 <span className="ml-1 text-xs text-muted-foreground">
                                                     ({formatEuro(pointsToEuros(holder.bonusPoints ?? 0), locale)})
                                                 </span>
                                             </td>
+                                            <td className="py-2 pl-2"><Button size="sm" variant="outline" disabled={clientSaveBusy === holder.id} onClick={() => void handleSaveClientDetails(holder)}>{clientSaveBusy === holder.id ? 'Сохранение…' : 'Сохранить'}</Button></td>
                                         </tr>
-                                    ))}
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>

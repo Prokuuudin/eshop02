@@ -7,7 +7,7 @@ const admin = { platformRole: 'admin' }
 describe('admin permissions', () => {
   it('grants managers only order and RFQ operations', () => {
     expect(getAdminPermissions(manager)).toEqual([
-      'admin.access', 'orders.read', 'orders.update', 'rfq.read', 'rfq.quote',
+      'admin.access', 'orders.read', 'orders.update', 'customers.read', 'rfq.read', 'rfq.quote',
     ])
     expect(hasAdminPermission(manager, 'users.manage')).toBe(false)
     expect(hasAdminPermission(manager, 'catalog.update')).toBe(false)

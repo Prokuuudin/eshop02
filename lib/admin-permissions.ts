@@ -31,6 +31,7 @@ const MANAGER_PERMISSIONS = new Set<AdminPermission>([
   'admin.access',
   'orders.read',
   'orders.update',
+  'customers.read',
   'rfq.read',
   'rfq.quote',
 ])

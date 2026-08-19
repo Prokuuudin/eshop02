@@ -120,6 +120,33 @@ describe('PATCH /api/admin/access-requests/[id] — approve no-card', () => {
     expect(vi.mocked(prisma.accessRequest.update)).toHaveBeenCalled()
   })
 
+  it('сохраняет тип и регистрационный номер юрлица', async () => {
+    accessRequestFindUniqueMock.mockResolvedValue(NO_CARD_REQUEST)
+    userFindFirstMock.mockResolvedValue(null)
+
+    const res = await PATCH(makeRequest({
+      status: 'approved', cardNumber: '77001', customerType: 'company',
+      companyName: 'SIA Test', registrationNumber: '40103351370',
+    }), params('req1'))
+
+    expect(res.status).toBe(200)
+    expect(userCreateMock.mock.calls[0][0].data).toMatchObject({
+      customerType: 'company', companyName: 'SIA Test', registrationNumber: '40103351370',
+    })
+  })
+
+  it('отклоняет юрлицо без корректного регистрационного номера', async () => {
+    accessRequestFindUniqueMock.mockResolvedValue(NO_CARD_REQUEST)
+
+    const res = await PATCH(makeRequest({
+      status: 'approved', cardNumber: '77001', customerType: 'company', companyName: 'SIA Test', registrationNumber: '123',
+    }), params('req1'))
+
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('invalid_company_details')
+    expect(userCreateMock).not.toHaveBeenCalled()
+  })
+
   it('карта занята другим юзером → 409, заявка не обновляется', async () => {
     accessRequestFindUniqueMock.mockResolvedValue(NO_CARD_REQUEST)
     userFindFirstMock.mockImplementation(async ({ where }) => {

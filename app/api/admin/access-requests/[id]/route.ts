@@ -16,10 +16,21 @@ import {
 } from '@/lib/invitations'
 import { getSiteUrl } from '@/lib/site-url'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { z } from 'zod'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 
 const ALLOWED_STATUSES = new Set(['approved', 'rejected'])
+const approvalBodySchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+  reviewNote: z.string().max(2000).optional(),
+  approvedTeamRole: z.string().max(50).optional(),
+  cardNumber: z.string().max(100).optional(),
+  customerType: z.enum(['individual', 'company']).optional(),
+  companyName: z.string().trim().max(200).optional(),
+  registrationNumber: z.string().trim().max(50).optional(),
+}).strict()
 
 export async function PATCH(
   req: NextRequest,
@@ -27,7 +38,7 @@ export async function PATCH(
 ): Promise<Response> {
   try {
     const user = await getServerUser()
-    if (!user || user.platformRole !== 'admin') {
+    if (!user || !hasAdminPermission(user, 'customers.read')) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -35,17 +46,11 @@ export async function PATCH(
     const existing = await prisma.accessRequest.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    const body = (await req.json()) as {
-      status?: string
-      reviewNote?: string
-      approvedTeamRole?: string
-      cardNumber?: string
-      companyName?: string
-    }
-
-    if (!body.status || !ALLOWED_STATUSES.has(body.status)) {
+    const parsedBody = approvalBodySchema.safeParse(await req.json().catch(() => null))
+    if (!parsedBody.success || !ALLOWED_STATUSES.has(parsedBody.data.status)) {
       return NextResponse.json({ error: 'invalid_status' }, { status: 400 })
     }
+    const body = parsedBody.data
 
     const requestUpdate = {
       where: { id },
@@ -69,6 +74,11 @@ export async function PATCH(
     // один аккаунт: для no-card номер выдаёт админ (body), для card-заявки
     // номер уже в самой заявке.
     if (body.status === 'approved') {
+      const customerType = body.customerType ?? 'individual'
+      const registrationNumber = body.registrationNumber?.replace(/\D/gu, '') || null
+      if (customerType === 'company' && (!body.companyName || !registrationNumber || registrationNumber.length !== 11)) {
+        return NextResponse.json({ error: 'invalid_company_details' }, { status: 400 })
+      }
       const cardNumber = normalizeCardNumber(body.cardNumber ?? existing.cardNumber ?? '')
       if (!isValidCardNumber(cardNumber)) {
         return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
@@ -105,6 +115,9 @@ export async function PATCH(
               privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
               marketingConsent: existing.marketingConsent,
               marketingConsentAt: existing.marketingConsentAt,
+              customerType,
+              companyName: customerType === 'company' ? body.companyName : null,
+              registrationNumber: customerType === 'company' ? registrationNumber : null,
             },
           })
         } else {
@@ -118,7 +131,9 @@ export async function PATCH(
               name: existing.name,
               phone: existing.phone,
               cardNumber,
-              companyName: body.companyName?.trim() || null,
+              companyName: customerType === 'company' ? body.companyName : null,
+              customerType,
+              registrationNumber: customerType === 'company' ? registrationNumber : null,
               platformRole: 'customer',
               mustChangePassword: true,
               privacyNoticeVersion: existing.privacyNoticeVersion,
@@ -188,8 +203,5 @@ export async function PATCH(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
-
 
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
@@ -71,7 +71,7 @@ type RejectPayload = { action: 'reject'; email: string; name: string; note?: str
 type Payload = ApprovePayload | RejectPayload
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const __gate = await requireAdmin()
+  const __gate = await requireAdminPermission('customers.read')
   if (__gate instanceof NextResponse) return __gate
 
   let payload: Payload
@@ -132,7 +132,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
 
 
 

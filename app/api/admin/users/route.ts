@@ -36,7 +36,7 @@ const patchSchema = z.object({
 
 export async function GET(req: NextRequest): Promise<Response> {
   try {
-    const caller = await requireAdminPermission('users.manage')
+    const caller = await requireAdminPermission('customers.read')
     if (caller instanceof NextResponse) return caller
 
     const { searchParams } = req.nextUrl
@@ -63,6 +63,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
     if (hasCard) where.cardNumber = { not: null }
+    if (caller.platformRole !== 'admin') {
+      where.cardNumber = { not: null }
+      where.platformRole = 'customer'
+    }
     if (createdSince) {
       const date = new Date(createdSince)
       if (!Number.isNaN(date.getTime())) where.createdAt = { gte: date }
@@ -120,7 +124,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
   if (blocked) return blocked
 
   try {
-    const caller = await requireAdminPermission('users.manage')
+    const caller = await requireAdminPermission('admin.access')
     if (caller instanceof NextResponse) return caller
 
     const parsed = patchSchema.safeParse(await req.json().catch(() => null))
@@ -130,6 +134,11 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
+    const customerDetailFields = new Set(['customerType', 'registrationNumber', 'vatNumber', 'legalAddress'])
+    const customerDetailsOnly = Object.keys(updates).every((field) => customerDetailFields.has(field))
+    if (caller.platformRole !== 'admin' && !customerDetailsOnly) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    }
 
     const roleChangeRequested = updates.platformRole !== undefined
     if (id === caller.id && roleChangeRequested) {
@@ -189,6 +198,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     const user = await prisma.$transaction(async (tx) => {
       const before = await tx.user.findUnique({ where: { id } })
       if (!before) return null
+      if (caller.platformRole !== 'admin' && (before.platformRole !== 'customer' || !before.cardNumber)) {
+        throw new Error('forbidden')
+      }
       if (before.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
         throw new Error('optimistic_conflict')
       }
@@ -241,6 +253,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     const message = e instanceof Error ? e.message : ''
     if (message === 'optimistic_conflict') return NextResponse.json({ error: message }, { status: 409 })
     if (message === 'last_admin_protected') return NextResponse.json({ error: message }, { status: 409 })
+    if (message === 'forbidden') return NextResponse.json({ error: message }, { status: 403 })
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 import { readCertificate, parseDataUrl } from '@/lib/certificate-store'
 
 export const runtime = 'nodejs'
@@ -14,7 +15,7 @@ export async function GET(
 ): Promise<Response> {
   try {
     const user = await getServerUser()
-    if (!user || user.platformRole !== 'admin') {
+    if (!user || !hasAdminPermission(user, 'customers.read')) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -38,8 +39,6 @@ export async function GET(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
 
 
 

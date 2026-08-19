@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
 // занято) — считать свободный номер нужно по реальным картам, а не по пустой
 // таблице Company.
 export async function GET(): Promise<NextResponse> {
-  const gate = await requireAdmin()
+  const gate = await requireAdminPermission('customers.read')
   if (gate instanceof NextResponse) return gate
 
   const rows = await prisma.user.findMany({

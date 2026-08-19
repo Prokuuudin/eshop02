@@ -3,13 +3,14 @@ import { logApiError } from '@/lib/observability'
 import { parseOffsetPagination } from '@/lib/pagination'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest): Promise<Response> {
   try {
     const user = await getServerUser()
-    if (!user || user.platformRole !== 'admin') {
+    if (!user || !hasAdminPermission(user, 'customers.read')) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -43,5 +44,3 @@ export async function GET(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-

@@ -5,8 +5,7 @@ import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Bell, Pencil, Trash2 } from 'lucide-react';
-import { useStockNotifyStore } from '@/lib/stock-notify-store';
+import { Pencil, Trash2 } from 'lucide-react';
 
 interface ProductCardProps {
     product: Product;
@@ -21,9 +20,6 @@ const BADGE_LABELS: Record<string, string> = {
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
-    const { getByProduct, notifyProduct } = useStockNotifyStore();
-    const subscribers = getByProduct(product.id);
-
     const [stock, setStock] = useState(product.stock);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
@@ -38,13 +34,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 body: JSON.stringify({ id: product.id, changes: { stock } }),
             });
             if (!res.ok) throw new Error('save failed');
-
-            if (product.stock === 0 && stock > 0 && subscribers.length > 0) {
-                notifyProduct(product.id, product.title);
-                setSaveMsg(`Уведомлено ${subscribers.length}`);
-            } else {
-                setSaveMsg('Сохранено');
-            }
+            setSaveMsg('Сохранено');
         } catch {
             setSaveMsg('Ошибка');
         } finally {
@@ -134,12 +124,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 >
                     {saving ? '...' : 'Сохр.'}
                 </button>
-                {subscribers.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-[11px] text-primary dark:text-primary ml-auto">
-                        <Bell className="w-3 h-3" />
-                        {subscribers.length}
-                    </span>
-                )}
                 {saveMsg && (
                     <span className="text-[11px] text-green-600 dark:text-green-400 ml-auto">{saveMsg}</span>
                 )}

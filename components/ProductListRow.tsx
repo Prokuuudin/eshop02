@@ -11,8 +11,8 @@ import { stripBrandPrefix } from '@/lib/product-title';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
-import { StockNotifyButton } from './StockNotifyButton';
 import { localizePath } from '@/lib/i18n-routing';
+import { Bell } from 'lucide-react';
 
 type Props = { product: Product };
 
@@ -118,14 +118,19 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
         )}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="flex-1 min-w-0 sm:flex-none">
-            {isOutOfStock ? (
-              <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
-            ) : (
-              <AddToCartButton product={product} />
-            )}
+            {!isOutOfStock && <AddToCartButton product={product} />}
           </div>
           <WishlistButton product={product} className="shrink-0" />
         </div>
+        {isAuthenticated && (
+          <Link
+            href={localizePath(`/product/${product.id}?subscribe=1`, language)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            <Bell className="h-3.5 w-3.5" />
+            {t('productNews.catalogCta')}
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
-import { StockNotifyButton } from './StockNotifyButton';
+import { Bell } from 'lucide-react';
 
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
@@ -162,10 +162,15 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 {/* На десктопе блок действий не занимает места в карточке: по ховеру/фокусу
                     выезжает абсолютом ниже её нижней границы как продолжение карточки. */}
                 <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:absolute lg:top-full lg:-inset-x-px lg:mt-0 lg:w-auto lg:bg-card lg:border lg:border-t-0 lg:border-border lg:rounded-b-xl lg:px-3 lg:pb-3 lg:shadow-xl lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
-                    {isOutOfStock ? (
-                        <StockNotifyButton productId={product.id} productTitle={localizedTitle} compact />
-                    ) : (
-                        <AddToCartButton product={product} />
+                    {!isOutOfStock && <AddToCartButton product={product} />}
+                    {isAuthenticated && (
+                        <Link
+                            href={localizePath(`/product/${product.id}?subscribe=1`, language)}
+                            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/40 px-2 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
+                        >
+                            <Bell className="h-3.5 w-3.5" />
+                            {t('productNews.catalogCta')}
+                        </Link>
                     )}
                 </div>
             </div>

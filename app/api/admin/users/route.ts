@@ -11,6 +11,7 @@ import { parseOffsetPagination } from '@/lib/pagination'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
+const customerTypeSchema = z.enum(['individual', 'company'])
 const patchSchema = z.object({
   id: z.string().min(1).max(200),
   expectedUpdatedAt: z.iso.datetime(),
@@ -27,6 +28,10 @@ const patchSchema = z.object({
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   approvalRequired: z.boolean().optional(),
   auditLoggingEnabled: z.boolean().optional(),
+  customerType: customerTypeSchema.optional(),
+  registrationNumber: z.string().trim().max(50).nullable().optional(),
+  vatNumber: z.string().trim().max(50).nullable().optional(),
+  legalAddress: z.string().trim().max(500).nullable().optional(),
 }).strict()
 
 export async function GET(req: NextRequest): Promise<Response> {
@@ -38,6 +43,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const search = searchParams.get('search')?.trim() || ''
     const role = searchParams.get('role') || ''
     const companyId = searchParams.get('companyId') || ''
+    const customerType = searchParams.get('customerType') || ''
     const createdSince = searchParams.get('createdSince') || ''
     const hasCard = searchParams.get('hasCard') === '1'
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
@@ -49,10 +55,13 @@ export async function GET(req: NextRequest): Promise<Response> {
         { email: { contains: search, mode: 'insensitive' } },
         { name: { contains: search, mode: 'insensitive' } },
         { cardNumber: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { registrationNumber: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (role) where.platformRole = role
     if (companyId) where.companyId = companyId
+    if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
     if (hasCard) where.cardNumber = { not: null }
     if (createdSince) {
       const date = new Date(createdSince)
@@ -77,6 +86,10 @@ export async function GET(req: NextRequest): Promise<Response> {
           cardNumber: true,
           avatarUrl: true,
           bonusPoints: true,
+          customerType: true,
+          registrationNumber: true,
+          vatNumber: true,
+          legalAddress: true,
           approvalRequired: true,
           auditLoggingEnabled: true,
           mustChangePassword: true,
@@ -220,6 +233,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     return NextResponse.json({ user: {
       id: user.id, email: user.email, name: user.name, platformRole: user.platformRole,
       companyId: user.companyId, teamRole: user.teamRole, mfaEnabled: user.mfaEnabled,
+      customerType: user.customerType, registrationNumber: user.registrationNumber,
+      vatNumber: user.vatNumber, legalAddress: user.legalAddress,
       updatedAt: user.updatedAt.toISOString(),
     } })
   } catch (e) {
@@ -233,5 +248,3 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-

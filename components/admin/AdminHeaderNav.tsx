@@ -69,7 +69,6 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         title: 'customers',
         icon: Users,
         items: [
-            { title: 'customers.accounts', href: '/admin/accounts' },
             { title: 'customers.barcodes', href: '/admin/client-barcodes' },
             { title: 'customers.invitations', href: '/admin/invitations' },
             { title: 'customers.segments', href: '/admin/customers/segments' },
@@ -112,7 +111,6 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         title: 'system',
         icon: Cog,
         items: [
-            { title: 'system.users', href: '/admin/accounts' },
             { title: 'system.audit', href: '/account/audit-logs' },
             { title: 'system.logs', href: '/admin/system/logs' },
             { title: 'system.backup', href: '/admin/system/backup' },

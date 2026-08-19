@@ -38,6 +38,10 @@ export type CardHolder = {
     cardNumber: string | null;
     bonusPoints: number;
     companyName: string | null;
+    customerType: 'individual' | 'company' | null;
+    registrationNumber: string | null;
+    vatNumber: string | null;
+    legalAddress: string | null;
 };
 
 function useAdminClientBarcodesPageState() {
@@ -55,6 +59,8 @@ function useAdminClientBarcodesPageState() {
     const [formError, setFormError] = useState('');
     const [message, setMessage] = useState('');
     const [search, setSearch] = useState('');
+    const [customerType, setCustomerType] = useState('all');
+    const [cardHoldersPage, setCardHoldersPage] = useState(0);
 
     // Список держателей карт — из Neon по /api/admin/users, фильтр по email/
     // имени/номеру карты идёт на сервере (WHERE ... contains)
@@ -66,7 +72,9 @@ function useAdminClientBarcodesPageState() {
         setCardHoldersLoading(true);
         try {
             const params = new URLSearchParams({ take: '50', hasCard: '1' });
+            params.set('skip', String(cardHoldersPage * 50));
             if (search.trim()) params.set('search', search.trim());
+            if (customerType !== 'all') params.set('customerType', customerType);
             const res = await fetch(`/api/admin/users?${params}`, { cache: 'no-store' });
             if (!res.ok) return;
             const data = await res.json();
@@ -77,7 +85,7 @@ function useAdminClientBarcodesPageState() {
         } catch { /* сеть — оставляем прежний список */ } finally {
             setCardHoldersLoading(false);
         }
-    }, [search]);
+    }, [search, customerType, cardHoldersPage]);
 
     useEffect(() => {
         queueMicrotask(() => void loadCardHolders());
@@ -207,7 +215,7 @@ function useAdminClientBarcodesPageState() {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(): ReturnType<typeof useAdminClientBarcodesPageState> {

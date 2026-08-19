@@ -77,7 +77,7 @@ const ADMIN_PATH_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> 
   ['/admin/stock-alerts', 'catalog.read'],
   ['/admin/customers', 'customers.read'],
   ['/admin/client-barcodes', 'customers.read'],
-  ['/admin/accounts', 'users.manage'],
+  ['/admin/accounts', 'customers.read'],
   ['/admin/invitations', 'users.manage'],
   ['/admin/marketing', 'marketing.manage'],
   ['/admin/notifications', 'marketing.manage'],

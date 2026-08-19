@@ -23,6 +23,10 @@ model User {
   pkLast3             String?   @db.VarChar(3)
   avatarUrl           String?
   checkoutProfile     Json?
+  customerType        String?   @default("individual")
+  registrationNumber  String?
+  vatNumber           String?
+  legalAddress        String?
   bonusPoints         Int       @default(350)
   mustChangePassword  Boolean   @default(false)
   privacyNoticeVersion String?
@@ -45,6 +49,8 @@ model User {
 
   @@index([email])
   @@index([companyId])
+  @@index([customerType])
+  @@index([registrationNumber])
 }
 
 model InvitationToken {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
 import { pointsToEuros } from '@/lib/bonus-program';
@@ -14,7 +15,7 @@ import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage'
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
   const pageState = useAdminClientBarcodesPage()
-  const { tl, language, formError, message, search, setSearch, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
+  const { tl, language, formError, message, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, noCardRequests, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest } = pageState
   const locale = getLocaleFromLanguage(language)
 return (
         <AdminGate>
@@ -27,14 +28,24 @@ return (
                         <p className="text-sm text-muted-foreground mt-1">
                             {tl('admin.clientBarcodes.subtitle', 'Поиск клиентов по номеру карты и выдача карт мастерам без карты.', 'Look up clients by card number and issue cards to masters without one.', 'Klientu meklēšana pēc kartes numura un karšu izsniegšana meistariem bez kartes.')}
                         </p>
-                        <div className="relative mt-3 w-full max-w-sm">
-                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <Input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Поиск по карте, имени, email, телефону..."
-                                className="h-9 pl-9"
-                            />
+                        <div className="mt-3 flex w-full max-w-2xl flex-wrap gap-2">
+                            <div className="relative min-w-64 flex-1">
+                                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                <Input
+                                    value={search}
+                                    onChange={(e) => { setSearch(e.target.value); setCardHoldersPage(0) }}
+                                    placeholder="Поиск по карте, имени, email, телефону или рег. номеру..."
+                                    className="h-9 pl-9"
+                                />
+                            </div>
+                            <Select value={customerType} onValueChange={(value) => { setCustomerType(value); setCardHoldersPage(0) }}>
+                                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все клиенты</SelectItem>
+                                    <SelectItem value="individual">Физлица</SelectItem>
+                                    <SelectItem value="company">Юрлица</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <Link href="/admin">
@@ -212,6 +223,8 @@ return (
                                         <th className="pb-2 pr-4 font-medium">Имя</th>
                                         <th className="pb-2 pr-4 font-medium">Email</th>
                                         <th className="pb-2 pr-4 font-medium">Телефон</th>
+                                        <th className="pb-2 pr-4 font-medium">Тип</th>
+                                        <th className="pb-2 pr-4 font-medium">Рег. номер</th>
                                         <th className="pb-2 font-medium">Бонусы</th>
                                     </tr>
                                 </thead>
@@ -222,6 +235,8 @@ return (
                                             <td className="py-2 pr-4">{holder.name || holder.companyName || '—'}</td>
                                             <td className="py-2 pr-4 font-mono text-xs">{holder.email}</td>
                                             <td className="py-2 pr-4">{holder.phone ?? '—'}</td>
+                                            <td className="py-2 pr-4">{holder.customerType === 'company' ? 'Юрлицо' : 'Физлицо'}</td>
+                                            <td className="py-2 pr-4 font-mono text-xs">{holder.customerType === 'company' ? holder.registrationNumber ?? '—' : '—'}</td>
                                             <td className="py-2">
                                                 {holder.bonusPoints}
                                                 <span className="ml-1 text-xs text-muted-foreground">
@@ -232,6 +247,13 @@ return (
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+                    {cardHoldersTotal > 50 && (
+                        <div className="mt-4 flex items-center justify-end gap-3 text-sm">
+                            <Button size="sm" variant="outline" disabled={cardHoldersLoading || cardHoldersPage === 0} onClick={() => setCardHoldersPage((page) => Math.max(0, page - 1))}>Назад</Button>
+                            <span>{cardHoldersPage + 1} / {Math.ceil(cardHoldersTotal / 50)}</span>
+                            <Button size="sm" variant="outline" disabled={cardHoldersLoading || (cardHoldersPage + 1) * 50 >= cardHoldersTotal} onClick={() => setCardHoldersPage((page) => page + 1)}>Далее</Button>
                         </div>
                     )}
                 </section>

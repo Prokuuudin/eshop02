@@ -62,7 +62,6 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Users,
         color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
         items: [
-            { label: 'Аккаунты', href: '/admin/accounts' },
             { label: 'Карты клиентов', href: '/admin/client-barcodes' },
             { label: 'Приглашения клиентов', href: '/admin/invitations' },
             { label: 'Сегменты', href: '/admin/customers/segments' },
@@ -343,7 +342,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         icon={Users}
                         label="Новые клиенты за 7 дней / Всего"
                         value={`${newCustomers7d} / ${totalCustomers}`}
-                        href="/admin/accounts"
+                        href="/admin/client-barcodes"
                         color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
                     />
                 </div>

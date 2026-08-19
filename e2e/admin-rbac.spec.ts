@@ -111,27 +111,12 @@ test('manager sees admin navigation link in user menu', async ({ page }) => {
   await expect(page.getByRole('link', { name: /Админ-панель|Admin Panel|Administrācijas panelis/i })).toBeVisible()
 })
 
-test('admin accounts table only offers supported global roles', async ({ page }) => {
-  // Страница аккаунтов теперь DB-backed: таблица юзеров из Neon + смена
-  // platformRole через API. Старая localStorage-секция «Аккаунты компании
-  // и роли» осталась, но требует компании в DB-сторе — company_miks_plus
-  // там нет, так что тестируем поддерживаемый DB-флоу.
+test('legacy admin accounts route redirects to client cards', async ({ page }) => {
   await loginAs(page, E2E_ADMIN)
   await seedSession(page, [E2E_ADMIN], E2E_ADMIN.id)
 
   await page.goto('/admin/accounts', { waitUntil: 'domcontentloaded' })
 
-  await expect(page.getByRole('heading', { name: 'Управление аккаунтами' })).toBeVisible()
-
-  // Ищем фикстурного менеджера в DB-таблице
-  await page.getByPlaceholder(/Email, имя, карта/).fill(E2E_MANAGER.email)
-  const row = page.locator('tr', { hasText: E2E_MANAGER.email })
-  await expect(row).toBeVisible({ timeout: 15000 })
-
-  // B2B is represented by company/teamRole, not by the global platformRole.
-  await row.getByRole('combobox').click()
-  await expect(page.getByRole('option', { name: 'customer' })).toBeVisible()
-  await expect(page.getByRole('option', { name: 'admin' })).toBeVisible()
-  await expect(page.getByRole('option', { name: 'b2b' })).toHaveCount(0)
-  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/\/admin\/client-barcodes$/)
+  await expect(page.getByRole('heading', { name: 'Клиентские баркоды' })).toBeVisible()
 })

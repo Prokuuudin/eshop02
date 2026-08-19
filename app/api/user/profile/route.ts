@@ -33,6 +33,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const body = await req.json()
     const checkoutProfile = parseCheckoutProfile(body.checkoutProfile)
+    const customerType = checkoutProfile?.customerType
+    const registrationNumber = customerType === 'company'
+      ? checkoutProfile?.regNumber.replace(/\D/gu, '') || null
+      : null
 
     const newEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined
     if (newEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
@@ -76,6 +80,11 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
         checkoutProfile,
+        customerType,
+        companyName: customerType === 'company' ? checkoutProfile?.companyName || null : null,
+        registrationNumber,
+        vatNumber: customerType === 'company' ? checkoutProfile?.vatNumber || null : null,
+        legalAddress: customerType === 'company' ? checkoutProfile?.legalAddress || null : null,
       },
     })
 
@@ -111,7 +120,5 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
 
 

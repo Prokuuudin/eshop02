@@ -21,6 +21,7 @@ export default function Header(): React.ReactElement {
   // Плавное уменьшение header при скролле, но без исчезновения.
   // Только переключаем булев флаг — без измерения offsetHeight (sticky сам держит layout).
   const [scrolled, setScrolled] = useState(false);
+  const compactHeader = scrolled && !isAdminPage;
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -42,7 +43,7 @@ export default function Header(): React.ReactElement {
         className="header sticky top-0 w-full bg-white dark:bg-card shadow transition-all duration-300 text-foreground z-header"
       >
         {/* Верхняя строка: логотип, навигация, действия */}
-          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-4 transition-[min-height] duration-300 ${scrolled ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
+          <div className={`mx-auto flex w-full max-w-[1440px] items-center gap-1 px-4 transition-[min-height] duration-300 ${compactHeader ? 'py-0 min-h-[12px]' : 'py-0 min-h-[16px]'}`}>
           {/* Логотип слева */}
           <div className="flex min-w-0 flex-shrink-0 items-center">
             <HeaderLogo />

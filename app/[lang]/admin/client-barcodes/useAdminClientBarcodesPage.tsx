@@ -42,6 +42,12 @@ export type CardHolder = {
     registrationNumber: string | null;
     vatNumber: string | null;
     legalAddress: string | null;
+    address: string | null;
+    bankName: string | null;
+    iban: string | null;
+    personalCodeMasked: string | null;
+    registered: boolean;
+    registeredAt: string | null;
     updatedAt: string;
 };
 
@@ -52,7 +58,7 @@ type NoCardDraft = {
     cardNumber: string;
 };
 
-function useAdminClientBarcodesPageState() {
+function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const { t, language } = useTranslation();
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
@@ -77,7 +83,7 @@ function useAdminClientBarcodesPageState() {
     const [cardHoldersTotal, setCardHoldersTotal] = useState(0);
     const [cardHoldersLoading, setCardHoldersLoading] = useState(false);
     const [cardHoldersError, setCardHoldersError] = useState('');
-    const [clientEdits, setClientEdits] = useState<Record<string, { customerType: 'individual' | 'company'; registrationNumber: string }>>({});
+    const [clientEdits, setClientEdits] = useState<Record<string, { name: string; email: string; phone: string; customerType: 'individual' | 'company'; registrationNumber: string }>>({});
     const [clientSaveBusy, setClientSaveBusy] = useState<string | null>(null);
 
     useEffect(() => {
@@ -89,23 +95,29 @@ function useAdminClientBarcodesPageState() {
         setCardHoldersLoading(true);
         try {
             const params = new URLSearchParams({ take: '50', hasCard: '1' });
+            if (registeredOnly) params.set('registration', 'registered');
             params.set('skip', String(cardHoldersPage * 50));
             if (debouncedSearch) params.set('search', debouncedSearch);
             if (customerType !== 'all') params.set('customerType', customerType);
             const res = await fetch(`/api/admin/users?${params}`, { cache: 'no-store' });
-            if (!res.ok) throw new Error(`users_${res.status}`);
-            const data = await res.json();
+            const data = await res.json().catch(() => null);
+            if (res.status === 401) {
+                window.location.assign('/auth/login?admin=1');
+                return;
+            }
+            if (res.status === 403) throw new Error(language === 'ru' ? 'Недостаточно прав для просмотра карт клиентов.' : language === 'lv' ? 'Nav pietiekamu tiesību klientu karšu skatīšanai.' : 'Insufficient permission to view client cards.');
+            if (!res.ok) throw new Error(data?.error ? `API: ${data.error}` : `API HTTP ${res.status}`);
             if (Array.isArray(data.users)) {
                 setCardHolders(data.users);
                 setCardHoldersTotal(data.total ?? data.users.length);
                 setCardHoldersError('');
             }
-        } catch {
-            setCardHoldersError(language === 'ru' ? 'Не удалось загрузить карты клиентов.' : language === 'lv' ? 'Neizdevās ielādēt klientu kartes.' : 'Failed to load client cards.');
+        } catch (cause) {
+            setCardHoldersError(cause instanceof Error ? cause.message : (language === 'ru' ? 'Не удалось загрузить карты клиентов.' : language === 'lv' ? 'Neizdevās ielādēt klientu kartes.' : 'Failed to load client cards.'));
         } finally {
             setCardHoldersLoading(false);
         }
-    }, [debouncedSearch, customerType, cardHoldersPage, language]);
+    }, [debouncedSearch, customerType, cardHoldersPage, language, registeredOnly]);
 
     useEffect(() => {
         queueMicrotask(() => void loadCardHolders());
@@ -210,6 +222,9 @@ function useAdminClientBarcodesPageState() {
     };
 
     const getClientEdit = (holder: CardHolder) => clientEdits[holder.id] ?? {
+        name: holder.name ?? '',
+        email: holder.email.endsWith('@client.local') ? '' : holder.email,
+        phone: holder.phone ?? '',
         customerType: holder.customerType === 'company' ? 'company' : 'individual',
         registrationNumber: holder.registrationNumber ?? '',
     };
@@ -225,7 +240,15 @@ function useAdminClientBarcodesPageState() {
         try {
             const response = await fetch('/api/admin/users', {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: holder.id, expectedUpdatedAt: holder.updatedAt, customerType: edit.customerType, registrationNumber: edit.customerType === 'company' ? registrationNumber : null }),
+                body: JSON.stringify({
+                    id: holder.id,
+                    expectedUpdatedAt: holder.updatedAt,
+                    name: edit.name.trim() || null,
+                    ...(edit.email.trim() ? { email: edit.email.trim().toLowerCase() } : {}),
+                    phone: edit.phone.trim() || null,
+                    customerType: edit.customerType,
+                    registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
+                }),
             });
             const payload = await response.json().catch(() => null);
             if (!response.ok) throw new Error(payload?.error ?? 'client_update_failed');
@@ -274,6 +297,6 @@ function useAdminClientBarcodesPageState() {
       return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
-export function useAdminClientBarcodesPage(): ReturnType<typeof useAdminClientBarcodesPageState> {
-  return useAdminClientBarcodesPageState()
+export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {
+  return useAdminClientBarcodesPageState(registeredOnly)
 }

@@ -69,7 +69,8 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         title: 'customers',
         icon: Users,
         items: [
-            { title: 'customers.barcodes', href: '/admin/client-barcodes' },
+            { title: 'customers.registered', href: '/admin/client-barcodes' },
+            { title: 'customers.database', href: '/admin/client-database' },
             { title: 'customers.invitations', href: '/admin/invitations' },
             { title: 'customers.segments', href: '/admin/customers/segments' },
             { title: 'customers.history', href: '/admin/customers/history' },
@@ -147,6 +148,8 @@ const NAV_LABELS = {
         customers: 'Клиенты',
         'customers.accounts': 'Аккаунты компаний',
         'customers.barcodes': 'Карты клиентов',
+        'customers.registered': 'Зарегистрированные клиенты',
+        'customers.database': 'База клиентов',
         'customers.invitations': 'Приглашения клиентов',
         'customers.segments': 'Сегменты и статусы',
         'customers.history': 'История взаимодействий',

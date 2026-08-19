@@ -19,6 +19,7 @@ const patchSchema = z.object({
   mfaCode: z.string().regex(/^\d{6}$/u).optional(),
   reason: z.string().trim().min(5).max(1000).optional(),
   name: z.string().trim().min(1).max(200).nullable().optional(),
+  email: z.string().trim().toLowerCase().email().max(320).optional(),
   platformRole: platformRoleSchema.optional(),
   companyId: z.string().trim().max(200).nullable().optional(),
   companyName: z.string().trim().max(300).nullable().optional(),
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const customerType = searchParams.get('customerType') || ''
     const createdSince = searchParams.get('createdSince') || ''
     const hasCard = searchParams.get('hasCard') === '1'
+    const registration = searchParams.get('registration') || ''
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
 
     const where: Record<string, unknown> = {}
@@ -63,6 +65,11 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
     if (hasCard) where.cardNumber = { not: null }
+    if (registration === 'registered') {
+      where.cardNumber = { not: null }
+      where.platformRole = 'customer'
+      where.privacyAcknowledgedAt = { not: null }
+    }
     if (caller.platformRole !== 'admin') {
       where.cardNumber = { not: null }
       where.platformRole = 'customer'
@@ -94,6 +101,8 @@ export async function GET(req: NextRequest): Promise<Response> {
           registrationNumber: true,
           vatNumber: true,
           legalAddress: true,
+          checkoutProfile: true,
+          privacyAcknowledgedAt: true,
           approvalRequired: true,
           auditLoggingEnabled: true,
           mustChangePassword: true,
@@ -106,11 +115,36 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.user.count({ where }),
     ])
 
-    const mapped = users.map((u) => ({
-      ...u,
-      createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
-      updatedAt: u.updatedAt instanceof Date ? u.updatedAt.toISOString() : String(u.updatedAt),
-    }))
+    const mapped = users.map(({ checkoutProfile, ...u }) => {
+      const profile = checkoutProfile && typeof checkoutProfile === 'object' && !Array.isArray(checkoutProfile)
+        ? checkoutProfile as Record<string, unknown>
+        : null
+      const profileText = (field: string): string => typeof profile?.[field] === 'string' ? String(profile[field]).trim() : ''
+      const profileType = profileText('customerType')
+      const customerType = profileType === 'company' || profileType === 'individual' ? profileType : u.customerType
+      const profileName = customerType === 'company'
+        ? profileText('companyName')
+        : [profileText('firstName'), profileText('lastName')].filter(Boolean).join(' ')
+      const personalCode = profileText('personalCode').replace(/\D/gu, '')
+      return {
+        ...u,
+        name: profileName || u.name,
+        phone: profileText('phone') || u.phone,
+        companyName: profileText('companyName') || u.companyName,
+        customerType,
+        registrationNumber: profileText('regNumber').replace(/\D/gu, '') || u.registrationNumber,
+        vatNumber: profileText('vatNumber') || u.vatNumber,
+        legalAddress: profileText('legalAddress') || u.legalAddress,
+        address: [profileText('address'), profileText('city'), profileText('postalCode')].filter(Boolean).join(', ') || u.legalAddress,
+        bankName: profileText('bankName') || null,
+        iban: profileText('iban') || null,
+        personalCodeMasked: personalCode ? `••••••-•${personalCode.slice(-4)}` : null,
+        registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
+        registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,
+        createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
+        updatedAt: u.updatedAt instanceof Date ? u.updatedAt.toISOString() : String(u.updatedAt),
+      }
+    })
 
     return NextResponse.json({ users: mapped, total })
   } catch (e) {
@@ -134,7 +168,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
-    const customerDetailFields = new Set(['customerType', 'registrationNumber', 'vatNumber', 'legalAddress'])
+    const customerDetailFields = new Set(['name', 'email', 'phone', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress'])
     const customerDetailsOnly = Object.keys(updates).every((field) => customerDetailFields.has(field))
     if (caller.platformRole !== 'admin' && !customerDetailsOnly) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -254,6 +288,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (message === 'optimistic_conflict') return NextResponse.json({ error: message }, { status: 409 })
     if (message === 'last_admin_protected') return NextResponse.json({ error: message }, { status: 409 })
     if (message === 'forbidden') return NextResponse.json({ error: message }, { status: 403 })
+    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
+      return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+    }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })
     }

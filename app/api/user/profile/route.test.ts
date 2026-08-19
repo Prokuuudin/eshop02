@@ -79,6 +79,32 @@ describe('PATCH /api/user/profile', () => {
     const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
     expect(data.checkoutProfile).toMatchObject({ customerType: 'company', companyName: 'SIA Test', iban: 'LV00' })
     expect(data.checkoutProfile).not.toHaveProperty('ignored')
+    expect(data).toMatchObject({
+      customerType: 'company', companyName: 'SIA Test', registrationNumber: null,
+    })
+  })
+
+  it('synchronizes legal details and never changes card verification pkLast3', async () => {
+    await PATCH(makeRequest({ checkoutProfile: {
+      customerType: 'company', companyName: 'SIA Test', regNumber: 'LV 4010-3351-370',
+      vatNumber: 'LV40103351370', legalAddress: 'Rīga', personalCode: 'should-not-be-pkLast3',
+    } }))
+    const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
+    expect(data).toMatchObject({
+      customerType: 'company', companyName: 'SIA Test', registrationNumber: '40103351370',
+      vatNumber: 'LV40103351370', legalAddress: 'Rīga',
+    })
+    expect(data).not.toHaveProperty('pkLast3')
+    expect(data).not.toHaveProperty('cardNumber')
+  })
+
+  it('clears legal fields when profile switches to an individual', async () => {
+    await PATCH(makeRequest({ checkoutProfile: { customerType: 'individual', personalCode: '010101-12345' } }))
+    const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
+    expect(data).toMatchObject({
+      customerType: 'individual', companyName: null, registrationNumber: null,
+      vatNumber: null, legalAddress: null,
+    })
   })
 
   it('updates email and related user records', async () => {

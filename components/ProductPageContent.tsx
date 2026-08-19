@@ -7,6 +7,7 @@ import { ProductBulkPricing } from '@/components/ProductBulkPricing';
 import { ProductRelatedList } from '@/components/ProductRelatedList';
 import { ProductBenefits } from '@/components/ProductBenefits';
 import ProductRequestSection from '@/components/ProductRequestSection';
+import ProductQuestionSection from '@/components/ProductQuestionSection';
 
 import React, { useEffect } from 'react';
 import type { JSX } from 'react';
@@ -107,6 +108,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
                     </div>
                 </div>
                 <ProductBulkPricing product={product} />
+                <ProductQuestionSection productName={localizedTitle} productId={product.id} />
                 <ProductReviews productId={product.id} />
                 <ProductRelatedList
                     title={t('product.relatedProducts')}

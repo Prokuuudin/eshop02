@@ -12,7 +12,6 @@ export const MONEY_FIELDS_BY_MODEL: Record<string, string[]> = {
   Invoice: ['subtotal', 'taxAmount', 'total', 'paidAmount', 'remainingAmount'],
   Company: ['creditLimit', 'usedCredit'],
   Product: ['price', 'oldPrice'],
-  ProductSubscription: ['pricePerUnit'],
   ReturnRequest: ['refundAmount'],
 }
 

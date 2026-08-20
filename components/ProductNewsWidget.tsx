@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -41,32 +41,37 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
     [subscriptions, product.id]
   )
 
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('subscribe') !== '1') return
-    if (!isHydrated || !isAuthenticated) return
-    queueMicrotask(() => {
-      setOpen(true)
-      widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    })
-  }, [isHydrated, isAuthenticated])
-
-  useEffect(() => {
-    if (!isHydrated || !isAuthenticated) return
-    void hydrateFromServer()
-  }, [isHydrated, isAuthenticated, hydrateFromServer])
-
-  const openDialog = (): void => {
-    if (existingSub) {
-      setNotifyPrice(existingSub.notifyPrice)
-      setNotifyStock(existingSub.notifyStock)
-      setNotifyPromo(existingSub.notifyPromo)
+  const openDialogFor = useCallback((sub: { notifyPrice: boolean; notifyStock: boolean; notifyPromo: boolean } | undefined): void => {
+    if (sub) {
+      setNotifyPrice(sub.notifyPrice)
+      setNotifyStock(sub.notifyStock)
+      setNotifyPromo(sub.notifyPromo)
     } else {
       setNotifyPrice(true)
       setNotifyStock(true)
       setNotifyPromo(true)
     }
     setOpen(true)
-  }
+  }, [])
+
+  const openDialog = (): void => openDialogFor(existingSub)
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated) return
+    let cancelled = false
+    void hydrateFromServer().then(() => {
+      if (cancelled) return
+      if (new URLSearchParams(window.location.search).get('subscribe') !== '1') return
+      queueMicrotask(() => {
+        const freshSub = useProductNewsStore.getState().subscriptions.find((s) => s.productId === product.id)
+        openDialogFor(freshSub)
+        widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isHydrated, isAuthenticated, hydrateFromServer, product.id, openDialogFor])
 
   const handleConfirm = async (): Promise<void> => {
     if (!notifyPrice && !notifyStock && !notifyPromo) {

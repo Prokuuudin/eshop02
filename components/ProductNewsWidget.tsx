@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -145,14 +146,23 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
             </div>
           </div>
         ) : (
-          <Button
-            variant="outline"
-            className="product-news-widget__trigger w-full gap-2 border-primary/50 text-primary hover:bg-primary/5 dark:border-primary/50 dark:text-primary dark:hover:bg-primary/20"
-            onClick={openDialog}
-          >
-            <Bell className="w-4 h-4" />
-            {t('productNews.notifyBtn')}
-          </Button>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="product-news-widget__trigger w-full gap-2 border-primary/50 text-primary hover:bg-primary/5 dark:border-primary/50 dark:text-primary dark:hover:bg-primary/20"
+                  onClick={openDialog}
+                >
+                  <Bell className="w-4 h-4" />
+                  {t('productNews.notifyBtn')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-center">
+                {t('productNews.subscribeHint')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 

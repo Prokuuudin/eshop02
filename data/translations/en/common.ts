@@ -310,6 +310,7 @@ const enCommon: Record<string, string> = {
   'productNews.emptyHint': 'Subscribe on any product page to hear about price changes, restocks and promotions.',
   'productNews.emptyCta': 'Go to catalog',
   'productNews.catalogCta': 'Get product news',
+  'productNews.subscribeHint': 'You can subscribe to notifications about price changes, promotions, and this product being back in stock',
   'terms.title': 'Terms of service',
   'confirm.deleteAllNotifications': 'Delete all notifications? This action cannot be undone.',
   'confirm.deleteSelectedNotifications': 'Delete {count} notifications? This action cannot be undone.',

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Product } from '../data/products';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
 import { Bell } from 'lucide-react';
@@ -164,13 +165,22 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:absolute lg:top-full lg:-inset-x-px lg:mt-0 lg:w-auto lg:bg-card lg:border lg:border-t-0 lg:border-border lg:rounded-b-xl lg:px-3 lg:pb-3 lg:shadow-xl lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
                     {!isOutOfStock && <AddToCartButton product={product} />}
                     {isAuthenticated && (
-                        <Link
-                            href={localizePath(`/product/${product.id}?subscribe=1`, language)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/40 px-2 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
-                        >
-                            <Bell className="h-3.5 w-3.5" />
-                            {t('productNews.catalogCta')}
-                        </Link>
+                        <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Link
+                                        href={localizePath(`/product/${product.id}?subscribe=1`, language)}
+                                        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/40 px-2 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
+                                    >
+                                        <Bell className="h-3.5 w-3.5" />
+                                        {t('productNews.catalogCta')}
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-center">
+                                    {t('productNews.subscribeHint')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                 </div>
             </div>

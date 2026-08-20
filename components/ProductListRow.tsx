@@ -9,6 +9,7 @@ import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
 import { useAuthStore } from '@/lib/auth-store';
 import { stripBrandPrefix } from '@/lib/product-title';
 import { Badge } from './ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
 import { localizePath } from '@/lib/i18n-routing';
@@ -123,13 +124,22 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
           <WishlistButton product={product} className="shrink-0" />
         </div>
         {isAuthenticated && (
-          <Link
-            href={localizePath(`/product/${product.id}?subscribe=1`, language)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            {t('productNews.catalogCta')}
-          </Link>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href={localizePath(`/product/${product.id}?subscribe=1`, language)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  {t('productNews.catalogCta')}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-center">
+                {t('productNews.subscribeHint')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
     </div>

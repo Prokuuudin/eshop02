@@ -12,6 +12,7 @@ import AccountOrdersSection from '@/components/account/AccountOrdersSection';
 import { AccountProductNewsSection } from '@/components/account/AccountProductNewsSection';
 import { AccountWishlistWidget } from '@/components/account/AccountWishlistWidget';
 import { AccountViewedProductsWidget } from '@/components/account/AccountViewedProductsWidget';
+import { AccountReorderSuggestionsWidget } from '@/components/account/AccountReorderSuggestionsWidget';
 import { AccountReturnsSection } from '@/components/account/AccountReturnsSection';
 import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
 import B2BChat from '@/components/B2BChat';
@@ -156,6 +157,11 @@ export default function AccountPage(): React.ReactElement {
                         {!isAdmin && (
                             <div className="mt-4">
                                 <AccountViewedProductsWidget />
+                            </div>
+                        )}
+                        {!isAdmin && user?.id && (
+                            <div className="mt-4">
+                                <AccountReorderSuggestionsWidget userOrders={userOrders} userId={user.id} />
                             </div>
                         )}
                         {!isAdmin && (

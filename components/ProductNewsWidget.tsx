@@ -25,7 +25,8 @@ interface ProductNewsWidgetProps {
 export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product }) => {
   const { t } = useTranslation()
   const { showToast } = useToast()
-  const { subscribe, update, unsubscribe, getForProduct } = useProductNewsStore()
+  const { subscribe, update, unsubscribe, hydrateFromServer } = useProductNewsStore()
+  const subscriptions = useProductNewsStore((s) => s.subscriptions)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isHydrated = useAuthStore((s) => s.isHydrated)
 
@@ -33,8 +34,12 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
   const [notifyPrice, setNotifyPrice] = useState(true)
   const [notifyStock, setNotifyStock] = useState(true)
   const [notifyPromo, setNotifyPromo] = useState(true)
-  const [existingSub, setExistingSub] = useState<ReturnType<typeof getForProduct>>(undefined)
   const widgetRef = useRef<HTMLDivElement>(null)
+
+  const existingSub = useMemo(
+    () => subscriptions.find((s) => s.productId === product.id),
+    [subscriptions, product.id]
+  )
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('subscribe') !== '1') return
@@ -46,10 +51,9 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
   }, [isHydrated, isAuthenticated])
 
   useEffect(() => {
-    const user = getCurrentUser()
-    if (!user) return
-    queueMicrotask(() => setExistingSub(getForProduct(product.id)))
-  }, [product.id, getForProduct])
+    if (!isHydrated || !isAuthenticated) return
+    void hydrateFromServer()
+  }, [isHydrated, isAuthenticated, hydrateFromServer])
 
   const openDialog = (): void => {
     if (existingSub) {
@@ -71,7 +75,6 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
     }
     if (existingSub) {
       update(existingSub.id, { notifyPrice, notifyStock, notifyPromo })
-      setExistingSub({ ...existingSub, notifyPrice, notifyStock, notifyPromo })
       setOpen(false)
       showToast(t('productNews.updatedToast'), 'success')
       return
@@ -92,7 +95,6 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
       showToast(t('productNews.selectAtLeastOne'), 'error')
       return
     }
-    setExistingSub(sub)
     setOpen(false)
     showToast(t('productNews.successToast'), 'success')
   }
@@ -100,7 +102,6 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
   const handleUnsubscribe = (): void => {
     if (!existingSub) return
     unsubscribe(existingSub.id)
-    setExistingSub(undefined)
     showToast(t('productNews.unsubscribedToast'), 'info')
   }
 

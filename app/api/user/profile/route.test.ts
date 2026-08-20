@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { userUpdateMock, userFindFirstMock, getServerUserMock, companyMemberUpdateManyMock, savedAddressUpdateManyMock, savedAddressFindFirstMock, productSubscriptionUpdateManyMock } = vi.hoisted(() => ({
+const { userUpdateMock, userFindFirstMock, getServerUserMock, companyMemberUpdateManyMock, savedAddressUpdateManyMock, savedAddressFindFirstMock } = vi.hoisted(() => ({
   userUpdateMock: vi.fn(),
   userFindFirstMock: vi.fn(),
   getServerUserMock: vi.fn(),
   companyMemberUpdateManyMock: vi.fn(),
   savedAddressUpdateManyMock: vi.fn(),
   savedAddressFindFirstMock: vi.fn(),
-  productSubscriptionUpdateManyMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
@@ -17,7 +16,6 @@ vi.mock('@/lib/prisma', () => ({
     user: { update: userUpdateMock, findFirst: userFindFirstMock },
     companyMember: { updateMany: companyMemberUpdateManyMock },
     savedAddress: { updateMany: savedAddressUpdateManyMock, findFirst: savedAddressFindFirstMock },
-    productSubscription: { updateMany: productSubscriptionUpdateManyMock },
   },
 }))
 vi.mock('@/lib/server-auth', () => ({

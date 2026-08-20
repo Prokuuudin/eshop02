@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AddToCartButton from '@/components/AddToCartButton';
 import ProductBonusInfo from '@/components/ProductBonusInfo';
 import WishlistButton from '@/components/WishlistButton';
-import { SubscriptionWidget } from '@/components/SubscriptionWidget';
+import { ProductNewsWidget } from '@/components/ProductNewsWidget';
 import { useTranslation } from '@/lib/use-translation';
 import { Product, SelectedVariant } from '@/data/products';
 
@@ -39,7 +39,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
                     {t('product.minimumOrder')}: {minOrderQuantity} {t('product.pcs')}
                 </p>
             )}
-            <SubscriptionWidget product={product} displayPrice={displayPrice} />
+            <ProductNewsWidget product={product} />
         </div>
     );
 };

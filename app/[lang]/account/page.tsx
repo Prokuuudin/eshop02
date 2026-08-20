@@ -9,13 +9,11 @@ import AccountNotificationsSection from '@/components/account/AccountNotificatio
 import { AccountAddressesWidget } from '@/components/account/AccountAddressesWidget';
 import { AccountTemplatesWidget } from '@/components/account/AccountTemplatesWidget';
 import AccountOrdersSection from '@/components/account/AccountOrdersSection';
-import { AccountSubscriptionsSection } from '@/components/account/AccountSubscriptionsSection';
+import { AccountProductNewsSection } from '@/components/account/AccountProductNewsSection';
 import { AccountWishlistWidget } from '@/components/account/AccountWishlistWidget';
 import { AccountViewedProductsWidget } from '@/components/account/AccountViewedProductsWidget';
 import { AccountReturnsSection } from '@/components/account/AccountReturnsSection';
-import { AccountStockNotificationsSection } from '@/components/account/AccountStockNotificationsSection';
 import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
-import { useSubscriptionReminders } from '@/hooks/useSubscriptionReminders';
 import B2BChat from '@/components/B2BChat';
 import AdminAccountDashboard from '@/components/admin/AdminAccountDashboard';
 
@@ -94,7 +92,6 @@ export default function AccountPage(): React.ReactElement {
         if (user?.id) void hydrateWishlistFromServer();
     }, [user?.id]);
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
-    useSubscriptionReminders(user?.id ?? null);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');
     const orders = useAccountOrders(userOrders, getOrderStatus, orderFilter);
     const accountTools = getAccountTools(user, tl);
@@ -163,7 +160,7 @@ export default function AccountPage(): React.ReactElement {
                         )}
                         {!isAdmin && (
                             <div className="mt-4">
-                                <AccountSubscriptionsSection />
+                                <AccountProductNewsSection />
                             </div>
                         )}
                     </aside>
@@ -174,7 +171,6 @@ export default function AccountPage(): React.ReactElement {
                             {!isAdmin && <AccountTemplatesWidget />}
                             {!isAdmin && <AccountWishlistWidget />}
                         </AccountToolsSection>
-                        {!isAdmin && <AccountStockNotificationsSection />}
                         {!isAdmin && <AccountReturnsSection />}
                         {!isAdmin && <AccountReviewsSection />}
                         {!isAdmin && (

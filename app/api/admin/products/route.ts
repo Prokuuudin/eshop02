@@ -8,6 +8,8 @@ import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-ma
 import { createProductRequestSchema, updateProductRequestSchema } from '@/lib/product-mutation-schema'
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
+import { notifyPriceChange, notifyRestock } from '@/lib/product-news-notify'
+import { toNum } from '@/lib/decimal'
 
 export const runtime = 'nodejs'
 
@@ -65,6 +67,8 @@ export async function PUT(req: NextRequest): Promise<Response> {
     const parsed = updateProductRequestSchema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: 'invalid_product', issues: parsed.error.flatten() }, { status: 400 })
     const { id, revision, changes } = parsed.data
+    let priceChange: { oldPrice: number; newPrice: number } | null = null
+    let restocked = false
     const updated = await prisma.$transaction(async (tx) => {
       const current = await tx.product.findUnique({ where: { id } })
       if (!current || current.isDeleted) throw new ProductMutationError('Product not found', 404)
@@ -91,8 +95,21 @@ export async function PUT(req: NextRequest): Promise<Response> {
       }
       const next = await tx.product.findUniqueOrThrow({ where: { id } })
       await appendServerAudit(tx, req, actor, { action: 'product.update', entityType: 'product', entityId: id, entityTitle: next.title, before, after: mapDbToProduct(next) })
+      if (before.price !== toNum(next.price)) priceChange = { oldPrice: before.price, newPrice: toNum(next.price) }
+      if (before.stock === 0 && next.stock > 0) restocked = true
       return next
     })
+    if (priceChange) {
+      // TS narrows `priceChange` to `null` here despite the transaction closure's
+      // reassignment (control-flow analysis doesn't see across function boundaries) —
+      // assert back to the declared type; runtime `if (priceChange)` check is unaffected.
+      const change = priceChange as { oldPrice: number; newPrice: number }
+      notifyPriceChange(id, updated.title, change.oldPrice, change.newPrice)
+        .catch((e) => logApiError('[admin/products PUT notifyPriceChange]', e))
+    }
+    if (restocked) {
+      notifyRestock(id, updated.title).catch((e) => logApiError('[admin/products PUT notifyRestock]', e))
+    }
     return successResponse({ product: mapDbToProduct(updated), products: await getAdminProducts() })
   } catch (error) {
     const response = mutationError(error); if (response) return response

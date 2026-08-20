@@ -20,8 +20,7 @@ export type UserExport = {
   invoices: unknown[]
   reviews: unknown[]
   savedAddresses: unknown[]
-  subscriptions: unknown[]
-  stockNotifications: unknown[]
+  productNews: unknown[]
   returnRequests: unknown[]
   wishlist: unknown[]
   notifications: unknown[]
@@ -32,9 +31,9 @@ export type UserExport = {
 /**
  * Assembles everything the platform holds about a data subject (Art. 15/20).
  * `id` is null for a guest who checked out without an account - orders,
- * saved addresses, subscriptions, stock notifications, returns and access
- * requests are all keyed by email too, so those still export; only the
- * account-only tables (wishlist, notifications, invitations) come back empty.
+ * saved addresses, returns and access requests are all keyed by email too,
+ * so those still export; only the account-only tables (product news
+ * subscriptions, wishlist, notifications, invitations) come back empty.
  */
 export async function exportUserData(params: {
   id: string | null
@@ -51,7 +50,7 @@ export async function exportUserData(params: {
   })
   const orderIds = orders.map((o) => o.id)
 
-  const [profile, savedAddresses, subscriptions, stockNotifications, returnRequests, invoices,
+  const [profile, savedAddresses, productNews, returnRequests, invoices,
     wishlist, notifications, accessRequests, invitations] =
     await Promise.all([
       id
@@ -66,8 +65,7 @@ export async function exportUserData(params: {
           })
         : Promise.resolve({ email: emailLower, note: 'Guest checkout - no registered account' }),
       prisma.savedAddress.findMany({ where: { email: emailLower } }),
-      prisma.productSubscription.findMany({ where: id ? { OR: [{ userId: id }, { userEmail: emailLower }] } : { userEmail: emailLower } }),
-      prisma.stockNotification.findMany({ where: id ? { OR: [{ userId: id }, { email: emailLower }] } : { email: emailLower } }),
+      id ? prisma.productNewsSubscription.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }) : Promise.resolve([]),
       prisma.returnRequest.findMany({ where: { email: emailLower } }),
       orderIds.length ? prisma.invoice.findMany({ where: { orderId: { in: orderIds } } }) : Promise.resolve([]),
       id ? prisma.wishlistItem.findMany({ where: { userId: id }, orderBy: { addedAt: 'desc' } }) : Promise.resolve([]),
@@ -100,8 +98,7 @@ export async function exportUserData(params: {
     // (over-disclosure). Review erasure is handled manually until a userId FK is added.
     reviews: [],
     savedAddresses,
-    subscriptions,
-    stockNotifications,
+    productNews,
     returnRequests,
     wishlist,
     notifications,
@@ -144,8 +141,7 @@ export async function anonymizeUser(params: {
     // Pure-PII / intent records: remove entirely.
     await tx.savedAddress.deleteMany({ where: { email: emailLower } })
     await tx.wishlistItem.deleteMany({ where: { userId: id } })
-    await tx.stockNotification.deleteMany({ where: { OR: [{ userId: id }, { email: emailLower }] } })
-    await tx.productSubscription.deleteMany({ where: { OR: [{ userId: id }, { userEmail: emailLower }] } })
+    await tx.productNewsSubscription.deleteMany({ where: { userId: id } })
     await tx.accessRequest.deleteMany({ where: { email: emailLower } })
     await tx.companyMember.deleteMany({ where: { userId: id } })
     await tx.userNotification.deleteMany({ where: { userId: id } })

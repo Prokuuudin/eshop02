@@ -46,6 +46,7 @@ model User {
   accountManagerMessages AccountManagerMessage[]
   userNotifications   UserNotification[]
   bonusTransactions   BonusTransaction[]
+  productNewsSubscriptions ProductNewsSubscription[]
 
   @@index([email])
   @@index([companyId])
@@ -492,43 +493,20 @@ model SavedAddress {
   @@index([email])
 }
 
-model StockNotification {
-  id           String    @id
+model ProductNewsSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId    String
   productTitle String
-  email        String
-  userId       String?
-  createdAt    DateTime  @default(now())
-  notified     Boolean   @default(false)
-  notifiedAt   DateTime?
+  notifyPrice  Boolean  @default(true)
+  notifyStock  Boolean  @default(true)
+  notifyPromo  Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
-  @@unique([productId, email])
+  @@unique([userId, productId])
   @@index([productId])
-  @@index([email])
-  @@index([notified])
-}
-
-model ProductSubscription {
-  id              String    @id
-  userId          String
-  userEmail       String
-  productId       String
-  productTitle    String
-  productImage    String?
-  pricePerUnit    Decimal  @db.Decimal(12, 2)
-  discountPercent Float
-  quantity        Int
-  interval        String
-  status          String    @default("active")
-  nextOrderDate   DateTime
-  lastOrderDate   DateTime?
-  remindedAt      DateTime?
-  createdAt       DateTime  @default(now())
-
   @@index([userId])
-  @@index([userEmail])
-  @@index([status])
-  @@index([nextOrderDate])
 }
 
 model ReturnRequest {

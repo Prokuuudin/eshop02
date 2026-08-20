@@ -26,6 +26,7 @@ import ProductPicker from './ProductPicker';
 import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 import { ProductFormModeContext } from './ProductFormModeContext';
+import { NotifyPromoSubscribersButton } from './NotifyPromoSubscribersButton';
 
 import './AddProductForm.css';
 
@@ -246,6 +247,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                         Открыть на сайте ↗
                                     </Button>
                                 )}
+                                {isEdit && productId && <NotifyPromoSubscribersButton productId={productId} />}
                             </div>
                             {submitError && (
                                 <p className="text-red-600 text-sm">{submitError}</p>

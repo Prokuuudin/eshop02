@@ -420,7 +420,7 @@ export default function CheckoutPage(): React.ReactElement {
                                         key={item.lineKey}
                                         className="checkout__summary-item flex min-h-14 items-center gap-3"
                                     >
-                                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-white">
+                                        <div className="product-image-surface relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border">
                                             <Image
                                                 src={item.image || '/placeholder.png'}
                                                 alt={localizedTitle}

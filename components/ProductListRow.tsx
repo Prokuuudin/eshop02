@@ -41,7 +41,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
     <div className="product-list-row flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 p-3 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
       {/* Image + Info */}
       <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-[200px]">
-        <Link href={localizePath(`/product/${product.id}`, language)} className="flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden bg-white">
+        <Link href={localizePath(`/product/${product.id}`, language)} className="product-image-surface flex-shrink-0 relative w-20 h-20 rounded-md overflow-hidden">
           {product.image && product.image.trim() ? (
             <Image
               src={product.image}

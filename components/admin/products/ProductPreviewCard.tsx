@@ -61,7 +61,7 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                 </button>
             </div>
             {/* Packshot целиком на белой подложке — как в витринной карточке */}
-            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative group bg-white">
+            <div className="product-card__media product-image-surface rounded-md overflow-hidden block flex-shrink-0 relative group">
                 <div className="relative w-full h-48">
                     {image && image.trim() ? (
                         <Image

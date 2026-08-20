@@ -77,7 +77,7 @@ export const AccountReorderSuggestionsWidget: React.FC<AccountReorderSuggestions
                         key={item.id}
                         className="flex items-center gap-3 rounded-xl border border-transparent p-1.5 hover:border-amber-200 hover:bg-white/60 dark:hover:border-amber-800 dark:hover:bg-gray-900/50 transition-all"
                     >
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-100 bg-white p-1.5 dark:border-amber-900 dark:bg-gray-900">
+                        <div className="product-image-surface flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-amber-100 p-1.5 dark:border-amber-900">
                             <Image
                                 src={item.image ?? '/hero-placeholder.svg'}
                                 alt={item.title}

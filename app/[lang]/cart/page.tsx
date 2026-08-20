@@ -201,7 +201,7 @@ export default function CartPage(): React.ReactElement {
                                             </TooltipProvider>
                                         </div>
 
-                                        <div className="cart__item-image w-24 h-24 flex-shrink-0 bg-white rounded-lg overflow-hidden relative">
+                                        <div className="cart__item-image product-image-surface w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden relative">
                                             <Image
                                                 src={item.image || '/placeholder.png'}
                                                 alt={localizedTitle}

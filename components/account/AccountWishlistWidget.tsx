@@ -46,7 +46,7 @@ export const AccountWishlistWidget: React.FC = () => {
                         {preview.map((item) => (
                             <div
                                 key={item.id}
-                                className="h-12 w-12 rounded-lg border border-pink-100 bg-white overflow-hidden dark:border-pink-900 dark:bg-gray-900"
+                                className="product-image-surface h-12 w-12 rounded-lg border border-pink-100 overflow-hidden dark:border-pink-900"
                             >
                                 <Image
                                     src={item.images?.[0] ?? item.image ?? '/hero-placeholder.svg'}

@@ -48,7 +48,7 @@ export const ProductZoomPane: React.FC<ZoomPaneProps> = ({
     <div
         ref={paneRef}
         aria-hidden="true"
-        className={`product-detail__zoom-pane pointer-events-none absolute z-30 overflow-hidden rounded-lg border border-border bg-white shadow-lg transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
+        className={`product-detail__zoom-pane product-image-surface pointer-events-none absolute z-30 overflow-hidden rounded-lg border border-border shadow-lg transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
             effectivePaneMode === 'side' ? 'left-full top-0 ml-4 h-full w-full' : 'inset-0'
         } ${visible ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
     >

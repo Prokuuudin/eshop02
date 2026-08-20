@@ -196,7 +196,7 @@ return (
                                     >
                                         <Link
                                             href={localizePath(`/product/${item.id}`, language)}
-                                            className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded border border-border bg-white"
+                                            className="product-image-surface relative h-20 w-20 flex-shrink-0 overflow-hidden rounded border border-border"
                                         >
                                             <Image
                                                 src={item.image || '/placeholder.png'}

@@ -41,7 +41,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
             <div className="product-detail__zoom-root relative mx-auto w-full sm:w-1/2">
                 <div
                     {...zoom.containerProps}
-                    className={`relative aspect-square bg-white rounded-lg overflow-hidden flex items-center justify-center ${
+                    className={`product-image-surface relative aspect-square rounded-lg overflow-hidden flex items-center justify-center ${
                         zoom.visible ? 'cursor-none' : ''
                     }`}
                 >
@@ -89,7 +89,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                                 activeImage === idx
                                     ? 'border-primary ring-2 ring-primary/50'
                                     : 'border-transparent opacity-70 hover:opacity-100'
-                            } bg-white`}
+                            } product-image-surface`}
                             style={{ width: 48, height: 48, overflow: 'hidden' }}
                             onClick={() => setActiveImage(idx)}
                             aria-label={`Показать изображение ${idx + 1}`}

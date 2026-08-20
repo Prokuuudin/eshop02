@@ -33,7 +33,7 @@ export const AccountViewedProductsWidget: React.FC = () => {
                             href={`/product/${product.id}`}
                             className="flex items-center gap-3 rounded-xl border border-transparent p-1.5 hover:border-sky-200 hover:bg-white/60 dark:hover:border-sky-800 dark:hover:bg-gray-900/50 transition-all group"
                         >
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-sky-100 bg-white p-1.5 dark:border-sky-900 dark:bg-gray-900">
+                            <div className="product-image-surface flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-sky-100 p-1.5 dark:border-sky-900">
                                 <Image
                                     src={product.images?.[0] ?? product.image ?? '/hero-placeholder.svg'}
                                     alt={product.title}

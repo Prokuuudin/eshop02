@@ -56,7 +56,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
 
             {/* Packshot целиком, на белой подложке (как на hairshop.lv): исходники —
                 фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
-            <div className="product-card__media rounded-md overflow-hidden block flex-shrink-0 relative bg-white">
+            <div className="product-card__media product-image-surface rounded-md overflow-hidden block flex-shrink-0 relative">
                 <div className="relative w-full h-48">
                     {product.image && product.image.trim() ? (
                         <Image

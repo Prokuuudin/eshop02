@@ -49,7 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
         <article className="admin-product-card flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {/* Packshot целиком на белой подложке, как в витринной карточке:
                 исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
-            <div className="admin-product-card__image relative h-40 bg-white flex items-center justify-center overflow-hidden">
+            <div className="admin-product-card__image product-image-surface relative h-40 flex items-center justify-center overflow-hidden">
                 {imageUrl ? (
                     <Image
                         unoptimized

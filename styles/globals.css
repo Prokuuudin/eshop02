@@ -339,6 +339,11 @@ body {
     overflow-y: visible !important;
 }
 
+/* Product photography keeps its original light presentation in every theme. */
+.product-image-surface {
+    background-color: #ffffff !important;
+}
+
 /* Neutralize react-remove-scroll's padding/margin compensation so Radix dialogs/dropdowns
    don't shift the layout (the html scrollbar is always present, so no compensation is needed). */
 body[data-radix-dialog-open],

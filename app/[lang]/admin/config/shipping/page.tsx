@@ -2,301 +2,63 @@
 
 import React from 'react'
 import Link from 'next/link'
+import { AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DEFAULT_COMMERCE_SETTINGS, deliveryMethodIds, getCommerceSettingsIssues, paymentMethodIds, type CommerceSettings, type DeliveryMethodId, type PaymentMethodId } from '@/lib/commerce-settings'
 
-const SELECT_CLASS =
-  'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
+const DELIVERY_NAMES: Record<DeliveryMethodId, string> = { pickup: 'Самовывоз', courier_riga: 'Курьер по Риге', courier_latvia: 'Курьер по Латвии', omniva: 'Omniva', dpd: 'DPD', venipak: 'Venipak' }
+const PAYMENT_NAMES: Record<PaymentMethodId, string> = { card_online: 'Карта онлайн', internet_bank: 'Интернет-банк', paypal: 'PayPal', bank_transfer: 'Банковский перевод', cash_office: 'Наличные в офисе', card_office: 'Карта в офисе', invoice: 'Оплата по счёту' }
 
-interface DeliveryMethod {
-  enabled: boolean
-  price: number
-  freeFrom: number
-  label: string
-}
-
-interface PaymentMethod {
-  enabled: boolean
-  label: string
-}
-
-interface ShippingSettings {
-  delivery: Record<string, DeliveryMethod>
-  payment: Record<string, PaymentMethod>
-}
-
-const DELIVERY_KEYS = ['courier', 'pickup', 'post'] as const
-const PAYMENT_KEYS = ['card', 'cash', 'online', 'invoice'] as const
-
-const DELIVERY_NAMES: Record<string, string> = {
-  courier: 'Курьер',
-  pickup: 'Самовывоз',
-  post: 'Почта',
-}
-
-const PAYMENT_NAMES: Record<string, string> = {
-  card: 'Банковская карта',
-  cash: 'Наличные',
-  online: 'Онлайн (Stripe)',
-  invoice: 'По счёту (B2B)',
-}
-
-const DEFAULT_SETTINGS: ShippingSettings = {
-  delivery: {
-    courier: { enabled: true, price: 5.99, freeFrom: 50, label: 'Курьер' },
-    pickup: { enabled: true, price: 0, freeFrom: 0, label: 'Самовывоз' },
-    post: { enabled: true, price: 3.99, freeFrom: 30, label: 'Почта' },
-  },
-  payment: {
-    card: { enabled: true, label: 'Банковская карта' },
-    cash: { enabled: true, label: 'Наличные' },
-    online: { enabled: true, label: 'Онлайн (Stripe)' },
-    invoice: { enabled: false, label: 'По счёту (B2B)' },
-  },
+function NumberField({ value, onChange }: { value: number | null; onChange: (value: number | null) => void }) {
+  return <Input type="number" min={0} step={0.01} value={value ?? ''} placeholder="Не определено" onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))} />
 }
 
 export default function AdminShippingPage(): React.ReactElement {
-  const [settings, setSettings] = React.useState<ShippingSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = React.useState<CommerceSettings>(DEFAULT_COMMERCE_SETTINGS)
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [message, setMessage] = React.useState<{ text: string; ok: boolean } | null>(null)
+  const issues = getCommerceSettingsIssues(settings)
 
   React.useEffect(() => {
-    fetch('/api/admin/shipping')
-      .then((r) => r.json())
-      .then((data: ShippingSettings) => {
-        setSettings(data)
-      })
-      .catch(() => {
-        /* keep defaults */
-      })
-      .finally(() => setLoading(false))
+    fetch('/api/admin/shipping').then(async (response) => {
+      if (!response.ok) throw new Error('load_failed')
+      setSettings(await response.json() as CommerceSettings)
+    }).catch(() => setMessage({ text: 'Не удалось загрузить настройки. Показан безопасный черновик.', ok: false })).finally(() => setLoading(false))
   }, [])
 
-  const updateDelivery = (key: string, field: keyof DeliveryMethod, value: string | boolean | number) => {
-    setSettings((prev) => ({
-      ...prev,
-      delivery: {
-        ...prev.delivery,
-        [key]: {
-          ...prev.delivery[key],
-          [field]: value,
-        },
-      },
-    }))
-  }
-
-  const updatePayment = (key: string, field: keyof PaymentMethod, value: string | boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      payment: {
-        ...prev.payment,
-        [key]: {
-          ...prev.payment[key],
-          [field]: value,
-        },
-      },
-    }))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    setMessage(null)
+  const updateDelivery = (id: DeliveryMethodId, patch: Partial<CommerceSettings['delivery'][DeliveryMethodId]>) => setSettings((current) => ({ ...current, delivery: { ...current.delivery, [id]: { ...current.delivery[id], ...patch } } }))
+  const updatePayment = (id: PaymentMethodId, patch: Partial<CommerceSettings['payment'][PaymentMethodId]>) => setSettings((current) => ({ ...current, payment: { ...current.payment, [id]: { ...current.payment[id], ...patch } } }))
+  const save = async () => {
+    setSaving(true); setMessage(null)
     try {
-      const res = await fetch('/api/admin/shipping', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      })
-      if (!res.ok) throw new Error('server_error')
+      const response = await fetch('/api/admin/shipping', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) })
+      if (!response.ok) throw new Error('save_failed')
       setMessage({ text: 'Настройки сохранены', ok: true })
-    } catch {
-      setMessage({ text: 'Не удалось сохранить настройки', ok: false })
-    } finally {
-      setSaving(false)
-      setTimeout(() => setMessage(null), 4000)
-    }
+    } catch { setMessage({ text: 'Не удалось сохранить настройки', ok: false }) }
+    finally { setSaving(false) }
   }
 
-  return (
-    <AdminGate>
-      <main className="w-full py-4 space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              Доставка и оплата
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Управляйте доступными способами доставки и оплаты.
-            </p>
-          </div>
-          <Link href="/admin">
-            <Button variant="outline">Назад в админку</Button>
-          </Link>
-        </div>
+  return <AdminGate><main className="w-full space-y-6 py-4">
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-bold md:text-3xl">Доставка и оплата</h1><p className="mt-1 text-sm text-muted-foreground">Рабочий черновик Hairshop‑Pro. Секретные API-ключи здесь не хранятся.</p></div><div className="flex gap-2"><Button asChild variant="outline"><Link href="/delivery-payment" target="_blank">Страница для клиента <ExternalLink className="ml-2 h-4 w-4" /></Link></Button><Button onClick={save} disabled={saving || loading}>{saving ? 'Сохранение…' : 'Сохранить'}</Button></div></header>
+    {message && <div className={`rounded-lg border p-3 text-sm ${message.ok ? 'border-green-300 bg-green-50 text-green-800' : 'border-red-300 bg-red-50 text-red-800'}`}>{message.text}</div>}
+    {loading ? <p className="text-sm text-muted-foreground">Загрузка…</p> : <>
+      <section className={`rounded-xl border p-4 ${issues.length ? 'border-amber-300 bg-amber-50/70 dark:bg-amber-950/20' : 'border-green-300 bg-green-50/70 dark:bg-green-950/20'}`}><div className="flex items-center gap-2 font-semibold">{issues.length ? <AlertTriangle className="h-5 w-5 text-amber-600" /> : <CheckCircle2 className="h-5 w-5 text-green-600" />}{issues.length ? `До запуска нужно закрыть: ${issues.length}` : 'Конфигурация готова к запуску'}</div>{issues.length > 0 && <ul className="mt-3 list-disc space-y-1 pl-6 text-sm text-muted-foreground">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>}</section>
 
-        {/* Message */}
-        {message && (
-          <div
-            className={`rounded-md border px-3 py-2 text-sm ${
-              message.ok
-                ? 'border-green-300 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300'
-                : 'border-red-300 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+      <section className="rounded-xl border bg-card p-4"><h2 className="text-lg font-semibold">Общие условия</h2><div className="mt-4 grid gap-4 md:grid-cols-3"><label className="space-y-1 text-sm"><span>Валюта</span><Input value="EUR" disabled /></label><label className="space-y-1 text-sm"><span>Срок обработки</span><Input value={settings.general.orderProcessingTime} onChange={(e) => setSettings((s) => ({ ...s, general: { ...s.general, orderProcessingTime: e.target.value } }))} /></label><label className="space-y-1 text-sm"><span>Ответственный контакт</span><Input value={settings.general.operationsContact} onChange={(e) => setSettings((s) => ({ ...s, general: { ...s.general, operationsContact: e.target.value } }))} /></label></div></section>
 
-        {loading ? (
-          <div className="text-sm text-muted-foreground">Загрузка...</div>
-        ) : (
-          <>
-            {/* Delivery */}
-            <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">Способы доставки</h2>
+      <section className="space-y-3"><div><h2 className="text-xl font-semibold">Способы доставки</h2><p className="text-sm text-muted-foreground">«Готов» означает, что тариф и условия подтверждены бизнесом.</p></div>{deliveryMethodIds.map((id) => { const method = settings.delivery[id]; return <article key={id} className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">{DELIVERY_NAMES[id]}</h3><p className="text-xs text-muted-foreground">{id}</p></div><div className="flex items-center gap-3"><label className="flex items-center gap-2 text-sm"><Checkbox checked={method.enabled} onCheckedChange={(checked) => updateDelivery(id, { enabled: checked === true })} />Включён</label><Select value={method.status} onValueChange={(status: 'draft'|'ready') => updateDelivery(id, { status })}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="draft">Черновик</SelectItem><SelectItem value="ready">Готов</SelectItem></SelectContent></Select></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="space-y-1 text-sm"><span>Название для клиента</span><Input value={method.label} onChange={(e) => updateDelivery(id, { label: e.target.value })} /></label><label className="space-y-1 text-sm"><span>Цена, €</span><NumberField value={method.price} onChange={(price) => updateDelivery(id, { price })} /></label><label className="space-y-1 text-sm"><span>Бесплатно от, €</span><NumberField value={method.freeFrom} onChange={(freeFrom) => updateDelivery(id, { freeFrom })} /></label><label className="space-y-1 text-sm"><span>Срок</span><Input value={method.eta} onChange={(e) => updateDelivery(id, { eta: e.target.value })} /></label><label className="space-y-1 text-sm"><span>Макс. вес, кг</span><NumberField value={method.maxWeightKg} onChange={(maxWeightKg) => updateDelivery(id, { maxWeightKg })} /></label><label className="space-y-1 text-sm"><span>Макс. размер, см</span><Input value={method.maxDimensionsCm} placeholder="Д × Ш × В" onChange={(e) => updateDelivery(id, { maxDimensionsCm: e.target.value })} /></label><div className="space-y-1 text-sm"><span>Страны</span><div className="flex h-10 items-center gap-3 rounded-md border px-3">{(['LV','LT','EE'] as const).map((country) => <label key={country} className="flex items-center gap-1"><Checkbox checked={method.countries.includes(country)} onCheckedChange={(checked) => updateDelivery(id, { countries: checked ? [...method.countries, country] : method.countries.filter((item) => item !== country) })} />{country}</label>)}</div></div><label className="space-y-1 text-sm"><span>Что уточнить</span><Input value={method.notes} onChange={(e) => updateDelivery(id, { notes: e.target.value })} /></label>
+      </div></article>})}</section>
 
-              <div className="space-y-4">
-                {DELIVERY_KEYS.map((key) => {
-                  const method = settings.delivery[key]
-                  if (!method) return null
-                  return (
-                    <div
-                      key={key}
-                      className="rounded-md border border-border p-3 space-y-3"
-                    >
-                      <p className="text-sm font-medium text-foreground">
-                        {DELIVERY_NAMES[key] ?? key}
-                      </p>
+      <section className="space-y-3"><div><h2 className="text-xl font-semibold">Способы оплаты</h2><p className="text-sm text-muted-foreground">Провайдер, аудитория и совместимость с доставкой задаются отдельно.</p></div>{paymentMethodIds.map((id) => { const method = settings.payment[id]; return <article key={id} className="rounded-xl border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">{PAYMENT_NAMES[id]}</h3><p className="text-xs text-muted-foreground">{id}</p></div><label className="flex items-center gap-2 text-sm"><Checkbox checked={method.enabled} onCheckedChange={(checked) => updatePayment(id, { enabled: checked === true })} />Включён</label></div><div className="mt-4 grid gap-3 md:grid-cols-4"><label className="space-y-1 text-sm"><span>Название</span><Input value={method.label} onChange={(e) => updatePayment(id, { label: e.target.value })} /></label><label className="space-y-1 text-sm"><span>Статус</span><Select value={method.status} onValueChange={(status: 'draft'|'ready') => updatePayment(id, { status })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="draft">Черновик</SelectItem><SelectItem value="ready">Готов</SelectItem></SelectContent></Select></label><label className="space-y-1 text-sm"><span>Провайдер</span><Select value={method.provider} onValueChange={(provider: 'paysera'|'paypal'|'manual') => updatePayment(id, { provider })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="paysera">Paysera</SelectItem><SelectItem value="paypal">PayPal</SelectItem><SelectItem value="manual">Ручная обработка</SelectItem></SelectContent></Select></label><label className="space-y-1 text-sm"><span>Клиенты</span><Select value={method.audience} onValueChange={(audience: 'all'|'business') => updatePayment(id, { audience })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Все</SelectItem><SelectItem value="business">Только B2B</SelectItem></SelectContent></Select></label></div><div className="mt-3"><p className="mb-2 text-sm">Допустимая доставка</p><div className="flex flex-wrap gap-3">{deliveryMethodIds.map((deliveryId) => <label key={deliveryId} className="flex items-center gap-1 text-sm"><Checkbox checked={method.allowedDeliveryMethods.includes(deliveryId)} onCheckedChange={(checked) => updatePayment(id, { allowedDeliveryMethods: checked ? [...method.allowedDeliveryMethods, deliveryId] : method.allowedDeliveryMethods.filter((item) => item !== deliveryId) })} />{DELIVERY_NAMES[deliveryId]}</label>)}</div></div><label className="mt-3 block space-y-1 text-sm"><span>Что уточнить</span><Input value={method.notes} onChange={(e) => updatePayment(id, { notes: e.target.value })} /></label></article>})}</section>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-1`} className="block text-xs font-medium text-muted-foreground">
-                            Статус
-                          </label>
-                          <Select
-                            value={method.enabled ? 'yes' : 'no'}
-                            onValueChange={(v) => updateDelivery(key, 'enabled', v === 'yes')}
-                          >
-                            <SelectTrigger id={`shipping-${key}-1`} className={SELECT_CLASS}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="yes">Включён</SelectItem>
-                              <SelectItem value="no">Отключён</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-2`} className="block text-xs font-medium text-muted-foreground">
-                            Название
-                          </label>
-                          <Input id={`shipping-${key}-2`}
-                            value={method.label}
-                            onChange={(e) => updateDelivery(key, 'label', e.target.value)}
-                            placeholder="Название"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-3`} className="block text-xs font-medium text-muted-foreground">
-                            Цена (€)
-                          </label>
-                          <Input id={`shipping-${key}-3`}
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            value={method.price}
-                            onChange={(e) => updateDelivery(key, 'price', parseFloat(e.target.value) || 0)}
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-4`} className="block text-xs font-medium text-muted-foreground">
-                            Бесплатно от (€)
-                          </label>
-                          <Input id={`shipping-${key}-4`}
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            value={method.freeFrom}
-                            onChange={(e) => updateDelivery(key, 'freeFrom', parseFloat(e.target.value) || 0)}
-                            placeholder="0 — всегда платно"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-
-            {/* Payment */}
-            <section className="rounded-lg border border-border bg-card p-4 space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">Способы оплаты</h2>
-
-              <div className="space-y-3">
-                {PAYMENT_KEYS.map((key) => {
-                  const method = settings.payment[key]
-                  if (!method) return null
-                  return (
-                    <div
-                      key={key}
-                      className="rounded-md border border-border p-3"
-                    >
-                      <p className="text-sm font-medium text-foreground mb-3">
-                        {PAYMENT_NAMES[key] ?? key}
-                      </p>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-5`} className="block text-xs font-medium text-muted-foreground">
-                            Статус
-                          </label>
-                          <Select
-                            value={method.enabled ? 'yes' : 'no'}
-                            onValueChange={(v) => updatePayment(key, 'enabled', v === 'yes')}
-                          >
-                            <SelectTrigger id={`shipping-${key}-5`} className={SELECT_CLASS}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="yes">Включён</SelectItem>
-                              <SelectItem value="no">Отключён</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label htmlFor={`shipping-${key}-6`} className="block text-xs font-medium text-muted-foreground">
-                            Название
-                          </label>
-                          <Input id={`shipping-${key}-6`}
-                            value={method.label}
-                            onChange={(e) => updatePayment(key, 'label', e.target.value)}
-                            placeholder="Название"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Сохранение...' : 'Сохранить изменения'}
-              </Button>
-            </div>
-          </>
-        )}
-      </main>
-    </AdminGate>
-  )
+      <section className="rounded-xl border bg-card p-4"><h2 className="text-xl font-semibold">Платёжные провайдеры</h2><p className="mt-1 text-sm text-muted-foreground">Только несекретные сведения. Ключи будут храниться отдельно.</p><div className="mt-4 grid gap-4 lg:grid-cols-2">{(['paysera','paypal'] as const).map((id) => { const provider = settings.providers[id]; const update = (patch: Partial<typeof provider>) => setSettings((s) => ({ ...s, providers: { ...s.providers, [id]: { ...s.providers[id], ...patch } } })); return <div key={id} className="rounded-lg border p-4"><h3 className="font-semibold">{id === 'paysera' ? 'Paysera' : 'PayPal'}</h3><div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="space-y-1 text-sm"><span>Аккаунт</span><Select value={provider.accountStatus} onValueChange={(accountStatus: typeof provider.accountStatus) => update({ accountStatus })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not_started">Не начато</SelectItem><SelectItem value="in_progress">В процессе</SelectItem><SelectItem value="ready">Готов</SelectItem></SelectContent></Select></label><label className="space-y-1 text-sm"><span>Тестовая среда</span><Select value={provider.testModeAvailable} onValueChange={(testModeAvailable: typeof provider.testModeAvailable) => update({ testModeAvailable })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unknown">Неизвестно</SelectItem><SelectItem value="yes">Есть</SelectItem><SelectItem value="no">Нет</SelectItem></SelectContent></Select></label><label className="space-y-1 text-sm"><span>Merchant / Project ID</span><Input value={provider.merchantId} placeholder="Несекретный ID" onChange={(e) => update({ merchantId: e.target.value })} /></label><label className="space-y-1 text-sm"><span>Контакт</span><Input value={provider.contact} onChange={(e) => update({ contact: e.target.value })} /></label><label className="space-y-1 text-sm sm:col-span-2"><span>Документация</span><Input value={provider.documentationUrl} placeholder="https://…" onChange={(e) => update({ documentationUrl: e.target.value })} /></label></div></div>})}</div></section>
+      <div className="sticky bottom-4 flex justify-end"><Button size="lg" onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить настройки'}</Button></div>
+    </>}
+  </main></AdminGate>
 }

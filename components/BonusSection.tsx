@@ -52,7 +52,7 @@ export default function BonusSection(): React.ReactElement | null {
                 </div>
 
                 {/* Steps */}
-                <div className="bonus-section__steps grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+                <div className="bonus-section__steps grid grid-cols-1 gap-5 sm:grid-cols-3">
                     {STEPS.map((step, idx) => {
                         const Icon = step.icon;
                         const badge =

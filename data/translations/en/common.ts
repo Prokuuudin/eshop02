@@ -32,7 +32,7 @@ const enCommon: Record<string, string> = {
   'common.product': 'Product',
   'common.auth': 'Authorization',
   'home.retailBanner.retailOnly': 'You can purchase the same products at retail prices — in our online store',
-  'about.storesInfo': 'In addition to our online store, we have a network of professional stores across Latvia. Here you can explore products in person, get expert advice, make a purchase, and collect online orders free of charge with no additional delivery fee.',
+  'about.storesInfo': 'At our stores across Latvia, you can explore products, get expert advice, make a purchase, and collect online orders free of charge.',
   'about.storesButton': 'View stores',
   'stores.phone': 'Phone',
   'stores.hours': 'Working hours',

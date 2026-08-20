@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -130,7 +130,17 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         mode: 'onChange',
     });
 
-    const { handleSubmit, formState } = methods;
+    const { handleSubmit, formState, trigger } = methods;
+
+    // react-hook-form + zodResolver + mode:'onChange' only computes formState.isValid
+    // after the first validation pass, which normally fires on the user's first onChange —
+    // it does NOT run automatically on mount. Without this, the Save button stays disabled
+    // forever even when defaultValues are already fully valid (formState.errors stays empty
+    // too, so there's no visible field error to explain it).
+    useEffect(() => {
+        void trigger();
+    }, [trigger]);
+
     const [image, title, titleEn, titleLv, brand, price, oldPrice, badges, stock, sku] = useWatch({
         control: methods.control,
         name: ['image', 'title', 'titleEn', 'titleLv', 'brand', 'price', 'oldPrice', 'badges', 'stock', 'sku'],

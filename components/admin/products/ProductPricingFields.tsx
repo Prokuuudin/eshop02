@@ -48,7 +48,9 @@ const ProductPricingFields: React.FC = () => {
                         placeholder="Например: 5"
                         type="number"
                         step="0.01"
-                        {...register('bonusRate', { valueAsNumber: true })}
+                        {...register('bonusRate', {
+                            setValueAs: (value) => value === '' ? undefined : Number(value),
+                        })}
                     />
                 </div>
             </div>

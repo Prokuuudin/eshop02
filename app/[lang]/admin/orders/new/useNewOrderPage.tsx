@@ -43,7 +43,8 @@ type CustomerSuggestion = {
 const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string; cost: number }[] = [
     { value: 'pickup', label: 'Самовывоз', cost: 0 },
     { value: 'courier', label: 'Курьер', cost: 5 },
-    { value: 'post', label: 'Почта', cost: 3 },
+    { value: 'post', label: 'Почта (Omniva)', cost: 4 },
+    { value: 'venipak', label: 'Venipak', cost: 3 },
 ];
 
 const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (терминал)', 'Перевод', 'Stripe'];

@@ -100,7 +100,11 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
     operationsContact: 'office@miksplus.eu',
   },
   delivery: {
-    pickup: delivery('Самовывоз', ['LV'], 0, 0, { enabled: true, status: 'ready' }),
+    pickup: delivery('Самовывоз', ['LV'], 0, 0, {
+      enabled: true,
+      status: 'ready',
+      notes: 'Только офис Hairshop Pro (Rencēnu iela 10A) — не вся сеть из 7 магазинов.',
+    }),
     courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100, { enabled: true }),
     courier_latvia: delivery('Курьер по Латвии', ['LV'], 10, 200, { enabled: true }),
     omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 200, {
@@ -108,23 +112,34 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       maxWeightKg: 30,
       maxDimensionsCm: '38 × 64 × 19',
       requiresLocation: true,
-      notes: 'Цена указана «от 4 €» и требует точной тарифной таблицы.',
+      notes: 'Тариф (с НДС): пакомат LV 4 € / EE,LT 8 €; курьер Omniva LV 10 € / EE,LT 15 €. Бесплатно от 200 € — только по Латвии, на EE/LT порог не действует (схема хранит один freeFrom на метод — уточнить перед подключением реального чекаута). Курьерская услуга самого Omniva как отдельный способ оплаты пока не смоделирована. Пакомат выбирает клиент при оформлении, список — с сайта перевозчика. Договор/API-доступ — тот же аккаунт перевозчика, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
     }),
-    dpd: delivery('DPD', ['LV', 'LT', 'EE'], null, null, { requiresLocation: true }),
-    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], null, null, { requiresLocation: true }),
+    dpd: delivery('DPD', ['LV', 'LT', 'EE'], null, null, {
+      requiresLocation: true,
+      maxWeightKg: 30,
+      maxDimensionsCm: '30 × 30 × 20',
+      notes: 'Габариты/вес подтверждены. Договор/API-доступ — тот же аккаунт DPD, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен. Тарифы по странам/зонам и список пакоматов ещё нет — заказчик даст данные или посмотреть в админке hairshop.lv.',
+    }),
+    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, 200, {
+      enabled: true,
+      requiresLocation: true,
+      maxWeightKg: 30,
+      maxDimensionsCm: '30 × 30 × 20',
+      notes: 'Тариф (с НДС): пакомат LV 3 € / EE,LT 8 €; курьер Venipak LV 10 € / EE,LT 15 €. Бесплатно от 200 € — только по Латвии (см. ту же оговорку про freeFrom, что и у Omniva). Договор/API-доступ — тот же аккаунт Venipak, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
+    }),
   },
   payment: {
-    card_online: { enabled: false, label: 'Банковская карта онлайн', status: 'draft', provider: 'paysera', audience: 'all', allowedDeliveryMethods: [], notes: 'Ожидается новый merchant-аккаунт Hairshop-Pro.' },
-    internet_bank: { enabled: false, label: 'Интернет-банк', status: 'draft', provider: 'paysera', audience: 'all', allowedDeliveryMethods: [], notes: 'Нужно подтвердить список банков и стран.' },
-    paypal: { enabled: false, label: 'PayPal', status: 'draft', provider: 'paypal', audience: 'all', allowedDeliveryMethods: [], notes: 'Ожидается новый аккаунт Hairshop-Pro.' },
+    card_online: { enabled: false, label: 'Банковская карта онлайн', status: 'draft', provider: 'paysera', audience: 'all', allowedDeliveryMethods: [], notes: 'Подтверждено окончательно: только в офисе (см. card_office). Упоминание онлайн-оплаты картой в описании способов доставки — общий маркетинговый текст, не инструкция.' },
+    internet_bank: { enabled: false, label: 'Интернет-банк', status: 'draft', provider: 'paysera', audience: 'all', allowedDeliveryMethods: [], notes: 'Paysera API поддерживает все банки/страны единым интерфейсом. Аккаунт Paysera уже существует (юрлицо MIKS PLUS SIA — тот же, что и hairshop.lv) — для Hairshop Pro заводится отдельный Project ID внутри него, не новая регистрация. Договор подписывает Andrejs Doronins, он же передаст API-доступы.' },
+    paypal: { enabled: false, label: 'PayPal', status: 'draft', provider: 'paypal', audience: 'all', allowedDeliveryMethods: [], notes: 'Нужен — через него идёт оплата картой на Hairshop Pro. Аккаунт PayPal уже существует (то же юрлицо MIKS PLUS SIA) — для Hairshop Pro заводится отдельный Client ID внутри него, не новая регистрация. Подтверждение оплаты — всегда вручную менеджером по факту денег на счёте, webhook не переводит заказ в paid автоматически ни для Paysera, ни для PayPal.' },
     bank_transfer: { enabled: true, label: 'Банковский перевод', status: 'ready', provider: 'manual', audience: 'all', allowedDeliveryMethods: [...deliveryMethodIds], notes: '' },
     cash_office: { enabled: true, label: 'Наличные в офисе', status: 'ready', provider: 'manual', audience: 'all', allowedDeliveryMethods: ['pickup'], notes: 'Только офис Rencēnu iela 10A.' },
     card_office: { enabled: true, label: 'Карта в офисе', status: 'ready', provider: 'manual', audience: 'all', allowedDeliveryMethods: ['pickup'], notes: 'Только при получении в офисе.' },
-    invoice: { enabled: true, label: 'Оплата по счёту', status: 'draft', provider: 'manual', audience: 'business', allowedDeliveryMethods: [...deliveryMethodIds], notes: 'Нужно определить предоплату/отсрочку и условия допуска.' },
+    invoice: { enabled: true, label: 'Оплата по счёту', status: 'draft', provider: 'manual', audience: 'business', allowedDeliveryMethods: [...deliveryMethodIds], notes: 'Обычная предоплата, не отсрочка — никому. Счёт формирует менеджер вручную перед отправкой клиенту, автo-PDF не нужен. Нумерация — отдельная от учётной программы, должна быть настраиваемая пользователем. Реквизиты продавца: SIA Miks Plus, Rencēnu 10A, Rīga, LV-1029, Rēģ./PVN LV 4010335137, AS Swedbank SWIFT HABALV22, konts LV66HABA0551036604107. НДС — по законодательству Латвии, обработка B2B LT/EE клиентов не детализирована.' },
   },
   providers: {
-    paysera: { accountStatus: 'not_started', merchantId: '', testModeAvailable: 'unknown', documentationUrl: '', contact: 'office@miksplus.eu' },
-    paypal: { accountStatus: 'not_started', merchantId: '', testModeAvailable: 'unknown', documentationUrl: '', contact: 'office@miksplus.eu' },
+    paysera: { accountStatus: 'in_progress', merchantId: '', testModeAvailable: 'unknown', documentationUrl: '', contact: 'office@miksplus.eu' },
+    paypal: { accountStatus: 'in_progress', merchantId: '', testModeAvailable: 'unknown', documentationUrl: '', contact: 'office@miksplus.eu' },
   },
 }
 

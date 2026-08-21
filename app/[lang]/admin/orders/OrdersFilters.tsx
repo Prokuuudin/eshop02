@@ -88,7 +88,8 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectItem value="all">Все доставки</SelectItem>
                                 <SelectItem value="courier">Курьер</SelectItem>
                                 <SelectItem value="pickup">Самовывоз</SelectItem>
-                                <SelectItem value="post">Почта</SelectItem>
+                                <SelectItem value="post">Почта (Omniva)</SelectItem>
+                                <SelectItem value="venipak">Venipak</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

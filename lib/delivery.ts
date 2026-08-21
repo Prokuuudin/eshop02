@@ -4,7 +4,8 @@
 export const DELIVERY_FEES_EUR: Record<string, number> = {
   courier: 5,
   pickup: 0,
-  post: 3,
+  post: 4, // Omniva пакомат LV (с НДС) — по тарифу перевозчика, не 3 как раньше
+  venipak: 3, // Venipak пакомат LV (с НДС)
 }
 
 export const DEFAULT_DELIVERY_FEE_EUR = DELIVERY_FEES_EUR.courier

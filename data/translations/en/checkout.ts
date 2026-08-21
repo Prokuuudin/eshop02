@@ -40,6 +40,7 @@ const enCheckout: Record<string, string> = {
   'checkout.delivery.courier': 'Courier (2-3 days)',
   'checkout.delivery.pickup': 'Pickup',
   'checkout.delivery.omniva': 'Omniva parcel lockers',
+  'checkout.delivery.venipak': 'Venipak parcel lockers',
   'checkout.delivery.free': 'Free',
   'checkout.payment.title': 'Payment Method',
   'checkout.payment.card': 'Bank Card',

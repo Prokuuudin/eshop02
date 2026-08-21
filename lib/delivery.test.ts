@@ -6,8 +6,12 @@ describe('calcDeliveryFee', () => {
     expect(calcDeliveryFee('courier', 60)).toBe(5)
   })
 
-  it('charges post €3 below the free-delivery threshold', () => {
-    expect(calcDeliveryFee('post', 60)).toBe(3)
+  it('charges post (Omniva) €4 below the free-delivery threshold', () => {
+    expect(calcDeliveryFee('post', 60)).toBe(4)
+  })
+
+  it('charges venipak €3 below the free-delivery threshold', () => {
+    expect(calcDeliveryFee('venipak', 60)).toBe(3)
   })
 
   it('pickup is always free', () => {
@@ -18,6 +22,7 @@ describe('calcDeliveryFee', () => {
     expect(calcDeliveryFee('courier', 100)).toBe(0)
     expect(calcDeliveryFee('courier', 250)).toBe(0)
     expect(calcDeliveryFee('post', 100)).toBe(0)
+    expect(calcDeliveryFee('venipak', 100)).toBe(0)
   })
 
   it('charges just below the threshold', () => {
@@ -32,7 +37,8 @@ describe('calcDeliveryFee', () => {
 
   it('exports fees in euros, not cents', () => {
     expect(DELIVERY_FEES_EUR.courier).toBe(5)
-    expect(DELIVERY_FEES_EUR.post).toBe(3)
+    expect(DELIVERY_FEES_EUR.post).toBe(4)
+    expect(DELIVERY_FEES_EUR.venipak).toBe(3)
     expect(DELIVERY_FEES_EUR.pickup).toBe(0)
     expect(FREE_DELIVERY_FROM_EUR).toBe(100)
   })

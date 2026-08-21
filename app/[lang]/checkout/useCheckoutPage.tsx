@@ -106,7 +106,7 @@ function useCheckoutPageState() {
     }, [currentUser?.id, currentUser?.email]);
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
-        return method === 'courier' || method === 'pickup' || method === 'post'
+        return method === 'courier' || method === 'pickup' || method === 'post' || method === 'venipak'
             ? method
             : 'courier';
     });

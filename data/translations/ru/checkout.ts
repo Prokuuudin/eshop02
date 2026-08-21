@@ -40,6 +40,7 @@ const ruCheckout: Record<string, string> = {
   'checkout.delivery.courier': 'Курьер (2-3 дня)',
   'checkout.delivery.pickup': 'Самовывоз',
   'checkout.delivery.omniva': 'Пакоматы Omniva',
+  'checkout.delivery.venipak': 'Пакоматы Venipak',
   'checkout.delivery.free': 'Бесплатно',
   'checkout.payment.title': 'Способ оплаты',
   'checkout.payment.card': 'Банковская карта',

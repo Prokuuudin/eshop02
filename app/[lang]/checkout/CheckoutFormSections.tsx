@@ -176,6 +176,7 @@ const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
   { id: 'courier', labelKey: 'checkout.delivery.courier' },
   { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
   { id: 'post', labelKey: 'checkout.delivery.omniva' },
+  { id: 'venipak', labelKey: 'checkout.delivery.venipak' },
 ]
 
 type DeliverySectionProps = {

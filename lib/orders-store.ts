@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { CartItem } from './cart-store'
 
-export type DeliveryMethod = 'courier' | 'pickup' | 'post'
+export type DeliveryMethod = 'courier' | 'pickup' | 'post' | 'venipak'
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed'
 
 export type OrderLegalDetails =

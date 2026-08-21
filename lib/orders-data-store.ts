@@ -110,7 +110,7 @@ export type AdminOrderUpdateInput = {
   address: string
   city: string
   postalCode?: string
-  deliveryMethod: 'courier' | 'pickup' | 'post'
+  deliveryMethod: 'courier' | 'pickup' | 'post' | 'venipak'
 }
 
 export type PrepareOrder = (
@@ -428,7 +428,8 @@ export const updateServerOrderPayment = async (
 const ADMIN_DELIVERY_COSTS: Record<AdminOrderUpdateInput['deliveryMethod'], number> = {
   courier: 5,
   pickup: 0,
-  post: 3,
+  post: 4,
+  venipak: 3,
 }
 
 function quantitiesByProduct(items: Array<{ id: string; quantity: number }>): Map<string, number> {

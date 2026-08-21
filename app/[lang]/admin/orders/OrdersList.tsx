@@ -204,7 +204,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     Способ доставки
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {(['pickup', 'courier', 'post'] as const).map(
+                                                    {(['pickup', 'courier', 'post', 'venipak'] as const).map(
                                                         (dm) => (
                                                             <button
                                                                 key={dm}

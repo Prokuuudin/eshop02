@@ -72,8 +72,9 @@ export const PAYMENT_COLORS: Record<string, string> = {
 export const DELIVERY_LABELS: Record<string, string> = {
   courier: 'Курьер',
   pickup: 'Самовывоз',
-  post: 'Почта',
+  post: 'Почта (Omniva)',
+  venipak: 'Venipak',
 }
 
-export const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, post: 3 }
+export const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, post: 4, venipak: 3 }
 export const ORDERS_PAGE_SIZE = 25

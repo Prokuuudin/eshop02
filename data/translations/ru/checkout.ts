@@ -179,7 +179,7 @@ const ruCheckout: Record<string, string> = {
   'order.helpTitle': 'Вопросы по заказу?',
   'order.helpWrite': 'Напишите нам на',
   'order.helpOrCall': 'или позвоните',
-  'order.workHours': 'Время работы: ПН–ПТ 09:00–17:00',
+  'order.workHours': 'Время работы: ПН–ПТ 09.00–17.00',
   'order.paymentStatus.paid': 'Оплачено',
   'order.paymentStatus.pending': 'Ожидает подтверждения',
   'order.paymentStatus.failed': 'Ошибка оплаты',

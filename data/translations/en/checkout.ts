@@ -179,7 +179,7 @@ const enCheckout: Record<string, string> = {
   'order.helpTitle': 'Questions about your order?',
   'order.helpWrite': 'Email us at',
   'order.helpOrCall': 'or call',
-  'order.workHours': 'Working hours: Mon–Fri 09:00–17:00',
+  'order.workHours': 'Working hours: Mon–Fri 09.00–17.00',
   'order.paymentStatus.paid': 'Paid',
   'order.paymentStatus.pending': 'Awaiting confirmation',
   'order.paymentStatus.failed': 'Payment failed',

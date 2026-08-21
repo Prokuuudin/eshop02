@@ -179,7 +179,7 @@ const lvCheckout: Record<string, string> = {
   'order.helpTitle': 'Jautājumi par pasūtījumu?',
   'order.helpWrite': 'Rakstiet mums uz',
   'order.helpOrCall': 'vai zvaniet',
-  'order.workHours': 'Darba laiks: P–Pk 09:00–17:00',
+  'order.workHours': 'Darba laiks: P–Pk 09.00–17.00',
   'order.paymentStatus.paid': 'Samaksāts',
   'order.paymentStatus.pending': 'Gaida apstiprinājumu',
   'order.paymentStatus.failed': 'Maksājums neizdevās',

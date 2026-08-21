@@ -128,7 +128,6 @@ const enCommon: Record<string, string> = {
   'deliveryPayment.payment.security.note': 'If you have any questions about payment security, contact our support team.',
   'deliveryPayment.support.title': 'Payment questions',
   'deliveryPayment.support.intro': 'Our support team is happy to help with any questions about paying for your order.',
-  'deliveryPayment.support.skypeLabel': 'Skype',
   'hero.alt': 'Hero',
   'reviews.write': 'Write a review',
   'reviews.your': 'Your review',

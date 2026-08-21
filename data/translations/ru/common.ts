@@ -128,7 +128,6 @@ const ruCommon: Record<string, string> = {
   'deliveryPayment.payment.security.note': 'Если у вас возникли вопросы по безопасности платежей, свяжитесь с нашей службой поддержки.',
   'deliveryPayment.support.title': 'Вопросы по оплате',
   'deliveryPayment.support.intro': 'Наша служба поддержки поможет решить вопросы, связанные с оплатой заказа.',
-  'deliveryPayment.support.skypeLabel': 'Skype',
   'hero.alt': 'Главное изображение',
   'reviews.write': 'Написать рецензию',
   'reviews.your': 'Ваша рецензия',

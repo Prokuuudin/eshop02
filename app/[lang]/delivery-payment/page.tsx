@@ -183,15 +183,6 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             </a>
                                         </li>
                                         <li>
-                                            {t('deliveryPayment.support.skypeLabel')}:{' '}
-                                            <a
-                                                href="skype:ShopForHair?chat"
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                ShopForHair
-                                            </a>
-                                        </li>
-                                        <li>
                                             {t('contact.emailLabel')}:{' '}
                                             <a
                                                 href="mailto:info@hairshop.lv"
@@ -327,15 +318,6 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                                 className="text-blue-600 hover:underline"
                                             >
                                                 +371 27067730
-                                            </a>
-                                        </li>
-                                        <li>
-                                            {t('deliveryPayment.support.skypeLabel')}:{' '}
-                                            <a
-                                                href="skype:ShopForHair?chat"
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                ShopForHair
                                             </a>
                                         </li>
                                         <li>

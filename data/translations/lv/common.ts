@@ -140,7 +140,6 @@ const lvCommon: Record<string, string> = {
   'deliveryPayment.payment.security.note': 'Ja jums ir jautājumi par maksājumu drošību, sazinieties ar mūsu atbalsta dienestu.',
   'deliveryPayment.support.title': 'Jautājumi par apmaksu',
   'deliveryPayment.support.intro': 'Mūsu atbalsta dienests palīdzēs atrisināt jautājumus, kas saistīti ar pasūtījuma apmaksu.',
-  'deliveryPayment.support.skypeLabel': 'Skype',
   'hero.alt': 'Galvenais attēls',
   'reviews.write': 'Rakstīt atsauksmi',
   'reviews.your': 'Jūsu atsauksme',

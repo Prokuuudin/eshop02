@@ -196,7 +196,6 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'deliveryPayment.payment.security.note', label: 'Безопасность — примечание', multiline: true },
       { type: 'text', key: 'deliveryPayment.support.title', label: 'Заголовок «Вопросы по оплате»' },
       { type: 'text', key: 'deliveryPayment.support.intro', label: 'Вопросы по оплате — вводный текст', multiline: true },
-      { type: 'text', key: 'deliveryPayment.support.skypeLabel', label: 'Лейбл «Skype»' },
     ],
   },
   {

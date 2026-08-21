@@ -41,6 +41,29 @@ function useAdminOrdersPageState() {
     const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
     const [editSaving, setEditSaving] = useState(false);
     const [mutationError, setMutationError] = useState('');
+    const [paymentSavingIds, setPaymentSavingIds] = useState<Set<string>>(new Set());
+    const markOrderPaid = async (orderId: string): Promise<void> => {
+        setMutationError('');
+        setPaymentSavingIds((prev) => new Set(prev).add(orderId));
+        try {
+            const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentStatus: 'paid', paymentProvider: 'manual' }),
+            });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(payload?.error ?? 'payment_update_failed');
+            upsertOrder(payload.order as import('@/lib/orders-store').Order);
+        } catch (error) {
+            setMutationError(error instanceof Error ? error.message : 'Не удалось отметить заказ оплаченным');
+        } finally {
+            setPaymentSavingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
+        }
+    };
     const setOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
         setMutationError('');
         try {
@@ -517,6 +540,8 @@ function useAdminOrdersPageState() {
         setEditProductSearch,
         editSaving,
         mutationError,
+        paymentSavingIds,
+        markOrderPaid,
         language,
         locale,
         search,

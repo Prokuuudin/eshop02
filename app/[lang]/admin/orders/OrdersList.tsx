@@ -23,6 +23,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
       setEditPostalCode, editDelivery, setEditDelivery, editProductSearch, setEditProductSearch,
       editSaving, locale, expandedOrder, setExpandedOrder, selectedIds, setInvoiceOrder, filtered,
       pageItems, toggleSelect, editProductResults, startEdit, cancelEdit, saveEdit, editUpdateQty, editAddProduct,
+      paymentSavingIds, markOrderPaid,
     } = state;
     return (
         <>
@@ -497,6 +498,16 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         {order.paymentSessionId}
                                                     </p>
                                                 </div>
+                                            )}
+                                            {payStatus !== 'paid' && (
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full"
+                                                    disabled={paymentSavingIds.has(order.id)}
+                                                    onClick={() => markOrderPaid(order.id)}
+                                                >
+                                                    {paymentSavingIds.has(order.id) ? 'Сохранение…' : 'Отметить оплаченным'}
+                                                </Button>
                                             )}
                                         </div>
                                     </div>

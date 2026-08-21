@@ -38,7 +38,7 @@ export const adminOrderUpdateSchema = z.object({
   deliveryMethod: z.enum(['courier', 'pickup', 'post', 'venipak']),
 }).strict()
 
-export const paymentMethodSchema = z.enum(['card', 'bank', 'cash'])
+export const paymentMethodSchema = z.enum(['bank', 'cash'])
 export const deliveryMethodSchema = z.enum(['courier', 'pickup', 'post', 'venipak'])
 
 export const returnRequestSchema = z.object({

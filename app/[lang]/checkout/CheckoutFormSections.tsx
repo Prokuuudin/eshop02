@@ -1,15 +1,10 @@
 'use client'
 
 import type { ChangeEvent, Dispatch, JSX, SetStateAction } from 'react'
-import Link from 'next/link'
 import { Info } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import PhoneInput from '@/components/ui/phone-input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { stores } from '@/data/stores'
-import type { DeliveryMethod } from '@/lib/orders-store'
-import { calcDeliveryFee } from '@/lib/delivery'
 
 export type CustomerType = 'individual' | 'company'
 
@@ -168,89 +163,6 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
           <Input id="checkout-postal-code" name="postalCode" value={formData.postalCode} onChange={onChange} placeholder={t('checkout.postalCode')} className={fieldClass(false)} />
         </div>
       </div>
-    </section>
-  )
-}
-
-const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
-  { id: 'courier', labelKey: 'checkout.delivery.courier' },
-  { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
-  { id: 'post', labelKey: 'checkout.delivery.omniva' },
-  { id: 'venipak', labelKey: 'checkout.delivery.venipak' },
-]
-
-type DeliverySectionProps = {
-  deliveryMethod: DeliveryMethod
-  setDeliveryMethod: (method: DeliveryMethod) => void
-  pickupStoreId: string
-  setPickupStoreId: (id: string) => void
-  subtotalAfterDiscount: number
-  errors: Errors
-  clearPickupError: () => void
-  formatCurrency: (value: number) => string
-  t: Translate
-}
-
-export function DeliverySection(props: DeliverySectionProps): JSX.Element {
-  const { deliveryMethod, setDeliveryMethod, pickupStoreId, setPickupStoreId, subtotalAfterDiscount, errors, clearPickupError, formatCurrency, t } = props
-  return (
-    <section className="checkout__section rounded-lg border border-border bg-card p-6">
-      <div className="checkout__section-header mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="checkout__section-title text-lg font-bold">{t('checkout.delivery.method')}</h2>
-        <Link href="/delivery-payment" target="_blank" className="checkout__section-info text-sm text-primary underline hover:no-underline">{t('checkout.delivery.moreInfo')}</Link>
-      </div>
-      <RadioGroup value={deliveryMethod} onValueChange={(value) => setDeliveryMethod(value as DeliveryMethod)} className="checkout__options space-y-3">
-        {DELIVERY_OPTIONS.map((option) => (
-          <div key={option.id} className="checkout__option-group">
-            <label className="checkout__option flex cursor-pointer items-center rounded border border-border p-3 hover:bg-gray-50 dark:hover:bg-gray-800" htmlFor={`delivery-${option.id}`}>
-              <RadioGroupItem id={`delivery-${option.id}`} value={option.id} className="mr-3" />
-              <span className="checkout__option-content flex-1">
-                <span className="checkout__option-title block font-medium">{t(option.labelKey)}</span>
-                <span className="checkout__option-caption block text-sm text-muted-foreground">{calcDeliveryFee(option.id, subtotalAfterDiscount) === 0 ? t('checkout.delivery.free') : formatCurrency(calcDeliveryFee(option.id, subtotalAfterDiscount))}</span>
-              </span>
-            </label>
-            {option.id === 'pickup' && deliveryMethod === 'pickup' && (
-              <div className="checkout__pickup-store ml-8 mt-3">
-                <label className="checkout__label mb-1 block text-sm font-medium text-foreground" htmlFor="pickup-store">{t('checkout.pickup.chooseStore')} <span className="text-red-600">*</span></label>
-                <Select value={pickupStoreId || undefined} onValueChange={(value) => { setPickupStoreId(value); clearPickupError() }}>
-                  <SelectTrigger id="pickup-store" className={`checkout__select w-full ${errors.pickupStore ? 'border-red-500' : 'border-border'}`} aria-invalid={!!errors.pickupStore}><SelectValue placeholder={t('checkout.pickup.storePlaceholder')} /></SelectTrigger>
-                  <SelectContent>{stores.map((store) => <SelectItem key={store.id} value={store.id}>{t(`stores.${store.id}.name`)} — {store.address.lv}</SelectItem>)}</SelectContent>
-                </Select>
-                <FieldError id="checkout-pickup-store-error" message={errors.pickupStore} />
-              </div>
-            )}
-          </div>
-        ))}
-      </RadioGroup>
-    </section>
-  )
-}
-
-type PaymentSectionProps = {
-  paymentMethod: string
-  setPaymentMethod: (method: string) => void
-  cashUnavailable: boolean
-  t: Translate
-}
-
-export function PaymentSection({ paymentMethod, setPaymentMethod, cashUnavailable, t }: PaymentSectionProps): JSX.Element {
-  return (
-    <section className="checkout__section rounded-lg border border-border bg-card p-6">
-      <div className="checkout__section-header mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="checkout__section-title text-lg font-bold">{t('checkout.payment.title')}</h2>
-        <Link href="/delivery-payment" target="_blank" className="checkout__section-info text-sm text-primary underline hover:no-underline">{t('checkout.payment.moreInfo')}</Link>
-      </div>
-      <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="checkout__options space-y-3">
-        {(['card', 'bank', 'cash'] as const).map((method) => {
-          const disabled = method === 'cash' && cashUnavailable
-          return (
-            <label key={method} className={`checkout__option flex items-center rounded border border-border p-3 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'}`} htmlFor={`payment-${method}`}>
-              <RadioGroupItem id={`payment-${method}`} value={method} className="mr-3" disabled={disabled} />
-              <span className="checkout__option-content flex-1"><span className="checkout__option-title block font-medium">{t(`checkout.payment.${method}`)}</span>{method === 'cash' && <span className="checkout__option-caption block text-sm text-muted-foreground">{t('checkout.payment.cashNote')}</span>}</span>
-            </label>
-          )
-        })}
-      </RadioGroup>
     </section>
   )
 }

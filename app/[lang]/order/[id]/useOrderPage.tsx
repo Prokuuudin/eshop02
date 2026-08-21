@@ -67,7 +67,7 @@ function useOrderPageState({ params }: PageProps) {
                         subtotal: number;
                         tax: number;
                         delivery: number;
-                        deliveryMethod: 'courier' | 'pickup' | 'post';
+                        deliveryMethod: 'courier' | 'pickup' | 'post' | 'venipak';
                         paymentMethod: string;
                         promoCode?: string;
                         discount: number;
@@ -143,6 +143,7 @@ function useOrderPageState({ params }: PageProps) {
     const getDeliveryLabel = (deliveryMethod: string): string => {
         if (deliveryMethod === 'courier') return t('order.delivery.courier');
         if (deliveryMethod === 'pickup') return t('order.delivery.pickup');
+        if (deliveryMethod === 'venipak') return t('order.delivery.venipak');
         return t('order.delivery.post');
     };
 

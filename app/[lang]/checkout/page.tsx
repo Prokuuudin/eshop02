@@ -30,6 +30,7 @@ const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
     { id: 'courier', labelKey: 'checkout.delivery.courier' },
     { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
     { id: 'post', labelKey: 'checkout.delivery.omniva' },
+    { id: 'venipak', labelKey: 'checkout.delivery.venipak' },
 ];
 
 import { useCheckoutPage } from './useCheckoutPage';
@@ -277,8 +278,8 @@ export default function CheckoutPage(): React.ReactElement {
                             }}
                             className="space-y-3"
                         >
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {(['card', 'bank', 'cash'] as const).map((method) => (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {(['bank', 'cash'] as const).map((method) => (
                                     <label
                                         key={method}
                                         className="flex items-center p-3 border rounded border-border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"

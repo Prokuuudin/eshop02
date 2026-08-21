@@ -75,7 +75,7 @@ function useCheckoutPageState() {
         address: searchParams.get('address') ?? '',
         city: searchParams.get('city') ?? '',
         postalCode: searchParams.get('postalCode') ?? '',
-        paymentMethod: 'card',
+        paymentMethod: 'bank',
     }));
 
     // Prefill from the user's saved address / profile, but never clobber a field

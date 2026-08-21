@@ -106,7 +106,9 @@ test('checkout submit redirects to order details page', async ({ page }) => {
   await expect(page).toHaveURL(/\/order\//)
 })
 
-test('checkout card flow redirects through mocked stripe and shows paid status', async ({ page }) => {
+// Online card payment is office-only by business decision — the storefront no longer offers
+// it as a checkout option, so this flow has nothing left to drive from the UI.
+test.skip('checkout card flow redirects through mocked stripe and shows paid status', async ({ page }) => {
   test.setTimeout(90_000)
 
   await seedCartWithOneItem(page)

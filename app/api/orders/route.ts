@@ -57,6 +57,7 @@ const DELIVERY_LABELS_RU: Record<string, string> = {
   courier: 'Курьер',
   pickup: 'Самовывоз',
   post: 'Пакоматы Omniva',
+  venipak: 'Пакоматы Venipak',
 }
 
 async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLabel?: string): Promise<void> {
@@ -233,10 +234,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000)) {
       return NextResponse.json({ error: 'invalid_items' }, { status: 400 })
     }
-    if (!['courier', 'pickup', 'post'].includes(order.deliveryMethod)) {
+    if (!['courier', 'pickup', 'post', 'venipak'].includes(order.deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
-    if (!['card', 'bank', 'cash'].includes(order.paymentMethod)) {
+    // Card payment is office-only (in-person terminal) — never offered as an online checkout method.
+    if (!['bank', 'cash'].includes(order.paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
 

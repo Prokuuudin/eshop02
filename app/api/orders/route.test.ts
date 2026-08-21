@@ -47,7 +47,7 @@ const VALID_ORDER = {
   postalCode: '1001',
   legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
   deliveryMethod: 'courier',
-  paymentMethod: 'card',
+  paymentMethod: 'bank',
   items: [
     { id: 'p1', title: 'Shampoo Pro', brand: 'Brand', image: '', category: 'hair', price: 25, rating: 5, stock: 10, quantity: 2 },
   ],
@@ -161,6 +161,13 @@ describe('POST /api/orders — admin notification', () => {
 
     expect(res.status).toBe(200)
     expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
+  it('rejects online card payment — card is office-only, never an online checkout method', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'card' }))
+
+    expect(res.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
   })
 
   it('rate-limits a guest by IP and normalized email before reserving stock', async () => {

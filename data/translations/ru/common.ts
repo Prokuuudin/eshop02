@@ -113,8 +113,6 @@ const ruCommon: Record<string, string> = {
   'deliveryPayment.payment.transfer.note1': 'После оформления заказа на вашу электронную почту будет отправлен счёт для оплаты.',
   'deliveryPayment.payment.transfer.note2': 'При оплате банковским переводом обязательно укажите номер заказа в назначении платежа.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Реквизиты для оплаты',
-  'deliveryPayment.payment.leasing.label': 'Оплата через Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Также доступна оплата с использованием услуг Lateko Līzings.',
   'deliveryPayment.payment.how.title': 'Как происходит оплата',
   'deliveryPayment.payment.how.step1': 'Оформите заказ на сайте.',
   'deliveryPayment.payment.how.step2': 'Выберите способ и адрес доставки.',

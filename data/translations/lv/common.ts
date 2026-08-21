@@ -125,8 +125,6 @@ const lvCommon: Record<string, string> = {
   'deliveryPayment.payment.transfer.note1': 'Pēc pasūtījuma noformēšanas uz jūsu e-pastu tiks nosūtīts rēķins apmaksai.',
   'deliveryPayment.payment.transfer.note2': 'Veicot apmaksu ar pārskaitījumu, obligāti norādiet pasūtījuma numuru maksājuma mērķī.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Rekvizīti apmaksai',
-  'deliveryPayment.payment.leasing.label': 'Apmaksa caur Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Pieejama arī apmaksa, izmantojot Lateko Līzings pakalpojumus.',
   'deliveryPayment.payment.how.title': 'Kā notiek apmaksa',
   'deliveryPayment.payment.how.step1': 'Noformējiet pasūtījumu mājaslapā.',
   'deliveryPayment.payment.how.step2': 'Izvēlieties piegādes veidu un adresi.',

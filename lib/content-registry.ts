@@ -181,8 +181,6 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'deliveryPayment.payment.transfer.note1', label: 'Банковский перевод — пояснение 1', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.transfer.note2', label: 'Банковский перевод — пояснение 2', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.transfer.requisitesTitle', label: 'Заголовок «Реквизиты для оплаты»' },
-      { type: 'text', key: 'deliveryPayment.payment.leasing.label', label: 'Lateko Līzings — заголовок' },
-      { type: 'text', key: 'deliveryPayment.payment.leasing.note', label: 'Lateko Līzings — пояснение', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.how.title', label: 'Заголовок «Как происходит оплата»' },
       { type: 'text', key: 'deliveryPayment.payment.how.step1', label: 'Шаг оплаты 1' },
       { type: 'text', key: 'deliveryPayment.payment.how.step2', label: 'Шаг оплаты 2' },

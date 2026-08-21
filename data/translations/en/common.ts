@@ -113,8 +113,6 @@ const enCommon: Record<string, string> = {
   'deliveryPayment.payment.transfer.note1': 'After placing your order, an invoice will be sent to your email.',
   'deliveryPayment.payment.transfer.note2': 'When paying by bank transfer, be sure to include the order number in the payment reference.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Payment details',
-  'deliveryPayment.payment.leasing.label': 'Payment via Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Payment using Lateko Līzings services is also available.',
   'deliveryPayment.payment.how.title': 'How payment works',
   'deliveryPayment.payment.how.step1': 'Place your order on the website.',
   'deliveryPayment.payment.how.step2': 'Choose a delivery method and address.',

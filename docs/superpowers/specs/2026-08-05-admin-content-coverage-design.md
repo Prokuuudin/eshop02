@@ -62,7 +62,6 @@ deliveryPayment.payment.methods.title
 deliveryPayment.payment.card.label / .note
 deliveryPayment.payment.cash.label / .note
 deliveryPayment.payment.transfer.label / .note1 / .note2 / .requisitesTitle
-deliveryPayment.payment.leasing.label / .note
 deliveryPayment.payment.how.title / .step1-4
 deliveryPayment.payment.security.title / .intro / .item1-3 / .note
 deliveryPayment.payment.support.title / .intro

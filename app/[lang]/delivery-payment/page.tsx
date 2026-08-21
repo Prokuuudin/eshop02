@@ -257,12 +257,6 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                                 </div>
                                             </div>
                                         </li>
-                                        <li>
-                                            <b>{t('deliveryPayment.payment.leasing.label')}</b>
-                                            <div className="mt-2 text-sm">
-                                                {t('deliveryPayment.payment.leasing.note')}
-                                            </div>
-                                        </li>
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>

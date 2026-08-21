@@ -551,8 +551,6 @@ Add these entries anywhere inside the `ruCommon` object (e.g. right after the ex
   'deliveryPayment.payment.transfer.note1': 'После оформления заказа на вашу электронную почту будет отправлен счёт для оплаты.',
   'deliveryPayment.payment.transfer.note2': 'При оплате банковским переводом обязательно укажите номер заказа в назначении платежа.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Реквизиты для оплаты',
-  'deliveryPayment.payment.leasing.label': 'Оплата через Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Также доступна оплата с использованием услуг Lateko Līzings.',
   'deliveryPayment.payment.how.title': 'Как происходит оплата',
   'deliveryPayment.payment.how.step1': 'Оформите заказ на сайте.',
   'deliveryPayment.payment.how.step2': 'Выберите способ и адрес доставки.',
@@ -613,8 +611,6 @@ Add these entries anywhere inside the `ruCommon` object (e.g. right after the ex
   'deliveryPayment.payment.transfer.note1': 'After placing your order, an invoice will be sent to your email.',
   'deliveryPayment.payment.transfer.note2': 'When paying by bank transfer, be sure to include the order number in the payment reference.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Payment details',
-  'deliveryPayment.payment.leasing.label': 'Payment via Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Payment using Lateko Līzings services is also available.',
   'deliveryPayment.payment.how.title': 'How payment works',
   'deliveryPayment.payment.how.step1': 'Place your order on the website.',
   'deliveryPayment.payment.how.step2': 'Choose a delivery method and address.',
@@ -675,8 +671,6 @@ Add these entries anywhere inside the `ruCommon` object (e.g. right after the ex
   'deliveryPayment.payment.transfer.note1': 'Pēc pasūtījuma noformēšanas uz jūsu e-pastu tiks nosūtīts rēķins apmaksai.',
   'deliveryPayment.payment.transfer.note2': 'Veicot apmaksu ar pārskaitījumu, obligāti norādiet pasūtījuma numuru maksājuma mērķī.',
   'deliveryPayment.payment.transfer.requisitesTitle': 'Rekvizīti apmaksai',
-  'deliveryPayment.payment.leasing.label': 'Apmaksa caur Lateko Līzings',
-  'deliveryPayment.payment.leasing.note': 'Pieejama arī apmaksa, izmantojot Lateko Līzings pakalpojumus.',
   'deliveryPayment.payment.how.title': 'Kā notiek apmaksa',
   'deliveryPayment.payment.how.step1': 'Noformējiet pasūtījumu mājaslapā.',
   'deliveryPayment.payment.how.step2': 'Izvēlieties piegādes veidu un adresi.',
@@ -906,12 +900,6 @@ Replace the `<AccordionItem value="methods">` trigger under the payment section 
                                                 </div>
                                             </div>
                                         </li>
-                                        <li>
-                                            <b>{t('deliveryPayment.payment.leasing.label')}</b>
-                                            <div className="mt-2 text-sm">
-                                                {t('deliveryPayment.payment.leasing.note')}
-                                            </div>
-                                        </li>
                                     </ul>
                                 </AccordionContent>
 ```
@@ -1083,8 +1071,6 @@ Add before the final `]` that closes `CONTENT_REGISTRY`:
       { type: 'text', key: 'deliveryPayment.payment.transfer.note1', label: 'Банковский перевод — пояснение 1', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.transfer.note2', label: 'Банковский перевод — пояснение 2', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.transfer.requisitesTitle', label: 'Заголовок «Реквизиты для оплаты»' },
-      { type: 'text', key: 'deliveryPayment.payment.leasing.label', label: 'Lateko Līzings — заголовок' },
-      { type: 'text', key: 'deliveryPayment.payment.leasing.note', label: 'Lateko Līzings — пояснение', multiline: true },
       { type: 'text', key: 'deliveryPayment.payment.how.title', label: 'Заголовок «Как происходит оплата»' },
       { type: 'text', key: 'deliveryPayment.payment.how.step1', label: 'Шаг оплаты 1' },
       { type: 'text', key: 'deliveryPayment.payment.how.step2', label: 'Шаг оплаты 2' },

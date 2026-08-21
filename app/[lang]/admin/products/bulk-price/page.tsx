@@ -22,39 +22,52 @@ type Product = {
 type AdjustMode = 'percent' | 'fixed_add' | 'fixed_set';
 type OldPriceAction = 'save_current' | 'clear';
 
-type ChangeBatchItem = {
+type ResultItem = {
     id: string;
     title: string;
     sku?: string;
     oldPrice: number;
     newPrice: number;
-    previousOldPrice?: number;
-    resultingOldPrice?: number;
     status: 'ok' | 'err';
-    revision: number;
     error?: string;
     httpStatus?: number;
 };
 
-type ChangeBatch = {
-    id: string;
+type LastResult = {
+    kind: 'apply' | 'revert';
     appliedAt: Date;
     description: string;
     ok: number;
     err: number;
-    items: ChangeBatchItem[];
-    kind: 'apply' | 'revert';
+    items: ResultItem[];
     mode?: AdjustMode;
     value?: number;
     oldPriceAction?: OldPriceAction;
-    revertState: 'available' | 'partial' | 'reverted' | 'not_available';
-    remainingRevertIds?: string[];
 };
 
-type PendingAction = { type: 'apply' } | { type: 'revert'; batch: ChangeBatch };
+type PriceSnapshot = { price: number; oldPrice: number | null };
+
+type ServerBatchItem = {
+    id: string;
+    title: string;
+    before: PriceSnapshot;
+    after: PriceSnapshot;
+    state: 'available' | 'reverted' | 'changed';
+};
+
+type ServerBatch = {
+    requestId: string;
+    appliedAt: string;
+    adminEmail: string;
+    adminName: string | null;
+    action: string;
+    items: ServerBatchItem[];
+    revertState: 'available' | 'partial' | 'reverted' | 'not_available';
+};
+
+type PendingAction = { type: 'apply' } | { type: 'revert'; batch: ServerBatch };
 
 const PAGE_SIZE = 100;
-const HISTORY_LIMIT = 20;
 const UPDATE_CONCURRENCY = 8;
 
 async function mapWithConcurrency<T, R>(items: T[], worker: (item: T) => Promise<R>): Promise<R[]> {
@@ -107,8 +120,23 @@ export default function BulkPricePage(): React.ReactElement {
     const [value, setValue] = useState('');
     const [oldPriceAction, setOldPriceAction] = useState<OldPriceAction>('save_current');
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-    const [history, setHistory] = useState<ChangeBatch[]>([]);
+    const [lastResult, setLastResult] = useState<LastResult | null>(null);
+    const [serverBatches, setServerBatches] = useState<ServerBatch[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+    const refreshBatches = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/products/price-batches');
+            const json: { data?: { batches?: ServerBatch[] } } = await res.json();
+            setServerBatches(Array.isArray(json.data?.batches) ? json.data.batches : []);
+        } catch {
+            // History panel is supplementary — the main table still works if this fails.
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshBatches();
+    }, [refreshBatches]);
 
     useEffect(() => {
         const id = setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -189,11 +217,11 @@ export default function BulkPricePage(): React.ReactElement {
         return Array.isArray(json.data?.products) ? json.data.products : [];
     };
 
-    const putProduct = async (id: string, revision: number, changes: Record<string, unknown>): Promise<{ status: 'ok' | 'err'; revision: number; error?: string; httpStatus?: number }> => {
+    const putProduct = async (id: string, revision: number, changes: Record<string, unknown>, batchId: string): Promise<{ status: 'ok' | 'err'; revision: number; error?: string; httpStatus?: number }> => {
         try {
             const res = await fetch('/api/admin/products', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'x-request-id': batchId },
                 body: JSON.stringify({ id, revision, changes }),
             });
             const json: { error?: string; data?: { product?: { revision?: number } } } = await res.json().catch(() => ({}));
@@ -219,99 +247,62 @@ export default function BulkPricePage(): React.ReactElement {
         const targets = [...selected]
             .map((id) => snapshots.current.get(id))
             .filter((p): p is Product => p !== undefined);
-        const items = await mapWithConcurrency(targets, async (p): Promise<ChangeBatchItem> => {
+        const batchId = crypto.randomUUID();
+        const items = await mapWithConcurrency(targets, async (p): Promise<ResultItem> => {
                 const newPrice = priceAdjustmentValid ? calcNewPrice(p.price, mode, numValue) : p.price;
                 const changes: Record<string, unknown> = priceAdjustmentValid ? { price: newPrice } : {};
                 if (oldPriceAction === 'save_current') changes.oldPrice = p.price;
                 if (oldPriceAction === 'clear') changes.oldPrice = null;
-                const result = await putProduct(p.id, p.revision, changes);
-                return {
-                    id: p.id, title: p.title, sku: p.sku,
-                    oldPrice: p.price, newPrice,
-                    previousOldPrice: p.oldPrice,
-                    resultingOldPrice: oldPriceAction === 'save_current'
-                        ? p.price
-                        : oldPriceAction === 'clear' ? undefined : p.oldPrice,
-                    ...result,
-                };
+                const result = await putProduct(p.id, p.revision, changes, batchId);
+                return { id: p.id, title: p.title, sku: p.sku, oldPrice: p.price, newPrice, ...result };
             });
         setSaving(false);
         const ok = items.filter((i) => i.status === 'ok').length;
         const err = items.length - ok;
-        setHistory((prev) => [
-            {
-                id: `${Date.now()}`, appliedAt: new Date(), description: describeChange(mode, numValue, oldPriceAction),
-                ok, err, items, kind: 'apply' as const, mode,
-                value: priceAdjustmentValid ? numValue : undefined, oldPriceAction,
-                revertState: (ok > 0 ? 'available' : 'not_available') as ChangeBatch['revertState'],
-            },
-            ...prev,
-        ].slice(0, HISTORY_LIMIT));
-        if (ok > 0) await loadPage(page);
+        setLastResult({
+            kind: 'apply', appliedAt: new Date(), description: describeChange(mode, numValue, oldPriceAction),
+            ok, err, items, mode, value: priceAdjustmentValid ? numValue : undefined, oldPriceAction,
+        });
+        if (ok > 0) await Promise.all([loadPage(page), refreshBatches()]);
         resetAll();
     };
 
-    const performRevert = async (batch: ChangeBatch) => {
+    const performRevert = async (batch: ServerBatch) => {
         setActionMessage(null);
         setPendingAction(null);
         setSaving(true);
-        const remaining = batch.remainingRevertIds ? new Set(batch.remainingRevertIds) : null;
-        const targets = batch.items.filter((i) => i.status === 'ok' && (!remaining || remaining.has(i.id)));
-        let currentById = new Map<string, Product>();
         try {
-            currentById = new Map((await getAllProducts()).map((product) => [product.id, product]));
+            const res = await fetch(`/api/admin/products/price-batches/${batch.requestId}/revert`, { method: 'POST' });
+            const json: { data?: { ok?: number; err?: number; items?: ResultItem[] }; error?: string } = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setActionMessage(json.error || 'Не удалось выполнить возврат цен.');
+            } else {
+                const items = json.data?.items ?? [];
+                setLastResult({
+                    kind: 'revert', appliedAt: new Date(),
+                    description: `Возврат цен: партия от ${new Date(batch.appliedAt).toLocaleString('ru-RU')}`,
+                    ok: json.data?.ok ?? 0, err: json.data?.err ?? 0, items,
+                });
+            }
         } catch {
-            // Each item below gets an actionable loading error.
+            setActionMessage('Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.');
+        } finally {
+            setSaving(false);
+            await Promise.all([loadPage(page), refreshBatches()]);
         }
-        const items = await mapWithConcurrency(targets, async (item): Promise<ChangeBatchItem> => {
-                const current = currentById.get(item.id);
-                if (!current) {
-                    return { ...item, oldPrice: item.newPrice, newPrice: item.oldPrice, status: 'err' as const, error: 'Не удалось получить актуальное состояние товара.' };
-                }
-                if (current.price !== item.newPrice || current.oldPrice !== item.resultingOldPrice) {
-                    return {
-                        ...item, oldPrice: current.price, newPrice: item.oldPrice, revision: current.revision,
-                        status: 'err' as const, httpStatus: 409,
-                        error: 'После этой операции товар изменился. Проверьте его вручную — автоматический возврат заблокирован.',
-                    };
-                }
-                const result = await putProduct(item.id, current.revision, { price: item.oldPrice, oldPrice: null });
-                return {
-                    id: item.id, title: item.title, sku: item.sku,
-                    oldPrice: item.newPrice, newPrice: item.oldPrice,
-                    previousOldPrice: item.resultingOldPrice, resultingOldPrice: undefined,
-                    ...result,
-                };
-            });
-        setSaving(false);
-        const ok = items.filter((i) => i.status === 'ok').length;
-        const err = items.length - ok;
-        const failedIds = items.filter((item) => item.status === 'err').map((item) => item.id);
-        setHistory((prev) => [
-            {
-                id: `${Date.now()}`, appliedAt: new Date(), description: `Возврат цен: ${batch.description}`,
-                ok, err, items, kind: 'revert' as const, revertState: 'not_available' as const,
-            },
-            ...prev.map((b) => b.id === batch.id ? {
-                ...b,
-                revertState: failedIds.length > 0 ? 'partial' as const : 'reverted' as const,
-                remainingRevertIds: failedIds,
-            } : b),
-        ].slice(0, HISTORY_LIMIT));
-        if (ok > 0) await loadPage(page);
     };
 
-    const prepareFailedRetry = async (batch: ChangeBatch) => {
-        if (batch.kind !== 'apply' || batch.mode === undefined) return;
+    const prepareFailedRetry = async (result: LastResult) => {
+        if (result.kind !== 'apply' || result.mode === undefined) return;
         setSaving(true);
         try {
-            const failedIds = new Set(batch.items.filter((item) => item.status === 'err').map((item) => item.id));
+            const failedIds = new Set(result.items.filter((item) => item.status === 'err').map((item) => item.id));
             const current = (await getAllProducts()).filter((product) => failedIds.has(product.id));
             snapshots.current = new Map(current.map((product) => [product.id, product]));
             setSelected(new Set(current.map((product) => product.id)));
-            setMode(batch.mode);
-            setValue(batch.value === undefined ? '' : String(batch.value));
-            setOldPriceAction(batch.oldPriceAction ?? 'save_current');
+            setMode(result.mode);
+            setValue(result.value === undefined ? '' : String(result.value));
+            setOldPriceAction(result.oldPriceAction ?? 'save_current');
             await loadPage(page);
             setActionMessage(
                 current.length > 0
@@ -416,8 +407,8 @@ export default function BulkPricePage(): React.ReactElement {
                                 <DialogHeader>
                                     <DialogTitle>Вернуть предыдущие цены</DialogTitle>
                                     <DialogDescription>
-                                        Будет восстановлена цена до операции «{pendingAction.batch.description}», а зачёркнутая цена будет убрана.
-                                        Если товар после неё уже менялся, автоматический возврат будет безопасно пропущен.
+                                        Будет восстановлена цена {pendingAction.batch.items.length} товар(ов) до состояния на {new Date(pendingAction.batch.appliedAt).toLocaleString('ru-RU')}.
+                                        Если товар после этой операции уже менялся, автоматический возврат будет безопасно пропущен.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
@@ -462,31 +453,40 @@ export default function BulkPricePage(): React.ReactElement {
                     </DialogContent>
                 </Dialog>
 
-                {history[0] && (
+                {lastResult && (
                     <div
                         role="status"
                         className={`rounded-xl border p-4 ${
-                            history[0].err === 0
+                            lastResult.err === 0
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200'
                                 : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100'
                         }`}
                     >
                         <div className="font-semibold">
-                            {history[0].kind === 'apply' ? 'Изменение цен завершено' : 'Возврат цен завершён'}
+                            {lastResult.kind === 'apply' ? 'Изменение цен завершено' : 'Возврат цен завершён'}
                         </div>
                         <p className="mt-1 text-sm">
-                            Успешно: {history[0].ok} из {history[0].items.length}.
-                            {history[0].err > 0 && ` Не удалось: ${history[0].err}. Причины указаны в результатах операции ниже.`}
+                            Успешно: {lastResult.ok} из {lastResult.items.length}.
+                            {lastResult.err > 0 && ` Не удалось: ${lastResult.err}. Причины указаны в результатах операции ниже.`}
                         </p>
-                        {history[0].kind === 'apply' && history[0].err > 0 && (
+                        {lastResult.kind === 'apply' && lastResult.err > 0 && (
                             <button
                                 type="button"
-                                onClick={() => prepareFailedRetry(history[0])}
+                                onClick={() => prepareFailedRetry(lastResult)}
                                 disabled={saving}
                                 className="mt-3 rounded-md border border-current px-3 py-1.5 text-sm font-medium disabled:opacity-40"
                             >
                                 Обновить данные и проверить неудавшиеся товары
                             </button>
+                        )}
+                        {lastResult.items.some((item) => item.status === 'err') && (
+                            <ul className="mt-3 space-y-1 text-xs">
+                                {lastResult.items.filter((item) => item.status === 'err').map((item) => (
+                                    <li key={item.id}>
+                                        <span className="font-medium">{item.title}</span>: {item.error}
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </div>
                 )}
@@ -646,95 +646,80 @@ export default function BulkPricePage(): React.ReactElement {
                     </div>
                 )}
 
-                {history.length > 0 && (
+                {serverBatches.length > 0 && (
                     <div className="order-1 rounded-xl border border-border bg-card p-4">
                         <h2 className="mb-3 text-sm font-semibold text-foreground">
-                            Результаты операций в этой вкладке
+                            История изменений цен
                         </h2>
                         <p className="mb-3 text-xs text-muted-foreground">
-                            Это оперативный список: после обновления или закрытия вкладки он исчезнет. Постоянный аудит сохраняется системой отдельно.
+                            Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
                         </p>
                         <div className="space-y-2">
-                            {history.map((batch, i) => (
-                                <details key={batch.id} open={i === 0} className="rounded-lg border border-border">
-                                    <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-                                        <span className="text-muted-foreground">
-                                            {batch.appliedAt.toLocaleTimeString('ru-RU')}
-                                        </span>
-                                        <span className="font-medium text-foreground">{batch.description}</span>
-                                        <span
-                                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                batch.err === 0
-                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                            }`}
-                                        >
-                                            Обновлено: {batch.ok}{batch.err > 0 && `, ошибок: ${batch.err}`}
-                                        </span>
-                                        {batch.revertState === 'reverted' ? (
-                                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                цены возвращены
+                            {serverBatches.map((batch, i) => {
+                                const availableCount = batch.items.filter((item) => item.state === 'available').length;
+                                return (
+                                    <details key={batch.requestId} open={i === 0} className="rounded-lg border border-border">
+                                        <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                                            <span className="text-muted-foreground">
+                                                {new Date(batch.appliedAt).toLocaleString('ru-RU')}
                                             </span>
-                                        ) : batch.revertState === 'partial' ? (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setPendingAction({ type: 'revert', batch });
-                                                }}
-                                                disabled={saving}
-                                                className="ml-auto text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
-                                            >
-                                                Повторить возврат для {batch.remainingRevertIds?.length ?? 0}
-                                            </button>
-                                        ) : batch.revertState === 'available' && batch.ok > 0 && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setPendingAction({ type: 'revert', batch });
-                                                }}
-                                                disabled={saving}
-                                                className="ml-auto text-xs text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
-                                            >
-                                                Вернуть предыдущие цены
-                                            </button>
-                                        )}
-                                    </summary>
-                                    <div className="overflow-x-auto border-t border-border">
-                                        <table className="w-full text-sm">
-                                            <tbody className="divide-y divide-border">
-                                                {batch.items.map((item) => (
-                                                    <tr key={item.id}>
-                                                        <td className="px-3 py-2">
-                                                            <div className="text-foreground">{item.title}</div>
-                                                            {item.sku && <div className="text-xs text-muted-foreground">{item.sku}</div>}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right text-muted-foreground">
-                                                            {formatMoney(item.oldPrice)}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right font-medium text-foreground">
-                                                            → {formatMoney(item.newPrice)}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right">
-                                                            <span className={item.status === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
-                                                                {item.status === 'ok' ? 'Готово' : 'Не изменено'}
-                                                            </span>
-                                                            {item.error && (
-                                                                <div className="mt-1 max-w-sm text-xs text-red-700 dark:text-red-300">
-                                                                    {item.error}
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </details>
-                            ))}
+                                            <span className="font-medium text-foreground">
+                                                {batch.action === 'product.revert' ? 'Возврат' : 'Изменение'} · {batch.items.length} товар(ов) · {batch.adminEmail}
+                                            </span>
+                                            {batch.revertState === 'reverted' ? (
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                                    цены возвращены
+                                                </span>
+                                            ) : batch.revertState === 'not_available' ? (
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                                    товары изменены позже — откат недоступен
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setPendingAction({ type: 'revert', batch });
+                                                    }}
+                                                    disabled={saving}
+                                                    className="ml-auto text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
+                                                >
+                                                    {batch.revertState === 'partial' ? `Вернуть оставшиеся ${availableCount}` : 'Вернуть предыдущие цены'}
+                                                </button>
+                                            )}
+                                        </summary>
+                                        <div className="overflow-x-auto border-t border-border">
+                                            <table className="w-full text-sm">
+                                                <tbody className="divide-y divide-border">
+                                                    {batch.items.map((item) => (
+                                                        <tr key={item.id}>
+                                                            <td className="px-3 py-2 text-foreground">{item.title}</td>
+                                                            <td className="px-3 py-2 text-right text-muted-foreground">
+                                                                {formatMoney(item.before.price)}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right font-medium text-foreground">
+                                                                → {formatMoney(item.after.price)}
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right">
+                                                                <span className={
+                                                                    item.state === 'reverted'
+                                                                        ? 'text-muted-foreground'
+                                                                        : item.state === 'available'
+                                                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                                                            : 'text-amber-600 dark:text-amber-400'
+                                                                }>
+                                                                    {item.state === 'reverted' ? 'возвращено' : item.state === 'available' ? 'действует' : 'изменено позже'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </details>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

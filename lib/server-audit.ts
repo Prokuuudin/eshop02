@@ -16,6 +16,8 @@ export type ServerAuditInput = {
   after?: unknown
   details?: string | null
   reason?: string | null
+  /** Groups multiple audit rows into one batch (e.g. a multi-item revert). Overrides the `x-request-id` header. */
+  requestId?: string
 }
 
 function jsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
@@ -39,7 +41,8 @@ export async function appendServerAudit(
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(203948721)`
   const previous = await tx.auditLog.findFirst({ orderBy: { sequence: 'desc' }, select: { integrityHash: true } })
   const requestIdHeader = request.headers.get('x-request-id')
-  const requestId = requestIdHeader && /^[A-Za-z0-9._:-]{1,128}$/u.test(requestIdHeader) ? requestIdHeader : randomUUID()
+  const requestId = input.requestId
+    ?? (requestIdHeader && /^[A-Za-z0-9._:-]{1,128}$/u.test(requestIdHeader) ? requestIdHeader : randomUUID())
   const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   const ipAddress = forwarded || request.headers.get('x-real-ip') || null
   const userAgent = request.headers.get('user-agent')?.slice(0, 1024) || null

@@ -3,34 +3,16 @@ import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { applyProductOverride, deleteProductAny, getAdminProducts, getAdminProductsPaginated, resetProductOverride, type ProductOverride } from '@/lib/product-overrides-store'
+import { deleteProductAny, getAdminProducts, getAdminProductsPaginated, resetProductOverride } from '@/lib/product-overrides-store'
 import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping'
 import { createProductRequestSchema, updateProductRequestSchema } from '@/lib/product-mutation-schema'
-import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { notifyPriceChange, notifyRestock } from '@/lib/product-news-notify'
 import { toNum } from '@/lib/decimal'
+import { ProductMutationError, applyProductChanges, assertReferences, assertUniqueSku } from '@/lib/product-mutation'
 
 export const runtime = 'nodejs'
-
-class ProductMutationError extends Error {
-  constructor(message: string, readonly status: number) { super(message) }
-}
-
-async function assertUniqueSku(tx: ExtendedTransactionClient, productId: string, sku?: string): Promise<void> {
-  const normalized = sku?.trim()
-  if (!normalized) return
-  const duplicate = await tx.product.findFirst({ where: { sku: { equals: normalized, mode: 'insensitive' }, id: { not: productId } }, select: { id: true } })
-  if (duplicate) throw new ProductMutationError('SKU already belongs to another product', 409)
-}
-
-async function assertReferences(tx: ExtendedTransactionClient, productId: string, ...lists: Array<string[] | undefined>): Promise<void> {
-  const ids = [...new Set(lists.flatMap((list) => list ?? []))]
-  if (ids.includes(productId)) throw new ProductMutationError('A product cannot reference itself', 400)
-  if (!ids.length) return
-  const found = await tx.product.count({ where: { id: { in: ids }, isDeleted: false } })
-  if (found !== ids.length) throw new ProductMutationError('One or more related products do not exist', 400)
-}
 
 function mutationError(error: unknown): Response | null {
   if (error instanceof ProductMutationError) return errorResponse(error.message, error.status)
@@ -70,30 +52,7 @@ export async function PUT(req: NextRequest): Promise<Response> {
     let priceChange: { oldPrice: number; newPrice: number } | null = null
     let restocked = false
     const updated = await prisma.$transaction(async (tx) => {
-      const current = await tx.product.findUnique({ where: { id } })
-      if (!current || current.isDeleted) throw new ProductMutationError('Product not found', 404)
-      if (current.revision !== revision) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
-      if (current.externalId && Object.hasOwn(changes, 'stock') && changes.stock !== current.stock) throw new ProductMutationError('Stock of a synchronized product cannot be changed manually', 400)
-      await assertReferences(tx, id, changes.relatedProductIds, changes.oftenBoughtTogether)
-      await assertUniqueSku(tx, id, changes.sku)
-      const setting = await tx.keyValueSetting.findUnique({ where: { key: 'product-overrides' } })
-      const overrides = setting?.value && typeof setting.value === 'object' && !Array.isArray(setting.value)
-        ? setting.value as Record<string, ProductOverride> : {}
-      const before = applyProductOverride(mapDbToProduct(current), overrides[id])
-      const nextProduct = {
-        ...before,
-        ...changes,
-        oldPrice: changes.oldPrice === null ? undefined : (changes.oldPrice ?? before.oldPrice),
-      }
-      const mapped = mapProductToDbCreate(nextProduct, current.isCustom)
-      const { id: _id, isCustom: _custom, isDeleted: _deleted, ...data } = mapped
-      const result = await tx.product.updateMany({ where: { id, revision }, data: { ...data, revision: { increment: 1 } } })
-      if (result.count !== 1) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
-      if (overrides[id]) {
-        delete overrides[id]
-        await tx.keyValueSetting.update({ where: { key: 'product-overrides' }, data: { value: overrides as Prisma.InputJsonValue } })
-      }
-      const next = await tx.product.findUniqueOrThrow({ where: { id } })
+      const { before, next } = await applyProductChanges(tx, id, revision, changes)
       await appendServerAudit(tx, req, actor, { action: 'product.update', entityType: 'product', entityId: id, entityTitle: next.title, before, after: mapDbToProduct(next) })
       if (before.price !== toNum(next.price)) priceChange = { oldPrice: before.price, newPrice: toNum(next.price) }
       if (before.stock === 0 && next.stock > 0) restocked = true

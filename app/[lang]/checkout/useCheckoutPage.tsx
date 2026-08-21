@@ -45,7 +45,7 @@ function useCheckoutPageState() {
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const { items, removeItem, updateQuantity, replaceWithItems } = useCart();
-    const { addOrder, updateOrderPayment } = useOrders();
+    const { addOrder } = useOrders();
     const { bonusProgram } = useAdminStore();
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
@@ -324,20 +324,15 @@ function useCheckoutPageState() {
             discount,
             total: finalGrandTotal,
             bonusSpent: bonusSpentPoints > 0 ? bonusSpentPoints : undefined,
-            paymentStatus: (formData.paymentMethod === 'card'
-                ? 'pending'
-                : 'unpaid') as import('@/lib/orders-store').PaymentStatus,
-            paymentProvider: (formData.paymentMethod === 'card' ? 'stripe' : 'manual') as
-                | 'stripe'
-                | 'manual',
+            paymentStatus: 'unpaid' as import('@/lib/orders-store').PaymentStatus,
+            paymentProvider: 'manual' as const,
             language: language as string,
             ...formData,
         };
 
-        // Persist server-side first: the server generates the unique order id and
-        // payment webhooks update canonical status there. If this fails, the order
-        // exists nowhere (no DB row, no confirmation email, no admin notification) —
-        // checkout must stop here rather than fake a success screen.
+        // Persist server-side first: the server generates the unique order id. If this
+        // fails, the order exists nowhere (no DB row, no confirmation email, no admin
+        // notification) — checkout must stop here rather than fake a success screen.
         let orderId: string;
         try {
             const response = await fetch('/api/orders', {
@@ -402,75 +397,6 @@ function useCheckoutPageState() {
             await syncBonusBalanceFromServer();
         }
 
-        let stripeCheckoutUrl: string | undefined;
-
-        if (formData.paymentMethod === 'card') {
-            try {
-                const response = await fetch('/api/payments/stripe/checkout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        orderId,
-                        email: formData.email,
-                        grandTotal: finalGrandTotal,
-                        items: checkoutItems.map((item) => ({
-                            id: item.id,
-                            title: t(`products.${item.id}.title`, item.title),
-                            quantity: item.quantity,
-                            price: calculatePrice(item, item.quantity),
-                        })),
-                    }),
-                });
-
-                if (!response.ok) {
-                    updateOrderPayment(orderId, {
-                        paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                        paymentProvider: 'stripe',
-                    });
-                    showToast(
-                        'Не удалось инициализировать онлайн-оплату. Попробуйте снова.',
-                        'error'
-                    );
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const payload = (await response.json()) as { url?: string; sessionId?: string };
-                if (!payload.url) {
-                    updateOrderPayment(orderId, {
-                        paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                        paymentProvider: 'stripe',
-                    });
-                    showToast(
-                        'Платежная сессия не была создана. Попробуйте снова.',
-                        'error'
-                    );
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                updateOrderPayment(orderId, {
-                    paymentStatus: 'pending' as import('@/lib/orders-store').PaymentStatus,
-                    paymentProvider: 'stripe',
-                    paymentSessionId: payload.sessionId,
-                });
-                stripeCheckoutUrl = payload.url;
-            } catch {
-                updateOrderPayment(orderId, {
-                    paymentStatus: 'failed' as import('@/lib/orders-store').PaymentStatus,
-                    paymentProvider: 'stripe',
-                });
-                showToast(
-                    'Ошибка при запуске оплаты. Попробуйте снова.',
-                    'error'
-                );
-                setIsSubmitting(false);
-                return;
-            }
-        }
-
         // B2B: Generate invoice if customer has payment terms
         const paymentTermDays = company?.paymentTermDays ?? 0;
         if (paymentTermDays > 0 && currentUser?.companyId) {
@@ -515,11 +441,6 @@ function useCheckoutPageState() {
 
         // Redirect to confirmation page
         setTimeout(() => {
-            if (formData.paymentMethod === 'card' && stripeCheckoutUrl) {
-                window.location.href = stripeCheckoutUrl;
-                return;
-            }
-
             setIsSubmitting(false);
             window.location.href = `/order/${orderId}`;
         }, 500);
@@ -577,7 +498,6 @@ function useCheckoutPageState() {
         updateQuantity,
         replaceWithItems,
         addOrder,
-        updateOrderPayment,
         bonusProgram,
         currentUser,
         isCheckoutAllowedForRole,

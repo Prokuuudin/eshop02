@@ -34,8 +34,8 @@ export async function GET(_req: NextRequest, context: Context): Promise<NextResp
 
 export async function PATCH(req: NextRequest, context: Context): Promise<NextResponse> {
   try {
-    // Payment status is set authoritatively by the Stripe webhook/verify endpoints.
-    // Any manual override here is admin-only נclients must never set paymentStatus directly.
+    // Payment status is confirmed manually by staff (bank transfer / cash / office card) —
+    // this is admin-only; clients must never set paymentStatus directly.
     const gate = await requireAdmin()
     if (gate instanceof NextResponse) return gate
 

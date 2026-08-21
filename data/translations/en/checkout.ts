@@ -184,8 +184,6 @@ const enCheckout: Record<string, string> = {
   'order.paymentStatus.pending': 'Awaiting confirmation',
   'order.paymentStatus.failed': 'Payment failed',
   'order.paymentStatus.unpaid': 'Not paid',
-  'order.retryPayment': 'Retry payment',
-  'order.paymentStatus.checking': 'Checking payment...',
   'order.loading': 'Loading order...',
   'order.loadingDescription': 'Fetching order data from server.',
 }

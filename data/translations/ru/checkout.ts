@@ -184,8 +184,6 @@ const ruCheckout: Record<string, string> = {
   'order.paymentStatus.pending': 'Ожидает подтверждения',
   'order.paymentStatus.failed': 'Ошибка оплаты',
   'order.paymentStatus.unpaid': 'Не оплачено',
-  'order.retryPayment': 'Повторить оплату',
-  'order.paymentStatus.checking': 'Проверяем оплату...',
   'order.loading': 'Загружаем заказ...',
   'order.loadingDescription': 'Пробуем получить данные заказа с сервера.',
 }

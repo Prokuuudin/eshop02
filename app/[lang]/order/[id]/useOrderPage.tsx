@@ -1,7 +1,6 @@
 ﻿'use client';
 import React from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useOrders, type OrderLegalDetails } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
@@ -20,9 +19,8 @@ type PageProps = {
 
 function useOrderPageState({ params }: PageProps) {
     const { id } = React.use(params);
-    const searchParams = useSearchParams();
     const { t, language } = useTranslation();
-    const { getOrder, updateOrderPayment, upsertOrder } = useOrders();
+    const { getOrder, upsertOrder } = useOrders();
     const { getOrderStatus } = useAdminStore();
     const localOrder = getOrder(id);
     const [serverOrder, setServerOrder] = React.useState<ReturnType<typeof getOrder> | null>(null);
@@ -30,10 +28,6 @@ function useOrderPageState({ params }: PageProps) {
     const [serverOrderResolved, setServerOrderResolved] = React.useState(false);
     const order = serverOrder ?? localOrder;
     const locale = getLocaleFromLanguage(language);
-    const [paymentCheckPending, setPaymentCheckPending] = React.useState(
-        () => searchParams.get('payment') === 'success' && Boolean(searchParams.get('session_id'))
-    );
-    const [retryingPayment, setRetryingPayment] = React.useState(false);
     const [downloadingInvoiceLang, setDownloadingInvoiceLang] = React.useState<InvoiceLang | null>(null);
     const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const { showToast } = useToast();
@@ -122,24 +116,6 @@ function useOrderPageState({ params }: PageProps) {
         };
     }, [id, serverOrderResolved, upsertOrder]);
 
-    const applyOrderPaymentUpdate = React.useCallback(
-        (
-            orderId: string,
-            updates: Partial<
-                Pick<
-                    NonNullable<typeof order>,
-                    'paymentStatus' | 'paymentProvider' | 'paymentSessionId'
-                >
-            >
-        ) => {
-            updateOrderPayment(orderId, updates);
-            setServerOrder((prev) =>
-                prev && prev.id === orderId ? { ...prev, ...updates } : prev
-            );
-        },
-        [updateOrderPayment]
-    );
-
     const getDeliveryLabel = (deliveryMethod: string): string => {
         if (deliveryMethod === 'courier') return t('order.delivery.courier');
         if (deliveryMethod === 'pickup') return t('order.delivery.pickup');
@@ -192,100 +168,6 @@ function useOrderPageState({ params }: PageProps) {
         return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200';
     };
 
-    React.useEffect(() => {
-        if (!order) return;
-
-        const paymentState = searchParams.get('payment');
-        const sessionId = searchParams.get('session_id');
-
-        if (paymentState === 'cancelled') {
-            let cancelled = false;
-            queueMicrotask(() => {
-                if (cancelled) return;
-                applyOrderPaymentUpdate(order.id, {
-                    paymentStatus: 'failed',
-                    paymentProvider: 'stripe',
-                });
-            });
-            return () => {
-                cancelled = true;
-            };
-        }
-
-        if (paymentState !== 'success' || !sessionId) return;
-
-        let isMounted = true;
-        fetch('/api/payments/stripe/verify', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ sessionId }),
-        })
-            .then(async (res) => {
-                if (!res.ok) throw new Error('Payment verification failed');
-                return (await res.json()) as {
-                    paymentStatus?: 'paid' | 'pending' | 'failed';
-                    sessionId?: string;
-                };
-            })
-            .then((result) => {
-                if (!isMounted) return;
-                applyOrderPaymentUpdate(order.id, {
-                    paymentStatus: result.paymentStatus || 'pending',
-                    paymentProvider: 'stripe',
-                    paymentSessionId: result.sessionId || sessionId,
-                });
-            })
-            .catch(() => {
-                if (!isMounted) return;
-                applyOrderPaymentUpdate(order.id, {
-                    paymentStatus: 'pending',
-                    paymentProvider: 'stripe',
-                    paymentSessionId: sessionId,
-                });
-            })
-            .finally(() => {
-                if (isMounted) setPaymentCheckPending(false);
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, [applyOrderPaymentUpdate, order, searchParams]);
-
-    React.useEffect(() => {
-        if (!order || order.paymentProvider !== 'stripe') return;
-
-        let isMounted = true;
-
-        fetch(`/api/payments/status?orderId=${encodeURIComponent(order.id)}`, {
-            cache: 'no-store',
-        })
-            .then(async (res) => {
-                if (!res.ok) throw new Error('Server payment status failed');
-                return (await res.json()) as {
-                    paymentStatus?: 'paid' | 'pending' | 'failed';
-                    sessionId?: string;
-                };
-            })
-            .then((serverPayment) => {
-                if (!isMounted || !serverPayment.paymentStatus) return;
-                applyOrderPaymentUpdate(order.id, {
-                    paymentStatus: serverPayment.paymentStatus,
-                    paymentProvider: 'stripe',
-                    paymentSessionId: serverPayment.sessionId || order.paymentSessionId,
-                });
-            })
-            .catch(() => {
-                // Keep local status when server status endpoint is unavailable.
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, [applyOrderPaymentUpdate, order]);
-
     if (serverOrderLoading && !serverOrder && !localOrder) {
         return (
             <main className="w-full px-4 py-12">
@@ -337,45 +219,6 @@ function useOrderPageState({ params }: PageProps) {
 
     const currentStatusIndex = statusOrder[status] ?? 0;
 
-    const handleRetryPayment = async (): Promise<void> => {
-        setRetryingPayment(true);
-        try {
-            const response = await fetch('/api/payments/stripe/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orderId: order.id,
-                    email: order.email,
-                    grandTotal: order.total,
-                    items: order.items.map((item) => ({
-                        id: item.id,
-                        title: item.title,
-                        quantity: item.quantity,
-                        price: item.price,
-                    })),
-                }),
-            });
-
-            if (!response.ok) {
-                showToast('Не удалось начать оплату. Попробуйте снова.', 'error');
-                setRetryingPayment(false);
-                return;
-            }
-
-            const payload = (await response.json()) as { url?: string };
-            if (!payload.url) {
-                showToast('Платёжная сессия не была создана. Попробуйте снова.', 'error');
-                setRetryingPayment(false);
-                return;
-            }
-
-            window.location.href = payload.url;
-        } catch {
-            showToast('Ошибка сети. Попробуйте снова.', 'error');
-            setRetryingPayment(false);
-        }
-    };
-
     const handleDownloadInvoice = async (invoiceLang: InvoiceLang): Promise<void> => {
         if (downloadingInvoiceLang !== null) return;
         setDownloadingInvoiceLang(invoiceLang);
@@ -396,7 +239,7 @@ function useOrderPageState({ params }: PageProps) {
         }
     };
 
-      return { id, searchParams, t, language, getOrder, updateOrderPayment, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, paymentCheckPending, setPaymentCheckPending, retryingPayment, setRetryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, showToast, applyOrderPaymentUpdate, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleRetryPayment, handleDownloadInvoice }
+      return { id, t, language, getOrder, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, showToast, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleDownloadInvoice }
 }
 
 export function useOrderPage({ params }: PageProps): ReturnType<typeof useOrderPageState> {

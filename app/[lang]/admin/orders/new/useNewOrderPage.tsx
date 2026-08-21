@@ -47,7 +47,7 @@ const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string; cost: number }[]
     { value: 'venipak', label: 'Venipak', cost: 3 },
 ];
 
-const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (терминал)', 'Перевод', 'Stripe'];
+const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (терминал)', 'Перевод'];
 
 const LOC = 'ru-RU';
 

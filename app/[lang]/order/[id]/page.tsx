@@ -24,7 +24,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, language, order, locale, paymentCheckPending, retryingPayment, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleRetryPayment, handleDownloadInvoice } = orderPageState
+  const { t, language, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleDownloadInvoice } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
 return (
@@ -163,21 +163,9 @@ return (
                                             order.paymentStatus
                                         )}`}
                                     >
-                                        {paymentCheckPending
-                                            ? t('order.paymentStatus.checking')
-                                            : getPaymentStatusLabel(order.paymentStatus)}
+                                        {getPaymentStatusLabel(order.paymentStatus)}
                                     </span>
                                 </div>
-                                {order.paymentStatus === 'failed' && order.paymentProvider === 'stripe' && (
-                                    <Button
-                                        className="mt-3 w-full"
-                                        size="sm"
-                                        disabled={retryingPayment}
-                                        onClick={handleRetryPayment}
-                                    >
-                                        {retryingPayment ? t('order.paymentStatus.checking') : t('order.retryPayment')}
-                                    </Button>
-                                )}
                             </div>
                             </div>
                         </div>

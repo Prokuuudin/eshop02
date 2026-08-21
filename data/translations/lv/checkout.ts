@@ -184,8 +184,6 @@ const lvCheckout: Record<string, string> = {
   'order.paymentStatus.pending': 'Gaida apstiprinājumu',
   'order.paymentStatus.failed': 'Maksājums neizdevās',
   'order.paymentStatus.unpaid': 'Nav samaksāts',
-  'order.retryPayment': 'Atkārtot maksājumu',
-  'order.paymentStatus.checking': 'Pārbaudām maksājumu...',
   'order.loading': 'Ielādējam pasūtījumu...',
   'order.loadingDescription': 'Mēģinām iegūt pasūtījuma datus no servera.',
 }

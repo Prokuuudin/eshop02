@@ -42,7 +42,7 @@ export default async function Hero({ language }: { language: Language }): Promis
             <Link href="/catalog">
               {t('hero.cta')}
               <MoveRight
-                className="!h-3.5 !w-5 translate-y-px transition-transform duration-200 group-hover:translate-x-0.5"
+                className="!h-3.5 !w-5 translate-y-0.5 transition-transform duration-200 group-hover:translate-x-0.5"
                 strokeWidth={1.5}
                 aria-hidden="true"
               />

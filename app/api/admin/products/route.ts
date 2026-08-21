@@ -110,7 +110,7 @@ export async function PUT(req: NextRequest): Promise<Response> {
     if (restocked) {
       notifyRestock(id, updated.title).catch((e) => logApiError('[admin/products PUT notifyRestock]', e))
     }
-    return successResponse({ product: mapDbToProduct(updated), products: await getAdminProducts() })
+    return successResponse({ product: mapDbToProduct(updated) })
   } catch (error) {
     const response = mutationError(error); if (response) return response
     logApiError("Admin products PUT error:", error); return errorResponse('Internal server error', 500)
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       await appendServerAudit(tx, req, actor, { action: 'product.create', entityType: 'product', entityId: row.id, entityTitle: row.title, after: mapDbToProduct(row) })
       return row
     })
-    return successResponse({ product: mapDbToProduct(created), products: await getAdminProducts() })
+    return successResponse({ product: mapDbToProduct(created) })
   } catch (error) {
     const response = mutationError(error); if (response) return response
     logApiError("Admin products POST error:", error); return errorResponse('Internal server error', 500)

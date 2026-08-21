@@ -14,6 +14,7 @@ import ProductListRow from './ProductListRow'
 import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 import type { CatalogFacets } from '@/lib/initial-catalog-products'
 import { fetchAllProducts } from '@/lib/client-products'
+import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 
 type ProductsFilters = {
   group: string
@@ -216,7 +217,9 @@ export default function Products({ initialProducts, initialFilters, initialSearc
 
   // сортировка
   const sortProducts = (arr: typeof searchMatchedProducts, order: string | undefined) => {
-    if (!order || order === '') return arr;
+    if (!order || order === '') {
+      return filters.brands.length > 0 ? sortBrandProductsNewestFirst(arr) : arr;
+    }
     if (order === 'price-asc') return [...arr].sort((a, b) => a.price - b.price);
     if (order === 'price-desc') return [...arr].sort((a, b) => b.price - a.price);
     if (order === 'name-asc') {

@@ -6,6 +6,7 @@ import { brandSlug } from '@/lib/brand-slug'
 import { getMergedProducts } from '@/lib/product-overrides-store'
 import { redactProductPrices } from '@/lib/product-price-visibility'
 import { getServerUser } from '@/lib/server-auth'
+import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 
 export const CATALOG_PAGE_SIZE = 24
 
@@ -22,8 +23,8 @@ type InitialCatalogFilters = {
   page?: number
 }
 
-function sortProducts(products: Product[], order: string | undefined, language: Language): Product[] {
-  if (!order) return products
+function sortProducts(products: Product[], order: string | undefined, language: Language, hasBrandFilter: boolean): Product[] {
+  if (!order) return hasBrandFilter ? sortBrandProductsNewestFirst(products) : products
   if (order === 'price-asc') return [...products].sort((a, b) => a.price - b.price)
   if (order === 'price-desc') return [...products].sort((a, b) => b.price - a.price)
   if (order === 'name-asc') {
@@ -82,7 +83,7 @@ export async function getInitialCatalogProducts({
     return true
   })
 
-  const sorted = sortProducts(filtered, order, language)
+  const sorted = sortProducts(filtered, order, language, brands.length > 0)
 
   const normalizedPage = Number.isInteger(page) && page > 0 ? page : 1
   const totalProducts = sorted.length

@@ -53,7 +53,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
 
     const holderServerSortField: 'name' | 'email' | 'cardNumber' | null =
         holderSort && holderSort.key !== 'status' ? holderSort.key : null;
-    const holderServerSortDir = holderSort?.dir ?? null;
+    const holderServerSortDir = holderSort && holderSort.key !== 'status' ? holderSort.dir : null;
 
     const loadHolders = useCallback(async () => {
         setLoading(true);
@@ -491,7 +491,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     </div>
 
-                    {!loading && holdersTotal > 0 && (
+                    {holdersTotal > 0 && (
                         <Input
                             value={holderSearch}
                             onChange={(e) => { setHolderSearch(e.target.value); setHolderPage(0); }}

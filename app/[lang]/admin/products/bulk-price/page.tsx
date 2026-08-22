@@ -647,11 +647,11 @@ export default function BulkPricePage(): React.ReactElement {
                 )}
 
                 {serverBatches.length > 0 && (
-                    <div className="order-1 rounded-xl border border-border bg-card p-4">
-                        <h2 className="mb-3 text-sm font-semibold text-foreground">
+                    <details className="order-1 rounded-xl border border-border bg-card p-4">
+                        <summary className="cursor-pointer text-sm font-semibold text-foreground">
                             История изменений цен
-                        </h2>
-                        <p className="mb-3 text-xs text-muted-foreground">
+                        </summary>
+                        <p className="mb-3 mt-3 text-xs text-muted-foreground">
                             Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
                         </p>
                         <div className="space-y-2">
@@ -721,7 +721,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 );
                             })}
                         </div>
-                    </div>
+                    </details>
                 )}
             </div>
         </AdminGate>

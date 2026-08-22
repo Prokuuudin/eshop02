@@ -193,7 +193,7 @@ export default function NewCategorySection({
                                 'Pirma apakskategorija (neobligata)'
                             )}
                         </p>
-                        <div className="mt-2 grid gap-2 md:grid-cols-5">
+                        <div className="mt-2 grid gap-2 md:grid-cols-4">
                             <AccessibleLabel className="text-xs">
                                 <span className="mb-1 block text-muted-foreground">Slug</span>
                                 <Input
@@ -208,26 +208,6 @@ export default function NewCategorySection({
                                         setNewCategory((prev) => ({
                                             ...prev,
                                             firstSubSlug: event.target.value,
-                                        }))
-                                    }
-                                />
-                            </AccessibleLabel>
-                            <AccessibleLabel className="text-xs">
-                                <span className="mb-1 block text-muted-foreground">
-                                    Search token
-                                </span>
-                                <Input
-                                    value={newCategory.firstSubSearch}
-                                    placeholder={tl(
-                                        'admin.categories.placeholder.firstSubSearch',
-                                        'Например: шампунь',
-                                        'Example: shampoo',
-                                        'Piemers: sampuns'
-                                    )}
-                                    onChange={(event) =>
-                                        setNewCategory((prev) => ({
-                                            ...prev,
-                                            firstSubSearch: event.target.value,
                                         }))
                                     }
                                 />

@@ -14,7 +14,6 @@ type NewBrandDraft = {
     id: string;
     name: string;
     logo: string;
-    popular: boolean;
     isDistributor: boolean;
     allowLogo: boolean;
     descriptionRu: string;
@@ -26,7 +25,6 @@ const EMPTY_NEW_BRAND: NewBrandDraft = {
     id: '',
     name: '',
     logo: '/brands/new-brand.svg',
-    popular: false,
     isDistributor: false,
     allowLogo: true,
     descriptionRu: '',
@@ -215,7 +213,6 @@ function useAdminBrandsPageState() {
                 id,
                 name,
                 logo,
-                popular: newBrand.popular,
                 isDistributor: newBrand.isDistributor,
                 allowLogo: newBrand.allowLogo,
                 description: normalizeDescription(

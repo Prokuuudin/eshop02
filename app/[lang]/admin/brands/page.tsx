@@ -169,47 +169,6 @@ export default function AdminBrandsPage(): React.ReactElement {
                                     <label className="text-xs">
                                         <span className="mb-1 block text-muted-foreground">
                                             {tl(
-                                                'admin.brands.field.popular',
-                                                'Популярный (на главной)',
-                                                'Featured (homepage)',
-                                                'Populārs (galvenaja)'
-                                            )}
-                                        </span>
-                                        <Select
-                                            value={newBrand.popular ? 'yes' : 'no'}
-                                            onValueChange={(v) =>
-                                                setNewBrand((prev) => ({
-                                                    ...prev,
-                                                    popular: v === 'yes',
-                                                }))
-                                            }
-                                        >
-                                            <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="no">
-                                                    {tl(
-                                                        'admin.brands.option.no',
-                                                        'Нет',
-                                                        'No',
-                                                        'Ne'
-                                                    )}
-                                                </SelectItem>
-                                                <SelectItem value="yes">
-                                                    {tl(
-                                                        'admin.brands.option.yes',
-                                                        'Да',
-                                                        'Yes',
-                                                        'Ja'
-                                                    )}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
-                                    <label className="text-xs">
-                                        <span className="mb-1 block text-muted-foreground">
-                                            {tl(
                                                 'admin.brands.field.isDistributor',
                                                 'Дистрибьютор',
                                                 'Distributor',
@@ -480,13 +439,17 @@ export default function AdminBrandsPage(): React.ReactElement {
                                 key={brand.id}
                                 className="rounded-lg border border-border bg-card p-4"
                             >
+                              <Accordion type="single" collapsible>
+                                <AccordionItem value={brand.id} className="border-0">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <div>
-                                        <h3 className="text-base font-semibold text-foreground">
+                                    <AccordionTrigger className="flex-1 !justify-start gap-3 !border-0 !bg-transparent !p-0 text-left !no-underline focus:!no-underline [&>svg]:ml-3">
+                                        <div>
+                                            <span className="block text-base font-semibold text-foreground">
 {brand.name}
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground">{brand.id}</p>
-                                    </div>
+                                            </span>
+                                            <span className="block text-xs text-muted-foreground">{brand.id}</span>
+                                        </div>
+                                    </AccordionTrigger>
                                     <div className="flex items-center gap-2">
                                         <Button
                                             size="sm"
@@ -535,7 +498,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                                         </Button>
                                     </div>
                                 </div>
-
+                                <AccordionContent>
                                 <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
                                     <div className="grid gap-2 md:grid-cols-3">
                                         <label className="text-xs">
@@ -555,44 +518,6 @@ export default function AdminBrandsPage(): React.ReactElement {
                                                     })
                                                 }
                                             />
-                                        </label>
-                                        <label className="text-xs">
-                                            <span className="mb-1 block text-muted-foreground">
-                                                {tl(
-                                                    'admin.brands.field.popular',
-                                                    'Популярный (на главной)',
-                                                    'Featured (homepage)',
-                                                    'Populārs (galvenaja)'
-                                                )}
-                                            </span>
-                                            <Select
-                                                value={brand.popular ? 'yes' : 'no'}
-                                                onValueChange={(v) =>
-                                                    updateBrand(brand.id, { popular: v === 'yes' })
-                                                }
-                                            >
-                                                <SelectTrigger className="h-9 w-full rounded-md border border-border bg-card px-2 py-1 text-sm">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="no">
-                                                        {tl(
-                                                            'admin.brands.option.no',
-                                                            'Нет',
-                                                            'No',
-                                                            'Ne'
-                                                        )}
-                                                    </SelectItem>
-                                                    <SelectItem value="yes">
-                                                        {tl(
-                                                            'admin.brands.option.yes',
-                                                            'Да',
-                                                            'Yes',
-                                                            'Ja'
-                                                        )}
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
                                         </label>
                                         <label className="text-xs">
                                             <span className="mb-1 block text-muted-foreground">
@@ -783,6 +708,9 @@ export default function AdminBrandsPage(): React.ReactElement {
                                 </div>
 
                                 <BrandLegalSection brand={brand} state={pageState} />
+                                </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
                             </article>
                         ))
                     )}

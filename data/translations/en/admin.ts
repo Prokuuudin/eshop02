@@ -120,7 +120,6 @@ const enAdmin: Record<string, string> = {
   'admin.brands.placeholder.id': 'Example: matrix',
   'admin.brands.field.name': 'Name',
   'admin.brands.placeholder.name': 'Example: Matrix',
-  'admin.brands.field.popular': 'Featured (homepage)',
   'admin.brands.field.isDistributor': 'Distributor',
   'admin.brands.field.allowLogo': 'Logo permission',
   'admin.brands.option.no': 'No',

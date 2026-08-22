@@ -120,7 +120,6 @@ const lvAdmin: Record<string, string> = {
   'admin.brands.placeholder.id': 'Piemers: matrix',
   'admin.brands.field.name': 'Nosaukums',
   'admin.brands.placeholder.name': 'Piemers: Matrix',
-  'admin.brands.field.popular': 'Populārs (galvenaja)',
   'admin.brands.field.isDistributor': 'Distributors',
   'admin.brands.field.allowLogo': 'Logo atlauja',
   'admin.brands.option.no': 'Ne',

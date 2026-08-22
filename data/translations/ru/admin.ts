@@ -120,7 +120,6 @@ const ruAdmin: Record<string, string> = {
   'admin.brands.placeholder.id': 'Например: matrix',
   'admin.brands.field.name': 'Название',
   'admin.brands.placeholder.name': 'Например: Matrix',
-  'admin.brands.field.popular': 'Популярный (на главной)',
   'admin.brands.field.isDistributor': 'Дистрибьютор',
   'admin.brands.field.allowLogo': 'Разрешение на лого',
   'admin.brands.option.no': 'Нет',

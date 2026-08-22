@@ -12,7 +12,6 @@ export type BrandConfigItem = {
   id: string
   name: string
   logo: string
-  popular: boolean
   isDistributor: boolean
   allowLogo: boolean
   description: LocalizedBrandDescription

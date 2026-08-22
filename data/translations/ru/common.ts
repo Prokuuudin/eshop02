@@ -331,7 +331,7 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.support': 'Поддержка',
   'breadcrumb.analytics': 'Аналитика',
   'breadcrumb.stockAlerts': 'Алерты остатков',
-  'breadcrumb.bulkPrice': 'Редактор цен',
+  'breadcrumb.bulkPrice': 'Массовый редактор цен',
   'breadcrumb.priceGroups': 'Прайс-листы',
   'breadcrumb.emailTemplates': 'Email-шаблоны',
   'breadcrumb.addresses': 'Адреса',

@@ -43,7 +43,7 @@ const NAV_SECTIONS: NavSection[] = [
             { label: 'Бренды', href: '/admin/brands' },
             { label: 'Импорт', href: '/admin/import' },
             { label: 'Алерты остатков', href: '/admin/stock-alerts' },
-            { label: 'Редактор цен', href: '/admin/products/bulk-price' },
+            { label: 'Массовый редактор цен', href: '/admin/products/bulk-price' },
         ],
     },
     {

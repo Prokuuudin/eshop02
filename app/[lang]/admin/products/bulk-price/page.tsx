@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -123,6 +124,16 @@ export default function BulkPricePage(): React.ReactElement {
     const [lastResult, setLastResult] = useState<LastResult | null>(null);
     const [serverBatches, setServerBatches] = useState<ServerBatch[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [expandedBatchIds, setExpandedBatchIds] = useState<Set<string>>(new Set());
+
+    const toggleBatch = (requestId: string) => {
+        setExpandedBatchIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(requestId)) next.delete(requestId); else next.add(requestId);
+            return next;
+        });
+    };
 
     const refreshBatches = useCallback(async () => {
         try {
@@ -647,84 +658,103 @@ export default function BulkPricePage(): React.ReactElement {
                 )}
 
                 {serverBatches.length > 0 && (
-                    <details className="order-1 rounded-xl border border-border bg-card p-4">
-                        <summary className="flex cursor-pointer flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm font-semibold text-foreground">
+                    <div className="order-1 rounded-xl border border-border bg-card">
+                        <button
+                            type="button"
+                            onClick={() => setHistoryOpen((v) => !v)}
+                            className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 p-4 text-left text-sm font-semibold text-foreground"
+                        >
+                            <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`} />
                             История изменений цен
                             <span className="text-xs font-normal text-muted-foreground">
                                 — когда, кто и сколько товаров менял; можно раскрыть операцию и вернуть цены к прежним значениям
                             </span>
-                        </summary>
-                        <p className="mb-3 mt-3 text-xs text-muted-foreground">
-                            Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
-                        </p>
-                        <div className="space-y-2">
-                            {serverBatches.map((batch) => {
-                                const availableCount = batch.items.filter((item) => item.state === 'available').length;
-                                return (
-                                    <details key={batch.requestId} className="rounded-lg border border-border">
-                                        <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-                                            <span className="text-muted-foreground">
-                                                {new Date(batch.appliedAt).toLocaleString('ru-RU')}
-                                            </span>
-                                            <span className="font-medium text-foreground">
-                                                {batch.action === 'product.revert' ? 'Возврат' : 'Изменение'} · {batch.items.length} товар(ов) · {batch.adminEmail}
-                                            </span>
-                                            {batch.revertState === 'reverted' ? (
-                                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                    цены возвращены
-                                                </span>
-                                            ) : batch.revertState === 'not_available' ? (
-                                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                    товары изменены позже — откат недоступен
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setPendingAction({ type: 'revert', batch });
-                                                    }}
-                                                    disabled={saving}
-                                                    className="ml-auto text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
-                                                >
-                                                    {batch.revertState === 'partial' ? `Вернуть оставшиеся ${availableCount}` : 'Вернуть предыдущие цены'}
-                                                </button>
-                                            )}
-                                        </summary>
-                                        <div className="overflow-x-auto border-t border-border">
-                                            <table className="w-full text-sm">
-                                                <tbody className="divide-y divide-border">
-                                                    {batch.items.map((item) => (
-                                                        <tr key={item.id}>
-                                                            <td className="px-3 py-2 text-foreground">{item.title}</td>
-                                                            <td className="px-3 py-2 text-right text-muted-foreground">
-                                                                {formatMoney(item.before.price)}
-                                                            </td>
-                                                            <td className="px-3 py-2 text-right font-medium text-foreground">
-                                                                → {formatMoney(item.after.price)}
-                                                            </td>
-                                                            <td className="px-3 py-2 text-right">
-                                                                <span className={
-                                                                    item.state === 'reverted'
-                                                                        ? 'text-muted-foreground'
-                                                                        : item.state === 'available'
-                                                                            ? 'text-emerald-600 dark:text-emerald-400'
-                                                                            : 'text-amber-600 dark:text-amber-400'
-                                                                }>
-                                                                    {item.state === 'reverted' ? 'возвращено' : item.state === 'available' ? 'действует' : 'изменено позже'}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </details>
-                                );
-                            })}
+                        </button>
+                        <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${historyOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                            <div className="overflow-hidden">
+                                <div className="px-4 pb-4">
+                                    <p className="mb-3 text-xs text-muted-foreground">
+                                        Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {serverBatches.map((batch) => {
+                                            const availableCount = batch.items.filter((item) => item.state === 'available').length;
+                                            const batchOpen = expandedBatchIds.has(batch.requestId);
+                                            return (
+                                                <div key={batch.requestId} className="rounded-lg border border-border">
+                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleBatch(batch.requestId)}
+                                                            className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-left"
+                                                        >
+                                                            <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${batchOpen ? 'rotate-180' : ''}`} />
+                                                            <span className="text-muted-foreground">
+                                                                {new Date(batch.appliedAt).toLocaleString('ru-RU')}
+                                                            </span>
+                                                            <span className="font-medium text-foreground">
+                                                                {batch.action === 'product.revert' ? 'Возврат' : 'Изменение'} · {batch.items.length} товар(ов) · {batch.adminEmail}
+                                                            </span>
+                                                        </button>
+                                                        {batch.revertState === 'reverted' ? (
+                                                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                                                цены возвращены
+                                                            </span>
+                                                        ) : batch.revertState === 'not_available' ? (
+                                                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                                                товары изменены позже — откат недоступен
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPendingAction({ type: 'revert', batch })}
+                                                                disabled={saving}
+                                                                className="text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
+                                                            >
+                                                                {batch.revertState === 'partial' ? `Вернуть оставшиеся ${availableCount}` : 'Вернуть предыдущие цены'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${batchOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                                        <div className="overflow-hidden">
+                                                            <div className="overflow-x-auto border-t border-border">
+                                                                <table className="w-full text-sm">
+                                                                    <tbody className="divide-y divide-border">
+                                                                        {batch.items.map((item) => (
+                                                                            <tr key={item.id}>
+                                                                                <td className="px-3 py-2 text-foreground">{item.title}</td>
+                                                                                <td className="px-3 py-2 text-right text-muted-foreground">
+                                                                                    {formatMoney(item.before.price)}
+                                                                                </td>
+                                                                                <td className="px-3 py-2 text-right font-medium text-foreground">
+                                                                                    → {formatMoney(item.after.price)}
+                                                                                </td>
+                                                                                <td className="px-3 py-2 text-right">
+                                                                                    <span className={
+                                                                                        item.state === 'reverted'
+                                                                                            ? 'text-muted-foreground'
+                                                                                            : item.state === 'available'
+                                                                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                                                                : 'text-amber-600 dark:text-amber-400'
+                                                                                    }>
+                                                                                        {item.state === 'reverted' ? 'возвращено' : item.state === 'available' ? 'действует' : 'изменено позже'}
+                                                                                    </span>
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </details>
+                    </div>
                 )}
             </div>
         </AdminGate>

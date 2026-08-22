@@ -16,6 +16,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
 
     const [holders, setHolders] = useState<Holder[]>([]);
     const [holdersTotal, setHoldersTotal] = useState(0);
+    const [allHoldersCount, setAllHoldersCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [formError, setFormError] = useState('');
@@ -69,6 +70,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
             if (res.ok) {
                 setHolders(json.holders ?? []);
                 setHoldersTotal(json.total ?? 0);
+                if (!debouncedHolderSearch) setAllHoldersCount(json.total ?? 0);
             }
         } finally {
             setLoading(false);
@@ -437,7 +439,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         }`}
                     >
                         {l('С картой', 'With a card', 'Ar karti')}{' '}
-                        <span className="text-muted-foreground font-normal">{holdersTotal.toLocaleString('ru-RU')}</span>
+                        <span className="text-muted-foreground font-normal">{allHoldersCount.toLocaleString('ru-RU')}</span>
                     </button>
                     <button
                         type="button"
@@ -491,31 +493,27 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     </div>
 
-                    {holdersTotal > 0 && (
-                        <Input
-                            value={holderSearch}
-                            onChange={(e) => { setHolderSearch(e.target.value); setHolderPage(0); }}
-                            placeholder={l('Поиск по имени, email, телефону или номеру карты…', 'Search by name, email, phone or card number…', 'Meklēt pēc vārda, e-pasta, tālruņa vai kartes numura…')}
-                            className="max-w-sm"
-                        />
-                    )}
+                    <Input
+                        value={holderSearch}
+                        onChange={(e) => { setHolderSearch(e.target.value); setHolderPage(0); }}
+                        placeholder={l('Поиск по имени, email, телефону или номеру карты…', 'Search by name, email, phone or card number…', 'Meklēt pēc vārda, e-pasta, tālruņa vai kartes numura…')}
+                        className="max-w-sm"
+                    />
 
-                    {loading ? (
+                    {loading && holders.length === 0 ? (
                         <p className="text-sm text-muted-foreground animate-pulse py-4">{l('Загрузка…', 'Loading…', 'Ielādē…')}</p>
                     ) : holdersTotal === 0 ? (
                         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                            {l(
-                                'Пока нет клиентов с картой. Назначьте карту через форму ниже или дождитесь импорта из ERP.',
-                                'No clients with a card yet. Assign a card below or wait for the ERP import.',
-                                'Pagaidām nav klientu ar karti. Piešķiriet karti zemāk vai gaidiet ERP importu.'
-                            )}
-                        </div>
-                    ) : displayedHolders.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                            {l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')}
+                            {debouncedHolderSearch
+                                ? l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')
+                                : l(
+                                    'Пока нет клиентов с картой. Назначьте карту через форму ниже или дождитесь импорта из ERP.',
+                                    'No clients with a card yet. Assign a card below or wait for the ERP import.',
+                                    'Pagaidām nav klientu ar karti. Piešķiriet karti zemāk vai gaidiet ERP importu.'
+                                  )}
                         </div>
                     ) : (
-                        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] rounded-md border border-border">
+                        <div className={`overflow-x-auto overflow-y-auto max-h-[60vh] rounded-md border border-border transition-opacity ${loading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={loading}>
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 bg-card z-10">
                                     <tr className="border-b border-border text-left text-muted-foreground">
@@ -635,7 +633,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     )}
 
-                    {!loading && holdersTotal > PAGE_SIZE &&
+                    {holdersTotal > PAGE_SIZE &&
                         renderPager(effectiveHolderPage, holderPageCount, holdersTotal, setHolderPage)}
 
                     {/* Ручное назначение карты (до ERP-импорта) */}

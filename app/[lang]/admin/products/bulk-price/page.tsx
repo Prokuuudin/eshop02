@@ -655,10 +655,10 @@ export default function BulkPricePage(): React.ReactElement {
                             Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
                         </p>
                         <div className="space-y-2">
-                            {serverBatches.map((batch, i) => {
+                            {serverBatches.map((batch) => {
                                 const availableCount = batch.items.filter((item) => item.state === 'available').length;
                                 return (
-                                    <details key={batch.requestId} open={i === 0} className="rounded-lg border border-border">
+                                    <details key={batch.requestId} className="rounded-lg border border-border">
                                         <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
                                             <span className="text-muted-foreground">
                                                 {new Date(batch.appliedAt).toLocaleString('ru-RU')}

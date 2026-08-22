@@ -63,12 +63,14 @@ export async function GET(req: NextRequest): Promise<Response> {
       : sortField === 'email' ? { email: sortDir }
       : { id: 'asc' }
 
-    const [state, totalEligible, total, users] = await Promise.all([
+    const [state, totalEligible, filteredTotal, users] = await Promise.all([
       readCampaign(prisma),
       prisma.user.count({ where: ELIGIBLE_WHERE }),
-      prisma.user.count({ where }),
-      // id asc (default) — тот же порядок, в котором курсор кампании проходит получателей
-      // (см. POST ниже), иначе sent-статус по курсору будет врать при дефолтной сортировке
+      // Без активного поиска where === ELIGIBLE_WHERE, второй count был бы точным дублем первого
+      search ? prisma.user.count({ where }) : Promise.resolve(null),
+      // sent-статус (isEligibleSent) — чистая проверка id <= cursor по каждой строке, она верна
+      // при любом порядке сортировки; id asc (дефолт) лишь даёт то, что "отправленные" идут
+      // единым видимым блоком в начале списка, а не вразброс
       prisma.user.findMany({
         where,
         select: { id: true, name: true, email: true },
@@ -77,6 +79,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         take,
       }),
     ])
+    const total = search ? (filteredTotal as number) : totalEligible
     return NextResponse.json({ state, totalEligible, total, users })
   } catch (e) {
     logApiError("[card-rules-campaign GET]", e)

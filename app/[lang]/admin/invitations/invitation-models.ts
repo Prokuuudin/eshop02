@@ -24,8 +24,6 @@ export type EligibleSortKey = 'name' | 'email' | 'status'
 export type SortDir = 'asc' | 'desc'
 
 export const isTechEmail = (email: string): boolean => email.toLowerCase().endsWith('@client.local')
-export const compareInvitationText = (a: string, b: string): number =>
-  a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
 export const HOLDER_STATUS_RANK: Record<Holder['status'], number> = { none: 0, sent: 1, accepted: 2, expired: 3, error: 4 }
 export const INVITATIONS_PAGE_SIZE = 50
 export const INVITE_BATCH_SIZE = 20

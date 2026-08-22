@@ -51,7 +51,9 @@ describe('GET /api/admin/card-rules-campaign', () => {
   })
 
   it('defaults to a 50-row page ordered by id asc, with no search filter', async () => {
-    await GET(makeGetRequest())
+    userCountMock.mockResolvedValue(38135)
+    const res = await GET(makeGetRequest())
+    const json = await res.json()
     expect(userFindManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: ELIGIBLE_WHERE,
@@ -61,6 +63,10 @@ describe('GET /api/admin/card-rules-campaign', () => {
       })
     )
     expect(userCountMock).toHaveBeenNthCalledWith(1, { where: ELIGIBLE_WHERE })
+    // No search filter — total reuses totalEligible instead of a second, redundant count query.
+    expect(userCountMock).toHaveBeenCalledTimes(1)
+    expect(json.total).toBe(38135)
+    expect(json.totalEligible).toBe(38135)
   })
 
   it('applies search across name/email and pagination/sort params, keeping totalEligible unfiltered', async () => {

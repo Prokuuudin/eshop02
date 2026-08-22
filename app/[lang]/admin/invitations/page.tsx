@@ -63,24 +63,32 @@ export default function AdminInvitationsPage(): React.ReactElement {
         holderSort && holderSort.key !== 'status' ? holderSort.key : null;
     const holderServerSortDir = holderSort && holderSort.key !== 'status' ? holderSort.dir : null;
 
+    const holdersAbortRef = useRef<AbortController | null>(null);
     const loadHolders = useCallback(async () => {
+        holdersAbortRef.current?.abort();
+        const controller = new AbortController();
+        holdersAbortRef.current = controller;
         setLoading(true);
         try {
-            const params = new URLSearchParams({ take: '50', skip: String(holderPage * 50) });
+            const params = new URLSearchParams({ take: String(PAGE_SIZE), skip: String(holderPage * PAGE_SIZE) });
             if (debouncedHolderSearch) params.set('search', debouncedHolderSearch);
             if (holderServerSortField) {
                 params.set('sort', holderServerSortField);
                 params.set('dir', holderServerSortDir ?? 'asc');
             }
-            const res = await fetch(`/api/admin/invitations?${params}`);
+            const res = await fetch(`/api/admin/invitations?${params}`, { signal: controller.signal });
             const json = await res.json();
             if (res.ok) {
                 setHolders(json.holders ?? []);
                 setHoldersTotal(json.total ?? 0);
                 if (!debouncedHolderSearch) setAllHoldersCount(json.total ?? 0);
             }
+        } catch (err) {
+            if ((err as Error)?.name !== 'AbortError') throw err;
+            return;
         } finally {
-            setLoading(false);
+            // Отменённый (устаревший) запрос не должен гасить индикатор загрузки за более новый
+            if (holdersAbortRef.current === controller) setLoading(false);
         }
     }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir]);
 
@@ -88,16 +96,20 @@ export default function AdminInvitationsPage(): React.ReactElement {
         eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.key : null;
     const eligibleServerSortDir = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.dir : null;
 
+    const eligibleAbortRef = useRef<AbortController | null>(null);
     const loadCampaign = useCallback(async () => {
+        eligibleAbortRef.current?.abort();
+        const controller = new AbortController();
+        eligibleAbortRef.current = controller;
         setEligibleLoading(true);
         try {
-            const params = new URLSearchParams({ take: '50', skip: String(eligiblePage * 50) });
+            const params = new URLSearchParams({ take: String(PAGE_SIZE), skip: String(eligiblePage * PAGE_SIZE) });
             if (debouncedEligibleSearch) params.set('search', debouncedEligibleSearch);
             if (eligibleServerSortField) {
                 params.set('sort', eligibleServerSortField);
                 params.set('dir', eligibleServerSortDir ?? 'asc');
             }
-            const res = await fetch(`/api/admin/card-rules-campaign?${params}`);
+            const res = await fetch(`/api/admin/card-rules-campaign?${params}`, { signal: controller.signal });
             if (res.ok) {
                 const json = await res.json();
                 setCampaign(json.state);
@@ -105,8 +117,12 @@ export default function AdminInvitationsPage(): React.ReactElement {
                 setEligibleFilteredTotal(json.total ?? 0);
                 setEligibleUsers(json.users ?? []);
             }
+        } catch (err) {
+            if ((err as Error)?.name !== 'AbortError') throw err;
+            return;
         } finally {
-            setEligibleLoading(false);
+            // Отменённый (устаревший) запрос не должен гасить индикатор загрузки за более новый
+            if (eligibleAbortRef.current === controller) setEligibleLoading(false);
         }
     }, [debouncedEligibleSearch, eligiblePage, eligibleServerSortField, eligibleServerSortDir]);
 
@@ -272,7 +288,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
             setMessage(l(`Карта ${cardNumber} назначена ${cardEmail}`, `Card ${cardNumber} assigned to ${cardEmail}`, `Karte ${cardNumber} piešķirta ${cardEmail}`));
             setCardEmail('');
             setCardNumber('');
-            await loadHolders();
+            // Клиент переходит из сегмента B в сегмент A — обновляем оба списка
+            await Promise.all([loadHolders(), loadCampaign()]);
         } finally {
             setCardBusy(false);
         }

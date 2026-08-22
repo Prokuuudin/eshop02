@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Info } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
 
 type Product = {
@@ -648,8 +650,18 @@ export default function BulkPricePage(): React.ReactElement {
 
                 {serverBatches.length > 0 && (
                     <details className="order-1 rounded-xl border border-border bg-card p-4">
-                        <summary className="cursor-pointer text-sm font-semibold text-foreground">
+                        <summary className="flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-foreground">
                             История изменений цен
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                        <Info className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="max-w-xs">
+                                        Здесь видны все прошлые изменения цен: когда, кто и на сколько товаров. Каждую операцию можно раскрыть, чтобы увидеть товары и цены до/после, и вернуть цены к прежним значениям одной кнопкой.
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </summary>
                         <p className="mb-3 mt-3 text-xs text-muted-foreground">
                             Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.

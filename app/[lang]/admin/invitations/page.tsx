@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import AdminGate from '@/components/admin/AdminGate';
 import { useTranslation } from '@/lib/use-translation';
-import { compareInvitationText as compareStr, HOLDER_STATUS_RANK, INVITATIONS_PAGE_SIZE as PAGE_SIZE, INVITE_BATCH_SIZE as INVITE_BATCH, isTechEmail, type CampaignState, type EligibleSortKey, type EligibleUser, type Holder, type HolderSortKey, type SortDir } from './invitation-models';
+import { HOLDER_STATUS_RANK, INVITATIONS_PAGE_SIZE as PAGE_SIZE, INVITE_BATCH_SIZE as INVITE_BATCH, isTechEmail, type CampaignState, type EligibleSortKey, type EligibleUser, type Holder, type HolderSortKey, type SortDir } from './invitation-models';
 
 export default function AdminInvitationsPage(): React.ReactElement {
     const { language } = useTranslation();
@@ -44,13 +44,20 @@ export default function AdminInvitationsPage(): React.ReactElement {
     // Кампания сегмента B
     const [campaign, setCampaign] = useState<CampaignState | null>(null);
     const [totalEligible, setTotalEligible] = useState(0);
+    const [eligibleFilteredTotal, setEligibleFilteredTotal] = useState(0);
     const [eligibleUsers, setEligibleUsers] = useState<EligibleUser[]>([]);
     const [eligibleLoading, setEligibleLoading] = useState(true);
     const [eligibleSearch, setEligibleSearch] = useState('');
+    const [debouncedEligibleSearch, setDebouncedEligibleSearch] = useState('');
     const [eligibleSort, setEligibleSort] = useState<{ key: EligibleSortKey; dir: SortDir } | null>(null);
     const [eligiblePage, setEligiblePage] = useState(0);
     const [campaignRunning, setCampaignRunning] = useState(false);
     const stopRequested = useRef(false);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedEligibleSearch(eligibleSearch.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [eligibleSearch]);
 
     const holderServerSortField: 'name' | 'email' | 'cardNumber' | null =
         holderSort && holderSort.key !== 'status' ? holderSort.key : null;
@@ -77,26 +84,39 @@ export default function AdminInvitationsPage(): React.ReactElement {
         }
     }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir]);
 
+    const eligibleServerSortField: 'name' | 'email' | null =
+        eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.key : null;
+    const eligibleServerSortDir = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.dir : null;
+
     const loadCampaign = useCallback(async () => {
+        setEligibleLoading(true);
         try {
-            const res = await fetch('/api/admin/card-rules-campaign');
+            const params = new URLSearchParams({ take: '50', skip: String(eligiblePage * 50) });
+            if (debouncedEligibleSearch) params.set('search', debouncedEligibleSearch);
+            if (eligibleServerSortField) {
+                params.set('sort', eligibleServerSortField);
+                params.set('dir', eligibleServerSortDir ?? 'asc');
+            }
+            const res = await fetch(`/api/admin/card-rules-campaign?${params}`);
             if (res.ok) {
                 const json = await res.json();
                 setCampaign(json.state);
                 setTotalEligible(json.totalEligible ?? 0);
+                setEligibleFilteredTotal(json.total ?? 0);
                 setEligibleUsers(json.users ?? []);
             }
         } finally {
             setEligibleLoading(false);
         }
-    }, []);
+    }, [debouncedEligibleSearch, eligiblePage, eligibleServerSortField, eligibleServerSortDir]);
 
     useEffect(() => {
-        queueMicrotask(() => {
-            void loadHolders();
-            void loadCampaign();
-        });
-    }, [loadHolders, loadCampaign]);
+        queueMicrotask(() => void loadHolders());
+    }, [loadHolders]);
+
+    useEffect(() => {
+        queueMicrotask(() => void loadCampaign());
+    }, [loadCampaign]);
 
     const sendInvites = async (userIds: string[]) => {
         setFormError('');
@@ -336,25 +356,12 @@ export default function AdminInvitationsPage(): React.ReactElement {
     };
     const isEligibleSent = (userId: string) => !!campaign?.cursor && userId <= campaign.cursor;
 
-    const normalizedEligibleSearch = eligibleSearch.trim().toLowerCase();
-    const filteredEligible = useMemo(() => {
-        const base = normalizedEligibleSearch
-            ? eligibleUsers.filter((u) =>
-                  (u.name ?? '').toLowerCase().includes(normalizedEligibleSearch) ||
-                  u.email.toLowerCase().includes(normalizedEligibleSearch)
-              )
-            : eligibleUsers;
-        if (!eligibleSort) return base;
+    const displayedEligible = useMemo(() => {
+        if (!eligibleSort || eligibleSort.key !== 'status') return eligibleUsers;
         const mul = eligibleSort.dir === 'asc' ? 1 : -1;
-        return [...base].sort((a, b) => {
-            switch (eligibleSort.key) {
-                case 'name': return compareStr(a.name ?? '', b.name ?? '') * mul;
-                case 'email': return compareStr(a.email, b.email) * mul;
-                case 'status': return (Number(isEligibleSent(a.id)) - Number(isEligibleSent(b.id))) * mul;
-            }
-        });
+        return [...eligibleUsers].sort((a, b) => (Number(isEligibleSent(a.id)) - Number(isEligibleSent(b.id))) * mul);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [eligibleUsers, normalizedEligibleSearch, eligibleSort, campaign?.cursor]);
+    }, [eligibleUsers, eligibleSort, campaign?.cursor]);
 
     const toggleEligibleSort = (key: EligibleSortKey) => {
         setEligiblePage(0);
@@ -365,12 +372,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
         });
     };
 
-    const eligiblePageCount = Math.max(1, Math.ceil(filteredEligible.length / PAGE_SIZE));
+    const eligiblePageCount = Math.max(1, Math.ceil(eligibleFilteredTotal / PAGE_SIZE));
     const effectiveEligiblePage = Math.min(eligiblePage, eligiblePageCount - 1);
-    const pagedEligible = useMemo(
-        () => filteredEligible.slice(effectiveEligiblePage * PAGE_SIZE, (effectiveEligiblePage + 1) * PAGE_SIZE),
-        [filteredEligible, effectiveEligiblePage]
-    );
 
     const sortArrow = (active: boolean, dir?: SortDir) => (
         <span className={`ml-1 text-[10px] ${active ? 'text-foreground' : 'text-gray-300 dark:text-gray-600'}`}>
@@ -667,32 +670,30 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         <h2 className="text-xl font-semibold text-foreground">
                             {l('Клиенты без карты', 'Clients without a card', 'Klienti bez kartes')}{' '}
                             <span className="text-muted-foreground font-normal text-base">
-                                {normalizedEligibleSearch ? `${filteredEligible.length} / ${eligibleUsers.length}` : eligibleUsers.length}
+                                {debouncedEligibleSearch
+                                    ? `${eligibleFilteredTotal.toLocaleString('ru-RU')} / ${totalEligible.toLocaleString('ru-RU')}`
+                                    : totalEligible.toLocaleString('ru-RU')}
                             </span>
                         </h2>
                     </div>
 
-                    {!eligibleLoading && eligibleUsers.length > 0 && (
-                        <Input
-                            value={eligibleSearch}
-                            onChange={(e) => { setEligibleSearch(e.target.value); setEligiblePage(0); }}
-                            placeholder={l('Поиск по имени или email…', 'Search by name or email…', 'Meklēt pēc vārda vai e-pasta…')}
-                            className="max-w-sm"
-                        />
-                    )}
+                    <Input
+                        value={eligibleSearch}
+                        onChange={(e) => { setEligibleSearch(e.target.value); setEligiblePage(0); }}
+                        placeholder={l('Поиск по имени или email…', 'Search by name or email…', 'Meklēt pēc vārda vai e-pasta…')}
+                        className="max-w-sm"
+                    />
 
-                    {eligibleLoading ? (
+                    {eligibleLoading && eligibleUsers.length === 0 ? (
                         <p className="text-sm text-muted-foreground animate-pulse py-4">{l('Загрузка…', 'Loading…', 'Ielādē…')}</p>
-                    ) : eligibleUsers.length === 0 ? (
+                    ) : eligibleFilteredTotal === 0 ? (
                         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                            {l('Нет клиентов без карты.', 'No clients without a card.', 'Nav klientu bez kartes.')}
-                        </div>
-                    ) : filteredEligible.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                            {l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')}
+                            {debouncedEligibleSearch
+                                ? l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')
+                                : l('Нет клиентов без карты.', 'No clients without a card.', 'Nav klientu bez kartes.')}
                         </div>
                     ) : (
-                        <div className="overflow-y-auto max-h-[60vh] rounded-md border border-border">
+                        <div className={`overflow-y-auto max-h-[60vh] rounded-md border border-border transition-opacity ${eligibleLoading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={eligibleLoading}>
                             <table className="w-full table-fixed text-sm">
                                 <thead className="sticky top-0 bg-card z-10">
                                     <tr className="border-b border-border text-left text-muted-foreground">
@@ -708,7 +709,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pagedEligible.map((u) => {
+                                    {displayedEligible.map((u) => {
                                         const sent = isEligibleSent(u.id);
                                         return (
                                             <tr key={u.id} className="border-b border-border/50">
@@ -727,8 +728,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     )}
 
-                    {!eligibleLoading && filteredEligible.length > PAGE_SIZE &&
-                        renderPager(effectiveEligiblePage, eligiblePageCount, filteredEligible.length, setEligiblePage)}
+                    {eligibleFilteredTotal > PAGE_SIZE &&
+                        renderPager(effectiveEligiblePage, eligiblePageCount, eligibleFilteredTotal, setEligiblePage)}
 
                     {/* Рассылка правил получения карты (аналог формы назначения карты в сегменте A) */}
                     <div className="rounded-md border border-border p-4 space-y-3">

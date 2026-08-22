@@ -13,6 +13,7 @@ import {
   type CampaignState,
 } from '@/lib/invitations'
 import { buildRulesEmail } from '@/lib/invitation-emails'
+import { parseOffsetPagination } from '@/lib/pagination'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -28,22 +29,52 @@ const ELIGIBLE_WHERE = {
   email: { contains: '@', not: { endsWith: '@client.local' } },
 } as const
 
-export async function GET(): Promise<Response> {
+const ELIGIBLE_SORT_FIELDS = ['name', 'email'] as const
+type EligibleSortField = (typeof ELIGIBLE_SORT_FIELDS)[number]
+
+export async function GET(req: NextRequest): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
   try {
-    const [state, totalEligible, users] = await Promise.all([
+    const { searchParams } = req.nextUrl
+    const search = searchParams.get('search')?.trim() || ''
+    const sortParam = searchParams.get('sort')
+    const sortField: EligibleSortField | null = (ELIGIBLE_SORT_FIELDS as readonly string[]).includes(sortParam ?? '')
+      ? (sortParam as EligibleSortField)
+      : null
+    const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc'
+    const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
+
+    const where: Record<string, unknown> = search
+      ? {
+          ...ELIGIBLE_WHERE,
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : ELIGIBLE_WHERE
+
+    const orderBy =
+      sortField === 'name' ? { name: sortDir } as const
+      : sortField === 'email' ? { email: sortDir } as const
+      : { id: 'asc' as const }
+
+    const [state, totalEligible, total, users] = await Promise.all([
       readCampaign(prisma),
       prisma.user.count({ where: ELIGIBLE_WHERE }),
-      // id asc — тот же порядок, в котором курсор кампании проходит получателей
-      // (см. POST ниже), иначе sent-статус по курсору будет врать
+      prisma.user.count({ where }),
+      // id asc (default) — тот же порядок, в котором курсор кампании проходит получателей
+      // (см. POST ниже), иначе sent-статус по курсору будет врать при дефолтной сортировке
       prisma.user.findMany({
-        where: ELIGIBLE_WHERE,
+        where,
         select: { id: true, name: true, email: true },
-        orderBy: { id: 'asc' },
+        orderBy,
+        skip,
+        take,
       }),
     ])
-    return NextResponse.json({ state, totalEligible, users })
+    return NextResponse.json({ state, totalEligible, total, users })
   } catch (e) {
     logApiError("[card-rules-campaign GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

@@ -35,6 +35,7 @@ const ProductBulkPricingFields: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="add-product__option-add"
                     onClick={() => append({ quantity: 1, pricePerUnit: 0 })}
                 >
                     Добавить оптовую цену

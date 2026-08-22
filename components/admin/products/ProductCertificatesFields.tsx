@@ -29,7 +29,7 @@ const ProductCertificatesFields: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="self-start mt-1"
+                    className="add-product__option-add"
                     onClick={() => append('' as never)}
                 >
                     + Добавить сертификат

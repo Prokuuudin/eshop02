@@ -39,20 +39,6 @@ const ProductPricingFields: React.FC = () => {
                         })}
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1" htmlFor="add-product-bonus">
-                        Бонусная ставка (баллов за единицу)
-                    </label>
-                    <Input
-                        id="add-product-bonus"
-                        placeholder="Например: 5"
-                        type="number"
-                        step="0.01"
-                        {...register('bonusRate', {
-                            setValueAs: (value) => value === '' ? undefined : Number(value),
-                        })}
-                    />
-                </div>
             </div>
         </div>
     );

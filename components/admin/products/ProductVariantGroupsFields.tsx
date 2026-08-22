@@ -123,7 +123,7 @@ const ProductVariantGroupsFields: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="self-start"
+                    className="add-product__option-add"
                     onClick={() => append({ name: '', required: false, options: [] })}
                 >
                     + Добавить группу вариантов

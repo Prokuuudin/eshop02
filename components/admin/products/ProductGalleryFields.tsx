@@ -15,7 +15,7 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
     return (
         <div className="add-product__section add-product__section--gallery">
             <h2 className="add-product__section-title">Изображения</h2>
-            <div className="add-product__fields-grid">
+            <div className="add-product__fields-grid add-product__gallery-grid">
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-image">
                         Главное изображение (URL)
@@ -57,9 +57,6 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
                 </div>
                 <div>
                     <p className="block text-sm font-medium mb-2">Демо-видео</p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                        Показываются в галерее на странице товара (mp4/webm или ссылка на видео)
-                    </p>
                     <div className="flex flex-col gap-2">
                         {videos.fields.map((field, index) => (
                             <div key={field.id} className="flex gap-2">

@@ -36,7 +36,7 @@ const ProductTechSpecsFields: React.FC = () => {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="self-start mt-1"
+                            className="add-product__option-add"
                             onClick={() => equip.append('' as never)}
                         >
                             + Добавить оборудование

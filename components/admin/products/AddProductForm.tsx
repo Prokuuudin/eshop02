@@ -189,8 +189,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                     onSubmit={handleSubmit(onSubmit)}
                     autoComplete="off"
                 >
-                    <div className="add-product__form flex flex-col gap-6">
-                        <div className="add-product__section">
+                    <div className="add-product__form flex flex-col">
+                        <div className="add-product__body">
                             <Tabs
                                 value={language}
                                 onValueChange={(value) => setLanguage(value as Language)}
@@ -213,10 +213,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductPricingFields />
                             <ProductInventoryFields />
                             <ProductGalleryFields productId={isEdit ? productId : undefined} />
-                            <ProductTechSpecsFields />
-                            <ProductVariantGroupsFields />
-                            <ProductCertificatesFields />
-                            <ProductBulkPricingFields />
+                            <div className="add-product__options-row">
+                                <ProductTechSpecsFields />
+                                <ProductVariantGroupsFields />
+                                <ProductCertificatesFields />
+                                <ProductBulkPricingFields />
+                            </div>
                             <ProductPicker
                                 name="relatedProductIds"
                                 title="Похожие товары"
@@ -230,7 +232,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductManufacturerFields language={language} />
                             <ProductSeoFields />
                         </div>
-                        <div className="add-product__actions flex flex-col gap-2 mt-4">
+                        <div className="add-product__actions flex flex-col gap-2">
                             <div className="flex gap-4">
                                 <Button type="submit" disabled={!formState.isValid || isSubmitting}>
                                     {isSubmitting

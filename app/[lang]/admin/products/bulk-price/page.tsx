@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -673,7 +673,8 @@ export default function BulkPricePage(): React.ReactElement {
                         <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${historyOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
                                 <div className="px-4 pb-4">
-                                    <p className="mb-3 text-xs text-muted-foreground">
+                                    <p className="mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+                                        <Info className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
                                         Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
                                     </p>
                                     <div className="space-y-2">

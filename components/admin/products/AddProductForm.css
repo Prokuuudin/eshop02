@@ -7,6 +7,24 @@
     flex: 1 1 0%;
     min-width: 0;
 }
+.add-product__form input:not([type='checkbox']):not([type='radio']),
+.add-product__form textarea,
+.add-product__form button[role='combobox'] {
+    border-color: hsl(var(--primary) / 0.45);
+    background: hsl(var(--muted) / 0.7);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.06);
+}
+.add-product__form input:not([type='checkbox']):not([type='radio']):hover,
+.add-product__form textarea:hover,
+.add-product__form button[role='combobox']:hover {
+    border-color: hsl(var(--primary) / 0.7);
+}
+.add-product__form input:not([type='checkbox']):not([type='radio']):focus-visible,
+.add-product__form textarea:focus-visible,
+.add-product__form button[role='combobox']:focus-visible {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.14);
+}
 .add-product__preview {
     width: 340px;
     position: sticky;

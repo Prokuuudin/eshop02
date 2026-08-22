@@ -675,7 +675,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 <div className="px-4 pb-4">
                                     <p className="mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
                                         <Info className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
-                                        Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства.
+                                        Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства. Показаны последние 30 операций.
                                     </p>
                                     <div className="space-y-2">
                                         {serverBatches.map((batch) => {

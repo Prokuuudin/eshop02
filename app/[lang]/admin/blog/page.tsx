@@ -80,7 +80,11 @@ export default function AdminBlogPage(): React.ReactElement {
                 <div className="bg-card rounded-lg border border-border p-6 mt-8">
                     <form
                         onSubmit={handleBlogCreate}
-                        className="mb-8 space-y-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20"
+                        className={`mb-8 space-y-4 rounded-lg p-5 shadow-sm ${
+                            editingBlogId
+                                ? 'bg-rose-50/80 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50'
+                                : 'border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
+                        }`}
                     >
                         <Tabs defaultValue="base">
                             <TabsList className="mb-4">

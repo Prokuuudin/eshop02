@@ -22,7 +22,7 @@ export default function ProductEditPageContent({
     return (
         <AdminGate>
             <main className="admin-products w-full space-y-4 text-foreground">
-                <div className="rounded-lg bg-card p-4">
+                <div className="rounded-xl bg-rose-50/80 p-4 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50">
                     <div className="flex items-center gap-3 mb-4">
                         <Link
                             href="/admin/products"

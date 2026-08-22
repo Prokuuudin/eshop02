@@ -440,7 +440,7 @@ export default function AdminBrandsPage(): React.ReactElement {
                         filteredBrands.map((brand) => (
                             <article
                                 key={brand.id}
-                                className="rounded-lg border border-border bg-card p-4"
+                                className="rounded-xl bg-rose-50/80 p-4 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50"
                             >
                               <Accordion type="single" collapsible>
                                 <AccordionItem value={brand.id} className="border-0">

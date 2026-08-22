@@ -15,6 +15,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
         language === 'ru' ? ru : language === 'lv' ? lv : en;
 
     const [holders, setHolders] = useState<Holder[]>([]);
+    const [holdersTotal, setHoldersTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [formError, setFormError] = useState('');
@@ -24,9 +25,15 @@ export default function AdminInvitationsPage(): React.ReactElement {
     const [bulkProgress, setBulkProgress] = useState<{ processed: number; total: number } | null>(null);
     const bulkStopRequested = useRef(false);
     const [holderSearch, setHolderSearch] = useState('');
+    const [debouncedHolderSearch, setDebouncedHolderSearch] = useState('');
     const [holderSort, setHolderSort] = useState<{ key: HolderSortKey; dir: SortDir } | null>(null);
     const [holderPage, setHolderPage] = useState(0);
     const [segment, setSegment] = useState<'withCard' | 'withoutCard'>('withCard');
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedHolderSearch(holderSearch.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [holderSearch]);
 
     // Форма назначения карты
     const [cardEmail, setCardEmail] = useState('');
@@ -44,15 +51,29 @@ export default function AdminInvitationsPage(): React.ReactElement {
     const [campaignRunning, setCampaignRunning] = useState(false);
     const stopRequested = useRef(false);
 
+    const holderServerSortField: 'name' | 'email' | 'cardNumber' | null =
+        holderSort && holderSort.key !== 'status' ? holderSort.key : null;
+    const holderServerSortDir = holderSort?.dir ?? null;
+
     const loadHolders = useCallback(async () => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/admin/invitations');
+            const params = new URLSearchParams({ take: '50', skip: String(holderPage * 50) });
+            if (debouncedHolderSearch) params.set('search', debouncedHolderSearch);
+            if (holderServerSortField) {
+                params.set('sort', holderServerSortField);
+                params.set('dir', holderServerSortDir ?? 'asc');
+            }
+            const res = await fetch(`/api/admin/invitations?${params}`);
             const json = await res.json();
-            if (res.ok) setHolders(json.holders ?? []);
+            if (res.ok) {
+                setHolders(json.holders ?? []);
+                setHoldersTotal(json.total ?? 0);
+            }
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir]);
 
     const loadCampaign = useCallback(async () => {
         try {
@@ -281,30 +302,11 @@ export default function AdminInvitationsPage(): React.ReactElement {
         error: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300',
     };
 
-    const normalizedSearch = holderSearch.trim().toLowerCase();
-    const filteredHolders = useMemo(() => {
-        const base = normalizedSearch
-            ? holders.filter((h) =>
-                  (h.name ?? '').toLowerCase().includes(normalizedSearch) ||
-                  h.email.toLowerCase().includes(normalizedSearch) ||
-                  (h.phone ?? '').toLowerCase().includes(normalizedSearch) ||
-                  h.cardNumber.toLowerCase().includes(normalizedSearch)
-              )
-            : holders;
-        if (!holderSort) return base;
+    const displayedHolders = useMemo(() => {
+        if (!holderSort || holderSort.key !== 'status') return holders;
         const mul = holderSort.dir === 'asc' ? 1 : -1;
-        return [...base].sort((a, b) => {
-            switch (holderSort.key) {
-                case 'name': return compareStr(a.name ?? '', b.name ?? '') * mul;
-                case 'email': {
-                    const techDiff = Number(isTechEmail(a.email)) - Number(isTechEmail(b.email));
-                    return techDiff !== 0 ? techDiff * mul : compareStr(a.email, b.email) * mul;
-                }
-                case 'cardNumber': return compareStr(a.cardNumber, b.cardNumber) * mul;
-                case 'status': return (HOLDER_STATUS_RANK[a.status] - HOLDER_STATUS_RANK[b.status]) * mul;
-            }
-        });
-    }, [holders, normalizedSearch, holderSort]);
+        return [...holders].sort((a, b) => (HOLDER_STATUS_RANK[a.status] - HOLDER_STATUS_RANK[b.status]) * mul);
+    }, [holders, holderSort]);
 
     const toggleHolderSort = (key: HolderSortKey) => {
         setHolderPage(0);
@@ -315,13 +317,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
         });
     };
 
-    const holderPageCount = Math.max(1, Math.ceil(filteredHolders.length / PAGE_SIZE));
+    const holderPageCount = Math.max(1, Math.ceil(holdersTotal / PAGE_SIZE));
     const effectiveHolderPage = Math.min(holderPage, holderPageCount - 1);
-    const pagedHolders = useMemo(
-        () => filteredHolders.slice(effectiveHolderPage * PAGE_SIZE, (effectiveHolderPage + 1) * PAGE_SIZE),
-        [filteredHolders, effectiveHolderPage]
-    );
-    const pageSelectableHolderIds = pagedHolders.filter((h) => h.status !== 'accepted').map((h) => h.userId);
+    const pageSelectableHolderIds = displayedHolders.filter((h) => h.status !== 'accepted').map((h) => h.userId);
     const allPageHoldersSelected = pageSelectableHolderIds.length > 0 && pageSelectableHolderIds.every((id) => selectedIds.has(id));
 
     // Кампания шлёт письма батчами по курсору (id asc), без лога на юзера —
@@ -439,7 +437,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         }`}
                     >
                         {l('С картой', 'With a card', 'Ar karti')}{' '}
-                        <span className="text-muted-foreground font-normal">{holders.length}</span>
+                        <span className="text-muted-foreground font-normal">{holdersTotal.toLocaleString('ru-RU')}</span>
                     </button>
                     <button
                         type="button"
@@ -462,7 +460,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         <h2 className="text-xl font-semibold text-foreground">
                             {l('Клиенты с картой', 'Clients with a card', 'Klienti ar karti')}{' '}
                             <span className="text-muted-foreground font-normal text-base">
-                                {normalizedSearch ? `${filteredHolders.length} / ${holders.length}` : holders.length}
+                                {holdersTotal.toLocaleString('ru-RU')}
                             </span>
                         </h2>
                         <div className="flex items-center gap-2">
@@ -493,7 +491,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     </div>
 
-                    {!loading && holders.length > 0 && (
+                    {!loading && holdersTotal > 0 && (
                         <Input
                             value={holderSearch}
                             onChange={(e) => { setHolderSearch(e.target.value); setHolderPage(0); }}
@@ -504,7 +502,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
 
                     {loading ? (
                         <p className="text-sm text-muted-foreground animate-pulse py-4">{l('Загрузка…', 'Loading…', 'Ielādē…')}</p>
-                    ) : holders.length === 0 ? (
+                    ) : holdersTotal === 0 ? (
                         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
                             {l(
                                 'Пока нет клиентов с картой. Назначьте карту через форму ниже или дождитесь импорта из ERP.',
@@ -512,7 +510,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 'Pagaidām nav klientu ar karti. Piešķiriet karti zemāk vai gaidiet ERP importu.'
                             )}
                         </div>
-                    ) : filteredHolders.length === 0 ? (
+                    ) : displayedHolders.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
                             {l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')}
                         </div>
@@ -547,7 +545,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pagedHolders.map((h) => (
+                                    {displayedHolders.map((h) => (
                                         <tr key={h.userId} className="border-b border-border/50">
                                             <td className="py-2 pr-2 pl-1">
                                                 {h.status !== 'accepted' && (
@@ -637,8 +635,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     )}
 
-                    {!loading && filteredHolders.length > PAGE_SIZE &&
-                        renderPager(effectiveHolderPage, holderPageCount, filteredHolders.length, setHolderPage)}
+                    {!loading && holdersTotal > PAGE_SIZE &&
+                        renderPager(effectiveHolderPage, holderPageCount, holdersTotal, setHolderPage)}
 
                     {/* Ручное назначение карты (до ERP-импорта) */}
                     <form onSubmit={handleAssignCard} className="rounded-md border border-border p-4 grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_auto] gap-3 items-end">

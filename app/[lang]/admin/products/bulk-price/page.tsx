@@ -358,9 +358,9 @@ export default function BulkPricePage(): React.ReactElement {
                                         key={opt.value}
                                         type="button"
                                         onClick={() => setMode(opt.value)}
-                                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
                                             mode === opt.value
-                                                ? 'bg-white text-emerald-700 shadow-sm dark:bg-gray-900 dark:text-emerald-400'
+                                                ? 'scale-105 bg-emerald-600 text-white shadow-md'
                                                 : 'text-gray-600 hover:bg-white dark:text-gray-400 dark:hover:bg-gray-900'
                                         }`}
                                     >

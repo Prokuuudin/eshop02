@@ -589,7 +589,10 @@
       "Bash(npm -v)",
       "Bash(sort -u -t: -k2)",
       "Bash(grep -v \"^ M \\\\.claude/settings.json$\")",
-      "Bash(grep -v \"^ M next-env.d.ts$\")"
+      "Bash(grep -v \"^ M next-env.d.ts$\")",
+      "Bash(curl -s \"http://localhost:3000/brand/black-professional\" -o bp_tmp.html)",
+      "Bash(curl -s \"http://localhost:3000/brand/aeno\" -o aeno_tmp.html)",
+      "Bash(grep -o 'subcat=[a-z-]*\\\\\\\\\",\\\\\\\\\"className\\\\\\\\\":\\\\\\\\\"brand-page__group-tile[^}]*\\\\\\\\\"children\\\\\\\\\":\\\\\\\\\"[^\\\\\\\\\"]*' aeno_tmp.html)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Desktop\\eshop02\\app\\admin\\products\\[id]",

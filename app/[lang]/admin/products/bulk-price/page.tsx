@@ -361,7 +361,7 @@ export default function BulkPricePage(): React.ReactElement {
                                         className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
                                             mode === opt.value
                                                 ? 'scale-105 bg-emerald-600 text-white shadow-md'
-                                                : 'text-gray-600 hover:bg-white dark:text-gray-400 dark:hover:bg-gray-900'
+                                                : 'text-muted-foreground hover:bg-background'
                                         }`}
                                     >
                                         {opt.label}
@@ -517,7 +517,7 @@ export default function BulkPricePage(): React.ReactElement {
                         className="w-full text-sm sm:w-72"
                     />
                     <Select value={catFilter || 'all'} onValueChange={(v) => setCatFilter(v === 'all' ? '' : v)}>
-                        <SelectTrigger className="w-48 shrink-0 rounded-md border border-border px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
+                        <SelectTrigger className="w-48 shrink-0 text-sm">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -580,7 +580,7 @@ export default function BulkPricePage(): React.ReactElement {
                                         <tr
                                             key={p.id}
                                             onClick={() => toggle(p)}
-                                            className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                                            className={`cursor-pointer transition-colors hover:bg-muted/50 ${
                                                 isSelected
                                                     ? 'bg-emerald-50/40 dark:bg-emerald-900/10'
                                                     : ''
@@ -618,7 +618,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                                 ? newPrice < p.price
                                                                     ? 'text-red-600 dark:text-red-400'
                                                                     : 'text-emerald-600 dark:text-emerald-400'
-                                                                : 'text-gray-500'
+                                                                : 'text-muted-foreground'
                                                         }`}
                                                     >
                                                         {formatMoney(newPrice)}

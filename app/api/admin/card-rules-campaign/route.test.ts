@@ -75,7 +75,7 @@ describe('GET /api/admin/card-rules-campaign', () => {
     expect(userFindManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expectedFilteredWhere,
-        orderBy: { name: 'desc' },
+        orderBy: [{ name: 'desc' }, { id: 'asc' }],
         skip: 50,
         take: 50,
       })

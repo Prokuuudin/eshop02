@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@/generated/prisma/client'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
@@ -55,10 +56,12 @@ export async function GET(req: NextRequest): Promise<Response> {
         }
       : ELIGIBLE_WHERE
 
-    const orderBy =
-      sortField === 'name' ? { name: sortDir } as const
-      : sortField === 'email' ? { email: sortDir } as const
-      : { id: 'asc' as const }
+    // name не уникален и допускает null — без id-тайбрейка Postgres не гарантирует
+    // стабильный порядок между OFFSET-страницами (email @unique, id — PK, им тайбрейк не нужен)
+    const orderBy: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[] =
+      sortField === 'name' ? [{ name: sortDir }, { id: 'asc' }]
+      : sortField === 'email' ? { email: sortDir }
+      : { id: 'asc' }
 
     const [state, totalEligible, total, users] = await Promise.all([
       readCampaign(prisma),

@@ -58,8 +58,7 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                     </div>
                 </div>
 
-                <h3 className="add-product__section-subtitle mt-4">Характеристики-карточки (feature1–4)</h3>
-                <p className="text-xs text-muted-foreground mb-2">Отображаются в блоке преимуществ на странице товара</p>
+                <h3 className="add-product__section-title mt-4">Дополнительные характеристики (1–4)</h3>
                 <div className="add-product__fields-grid">
                     <div>
                         <label htmlFor="product-translation-feature1" className="block text-sm font-medium mb-1">Feature 1</label>

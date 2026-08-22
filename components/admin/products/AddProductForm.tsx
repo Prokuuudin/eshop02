@@ -27,6 +27,7 @@ import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 import { ProductFormModeContext } from './ProductFormModeContext';
 import { NotifyPromoSubscribersButton } from './NotifyPromoSubscribersButton';
+import { ChevronDown } from 'lucide-react';
 
 import './AddProductForm.css';
 
@@ -59,7 +60,7 @@ const emptyDefaults: AddProductFormValues = {
     oldPrice: 0,
     bulkPricingTiers: [],
 
-    stock: 0,
+    stock: 1,
     minOrder: 1,
 
     image: '',
@@ -111,6 +112,28 @@ interface AddProductFormProps {
     revision?: number;
 }
 
+const ProductFormAccordionSection: React.FC<{
+    title: React.ReactNode;
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+}> = ({ title, children, defaultOpen = false }) => {
+    const [isOpen, setIsOpen] = React.useState(defaultOpen);
+
+    return (
+        <details
+            className="add-product__accordion-section group"
+            open={isOpen}
+            onToggle={(event) => setIsOpen(event.currentTarget.open)}
+        >
+            <summary className="add-product__accordion-trigger">
+                <span className="add-product__accordion-title">{title}</span>
+                <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <div className="add-product__accordion-content">{children}</div>
+        </details>
+    );
+};
+
 const AddProductForm: React.FC<AddProductFormProps> = ({
     mode = 'add',
     productId,
@@ -141,9 +164,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         void trigger();
     }, [trigger]);
 
-    const [image, title, titleEn, titleLv, brand, price, oldPrice, badges, stock, sku] = useWatch({
+    const [image, title, titleEn, titleLv, brand, price, oldPrice, badges, stock, rating, bulkPricingTiers] = useWatch({
         control: methods.control,
-        name: ['image', 'title', 'titleEn', 'titleLv', 'brand', 'price', 'oldPrice', 'badges', 'stock', 'sku'],
+        name: ['image', 'title', 'titleEn', 'titleLv', 'brand', 'price', 'oldPrice', 'badges', 'stock', 'rating', 'bulkPricingTiers'],
     });
 
     const localizedTitle = language === 'en' ? titleEn : language === 'lv' ? titleLv : title;
@@ -208,29 +231,65 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 </TabsList>
                             </Tabs>
                             <Separator />
-                            <ProductTranslationsFields language={language} />
-                            <ProductBasicFields />
-                            <ProductPricingFields />
-                            <ProductInventoryFields />
-                            <ProductGalleryFields productId={isEdit ? productId : undefined} />
+                            <ProductFormAccordionSection
+                                title={language === 'ru' ? 'Контент (RU)' : language === 'en' ? 'Content (EN)' : 'Saturs (LV)'}
+                                defaultOpen
+                            >
+                                <ProductTranslationsFields language={language} />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="Основная информация">
+                                <ProductBasicFields />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="Цена">
+                                <ProductPricingFields />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="Склад и наличие">
+                                <ProductInventoryFields />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="Изображения">
+                                <ProductGalleryFields productId={isEdit ? productId : undefined} />
+                            </ProductFormAccordionSection>
                             <div className="add-product__options-row">
-                                <ProductTechSpecsFields />
-                                <ProductVariantGroupsFields />
-                                <ProductCertificatesFields />
-                                <ProductBulkPricingFields />
+                                <ProductFormAccordionSection title="Совместимое оборудование">
+                                    <ProductTechSpecsFields />
+                                </ProductFormAccordionSection>
+                                <ProductFormAccordionSection title="Варианты (цвет / комплектация)">
+                                    <ProductVariantGroupsFields />
+                                </ProductFormAccordionSection>
+                                <ProductFormAccordionSection title="Сертификаты">
+                                    <ProductCertificatesFields />
+                                </ProductFormAccordionSection>
+                                <ProductFormAccordionSection title="Оптовое ценообразование">
+                                    <ProductBulkPricingFields />
+                                </ProductFormAccordionSection>
                             </div>
-                            <ProductPicker
-                                name="relatedProductIds"
-                                title="Похожие товары"
-                                hint="Показываются в блоке «Похожие товары». Если список пуст — блок заполняется автоматически товарами того же бренда и категории."
-                            />
-                            <ProductPicker
-                                name="oftenBoughtTogether"
-                                title="Часто покупают вместе"
-                                hint="Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов."
-                            />
-                            <ProductManufacturerFields language={language} />
-                            <ProductSeoFields />
+                            <ProductFormAccordionSection title="Похожие товары">
+                                <ProductPicker
+                                    name="relatedProductIds"
+                                    title="Похожие товары"
+                                    hint="Показываются в блоке «Похожие товары». Если список пуст — блок заполняется автоматически товарами того же бренда и категории."
+                                />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="Часто покупают вместе">
+                                <ProductPicker
+                                    name="oftenBoughtTogether"
+                                    title="Часто покупают вместе"
+                                    hint="Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов."
+                                />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection
+                                title={
+                                    <>
+                                        Производитель и дистрибьютор{' '}
+                                        <span className="text-destructive">(обязательно)</span>
+                                    </>
+                                }
+                            >
+                                <ProductManufacturerFields language={language} />
+                            </ProductFormAccordionSection>
+                            <ProductFormAccordionSection title="SEO">
+                                <ProductSeoFields />
+                            </ProductFormAccordionSection>
                         </div>
                         <div className="add-product__actions flex flex-col gap-2">
                             <div className="flex gap-4">
@@ -275,7 +334,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             oldPrice={oldPrice}
                             badges={badges}
                             stock={stock}
-                            sku={sku}
+                            rating={rating}
+                            bulkPricingTiers={bulkPricingTiers}
                         />
                         <div className="mt-4">
                             <ProductBadgesFields />

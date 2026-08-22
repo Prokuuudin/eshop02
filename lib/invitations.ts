@@ -59,8 +59,11 @@ export function hashInviteToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
-export async function readInvitations(db: Db): Promise<ProInvitation[]> {
-  const rows = await db.invitationToken.findMany({ orderBy: { createdAt: 'desc' } })
+export async function readInvitations(db: Db, emails?: string[]): Promise<ProInvitation[]> {
+  const rows = await db.invitationToken.findMany({
+    where: emails ? { email: { in: emails } } : undefined,
+    orderBy: { createdAt: 'desc' },
+  })
   return rows.map((row) => ({
     id: row.id,
     userId: row.userId,

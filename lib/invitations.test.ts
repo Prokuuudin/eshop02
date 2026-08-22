@@ -1,6 +1,6 @@
 import {
   deriveStatus, hashInviteToken, isEligibleRulesRecipient, newInviteToken,
-  readCampaign, resolveInviteLang, INVITE_BATCH_SIZE, type ProInvitation,
+  readCampaign, readInvitations, resolveInviteLang, INVITE_BATCH_SIZE, type ProInvitation,
 } from './invitations'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 
@@ -51,6 +51,25 @@ describe('configuration', () => {
     const db = { keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) } } as unknown as ExtendedPrismaClient
     expect(await readCampaign(db)).toEqual({
       sentCount: 0, errorCount: 0, cursor: null, lastRunAt: null, finished: false, runningSince: null,
+    })
+  })
+})
+
+describe('readInvitations', () => {
+  it('fetches every token when no email filter is given', async () => {
+    const findMany = vi.fn().mockResolvedValue([])
+    const db = { invitationToken: { findMany } } as unknown as ExtendedPrismaClient
+    await readInvitations(db)
+    expect(findMany).toHaveBeenCalledWith({ where: undefined, orderBy: { createdAt: 'desc' } })
+  })
+
+  it('scopes the query to the given emails', async () => {
+    const findMany = vi.fn().mockResolvedValue([])
+    const db = { invitationToken: { findMany } } as unknown as ExtendedPrismaClient
+    await readInvitations(db, ['a@b.lv', 'c@d.lv'])
+    expect(findMany).toHaveBeenCalledWith({
+      where: { email: { in: ['a@b.lv', 'c@d.lv'] } },
+      orderBy: { createdAt: 'desc' },
     })
   })
 })

@@ -17,33 +17,68 @@ import {
 } from '@/lib/invitations'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
 import { getSiteUrl } from '@/lib/site-url'
+import { parseOffsetPagination } from '@/lib/pagination'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const inviteUrlFor = (base: string, token: string) => `${base}/auth/invite?token=${token}`
 
-// GET: держатели карт + статусы приглашений
-export async function GET(): Promise<Response> {
+const HOLDER_SORT_FIELDS = ['name', 'email', 'cardNumber'] as const
+type HolderSortField = (typeof HOLDER_SORT_FIELDS)[number]
+
+// GET: держатели карт (постранично) + статусы приглашений
+export async function GET(req: NextRequest): Promise<Response> {
   const gate = await requireAdmin()
   if (gate instanceof NextResponse) return gate
 
   try {
-    const [holders, invitations] = await Promise.all([
+    const { searchParams } = req.nextUrl
+    const search = searchParams.get('search')?.trim() || ''
+    const sortParam = searchParams.get('sort')
+    const sortField: HolderSortField = (HOLDER_SORT_FIELDS as readonly string[]).includes(sortParam ?? '')
+      ? (sortParam as HolderSortField)
+      : 'email'
+    const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc'
+    const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
+
+    const where: Record<string, unknown> = { cardNumber: { not: null } }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { cardNumber: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    const orderBy =
+      sortField === 'name' ? { name: sortDir } as const
+      : sortField === 'cardNumber' ? { cardNumber: sortDir } as const
+      : { email: sortDir } as const
+
+    const [rows, total] = await Promise.all([
       prisma.user.findMany({
-        where: { cardNumber: { not: null } },
+        where,
         select: { id: true, name: true, email: true, phone: true, cardNumber: true },
-        orderBy: { email: 'asc' },
+        orderBy,
+        skip,
+        take,
       }),
-      readInvitations(prisma),
+      prisma.user.count({ where }),
     ])
+
+    const emails = rows.map((u) => u.email.toLowerCase())
+    const invitations = await readInvitations(prisma, emails)
     const byEmail = new Map<string, (typeof invitations)[number]>()
     // readInvitations is newest-first; keep the current invitation on resends.
     for (const invitation of invitations) {
       if (!byEmail.has(invitation.email)) byEmail.set(invitation.email, invitation)
     }
+
     return NextResponse.json({
-      holders: holders.map((u) => {
+      total,
+      holders: rows.map((u) => {
         const inv = byEmail.get(u.email.toLowerCase())
         const status = inv ? deriveStatus(inv) : 'none'
         return {

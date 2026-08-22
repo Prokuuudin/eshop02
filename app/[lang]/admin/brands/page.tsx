@@ -96,10 +96,13 @@ export default function AdminBrandsPage(): React.ReactElement {
                 )}
 
                 <Accordion type="single" collapsible>
-                    <AccordionItem value="new-brand" className="border-0">
+                    <AccordionItem
+                        value="new-brand"
+                        className="overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20"
+                    >
                         <AccordionTrigger className="group !border-0 !bg-transparent !p-0 !no-underline focus:!no-underline">
-                            <div className="flex cursor-pointer select-none items-center gap-3 rounded-lg bg-primary/5 px-4 py-3 transition hover:bg-primary/10">
-                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <div className="flex cursor-pointer select-none items-center gap-3 rounded-lg px-4 py-3.5 transition-colors hover:bg-emerald-100/70 dark:hover:bg-emerald-900/30">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
                                     <Plus className="h-6 w-6" />
                                 </span>
                                 <span className="text-base font-semibold">
@@ -110,10 +113,10 @@ export default function AdminBrandsPage(): React.ReactElement {
                                         'Pievienot zimolu'
                                     )}
                                 </span>
-                                <ChevronDown className="ml-auto h-5 w-5 text-primary transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                <ChevronDown className="ml-auto h-5 w-5 text-emerald-700 transition-transform duration-200 group-data-[state=open]:rotate-180 dark:text-emerald-400" />
                             </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 pb-4">
+                        <AccordionContent className="border-t border-emerald-200 px-4 pb-4 dark:border-emerald-800">
                             <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
                                 <div className="grid gap-2 md:grid-cols-3">
                                     <label className="text-xs">
@@ -719,4 +722,3 @@ export default function AdminBrandsPage(): React.ReactElement {
         </AdminGate>
     );
 }
-

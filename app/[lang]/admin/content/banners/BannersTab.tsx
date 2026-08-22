@@ -59,7 +59,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
 
             {/* Banner form */}
             {showBannerForm && (
-                <div className="rounded-lg border border-primary/30 dark:border-primary/50 bg-card p-5 space-y-4">
+                <div className="space-y-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20">
                     <h2 className="text-base font-semibold text-foreground">
                         {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
                     </h2>

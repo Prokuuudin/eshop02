@@ -78,7 +78,10 @@ export default function AdminBlogPage(): React.ReactElement {
                 </div>
 
                 <div className="bg-card rounded-lg border border-border p-6 mt-8">
-                    <form onSubmit={handleBlogCreate} className="space-y-4 mb-8">
+                    <form
+                        onSubmit={handleBlogCreate}
+                        className="mb-8 space-y-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20"
+                    >
                         <Tabs defaultValue="base">
                             <TabsList className="mb-4">
                                 <TabsTrigger value="base">Основное (RU)</TabsTrigger>

@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import AdminGate from '@/components/admin/AdminGate';
 import { useTranslation } from '@/lib/use-translation';
 import { HOLDER_STATUS_RANK, INVITATIONS_PAGE_SIZE as PAGE_SIZE, INVITE_BATCH_SIZE as INVITE_BATCH, isTechEmail, type CampaignState, type EligibleSortKey, type EligibleUser, type Holder, type HolderSortKey, type SortDir } from './invitation-models';
+import { InvitationPager, SortArrow } from './invitation-list-ui';
 
 export default function AdminInvitationsPage(): React.ReactElement {
     const { language } = useTranslation();
@@ -392,33 +393,6 @@ export default function AdminInvitationsPage(): React.ReactElement {
     const eligiblePageCount = Math.max(1, Math.ceil(eligibleFilteredTotal / PAGE_SIZE));
     const effectiveEligiblePage = Math.min(eligiblePage, eligiblePageCount - 1);
 
-    const sortArrow = (active: boolean, dir?: SortDir) => (
-        <span className={`ml-1 text-[10px] ${active ? 'text-foreground' : 'text-gray-300 dark:text-gray-600'}`}>
-            {active && dir === 'desc' ? '▼' : '▲'}
-        </span>
-    );
-
-    const renderPager = (page: number, pageCount: number, total: number, setPage: (p: number) => void) => (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-            <span>
-                {l(
-                    `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, total)} из ${total.toLocaleString('ru-RU')}`,
-                    `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, total)} of ${total.toLocaleString('ru-RU')}`,
-                    `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, total)} no ${total.toLocaleString('ru-RU')}`
-                )}
-            </span>
-            <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" disabled={page <= 0} onClick={() => setPage(Math.max(0, page - 1))}>
-                    {l('Назад', 'Prev', 'Atpakaļ')}
-                </Button>
-                <span>{page + 1} / {pageCount}</span>
-                <Button size="sm" variant="outline" disabled={page >= pageCount - 1} onClick={() => setPage(Math.min(pageCount - 1, page + 1))}>
-                    {l('Вперёд', 'Next', 'Uz priekšu')}
-                </Button>
-            </div>
-        </div>
-    );
-
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -546,17 +520,17 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                             />
                                         </th>
                                         <th className="py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleHolderSort('name')}>
-                                            {l('Имя', 'Name', 'Vārds')}{sortArrow(holderSort?.key === 'name', holderSort?.dir)}
+                                            {l('Имя', 'Name', 'Vārds')}<SortArrow active={holderSort?.key === 'name'} dir={holderSort?.dir} />
                                         </th>
                                         <th className="py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleHolderSort('email')}>
-                                            Email{sortArrow(holderSort?.key === 'email', holderSort?.dir)}
+                                            Email<SortArrow active={holderSort?.key === 'email'} dir={holderSort?.dir} />
                                         </th>
                                         <th className="py-2 pr-3 font-medium">{l('Телефон', 'Phone', 'Tālrunis')}</th>
                                         <th className="py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleHolderSort('cardNumber')}>
-                                            {l('Карта', 'Card', 'Karte')}{sortArrow(holderSort?.key === 'cardNumber', holderSort?.dir)}
+                                            {l('Карта', 'Card', 'Karte')}<SortArrow active={holderSort?.key === 'cardNumber'} dir={holderSort?.dir} />
                                         </th>
                                         <th className="py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleHolderSort('status')}>
-                                            {l('Статус', 'Status', 'Statuss')}{sortArrow(holderSort?.key === 'status', holderSort?.dir)}
+                                            {l('Статус', 'Status', 'Statuss')}<SortArrow active={holderSort?.key === 'status'} dir={holderSort?.dir} />
                                         </th>
                                         <th className="py-2 pr-3 font-medium">{l('Отправлено', 'Sent', 'Nosūtīts')}</th>
                                         <th className="py-2 pr-3 font-medium"></th>
@@ -653,8 +627,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     )}
 
-                    {holdersTotal > PAGE_SIZE &&
-                        renderPager(effectiveHolderPage, holderPageCount, holdersTotal, setHolderPage)}
+                    {holdersTotal > PAGE_SIZE && <InvitationPager page={effectiveHolderPage} pageCount={holderPageCount} total={holdersTotal} setPage={setHolderPage} l={l} />}
 
                     {/* Ручное назначение карты (до ERP-импорта) */}
                     <form onSubmit={handleAssignCard} className="rounded-md border border-border p-4 grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_auto] gap-3 items-end">
@@ -715,13 +688,13 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 <thead className="sticky top-0 bg-card z-10">
                                     <tr className="border-b border-border text-left text-muted-foreground">
                                         <th className="w-[35%] py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleEligibleSort('name')}>
-                                            {l('Имя', 'Name', 'Vārds')}{sortArrow(eligibleSort?.key === 'name', eligibleSort?.dir)}
+                                            {l('Имя', 'Name', 'Vārds')}<SortArrow active={eligibleSort?.key === 'name'} dir={eligibleSort?.dir} />
                                         </th>
                                         <th className="w-[45%] py-2 pr-3 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleEligibleSort('email')}>
-                                            Email{sortArrow(eligibleSort?.key === 'email', eligibleSort?.dir)}
+                                            Email<SortArrow active={eligibleSort?.key === 'email'} dir={eligibleSort?.dir} />
                                         </th>
                                         <th className="w-[20%] py-2 font-medium cursor-pointer select-none hover:text-foreground" onClick={() => toggleEligibleSort('status')}>
-                                            {l('Статус', 'Status', 'Statuss')}{sortArrow(eligibleSort?.key === 'status', eligibleSort?.dir)}
+                                            {l('Статус', 'Status', 'Statuss')}<SortArrow active={eligibleSort?.key === 'status'} dir={eligibleSort?.dir} />
                                         </th>
                                     </tr>
                                 </thead>
@@ -745,8 +718,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </div>
                     )}
 
-                    {eligibleFilteredTotal > PAGE_SIZE &&
-                        renderPager(effectiveEligiblePage, eligiblePageCount, eligibleFilteredTotal, setEligiblePage)}
+                    {eligibleFilteredTotal > PAGE_SIZE && <InvitationPager page={effectiveEligiblePage} pageCount={eligiblePageCount} total={eligibleFilteredTotal} setPage={setEligiblePage} l={l} />}
 
                     {/* Рассылка правил получения карты (аналог формы назначения карты в сегменте A) */}
                     <div className="rounded-md border border-border p-4 space-y-3">

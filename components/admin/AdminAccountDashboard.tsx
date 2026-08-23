@@ -75,7 +75,7 @@ const NAV_SECTIONS: NavSection[] = [
         color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400',
         items: [
             { label: 'Кампании', href: '/admin/marketing/campaigns' },
-            { label: 'Скидки и купоны', href: '/admin/marketing/discounts' },
+            { label: 'Промокоды', href: '/admin/marketing/discounts' },
             { label: 'Прайс-листы', href: '/admin/marketing/price-groups' },
         ],
     },

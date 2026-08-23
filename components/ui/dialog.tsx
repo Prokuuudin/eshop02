@@ -17,7 +17,7 @@ const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.O
     <DialogPrimitive.Overlay
       ref={ref}
       className={cn(
-        "fixed inset-0 z-modal bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 transition-all",
+        "fixed inset-0 z-modal bg-black/50 backdrop-blur-sm duration-[260ms] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:ease-out data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:ease-in",
         className
       )}
       {...props}
@@ -33,7 +33,7 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-[301] grid max-h-[calc(100dvh-2rem)] w-full max-w-md translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 border bg-card text-card-foreground px-4 py-5 shadow-lg duration-200 sm:rounded-lg data-[state=open]:animate-in data-[state=open]:fade-in-90 data-[state=open]:zoom-in-90 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          "fixed left-1/2 top-1/2 z-[301] grid max-h-[calc(100dvh-2rem)] w-full max-w-md translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 border bg-card text-card-foreground px-4 py-5 shadow-lg duration-[260ms] sm:rounded-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:ease-out data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:ease-in",
           className
         )}
         {...props}

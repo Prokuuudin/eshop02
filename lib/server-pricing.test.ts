@@ -302,6 +302,22 @@ describe('recomputeOrderPricing', () => {
 })
 
 describe('evaluatePromoCode targeting', () => {
+  it('combines brand and subcategory filters with AND semantics', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-rules', code: 'ACME-SHAMPOO', active: true, discount: 10, discountValue: 10,
+      discountType: 'percentage', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'rules', brands: ['Acme'], categories: [], subcategories: ['shampoos'],
+      productIds: [], excludedProductIds: [], excludeSaleItems: false,
+    })
+    const result = await evaluatePromoCode('ACME-SHAMPOO', [
+      { id: 'p1', price: 100, quantity: 1, brand: 'Acme', category: 'hair', subcategory: 'shampoos', bonusRate: 0, fromCatalog: true },
+      { id: 'p2', price: 200, quantity: 1, brand: 'Acme', category: 'hair', subcategory: 'masks', bonusRate: 0, fromCatalog: true },
+      { id: 'p3', price: 300, quantity: 1, brand: 'Other', category: 'hair', subcategory: 'shampoos', bonusRate: 0, fromCatalog: true },
+    ])
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 100, discount: 10 })
+  })
+
   it('discounts only products of selected brands', async () => {
     promoCodeFindFirstMock.mockResolvedValue({
       id: 'promo-1', code: 'BRAND20', active: true, discount: 20, discountValue: 20,

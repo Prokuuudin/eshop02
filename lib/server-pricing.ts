@@ -8,6 +8,9 @@ import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-progra
 import { calcDeliveryFee } from '@/lib/delivery'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { toNum } from '@/lib/decimal'
+import productSubcategories from '@/data/product-subcategories.json'
+
+const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
 // Authoritative server-side pricing. Never trust client-supplied prices/totals:
 // recompute everything from the DB catalog so a tampered request cannot lower the charge.
@@ -33,6 +36,7 @@ export type ResolvedLineItem = {
   oldPrice?: number | null
   brand?: string
   category?: string
+  subcategory?: string
   fromCatalog: boolean
 }
 
@@ -95,13 +99,14 @@ export async function resolveLineItems(items: LineItemInput[], db: PricingDb = p
         oldPrice: catalog.oldPrice,
         brand: catalog.brand,
         category: catalog.category,
+        subcategory: SUBCATEGORY_BY_PRODUCT_ID[item.id],
         fromCatalog: true,
       }
     }
 
     const fallback = Number(item.price)
     const safePrice = Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 0
-    return { id: item.id, quantity, price: safePrice, bonusRate: 0, oldPrice: null, brand: '', category: '', fromCatalog: false }
+    return { id: item.id, quantity, price: safePrice, bonusRate: 0, oldPrice: null, brand: '', category: '', subcategory: '', fromCatalog: false }
   })
 }
 
@@ -159,13 +164,15 @@ export async function evaluatePromoCode(
   const productIds = promo.productIds ?? []
   const brands = promo.brands ?? []
   const categories = promo.categories ?? []
+  const subcategories = promo.subcategories ?? []
   const selected = items.filter((item) => {
     if (!item.fromCatalog || excludedProductIds.includes(item.id)) return false
     if (promo.excludeSaleItems && item.oldPrice != null && item.oldPrice > item.price) return false
-    if (promo.appliesTo === 'products') return productIds.includes(item.id)
-    if (promo.appliesTo === 'brands') return brands.some((b) => b.toLowerCase() === (item.brand ?? '').toLowerCase())
-    if (promo.appliesTo === 'categories') return categories.includes(item.category ?? '')
-    return true
+    if (productIds.length > 0 && !productIds.includes(item.id)) return false
+    if (brands.length > 0 && !brands.some((b) => b.toLowerCase() === (item.brand ?? '').toLowerCase())) return false
+    if (categories.length > 0 && !categories.includes(item.category ?? '')) return false
+    if (subcategories.length > 0 && !subcategories.includes(item.subcategory ?? '')) return false
+    return (promo.appliesTo ?? 'all') === 'all' || productIds.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0
   })
   const eligibleAmount = Math.round(selected.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
   if (eligibleAmount <= 0) return { valid: false, discount: 0, eligibleAmount, reason: 'no_eligible_items' }

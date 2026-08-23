@@ -290,7 +290,7 @@ const lvAdmin: Record<string, string> = {
   'admin.notifications.error.noMessage': 'Ievadiet zinojumu',
   'admin.sidebar.marketing': 'Marketings',
   'admin.sidebar.marketing.campaigns': 'Promo kampanas',
-  'admin.sidebar.marketing.discounts': 'Atlaides un kuponi',
+  'admin.sidebar.marketing.discounts': 'Promokodi',
   'admin.sidebar.marketing.analytics': 'Promo analitika',
   'admin.sidebar.marketing.priceGroups': 'Cenu saraksti',
   'admin.sidebar.content': 'Saturs',

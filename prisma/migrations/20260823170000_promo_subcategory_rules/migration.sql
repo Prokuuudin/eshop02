@@ -1,0 +1,1 @@
+ALTER TABLE "PromoCode" ADD COLUMN "subcategories" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

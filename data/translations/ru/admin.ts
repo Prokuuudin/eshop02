@@ -290,7 +290,7 @@ const ruAdmin: Record<string, string> = {
   'admin.notifications.error.noMessage': 'Укажите сообщение',
   'admin.sidebar.marketing': 'Продвижение',
   'admin.sidebar.marketing.campaigns': 'Промо-кампании',
-  'admin.sidebar.marketing.discounts': 'Скидки и купоны',
+  'admin.sidebar.marketing.discounts': 'Промокоды',
   'admin.sidebar.marketing.analytics': 'Аналитика промо',
   'admin.sidebar.marketing.priceGroups': 'Прайс-листы',
   'admin.sidebar.content': 'Контент',

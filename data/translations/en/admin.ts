@@ -290,7 +290,7 @@ const enAdmin: Record<string, string> = {
   'admin.notifications.error.noMessage': 'Enter a message',
   'admin.sidebar.marketing': 'Marketing',
   'admin.sidebar.marketing.campaigns': 'Promo campaigns',
-  'admin.sidebar.marketing.discounts': 'Discounts and coupons',
+  'admin.sidebar.marketing.discounts': 'Promo codes',
   'admin.sidebar.marketing.analytics': 'Promo analytics',
   'admin.sidebar.marketing.priceGroups': 'Price lists',
   'admin.sidebar.content': 'Content',

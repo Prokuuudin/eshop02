@@ -316,7 +316,7 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.auditLogs': 'Журнал аудита',
   'breadcrumb.marketing': 'Маркетинг',
   'breadcrumb.campaigns': 'Кампании',
-  'breadcrumb.discounts': 'Скидки и купоны',
+  'breadcrumb.discounts': 'Промокоды',
   'breadcrumb.customers': 'Клиенты',
   'breadcrumb.segments': 'Сегменты',
   'breadcrumb.history': 'История',

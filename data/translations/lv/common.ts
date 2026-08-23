@@ -220,7 +220,7 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.auditLogs': 'Audita žurnāls',
   'breadcrumb.marketing': 'Mārketings',
   'breadcrumb.campaigns': 'Kampaņas',
-  'breadcrumb.discounts': 'Atlaides un kuponi',
+  'breadcrumb.discounts': 'Promokodi',
   'breadcrumb.customers': 'Klienti',
   'breadcrumb.segments': 'Segmenti',
   'breadcrumb.history': 'Vēsture',

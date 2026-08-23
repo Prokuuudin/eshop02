@@ -219,7 +219,7 @@ const enCommon: Record<string, string> = {
   'breadcrumb.auditLogs': 'Audit log',
   'breadcrumb.marketing': 'Marketing',
   'breadcrumb.campaigns': 'Campaigns',
-  'breadcrumb.discounts': 'Discounts and coupons',
+  'breadcrumb.discounts': 'Promo codes',
   'breadcrumb.customers': 'Customers',
   'breadcrumb.segments': 'Segments',
   'breadcrumb.history': 'History',

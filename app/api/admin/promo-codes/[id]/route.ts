@@ -25,10 +25,17 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
       discountType?: string; discountValue?: number; maxDiscount?: number | null; minEligibleAmount?: number;
       perUserLimit?: number | null; startsAt?: string | null; appliesTo?: string; productIds?: string[];
       brands?: string[]; categories?: string[]; excludedProductIds?: string[]; excludeSaleItems?: boolean; firstOrderOnly?: boolean
+      subcategories?: string[]
     }
 
     const existing = await prisma.promoCode.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'not_found' }, { status: 404 })
+    const scope = body.appliesTo ?? existing.appliesTo
+    const scopeValues = scope === 'products' ? (body.productIds === undefined ? existing.productIds : stringList(body.productIds))
+      : scope === 'brands' ? (body.brands === undefined ? existing.brands : stringList(body.brands))
+      : scope === 'categories' ? (body.categories === undefined ? existing.categories : stringList(body.categories))
+      : scope === 'rules' ? [...(body.brands === undefined ? existing.brands : stringList(body.brands)), ...(body.categories === undefined ? existing.categories : stringList(body.categories)), ...(body.subcategories === undefined ? existing.subcategories : stringList(body.subcategories))] : ['all']
+    if (scopeValues.length === 0) return NextResponse.json({ error: 'scope_required' }, { status: 400 })
 
     const updated = await prisma.$transaction(async (tx) => {
       const after = await tx.promoCode.update({ where: { id }, data: {
@@ -44,10 +51,11 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
         ...(body.usedCount !== undefined && { usedCount: clampNonNegative(body.usedCount) }),
         ...(body.startsAt !== undefined && { startsAt: body.startsAt ? new Date(body.startsAt) : null }),
         ...(body.expiresAt !== undefined && { expiresAt: body.expiresAt ? new Date(body.expiresAt) : null }),
-        ...(body.appliesTo !== undefined && { appliesTo: ['all', 'products', 'brands', 'categories'].includes(body.appliesTo) ? body.appliesTo : 'all' }),
+        ...(body.appliesTo !== undefined && { appliesTo: ['all', 'products', 'brands', 'categories', 'rules'].includes(body.appliesTo) ? body.appliesTo : 'all' }),
         ...(body.productIds !== undefined && { productIds: stringList(body.productIds) }),
         ...(body.brands !== undefined && { brands: stringList(body.brands) }),
         ...(body.categories !== undefined && { categories: stringList(body.categories) }),
+        ...(body.subcategories !== undefined && { subcategories: stringList(body.subcategories) }),
         ...(body.excludedProductIds !== undefined && { excludedProductIds: stringList(body.excludedProductIds) }),
         ...(body.excludeSaleItems !== undefined && { excludeSaleItems: body.excludeSaleItems }),
         ...(body.firstOrderOnly !== undefined && { firstOrderOnly: body.firstOrderOnly }),

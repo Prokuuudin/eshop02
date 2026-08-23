@@ -194,6 +194,7 @@ model PromoCode {
   productIds  String[] @default([])
   brands      String[] @default([])
   categories  String[] @default([])
+  subcategories String[] @default([])
   excludedProductIds String[] @default([])
   excludeSaleItems Boolean @default(false)
   firstOrderOnly Boolean @default(false)

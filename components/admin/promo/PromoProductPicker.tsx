@@ -27,9 +27,9 @@ export function PromoProductPicker({ label, selected, onChange }: { label: strin
     return () => window.clearTimeout(timer)
   }, [query])
 
-  return <div className="space-y-2 sm:col-span-2">
+  return <div className="ui-disclosure-in space-y-2 sm:col-span-2">
     <p className="text-sm font-medium">{label}</p>
-    {selected.length > 0 && <div className="space-y-1">
+    {selected.length > 0 && <div className="ui-disclosure-in space-y-1">
       {selected.map((id) => <div key={id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
         <span className="min-w-0 flex-1 truncate">{known[id]?.title ?? `Товар ${id}`}</span>
         <span className="text-xs text-muted-foreground">{known[id]?.brand}</span>
@@ -37,7 +37,7 @@ export function PromoProductPicker({ label, selected, onChange }: { label: strin
       </div>)}
     </div>}
     <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Название, бренд, SKU или ID…" />
-    {query.trim().length >= 2 && <div className="max-h-56 overflow-y-auto rounded-md border border-border p-1">
+    {query.trim().length >= 2 && <div className="ui-disclosure-in max-h-56 overflow-y-auto rounded-md border border-border p-1">
       {results.filter((item) => !selected.includes(item.id)).map((item) => <Button key={item.id} type="button" variant="ghost" className="h-auto w-full justify-start px-2 py-2 text-left" onClick={() => { setKnown((current) => ({ ...current, [item.id]: item })); onChange([...selected, item.id]); setQuery(''); setResults([]) }}>
         <span className="min-w-0"><span className="block truncate">{item.title}</span><span className="block text-xs text-muted-foreground">{item.brand} · ID {item.id}</span></span>
       </Button>)}

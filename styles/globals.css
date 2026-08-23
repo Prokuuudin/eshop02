@@ -648,6 +648,26 @@ body[data-scroll-locked][data-scroll-locked] {
   animation: ui-disclosure-in 0.22s ease-out;
 }
 
+@keyframes ui-panel-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ui-panel-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.985); }
+}
+
+.ui-panel-in {
+  transform-origin: top;
+  animation: ui-panel-in 0.26s ease-out;
+}
+
+.ui-panel-out {
+  transform-origin: top;
+  animation: ui-panel-out 0.26s ease-in forwards;
+}
+
 .toast-item {
   animation: toast-in 0.25s ease-out;
 }

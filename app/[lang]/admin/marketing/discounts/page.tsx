@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -56,15 +56,21 @@ export default function AdminDiscountsPage(): React.ReactElement {
   const [items, setItems] = useState<PromoCodeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [formClosing, setFormClosing] = useState(false)
   const [formCollapsed, setFormCollapsed] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<Omit<PromoCodeItem, 'id'>>(emptyForm())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const catalogOptions = usePromoCatalogOptions()
+  const closeTimerRef = useRef<number | null>(null)
 
-  async function load() {
-    setLoading(true)
+  useEffect(() => () => {
+    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+  }, [])
+
+  async function load(showLoadingState = true) {
+    if (showLoadingState) setLoading(true)
     try {
       const res = await fetch('/api/admin/promo-codes')
       const data = await res.json()
@@ -85,7 +91,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     } catch {
       setError('Ошибка загрузки данных')
     } finally {
-      setLoading(false)
+      if (showLoadingState) setLoading(false)
     }
   }
 
@@ -100,6 +106,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
   }, [])
 
   function openCreate() {
+    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+    setFormClosing(false)
     setEditId(null)
     setForm(emptyForm())
     setFormCollapsed(false)
@@ -107,6 +115,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
   }
 
   function openEdit(item: PromoCodeItem) {
+    if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+    setFormClosing(false)
     setEditId(item.id)
     setForm({
       code: item.code,
@@ -130,10 +140,15 @@ export default function AdminDiscountsPage(): React.ReactElement {
   }
 
   function cancelForm() {
-    setShowForm(false)
-    setFormCollapsed(false)
-    setEditId(null)
-    setForm(emptyForm())
+    setFormClosing(true)
+    closeTimerRef.current = window.setTimeout(() => {
+      setShowForm(false)
+      setFormClosing(false)
+      setFormCollapsed(false)
+      setEditId(null)
+      setForm(emptyForm())
+      closeTimerRef.current = null
+    }, 260)
   }
 
   async function closeFormWithWarning() {
@@ -201,7 +216,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
           return
         }
       }
-      await load()
+      await load(false)
       logAdminAction(editId ? 'promo.updated' : 'promo.created', {
         type: 'promo', id: editId ?? form.code, title: form.code.trim().toUpperCase(),
       }, { after: { discount: form.discount, active: form.active } })
@@ -219,7 +234,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     if (!decision.confirmed) return
     await fetch(`/api/admin/promo-codes/${id}`, { method: 'DELETE' })
     logAdminAction('promo.deleted', { type: 'promo', id, title: target?.code })
-    await load()
+    await load(false)
   }
 
   async function handleToggle(item: PromoCodeItem) {
@@ -231,7 +246,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     logAdminAction('promo.toggled', { type: 'promo', id: item.id, title: item.code }, {
       before: { active: item.active }, after: { active: !item.active },
     })
-    await load()
+    await load(false)
   }
 
   const selectCls = 'w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm'
@@ -252,14 +267,14 @@ export default function AdminDiscountsPage(): React.ReactElement {
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+          <div className="ui-disclosure-in rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
 
         {/* Form */}
         {showForm && (
-          <div className={`rounded-xl shadow-sm ${formCollapsed && !editId ? 'p-3' : 'p-6 space-y-4'} ${editId
+          <div className={`${formClosing ? 'ui-panel-out pointer-events-none' : 'ui-panel-in'} rounded-xl shadow-sm transition-[padding,background-color,box-shadow] duration-[280ms] ease-in-out ${formCollapsed && !editId ? 'p-3' : 'p-6'} ${editId
             ? 'bg-rose-50/80 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50'
             : 'border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
           }`}>
@@ -279,8 +294,9 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 <Button size="sm" variant="outline" onClick={() => void closeFormWithWarning()}>{editId ? 'Закрыть' : 'Отмена'}</Button>
               </div>
             </div>
-            {!formCollapsed && <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={`grid transition-[grid-template-rows,opacity] duration-[280ms] ease-in-out ${formCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`} aria-hidden={formCollapsed} inert={formCollapsed ? true : undefined}>
+            <div className="min-h-0 overflow-hidden">
+            <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               <label htmlFor="admin-discount-field-1" className="space-y-1">
                 <span className="text-sm text-muted-foreground">Код *</span>
                 <Input id="admin-discount-field-1"
@@ -366,7 +382,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.excludeSaleItems} onChange={(e) => setForm((f) => ({ ...f, excludeSaleItems: e.target.checked }))} />Не применять к уценённым товарам</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />Только первый заказ</label>
             </div>
-            </>}
+            </div>
+            </div>
           </div>
         )}
 
@@ -379,7 +396,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
             <p className="text-muted-foreground text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="ui-disclosure-in grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
               <div
                 key={item.id}

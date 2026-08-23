@@ -20,9 +20,9 @@ export function PromoMultiSelect({ label, options, selected, onChange, placehold
   }, [options, query, selected])
   const labels = new Map(options.map((option) => [option.value, option.label]))
 
-  return <div className="space-y-2 sm:col-span-2">
+  return <div className="ui-disclosure-in space-y-2 sm:col-span-2">
     <p className="text-sm font-medium">{label}</p>
-    {selected.length > 0 && <div className="flex flex-wrap gap-2">
+    {selected.length > 0 && <div className="ui-disclosure-in flex flex-wrap gap-2">
       {selected.map((value) => <span key={value} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">
         {labels.get(value) ?? value}
         <button type="button" className="ml-1 hover:text-destructive" aria-label={`Убрать ${labels.get(value) ?? value}`} onClick={() => onChange(selected.filter((item) => item !== value))}>×</button>

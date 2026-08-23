@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 type PriceGroup = {
@@ -37,20 +37,31 @@ function usePriceGroupsPageState() {
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [productSearch, setProductSearch] = useState('');
     const [overrideInput, setOverrideInput] = useState<Record<string, string>>({});
+    const [busy, setBusy] = useState(false);
+    const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const load = () => {
+    const request = useCallback(async (url: string, options?: RequestInit) => {
+        const response = await fetch(url, options);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'request_failed');
+        return payload;
+    }, []);
+
+    const load = useCallback(() => {
         setLoading(true);
+        setNotice(null);
         Promise.all([
-            fetch('/api/admin/price-groups').then((r) => r.json()),
-            fetch('/api/admin/products').then((r) => r.json()),
+            request('/api/admin/price-groups'),
+            request('/api/admin/products'),
         ])
             .then(([pgData, prods]) => {
                 setGroups(pgData.groups ?? []);
                 setOverrides(pgData.overrides ?? []);
                 setProducts(Array.isArray(prods?.data?.products) ? prods.data.products : []);
             })
+            .catch(() => setNotice({ type: 'error', text: 'Не удалось загрузить прайс-листы. Обновите страницу.' }))
             .finally(() => setLoading(false));
-    };
+    }, [request]);
 
     useEffect(() => {
         let cancelled = false;
@@ -60,55 +71,89 @@ function usePriceGroupsPageState() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [load]);
 
     const handleCreate = async (data: Omit<PriceGroup, 'id' | 'createdAt'>) => {
-        await fetch('/api/admin/price-groups', {
+        setBusy(true);
+        setNotice(null);
+        try {
+        await request('/api/admin/price-groups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
         setShowCreate(false);
         load();
+        setNotice({ type: 'success', text: 'Ценовая группа создана.' });
+        } catch { setNotice({ type: 'error', text: 'Не удалось создать группу. Проверьте введённые данные.' }); }
+        finally { setBusy(false); }
     };
 
     const handleUpdate = async (id: string, data: Omit<PriceGroup, 'id' | 'createdAt'>) => {
-        await fetch(`/api/admin/price-groups/${id}`, {
+        setBusy(true);
+        setNotice(null);
+        try {
+        await request(`/api/admin/price-groups/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
         setEditingId(null);
         load();
+        setNotice({ type: 'success', text: 'Изменения сохранены.' });
+        } catch { setNotice({ type: 'error', text: 'Не удалось сохранить изменения.' }); }
+        finally { setBusy(false); }
     };
 
     const handleDelete = async (id: string) => {
         const decision = await confirmAction({ title: 'Удалить ценовую группу?', description: 'Группа и все её ценовые переопределения будут удалены.', affected: [id], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
         if (!decision.confirmed) return;
-        await fetch(`/api/admin/price-groups/${id}`, { method: 'DELETE' });
+        setBusy(true);
+        setNotice(null);
+        try {
+        await request(`/api/admin/price-groups/${id}`, { method: 'DELETE' });
         if (selectedGroup === id) setSelectedGroup(null);
         load();
+        setNotice({ type: 'success', text: 'Ценовая группа удалена.' });
+        } catch { setNotice({ type: 'error', text: 'Не удалось удалить группу.' }); }
+        finally { setBusy(false); }
     };
 
     const handleSetOverride = async (groupId: string, productId: string) => {
         const key = `${groupId}-${productId}`;
         const price = parseFloat(overrideInput[key] ?? '');
-        if (!Number.isFinite(price) || price < 0) return;
-        await fetch(`/api/admin/price-groups/${groupId}`, {
+        if (!Number.isFinite(price) || price < 0) {
+            setNotice({ type: 'error', text: 'Введите корректную цену не меньше нуля.' });
+            return;
+        }
+        setBusy(true);
+        setNotice(null);
+        try {
+        await request(`/api/admin/price-groups/${groupId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'set_override', productId, price }),
         });
+        setOverrideInput((previous) => ({ ...previous, [key]: '' }));
         load();
+        setNotice({ type: 'success', text: 'Индивидуальная цена сохранена.' });
+        } catch { setNotice({ type: 'error', text: 'Не удалось сохранить индивидуальную цену.' }); }
+        finally { setBusy(false); }
     };
 
     const handleRemoveOverride = async (groupId: string, productId: string) => {
-        await fetch(`/api/admin/price-groups/${groupId}`, {
+        setBusy(true);
+        setNotice(null);
+        try {
+        await request(`/api/admin/price-groups/${groupId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'remove_override', productId }),
         });
         load();
+        setNotice({ type: 'success', text: 'Индивидуальная цена удалена.' });
+        } catch { setNotice({ type: 'error', text: 'Не удалось удалить индивидуальную цену.' }); }
+        finally { setBusy(false); }
     };
 
     const discountLabel = (m: number) => {
@@ -153,6 +198,9 @@ function usePriceGroupsPageState() {
         discountLabel,
         activeGroup,
         filteredProducts,
+        busy,
+        notice,
+        setNotice,
     };
 }
 

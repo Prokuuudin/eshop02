@@ -6,6 +6,7 @@ import {
   setOverride,
   removeOverride,
 } from '@/lib/price-groups-server-store'
+import { priceGroupSchema, priceOverrideSchema, removeOverrideSchema } from '@/lib/price-groups-validation'
 
 export const runtime = 'nodejs'
 
@@ -21,23 +22,26 @@ export async function PUT(
     const body = await request.json()
 
     if (body.action === 'set_override') {
-      const { productId, price } = body
-      const result = await setOverride(id, productId, Number(price))
+      const parsed = priceOverrideSchema.safeParse(body)
+      if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
+      const result = await setOverride(id, parsed.data.productId, parsed.data.price)
       return result.success
         ? NextResponse.json({ ok: true })
         : NextResponse.json({ error: result.error }, { status: 500 })
     }
 
     if (body.action === 'remove_override') {
-      const { productId } = body
-      const result = await removeOverride(id, productId)
+      const parsed = removeOverrideSchema.safeParse(body)
+      if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
+      const result = await removeOverride(id, parsed.data.productId)
       return result.success
         ? NextResponse.json({ ok: true })
         : NextResponse.json({ error: result.error }, { status: 500 })
     }
 
-    const { name, description, multiplier, color } = body
-    const result = await updatePriceGroup(id, { name, description, multiplier: Number(multiplier), color })
+    const parsed = priceGroupSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
+    const result = await updatePriceGroup(id, parsed.data)
     return result.success
       ? NextResponse.json({ ok: true })
       : NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 })

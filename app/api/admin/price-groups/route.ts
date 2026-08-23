@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { createPriceGroup, readPriceGroupsData } from '@/lib/price-groups-server-store'
+import { priceGroupSchema } from '@/lib/price-groups-validation'
 
 export const runtime = 'nodejs'
 
@@ -21,17 +22,11 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (__gate instanceof NextResponse) return __gate
 
   try {
-    const body = await request.json()
-    const { name, description, multiplier, color } = body
-    if (!name || multiplier == null) {
-      return NextResponse.json({ error: 'name_and_multiplier_required' }, { status: 400 })
+    const parsed = priceGroupSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
     }
-    const result = await createPriceGroup({
-      name,
-      description: description ?? '',
-      multiplier: Number(multiplier),
-      color: color ?? '#6b7280',
-    })
+    const result = await createPriceGroup(parsed.data)
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 })
     }

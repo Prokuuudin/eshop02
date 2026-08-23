@@ -109,6 +109,9 @@ export async function setOverride(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const data = await readPriceGroupsData()
+    if (!data.groups.some((group) => group.id === groupId)) {
+      return { success: false, error: 'not_found' }
+    }
     const idx = data.overrides.findIndex(
       (o) => o.groupId === groupId && o.productId === productId
     )

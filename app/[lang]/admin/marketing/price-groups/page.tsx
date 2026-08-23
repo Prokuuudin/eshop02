@@ -136,10 +136,17 @@ export default function PriceGroupsPage(): ReactElement {
             discountLabel,
             activeGroup,
             filteredProducts,
+            busy,
+            notice,
           } = pageState;
     return (
         <AdminGate access="full">
             <div className="space-y-6">
+                {notice && (
+                    <div role="status" className={`rounded-lg border px-4 py-3 text-sm ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300'}`}>
+                        {notice.text}
+                    </div>
+                )}
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
@@ -151,8 +158,9 @@ export default function PriceGroupsPage(): ReactElement {
                     </div>
                     <button
                         type="button"
+                        disabled={busy || showCreate}
                         onClick={() => setShowCreate(true)}
-                        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         + Новая группа
                     </button>
@@ -171,6 +179,11 @@ export default function PriceGroupsPage(): ReactElement {
                     <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {groups.length === 0 && (
+                            <div className="col-span-full rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+                                Ценовых групп пока нет. Создайте первую группу, чтобы настроить её цены.
+                            </div>
+                        )}
                         {groups.map((g) => {
                             const groupOverrides = overrides.filter((o) => o.groupId === g.id);
                             return (
@@ -304,6 +317,9 @@ export default function PriceGroupsPage(): ReactElement {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
+                                    {filteredProducts.length === 0 && (
+                                        <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">Товары не найдены.</td></tr>
+                                    )}
                                     {filteredProducts.map((p) => {
                                         const ov = overrides.find(
                                             (o) =>
@@ -360,13 +376,14 @@ export default function PriceGroupsPage(): ReactElement {
                                                         />
                                                         <button
                                                             type="button"
+                                                            disabled={busy}
                                                             onClick={() =>
                                                                 handleSetOverride(
                                                                     activeGroup.id,
                                                                     p.id
                                                                 )
                                                             }
-                                                            className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
+                                                            className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700 disabled:opacity-50"
                                                         >
                                                             Сохр.
                                                         </button>

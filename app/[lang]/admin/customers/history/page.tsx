@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
+import { useAuthStore } from '@/lib/auth-store'
+import { hasAdminPermission } from '@/lib/admin-permissions'
 
 type ActivityEntry = {
   id: string
@@ -44,6 +46,8 @@ function actionColor(action: string) {
 
 export default function AdminCustomerHistoryPage(): React.ReactElement {
   const confirmAction = useAdminConfirm()
+  const currentUser = useAuthStore((state) => state.user)
+  const canClearHistory = hasAdminPermission(currentUser, 'audit.read')
   const [entries, setEntries] = useState<ActivityEntry[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loadError, setLoadError] = useState('')
@@ -126,9 +130,11 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">История взаимодействий</h1>
           <div className="flex gap-2 flex-wrap">
-            <Button variant="destructive" size="sm" onClick={handleClear}>
-              Очистить старые записи (&gt; 90 дней)
-            </Button>
+            {canClearHistory && (
+              <Button variant="destructive" size="sm" onClick={handleClear}>
+                Очистить старые записи (&gt; 90 дней)
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link href="/admin">← Назад в админку</Link>
             </Button>

@@ -22,25 +22,36 @@ export type Product = {
  */
 export type StockAlertRow = Product & { synced: boolean };
 
-/** Fetches the admin product list. The route wraps its payload as `{ data: { products } }`. */
-export async function fetchStockAlertProducts(): Promise<Product[]> {
-    const res = await fetch('/api/admin/products');
-    const body = (await res.json()) as { data?: { products?: Product[] } };
-    return Array.isArray(body.data?.products) ? (body.data!.products as Product[]) : [];
-}
+export type StockAlertsResponse = {
+    products: StockAlertRow[];
+    total: number;
+    productCount: number;
+    outCount: number;
+    lowCount: number;
+    unconfirmedCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+};
 
-/** Fetches the set of product ids that carry a real (ERP-synced) `Product.externalId`. */
-export async function fetchSyncedProductIds(): Promise<Set<string>> {
-    const res = await fetch('/api/admin/products/sync-status');
-    const body = (await res.json()) as { syncedIds?: string[] };
-    return new Set(Array.isArray(body.syncedIds) ? body.syncedIds : []);
-}
-
-/**
- * Combines the raw product list with the ERP sync-status set so the UI can tell,
- * per row, whether an alert is backed by trustworthy stock data or is noise from
- * an unconfirmed placeholder.
- */
-export function deriveStockAlertRows(products: Product[], syncedIds: Set<string>): StockAlertRow[] {
-    return products.map((p) => ({ ...p, synced: syncedIds.has(p.id) }));
+export async function fetchStockAlerts(params: {
+    page: number;
+    limit: number;
+    threshold: number;
+    search: string;
+    filter: 'all' | 'low' | 'out';
+    hideUnconfirmed: boolean;
+    signal?: AbortSignal;
+}): Promise<StockAlertsResponse> {
+    const query = new URLSearchParams({
+        page: String(params.page),
+        limit: String(params.limit),
+        threshold: String(params.threshold),
+        q: params.search,
+        filter: params.filter,
+        hideUnconfirmed: String(params.hideUnconfirmed),
+    });
+    const res = await fetch(`/api/admin/stock-alerts?${query}`, { signal: params.signal });
+    if (!res.ok) throw new Error(`Stock alerts request failed: ${res.status}`);
+    return res.json() as Promise<StockAlertsResponse>;
 }

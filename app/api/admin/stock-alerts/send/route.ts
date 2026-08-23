@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
+import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
@@ -89,18 +90,30 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = (await request.json()) as {
       to?: string
       threshold?: number
-      products?: AlertProduct[]
     }
 
     const to = body.to?.trim() ?? ''
-    const threshold = Number.isFinite(body.threshold) ? (body.threshold as number) : 5
-    const products = Array.isArray(body.products) ? body.products : []
+    const threshold = Number.isFinite(body.threshold)
+      ? Math.max(0, Math.trunc(body.threshold as number))
+      : 5
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
 
-    const alertProducts = products.filter((p) => p.stock === 0 || p.stock <= threshold)
+    const rows = await prisma.product.findMany({
+      where: { isDeleted: false, stock: { gte: 0, lte: threshold } },
+      orderBy: [{ stock: 'asc' }, { title: 'asc' }],
+      select: {
+        id: true, title: true, brand: true, sku: true,
+        category: true, stock: true, price: true,
+      },
+    })
+    const alertProducts: AlertProduct[] = rows.map((product) => ({
+      ...product,
+      sku: product.sku ?? undefined,
+      price: Number(product.price),
+    }))
     const html = buildHtml(alertProducts, threshold)
 
     const outCount = alertProducts.filter((p) => p.stock === 0).length
@@ -115,8 +128,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
-
-
 
 
 

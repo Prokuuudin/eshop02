@@ -6,14 +6,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import {
-    deriveStockAlertRows,
-    fetchStockAlertProducts,
-    fetchSyncedProductIds,
+    fetchStockAlerts,
     type StockAlertRow,
 } from './stockAlertsData';
 
 const STORAGE_KEY = 'admin-stock-threshold';
 const DEFAULT_THRESHOLD = 5;
+const PAGE_SIZE = 50;
 
 function StockBadge({ stock, threshold }: { stock: number; threshold: number }) {
     if (stock === 0) {
@@ -64,6 +63,13 @@ export default function StockAlertsPage(): React.ReactElement {
     const [alertSending, setAlertSending] = useState(false);
     const [alertResult, setAlertResult] = useState<{ ok: boolean; sent?: number } | null>(null);
     const [lastSent, setLastSent] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [productCount, setProductCount] = useState(0);
+    const [outCount, setOutCount] = useState(0);
+    const [lowCount, setLowCount] = useState(0);
+    const [unconfirmedCount, setUnconfirmedCount] = useState(0);
 
     useEffect(() => {
         queueMicrotask(() => {
@@ -83,11 +89,34 @@ export default function StockAlertsPage(): React.ReactElement {
     }, []);
 
     useEffect(() => {
-        Promise.all([fetchStockAlertProducts(), fetchSyncedProductIds()])
-            .then(([productsData, syncedIds]) => setProducts(deriveStockAlertRows(productsData, syncedIds)))
-            .catch(() => setProducts([]))
-            .finally(() => setLoading(false));
-    }, []);
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            setLoading(true);
+            fetchStockAlerts({
+                page, limit: PAGE_SIZE, threshold, search, filter, hideUnconfirmed,
+                signal: controller.signal,
+            })
+                .then((data) => {
+                    setProducts(data.products);
+                    setTotal(data.total);
+                    setTotalPages(data.totalPages);
+                    setProductCount(data.productCount);
+                    setOutCount(data.outCount);
+                    setLowCount(data.lowCount);
+                    setUnconfirmedCount(data.unconfirmedCount);
+                })
+                .catch((error: unknown) => {
+                    if (!(error instanceof DOMException && error.name === 'AbortError')) setProducts([]);
+                })
+                .finally(() => {
+                    if (!controller.signal.aborted) setLoading(false);
+                });
+        }, search ? 250 : 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [filter, hideUnconfirmed, page, search, threshold]);
 
     const sendAlert = async () => {
         if (!alertEmail || alertSending) return;
@@ -98,7 +127,7 @@ export default function StockAlertsPage(): React.ReactElement {
             const res = await fetch('/api/admin/stock-alerts/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to: alertEmail, threshold, products }),
+                body: JSON.stringify({ to: alertEmail, threshold }),
             });
             const data = (await res.json()) as { ok: boolean; sent?: number };
             setAlertResult(data);
@@ -118,32 +147,10 @@ export default function StockAlertsPage(): React.ReactElement {
         const v = parseInt(thresholdInput, 10);
         if (Number.isFinite(v) && v >= 0) {
             setThreshold(v);
+            setPage(1);
             localStorage.setItem(STORAGE_KEY, String(v));
         }
     };
-
-    const filtered = products.filter((p) => {
-        if (hideUnconfirmed && !p.synced) return false;
-        if (filter === 'out' && p.stock !== 0) return false;
-        if (filter === 'low' && p.stock === 0) return false;
-        if (filter === 'low' && p.stock > threshold) return false;
-        if (search) {
-            const q = search.toLowerCase();
-            return (
-                p.title.toLowerCase().includes(q) ||
-                p.brand.toLowerCase().includes(q) ||
-                (p.sku ?? '').toLowerCase().includes(q)
-            );
-        }
-        return true;
-    });
-
-    // Deliberately independent of hideUnconfirmed: these totals feed the email-report
-    // count and the tab labels, and the report itself still emails every real alert
-    // (see sendAlert below) regardless of whether unconfirmed rows are hidden on screen.
-    const outCount = products.filter((p) => p.stock === 0).length;
-    const lowCount = products.filter((p) => p.stock > 0 && p.stock <= threshold).length;
-    const unconfirmedCount = products.filter((p) => !p.synced).length;
 
     return (
         <AdminGate access="full">
@@ -227,14 +234,14 @@ export default function StockAlertsPage(): React.ReactElement {
                     </div>
                     <div className="rounded-xl border border-border bg-card p-4">
                         <p className="text-xs text-muted-foreground">Всего товаров</p>
-                        <p className="mt-1 text-3xl font-bold text-foreground">{products.length}</p>
+                        <p className="mt-1 text-3xl font-bold text-foreground">{productCount}</p>
                     </div>
                 </div>
 
                 {!loading && showCaveat && unconfirmedCount > 0 && (
                     <div className="flex items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
                         <p>
-                            <strong>{unconfirmedCount}</strong> из {products.length} товаров ещё не синхронизированы с ERP — их остаток может быть техническим значением-заглушкой, унаследованным из старого импорта (чаще всего «10000»), а не актуальным складским остатком. Такие строки помечены бейджем «Не подтверждено ERP»; включите переключатель ниже, чтобы скрыть их из таблицы.
+                            <strong>{unconfirmedCount}</strong> из {productCount} товаров ещё не синхронизированы с ERP — их остаток может быть техническим значением-заглушкой, унаследованным из старого импорта (чаще всего «10000»), а не актуальным складским остатком. Такие строки помечены бейджем «Не подтверждено ERP»; включите переключатель ниже, чтобы скрыть их из таблицы.
                         </p>
                         <button
                             type="button"
@@ -252,7 +259,7 @@ export default function StockAlertsPage(): React.ReactElement {
                         type="text"
                         placeholder="Поиск по названию, бренду, SKU..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                         className="min-w-[240px] flex-1 text-sm"
                     />
                     <div className="flex rounded-lg border border-border bg-card p-1">
@@ -266,7 +273,7 @@ export default function StockAlertsPage(): React.ReactElement {
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() => setFilter(opt.value)}
+                                onClick={() => { setFilter(opt.value); setPage(1); }}
                                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                                     filter === opt.value
                                         ? 'bg-emerald-600 text-white'
@@ -279,7 +286,7 @@ export default function StockAlertsPage(): React.ReactElement {
                     </div>
                     <Checkbox
                         checked={hideUnconfirmed}
-                        onCheckedChange={setHideUnconfirmed}
+                        onCheckedChange={(checked) => { setHideUnconfirmed(checked); setPage(1); }}
                         label={`Скрыть неподтверждённые ERP${unconfirmedCount ? ` (${unconfirmedCount})` : ''}`}
                     />
                 </div>
@@ -287,7 +294,7 @@ export default function StockAlertsPage(): React.ReactElement {
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                     {loading ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
-                    ) : filtered.length === 0 ? (
+                    ) : products.length === 0 ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">
                             {hideUnconfirmed && unconfirmedCount > 0
                                 ? 'Нет подтверждённых ERP товаров, подходящих под фильтр'
@@ -325,7 +332,7 @@ export default function StockAlertsPage(): React.ReactElement {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {filtered.map((p) => (
+                                {products.map((p) => (
                                     <tr
                                         key={p.id}
                                         className={`transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
@@ -367,6 +374,32 @@ export default function StockAlertsPage(): React.ReactElement {
                         </table>
                     )}
                 </div>
+
+                {!loading && totalPages > 1 && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">
+                            Показано {products.length} из {total} · страница {page} из {totalPages}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                                disabled={page <= 1}
+                                className="rounded-md border border-border bg-card px-3 py-1.5 disabled:opacity-40"
+                            >
+                                Назад
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                                disabled={page >= totalPages}
+                                className="rounded-md border border-border bg-card px-3 py-1.5 disabled:opacity-40"
+                            >
+                                Дальше
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </AdminGate>
     );

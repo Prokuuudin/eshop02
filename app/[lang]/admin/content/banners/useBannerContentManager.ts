@@ -158,7 +158,7 @@ function useBannerContentManagerState() {
 
     setSaving(true)
     try {
-      await Promise.all([
+      const responses = await Promise.all([
         fetch(`/api/admin/banners/${updatedA.id}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ kind: 'banner', item: { order: updatedA.order } })
@@ -168,6 +168,7 @@ function useBannerContentManagerState() {
           body: JSON.stringify({ kind: 'banner', item: { order: updatedB.order } })
         })
       ])
+      if (responses.some((response) => !response.ok)) throw new Error()
       await loadData()
     } catch {
       showMsg('Не удалось изменить порядок.', true)

@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { encodeLocaleText, resolveLocaleText } from '@/lib/locale-text';
+import SaleBanner from '@/components/SaleBanner';
 import { LocaleTextField } from './LocaleTextField';
 import {
     BANNER_TYPE_LABELS,
@@ -121,19 +122,6 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 onChange={onBannerImageUpload}
                             />
                         </div>
-
-                        {bannerForm.image && (
-                            <div className="sm:col-span-2">
-                                <Image
-                                    src={bannerForm.image}
-                                    alt="Превью баннера"
-                                    width={800}
-                                    height={128}
-                                    unoptimized
-                                    className="h-32 w-full rounded-md border border-border object-cover bg-muted"
-                                />
-                            </div>
-                        )}
 
                         <div className="space-y-1">
                             <label
@@ -270,6 +258,38 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </Select>
                         </div>
                     </div>
+
+                    <section className="space-y-2" aria-labelledby="admin-banner-preview-title">
+                        <div className="flex items-center justify-between gap-3">
+                            <h3
+                                id="admin-banner-preview-title"
+                                className="text-sm font-semibold text-foreground"
+                            >
+                                Предпросмотр на витрине
+                            </h3>
+                            <span className="text-xs text-muted-foreground">
+                                Обновляется автоматически
+                            </span>
+                        </div>
+                        <div className="pointer-events-none rounded-2xl border border-dashed border-border bg-muted/30 p-2 sm:p-3">
+                            <SaleBanner
+                                banner={{
+                                    id: editingBannerId ?? 'banner-preview',
+                                    title: bannerForm.title || 'Заголовок баннера',
+                                    subtitle: bannerForm.subtitle,
+                                    image: bannerForm.image,
+                                    link: bannerForm.link,
+                                    ctaLabel: bannerForm.ctaLabel,
+                                    ctaStyle: bannerForm.ctaStyle,
+                                    bgColor: bannerForm.bgColor || '#ffffff',
+                                    textColor: bannerForm.textColor,
+                                }}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Текст отображается на языке текущей версии админки. Ссылки в предпросмотре отключены.
+                        </p>
+                    </section>
 
                     <div className="flex items-center gap-2 pt-1">
                         <Button onClick={onSaveBanner} disabled={saving}>

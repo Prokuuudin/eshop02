@@ -82,6 +82,21 @@ test('admin products page fetches the list once and does not get stuck on empty 
   expect(productListRequests.length).toBeLessThanOrEqual(4)
 })
 
+test('admin banners form shows a live storefront preview', async ({ page }) => {
+  await loginAs(page, E2E_ADMIN)
+  await seedAdminSession(page)
+  await page.goto('/admin/content/banners')
+
+  await page.getByRole('button', { name: 'Добавить баннер' }).click()
+
+  const preview = page.getByRole('region', { name: 'Предпросмотр на витрине' })
+  await expect(preview).toBeVisible()
+  await expect(preview.getByText('Заголовок баннера')).toBeVisible()
+
+  await page.getByPlaceholder('Заголовок баннера').first().fill('Тестовый баннер')
+  await expect(preview.getByText('Тестовый баннер')).toBeVisible()
+})
+
 test('price groups show amounts in euros, not rubles', async ({ page }) => {
   // Регрессия 1: цены в таблице групп рендерились через .toLocaleString('ru-RU') + '₽' —
   // похоже на скопированный шаблон, магазин латвийский, весь остальной админ — €.

@@ -10,7 +10,6 @@ import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
-import { calculateDiscount } from '@/lib/promo-codes';
 import { extractVat } from '@/lib/tax';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
@@ -193,7 +192,7 @@ function useCheckoutPageState() {
             const res = await fetch('/api/promo/validate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: promoCode, orderAmount: subtotal }),
+                body: JSON.stringify({ code: promoCode, email: formData.email, items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })) }),
             });
             const data = (await res.json()) as { valid: boolean; discount?: number; code?: string };
             if (!data.valid) {
@@ -275,10 +274,7 @@ function useCheckoutPageState() {
         }
 
         // Calculate totals
-        const discount =
-            appliedPromo && appliedPromoDiscountPct !== null
-                ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-                : 0;
+        const discount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
         const subtotalAfterDiscount = subtotal - discount;
         const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
 
@@ -454,10 +450,7 @@ function useCheckoutPageState() {
         return <CheckoutRoleBlockedView t={t} />;
     }
 
-    const discount =
-        appliedPromo && appliedPromoDiscountPct !== null
-            ? calculateDiscount(subtotal, appliedPromoDiscountPct)
-            : 0;
+    const discount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
     const subtotalAfterDiscount = subtotal - discount;
     const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
     // Catalog prices already include VAT — taxAmount is informational, not added to the total.

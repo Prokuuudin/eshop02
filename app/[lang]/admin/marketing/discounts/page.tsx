@@ -12,10 +12,23 @@ type PromoCodeItem = {
   id: string
   code: string
   discount: number
+  discountType: 'percentage' | 'fixed'
+  discountValue: number | null
+  maxDiscount: number | null
   minOrder: number
+  minEligibleAmount: number
   maxUses: number | null
   usedCount: number
   expiresAt: string | null
+  startsAt: string | null
+  perUserLimit: number | null
+  appliesTo: 'all' | 'products' | 'brands' | 'categories'
+  productIds: string[]
+  brands: string[]
+  categories: string[]
+  excludedProductIds: string[]
+  excludeSaleItems: boolean
+  firstOrderOnly: boolean
   active: boolean
   description: string
 }
@@ -23,10 +36,14 @@ type PromoCodeItem = {
 const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
   code: '',
   discount: 10,
+  discountType: 'percentage', discountValue: 10, maxDiscount: null,
   minOrder: 0,
+  minEligibleAmount: 0,
   maxUses: null,
   usedCount: 0,
   expiresAt: null,
+  startsAt: null, perUserLimit: null, appliesTo: 'all', productIds: [], brands: [], categories: [],
+  excludedProductIds: [], excludeSaleItems: false, firstOrderOnly: false,
   active: true,
   description: ''
 })
@@ -75,10 +92,17 @@ export default function AdminDiscountsPage(): React.ReactElement {
     setForm({
       code: item.code,
       discount: item.discount,
+      discountType: item.discountType ?? 'percentage', discountValue: item.discountValue ?? item.discount,
+      maxDiscount: item.maxDiscount ?? null,
       minOrder: item.minOrder,
+      minEligibleAmount: item.minEligibleAmount ?? 0,
       maxUses: item.maxUses,
       usedCount: item.usedCount,
       expiresAt: item.expiresAt,
+      startsAt: item.startsAt ?? null, perUserLimit: item.perUserLimit ?? null, appliesTo: item.appliesTo ?? 'all',
+      productIds: item.productIds ?? [], brands: item.brands ?? [], categories: item.categories ?? [],
+      excludedProductIds: item.excludedProductIds ?? [], excludeSaleItems: item.excludeSaleItems ?? false,
+      firstOrderOnly: item.firstOrderOnly ?? false,
       active: item.active,
       description: item.description
     })
@@ -200,8 +224,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
                   type="number"
                   min={1}
                   max={100}
-                  value={form.discount}
-                  onChange={(e) => setForm((f) => ({ ...f, discount: Number(e.target.value) }))}
+                  value={form.discountValue ?? form.discount}
+                  onChange={(e) => setForm((f) => ({ ...f, discountValue: Number(e.target.value), discount: Number(e.target.value) }))}
                 />
               </label>
               <label htmlFor="admin-discount-field-3" className="space-y-1">
@@ -243,6 +267,23 @@ export default function AdminDiscountsPage(): React.ReactElement {
                   </SelectContent>
                 </Select>
               </label>
+              <label className="space-y-1">
+                <span className="text-sm text-muted-foreground">Тип скидки</span>
+                <Select value={form.discountType} onValueChange={(v) => setForm((f) => ({ ...f, discountType: v as 'percentage' | 'fixed' }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">Процент</SelectItem><SelectItem value="fixed">Фиксированная сумма</SelectItem></SelectContent>
+                </Select>
+              </label>
+              {form.discountType === 'percentage' && <label className="space-y-1"><span className="text-sm text-muted-foreground">Максимальная скидка, €</span><Input type="number" min={0} value={form.maxDiscount ?? ''} onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value ? Number(e.target.value) : null }))} /></label>}
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">Мин. сумма подходящих товаров, €</span><Input type="number" min={0} value={form.minEligibleAmount} onChange={(e) => setForm((f) => ({ ...f, minEligibleAmount: Number(e.target.value) }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">Лимит на клиента</span><Input type="number" min={1} value={form.perUserLimit ?? ''} placeholder="Без лимита" onChange={(e) => setForm((f) => ({ ...f, perUserLimit: e.target.value ? Number(e.target.value) : null }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">Начало действия</span><Input type="date" value={form.startsAt?.slice(0, 10) ?? ''} onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value || null }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">Область действия</span><Select value={form.appliesTo} onValueChange={(v) => setForm((f) => ({ ...f, appliesTo: v as PromoCodeItem['appliesTo'] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Вся корзина</SelectItem><SelectItem value="products">Отдельные товары</SelectItem><SelectItem value="brands">Бренды</SelectItem><SelectItem value="categories">Категории</SelectItem></SelectContent></Select></label>
+              {form.appliesTo === 'products' && <label className="space-y-1 sm:col-span-2"><span className="text-sm text-muted-foreground">ID товаров через запятую</span><Input value={form.productIds.join(', ')} onChange={(e) => setForm((f) => ({ ...f, productIds: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) }))} /></label>}
+              {form.appliesTo === 'brands' && <label className="space-y-1 sm:col-span-2"><span className="text-sm text-muted-foreground">Бренды через запятую</span><Input value={form.brands.join(', ')} onChange={(e) => setForm((f) => ({ ...f, brands: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) }))} /></label>}
+              {form.appliesTo === 'categories' && <label className="space-y-1 sm:col-span-2"><span className="text-sm text-muted-foreground">Коды категорий через запятую</span><Input value={form.categories.join(', ')} onChange={(e) => setForm((f) => ({ ...f, categories: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) }))} /></label>}
+              <label className="space-y-1 sm:col-span-2"><span className="text-sm text-muted-foreground">Исключить товары (ID через запятую)</span><Input value={form.excludedProductIds.join(', ')} onChange={(e) => setForm((f) => ({ ...f, excludedProductIds: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) }))} /></label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.excludeSaleItems} onChange={(e) => setForm((f) => ({ ...f, excludeSaleItems: e.target.checked }))} />Не применять к уценённым товарам</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />Только первый заказ</label>
               <label htmlFor="admin-discount-field-7" className="space-y-1 sm:col-span-2">
                 <span className="text-sm text-muted-foreground">Описание</span>
                 <Input id="admin-discount-field-7"

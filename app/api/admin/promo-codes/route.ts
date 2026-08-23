@@ -10,6 +10,7 @@ export const runtime = 'nodejs'
 // math, floor an order's total to €0.
 const clampDiscount = (value: unknown): number => Math.min(100, Math.max(0, Number(value) || 0))
 const clampNonNegative = (value: unknown): number => Math.max(0, Number(value) || 0)
+const stringList = (value: unknown): string[] => Array.isArray(value) ? [...new Set(value.map(String).map((v) => v.trim()).filter(Boolean))] : []
 
 export async function GET(): Promise<Response> {
   const actor = await requireAdmin()
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       code?: string; discount?: number; minOrder?: number;
       maxUses?: number | null; usedCount?: number; expiresAt?: string | null;
       active?: boolean; description?: string
+      discountType?: string; discountValue?: number; maxDiscount?: number | null; minEligibleAmount?: number;
+      perUserLimit?: number | null; startsAt?: string | null; appliesTo?: string; productIds?: string[];
+      brands?: string[]; categories?: string[]; excludedProductIds?: string[]; excludeSaleItems?: boolean; firstOrderOnly?: boolean
     }
     const code = (body.code ?? '').toUpperCase().trim()
     if (!code) return NextResponse.json({ error: 'code_required' }, { status: 400 })
@@ -43,11 +47,21 @@ export async function POST(request: NextRequest): Promise<Response> {
       const created = await tx.promoCode.create({ data: {
         id: `pc-${Date.now()}`,
         code,
-        discount: clampDiscount(body.discount),
+        discount: clampDiscount(body.discountValue ?? body.discount),
+        discountType: body.discountType === 'fixed' ? 'fixed' : 'percentage',
+        discountValue: body.discountType === 'fixed' ? clampNonNegative(body.discountValue ?? body.discount) : clampDiscount(body.discountValue ?? body.discount),
+        maxDiscount: body.maxDiscount == null ? null : clampNonNegative(body.maxDiscount),
         minOrder: clampNonNegative(body.minOrder),
+        minEligibleAmount: clampNonNegative(body.minEligibleAmount),
         maxUses: body.maxUses !== null && body.maxUses !== undefined ? Math.max(0, Number(body.maxUses) || 0) : null,
+        perUserLimit: body.perUserLimit == null ? null : Math.max(1, Math.floor(Number(body.perUserLimit) || 1)),
         usedCount: clampNonNegative(body.usedCount),
+        startsAt: body.startsAt ? new Date(body.startsAt) : null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+        appliesTo: ['all', 'products', 'brands', 'categories'].includes(body.appliesTo ?? '') ? body.appliesTo! : 'all',
+        productIds: stringList(body.productIds), brands: stringList(body.brands), categories: stringList(body.categories),
+        excludedProductIds: stringList(body.excludedProductIds), excludeSaleItems: body.excludeSaleItems ?? false,
+        firstOrderOnly: body.firstOrderOnly ?? false,
         active: body.active ?? true,
         description: body.description ?? '',
       } })

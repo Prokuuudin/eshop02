@@ -311,6 +311,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         deliveryMethod: order.deliveryMethod,
         bonusSpent: order.bonusSpent,
         userBonusBalance: currentBonusBalance,
+        userId: caller?.id,
+        email,
       }, tx)
       return {
         ...orderBase,

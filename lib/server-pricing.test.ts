@@ -23,6 +23,7 @@ import {
   resolveLineItems,
   getServerPromoDiscountPct,
   recomputeOrderPricing,
+  evaluatePromoCode,
 } from './server-pricing'
 
 beforeEach(() => vi.clearAllMocks())
@@ -297,6 +298,38 @@ describe('recomputeOrderPricing', () => {
     expect(r.delivery).toBe(0)
     expect(r.tax).toBe(156.2) // VAT extracted for display: (1000-100) - 900/1.21
     expect(r.total).toBe(900) // tax already included, not added
+  })
+})
+
+describe('evaluatePromoCode targeting', () => {
+  it('discounts only products of selected brands', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-1', code: 'BRAND20', active: true, discount: 20, discountValue: 20,
+      discountType: 'percentage', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'brands', brands: ['Acme'], categories: [], productIds: [],
+      excludedProductIds: [], excludeSaleItems: false,
+    })
+    const result = await evaluatePromoCode('BRAND20', [
+      { id: 'p1', price: 100, quantity: 1, brand: 'Acme', category: 'hair', bonusRate: 0, fromCatalog: true },
+      { id: 'p2', price: 200, quantity: 1, brand: 'Other', category: 'hair', bonusRate: 0, fromCatalog: true },
+    ])
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 100, discount: 20 })
+  })
+
+  it('caps a fixed discount at the eligible subtotal and excludes sale items', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-2', code: 'FIXED50', active: true, discount: 50, discountValue: 50,
+      discountType: 'fixed', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'all', brands: [], categories: [], productIds: [],
+      excludedProductIds: [], excludeSaleItems: true,
+    })
+    const result = await evaluatePromoCode('FIXED50', [
+      { id: 'sale', price: 40, oldPrice: 60, quantity: 1, brand: 'A', category: 'hair', bonusRate: 0, fromCatalog: true },
+      { id: 'regular', price: 30, oldPrice: null, quantity: 1, brand: 'A', category: 'hair', bonusRate: 0, fromCatalog: true },
+    ])
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 30, discount: 30 })
   })
 })
 

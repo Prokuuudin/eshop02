@@ -266,6 +266,23 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
         data: { usedCount: { increment: 1 } },
       })
       if (promoUse.count !== 1) throw new PromoCodeUsageLimitError()
+      const promo = await tx.promoCode.findFirst({
+        where: { code: order.promoCode.toUpperCase(), active: true },
+        select: { id: true, perUserLimit: true },
+      })
+      if (!promo) throw new PromoCodeUsageLimitError()
+      if (promo.perUserLimit) {
+        const identity = order.userId ? { userId: order.userId } : { email: order.email.toLowerCase() }
+        const priorUses = await tx.promoCodeRedemption.count({ where: { promoCodeId: promo.id, ...identity } })
+        if (priorUses >= promo.perUserLimit) throw new PromoCodeUsageLimitError()
+      }
+      await tx.promoCodeRedemption.create({ data: {
+        promoCodeId: promo.id,
+        orderId: created.id,
+        userId: order.userId ?? null,
+        email: order.email.toLowerCase(),
+        discount: order.discount,
+      } })
     }
 
     // Credit earned points separately after the guarded debit.

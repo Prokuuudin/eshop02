@@ -110,12 +110,15 @@ export async function POST(req: NextRequest): Promise<Response> {
       return errorResponse('No valid items', 400)
     }
 
+    const customerEmail = (typeof body.email === 'string' && body.email) || auth.user.email || 'api-user@example.com'
     // Authoritative pricing from the catalog.
     const pricing = await recomputeOrderPricing({
       items: normalizedItems,
       promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
       deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
       userBonusBalance: null,
+      userId: auth.user.id,
+      email: customerEmail,
     })
 
     // Build full order line items from the catalog (title/brand/etc.) for display.
@@ -151,16 +154,18 @@ export async function POST(req: NextRequest): Promise<Response> {
       deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
       paymentMethod: payment || 'transfer',
       discount: pricing.discount,
+      promoCode: pricing.promoApplied && typeof body.promoCode === 'string' ? body.promoCode.trim().toUpperCase() : undefined,
       total: pricing.total,
       firstName: address.firstName || 'API',
       lastName: address.lastName || 'User',
-      email: (typeof body.email === 'string' && body.email) || auth.user.email || 'api-user@example.com',
+      email: customerEmail,
       phone: address.phone || '',
       address: address.address || '',
       city: address.city || '',
       postalCode: address.postalCode,
       paymentStatus: 'unpaid',
       companyId: auth.user.companyId,
+      userId: auth.user.id,
       language: 'ru',
     }
 
@@ -185,5 +190,4 @@ export async function POST(req: NextRequest): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 }
-
 

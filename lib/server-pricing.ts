@@ -22,7 +22,7 @@ import { toNum } from '@/lib/decimal'
 
 type BulkTier = { quantity: number; pricePerUnit: number }
 
-type CatalogPrice = { price: number; bulkPricingTiers?: BulkTier[]; bonusRate: number }
+type CatalogPrice = { price: number; oldPrice: number | null; brand: string; category: string; bulkPricingTiers?: BulkTier[]; bonusRate: number }
 
 export type LineItemInput = { id: string; quantity: number; price?: number }
 export type ResolvedLineItem = {
@@ -30,6 +30,9 @@ export type ResolvedLineItem = {
   quantity: number
   price: number
   bonusRate: number
+  oldPrice?: number | null
+  brand?: string
+  category?: string
   fromCatalog: boolean
 }
 
@@ -47,7 +50,7 @@ function sanitizeBulkTiers(value: unknown): BulkTier[] | undefined {
 }
 
 /** Fetch authoritative catalog prices for a set of product ids. */
-type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting'>
+type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting' | 'order' | 'promoCodeRedemption'>
 
 export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): Promise<Map<string, CatalogPrice>> {
   const uniqueIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))]
@@ -55,13 +58,16 @@ export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): P
 
   const rows = await db.product.findMany({
     where: { id: { in: uniqueIds }, isDeleted: false },
-    select: { id: true, price: true, bulkPricingTiers: true, bonusRate: true },
+    select: { id: true, price: true, oldPrice: true, brand: true, category: true, bulkPricingTiers: true, bonusRate: true },
   })
 
   const map = new Map<string, CatalogPrice>()
   for (const row of rows) {
     map.set(row.id, {
       price: toNum(row.price),
+      oldPrice: row.oldPrice == null ? null : toNum(row.oldPrice),
+      brand: row.brand,
+      category: row.category,
       bulkPricingTiers: sanitizeBulkTiers(row.bulkPricingTiers),
       bonusRate: typeof row.bonusRate === 'number' ? row.bonusRate : 0,
     })
@@ -86,13 +92,16 @@ export async function resolveLineItems(items: LineItemInput[], db: PricingDb = p
         quantity,
         price: calculatePrice(catalog, quantity),
         bonusRate: catalog.bonusRate,
+        oldPrice: catalog.oldPrice,
+        brand: catalog.brand,
+        category: catalog.category,
         fromCatalog: true,
       }
     }
 
     const fallback = Number(item.price)
     const safePrice = Number.isFinite(fallback) && fallback > 0 ? Math.round(fallback) : 0
-    return { id: item.id, quantity, price: safePrice, bonusRate: 0, fromCatalog: false }
+    return { id: item.id, quantity, price: safePrice, bonusRate: 0, oldPrice: null, brand: '', category: '', fromCatalog: false }
   })
 }
 
@@ -116,6 +125,58 @@ export async function getServerPromoDiscountPct(
   return promo.discount
 }
 
+export type PromoResult = { valid: boolean; discount: number; code?: string; eligibleAmount: number; reason?: string; promoId?: string }
+
+export async function evaluatePromoCode(
+  code: string | undefined | null,
+  items: ResolvedLineItem[],
+  customer: { userId?: string | null; email?: string | null } = {},
+  db: PricingDb = prisma
+): Promise<PromoResult> {
+  const trimmed = code?.trim().toUpperCase()
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  if (!trimmed) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'code_required' }
+  const promo = await db.promoCode.findFirst({ where: { code: trimmed, active: true } })
+  if (!promo) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'invalid' }
+  const now = new Date()
+  if (promo.startsAt && now < promo.startsAt) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'not_started' }
+  if (promo.expiresAt && now > promo.expiresAt) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'expired' }
+  if (promo.maxUses !== null && promo.usedCount >= promo.maxUses) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'max_uses' }
+  if (subtotal < promo.minOrder) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'min_order' }
+
+  const identity = customer.userId ? { userId: customer.userId } : customer.email ? { email: customer.email.toLowerCase() } : null
+  if ((promo.perUserLimit || promo.firstOrderOnly) && !identity) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'login_required' }
+  if (promo.perUserLimit && identity) {
+    const count = await db.promoCodeRedemption.count({ where: { promoCodeId: promo.id, ...identity } })
+    if (count >= promo.perUserLimit) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'user_limit' }
+  }
+  if (promo.firstOrderOnly && identity) {
+    const count = await db.order.count({ where: customer.userId ? { userId: customer.userId } : { email: customer.email!.toLowerCase() } })
+    if (count > 0) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'first_order_only' }
+  }
+
+  const excludedProductIds = promo.excludedProductIds ?? []
+  const productIds = promo.productIds ?? []
+  const brands = promo.brands ?? []
+  const categories = promo.categories ?? []
+  const selected = items.filter((item) => {
+    if (!item.fromCatalog || excludedProductIds.includes(item.id)) return false
+    if (promo.excludeSaleItems && item.oldPrice != null && item.oldPrice > item.price) return false
+    if (promo.appliesTo === 'products') return productIds.includes(item.id)
+    if (promo.appliesTo === 'brands') return brands.some((b) => b.toLowerCase() === (item.brand ?? '').toLowerCase())
+    if (promo.appliesTo === 'categories') return categories.includes(item.category ?? '')
+    return true
+  })
+  const eligibleAmount = Math.round(selected.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
+  if (eligibleAmount <= 0) return { valid: false, discount: 0, eligibleAmount, reason: 'no_eligible_items' }
+  if (eligibleAmount < promo.minEligibleAmount) return { valid: false, discount: 0, eligibleAmount, reason: 'min_eligible_amount' }
+  const value = promo.discountValue ?? promo.discount
+  let discount = promo.discountType === 'fixed' ? Math.min(value, eligibleAmount) : calculateDiscount(eligibleAmount, value)
+  if (promo.maxDiscount != null) discount = Math.min(discount, promo.maxDiscount)
+  discount = Math.round(Math.max(0, discount) * 100) / 100
+  return { valid: discount > 0, discount, eligibleAmount, code: promo.code, promoId: promo.id }
+}
+
 export type RecomputeInput = {
   items: LineItemInput[]
   promoCode?: string | null
@@ -123,6 +184,8 @@ export type RecomputeInput = {
   bonusSpent?: number | null
   /** Authenticated user's real bonus balance; null/undefined for guests (no bonus allowed). */
   userBonusBalance?: number | null
+  userId?: string | null
+  email?: string | null
 }
 
 export type RecomputedPricing = {
@@ -142,8 +205,8 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
   const items = await resolveLineItems(input.items, db)
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const discountPct = await getServerPromoDiscountPct(input.promoCode, subtotal, db)
-  const discount = discountPct > 0 ? calculateDiscount(subtotal, discountPct) : 0
+  const promo = await evaluatePromoCode(input.promoCode, items, { userId: input.userId, email: input.email }, db)
+  const discount = promo.valid ? promo.discount : 0
 
   const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount)
   // Catalog prices already include VAT — tax here is informational only, not added to the total.
@@ -194,6 +257,6 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
     bonusSpent,
     bonusEarned,
     total,
-    promoApplied: discountPct > 0,
+    promoApplied: promo.valid,
   }
 }

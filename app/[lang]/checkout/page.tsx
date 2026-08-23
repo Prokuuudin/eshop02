@@ -60,6 +60,7 @@ export default function CheckoutPage(): React.ReactElement {
             setAppliedPromo,
             appliedPromoDiscountPct,
             setAppliedPromoDiscountPct,
+            campaignOffer,
             bonusApplied,
             setBonusApplied,
             termsAccepted,
@@ -384,7 +385,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 </div>
                                 {discount > 0 && (
                                     <div className="order-4 col-span-3 flex justify-between text-green-600">
-                                        <span>{t('checkout.summary.discount')}</span>
+                                        <span>{campaignOffer.campaignName && campaignOffer.discount >= (appliedPromoDiscountPct ?? 0) ? `${t('checkout.summary.discount')} (${campaignOffer.campaignName})` : t('checkout.summary.discount')}</span>
                                         <span className="font-medium">−{formatCurrency(discount)}</span>
                                     </div>
                                 )}
@@ -510,7 +511,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 </div>
                                 {discount > 0 && (
                                     <div className="col-span-3 flex justify-between text-green-600">
-                                        <span>{t('checkout.summary.discount')}</span>
+                                        <span>{campaignOffer.campaignName && campaignOffer.discount >= (appliedPromoDiscountPct ?? 0) ? `${t('checkout.summary.discount')} (${campaignOffer.campaignName})` : t('checkout.summary.discount')}</span>
                                         <span className="font-medium">−{formatCurrency(discount)}</span>
                                     </div>
                                 )}
@@ -661,6 +662,9 @@ export default function CheckoutPage(): React.ReactElement {
                                                 {' '}
                                                 ({appliedPromo} −{appliedPromoDiscountPct}%)
                                             </span>
+                                        )}
+                                        {!appliedPromo && campaignOffer.campaignName && (
+                                            <span className="text-muted-foreground"> ({campaignOffer.campaignName})</span>
                                         )}
                                         :
                                     </span>

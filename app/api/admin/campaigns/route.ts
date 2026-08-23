@@ -15,6 +15,8 @@ type PromoCampaign = {
   endDate: string
   active: boolean
   targetCategories: string[]
+  targetSubcategories: string[]
+  targetBrands: string[]
   minOrderAmount: number
   createdAt: string
   updatedAt: string
@@ -54,19 +56,28 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     const body = (await request.json()) as Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'>
+    const name = String(body.name ?? '').trim()
+    const type = body.type === 'free_shipping' ? 'free_shipping' : body.type === 'discount' ? 'discount' : null
+    const startDate = String(body.startDate ?? '').slice(0, 10)
+    const endDate = String(body.endDate ?? '').slice(0, 10)
+    if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
+    if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
+    if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
     const data = await readData()
     const now = new Date().toISOString()
     const item: PromoCampaign = {
       id: `campaign-${Date.now()}`,
-      name: body.name ?? '',
-      description: body.description ?? '',
-      type: body.type ?? 'discount',
-      discountPercent: Number(body.discountPercent) || 0,
-      startDate: body.startDate ?? now,
-      endDate: body.endDate ?? now,
+      name,
+      description: String(body.description ?? '').trim(),
+      type,
+      discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(body.discountPercent) || 0)) : 0,
+      startDate,
+      endDate,
       active: body.active ?? true,
-      targetCategories: Array.isArray(body.targetCategories) ? body.targetCategories : [],
-      minOrderAmount: Number(body.minOrderAmount) || 0,
+      targetCategories: Array.isArray(body.targetCategories) ? [...new Set(body.targetCategories.map(String).filter(Boolean))] : [],
+      targetSubcategories: Array.isArray(body.targetSubcategories) ? [...new Set(body.targetSubcategories.map(String).filter(Boolean))] : [],
+      targetBrands: Array.isArray(body.targetBrands) ? [...new Set(body.targetBrands.map(String).filter(Boolean))] : [],
+      minOrderAmount: Math.max(0, Number(body.minOrderAmount) || 0),
       createdAt: now,
       updatedAt: now,
     }

@@ -16,7 +16,7 @@ export function PromoMultiSelect({ label, options, selected, onChange, placehold
   const [query, setQuery] = useState('')
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return options.filter((option) => !selected.includes(option.value) && (!q || option.label.toLowerCase().includes(q))).slice(0, 12)
+    return options.filter((option) => !selected.includes(option.value) && (!q || option.label.toLowerCase().includes(q)))
   }, [options, query, selected])
   const labels = new Map(options.map((option) => [option.value, option.label]))
 
@@ -29,11 +29,12 @@ export function PromoMultiSelect({ label, options, selected, onChange, placehold
       </span>)}
     </div>}
     <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={placeholder} />
-    <div className="max-h-40 overflow-y-auto rounded-md border border-border p-1">
+    <div className="max-h-64 overflow-y-auto rounded-md border border-border p-1">
       {filtered.length === 0 ? <p className="px-2 py-3 text-sm text-muted-foreground">Нет доступных вариантов</p> : filtered.map((option) =>
         <Button key={option.value} type="button" variant="ghost" size="sm" className="w-full justify-start" onClick={() => { onChange([...selected, option.value]); setQuery('') }}>{option.label}</Button>
       )}
     </div>
+    <p className="text-xs text-muted-foreground">Показано: {filtered.length} из {options.length}</p>
   </div>
 }
 

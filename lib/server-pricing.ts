@@ -9,6 +9,7 @@ import { calcDeliveryFee } from '@/lib/delivery'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { toNum } from '@/lib/decimal'
 import productSubcategories from '@/data/product-subcategories.json'
+import { evaluatePromoCampaigns } from '@/lib/promo-campaigns'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -205,6 +206,8 @@ export type RecomputedPricing = {
   bonusEarned: number
   total: number
   promoApplied: boolean
+  campaignApplied?: boolean
+  campaignName?: string
 }
 
 /** Recompute an order's money fields authoritatively from the catalog. */
@@ -213,9 +216,11 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   const promo = await evaluatePromoCode(input.promoCode, items, { userId: input.userId, email: input.email }, db)
-  const discount = promo.valid ? promo.discount : 0
+  const campaign = await evaluatePromoCampaigns(items, db)
+  const usePromo = promo.valid && promo.discount >= campaign.discount
+  const discount = usePromo ? promo.discount : campaign.discount
 
-  const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount)
+  const delivery = campaign.freeShipping ? 0 : calcDeliveryFee(input.deliveryMethod, subtotal - discount)
   // Catalog prices already include VAT — tax here is informational only, not added to the total.
   const tax = extractVat(subtotal - discount)
   const grandTotal = subtotal - discount + delivery
@@ -264,6 +269,8 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
     bonusSpent,
     bonusEarned,
     total,
-    promoApplied: promo.valid,
+    promoApplied: usePromo,
+    campaignApplied: campaign.freeShipping || (!usePromo && campaign.discount > 0),
+    campaignName: campaign.campaignName,
   }
 }

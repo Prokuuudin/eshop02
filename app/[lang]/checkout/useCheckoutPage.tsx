@@ -114,6 +114,7 @@ function useCheckoutPageState() {
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
     const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
+    const [campaignOffer, setCampaignOffer] = useState<{ discount: number; freeShipping: boolean; campaignName?: string }>({ discount: 0, freeShipping: false });
     const [bonusApplied, setBonusApplied] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -153,6 +154,26 @@ function useCheckoutPageState() {
             ),
         [checkoutItems]
     );
+
+    React.useEffect(() => {
+        let cancelled = false;
+        const controller = new AbortController();
+        void fetch('/api/promo/campaigns/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })) }),
+            signal: controller.signal,
+        }).then(async (response) => {
+            if (!response.ok || cancelled) return;
+            const result = await response.json() as { discount?: number; freeShipping?: boolean; campaignName?: string };
+            if (!cancelled) setCampaignOffer({
+                discount: Math.max(0, Number(result.discount) || 0),
+                freeShipping: result.freeShipping === true,
+                campaignName: result.campaignName,
+            });
+        }).catch(() => undefined);
+        return () => { cancelled = true; controller.abort(); };
+    }, [checkoutItems]);
 
     // Оплата при получении возможна только в офисе (Rencēnu 10A) —
     // требуется самовывоз именно из «Рига Офис».
@@ -274,9 +295,10 @@ function useCheckoutPageState() {
         }
 
         // Calculate totals
-        const discount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
+        const promoDiscount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
+        const discount = Math.max(promoDiscount, campaignOffer.discount);
         const subtotalAfterDiscount = subtotal - discount;
-        const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
+        const deliveryFee = campaignOffer.freeShipping ? 0 : calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
 
         // Catalog prices already include VAT — taxAmount is informational, not added to the total.
         const taxAmount = extractVat(subtotalAfterDiscount);
@@ -450,9 +472,10 @@ function useCheckoutPageState() {
         return <CheckoutRoleBlockedView t={t} />;
     }
 
-    const discount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
+    const promoDiscount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
+    const discount = Math.max(promoDiscount, campaignOffer.discount);
     const subtotalAfterDiscount = subtotal - discount;
-    const deliveryFee = calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
+    const deliveryFee = campaignOffer.freeShipping ? 0 : calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
     // Catalog prices already include VAT — taxAmount is informational, not added to the total.
     const taxAmount = extractVat(subtotalAfterDiscount);
     const grandTotal = subtotalAfterDiscount + deliveryFee;
@@ -513,6 +536,7 @@ function useCheckoutPageState() {
         setAppliedPromo,
         appliedPromoDiscountPct,
         setAppliedPromoDiscountPct,
+        campaignOffer,
         bonusApplied,
         setBonusApplied,
         termsAccepted,

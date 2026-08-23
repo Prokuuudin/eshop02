@@ -9,6 +9,7 @@ import { logAdminAction } from '@/lib/admin-log-store'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { PromoMultiSelect, usePromoCatalogOptions } from '@/components/admin/promo/PromoMultiSelect'
 import { PromoProductPicker } from '@/components/admin/promo/PromoProductPicker'
+import { PromoProductsPreview } from '@/components/admin/promo/PromoProductsPreview'
 
 type PromoCodeItem = {
   id: string
@@ -381,6 +382,9 @@ export default function AdminDiscountsPage(): React.ReactElement {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.excludeSaleItems} onChange={(e) => setForm((f) => ({ ...f, excludeSaleItems: e.target.checked }))} />Не применять к уценённым товарам</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />Только первый заказ</label>
+            </div>
+            <div className="pt-4">
+              <PromoProductsPreview categories={form.categories} subcategories={form.subcategories} brands={form.brands} productIds={form.productIds} excludedProductIds={form.excludedProductIds} excludeSaleItems={form.excludeSaleItems} />
             </div>
             </div>
             </div>

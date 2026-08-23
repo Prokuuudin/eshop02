@@ -8,8 +8,7 @@ import {
     type ReturnReason,
     type ReturnItem,
 } from '@/lib/returns-store';
-import { useOrders, type Order } from '@/lib/orders-store';
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
+import type { ServerOrder } from '@/lib/orders-data-store';
 import { useTranslation } from '@/lib/use-translation';
 import { adminFetchJson, reportAdminError } from '@/lib/admin-ui-errors';
 
@@ -38,9 +37,7 @@ async function loadAllReturns(): Promise<ReturnType<typeof mapServerReturn>[]> {
 }
 
 function useAdminReturnsPageState() {
-    useAdminOrdersSync();
     const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore();
-    const { orders } = useOrders();
 
     useEffect(() => {
         loadAllReturns()
@@ -61,7 +58,8 @@ function useAdminReturnsPageState() {
     // Create form state
     const [showCreate, setShowCreate] = useState(false);
     const [formOrderId, setFormOrderId] = useState('');
-    const [foundOrder, setFoundOrder] = useState<Order | undefined>(undefined);
+    const [foundOrder, setFoundOrder] = useState<ServerOrder | undefined>(undefined);
+    const [lookupPending, setLookupPending] = useState(false);
     const [formReason, setFormReason] = useState<ReturnReason>('defective');
     const [formComment, setFormComment] = useState('');
     const [formFirstName, setFormFirstName] = useState('');
@@ -135,27 +133,38 @@ function useAdminReturnsPageState() {
         }
     };
 
-    const lookupOrder = () => {
-        const order = orders.find((o) => o.id === formOrderId.trim());
-        if (order) {
-            setFoundOrder(order);
-            setFormFirstName(order.firstName);
-            setFormLastName(order.lastName);
-            setFormEmail(order.email);
-            setFormPhone(order.phone);
-            setFormItems(
-                order.items.map((item) => ({
-                    productId: item.id,
-                    title: item.title,
-                    quantity: 1,
-                    price: item.price,
-                    image: item.image,
-                }))
-            );
-            setFormError('');
-        } else {
+    const lookupOrder = async () => {
+        const id = formOrderId.trim();
+        if (!id) return;
+        setLookupPending(true);
+        try {
+            const res = await fetch(`/api/orders/${encodeURIComponent(id)}`);
+            const order = res.ok ? ((await res.json()) as { order: ServerOrder }).order : null;
+            if (order) {
+                setFoundOrder(order);
+                setFormFirstName(order.firstName);
+                setFormLastName(order.lastName);
+                setFormEmail(order.email);
+                setFormPhone(order.phone);
+                setFormItems(
+                    order.items.map((item) => ({
+                        productId: item.id,
+                        title: item.title,
+                        quantity: 1,
+                        price: item.price,
+                        image: item.image,
+                    }))
+                );
+                setFormError('');
+            } else {
+                setFoundOrder(undefined);
+                setFormError('Заказ не найден. Можно заполнить данные вручную.');
+            }
+        } catch {
             setFoundOrder(undefined);
-            setFormError('Заказ не найден. Можно заполнить данные вручную.');
+            setFormError('Не удалось найти заказ. Попробуйте ещё раз.');
+        } finally {
+            setLookupPending(false);
         }
     };
 
@@ -214,7 +223,6 @@ function useAdminReturnsPageState() {
         addReturn,
         setReturnStatus,
         setReturns,
-        orders,
         language,
         locale,
         search,
@@ -237,6 +245,7 @@ function useAdminReturnsPageState() {
         setFormOrderId,
         foundOrder,
         setFoundOrder,
+        lookupPending,
         formReason,
         setFormReason,
         formComment,

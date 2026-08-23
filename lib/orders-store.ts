@@ -49,20 +49,9 @@ export interface Order {
   legalDetails?: OrderLegalDetails
 }
 
-/**
- * Hydration status of the FULL admin order table in this store (see
- * `useAdminOrdersSync` in lib/use-admin-orders-sync.ts). Only meaningful for the
- * admin "load everything" flow — the public/single-order flows (checkout,
- * order confirmation, account page) ignore this field entirely.
- */
-export type OrdersHydrationStatus = 'idle' | 'loading' | 'loaded' | 'error'
-
 type OrdersStore = {
   orders: Order[]
-  hydrationStatus: OrdersHydrationStatus
-  setHydrationStatus: (status: OrdersHydrationStatus) => void
   replaceOrders: (orders: Order[]) => void
-  clearOrders: () => void
   addOrder: (order: Order) => void
   upsertOrder: (order: Order) => void
   getOrder: (id: string) => Order | undefined
@@ -72,12 +61,9 @@ type OrdersStore = {
 export const useOrders = create<OrdersStore>()(
     (set, get) => ({
       orders: [],
-      hydrationStatus: 'idle',
-      setHydrationStatus: (status) => set({ hydrationStatus: status }),
       replaceOrders: (orders) => set({
         orders: orders.map((order) => ({ ...order, createdAt: new Date(order.createdAt) })),
       }),
-      clearOrders: () => set({ orders: [] }),
       addOrder: (order: Order) => {
         set((state) => ({
           orders: [order, ...state.orders]

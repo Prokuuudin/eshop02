@@ -11,7 +11,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
     const {
             page,
             setPage,
-            filtered,
+            filteredCount,
             totalPages,
           } = state;
     return (
@@ -19,7 +19,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
             {totalPages > 1 && (
                 <div className="flex items-center justify-between gap-4 pt-2">
                     <span className="text-sm text-muted-foreground">
-                        {page + 1} / {totalPages} · {filtered.length} заказов
+                        {page + 1} / {totalPages} · {filteredCount} заказов
                     </span>
                     <div className="flex items-center gap-1">
                         <Button

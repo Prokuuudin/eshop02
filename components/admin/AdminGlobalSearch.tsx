@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, ShoppingCart, Package, Users, Tag } from 'lucide-react'
-import { useOrders } from '@/lib/orders-store'
 import { adminFetchJson, reportAdminPartial } from '@/lib/admin-ui-errors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,6 +23,8 @@ type ResultItem = {
 
 type CatalogProduct = { id: string; title: string; brand: string; sku?: string }
 type PromoCode = { code: string; discount: number; active: boolean; description?: string }
+type OrderHit = { id: string; firstName: string; lastName: string; email: string }
+type CustomerHit = { email: string; firstName: string; lastName: string; totalOrders: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,12 +36,13 @@ function match(q: string, ...fields: (string | undefined)[]): boolean {
 
 export default function AdminGlobalSearch(): React.ReactElement {
   const router = useRouter()
-  const orders = useOrders((s) => s.orders)
 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [promos, setPromos] = useState<PromoCode[]>([])
+  const [orderHits, setOrderHits] = useState<OrderHit[]>([])
+  const [customerHits, setCustomerHits] = useState<CustomerHit[]>([])
   const [selectedIdx, setSelectedIdx] = useState(0)
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -56,6 +58,30 @@ export default function AdminGlobalSearch(): React.ReactElement {
       .then((d: unknown) => { if (Array.isArray(d)) setPromos(d as PromoCode[]) })
       .catch(() => reportAdminPartial('Поиск по промокодам временно недоступен.', 'Глобальный поиск'))
   }, [])
+
+  // ── Orders + customers are searched server-side (debounced) instead of
+  // scanning the entire admin order table in the browser ────────────────────
+
+  useEffect(() => {
+    const q = query.trim()
+    // Short queries skip the fetch entirely - `groups` below already ignores
+    // orderHits/customerHits below the 2-char threshold, so there's nothing
+    // to clear synchronously here.
+    if (q.length < 2) return
+    const controller = new AbortController()
+    const t = setTimeout(() => {
+      fetch(`/api/admin/orders?search=${encodeURIComponent(q)}&take=4`, { signal: controller.signal, cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { orders?: OrderHit[] } | null) => setOrderHits(data?.orders ?? []))
+        .catch(() => { if (!controller.signal.aborted) setOrderHits([]) })
+
+      fetch(`/api/admin/customers?search=${encodeURIComponent(q)}&pageSize=4`, { signal: controller.signal, cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { customers?: CustomerHit[] } | null) => setCustomerHits(data?.customers ?? []))
+        .catch(() => { if (!controller.signal.aborted) setCustomerHits([]) })
+    }, 250)
+    return () => { clearTimeout(t); controller.abort() }
+  }, [query])
 
   // ── Keyboard shortcut Ctrl/⌘ + K ─────────────────────────────────────────
 
@@ -85,16 +111,13 @@ export default function AdminGlobalSearch(): React.ReactElement {
     const q = query.trim().toLowerCase()
     if (q.length < 2) return []
 
-    // Orders
-    const orderItems: ResultItem[] = orders
-      .filter((o) => match(q, o.id, o.email, o.firstName, o.lastName, `${o.firstName} ${o.lastName}`))
-      .slice(0, 4)
-      .map((o) => ({
-        id: o.id,
-        label: `${o.firstName} ${o.lastName}`,
-        sub: `${o.id} · ${o.email}`,
-        href: `/admin/orders?q=${encodeURIComponent(o.id)}`,
-      }))
+    // Orders (server-searched)
+    const orderItems: ResultItem[] = orderHits.map((o) => ({
+      id: o.id,
+      label: `${o.firstName} ${o.lastName}`,
+      sub: `${o.id} · ${o.email}`,
+      href: `/admin/orders?q=${encodeURIComponent(o.id)}`,
+    }))
 
     // Products
     const productItems: ResultItem[] = products
@@ -107,25 +130,13 @@ export default function AdminGlobalSearch(): React.ReactElement {
         href: `/admin/products/${p.id}`,
       }))
 
-    // Customers (unique emails from orders)
-    const customerMap = new Map<string, { name: string; orders: number }>()
-    orders.forEach((o) => {
-      if (!o.email) return
-      const existing = customerMap.get(o.email)
-      customerMap.set(o.email, {
-        name: `${o.firstName} ${o.lastName}`.trim(),
-        orders: (existing?.orders ?? 0) + 1,
-      })
-    })
-    const customerItems: ResultItem[] = Array.from(customerMap.entries())
-      .filter(([email, { name }]) => match(q, email, name))
-      .slice(0, 4)
-      .map(([email, { name, orders: cnt }]) => ({
-        id: email,
-        label: name || email,
-        sub: `${email} · ${cnt} заказов`,
-        href: `/admin/customers/profile?email=${encodeURIComponent(email)}`,
-      }))
+    // Customers (server-searched)
+    const customerItems: ResultItem[] = customerHits.map((c) => ({
+      id: c.email,
+      label: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email,
+      sub: `${c.email} · ${c.totalOrders} заказов`,
+      href: `/admin/customers/profile?email=${encodeURIComponent(c.email)}`,
+    }))
 
     // Promo codes
     const promoItems: ResultItem[] = promos
@@ -144,7 +155,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
       { label: 'Клиенты', icon: Users, color: 'text-purple-600 dark:text-purple-400', items: customerItems },
       { label: 'Промокоды', icon: Tag, color: 'text-orange-600 dark:text-orange-400', items: promoItems },
     ].filter((g) => g.items.length > 0)
-  }, [query, orders, products, promos])
+  }, [query, orderHits, customerHits, products, promos])
 
   const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups])
   const isEmpty = query.trim().length >= 2 && allItems.length === 0

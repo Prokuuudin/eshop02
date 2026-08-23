@@ -5,25 +5,21 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import AdminGate from '@/components/admin/AdminGate'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
-import { useAdminStore } from '@/lib/admin-store'
+import type { Order } from '@/lib/orders-store'
 import type { ReturnRequest } from '@/lib/returns-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { fetchCustomerReturns } from './fetchCustomerReturns'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+type ServerSegment = 'vip' | 'regular' | 'new' | 'inactive'
 type Segment = 'VIP' | 'Постоянный' | 'Новый' | 'Неактивный'
 
-function getSegment(totalOrders: number, totalSpent: number, lastOrderDate: Date | null): Segment {
-  const days = lastOrderDate
-    ? (Date.now() - new Date(lastOrderDate).getTime()) / 86400_000
-    : Infinity
-  if (totalSpent > 500) return 'VIP'
-  if (totalOrders > 3) return 'Постоянный'
-  if (days > 180 || totalOrders === 0) return 'Неактивный'
-  return 'Новый'
+const SEGMENT_LABEL: Record<ServerSegment, Segment> = {
+  vip: 'VIP',
+  regular: 'Постоянный',
+  new: 'Новый',
+  inactive: 'Неактивный',
 }
 
 const SEGMENT_BADGE: Record<Segment, string> = {
@@ -63,24 +59,48 @@ export default function CustomerProfilePage(): React.ReactElement {
   const searchParams = useSearchParams()
   const email = decodeURIComponent(searchParams.get('email') ?? '')
 
-  useAdminOrdersSync()
-  const allOrders = useOrders((s) => s.orders)
-  const { getOrderStatus, getOrderNote } = useAdminStore()
-
   const [tab, setTab] = useState<'orders' | 'returns' | 'products'>('orders')
-  const [accountName, setAccountName] = useState<{ firstName: string; lastName: string } | null>(null)
+  const [summary, setSummary] = useState<{
+    firstName: string; lastName: string; totalOrders: number; totalSpent: number
+    lastOrderDate: string | null; segment: ServerSegment
+  } | null>(null)
+  const [customerOrders, setCustomerOrders] = useState<Order[]>([])
+  const [orderStatuses, setOrderStatuses] = useState<Record<string, string>>({})
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({})
   const [customerReturns, setCustomerReturns] = useState<ReturnRequest[]>([])
   const [returnsLoading, setReturnsLoading] = useState(true)
 
+  // Customer-wide totals/segment come from the same server-side aggregation
+  // already used by /admin/customers/segments, instead of being recomputed
+  // here from a full client-side order sync.
   useEffect(() => {
     if (!email) return
     fetch(`/api/admin/customers?email=${encodeURIComponent(email)}&pageSize=1`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
-      .then((data: { customers?: Array<{ email: string; firstName: string; lastName: string }> }) => {
+      .then((data: { customers?: Array<{ email: string; firstName: string; lastName: string; totalOrders: number; totalSpent: number; lastOrderDate: string | null; segment: ServerSegment }> }) => {
         const customer = data.customers?.find((item) => item.email.toLowerCase() === email.toLowerCase())
-        if (customer) setAccountName({ firstName: customer.firstName, lastName: customer.lastName })
+        if (customer) setSummary(customer)
       })
       .catch(() => {})
+  }, [email])
+
+  // Individual order rows (for the Заказы/Покупки tabs) are fetched scoped to
+  // this one customer, not synced wholesale from the admin order table.
+  useEffect(() => {
+    if (!email) return
+    const controller = new AbortController()
+    fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&take=200`, { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+      .then((data: { orders?: (Omit<Order, 'createdAt'> & { createdAt: string })[]; statuses?: Record<string, string>; notes?: Record<string, string> }) => {
+        const rows = (data.orders ?? [])
+          .filter((o) => o.email.toLowerCase() === email.toLowerCase())
+          .map((o) => ({ ...o, createdAt: new Date(o.createdAt) }))
+        setCustomerOrders(rows)
+        setOrderStatuses(data.statuses ?? {})
+        setOrderNotes(data.notes ?? {})
+      })
+      .catch((e) => { if ((e as Error).name !== 'AbortError') { setCustomerOrders([]); setOrderStatuses({}); setOrderNotes({}) } })
+    return () => controller.abort()
   }, [email])
 
   // Returns are not part of the globally-hydrated store (that's only populated
@@ -97,28 +117,21 @@ export default function CustomerProfilePage(): React.ReactElement {
     return () => { cancelled = true }
   }, [email])
 
-  // ── Customer orders ───────────────────────────────────────────────────────
-
-  const customerOrders = useMemo(
-    () => allOrders
-      .filter((o) => o.email.toLowerCase() === email.toLowerCase())
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [allOrders, email]
-  )
-
   // ── Stats ─────────────────────────────────────────────────────────────────
 
   const stats = useMemo(() => {
-    const totalOrders = customerOrders.length
-    const totalSpent = customerOrders.reduce((s, o) => s + o.total, 0)
+    const totalOrders = summary?.totalOrders ?? customerOrders.length
+    const totalSpent = summary?.totalSpent ?? customerOrders.reduce((s, o) => s + o.total, 0)
     const aov = totalOrders > 0 ? totalSpent / totalOrders : 0
-    const lastOrderDate = customerOrders[0] ? new Date(customerOrders[0].createdAt) : null
-    const segment = getSegment(totalOrders, totalSpent, lastOrderDate)
-    const firstName = accountName?.firstName ?? customerOrders[0]?.firstName ?? ''
-    const lastName = accountName?.lastName ?? customerOrders[0]?.lastName ?? ''
+    const lastOrderDate = summary?.lastOrderDate
+      ? new Date(summary.lastOrderDate)
+      : customerOrders[0] ? new Date(customerOrders[0].createdAt) : null
+    const segment = SEGMENT_LABEL[summary?.segment ?? 'inactive']
+    const firstName = summary?.firstName ?? customerOrders[0]?.firstName ?? ''
+    const lastName = summary?.lastName ?? customerOrders[0]?.lastName ?? ''
     const phone = customerOrders[0]?.phone ?? ''
     return { totalOrders, totalSpent, aov, lastOrderDate, segment, firstName, lastName, phone }
-  }, [accountName, customerOrders])
+  }, [summary, customerOrders])
 
   // ── Top products ──────────────────────────────────────────────────────────
 
@@ -239,8 +252,8 @@ export default function CustomerProfilePage(): React.ReactElement {
               <div className="py-10 text-center text-sm text-muted-foreground">Заказов нет</div>
             )}
             {customerOrders.map((order) => {
-              const status = getOrderStatus(order.id)
-              const note = getOrderNote(order.id)
+              const status = orderStatuses[order.id] ?? 'pending'
+              const note = orderNotes[order.id]
               return (
                 <div key={order.id} className="rounded-xl border border-border bg-card px-5 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">

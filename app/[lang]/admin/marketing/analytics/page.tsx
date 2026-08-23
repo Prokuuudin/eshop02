@@ -1,9 +1,7 @@
 ﻿'use client'
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 
 const CATEGORY_LABELS: Record<string, string> = {
   hair: 'Волосы',
@@ -17,75 +15,50 @@ function formatEur(amount: number): string {
   return `€${amount.toFixed(2)}`
 }
 
+type MarketingAnalyticsResponse = {
+  totalWithPromo: number
+  totalOrders: number
+  totalDiscounts: number
+  avgDiscount: number
+  conversionRate: number
+  codeStats: { code: string; count: number; totalDiscount: number; avgOrder: number }[]
+  categoryStats: { cat: string; count: number; totalDiscount: number }[]
+  recentPromoOrders: { id: string; email: string; promoCode: string; discount: number; createdAt: string }[]
+}
+
+const EMPTY_MARKETING_ANALYTICS: MarketingAnalyticsResponse = {
+  totalWithPromo: 0,
+  totalOrders: 0,
+  totalDiscounts: 0,
+  avgDiscount: 0,
+  conversionRate: 0,
+  codeStats: [],
+  categoryStats: [],
+  recentPromoOrders: [],
+}
+
 export default function AdminMarketingAnalyticsPage(): React.ReactElement {
-  useAdminOrdersSync()
-  const { orders } = useOrders()
+  const [loaded, setLoaded] = useState<MarketingAnalyticsResponse | null>(null)
 
-  const promoOrders = useMemo(() => orders.filter((o) => o.promoCode && o.promoCode.trim() !== ''), [orders])
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/admin/marketing/analytics', { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+      .then((json: MarketingAnalyticsResponse) => setLoaded(json))
+      .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded(EMPTY_MARKETING_ANALYTICS) })
+    return () => controller.abort()
+  }, [])
 
-  const stats = useMemo(() => {
-    const totalWithPromo = promoOrders.length
-    const totalOrders = orders.length
-    const conversionRate = totalOrders > 0 ? (totalWithPromo / totalOrders) * 100 : 0
-    const totalDiscounts = promoOrders.reduce((sum, o) => sum + (o.discount || 0), 0)
-    const avgDiscount = totalWithPromo > 0
-      ? promoOrders.reduce((sum, o) => {
-          const pct = o.subtotal > 0 ? ((o.discount || 0) / o.subtotal) * 100 : 0
-          return sum + pct
-        }, 0) / totalWithPromo
-      : 0
+  const data = loaded ?? EMPTY_MARKETING_ANALYTICS
+  const stats = data
+  const codeStats = data.codeStats
 
-    return { totalWithPromo, totalOrders, conversionRate, totalDiscounts, avgDiscount }
-  }, [orders, promoOrders])
-
-  const codeStats = useMemo(() => {
-    const map = new Map<string, { count: number; totalDiscount: number; totalOrder: number }>()
-    for (const o of promoOrders) {
-      const code = (o.promoCode ?? '').toUpperCase()
-      const prev = map.get(code) ?? { count: 0, totalDiscount: 0, totalOrder: 0 }
-      map.set(code, {
-        count: prev.count + 1,
-        totalDiscount: prev.totalDiscount + (o.discount || 0),
-        totalOrder: prev.totalOrder + (o.total || 0)
-      })
-    }
-    return Array.from(map.entries())
-      .map(([code, data]) => ({
-        code,
-        count: data.count,
-        totalDiscount: data.totalDiscount,
-        avgOrder: data.count > 0 ? data.totalOrder / data.count : 0
-      }))
-      .sort((a, b) => b.count - a.count)
-  }, [promoOrders])
-
-  const categoryStats = useMemo(() => {
-    const map = new Map<string, { count: number; totalDiscount: number }>()
-    for (const o of promoOrders) {
-      for (const item of o.items) {
-        const cat = (item as { category?: string }).category ?? 'unknown'
-        const prev = map.get(cat) ?? { count: 0, totalDiscount: 0 }
-        const perItemDiscount = o.items.length > 0 ? (o.discount || 0) / o.items.length : 0
-        map.set(cat, {
-          count: prev.count + (item.quantity || 1),
-          totalDiscount: prev.totalDiscount + perItemDiscount * (item.quantity || 1)
-        })
-      }
-    }
-    return Array.from(map.entries())
-      .map(([cat, data]) => ({
-        cat,
-        label: CATEGORY_LABELS[cat] ?? cat,
-        count: data.count,
-        totalDiscount: data.totalDiscount
-      }))
-      .sort((a, b) => b.count - a.count)
-  }, [promoOrders])
-
-  const recentPromoOrders = useMemo(
-    () => [...promoOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20),
-    [promoOrders]
+  const categoryStats = useMemo(
+    () => data.categoryStats.map((row) => ({ ...row, label: CATEGORY_LABELS[row.cat] ?? row.cat })),
+    [data.categoryStats]
   )
+
+  const recentPromoOrders = data.recentPromoOrders
 
   return (
     <AdminGate>
@@ -98,7 +71,11 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
           <h1 className="text-2xl font-bold text-foreground">Аналитика продвижения</h1>
         </div>
 
-        {promoOrders.length === 0 ? (
+        {loaded === null ? (
+          <div className="rounded-xl border border-dashed border-border p-12 text-center">
+            <p className="text-muted-foreground text-sm">Загрузка…</p>
+          </div>
+        ) : data.totalWithPromo === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-2">
             <p className="text-muted-foreground font-medium">Заказов с промокодами пока нет</p>
             <p className="text-muted-foreground text-sm">

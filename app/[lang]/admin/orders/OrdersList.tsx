@@ -18,10 +18,10 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersList({ state }: { state: OrdersState }): React.ReactElement {
     const {
-      orders, hydrationStatus, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
+      totalOrderCount, hydrationStatus, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity, editPostalCode,
       setEditPostalCode, editDelivery, setEditDelivery, editProductSearch, setEditProductSearch,
-      editSaving, locale, expandedOrder, setExpandedOrder, selectedIds, setInvoiceOrder, filtered,
+      editSaving, locale, expandedOrder, setExpandedOrder, selectedIds, setInvoiceOrder, filteredCount,
       pageItems, toggleSelect, editProductResults, startEdit, cancelEdit, saveEdit, editUpdateQty, editAddProduct,
       paymentSavingIds, markOrderPaid,
     } = state;
@@ -721,19 +721,19 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                     );
                 })}
 
-                {filtered.length === 0 && hydrationStatus === 'loading' && (
+                {filteredCount === 0 && hydrationStatus === 'loading' && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground" role="status">
                         Загружаем заказы…
                     </div>
                 )}
-                {filtered.length === 0 && hydrationStatus === 'error' && (
+                {filteredCount === 0 && hydrationStatus === 'error' && (
                     <div className="rounded-xl border border-destructive/40 p-10 bg-destructive/10 text-center text-sm text-destructive" role="alert">
                         Не удалось загрузить заказы. Обновите страницу и попробуйте ещё раз.
                     </div>
                 )}
-                {filtered.length === 0 && hydrationStatus !== 'loading' && hydrationStatus !== 'error' && (
+                {filteredCount === 0 && hydrationStatus !== 'loading' && hydrationStatus !== 'error' && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
-                        {orders.length === 0
+                        {totalOrderCount === 0
                             ? 'Заказов пока нет'
                             : 'Нет заказов по выбранным фильтрам'}
                     </div>

@@ -1,16 +1,50 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { formatEuro } from '@/lib/utils'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 type Period = '7d' | '30d' | '90d' | 'all'
 type Metric = 'revenue' | 'qty'
+
+type ProductRow = { id: string; title: string; brand: string; qty: number; revenue: number }
+type BrandRow = { brand: string; qty: number; revenue: number }
+type CategoryRow = { cat: string; qty: number; revenue: number }
+type TrendRow = { month: string; cat: string; qty: number; revenue: number }
+
+type BreakdownResponse = {
+  orderCount: number
+  totalRevenue: number
+  totalQty: number
+  uniqueProducts: number
+  topProductsByRevenue: ProductRow[]
+  topProductsByQty: ProductRow[]
+  topBrandsByRevenue: BrandRow[]
+  topBrandsByQty: BrandRow[]
+  categorySummary: CategoryRow[]
+  categoryTrend: TrendRow[]
+}
+
+const EMPTY_BREAKDOWN: BreakdownResponse = {
+  orderCount: 0,
+  totalRevenue: 0,
+  totalQty: 0,
+  uniqueProducts: 0,
+  topProductsByRevenue: [],
+  topProductsByQty: [],
+  topBrandsByRevenue: [],
+  topBrandsByQty: [],
+  categorySummary: [],
+  categoryTrend: [],
+}
+
+const monthLabel = (ym: string): string => {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' })
+}
 
 const CAT_LABELS: Record<string, string> = {
   hair: 'Волосы',
@@ -42,7 +76,7 @@ function HBar({ value, max, color = '#6366f1' }: { value: number; max: number; c
   )
 }
 
-type StackedMonth = { month: string; sortKey: number; [cat: string]: string | number }
+type StackedMonth = { month: string; sortKey: string; [cat: string]: string | number }
 
 function StackedBarChart({
   data,
@@ -146,102 +180,56 @@ function StackedBarChart({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesBreakdownPage(): React.ReactElement {
-  useAdminOrdersSync()
-  const orders = useOrders((s) => s.orders)
   const [period, setPeriod] = useState<Period>('30d')
-  const [now] = useState(Date.now)
   const [metric, setMetric] = useState<Metric>('revenue')
+  const [loaded, setLoaded] = useState<BreakdownResponse | null>(null)
 
-  const filtered = useMemo(() => {
-    if (period === 'all') return orders
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90
-    const cutoff = now - days * 86400000
-    return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
-  }, [orders, period, now])
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`/api/admin/sales/breakdown?period=${period}`, { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+      .then((json: BreakdownResponse) => setLoaded(json))
+      .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded(EMPTY_BREAKDOWN) })
+    return () => controller.abort()
+  }, [period])
+
+  const data = loaded ?? EMPTY_BREAKDOWN
 
   // ── KPIs
-  const totalRevenue = useMemo(() => filtered.reduce((s, o) => s + (o.total ?? 0), 0), [filtered])
-  const totalQty = useMemo(() => filtered.reduce((s, o) => s + o.items.reduce((q, i) => q + i.quantity, 0), 0), [filtered])
-  const aov = filtered.length > 0 ? totalRevenue / filtered.length : 0
-  const uniqueProducts = useMemo(() => new Set(filtered.flatMap((o) => o.items.map((i) => i.id))).size, [filtered])
+  const totalRevenue = data.totalRevenue
+  const totalQty = data.totalQty
+  const uniqueProducts = data.uniqueProducts
+  const aov = data.orderCount > 0 ? totalRevenue / data.orderCount : 0
 
-  // ── Top products
-  const topProducts = useMemo(() => {
-    const map = new Map<string, { title: string; brand: string; qty: number; revenue: number }>()
-    filtered.forEach((o) => {
-      o.items.forEach((item) => {
-        const e = map.get(item.id) ?? { title: item.title, brand: (item as { brand?: string }).brand ?? '—', qty: 0, revenue: 0 }
-        map.set(item.id, { ...e, qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
-      })
-    })
-    return Array.from(map.values())
-      .sort((a, b) => (metric === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
-      .slice(0, 10)
-  }, [filtered, metric])
-
+  // ── Top products / brands (server ranks both metrics; pick the active one)
+  const topProducts = metric === 'revenue' ? data.topProductsByRevenue : data.topProductsByQty
   const topProductMax = topProducts[0]?.[metric === 'revenue' ? 'revenue' : 'qty'] ?? 1
 
-  // ── Top brands
-  const topBrands = useMemo(() => {
-    const map = new Map<string, { qty: number; revenue: number }>()
-    filtered.forEach((o) => {
-      o.items.forEach((item) => {
-        const brand = (item as { brand?: string }).brand ?? '—'
-        const e = map.get(brand) ?? { qty: 0, revenue: 0 }
-        map.set(brand, { qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
-      })
-    })
-    return Array.from(map.entries())
-      .map(([brand, v]) => ({ brand, ...v }))
-      .sort((a, b) => (metric === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
-      .slice(0, 15)
-  }, [filtered, metric])
-
+  const topBrands = metric === 'revenue' ? data.topBrandsByRevenue : data.topBrandsByQty
   const topBrandMax = topBrands[0]?.[metric === 'revenue' ? 'revenue' : 'qty'] ?? 1
 
-  // ── Category trend by month (stacked bar)
+  // ── Category trend by month (stacked bar) - pivot flat rows into one entry per month
   const { categoryTrend, activeCategories } = useMemo(() => {
-    const monthMap = new Map<number, { month: string; sortKey: number; cats: Record<string, number> }>()
-
-    filtered.forEach((o) => {
-      const d = new Date(o.createdAt)
-      const sortKey = d.getFullYear() * 100 + (d.getMonth() + 1)
-      const label = d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' })
-
-      if (!monthMap.has(sortKey)) monthMap.set(sortKey, { month: label, sortKey, cats: {} })
-      const entry = monthMap.get(sortKey)!
-      o.items.forEach((item) => {
-        const cat = (item as { category?: string }).category ?? 'other'
-        const val = metric === 'revenue' ? item.price * item.quantity : item.quantity
-        entry.cats[cat] = (entry.cats[cat] ?? 0) + val
-      })
+    const monthMap = new Map<string, StackedMonth>()
+    data.categoryTrend.forEach((row) => {
+      if (!monthMap.has(row.month)) {
+        monthMap.set(row.month, { month: monthLabel(row.month), sortKey: row.month })
+      }
+      const entry = monthMap.get(row.month)!
+      entry[row.cat] = metric === 'revenue' ? row.revenue : row.qty
     })
 
-    const trend: StackedMonth[] = Array.from(monthMap.values())
-      .sort((a, b) => a.sortKey - b.sortKey)
-      .map(({ month, sortKey, cats }) => ({ month, sortKey, ...cats }))
+    const trend = Array.from(monthMap.values()).sort((a, b) => String(a.sortKey).localeCompare(String(b.sortKey)))
 
     const catSet = new Set<string>()
-    trend.forEach((d) => Object.keys(d).filter((k) => k !== 'month' && k !== 'sortKey').forEach((k) => catSet.add(k)))
+    data.categoryTrend.forEach((row) => catSet.add(row.cat))
     const active = Array.from(catSet).filter((c) => c !== 'other')
 
     return { categoryTrend: trend, activeCategories: active }
-  }, [filtered, metric])
+  }, [data.categoryTrend, metric])
 
   // ── Category summary (donut-like table)
-  const categorySummary = useMemo(() => {
-    const map = new Map<string, { qty: number; revenue: number }>()
-    filtered.forEach((o) => {
-      o.items.forEach((item) => {
-        const cat = (item as { category?: string }).category ?? 'other'
-        const e = map.get(cat) ?? { qty: 0, revenue: 0 }
-        map.set(cat, { qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity })
-      })
-    })
-    return Array.from(map.entries())
-      .map(([cat, v]) => ({ cat, ...v }))
-      .sort((a, b) => b.revenue - a.revenue)
-  }, [filtered])
+  const categorySummary = data.categorySummary
 
   const PERIOD_OPTIONS: { value: Period; label: string }[] = [
     { value: '7d', label: '7 дней' },
@@ -263,7 +251,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Аналитика: товары и категории</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {filtered.length} заказов · {totalQty} единиц товаров
+              {loaded === null ? 'Загрузка…' : `${data.orderCount} заказов · ${totalQty} единиц товаров`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -311,7 +299,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: 'Выручка', value: fmt(totalRevenue) },
-            { label: 'Заказов', value: filtered.length.toLocaleString('ru-RU') },
+            { label: 'Заказов', value: data.orderCount.toLocaleString('ru-RU') },
             { label: 'Средний чек', value: fmt(aov) },
             { label: 'Уникальных товаров', value: uniqueProducts.toLocaleString('ru-RU') },
           ].map((k) => (

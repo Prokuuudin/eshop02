@@ -14,6 +14,8 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
             unhandledCount,
             exportOrdersCSV,
             exportCustomersCSV,
+            exportingOrders,
+            exportingCustomers,
           } = state;
     return (
         <>
@@ -39,19 +41,21 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         variant="outline"
                         size="sm"
                         onClick={exportOrdersCSV}
+                        disabled={exportingOrders}
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        Заказы (CSV)
+                        {exportingOrders ? 'Экспорт…' : 'Заказы (CSV)'}
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={exportCustomersCSV}
+                        disabled={exportingCustomers}
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        Клиенты (CSV)
+                        {exportingCustomers ? 'Экспорт…' : 'Клиенты (CSV)'}
                     </Button>
                     <Link href="/admin" className="hidden sm:block">
                         <Button variant="outline">Назад в админку</Button>

@@ -70,6 +70,7 @@ export default function AdminReturnsPage(): React.ReactElement {
             formOrderId,
             setFormOrderId,
             foundOrder,
+            lookupPending,
             formReason,
             setFormReason,
             formComment,
@@ -149,8 +150,8 @@ export default function AdminReturnsPage(): React.ReactElement {
                             placeholder="ID заказа (например ORD-...)"
                             className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
-                        <Button size="sm" variant="outline" onClick={lookupOrder}>
-                            Найти заказ
+                        <Button size="sm" variant="outline" onClick={lookupOrder} disabled={lookupPending}>
+                            {lookupPending ? 'Поиск…' : 'Найти заказ'}
                         </Button>
                     </div>
 

@@ -1,50 +1,30 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { formatEuro } from '@/lib/utils'
 import { GRADE_STYLES, type AbcGrade, type AbcRow, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
 
+type RawAbcRow = { id: string; title: string; brand: string; qty: number; revenue: number; revenuePct: number; cumPct: number }
+
 export default function AbcSection(): ReactElement {
-  useAdminOrdersSync()
-  const orders = useOrders((s) => s.orders)
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
+  const [loaded, setLoaded] = useState<RawAbcRow[] | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/admin/analytics/abc', { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+      .then((json: { rows: RawAbcRow[] }) => setLoaded(json.rows))
+      .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded([]) })
+    return () => controller.abort()
+  }, [])
 
   const rows = useMemo<AbcRow[]>(() => {
-    const map = new Map<string, { title: string; brand: string; qty: number; revenue: number }>()
-
-    orders.forEach((o) => {
-      o.items.forEach((item) => {
-        const e = map.get(item.id) ?? {
-          title: item.title,
-          brand: (item as { brand?: string }).brand ?? '—',
-          qty: 0,
-          revenue: 0,
-        }
-        map.set(item.id, {
-          ...e,
-          qty: e.qty + item.quantity,
-          revenue: e.revenue + item.price * item.quantity,
-        })
-      })
+    return (loaded ?? []).map((r) => {
+      const grade: AbcGrade = r.cumPct <= 0.8 ? 'A' : r.cumPct <= 0.95 ? 'B' : 'C'
+      return { ...r, grade }
     })
-
-    const sorted = Array.from(map.entries())
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.revenue - a.revenue)
-
-    const total = sorted.reduce((s, r) => s + r.revenue, 0)
-    if (total === 0) return []
-
-    let cum = 0
-    return sorted.map((r) => {
-      const revenuePct = r.revenue / total
-      cum += revenuePct
-      const grade: AbcGrade = cum <= 0.8 ? 'A' : cum <= 0.95 ? 'B' : 'C'
-      return { ...r, revenuePct, cumPct: cum, grade }
-    })
-  }, [orders])
+  }, [loaded])
 
   const counts = useMemo(() => {
     const c = { A: 0, B: 0, C: 0 }
@@ -61,7 +41,10 @@ export default function AbcSection(): ReactElement {
   const total = rows.reduce((s, r) => s + r.revenue, 0)
   const filtered = filter === 'all' ? rows : rows.filter((r) => r.grade === filter)
 
-  if (orders.length === 0) {
+  if (loaded === null) {
+    return <Empty text="Загрузка…" />
+  }
+  if (rows.length === 0) {
     return <Empty text="Нет данных о заказах. ABC-анализ строится на истории продаж." />
   }
 

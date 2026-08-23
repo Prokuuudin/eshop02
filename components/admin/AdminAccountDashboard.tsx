@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,7 +20,6 @@ import {
     AlertTriangle,
     ClipboardList,
 } from 'lucide-react';
-import { useOrders } from '@/lib/orders-store';
 import { type User } from '@/lib/auth';
 import AdminMfaSection from '@/components/admin/AdminMfaSection';
 
@@ -162,12 +161,12 @@ function KpiCard({
 }
 
 export default function AdminAccountDashboard({ user }: { user: User }): React.ReactElement {
-    const orders = useOrders((s) => s.orders);
     const [statsTimestamp] = useState(Date.now);
     const [lowStockCount, setLowStockCount] = useState<number | null>(null);
     const [totalCustomers, setTotalCustomers] = useState<number>(0);
     const [newCustomers7d, setNewCustomers7d] = useState<number>(0);
     const [pendingRequestCount, setPendingRequestCount] = useState<number>(0);
+    const [orderStats, setOrderStats] = useState({ ordersToday: 0, revenue7d: 0, totalOrders: 0 });
 
     useEffect(() => {
         // Заявки на карту — из Neon: клиенты подают их со своих браузеров,
@@ -196,33 +195,22 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                 setNewCustomers7d(recentData.total ?? 0);
             })
             .catch(() => reportAdminPartial('Статистика клиентов недоступна.', 'Dashboard'));
+        // Order KPIs are computed server-side instead of scanning the entire
+        // admin order table in the browser (see /api/admin/orders/stats).
+        fetch('/api/admin/orders/stats', { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((json: { todayOrderCount?: number; last7DaysRevenue?: number; totalOrderCount?: number } | null) => {
+                if (!json) return;
+                setOrderStats({
+                    ordersToday: json.todayOrderCount ?? 0,
+                    revenue7d: json.last7DaysRevenue ?? 0,
+                    totalOrders: json.totalOrderCount ?? 0,
+                });
+            })
+            .catch(() => reportAdminPartial('Статистика заказов недоступна.', 'Dashboard'));
     }, [statsTimestamp]);
 
-    const stats = useMemo(() => {
-        const sevenDaysAgo = statsTimestamp - 7 * 86400000;
-        const todayStart = new Date(statsTimestamp);
-        todayStart.setHours(0, 0, 0, 0);
-
-        const recent = orders.filter((o) => new Date(o.createdAt).getTime() >= sevenDaysAgo);
-        const today = orders.filter((o) => new Date(o.createdAt).getTime() >= todayStart.getTime());
-
-        const allEmails = new Set(orders.map((o) => o.email.toLowerCase()));
-        const recentEmails = new Set(recent.map((o) => o.email.toLowerCase()));
-        const newBuyers7d = [...recentEmails].filter((e) => {
-            const firstOrder = orders
-                .filter((o) => o.email.toLowerCase() === e)
-                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
-            return firstOrder && new Date(firstOrder.createdAt).getTime() >= sevenDaysAgo;
-        }).length;
-
-        return {
-            ordersToday: today.length,
-            revenue7d: recent.reduce((s, o) => s + (o.total ?? 0), 0),
-            totalOrders: orders.length,
-            uniqueBuyers: allEmails.size,
-            newBuyers7d,
-        };
-    }, [orders, statsTimestamp]);
+    const stats = orderStats;
 
     const now = new Date();
     const hour = now.getHours();

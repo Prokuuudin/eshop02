@@ -12,13 +12,16 @@ import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
  * Mounted once for the whole /admin section (app/[lang]/admin/layout.tsx) because
  * these two fetches are cheap, single requests needed widely across admin pages
  * (bonus config, company/team data). The FULL order table (~8,700+ rows and
- * growing) is deliberately NOT loaded here anymore — it used to be, which meant
- * every admin page, including ones with nothing to do with orders, paid for a
- * full-table fetch on every session. Order data now hydrates on demand via
- * `useAdminOrdersSync()` (lib/use-admin-orders-sync.ts), called only by the
- * pages/components that actually read `useOrders` (orders list, sales
+ * growing) is NOT loaded here, or anywhere else in the admin — every page that
+ * used to sync the whole table client-side (orders list, sales
  * analytics/breakdown, bonus, returns, customer profile, marketing analytics,
- * ABC/cohort analytics).
+ * ABC/cohort analytics, the dashboard KPIs, the global Ctrl+K search) now
+ * calls a dedicated server-side aggregation/search endpoint instead
+ * (app/api/admin/orders, /orders/stats, /sales/*, /analytics/*, /bonus/stats,
+ * /marketing/analytics). The old `useAdminOrdersSync()` full-sync hook was
+ * removed for the same reason; the `useOrders` Zustand store still exists,
+ * but only for the storefront's own per-user order flows (checkout, account),
+ * which are unrelated to and much smaller than the admin's full order table.
  */
 export default function AdminOperationalDataSync(): null {
   useEffect(() => {

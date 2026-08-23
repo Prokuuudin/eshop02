@@ -1,13 +1,40 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
-import { useOrders } from '@/lib/orders-store';
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync';
 import { formatEuro } from '@/lib/utils';
 
 type Period = '7d' | '30d' | '90d' | 'all';
+
+type DayPoint = { date: string; value: number };
+type ProductRow = { id: string; title: string; qty: number; revenue: number };
+type CategoryRow = { cat: string; qty: number; revenue: number };
+
+type AnalyticsResponse = {
+    orderCount: number;
+    revenue: number;
+    uniqueCustomers: number;
+    revenueByDay: DayPoint[];
+    ordersByDay: DayPoint[];
+    topProducts: ProductRow[];
+    topCategories: CategoryRow[];
+};
+
+const EMPTY_ANALYTICS: AnalyticsResponse = {
+    orderCount: 0,
+    revenue: 0,
+    uniqueCustomers: 0,
+    revenueByDay: [],
+    ordersByDay: [],
+    topProducts: [],
+    topCategories: [],
+};
+
+const dayLabel = (isoDate: string): string => {
+    const [, m, d] = isoDate.split('-');
+    return `${d}.${m}`;
+};
 
 const formatMoney = (v: number) => formatEuro(v, 'ru-RU');
 
@@ -77,88 +104,29 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 }
 
 export default function SalesAnalyticsPage(): React.ReactElement {
-    useAdminOrdersSync();
-    const orders = useOrders((s) => s.orders);
     const [period, setPeriod] = useState<Period>('30d');
-    const [now] = useState(Date.now);
+    const [loaded, setLoaded] = useState<AnalyticsResponse | null>(null);
 
-    const filteredOrders = useMemo(() => {
-        if (period === 'all') return orders;
-        const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-        const cutoff = now - days * 86400000;
-        return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff);
-    }, [orders, period, now]);
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch(`/api/admin/sales/analytics?period=${period}`, { signal: controller.signal, cache: 'no-store' })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+            .then((json: AnalyticsResponse) => setLoaded(json))
+            .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded(EMPTY_ANALYTICS); });
+        return () => controller.abort();
+    }, [period]);
 
-    const totalRevenue = filteredOrders.reduce((s, o) => s + (o.total ?? 0), 0);
-    const avgOrder = filteredOrders.length ? totalRevenue / filteredOrders.length : 0;
-    const uniqueCustomers = new Set(filteredOrders.map((o) => o.email)).size;
+    const loading = loaded === null;
+    const data = loaded ?? EMPTY_ANALYTICS;
 
-    const revenueByDay = useMemo(() => {
-        const map = new Map<string, number>();
-        filteredOrders.forEach((o) => {
-            const d = new Date(o.createdAt).toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-            });
-            map.set(d, (map.get(d) ?? 0) + (o.total ?? 0));
-        });
-        return Array.from(map.entries())
-            .sort((a, b) => {
-                const [da, ma] = a[0].split('.').map(Number);
-                const [db, mb] = b[0].split('.').map(Number);
-                return ma !== mb ? ma - mb : da - db;
-            })
-            .map(([label, value]) => ({ label, value }));
-    }, [filteredOrders]);
+    const totalRevenue = data.revenue;
+    const avgOrder = data.orderCount ? totalRevenue / data.orderCount : 0;
+    const uniqueCustomers = data.uniqueCustomers;
 
-    const ordersByDay = useMemo(() => {
-        const map = new Map<string, number>();
-        filteredOrders.forEach((o) => {
-            const d = new Date(o.createdAt).toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-            });
-            map.set(d, (map.get(d) ?? 0) + 1);
-        });
-        return Array.from(map.entries())
-            .sort((a, b) => {
-                const [da, ma] = a[0].split('.').map(Number);
-                const [db, mb] = b[0].split('.').map(Number);
-                return ma !== mb ? ma - mb : da - db;
-            })
-            .map(([label, value]) => ({ label, value }));
-    }, [filteredOrders]);
-
-    const topProducts = useMemo(() => {
-        const map = new Map<string, { title: string; qty: number; revenue: number }>();
-        filteredOrders.forEach((o) => {
-            o.items.forEach((item) => {
-                const e = map.get(item.id) ?? { title: item.title, qty: 0, revenue: 0 };
-                map.set(item.id, {
-                    title: item.title,
-                    qty: e.qty + item.quantity,
-                    revenue: e.revenue + item.price * item.quantity,
-                });
-            });
-        });
-        return Array.from(map.values())
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 10);
-    }, [filteredOrders]);
-
-    const topCategories = useMemo(() => {
-        const map = new Map<string, { qty: number; revenue: number }>();
-        filteredOrders.forEach((o) => {
-            o.items.forEach((item) => {
-                const cat = (item as { category?: string }).category ?? '—';
-                const e = map.get(cat) ?? { qty: 0, revenue: 0 };
-                map.set(cat, { qty: e.qty + item.quantity, revenue: e.revenue + item.price * item.quantity });
-            });
-        });
-        return Array.from(map.entries())
-            .map(([cat, v]) => ({ cat, ...v }))
-            .sort((a, b) => b.revenue - a.revenue);
-    }, [filteredOrders]);
+    const revenueByDay = data.revenueByDay.map((p) => ({ label: dayLabel(p.date), value: p.value }));
+    const ordersByDay = data.ordersByDay.map((p) => ({ label: dayLabel(p.date), value: p.value }));
+    const topProducts = data.topProducts;
+    const topCategories = data.topCategories;
 
     const PERIOD_OPTIONS: { value: Period; label: string }[] = [
         { value: '7d', label: '7 дней' },
@@ -176,7 +144,7 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                             Аналитика продаж
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {filteredOrders.length} заказов за период
+                            {loading ? 'Загрузка…' : `${data.orderCount} заказов за период`}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -207,7 +175,7 @@ export default function SalesAnalyticsPage(): React.ReactElement {
 
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <KpiCard label="Выручка" value={formatMoney(totalRevenue)} />
-                    <KpiCard label="Заказов" value={String(filteredOrders.length)} />
+                    <KpiCard label="Заказов" value={String(data.orderCount)} />
                     <KpiCard label="Средний чек" value={formatMoney(avgOrder)} />
                     <KpiCard label="Покупателей" value={String(uniqueCustomers)} />
                 </div>

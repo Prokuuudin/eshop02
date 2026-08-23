@@ -6,7 +6,10 @@ import { requireAdminPermission } from '@/lib/server-auth'
 const ALLOWED_CHART_DAYS = [7, 30, 90] as const
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
-type TotalsRow = { orderCount: number; revenue: number; itemsSold: number }
+type TotalsRow = {
+  orderCount: number; totalOrderCount: number; revenue: number; shippedDeliveredRevenue: number; itemsSold: number
+  todayOrderCount: number; last7DaysOrderCount: number; last7DaysRevenue: number
+}
 type StatusRow = { status: string; count: number }
 type ChartRow = { day: Date; revenue: number; orderCount: number }
 
@@ -29,12 +32,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const [totalsRows, statusRows, chartRows] = await Promise.all([
       prisma.$queryRaw<TotalsRow[]>`
         SELECT
-          COUNT(*)::int AS "orderCount",
-          COALESCE(SUM(o.total), 0)::float8 AS "revenue",
-          COALESCE(SUM(jsonb_array_length(o.items::jsonb)), 0)::int AS "itemsSold"
+          COUNT(*) FILTER (WHERE COALESCE(osr.status, 'pending') <> 'cancelled')::int AS "orderCount",
+          COUNT(*)::int AS "totalOrderCount",
+          COALESCE(SUM(o.total) FILTER (WHERE COALESCE(osr.status, 'pending') <> 'cancelled'), 0)::float8 AS "revenue",
+          COALESCE(SUM(o.total) FILTER (WHERE COALESCE(osr.status, 'pending') IN ('shipped', 'delivered')), 0)::float8 AS "shippedDeliveredRevenue",
+          COALESCE(SUM(jsonb_array_length(o.items::jsonb)) FILTER (WHERE COALESCE(osr.status, 'pending') <> 'cancelled'), 0)::int AS "itemsSold",
+          COUNT(*) FILTER (
+            WHERE (o."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Riga')
+              >= date_trunc('day', now() AT TIME ZONE 'Europe/Riga')
+          )::int AS "todayOrderCount",
+          COUNT(*) FILTER (WHERE o."createdAt" >= now() - interval '7 days')::int AS "last7DaysOrderCount",
+          COALESCE(SUM(o.total) FILTER (WHERE o."createdAt" >= now() - interval '7 days'), 0)::float8 AS "last7DaysRevenue"
         FROM "Order" o
         LEFT JOIN "OrderStatusRecord" osr ON osr."orderId" = o.id
-        WHERE COALESCE(osr.status, 'pending') <> 'cancelled'
       `,
       prisma.$queryRaw<StatusRow[]>`
         SELECT COALESCE(osr.status, 'pending') AS status, COUNT(*)::int AS count
@@ -56,7 +66,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       `,
     ])
 
-    const totals = totalsRows[0] ?? { orderCount: 0, revenue: 0, itemsSold: 0 }
+    const totals = totalsRows[0] ?? {
+      orderCount: 0, totalOrderCount: 0, revenue: 0, shippedDeliveredRevenue: 0, itemsSold: 0,
+      todayOrderCount: 0, last7DaysOrderCount: 0, last7DaysRevenue: 0,
+    }
     const avgOrderValue = totals.orderCount > 0 ? Math.round(totals.revenue / totals.orderCount) : 0
 
     const statusCounts = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0])) as Record<
@@ -71,9 +84,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       orderCount: totals.orderCount,
+      totalOrderCount: totals.totalOrderCount,
       revenue: totals.revenue,
+      shippedDeliveredRevenue: totals.shippedDeliveredRevenue,
       avgOrderValue,
       itemsSold: totals.itemsSold,
+      todayOrderCount: totals.todayOrderCount,
+      last7DaysOrderCount: totals.last7DaysOrderCount,
+      last7DaysRevenue: totals.last7DaysRevenue,
       statusCounts,
       chart: chartRows.map((row) => ({
         date: row.day instanceof Date ? row.day.toISOString().slice(0, 10) : String(row.day),

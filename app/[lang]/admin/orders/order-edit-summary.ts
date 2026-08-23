@@ -1,9 +1,9 @@
 import { isOrderTaxIncluded } from '@/lib/tax'
+import type { Order } from '@/lib/orders-store'
 import { EDIT_DELIVERY_COSTS } from './order-config'
 import type { useAdminOrdersPage } from './useAdminOrdersPage'
 
 type State = ReturnType<typeof useAdminOrdersPage>
-type Order = State['orders'][number]
 
 export function calculateOrderEditSummary(
   order: Order,

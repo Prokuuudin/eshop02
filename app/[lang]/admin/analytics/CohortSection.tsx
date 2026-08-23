@@ -1,63 +1,50 @@
-import { useMemo, useState } from 'react'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
-import { monthDiff, monthLabel, retentionColor, toMonthKey, Empty } from './analytics-shared'
+import { useEffect, useMemo, useState } from 'react'
+import { monthLabel, retentionColor, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
 
+type CohortsResponse = {
+  cohortSizes: { cohort: string; size: number }[]
+  cells: { cohort: string; offset: number; count: number }[]
+}
+
 export default function CohortSection(): ReactElement {
-  useAdminOrdersSync()
-  const orders = useOrders((s) => s.orders)
   const [showPct, setShowPct] = useState(true)
+  const [loaded, setLoaded] = useState<CohortsResponse | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/admin/analytics/cohorts', { signal: controller.signal, cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
+      .then((json: CohortsResponse) => setLoaded(json))
+      .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded({ cohortSizes: [], cells: [] }) })
+    return () => controller.abort()
+  }, [])
 
   const { cohortMonths, matrix, cohortSizes, maxOffset } = useMemo(() => {
-    if (orders.length === 0) return { cohortMonths: [], matrix: new Map(), cohortSizes: new Map(), maxOffset: 0 }
+    if (!loaded || loaded.cohortSizes.length === 0) {
+      return { cohortMonths: [] as string[], matrix: new Map<string, Map<number, number>>(), cohortSizes: new Map<string, number>(), maxOffset: 0 }
+    }
 
-    // Find each customer's first purchase month
-    const firstMonth = new Map<string, string>()
-    orders.forEach((o) => {
-      if (!o.email) return
-      const mk = toMonthKey(o.createdAt)
-      const existing = firstMonth.get(o.email)
-      if (!existing || mk < existing) firstMonth.set(o.email, mk)
-    })
+    const sizes = new Map(loaded.cohortSizes.map((r) => [r.cohort, r.size]))
 
-    // Build matrix: cohortMonth → offset → Set<email>
-    const mat = new Map<string, Map<number, Set<string>>>()
-    orders.forEach((o) => {
-      if (!o.email) return
-      const cohort = firstMonth.get(o.email)
-      if (!cohort) return
-      const offset = monthDiff(cohort, toMonthKey(o.createdAt))
-      if (offset < 0) return
-
-      if (!mat.has(cohort)) mat.set(cohort, new Map())
-      const row = mat.get(cohort)!
-      if (!row.has(offset)) row.set(offset, new Set())
-      row.get(offset)!.add(o.email)
-    })
-
-    // Cohort sizes (= size of offset 0)
-    const sizes = new Map<string, number>()
-    firstMonth.forEach((cohort) => {
-      sizes.set(cohort, (sizes.get(cohort) ?? 0) + 1)
-    })
-
-    const sortedCohorts = Array.from(mat.keys()).sort()
+    const mat = new Map<string, Map<number, number>>()
     let max = 0
-    mat.forEach((row) => {
-      row.forEach((_, offset) => { if (offset > max) max = offset })
+    loaded.cells.forEach((cell) => {
+      if (!mat.has(cell.cohort)) mat.set(cell.cohort, new Map())
+      mat.get(cell.cohort)!.set(cell.offset, cell.count)
+      if (cell.offset > max) max = cell.offset
     })
 
     return {
-      cohortMonths: sortedCohorts,
+      cohortMonths: Array.from(sizes.keys()).sort(),
       matrix: mat,
       cohortSizes: sizes,
       maxOffset: Math.min(max, 11),
     }
-  }, [orders])
+  }, [loaded])
 
-  if (orders.length === 0) {
-    return <Empty text="Нет данных о заказах." />
+  if (loaded === null) {
+    return <Empty text="Загрузка…" />
   }
   if (cohortMonths.length === 0) {
     return <Empty text="Недостаточно данных для когортного анализа." />
@@ -126,7 +113,7 @@ export default function CohortSection(): ReactElement {
                     {size}
                   </td>
                   {offsets.map((offset) => {
-                    const count = row?.get(offset)?.size ?? 0
+                    const count = row?.get(offset) ?? 0
                     const p = size > 0 ? Math.round((count / size) * 100) : 0
 
                     // Don't show future months

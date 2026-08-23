@@ -10,7 +10,7 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersStatistics({ state }: { state: OrdersState }): React.ReactElement {
     const {
-            orders,
+            totalOrderCount,
             locale,
             statusFilter,
             setStatusFilter,
@@ -26,7 +26,7 @@ export default function OrdersStatistics({ state }: { state: OrdersState }): Rea
                         {formatEuro(totalRevenue, locale)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        {orders.length} заказов всего
+                        {totalOrderCount} заказов всего
                     </p>
                 </div>
                 {STATUS_LIST.map((s) => (

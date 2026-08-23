@@ -20,6 +20,8 @@ import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/ord
 // request can't set an arbitrary delivery cost.
 const DELIVERY_COSTS: Record<string, number> = { pickup: 0, courier: 5, post: 3 }
 
+const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const user = await requireAdminPermission('orders.read')
@@ -28,6 +30,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = req.nextUrl
     const search = searchParams.get('search')?.trim() || ''
     const payment = searchParams.get('payment') || ''
+    const deliveryMethod = searchParams.get('deliveryMethod') || ''
+    const statusParam = searchParams.get('status') || ''
+    const status = (ORDER_STATUS_VALUES as readonly string[]).includes(statusParam) ? statusParam : ''
+    const sortField = searchParams.get('sort') === 'total' ? 'total' : 'createdAt'
+    const sortDir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 200 })
 
     const where: Record<string, unknown> = {}
@@ -42,11 +49,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     if (payment) where.paymentStatus = payment
+    if (deliveryMethod) where.deliveryMethod = deliveryMethod
+
+    // OrderStatusRecord is sparse (no row = 'pending', same fallback used
+    // everywhere else) so a status filter is resolved as an id set first,
+    // rather than joined directly into the Prisma `where`.
+    if (status) {
+      const matchingIds = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT o.id
+        FROM "Order" o
+        LEFT JOIN "OrderStatusRecord" osr ON osr."orderId" = o.id
+        WHERE COALESCE(osr.status, 'pending') = ${status}
+      `
+      where.id = { in: matchingIds.map((row) => row.id) }
+    }
 
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sortField]: sortDir },
         skip,
         take,
       }),

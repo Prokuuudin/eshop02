@@ -32,6 +32,7 @@ vi.mock('@/lib/prisma', () => ({
     orderNote: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     user: { findFirst: vi.fn() },
+    $queryRaw: vi.fn(),
     $transaction: txMock,
   },
 }))
@@ -97,6 +98,42 @@ describe('GET /api/admin/orders', () => {
     expect(response.status).toBe(200)
     expect(body.statuses).toEqual({ 'order-1': 'delivered' })
     expect(body.notes).toEqual({ 'order-1': 'Done' })
+  })
+
+  it('resolves a status filter to an id set before querying orders', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'order-1' }, { id: 'order-2' }] as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(0)
+
+    await GET(new NextRequest('http://localhost/api/admin/orders?status=shipped'))
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+    const findManyArg = vi.mocked(prisma.order.findMany).mock.calls[0][0]
+    expect(findManyArg?.where?.id).toEqual({ in: ['order-1', 'order-2'] })
+  })
+
+  it('ignores an unknown status value instead of filtering by it', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(0)
+
+    await GET(new NextRequest('http://localhost/api/admin/orders?status=bogus'))
+
+    expect(prisma.$queryRaw).not.toHaveBeenCalled()
+    const findManyArg = vi.mocked(prisma.order.findMany).mock.calls[0][0]
+    expect(findManyArg?.where?.id).toBeUndefined()
+  })
+
+  it('sorts by total when requested instead of the default date sort', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(0)
+
+    await GET(new NextRequest('http://localhost/api/admin/orders?sort=total&dir=asc'))
+
+    const findManyArg = vi.mocked(prisma.order.findMany).mock.calls[0][0]
+    expect(findManyArg?.orderBy).toEqual({ total: 'asc' })
   })
 })
 

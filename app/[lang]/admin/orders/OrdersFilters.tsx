@@ -20,7 +20,7 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersFilters({ state }: { state: OrdersState }): React.ReactElement {
     const {
-            orders,
+            totalOrderCount,
             search,
             setSearch,
             statusFilter,
@@ -31,7 +31,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
             setDeliveryFilter,
             sortField,
             sortDir,
-            filtered,
+            filteredCount,
             isAllSelected,
             isSomeSelected,
             toggleSelectAll,
@@ -135,7 +135,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                         {sortField === 'total' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                     </button>
                     <span className="ml-auto text-xs text-muted-foreground">
-                        {filtered.length} из {orders.length}
+                        {filteredCount} из {totalOrderCount}
                     </span>
                 </div>
             </div>

@@ -7,19 +7,36 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminStore } from '@/lib/admin-store'
-import { useOrders } from '@/lib/orders-store'
-import { useAdminOrdersSync } from '@/lib/use-admin-orders-sync'
 import { type User } from '@/lib/auth'
 import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
 import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 
+type BonusHistoryRow = {
+  id: string
+  createdAt: string
+  firstName: string
+  lastName: string
+  email: string
+  total: number
+  bonusEarned: number
+  bonusSpent: number
+}
+
+type BonusStats = {
+  totalEarned: number
+  totalSpent: number
+  ordersWithBonus: number
+  history: BonusHistoryRow[]
+}
+
+const EMPTY_BONUS_STATS: BonusStats = { totalEarned: 0, totalSpent: 0, ordersWithBonus: 0, history: [] }
+
 export default function AdminBonusPage(): React.ReactElement {
-  useAdminOrdersSync()
   const { t } = useTranslation()
   const { bonusProgram, updateBonusProgram } = useAdminStore()
-  const { orders } = useOrders()
+  const [bonusStats, setBonusStats] = useState<BonusStats>(EMPTY_BONUS_STATS)
   const [draft, setDraft] = useState(bonusProgram)
   const [saved, setSaved] = useState(false)
 
@@ -63,6 +80,13 @@ export default function AdminBonusPage(): React.ReactElement {
       .catch((error) => reportAdminError(error, 'Настройки бонусной программы'))
   }, [])
 
+  useEffect(() => {
+    fetch('/api/admin/bonus/stats', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((stats) => { if (stats) setBonusStats(stats) })
+      .catch((error) => reportAdminError(error, 'Статистика бонусной программы'))
+  }, [])
+
   const saveSettings = async () => {
     try {
       const authoritative = await updateBonusProgram(draft)
@@ -93,9 +117,7 @@ export default function AdminBonusPage(): React.ReactElement {
     }
   }
 
-  const totalEarned = orders.reduce((s, o) => s + (o.bonusEarned ?? 0), 0)
-  const totalSpent = orders.reduce((s, o) => s + (o.bonusSpent ?? 0), 0)
-  const ordersWithBonus = orders.filter((o) => (o.bonusEarned ?? 0) > 0 || (o.bonusSpent ?? 0) > 0).length
+  const { totalEarned, totalSpent, ordersWithBonus } = bonusStats
   const usersWithBalance = users.filter((u) => (u.bonusPoints ?? 0) > 0).length
   const totalBalance = users.reduce((s, u) => s + (u.bonusPoints ?? 0), 0)
 
@@ -131,9 +153,7 @@ export default function AdminBonusPage(): React.ReactElement {
     .slice(0, 5)
     .filter((u) => (u.bonusPoints ?? 0) > 0)
 
-  const bonusOrders = [...orders]
-    .filter((o) => (o.bonusEarned ?? 0) > 0 || (o.bonusSpent ?? 0) > 0)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const bonusOrders = bonusStats.history
 
   return (
     <AdminGate>

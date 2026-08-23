@@ -178,7 +178,7 @@ export default function AdminFaqPage(): React.ReactElement {
                       </span>
                     </button>
                     {isOpen && (
-                      <div className="px-5 pb-5">
+                      <div className="ui-disclosure-in px-5 pb-5">
                         <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
                       </div>
                     )}

@@ -49,7 +49,7 @@ export default function PasswordChangeBanner({ userId }: { userId: string }): Re
                 </button>
             </div>
             {expanded && (
-                <div className="mx-auto max-w-[1200px] pt-3 pb-1">
+                <div className="ui-disclosure-in mx-auto max-w-[1200px] pt-3 pb-1">
                     <ChangePasswordFields />
                 </div>
             )}

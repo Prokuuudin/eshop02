@@ -145,7 +145,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
         </div>
 
         {expanded && (
-          <div id="product-request-card" className="product-request__card mt-4 rounded-lg border bg-card p-4 md:p-5">
+          <div id="product-request-card" className="product-request__card ui-disclosure-in mt-4 rounded-lg border bg-card p-4 md:p-5">
             {submitted ? (
               <div
                 aria-live="polite"

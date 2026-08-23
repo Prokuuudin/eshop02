@@ -79,7 +79,7 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
               <span className={`transform transition-transform ${expandCategories ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {expandCategories && (
-              <ul className="ml-4 mt-2 space-y-2 border-l border-border pl-3">
+              <ul className="ui-disclosure-in ml-4 mt-2 space-y-2 border-l border-border pl-3">
                 {categories.map((cat) => {
                   const catLabel = cat.titleKey ? t(cat.titleKey, cat.labels[language]) : cat.labels[language];
                   const subcategories = cat.subcategories ?? [];
@@ -108,7 +108,7 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
                         <span className={`transform transition-transform ${expanded ? 'rotate-180' : ''}`}>▼</span>
                       </button>
                       {expanded && (
-                        <ul className="ml-3 mt-1 space-y-1 border-l border-border pl-3">
+                        <ul className="ui-disclosure-in ml-3 mt-1 space-y-1 border-l border-border pl-3">
                           <li>
                             <Link href={`/category/${cat.id}`} onClick={onClose} className={subLinkClass}>
                               {t('categories.all')}

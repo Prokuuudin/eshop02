@@ -80,8 +80,8 @@ module.exports = {
                 },
             },
             animation: {
-                'accordion-down': 'accordion-down 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-                'accordion-up': 'accordion-up 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                'accordion-down': 'accordion-down 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                'accordion-up': 'accordion-up 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
             },
         },
     },

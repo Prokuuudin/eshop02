@@ -190,11 +190,11 @@ export default function AdminBonusPage(): React.ReactElement {
             className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
             <span className="text-lg font-semibold">Настройки программы</span>
-            <span className={`text-gray-400 transition-transform duration-200 ${settingsOpen ? 'rotate-180' : ''}`}>▾</span>
+            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${settingsOpen ? 'rotate-180' : ''}`}>▾</span>
           </button>
 
           {settingsOpen && (
-            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+            <div className="ui-disclosure-in px-5 pb-5 space-y-4 border-t border-border pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="text-sm">
                   <span className="block text-muted-foreground mb-1">{t('admin.bonus.enabled')}</span>
@@ -262,11 +262,11 @@ export default function AdminBonusPage(): React.ReactElement {
             className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
             <span className="text-lg font-semibold">Предпросмотр логики</span>
-            <span className={`text-gray-400 transition-transform duration-200 ${calcOpen ? 'rotate-180' : ''}`}>▾</span>
+            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${calcOpen ? 'rotate-180' : ''}`}>▾</span>
           </button>
 
           {calcOpen && (
-            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+            <div className="ui-disclosure-in px-5 pb-5 space-y-4 border-t border-border pt-4">
               <p className="text-xs text-muted-foreground">
                 Введите произвольную сумму заказа — калькулятор покажет, сколько баллов получит клиент и сколько сможет потратить на следующую покупку, исходя из текущих настроек выше.
               </p>
@@ -335,11 +335,11 @@ export default function AdminBonusPage(): React.ReactElement {
             className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
             <span className="text-lg font-semibold">Балансы пользователей</span>
-            <span className={`text-gray-400 transition-transform duration-200 ${balancesOpen ? 'rotate-180' : ''}`}>▾</span>
+            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${balancesOpen ? 'rotate-180' : ''}`}>▾</span>
           </button>
 
           {balancesOpen && (
-            <div className="border-t border-border px-5 pb-5 pt-4 space-y-3">
+            <div className="ui-disclosure-in border-t border-border px-5 pb-5 pt-4 space-y-3">
               <Input
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}

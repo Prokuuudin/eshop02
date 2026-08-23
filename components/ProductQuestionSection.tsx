@@ -126,7 +126,7 @@ export default function ProductQuestionSection({ productName, productId }: Props
         </div>
 
         {expanded && (
-          <div id="product-question-form" className="border-t border-border p-5 md:p-7">
+          <div id="product-question-form" className="ui-disclosure-in border-t border-border p-5 md:p-7">
             {submitted ? (
               <div aria-live="polite" className="rounded-md border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-200">
                 ✓ {t('product.question.success')}

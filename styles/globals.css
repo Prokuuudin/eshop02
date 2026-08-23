@@ -637,6 +637,17 @@ body[data-scroll-locked][data-scroll-locked] {
   to   { opacity: 0; transform: translateY(8px); }
 }
 
+/* Shared motion for lightweight, conditionally rendered disclosures. */
+@keyframes ui-disclosure-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ui-disclosure-in {
+  transform-origin: top;
+  animation: ui-disclosure-in 0.22s ease-out;
+}
+
 .toast-item {
   animation: toast-in 0.25s ease-out;
 }

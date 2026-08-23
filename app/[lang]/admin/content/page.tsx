@@ -305,7 +305,7 @@ export default function AdminContentPage(): React.ReactElement {
                                 </button>
 
                                 {isOpen && (
-                                    <div className="grid grid-cols-1 gap-3 border-t border-border p-4 lg:grid-cols-2">
+                                    <div className="ui-disclosure-in grid grid-cols-1 gap-3 border-t border-border p-4 lg:grid-cols-2">
                                         {section.entries.map((entry) =>
                                             entry.type === 'text' ? (
                                                 <TextEntryRow

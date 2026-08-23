@@ -216,7 +216,7 @@ export default function DuplicatesPage(): React.ReactElement {
 
                     {/* Products in group */}
                     {isOpen && (
-                      <div className="divide-y divide-border bg-card">
+                      <div className="ui-disclosure-in divide-y divide-border bg-card">
                         {group.products.map((p, i) => (
                           <div key={p.id} className="flex items-center gap-4 px-5 py-3">
                             {/* Image */}

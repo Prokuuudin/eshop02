@@ -92,15 +92,6 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                     {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>
 
-                {product.rating > 0 && (
-                    <div
-                        className="product-card__rating mt-1 text-sm text-yellow-500"
-                        aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
-                    >
-                        {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
-                    </div>
-                )}
-
                 <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 max-w-full overflow-hidden">
                     {product.badges?.includes('sale') && (
                         <Badge className="bg-red-600 text-white max-w-[90%] truncate">
@@ -127,7 +118,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 {/* mt-auto — прижимает строку цены к низу карточки, поэтому она на одном
                     уровне у всех карточек в ряду независимо от длины тайтла/бейджей. */}
                 <div className="product-card__meta mt-auto pt-1 flex items-center justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                         {!isHydrated ? (
                             // Neutral placeholder until auth is known — avoids the login/price flash.
                             <div className="h-7 w-20 rounded bg-muted animate-pulse" />
@@ -158,6 +149,14 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                             </div>
                         )}
                     </div>
+                    {product.rating > 0 && (
+                        <div
+                            className="product-card__rating ml-auto shrink-0 self-end text-sm text-yellow-500"
+                            aria-label={t('product.ratingLabel', 'Рейтинг {rating} из 5', { rating: product.rating.toFixed(1) })}
+                        >
+                            {product.rating.toFixed(1)} <span aria-hidden="true">★</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* На десктопе блок действий не занимает места в карточке: по ховеру/фокусу

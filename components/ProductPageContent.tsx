@@ -9,7 +9,7 @@ import { ProductBenefits } from '@/components/ProductBenefits';
 import ProductRequestSection from '@/components/ProductRequestSection';
 import ProductQuestionSection from '@/components/ProductQuestionSection';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import type { JSX } from 'react';
 import { Product } from '@/data/products';
 import { useViewedProducts } from '@/lib/viewed-products-store';
@@ -42,7 +42,15 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
     const displayPrice = getDisplayPrice(product.price);
     const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined;
     const { addView, getRecentViews } = useViewedProducts();
-    const recentViews = getRecentViews(4);
+    // The persisted store can already contain localStorage data during the first browser
+    // render, while SSR always sees an empty store. Keep that render identical to the
+    // server output and reveal the history immediately after hydration.
+    const isClient = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false
+    );
+    const recentViews = isClient ? getRecentViews(4) : [];
 
     const minOrderQuantity = getMinimumOrderQuantity(product);
     const ratingCount = product.ratingCount ?? product.reviewCount ?? 0;

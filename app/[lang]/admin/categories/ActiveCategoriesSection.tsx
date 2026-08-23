@@ -87,7 +87,7 @@ export default function ActiveCategoriesSection({
                                 <div className="relative lg:pr-[224px]">
                                     <div className="flex flex-wrap items-center gap-3">
                                         <div>
-                                            <h3 className="text-lg font-bold tracking-tight text-foreground">
+                                            <h3 className="text-xl font-extrabold tracking-tight text-foreground">
                                                 {category.labels[language] || category.id}
                                             </h3>
                                         </div>

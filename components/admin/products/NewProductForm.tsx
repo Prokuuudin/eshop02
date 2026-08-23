@@ -23,7 +23,7 @@ const NewProductForm: React.FC<NewProductFormProps> = ({ title }) => {
                 value="add-product"
                 className="overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20"
             >
-                <AccordionTrigger className="group text-xl font-bold !p-0 !bg-transparent !border-0 !no-underline focus:!no-underline">
+                <AccordionTrigger className="group text-xl font-bold !p-0 !bg-transparent !border-0 !no-underline focus:!no-underline [&>svg]:hidden">
                     <div className="flex w-full cursor-pointer select-none items-center gap-3 rounded-lg px-4 py-3.5 transition-colors hover:bg-emerald-100/70 dark:hover:bg-emerald-900/30">
                         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
                             <IconPlus className="w-6 h-6" />

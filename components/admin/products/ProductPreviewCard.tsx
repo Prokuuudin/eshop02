@@ -60,9 +60,6 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
 
             <div className="product-card__body mt-2 flex-1 flex flex-col min-w-0">
                 <div className="product-card__title text-sm font-medium">{stripBrandPrefix(title, brand ?? '')}</div>
-                {typeof rating === 'number' && rating > 0 && (
-                    <div className="product-card__rating mt-1 text-sm text-yellow-500">{rating.toFixed(1)} <span aria-hidden="true">★</span></div>
-                )}
                 <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 max-w-full overflow-hidden">
                     {badges?.includes('sale') && <Badge className="bg-red-600 text-white max-w-[90%] truncate">{t('product.sale')}</Badge>}
                     {badges?.includes('new') && <Badge className="bg-green-600 text-white max-w-[90%] truncate">{t('product.new')}</Badge>}
@@ -86,6 +83,11 @@ const ProductPreviewCard: React.FC<ProductPreviewCardProps> = ({
                             </>
                         )}
                     </div>
+                    {typeof rating === 'number' && rating > 0 && (
+                        <div className="product-card__rating ml-auto shrink-0 self-end text-sm text-yellow-500">
+                            {rating.toFixed(1)} <span aria-hidden="true">★</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="product-card__actions relative z-10 mt-2 w-full space-y-2">

@@ -8,11 +8,16 @@ vi.mock('@/lib/newsletter-store', () => ({
   getMarketingOptedOutSet: vi.fn(),
   marketingUnsubUrl: vi.fn((email: string) => `https://shop.test/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&token=signed`),
 }))
+vi.mock('@/lib/admin/customer-segments', () => ({
+  CUSTOMER_SEGMENTS: ['vip', 'regular', 'new', 'inactive'],
+  getCustomerRecipients: vi.fn(),
+}))
 
 import { sendEmail } from '@/lib/mailer'
 import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
 import { requireAdmin } from '@/lib/server-auth'
 import { POST } from './route'
+import { getCustomerRecipients } from '@/lib/admin/customer-segments'
 
 const request = (recipients: Array<{ email: string; firstName: string; lastName: string }>) => new NextRequest(
   'https://shop.test/api/admin/broadcast',
@@ -28,6 +33,7 @@ beforeEach(() => {
   vi.mocked(requireAdmin).mockResolvedValue({ id: 'admin' } as never)
   vi.mocked(getMarketingOptedOutSet).mockResolvedValue(new Set())
   vi.mocked(sendEmail).mockResolvedValue(undefined)
+  vi.mocked(getCustomerRecipients).mockResolvedValue([])
 })
 
 describe('POST /api/admin/broadcast email lifecycle', () => {
@@ -68,5 +74,17 @@ describe('POST /api/admin/broadcast email lifecycle', () => {
     expect(await res.json()).toEqual({ ok: true, sent: 1, failed: 1, skipped: 1, failedEmails: ['fail@test.com'] })
     expect(sendEmail).toHaveBeenCalledTimes(2)
     expect(sendEmail).not.toHaveBeenCalledWith('opted@test.com', expect.anything(), expect.anything(), expect.anything())
+  })
+
+  it('resolves a segment audience on the server instead of trusting browser-supplied recipients', async () => {
+    vi.mocked(getCustomerRecipients).mockResolvedValue([{ email: 'vip@test.com', firstName: 'V', lastName: 'IP' }])
+    const res = await POST(new NextRequest('https://shop.test/api/admin/broadcast', { method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ audience: { segment: 'vip' }, recipients: [{ email: 'attacker@test.com', firstName: '', lastName: '' }], subject: 'Hi', body: 'Text' }),
+    }))
+    expect(res.status).toBe(200)
+    expect(getCustomerRecipients).toHaveBeenCalledWith('vip', 501)
+    expect(sendEmail).toHaveBeenCalledWith('vip@test.com', expect.anything(), expect.anything(), expect.anything())
+    expect(sendEmail).not.toHaveBeenCalledWith('attacker@test.com', expect.anything(), expect.anything(), expect.anything())
   })
 })

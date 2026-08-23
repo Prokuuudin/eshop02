@@ -74,7 +74,7 @@ export default function CustomerProfilePage(): React.ReactElement {
 
   useEffect(() => {
     if (!email) return
-    fetch('/api/admin/customers')
+    fetch(`/api/admin/customers?email=${encodeURIComponent(email)}&pageSize=1`)
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
       .then((data: { customers?: Array<{ email: string; firstName: string; lastName: string }> }) => {
         const customer = data.customers?.find((item) => item.email.toLowerCase() === email.toLowerCase())

@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/server-auth"
 import { sendEmail } from '@/lib/mailer'
 import { getSiteUrl } from '@/lib/site-url'
 import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
+import { CUSTOMER_SEGMENTS, getCustomerRecipients, type CustomerSegment } from '@/lib/admin/customer-segments'
 
 export const runtime = 'nodejs'
 
@@ -44,11 +45,19 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = (await request.json()) as {
       recipients?: Recipient[]
+      audience?: { segment?: CustomerSegment }
       subject?: string
       body?: string
     }
 
-    const recipients = (Array.isArray(body.recipients) ? body.recipients : []).filter(
+    const requestedSegment = body.audience?.segment
+    if (requestedSegment && !CUSTOMER_SEGMENTS.includes(requestedSegment)) {
+      return NextResponse.json({ error: 'invalid_segment' }, { status: 400 })
+    }
+    const serverRecipients = body.audience
+      ? await getCustomerRecipients(requestedSegment, MAX_RECIPIENTS + 1)
+      : (Array.isArray(body.recipients) ? body.recipients : [])
+    const recipients = serverRecipients.filter(
       (r) => r.email && EMAIL_RE.test(r.email)
     )
     const subject = body.subject?.trim() ?? ''
@@ -99,7 +108,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'internal_error' }, { status: 500 })
   }
 }
-
 
 
 

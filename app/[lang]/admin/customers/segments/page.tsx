@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -10,23 +10,15 @@ import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import type { CustomerRow as ApiCustomerRow } from '@/app/api/admin/customers/route'
 
 type Segment = 'VIP' | 'Постоянный' | 'Новый' | 'Неактивный'
+type ApiSegment = 'vip' | 'regular' | 'new' | 'inactive'
+type CustomerSort = 'lastOrderDate' | 'totalSpent' | 'totalOrders' | 'email'
 
-interface CustomerRow extends ApiCustomerRow {
-  lastOrderDate: string | null
+interface CustomerRow extends Omit<ApiCustomerRow, 'segment'> {
   segment: Segment
 }
 
-function getSegment(totalOrders: number, totalSpent: number, lastOrderDate: string | null): Segment {
-  const now = new Date()
-  const daysSinceLast = lastOrderDate
-    ? (now.getTime() - new Date(lastOrderDate).getTime()) / (1000 * 60 * 60 * 24)
-    : Infinity
-
-  if (totalSpent > 500) return 'VIP'
-  if (totalOrders > 3) return 'Постоянный'
-  if (daysSinceLast > 180 || totalOrders === 0) return 'Неактивный'
-  return 'Новый'
-}
+const API_SEGMENT: Record<Segment, ApiSegment> = { VIP: 'vip', Постоянный: 'regular', Новый: 'new', Неактивный: 'inactive' }
+const SEGMENT_LABEL: Record<ApiSegment, Segment> = { vip: 'VIP', regular: 'Постоянный', new: 'Новый', inactive: 'Неактивный' }
 
 const SEGMENT_COLORS: Record<Segment, string> = {
   VIP:         'bg-yellow-100 text-yellow-800 border border-yellow-300',
@@ -66,6 +58,13 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
   const [customers, setCustomers] = useState<CustomerRow[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [counts, setCounts] = useState<Record<Segment, number>>({ VIP: 0, Постоянный: 0, Новый: 0, Неактивный: 0 })
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [sort, setSort] = useState<CustomerSort>('lastOrderDate')
+  const [direction, setDirection] = useState<'asc' | 'desc'>('desc')
 
   const [activeTab, setActiveTab] = useState<FilterTab>('Все')
   const [search, setSearch] = useState('')
@@ -79,17 +78,27 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
   const [bResult, setBResult] = useState<BroadcastResult | null>(null)
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1) }, 300)
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  useEffect(() => {
     let cancelled = false
-    fetch('/api/admin/customers')
+    setLoading(true)
+    setFetchError(null)
+    const params = new URLSearchParams({ page: String(page), pageSize: '50', sort, direction })
+    if (activeTab !== 'Все') params.set('segment', API_SEGMENT[activeTab])
+    if (debouncedSearch) params.set('search', debouncedSearch)
+    fetch(`/api/admin/customers?${params}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = (await res.json()) as { customers: ApiCustomerRow[]; total: number }
+        const data = (await res.json()) as { customers: Array<Omit<ApiCustomerRow, 'segment'> & { segment: ApiSegment }>; total: number; totalPages: number; counts: Record<ApiSegment, number> }
         if (cancelled) return
-        const rows: CustomerRow[] = data.customers.map((c) => ({
-          ...c,
-          segment: getSegment(c.totalOrders, c.totalSpent, c.lastOrderDate),
-        }))
+        const rows: CustomerRow[] = data.customers.map((c) => ({ ...c, segment: SEGMENT_LABEL[c.segment] }))
         setCustomers(rows)
+        setTotal(data.total)
+        setTotalPages(data.totalPages)
+        setCounts({ VIP: data.counts.vip, Постоянный: data.counts.regular, Новый: data.counts.new, Неактивный: data.counts.inactive })
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -100,27 +109,20 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
       })
 
     return () => { cancelled = true }
-  }, [])
+  }, [activeTab, debouncedSearch, page, sort, direction])
 
-  const counts = useMemo(() => {
-    const result: Record<Segment, number> = { VIP: 0, Постоянный: 0, Новый: 0, Неактивный: 0 }
-    for (const c of customers) result[c.segment]++
-    return result
-  }, [customers])
+  const changeSort = (nextSort: CustomerSort) => {
+    setPage(1)
+    if (sort === nextSort) setDirection((value) => value === 'asc' ? 'desc' : 'asc')
+    else { setSort(nextSort); setDirection(nextSort === 'email' ? 'asc' : 'desc') }
+  }
 
-  const filtered = useMemo(() => {
-    return customers.filter((c) => {
-      if (activeTab !== 'Все' && c.segment !== activeTab) return false
-      if (search && !c.email.toLowerCase().includes(search.toLowerCase())) return false
-      return true
-    })
-  }, [customers, activeTab, search])
+  const sortMark = (column: CustomerSort) => sort === column ? (direction === 'asc' ? ' ↑' : ' ↓') : ''
 
   // Recipients for broadcast = current filter, no search constraint
-  const broadcastRecipients = useMemo(() => {
-    if (activeTab === 'Все') return customers
-    return customers.filter((c) => c.segment === activeTab)
-  }, [customers, activeTab])
+  const broadcastRecipientCount = activeTab === 'Все'
+    ? Object.values(counts).reduce((sum, value) => sum + value, 0)
+    : counts[activeTab]
 
   const tabs: FilterTab[] = ['Все', 'VIP', 'Постоянный', 'Новый', 'Неактивный']
 
@@ -134,29 +136,26 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          recipients: broadcastRecipients.map((c) => ({
-            email: c.email,
-            firstName: c.firstName,
-            lastName: c.lastName,
-          })),
+          audience: { segment: activeTab === 'Все' ? undefined : API_SEGMENT[activeTab] },
           subject: bSubject,
           body: bBody,
         }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = (await res.json()) as BroadcastResult
       setBResult(data)
     } catch {
-      setBResult({ sent: 0, failed: broadcastRecipients.length, failedEmails: [] })
+      setBResult({ sent: 0, failed: broadcastRecipientCount, failedEmails: [] })
     } finally {
       setBSending(false)
     }
   }
 
   const sendButtonLabel = bSending
-    ? `Отправка (${broadcastRecipients.length} писем)...`
-    : `Отправить ${broadcastRecipients.length} письм${broadcastRecipients.length === 1 ? 'о' : broadcastRecipients.length < 5 ? 'а' : ''}`
+    ? `Отправка (${broadcastRecipientCount} писем)...`
+    : `Отправить ${broadcastRecipientCount} письм${broadcastRecipientCount === 1 ? 'о' : broadcastRecipientCount < 5 ? 'а' : ''}`
 
-  const canSend = !bSending && !!bSubject.trim() && !!bBody.trim() && broadcastRecipients.length > 0
+  const canSend = !bSending && !!bSubject.trim() && !!bBody.trim() && broadcastRecipientCount > 0 && broadcastRecipientCount <= 500
 
   return (
     <AdminGate>
@@ -205,7 +204,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                 {tabs.map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => { setActiveTab(tab); setBResult(null) }}
+                    onClick={() => { setActiveTab(tab); setPage(1); setBResult(null) }}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
                       activeTab === tab
                         ? 'bg-primary text-primary-foreground border-primary'
@@ -226,7 +225,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
             </div>
 
             {/* Broadcast panel */}
-            {customers.length > 0 && (
+            {Object.values(counts).some(Boolean) && (
               <div className="rounded-xl border border-primary/30 dark:border-primary/40 bg-card">
                 <button
                   type="button"
@@ -238,7 +237,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       Рассылка по сегменту
                     </span>
                     <span className="rounded-full bg-primary/10 dark:bg-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary dark:text-primary">
-                      {broadcastRecipients.length} получателей
+                      {broadcastRecipientCount} получателей
                       {activeTab !== 'Все' && ` · ${activeTab}`}
                     </span>
                   </div>
@@ -251,7 +250,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     {/* Recipients info */}
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>
-                        Получатели: <strong className="text-foreground">{broadcastRecipients.length}</strong>
+                        Получатели: <strong className="text-foreground">{broadcastRecipientCount}</strong>
                         {activeTab !== 'Все' && ` клиентов сегмента «${activeTab}»`}
                         {activeTab === 'Все' && ' (все клиенты)'}
                       </span>
@@ -322,7 +321,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     <div className="flex flex-wrap items-center gap-3 pt-1">
                       <ConfirmActionDialog
                         title="Подтвердите рассылку"
-                        description={`Отправить письмо ${broadcastRecipients.length} получателям${activeTab !== 'Все' ? ` (${activeTab})` : ''}? Это действие нельзя отменить.`}
+                        description={`Отправить письмо ${broadcastRecipientCount} получателям${activeTab !== 'Все' ? ` (${activeTab})` : ''}? Это действие нельзя отменить.`}
                         confirmLabel="Отправить"
                         cancelLabel="Отмена"
                         onConfirm={() => void sendBroadcast()}
@@ -338,6 +337,9 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       {!bSubject.trim() || !bBody.trim() ? (
                         <span className="text-xs text-muted-foreground">Заполните тему и текст</span>
                       ) : null}
+                      {broadcastRecipientCount > 500 && (
+                        <span className="text-xs text-amber-700 dark:text-amber-400">В одной рассылке допустимо не более 500 получателей. Выберите более узкий сегмент.</span>
+                      )}
                     </div>
 
                     {/* Result */}
@@ -360,11 +362,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
             )}
 
             {/* Table */}
-            {customers.length === 0 ? (
+            {Object.values(counts).every((value) => value === 0) ? (
               <div className="text-center text-muted-foreground py-16 border rounded-lg">
                 Нет данных о заказах. Клиенты появятся после первых заказов.
               </div>
-            ) : filtered.length === 0 ? (
+            ) : customers.length === 0 ? (
               <div className="text-center text-muted-foreground py-16 border rounded-lg">
                 Клиенты не найдены по заданным фильтрам.
               </div>
@@ -373,17 +375,17 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                 <table className="min-w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('email')} className="hover:text-foreground">Email{sortMark('email')}</button></th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Имя</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Заказов</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Потрачено</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Последний заказ</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalOrders')} className="hover:text-foreground">Заказов{sortMark('totalOrders')}</button></th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalSpent')} className="hover:text-foreground">Потрачено{sortMark('totalSpent')}</button></th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('lastOrderDate')} className="hover:text-foreground">Последний заказ{sortMark('lastOrderDate')}</button></th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Сегмент</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {filtered.map((c) => (
+                    {customers.map((c) => (
                       <tr key={c.email} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="px-4 py-3 text-foreground">
                           <Link
@@ -427,6 +429,17 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {total > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                <span>Показано {(page - 1) * 50 + 1}–{Math.min(page * 50, total)} из {total}</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || loading}>← Назад</Button>
+                  <span>Страница {page} из {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={page >= totalPages || loading}>Вперёд →</Button>
+                </div>
               </div>
             )}
           </>

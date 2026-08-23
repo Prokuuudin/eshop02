@@ -37,6 +37,13 @@ const SEGMENT_CARD_COLORS: Record<Segment, string> = {
 type FilterTab = 'Все' | Segment
 
 type BroadcastResult = { sent: number; failed: number; failedEmails: string[] }
+type SegmentAnalytics = {
+  previousCounts: Record<ApiSegment, number>
+  revenue: Record<ApiSegment, number>
+  becameVip: number
+  becameInactive: number
+  comparisonDays: number
+}
 
 const SEGMENT_DESCRIPTIONS: Record<Segment, string> = {
   VIP:        'потратили более €500',
@@ -54,6 +61,22 @@ const SAMPLE_VARS = { first_name: 'Иван', last_name: 'Петров', email: 
 const UNSUBSCRIBE_TEXT =
   'Чтобы отписаться от рассылки, ответьте на это письмо с пометкой «Отписаться». / To unsubscribe, reply to this email with "Unsubscribe". / Lai atteiktos no jaunumiem, atbildiet uz šo e-pastu ar norādi "Atteikt".'
 
+const EMPTY_ANALYTICS: SegmentAnalytics = {
+  previousCounts: { vip: 0, regular: 0, new: 0, inactive: 0 },
+  revenue: { vip: 0, regular: 0, new: 0, inactive: 0 },
+  becameVip: 0, becameInactive: 0, comparisonDays: 30,
+}
+
+function segmentReason(customer: CustomerRow): string {
+  if (customer.segment === 'VIP') return `Потрачено €${customer.totalSpent.toFixed(2)} — больше €500`
+  if (customer.segment === 'Постоянный') return `${customer.totalOrders} заказов — больше 3`
+  if (customer.segment === 'Неактивный' && customer.lastOrderDate) {
+    const days = Math.max(0, Math.floor((Date.now() - new Date(customer.lastOrderDate).getTime()) / 86_400_000))
+    return `${days} дней без заказов — больше 180`
+  }
+  return `${customer.totalOrders} заказ${customer.totalOrders === 1 ? '' : 'а'} и покупка в последние 180 дней`
+}
+
 export default function AdminCustomerSegmentsPage(): React.ReactElement {
   const [customers, setCustomers] = useState<CustomerRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +85,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [counts, setCounts] = useState<Record<Segment, number>>({ VIP: 0, Постоянный: 0, Новый: 0, Неактивный: 0 })
+  const [analytics, setAnalytics] = useState<SegmentAnalytics>(EMPTY_ANALYTICS)
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sort, setSort] = useState<CustomerSort>('lastOrderDate')
   const [direction, setDirection] = useState<'asc' | 'desc'>('desc')
@@ -92,13 +116,14 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
     fetch(`/api/admin/customers?${params}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = (await res.json()) as { customers: Array<Omit<ApiCustomerRow, 'segment'> & { segment: ApiSegment }>; total: number; totalPages: number; counts: Record<ApiSegment, number> }
+        const data = (await res.json()) as { customers: Array<Omit<ApiCustomerRow, 'segment'> & { segment: ApiSegment }>; total: number; totalPages: number; counts: Record<ApiSegment, number>; analytics: SegmentAnalytics }
         if (cancelled) return
         const rows: CustomerRow[] = data.customers.map((c) => ({ ...c, segment: SEGMENT_LABEL[c.segment] }))
         setCustomers(rows)
         setTotal(data.total)
         setTotalPages(data.totalPages)
         setCounts({ VIP: data.counts.vip, Постоянный: data.counts.regular, Новый: data.counts.new, Неактивный: data.counts.inactive })
+        setAnalytics(data.analytics)
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -191,9 +216,20 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(['VIP', 'Постоянный', 'Новый', 'Неактивный'] as Segment[]).map((seg) => (
                 <div key={seg} className={`rounded-lg border p-4 ${SEGMENT_CARD_COLORS[seg]}`}>
-                  <div className="text-2xl font-bold text-foreground">{counts[seg]}</div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="text-2xl font-bold text-foreground">{counts[seg]}</div>
+                    {(() => {
+                      const delta = counts[seg] - analytics.previousCounts[API_SEGMENT[seg]]
+                      return <span className={`text-xs font-medium ${delta > 0 ? 'text-green-700 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} title={`Изменение за ${analytics.comparisonDays} дней`}>
+                        {delta > 0 ? '+' : ''}{delta} за 30 дней
+                      </span>
+                    })()}
+                  </div>
                   <div className="text-sm font-medium text-foreground mt-0.5">{seg}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{SEGMENT_DESCRIPTIONS[seg]}</div>
+                  <div className="text-xs text-foreground/80 mt-2">Выручка: €{analytics.revenue[API_SEGMENT[seg]].toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  {seg === 'VIP' && <div className="text-xs text-muted-foreground mt-0.5">Новых VIP: {analytics.becameVip}</div>}
+                  {seg === 'Неактивный' && <div className="text-xs text-muted-foreground mt-0.5">Стали неактивными: {analytics.becameInactive}</div>}
                 </div>
               ))}
             </div>
@@ -381,6 +417,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalSpent')} className="hover:text-foreground">Потрачено{sortMark('totalSpent')}</button></th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('lastOrderDate')} className="hover:text-foreground">Последний заказ{sortMark('lastOrderDate')}</button></th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Сегмент</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Причина</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
@@ -408,6 +445,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                             {c.segment}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[240px]" title={segmentReason(c)}>{segmentReason(c)}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                             <a

@@ -23,6 +23,13 @@ export interface CustomerPage {
   pageSize: number
   totalPages: number
   counts: Record<CustomerSegment, number>
+  analytics: {
+    previousCounts: Record<CustomerSegment, number>
+    revenue: Record<CustomerSegment, number>
+    becameVip: number
+    becameInactive: number
+    comparisonDays: number
+  }
 }
 
 type RawCustomer = {
@@ -37,6 +44,18 @@ type RawCustomer = {
 }
 
 type RawCounts = Record<CustomerSegment, bigint | number>
+type RawAnalytics = {
+  previousVip: bigint | number
+  previousRegular: bigint | number
+  previousNew: bigint | number
+  previousInactive: bigint | number
+  vipRevenue: Prisma.Decimal | number
+  regularRevenue: Prisma.Decimal | number
+  newRevenue: Prisma.Decimal | number
+  inactiveRevenue: Prisma.Decimal | number
+  becameVip: bigint | number
+  becameInactive: bigint | number
+}
 
 export interface CustomerQuery {
   page: number
@@ -95,7 +114,7 @@ const filtersSql = (query: Pick<CustomerQuery, 'search' | 'email' | 'segment'>):
 export async function getCustomerPage(query: CustomerQuery): Promise<CustomerPage> {
   const where = filtersSql(query)
   const offset = (query.page - 1) * query.pageSize
-  const [rows, countRows] = await Promise.all([
+  const [rows, countRows, analyticsRows] = await Promise.all([
     prisma.$queryRaw<RawCustomer[]>(Prisma.sql`${aggregation}
       SELECT *, count(*) OVER()::bigint AS "filteredTotal" FROM customers ${where}
       ORDER BY ${orderBySql(query.sort, query.direction)} LIMIT ${query.pageSize} OFFSET ${offset}`),
@@ -104,9 +123,46 @@ export async function getCustomerPage(query: CustomerQuery): Promise<CustomerPag
         count(*) FILTER (WHERE segment = 'regular')::bigint AS regular,
         count(*) FILTER (WHERE segment = 'new')::bigint AS new,
         count(*) FILTER (WHERE segment = 'inactive')::bigint AS inactive FROM customers`),
+    prisma.$queryRaw<RawAnalytics[]>(Prisma.sql`
+      WITH current_aggregated AS (
+        SELECT lower(trim(email)) AS email, count(*)::bigint AS orders,
+          coalesce(sum(total), 0) AS spent, max("createdAt") AS last_order
+        FROM "Order" WHERE trim(email) <> '' GROUP BY lower(trim(email))
+      ), previous_aggregated AS (
+        SELECT lower(trim(email)) AS email, count(*)::bigint AS orders,
+          coalesce(sum(total), 0) AS spent, max("createdAt") AS last_order
+        FROM "Order"
+        WHERE trim(email) <> '' AND "createdAt" <= now() - interval '30 days'
+        GROUP BY lower(trim(email))
+      ), compared AS (
+        SELECT c.email, c.spent,
+          CASE WHEN c.spent > 500 THEN 'vip' WHEN c.orders > 3 THEN 'regular'
+            WHEN c.last_order < now() - interval '180 days' THEN 'inactive' ELSE 'new' END AS current_segment,
+          CASE WHEN p.email IS NULL THEN NULL WHEN p.spent > 500 THEN 'vip' WHEN p.orders > 3 THEN 'regular'
+            WHEN p.last_order < now() - interval '210 days' THEN 'inactive' ELSE 'new' END AS previous_segment
+        FROM current_aggregated c LEFT JOIN previous_aggregated p ON p.email = c.email
+      )
+      SELECT
+        count(*) FILTER (WHERE previous_segment = 'vip')::bigint AS "previousVip",
+        count(*) FILTER (WHERE previous_segment = 'regular')::bigint AS "previousRegular",
+        count(*) FILTER (WHERE previous_segment = 'new')::bigint AS "previousNew",
+        count(*) FILTER (WHERE previous_segment = 'inactive')::bigint AS "previousInactive",
+        coalesce(sum(spent) FILTER (WHERE current_segment = 'vip'), 0) AS "vipRevenue",
+        coalesce(sum(spent) FILTER (WHERE current_segment = 'regular'), 0) AS "regularRevenue",
+        coalesce(sum(spent) FILTER (WHERE current_segment = 'new'), 0) AS "newRevenue",
+        coalesce(sum(spent) FILTER (WHERE current_segment = 'inactive'), 0) AS "inactiveRevenue",
+        count(*) FILTER (WHERE current_segment = 'vip' AND previous_segment IS DISTINCT FROM 'vip')::bigint AS "becameVip",
+        count(*) FILTER (WHERE current_segment = 'inactive' AND previous_segment IS DISTINCT FROM 'inactive')::bigint AS "becameInactive"
+      FROM compared
+    `),
   ])
   const total = rows[0] ? Number(rows[0].filteredTotal) : 0
   const rawCounts = countRows[0] ?? { vip: 0, regular: 0, new: 0, inactive: 0 }
+  const analytics = analyticsRows[0] ?? {
+    previousVip: 0, previousRegular: 0, previousNew: 0, previousInactive: 0,
+    vipRevenue: 0, regularRevenue: 0, newRevenue: 0, inactiveRevenue: 0,
+    becameVip: 0, becameInactive: 0,
+  }
   return {
     customers: rows.map((row) => ({ email: row.email, firstName: row.firstName ?? '', lastName: row.lastName ?? '',
       totalOrders: Number(row.totalOrders), totalSpent: Number(row.totalSpent),
@@ -114,6 +170,11 @@ export async function getCustomerPage(query: CustomerQuery): Promise<CustomerPag
     total, page: query.page, pageSize: query.pageSize,
     totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
     counts: { vip: Number(rawCounts.vip), regular: Number(rawCounts.regular), new: Number(rawCounts.new), inactive: Number(rawCounts.inactive) },
+    analytics: {
+      previousCounts: { vip: Number(analytics.previousVip), regular: Number(analytics.previousRegular), new: Number(analytics.previousNew), inactive: Number(analytics.previousInactive) },
+      revenue: { vip: Number(analytics.vipRevenue), regular: Number(analytics.regularRevenue), new: Number(analytics.newRevenue), inactive: Number(analytics.inactiveRevenue) },
+      becameVip: Number(analytics.becameVip), becameInactive: Number(analytics.becameInactive), comparisonDays: 30,
+    },
   }
 }
 

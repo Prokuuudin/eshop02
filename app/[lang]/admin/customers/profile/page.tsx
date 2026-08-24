@@ -9,29 +9,16 @@ import type { Order } from '@/lib/orders-store'
 import type { ReturnRequest } from '@/lib/returns-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { fetchCustomerReturns } from './fetchCustomerReturns'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 type ServerSegment = 'vip' | 'regular' | 'new' | 'inactive'
-type Segment = 'VIP' | 'Постоянный' | 'Новый' | 'Неактивный'
-
-const SEGMENT_LABEL: Record<ServerSegment, Segment> = {
-  vip: 'VIP',
-  regular: 'Постоянный',
-  new: 'Новый',
-  inactive: 'Неактивный',
-}
-
-const SEGMENT_BADGE: Record<Segment, string> = {
-  VIP:        'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-800',
-  Постоянный: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
-  Новый:      'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-800',
-  Неактивный: 'bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
-}
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending: 'Новый', confirmed: 'Подтверждён', shipped: 'Отправлен',
-  delivered: 'Доставлен', cancelled: 'Отменён',
+const SEGMENT_BADGE: Record<ServerSegment, string> = {
+  vip: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-800',
+  regular: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
+  new: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-200 dark:border-green-800',
+  inactive: 'bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
 }
 const ORDER_STATUS_COLORS: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -40,8 +27,6 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
   delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
-
-const LOC = 'ru-RU'
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -56,6 +41,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CustomerProfilePage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
   const searchParams = useSearchParams()
   const email = decodeURIComponent(searchParams.get('email') ?? '')
 
@@ -109,7 +95,7 @@ export default function CustomerProfilePage(): React.ReactElement {
   useEffect(() => {
     if (!email) return
     let cancelled = false
-    setReturnsLoading(true)
+    queueMicrotask(() => { if (!cancelled) setReturnsLoading(true) })
     fetchCustomerReturns(email)
       .then((data) => { if (!cancelled) setCustomerReturns(data) })
       .catch(() => { if (!cancelled) setCustomerReturns([]) })
@@ -126,7 +112,7 @@ export default function CustomerProfilePage(): React.ReactElement {
     const lastOrderDate = summary?.lastOrderDate
       ? new Date(summary.lastOrderDate)
       : customerOrders[0] ? new Date(customerOrders[0].createdAt) : null
-    const segment = SEGMENT_LABEL[summary?.segment ?? 'inactive']
+    const segment = summary?.segment ?? 'inactive'
     const firstName = summary?.firstName ?? customerOrders[0]?.firstName ?? ''
     const lastName = summary?.lastName ?? customerOrders[0]?.lastName ?? ''
     const phone = customerOrders[0]?.phone ?? ''
@@ -152,9 +138,9 @@ export default function CustomerProfilePage(): React.ReactElement {
     return (
       <AdminGate>
         <main className="w-full py-4 text-center">
-          <p className="text-muted-foreground">Email клиента не указан.</p>
+          <p className="text-muted-foreground">{l('Email клиента не указан.', 'Customer email is not specified.', 'Klienta e-pasts nav norādīts.')}</p>
           <Link href="/admin/customers/segments" className="text-primary hover:underline text-sm mt-2 inline-block">
-            ← К сегментам
+            ← {l('К сегментам', 'To segments', 'Uz segmentiem')}
           </Link>
         </main>
       </AdminGate>
@@ -167,7 +153,7 @@ export default function CustomerProfilePage(): React.ReactElement {
 
         {/* Back */}
         <Link href="/admin/customers/segments" className="text-sm text-primary hover:underline">
-          ← Клиенты
+          ← {l('Клиенты', 'Customers', 'Klienti')}
         </Link>
 
         {/* Header */}
@@ -183,7 +169,7 @@ export default function CustomerProfilePage(): React.ReactElement {
                 {[stats.firstName, stats.lastName].filter(Boolean).join(' ') || email}
               </h1>
               <span className={`rounded-full border px-3 py-0.5 text-sm font-medium ${SEGMENT_BADGE[stats.segment]}`}>
-                {stats.segment}
+                {stats.segment === 'vip' ? 'VIP' : stats.segment === 'regular' ? l('Постоянный', 'Regular', 'Pastāvīgs') : stats.segment === 'new' ? l('Новый', 'New', 'Jauns') : l('Неактивный', 'Inactive', 'Neaktīvs')}
               </span>
             </div>
             <div className="flex flex-wrap gap-4 mt-1.5 text-sm text-muted-foreground">
@@ -195,17 +181,17 @@ export default function CustomerProfilePage(): React.ReactElement {
           <div className="flex gap-2">
             <a href={`/api/admin/customers/export?email=${encodeURIComponent(email)}`} download>
               <button type="button" className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-50 hover:text-foreground dark:hover:bg-gray-800 transition-colors">
-                Отчёт о данных клиента (PDF)
+                {l('Отчёт о данных клиента (PDF)', 'Customer data report (PDF)', 'Klienta datu pārskats (PDF)')}
               </button>
             </a>
             <a href={`mailto:${email}`}>
               <button type="button" className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                Написать письмо
+                {l('Написать письмо', 'Send email', 'Rakstīt e-pastu')}
               </button>
             </a>
             <Link href={`/admin/orders?q=${encodeURIComponent(email)}`}>
               <button type="button" className="rounded-lg border border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 text-sm text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/40 transition-colors">
-                Все заказы ↗
+                {l('Все заказы', 'All orders', 'Visi pasūtījumi')} ↗
               </button>
             </Link>
           </div>
@@ -213,21 +199,21 @@ export default function CustomerProfilePage(): React.ReactElement {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Kpi label="Заказов" value={String(stats.totalOrders)} />
-          <Kpi label="Потрачено" value={formatEuro(stats.totalSpent, LOC)} />
-          <Kpi label="Средний чек" value={formatEuro(stats.aov, LOC)} />
+          <Kpi label={l('Заказов', 'Orders', 'Pasūtījumi')} value={String(stats.totalOrders)} />
+          <Kpi label={l('Потрачено', 'Spent', 'Iztērēts')} value={formatEuro(stats.totalSpent, locale)} />
+          <Kpi label={l('Средний чек', 'Average order', 'Vidējais pasūtījums')} value={formatEuro(stats.aov, locale)} />
           <Kpi
-            label="Последний заказ"
-            value={stats.lastOrderDate ? formatDate(stats.lastOrderDate, LOC) : '—'}
+            label={l('Последний заказ', 'Last order', 'Pēdējais pasūtījums')}
+            value={stats.lastOrderDate ? formatDate(stats.lastOrderDate, locale) : '—'}
           />
         </div>
 
         {/* Tabs */}
         <div className="flex gap-0 border-b border-border">
           {([
-            { key: 'orders' as const, label: `Заказы (${customerOrders.length})` },
-            { key: 'returns' as const, label: `Возвраты (${customerReturns.length})` },
-            { key: 'products' as const, label: `Покупки (${topProducts.length})` },
+            { key: 'orders' as const, label: `${l('Заказы', 'Orders', 'Pasūtījumi')} (${customerOrders.length})` },
+            { key: 'returns' as const, label: `${l('Возвраты', 'Returns', 'Atgriešanas')} (${customerReturns.length})` },
+            { key: 'products' as const, label: `${l('Покупки', 'Purchases', 'Pirkumi')} (${topProducts.length})` },
           ]).map((t) => (
             <button
               key={t.key}
@@ -249,7 +235,7 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'orders' && (
           <div className="space-y-3">
             {customerOrders.length === 0 && (
-              <div className="py-10 text-center text-sm text-muted-foreground">Заказов нет</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">{l('Заказов нет', 'No orders', 'Nav pasūtījumu')}</div>
             )}
             {customerOrders.map((order) => {
               const status = orderStatuses[order.id] ?? 'pending'
@@ -261,15 +247,15 @@ export default function CustomerProfilePage(): React.ReactElement {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
                         <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${ORDER_STATUS_COLORS[status]}`}>
-                          {ORDER_STATUS_LABELS[status] ?? status}
+                          {status === 'pending' ? l('Новый', 'New', 'Jauns') : status === 'confirmed' ? l('Подтверждён', 'Confirmed', 'Apstiprināts') : status === 'shipped' ? l('Отправлен', 'Shipped', 'Nosūtīts') : status === 'delivered' ? l('Доставлен', 'Delivered', 'Piegādāts') : status === 'cancelled' ? l('Отменён', 'Cancelled', 'Atcelts') : status}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(order.createdAt, LOC)}
+                        {formatDate(order.createdAt, locale)}
                         {' · '}
-                        {order.items.length} {order.items.length === 1 ? 'позиция' : 'позиций'}
+                        {order.items.length} {order.items.length === 1 ? l('позиция', 'item', 'pozīcija') : l('позиций', 'items', 'pozīcijas')}
                         {' · '}
-                        {order.deliveryMethod === 'courier' ? 'Курьер' : order.deliveryMethod === 'pickup' ? 'Самовывоз' : 'Почта'}
+                        {order.deliveryMethod === 'courier' ? l('Курьер', 'Courier', 'Kurjers') : order.deliveryMethod === 'pickup' ? l('Самовывоз', 'Pickup', 'Saņemšana veikalā') : l('Почта', 'Post', 'Pasts')}
                       </p>
                       {/* Items preview */}
                       <p className="text-xs text-muted-foreground truncate max-w-xs">
@@ -280,13 +266,13 @@ export default function CustomerProfilePage(): React.ReactElement {
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-lg font-bold text-foreground">{formatEuro(order.total, LOC)}</p>
+                      <p className="text-lg font-bold text-foreground">{formatEuro(order.total, locale)}</p>
                       <p className="text-xs text-muted-foreground">{order.paymentMethod}</p>
                       <Link
                         href={`/admin/orders?q=${encodeURIComponent(order.id)}`}
                         className="text-xs text-primary hover:underline mt-1 inline-block"
                       >
-                        Открыть →
+                        {l('Открыть', 'Open', 'Atvērt')} →
                       </Link>
                     </div>
                   </div>
@@ -300,10 +286,10 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'returns' && (
           <div className="space-y-3">
             {returnsLoading && (
-              <div className="py-10 text-center text-sm text-muted-foreground">Загрузка…</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">{l('Загрузка…', 'Loading…', 'Ielāde…')}</div>
             )}
             {!returnsLoading && customerReturns.length === 0 && (
-              <div className="py-10 text-center text-sm text-muted-foreground">Возвратов нет</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">{l('Возвратов нет', 'No returns', 'Nav atgriešanu')}</div>
             )}
             {customerReturns.map((ret) => (
               <div key={ret.id} className="rounded-xl border border-border bg-card px-5 py-4">
@@ -316,14 +302,14 @@ export default function CustomerProfilePage(): React.ReactElement {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Заказ: <span className="font-mono">{ret.orderId}</span>
+                      {l('Заказ:', 'Order:', 'Pasūtījums:')} <span className="font-mono">{ret.orderId}</span>
                       {' · '}
-                      {formatDate(ret.createdAt, LOC)}
+                      {formatDate(ret.createdAt, locale)}
                     </p>
                     <p className="text-xs text-muted-foreground">{ret.reason}</p>
                   </div>
                   <p className="text-base font-bold text-red-600 dark:text-red-400 shrink-0">
-                    {formatEuro(ret.refundAmount, LOC)}
+                    {formatEuro(ret.refundAmount, locale)}
                   </p>
                 </div>
               </div>
@@ -335,7 +321,7 @@ export default function CustomerProfilePage(): React.ReactElement {
         {tab === 'products' && (
           <div className="space-y-2">
             {topProducts.length === 0 && (
-              <div className="py-10 text-center text-sm text-muted-foreground">Нет данных</div>
+              <div className="py-10 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</div>
             )}
             {topProducts.map((p, i) => (
               <div key={p.title} className="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-3">
@@ -348,8 +334,8 @@ export default function CustomerProfilePage(): React.ReactElement {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold text-foreground">{formatEuro(p.revenue, LOC)}</p>
-                  <p className="text-xs text-muted-foreground">{p.qty} шт</p>
+                  <p className="text-sm font-semibold text-foreground">{formatEuro(p.revenue, locale)}</p>
+                  <p className="text-xs text-muted-foreground">{p.qty} {l('шт.', 'pcs', 'gab.')}</p>
                 </div>
               </div>
             ))}

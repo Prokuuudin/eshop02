@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import ConfirmActionDialog from '@/components/ConfirmActionDialog'
 import type { CustomerRow as ApiCustomerRow } from '@/app/api/admin/customers/route'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type Segment = 'VIP' | 'Постоянный' | 'Новый' | 'Неактивный'
 type ApiSegment = 'vip' | 'regular' | 'new' | 'inactive'
@@ -45,13 +46,6 @@ type SegmentAnalytics = {
   comparisonDays: number
 }
 
-const SEGMENT_DESCRIPTIONS: Record<Segment, string> = {
-  VIP:        'потратили более €500',
-  Постоянный: 'более 3 заказов',
-  Новый:      'до 3 заказов, активные',
-  Неактивный: 'не покупали более 180 дней',
-}
-
 function renderPreview(text: string, vars: Record<string, string>): string {
   return text.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`)
 }
@@ -78,6 +72,9 @@ function segmentReason(customer: CustomerRow): string {
 }
 
 export default function AdminCustomerSegmentsPage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
+  const segmentLabel = (segment: Segment | 'Все') => segment === 'Все' ? l('Все', 'All', 'Visi') : segment === 'VIP' ? 'VIP' : segment === 'Постоянный' ? l('Постоянный', 'Regular', 'Pastāvīgs') : segment === 'Новый' ? l('Новый', 'New', 'Jauns') : l('Неактивный', 'Inactive', 'Neaktīvs')
+  const segmentDescription = (segment: Segment) => segment === 'VIP' ? l('потратили более €500', 'spent more than €500', 'iztērējuši vairāk nekā €500') : segment === 'Постоянный' ? l('более 3 заказов', 'more than 3 orders', 'vairāk nekā 3 pasūtījumi') : segment === 'Новый' ? l('до 3 заказов, активные', 'up to 3 orders, active', 'līdz 3 pasūtījumiem, aktīvi') : l('не покупали более 180 дней', 'no purchases for over 180 days', 'nav pirkuši vairāk nekā 180 dienas')
   const [customers, setCustomers] = useState<CustomerRow[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -108,8 +105,12 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setFetchError(null)
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLoading(true)
+        setFetchError(null)
+      }
+    })
     const params = new URLSearchParams({ page: String(page), pageSize: '50', sort, direction })
     if (activeTab !== 'Все') params.set('segment', API_SEGMENT[activeTab])
     if (debouncedSearch) params.set('search', debouncedSearch)
@@ -127,14 +128,14 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setFetchError(err instanceof Error ? err.message : 'Ошибка загрузки')
+        setFetchError(err instanceof Error ? err.message : l('Ошибка загрузки', 'Loading error', 'Ielādes kļūda'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
 
     return () => { cancelled = true }
-  }, [activeTab, debouncedSearch, page, sort, direction])
+  }, [activeTab, debouncedSearch, page, sort, direction, l])
 
   const changeSort = (nextSort: CustomerSort) => {
     setPage(1)
@@ -177,8 +178,8 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
   }
 
   const sendButtonLabel = bSending
-    ? `Отправка (${broadcastRecipientCount} писем)...`
-    : `Отправить ${broadcastRecipientCount} письм${broadcastRecipientCount === 1 ? 'о' : broadcastRecipientCount < 5 ? 'а' : ''}`
+    ? l(`Отправка (${broadcastRecipientCount} писем)...`, `Sending (${broadcastRecipientCount} emails)...`, `Sūta (${broadcastRecipientCount} e-pasti)...`)
+    : l(`Отправить: ${broadcastRecipientCount}`, `Send to ${broadcastRecipientCount}`, `Nosūtīt: ${broadcastRecipientCount}`)
 
   const canSend = !bSending && !!bSubject.trim() && !!bBody.trim() && broadcastRecipientCount > 0 && broadcastRecipientCount <= 500
 
@@ -186,9 +187,9 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
     <AdminGate>
       <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl font-bold text-foreground">Сегменты и статусы клиентов</h1>
+          <h1 className="text-2xl font-bold text-foreground">{l('Сегменты и статусы клиентов', 'Customer segments and statuses', 'Klientu segmenti un statusi')}</h1>
           <Button variant="outline" asChild>
-            <Link href="/admin">← Назад в админку</Link>
+            <Link href="/admin">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
           </Button>
         </div>
 
@@ -206,7 +207,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
 
         {!loading && fetchError && (
           <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 px-4 py-3">
-            <p className="text-sm text-red-700 dark:text-red-400">Ошибка загрузки данных: {fetchError}</p>
+            <p className="text-sm text-red-700 dark:text-red-400">{l('Ошибка загрузки данных:', 'Data loading error:', 'Datu ielādes kļūda:')} {fetchError}</p>
           </div>
         )}
 
@@ -220,16 +221,16 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     <div className="text-2xl font-bold text-foreground">{counts[seg]}</div>
                     {(() => {
                       const delta = counts[seg] - analytics.previousCounts[API_SEGMENT[seg]]
-                      return <span className={`text-xs font-medium ${delta > 0 ? 'text-green-700 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} title={`Изменение за ${analytics.comparisonDays} дней`}>
-                        {delta > 0 ? '+' : ''}{delta} за 30 дней
+                      return <span className={`text-xs font-medium ${delta > 0 ? 'text-green-700 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} title={l(`Изменение за ${analytics.comparisonDays} дней`, `Change over ${analytics.comparisonDays} days`, `Izmaiņas ${analytics.comparisonDays} dienās`)}>
+                        {delta > 0 ? '+' : ''}{delta} {l('за 30 дней', 'in 30 days', '30 dienās')}
                       </span>
                     })()}
                   </div>
-                  <div className="text-sm font-medium text-foreground mt-0.5">{seg}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{SEGMENT_DESCRIPTIONS[seg]}</div>
-                  <div className="text-xs text-foreground/80 mt-2">Выручка: €{analytics.revenue[API_SEGMENT[seg]].toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                  {seg === 'VIP' && <div className="text-xs text-muted-foreground mt-0.5">Новых VIP: {analytics.becameVip}</div>}
-                  {seg === 'Неактивный' && <div className="text-xs text-muted-foreground mt-0.5">Стали неактивными: {analytics.becameInactive}</div>}
+                  <div className="text-sm font-medium text-foreground mt-0.5">{segmentLabel(seg)}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{segmentDescription(seg)}</div>
+                  <div className="text-xs text-foreground/80 mt-2">{l('Выручка:', 'Revenue:', 'Ieņēmumi:')} €{analytics.revenue[API_SEGMENT[seg]].toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  {seg === 'VIP' && <div className="text-xs text-muted-foreground mt-0.5">{l('Новых VIP:', 'New VIP:', 'Jauni VIP:')} {analytics.becameVip}</div>}
+                  {seg === 'Неактивный' && <div className="text-xs text-muted-foreground mt-0.5">{l('Стали неактивными:', 'Became inactive:', 'Kļuva neaktīvi:')} {analytics.becameInactive}</div>}
                 </div>
               ))}
             </div>
@@ -247,13 +248,13 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         : 'bg-card text-gray-700 dark:text-gray-300 border-border hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
-                    {tab}
+                    {segmentLabel(tab)}
                     {tab !== 'Все' && <span className="ml-1 opacity-70">({counts[tab as Segment]})</span>}
                   </button>
                 ))}
               </div>
               <Input
-                placeholder="Поиск по email…"
+                placeholder={l('Поиск по email…', 'Search by email…', 'Meklēt pēc e-pasta…')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-xs"

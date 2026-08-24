@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { type DeliveryMethod } from '@/lib/orders-store';
 import { formatEuro } from '@/lib/utils';
 import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,21 +41,17 @@ type CustomerSuggestion = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string; cost: number }[] = [
-    { value: 'pickup', label: 'Самовывоз', cost: 0 },
-    { value: 'courier', label: 'Курьер', cost: 5 },
-    { value: 'post', label: 'Почта (Omniva)', cost: 4 },
-    { value: 'venipak', label: 'Venipak', cost: 3 },
-];
-
-const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (терминал)', 'Перевод'];
-
-const LOC = 'ru-RU';
+const DELIVERY_COSTS: Record<DeliveryMethod, number> = { pickup: 0, courier: 5, post: 4, venipak: 3 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function useNewOrderPageState() {
     const router = useRouter();
+    const { locale, l } = useAdminLocale();
+    const paymentMethods = [
+        l('Счёт (invoice)', 'Invoice', 'Rēķins'), l('Наличные', 'Cash', 'Skaidra nauda'),
+        l('Карта (терминал)', 'Card terminal', 'Karšu terminālis'), l('Перевод', 'Bank transfer', 'Bankas pārskaitījums'),
+    ];
 
     // ── Catalog
     const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
@@ -87,7 +84,7 @@ function useNewOrderPageState() {
     const [postalCode, setPostalCode] = useState('');
 
     // ── Payment
-    const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+    const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
     const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'paid'>('unpaid');
 
     // ── Notes
@@ -105,7 +102,7 @@ function useNewOrderPageState() {
             .then((d: { data?: { products?: CatalogProduct[] } }) =>
                 setCatalog(d.data?.products ?? [])
             )
-            .catch((error) => reportAdminError(error, 'Каталог для нового заказа'));
+            .catch((error) => reportAdminError(error, l('Каталог для нового заказа', 'New order catalog', 'Jauna pasūtījuma katalogs')));
 
         fetch('/api/admin/promo-codes')
             .then((r) => r.json())
@@ -120,8 +117,8 @@ function useNewOrderPageState() {
                     );
                 }
             })
-            .catch(() => reportAdminPartial('Заказ можно создать, но проверка промокодов временно недоступна.', 'Новый заказ'));
-    }, []);
+            .catch(() => reportAdminPartial(l('Заказ можно создать, но проверка промокодов временно недоступна.', 'The order can be created, but promo code validation is temporarily unavailable.', 'Pasūtījumu var izveidot, bet promokodu pārbaude pašlaik nav pieejama.'), l('Новый заказ', 'New order', 'Jauns pasūtījums')));
+    }, [l]);
 
     // ── Customer lookup ───────────────────────────────────────────────────────
 
@@ -206,12 +203,12 @@ function useNewOrderPageState() {
         if (!code) return;
         const found = promoCodes.find((p) => p.code.toUpperCase() === code);
         if (!found) {
-            setPromoError('Промокод не найден');
+            setPromoError(l('Промокод не найден', 'Promo code not found', 'Promokods nav atrasts'));
             setPromoResult(null);
             return;
         }
         if (subtotal < found.minOrder) {
-            setPromoError(`Мин. сумма заказа: ${formatEuro(found.minOrder, LOC)}`);
+            setPromoError(l(`Мин. сумма заказа: ${formatEuro(found.minOrder, locale)}`, `Minimum order: ${formatEuro(found.minOrder, locale)}`, `Minimālā pasūtījuma summa: ${formatEuro(found.minOrder, locale)}`));
             setPromoResult(null);
             return;
         }
@@ -241,7 +238,7 @@ function useNewOrderPageState() {
 
     const discount = Math.max(discountFromPromo, discountFromManual);
 
-    const deliveryCost = DELIVERY_OPTIONS.find((d) => d.value === deliveryMethod)?.cost ?? 0;
+    const deliveryCost = DELIVERY_COSTS[deliveryMethod] ?? 0;
 
     const total = Math.max(0, subtotal - discount + deliveryCost);
 
@@ -249,11 +246,11 @@ function useNewOrderPageState() {
 
     const validate = (): string[] => {
         const errs: string[] = [];
-        if (!email.trim()) errs.push('Email покупателя обязателен');
-        if (!firstName.trim()) errs.push('Имя покупателя обязательно');
-        if (items.length === 0) errs.push('Добавьте хотя бы один товар');
-        if (deliveryMethod !== 'pickup' && !address.trim()) errs.push('Укажите адрес доставки');
-        if (deliveryMethod !== 'pickup' && !city.trim()) errs.push('Укажите город');
+        if (!email.trim()) errs.push(l('Email покупателя обязателен', 'Customer email is required', 'Klienta e-pasts ir obligāts'));
+        if (!firstName.trim()) errs.push(l('Имя покупателя обязательно', 'Customer first name is required', 'Klienta vārds ir obligāts'));
+        if (items.length === 0) errs.push(l('Добавьте хотя бы один товар', 'Add at least one product', 'Pievienojiet vismaz vienu preci'));
+        if (deliveryMethod !== 'pickup' && !address.trim()) errs.push(l('Укажите адрес доставки', 'Enter a delivery address', 'Norādiet piegādes adresi'));
+        if (deliveryMethod !== 'pickup' && !city.trim()) errs.push(l('Укажите город', 'Enter a city', 'Norādiet pilsētu'));
         return errs;
     };
 
@@ -299,15 +296,15 @@ function useNewOrderPageState() {
                     | { error?: string; items?: string[] }
                     | null;
                 if (body?.error === 'insufficient_stock') {
-                    setErrors([`Недостаточно остатка для: ${(body.items ?? []).join(', ')}`]);
+                    setErrors([l(`Недостаточно остатка для: ${(body.items ?? []).join(', ')}`, `Insufficient stock for: ${(body.items ?? []).join(', ')}`, `Nepietiekams atlikums: ${(body.items ?? []).join(', ')}`)]);
                 } else if (body?.error === 'invalid_items') {
-                    setErrors(['Некоторые товары больше недоступны — обновите список и попробуйте снова']);
+                    setErrors([l('Некоторые товары больше недоступны — обновите список и попробуйте снова', 'Some products are no longer available — refresh the list and try again', 'Dažas preces vairs nav pieejamas — atjauniniet sarakstu un mēģiniet vēlreiz')]);
                 } else if (body?.error === 'promo_code_usage_limit') {
-                    setErrors(['Лимит использования промокода исчерпан']);
+                    setErrors([l('Лимит использования промокода исчерпан', 'Promo code usage limit reached', 'Promokoda izmantošanas limits ir sasniegts')]);
                 } else if (res.status === 403) {
-                    setErrors(['Недостаточно прав для создания заказа']);
+                    setErrors([l('Недостаточно прав для создания заказа', 'Insufficient permission to create an order', 'Nepietiek tiesību pasūtījuma izveidei')]);
                 } else {
-                    setErrors(['Не удалось создать заказ. Попробуйте ещё раз.']);
+                    setErrors([l('Не удалось создать заказ. Попробуйте ещё раз.', 'Failed to create the order. Try again.', 'Neizdevās izveidot pasūtījumu. Mēģiniet vēlreiz.')]);
                 }
                 return;
             }
@@ -315,14 +312,14 @@ function useNewOrderPageState() {
             const data = (await res.json()) as { order: { id: string }; warning?: string };
             if (data.warning) {
                 reportAdminPartial(
-                    'Заказ создан, но статус/заметка могли не сохраниться — проверьте вручную.',
-                    'Новый заказ'
+                    l('Заказ создан, но статус/заметка могли не сохраниться — проверьте вручную.', 'The order was created, but its status or note may not have been saved — check manually.', 'Pasūtījums ir izveidots, bet statuss vai piezīme, iespējams, netika saglabāta — pārbaudiet manuāli.'),
+                    l('Новый заказ', 'New order', 'Jauns pasūtījums')
                 );
             }
             router.push('/admin/orders');
         } catch (error) {
-            reportAdminError(error, 'Создание заказа');
-            setErrors(['Ошибка сети — заказ не создан. Проверьте соединение и попробуйте снова.']);
+            reportAdminError(error, l('Создание заказа', 'Order creation', 'Pasūtījuma izveide'));
+            setErrors([l('Ошибка сети — заказ не создан. Проверьте соединение и попробуйте снова.', 'Network error — the order was not created. Check your connection and try again.', 'Tīkla kļūda — pasūtījums netika izveidots. Pārbaudiet savienojumu un mēģiniet vēlreiz.')]);
         } finally {
             setSubmitting(false);
         }
@@ -335,6 +332,9 @@ function useNewOrderPageState() {
     const selectCls = inputCls;
 
     return {
+        l,
+        locale,
+        paymentMethods,
         router,
         catalog,
         setCatalog,

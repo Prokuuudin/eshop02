@@ -20,17 +20,6 @@ import { formatEuro } from '@/lib/utils';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string; cost: number }[] = [
-    { value: 'pickup', label: 'Самовывоз', cost: 0 },
-    { value: 'courier', label: 'Курьер', cost: 5 },
-    { value: 'post', label: 'Почта (Omniva)', cost: 4 },
-    { value: 'venipak', label: 'Venipak', cost: 3 },
-];
-
-const PAYMENT_METHODS = ['Счёт (invoice)', 'Наличные', 'Карта (терминал)', 'Перевод'];
-
-const LOC = 'ru-RU';
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -71,6 +60,9 @@ import { useNewOrderPage } from './useNewOrderPage';
 export default function NewOrderPage(): React.ReactElement {
     const pageState = useNewOrderPage();
     const {
+            l,
+            locale,
+            paymentMethods,
             productSearch,
             setProductSearch,
             showDropdown,
@@ -129,21 +121,26 @@ export default function NewOrderPage(): React.ReactElement {
             handleSubmit,
             selectCls,
           } = pageState;
+    const deliveryOptions: { value: DeliveryMethod; label: string; cost: number }[] = [
+        { value: 'pickup', label: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'), cost: 0 },
+        { value: 'courier', label: l('Курьер', 'Courier', 'Kurjers'), cost: 5 },
+        { value: 'post', label: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), cost: 4 },
+        { value: 'venipak', label: 'Venipak', cost: 3 },
+    ];
     return (
         <AdminGate access="partial">
             <main className="w-full py-4">
                 <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
-                            Создать заказ вручную
+                            {l('Создать заказ вручную', 'Create order manually', 'Izveidot pasūtījumu manuāli')}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Заказ создаётся со статусом «Подтверждён» и оплатой «
-                            {paymentStatus === 'paid' ? 'Оплачен' : 'Не оплачен'}»
+                            {l('Заказ создаётся со статусом «Подтверждён» и оплатой', 'The order will be created as “Confirmed” with payment status', 'Pasūtījums tiks izveidots ar statusu “Apstiprināts” un maksājuma statusu')} «{paymentStatus === 'paid' ? l('Оплачен', 'Paid', 'Apmaksāts') : l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}»
                         </p>
                     </div>
                     <Link href="/admin/orders">
-                        <Button variant="outline">← Заказы</Button>
+                        <Button variant="outline">← {l('Заказы', 'Orders', 'Pasūtījumi')}</Button>
                     </Link>
                 </div>
 
@@ -151,7 +148,7 @@ export default function NewOrderPage(): React.ReactElement {
                     {/* ── Left: form ── */}
                     <div className="lg:col-span-2 space-y-5">
                         {/* Customer */}
-                        <Section title="Покупатель">
+                        <Section title={l('Покупатель', 'Customer', 'Klients')}>
                             <div className="relative" ref={searchRef}>
                                 <Field label="Email" required>
                                     <Input
@@ -192,22 +189,22 @@ export default function NewOrderPage(): React.ReactElement {
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <Field label="Имя" required>
+                                <Field label={l('Имя', 'First name', 'Vārds')} required>
                                     <Input
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        placeholder="Иван"
+                                        placeholder={l('Иван', 'John', 'Jānis')}
                                     />
                                 </Field>
-                                <Field label="Фамилия">
+                                <Field label={l('Фамилия', 'Last name', 'Uzvārds')}>
                                     <Input
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        placeholder="Петров"
+                                        placeholder={l('Петров', 'Smith', 'Bērziņš')}
                                     />
                                 </Field>
                             </div>
-                            <Field label="Телефон">
+                            <Field label={l('Телефон', 'Phone', 'Tālrunis')}>
                                 <Input
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
@@ -217,7 +214,7 @@ export default function NewOrderPage(): React.ReactElement {
                         </Section>
 
                         {/* Products */}
-                        <Section title="Товары">
+                        <Section title={l('Товары', 'Products', 'Preces')}>
                             {/* Search */}
                             <div className="relative">
                                 <Input
@@ -227,7 +224,7 @@ export default function NewOrderPage(): React.ReactElement {
                                         setShowDropdown(true);
                                     }}
                                     onFocus={() => setShowDropdown(true)}
-                                    placeholder="Поиск по названию, SKU, бренду..."
+                                    placeholder={l('Поиск по названию, SKU, бренду...', 'Search by name, SKU, or brand...', 'Meklēt pēc nosaukuma, SKU vai zīmola...')}
                                 />
                                 {showDropdown && productResults.length > 0 && (
                                     <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-lg border border-border bg-card shadow-xl max-h-72 overflow-y-auto">
@@ -259,7 +256,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                 </div>
                                                 <div className="shrink-0 text-right">
                                                     <p className="text-sm font-semibold text-foreground">
-                                                        {formatEuro(p.price, LOC)}
+                                                        {formatEuro(p.price, locale)}
                                                     </p>
                                                     <p
                                                         className={`text-xs ${
@@ -268,7 +265,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                                 : 'text-gray-400'
                                                         }`}
                                                     >
-                                                        {p.stock === 0 ? 'нет' : `${p.stock} шт`}
+                                                        {p.stock === 0 ? l('нет', 'none', 'nav') : `${p.stock} ${l('шт', 'pcs', 'gab.')}`}
                                                     </p>
                                                 </div>
                                             </button>
@@ -280,7 +277,7 @@ export default function NewOrderPage(): React.ReactElement {
                             {/* Added items */}
                             {items.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-4">
-                                    Начните вводить название товара чтобы добавить его в заказ
+                                    {l('Начните вводить название товара чтобы добавить его в заказ', 'Start typing a product name to add it to the order', 'Sāciet rakstīt preces nosaukumu, lai pievienotu to pasūtījumam')}
                                 </p>
                             ) : (
                                 <div className="space-y-2">
@@ -322,7 +319,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                         )
                                                     }
                                                     className="h-8 w-20 px-2 py-1 text-sm text-center tabular-nums"
-                                                    title="Цена за единицу (можно изменить)"
+                                                    title={l('Цена за единицу (можно изменить)', 'Unit price (editable)', 'Vienības cena (rediģējama)')}
                                                 />
                                             </div>
                                             {/* Qty */}
@@ -357,7 +354,7 @@ export default function NewOrderPage(): React.ReactElement {
                                             </div>
                                             {/* Line total */}
                                             <span className="w-20 text-right text-sm font-semibold text-foreground shrink-0 tabular-nums">
-                                                {formatEuro(item.unitPrice * item.quantity, LOC)}
+                                                {formatEuro(item.unitPrice * item.quantity, locale)}
                                             </span>
                                             <button
                                                 type="button"
@@ -373,12 +370,12 @@ export default function NewOrderPage(): React.ReactElement {
                         </Section>
 
                         {/* Discounts */}
-                        <Section title="Скидки">
+                        <Section title={l('Скидки', 'Discounts', 'Atlaides')}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Promo code */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-medium text-muted-foreground">
-                                        Промокод
+                                        {l('Промокод', 'Promo code', 'Promokods')}
                                     </p>
                                     {promoResult ? (
                                         <div className="flex items-center gap-2">
@@ -414,7 +411,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                 variant="outline"
                                                 onClick={applyPromo}
                                             >
-                                                Применить
+                                                {l('Применить', 'Apply', 'Lietot')}
                                             </Button>
                                         </div>
                                     )}
@@ -450,10 +447,10 @@ export default function NewOrderPage(): React.ReactElement {
                                 {/* Manual discount */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-medium text-muted-foreground">
-                                        Ручная скидка, %
+                                        {l('Ручная скидка, %', 'Manual discount, %', 'Manuālā atlaide, %')}
                                         {promoResult && (
                                             <span className="text-muted-foreground ml-1">
-                                                (применяется большее из двух)
+                                                {l('(применяется большее из двух)', '(the larger of the two is applied)', '(tiek piemērota lielākā no abām)')}
                                             </span>
                                         )}
                                     </p>
@@ -471,7 +468,7 @@ export default function NewOrderPage(): React.ReactElement {
                                     </div>
                                     {discountFromManual > 0 && (
                                         <p className="text-xs text-amber-600 dark:text-amber-400">
-                                            −{formatEuro(discountFromManual, LOC)}
+                                            −{formatEuro(discountFromManual, locale)}
                                         </p>
                                     )}
                                 </div>
@@ -479,9 +476,9 @@ export default function NewOrderPage(): React.ReactElement {
                         </Section>
 
                         {/* Delivery */}
-                        <Section title="Доставка">
+                        <Section title={l('Доставка', 'Delivery', 'Piegāde')}>
                             <div className="flex flex-wrap gap-2">
-                                {DELIVERY_OPTIONS.map((opt) => (
+                                {deliveryOptions.map((opt) => (
                                     <button
                                         key={opt.value}
                                         type="button"
@@ -495,7 +492,7 @@ export default function NewOrderPage(): React.ReactElement {
                                     >
                                         {opt.label}
                                         <span className="ml-1.5 text-xs opacity-70">
-                                            {opt.cost === 0 ? 'бесплатно' : `€${opt.cost}`}
+                                            {opt.cost === 0 ? l('бесплатно', 'free', 'bez maksas') : `€${opt.cost}`}
                                         </span>
                                     </button>
                                 ))}
@@ -503,22 +500,22 @@ export default function NewOrderPage(): React.ReactElement {
 
                             {deliveryMethod !== 'pickup' && (
                                 <div className="space-y-3 pt-1">
-                                    <Field label="Адрес" required>
+                                    <Field label={l('Адрес', 'Address', 'Adrese')} required>
                                         <Input
                                             value={address}
                                             onChange={(e) => setAddress(e.target.value)}
-                                            placeholder="ул. Пушкина, д. 10, кв. 5"
+                                            placeholder={l('ул. Примерная, д. 10, кв. 5', '10 Example Street, Apt. 5', 'Parauga iela 10–5')}
                                         />
                                     </Field>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Field label="Город" required>
+                                        <Field label={l('Город', 'City', 'Pilsēta')} required>
                                             <Input
                                                 value={city}
                                                 onChange={(e) => setCity(e.target.value)}
-                                                placeholder="Рига"
+                                                placeholder={l('Рига', 'Riga', 'Rīga')}
                                             />
                                         </Field>
-                                        <Field label="Индекс">
+                                        <Field label={l('Индекс', 'Postal code', 'Pasta indekss')}>
                                             <Input
                                                 value={postalCode}
                                                 onChange={(e) => setPostalCode(e.target.value)}
@@ -531,15 +528,15 @@ export default function NewOrderPage(): React.ReactElement {
                         </Section>
 
                         {/* Payment */}
-                        <Section title="Оплата">
+                        <Section title={l('Оплата', 'Payment', 'Apmaksa')}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Field label="Способ оплаты">
+                                <Field label={l('Способ оплаты', 'Payment method', 'Apmaksas veids')}>
                                     <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                                         <SelectTrigger className={selectCls}>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {PAYMENT_METHODS.map((m) => (
+                                            {paymentMethods.map((m) => (
                                                 <SelectItem key={m} value={m}>
                                                     {m}
                                                 </SelectItem>
@@ -547,7 +544,7 @@ export default function NewOrderPage(): React.ReactElement {
                                         </SelectContent>
                                     </Select>
                                 </Field>
-                                <Field label="Статус оплаты">
+                                <Field label={l('Статус оплаты', 'Payment status', 'Maksājuma statuss')}>
                                     <Select
                                         value={paymentStatus}
                                         onValueChange={(v) =>
@@ -558,8 +555,8 @@ export default function NewOrderPage(): React.ReactElement {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="unpaid">Не оплачен</SelectItem>
-                                            <SelectItem value="paid">Оплачен</SelectItem>
+                                            <SelectItem value="unpaid">{l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}</SelectItem>
+                                            <SelectItem value="paid">{l('Оплачен', 'Paid', 'Apmaksāts')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </Field>
@@ -567,12 +564,12 @@ export default function NewOrderPage(): React.ReactElement {
                         </Section>
 
                         {/* Notes */}
-                        <Section title="Заметка менеджера">
+                        <Section title={l('Заметка менеджера', 'Manager note', 'Vadītāja piezīme')}>
                             <Textarea
                                 rows={3}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Внутренний комментарий (клиент не видит)..."
+                                placeholder={l('Внутренний комментарий (клиент не видит)...', 'Internal comment (hidden from customer)...', 'Iekšējs komentārs (klients neredz)...')}
                                 className="w-full resize-none text-sm"
                             />
                         </Section>
@@ -593,7 +590,7 @@ export default function NewOrderPage(): React.ReactElement {
                     <div className="lg:col-span-1">
                         <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
                             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                Сводка заказа
+                                {l('Сводка заказа', 'Order summary', 'Pasūtījuma kopsavilkums')}
                             </h2>
 
                             {/* Customer */}
@@ -618,7 +615,7 @@ export default function NewOrderPage(): React.ReactElement {
                                                 {item.product.title} ×{item.quantity}
                                             </span>
                                             <span className="shrink-0 text-foreground tabular-nums">
-                                                {formatEuro(item.unitPrice * item.quantity, LOC)}
+                                                {formatEuro(item.unitPrice * item.quantity, locale)}
                                             </span>
                                         </div>
                                     ))}
@@ -628,15 +625,15 @@ export default function NewOrderPage(): React.ReactElement {
                             {items.length > 0 && (
                                 <div className="border-t border-border pt-3 space-y-1.5 text-sm">
                                     <div className="flex justify-between text-muted-foreground">
-                                        <span>Товары</span>
+                                        <span>{l('Товары', 'Products', 'Preces')}</span>
                                         <span className="tabular-nums">
-                                            {formatEuro(subtotal, LOC)}
+                                            {formatEuro(subtotal, locale)}
                                         </span>
                                     </div>
                                     {discount > 0 && (
                                         <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                                             <span>
-                                                Скидка
+                                                {l('Скидка', 'Discount', 'Atlaide')}
                                                 {promoResult &&
                                                 discountFromPromo >= discountFromManual
                                                     ? ` (${promoResult.code})`
@@ -645,15 +642,15 @@ export default function NewOrderPage(): React.ReactElement {
                                                     : ''}
                                             </span>
                                             <span className="tabular-nums">
-                                                −{formatEuro(discount, LOC)}
+                                                −{formatEuro(discount, locale)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-muted-foreground">
                                         <span>
-                                            Доставка (
+                                            {l('Доставка', 'Delivery', 'Piegāde')} (
                                             {
-                                                DELIVERY_OPTIONS.find(
+                                                deliveryOptions.find(
                                                     (d) => d.value === deliveryMethod
                                                 )?.label
                                             }
@@ -661,14 +658,14 @@ export default function NewOrderPage(): React.ReactElement {
                                         </span>
                                         <span className="tabular-nums">
                                             {deliveryCost === 0
-                                                ? 'бесплатно'
-                                                : formatEuro(deliveryCost, LOC)}
+                                                ? l('бесплатно', 'free', 'bez maksas')
+                                                : formatEuro(deliveryCost, locale)}
                                         </span>
                                     </div>
                                     <div className="flex justify-between font-bold text-lg text-foreground pt-1 border-t border-border">
-                                        <span>Итого</span>
+                                        <span>{l('Итого', 'Total', 'Kopā')}</span>
                                         <span className="tabular-nums">
-                                            {formatEuro(total, LOC)}
+                                            {formatEuro(total, locale)}
                                         </span>
                                     </div>
                                 </div>
@@ -676,10 +673,10 @@ export default function NewOrderPage(): React.ReactElement {
 
                             {/* Payment summary */}
                             <div className="text-xs text-muted-foreground space-y-0.5">
-                                <p>Оплата: {paymentMethod}</p>
+                                <p>{l('Оплата:', 'Payment:', 'Apmaksa:')} {paymentMethod}</p>
                                 <p>
-                                    Статус:{' '}
-                                    {paymentStatus === 'paid' ? '✓ Оплачен' : '⚠ Не оплачен'}
+                                    {l('Статус:', 'Status:', 'Statuss:')}{' '}
+                                    {paymentStatus === 'paid' ? `✓ ${l('Оплачен', 'Paid', 'Apmaksāts')}` : `⚠ ${l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}`}
                                 </p>
                             </div>
 
@@ -689,15 +686,15 @@ export default function NewOrderPage(): React.ReactElement {
                                 onClick={handleSubmit}
                             >
                                 {submitting
-                                    ? 'Создание...'
-                                    : `Создать заказ${
-                                          total > 0 ? ` · ${formatEuro(total, LOC)}` : ''
+                                    ? l('Создание...', 'Creating...', 'Izveido...')
+                                    : `${l('Создать заказ', 'Create order', 'Izveidot pasūtījumu')}${
+                                          total > 0 ? ` · ${formatEuro(total, locale)}` : ''
                                       }`}
                             </Button>
 
                             {items.length === 0 && (
                                 <p className="text-xs text-muted-foreground text-center">
-                                    Добавьте товары чтобы создать заказ
+                                    {l('Добавьте товары чтобы создать заказ', 'Add products to create the order', 'Pievienojiet preces, lai izveidotu pasūtījumu')}
                                 </p>
                             )}
                         </div>

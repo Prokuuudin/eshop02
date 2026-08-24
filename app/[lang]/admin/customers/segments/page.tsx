@@ -61,14 +61,14 @@ const EMPTY_ANALYTICS: SegmentAnalytics = {
   becameVip: 0, becameInactive: 0, comparisonDays: 30,
 }
 
-function segmentReason(customer: CustomerRow): string {
-  if (customer.segment === 'VIP') return `Потрачено €${customer.totalSpent.toFixed(2)} — больше €500`
-  if (customer.segment === 'Постоянный') return `${customer.totalOrders} заказов — больше 3`
+function segmentReason(customer: CustomerRow, l: (ru: string, en: string, lv: string) => string): string {
+  if (customer.segment === 'VIP') return l(`Потрачено €${customer.totalSpent.toFixed(2)} — больше €500`, `Spent €${customer.totalSpent.toFixed(2)} — over €500`, `Iztērēti €${customer.totalSpent.toFixed(2)} — vairāk nekā €500`)
+  if (customer.segment === 'Постоянный') return l(`${customer.totalOrders} заказов — больше 3`, `${customer.totalOrders} orders — more than 3`, `${customer.totalOrders} pasūtījumi — vairāk nekā 3`)
   if (customer.segment === 'Неактивный' && customer.lastOrderDate) {
     const days = Math.max(0, Math.floor((Date.now() - new Date(customer.lastOrderDate).getTime()) / 86_400_000))
-    return `${days} дней без заказов — больше 180`
+    return l(`${days} дней без заказов — больше 180`, `${days} days without orders — over 180`, `${days} dienas bez pasūtījumiem — vairāk nekā 180`)
   }
-  return `${customer.totalOrders} заказ${customer.totalOrders === 1 ? '' : 'а'} и покупка в последние 180 дней`
+  return l(`${customer.totalOrders} заказов и покупка за последние 180 дней`, `${customer.totalOrders} orders and a purchase in the last 180 days`, `${customer.totalOrders} pasūtījumi un pirkums pēdējās 180 dienās`)
 }
 
 export default function AdminCustomerSegmentsPage(): React.ReactElement {
@@ -271,14 +271,14 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-primary dark:text-primary">
-                      Рассылка по сегменту
+                      {l('Рассылка по сегменту', 'Segment broadcast', 'Segmenta izsūtne')}
                     </span>
                     <span className="rounded-full bg-primary/10 dark:bg-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary dark:text-primary">
-                      {broadcastRecipientCount} получателей
-                      {activeTab !== 'Все' && ` · ${activeTab}`}
+                      {broadcastRecipientCount} {l('получателей', 'recipients', 'saņēmēji')}
+                      {activeTab !== 'Все' && ` · ${segmentLabel(activeTab)}`}
                     </span>
                   </div>
-                  <span className="text-muted-foreground text-xs">{showBroadcast ? '▲ Свернуть' : '▼ Развернуть'}</span>
+                  <span className="text-muted-foreground text-xs">{showBroadcast ? `▲ ${l('Свернуть', 'Collapse', 'Sakļaut')}` : `▼ ${l('Развернуть', 'Expand', 'Izvērst')}`}</span>
                 </button>
 
                 {showBroadcast && (
@@ -287,29 +287,29 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     {/* Recipients info */}
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>
-                        Получатели: <strong className="text-foreground">{broadcastRecipientCount}</strong>
-                        {activeTab !== 'Все' && ` клиентов сегмента «${activeTab}»`}
-                        {activeTab === 'Все' && ' (все клиенты)'}
+                        {l('Получатели:', 'Recipients:', 'Saņēmēji:')} <strong className="text-foreground">{broadcastRecipientCount}</strong>
+                        {activeTab !== 'Все' && ` · ${segmentLabel(activeTab)}`}
+                        {activeTab === 'Все' && l(' (все клиенты)', ' (all customers)', ' (visi klienti)')}
                       </span>
                       <span className="text-muted-foreground">·</span>
-                      <span>Переменные: <code className="bg-muted px-1 rounded">{'{first_name}'}</code> <code className="bg-muted px-1 rounded">{'{last_name}'}</code> <code className="bg-muted px-1 rounded">{'{email}'}</code></span>
+                      <span>{l('Переменные:', 'Variables:', 'Mainīgie:')} <code className="bg-muted px-1 rounded">{'{first_name}'}</code> <code className="bg-muted px-1 rounded">{'{last_name}'}</code> <code className="bg-muted px-1 rounded">{'{email}'}</code></span>
                     </div>
 
                     {/* Subject */}
                     <div>
-                      <label htmlFor="broadcast-subject" className="block text-xs font-medium text-muted-foreground mb-1">Тема письма</label>
+                      <label htmlFor="broadcast-subject" className="block text-xs font-medium text-muted-foreground mb-1">{l('Тема письма', 'Email subject', 'E-pasta tēma')}</label>
                       <Input
                         id="broadcast-subject"
                         value={bSubject}
                         onChange={(e) => setBSubject(e.target.value)}
-                        placeholder="Например: Привет, {first_name}! Специальное предложение для вас"
+                        placeholder={l('Например: Привет, {first_name}! Специальное предложение для вас', 'For example: Hi, {first_name}! A special offer for you', 'Piemēram: Sveiki, {first_name}! Īpašs piedāvājums jums')}
                       />
                     </div>
 
                     {/* Body with edit/preview tabs */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label htmlFor="broadcast-body" className="text-xs font-medium text-muted-foreground">Текст письма</label>
+                        <label htmlFor="broadcast-body" className="text-xs font-medium text-muted-foreground">{l('Текст письма', 'Email body', 'E-pasta teksts')}</label>
                         <div className="flex rounded-md border border-border overflow-hidden text-xs">
                           {(['edit', 'preview'] as const).map((t) => (
                             <button
@@ -318,7 +318,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                               onClick={() => setBTab(t)}
                               className={`px-3 py-1 transition-colors ${bTab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                             >
-                              {t === 'edit' ? 'Редактор' : 'Превью'}
+                              {t === 'edit' ? l('Редактор', 'Editor', 'Redaktors') : l('Предпросмотр', 'Preview', 'Priekšskatījums')}
                             </button>
                           ))}
                         </div>
@@ -330,7 +330,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                           rows={7}
                           value={bBody}
                           onChange={(e) => setBBody(e.target.value)}
-                          placeholder={'Здравствуйте, {first_name}!\n\nПишем вам по поводу...'}
+                          placeholder={l('Здравствуйте, {first_name}!\n\nПишем вам по поводу...', 'Hello, {first_name}!\n\nWe are writing to you about...', 'Sveiki, {first_name}!\n\nRakstām jums par...')}
                           className="w-full resize-none text-sm"
                         />
                       ) : (
@@ -338,7 +338,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                           {bBody ? (
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground mb-3">
-                                Тема: <span className="text-foreground">{renderPreview(bSubject, SAMPLE_VARS) || '—'}</span>
+                                {l('Тема:', 'Subject:', 'Tēma:')} <span className="text-foreground">{renderPreview(bSubject, SAMPLE_VARS) || '—'}</span>
                               </p>
                               <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                                 {renderPreview(bBody, SAMPLE_VARS)}
@@ -348,7 +348,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                               </p>
                             </div>
                           ) : (
-                            <p className="text-sm text-muted-foreground">Введите текст письма в редакторе</p>
+                            <p className="text-sm text-muted-foreground">{l('Введите текст письма в редакторе', 'Enter the email text in the editor', 'Ievadiet e-pasta tekstu redaktorā')}</p>
                           )}
                         </div>
                       )}
@@ -357,10 +357,10 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     {/* Send button + confirm dialog + result */}
                     <div className="flex flex-wrap items-center gap-3 pt-1">
                       <ConfirmActionDialog
-                        title="Подтвердите рассылку"
-                        description={`Отправить письмо ${broadcastRecipientCount} получателям${activeTab !== 'Все' ? ` (${activeTab})` : ''}? Это действие нельзя отменить.`}
-                        confirmLabel="Отправить"
-                        cancelLabel="Отмена"
+                        title={l('Подтвердите рассылку', 'Confirm broadcast', 'Apstipriniet izsūtni')}
+                        description={l(`Отправить письмо ${broadcastRecipientCount} получателям? Это действие нельзя отменить.`, `Send the email to ${broadcastRecipientCount} recipients? This cannot be undone.`, `Nosūtīt e-pastu ${broadcastRecipientCount} saņēmējiem? Šo darbību nevar atsaukt.`)}
+                        confirmLabel={l('Отправить', 'Send', 'Nosūtīt')}
+                        cancelLabel={l('Отмена', 'Cancel', 'Atcelt')}
                         onConfirm={() => void sendBroadcast()}
                         trigger={
                           <Button
@@ -372,10 +372,10 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         }
                       />
                       {!bSubject.trim() || !bBody.trim() ? (
-                        <span className="text-xs text-muted-foreground">Заполните тему и текст</span>
+                        <span className="text-xs text-muted-foreground">{l('Заполните тему и текст', 'Enter a subject and message', 'Ievadiet tēmu un tekstu')}</span>
                       ) : null}
                       {broadcastRecipientCount > 500 && (
-                        <span className="text-xs text-amber-700 dark:text-amber-400">В одной рассылке допустимо не более 500 получателей. Выберите более узкий сегмент.</span>
+                        <span className="text-xs text-amber-700 dark:text-amber-400">{l('В одной рассылке допустимо не более 500 получателей. Выберите более узкий сегмент.', 'A broadcast can have at most 500 recipients. Select a narrower segment.', 'Vienā izsūtnē drīkst būt ne vairāk kā 500 saņēmēju. Izvēlieties šaurāku segmentu.')}</span>
                       )}
                     </div>
 
@@ -383,12 +383,12 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                     {bResult && (
                       <div className={`rounded-lg border px-4 py-3 ${bResult.failed === 0 ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20'}`}>
                         <p className="text-sm font-medium text-foreground">
-                          Рассылка завершена: <span className="text-green-700 dark:text-green-400">{bResult.sent} отправлено</span>
-                          {bResult.failed > 0 && <span className="text-red-600 dark:text-red-400"> · {bResult.failed} ошибок</span>}
+                          {l('Рассылка завершена:', 'Broadcast completed:', 'Izsūtne pabeigta:')} <span className="text-green-700 dark:text-green-400">{bResult.sent} {l('отправлено', 'sent', 'nosūtīti')}</span>
+                          {bResult.failed > 0 && <span className="text-red-600 dark:text-red-400"> · {bResult.failed} {l('ошибок', 'failed', 'kļūdas')}</span>}
                         </p>
                         {bResult.failedEmails.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Не доставлено: {bResult.failedEmails.join(', ')}
+                            {l('Не доставлено:', 'Not delivered:', 'Nav piegādāts:')} {bResult.failedEmails.join(', ')}
                           </p>
                         )}
                       </div>
@@ -401,11 +401,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
             {/* Table */}
             {Object.values(counts).every((value) => value === 0) ? (
               <div className="text-center text-muted-foreground py-16 border rounded-lg">
-                Нет данных о заказах. Клиенты появятся после первых заказов.
+                {l('Нет данных о заказах. Клиенты появятся после первых заказов.', 'There is no order data yet. Customers will appear after the first orders.', 'Pasūtījumu datu vēl nav. Klienti parādīsies pēc pirmajiem pasūtījumiem.')}
               </div>
             ) : customers.length === 0 ? (
               <div className="text-center text-muted-foreground py-16 border rounded-lg">
-                Клиенты не найдены по заданным фильтрам.
+                {l('Клиенты не найдены по заданным фильтрам.', 'No customers match the selected filters.', 'Atlasītajiem filtriem neatbilst neviens klients.')}
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border">
@@ -413,12 +413,12 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                   <thead className="bg-muted">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('email')} className="hover:text-foreground">Email{sortMark('email')}</button></th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Имя</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalOrders')} className="hover:text-foreground">Заказов{sortMark('totalOrders')}</button></th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalSpent')} className="hover:text-foreground">Потрачено{sortMark('totalSpent')}</button></th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('lastOrderDate')} className="hover:text-foreground">Последний заказ{sortMark('lastOrderDate')}</button></th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Сегмент</th>
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Причина</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">{l('Имя', 'Name', 'Vārds')}</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalOrders')} className="hover:text-foreground">{l('Заказов', 'Orders', 'Pasūtījumi')}{sortMark('totalOrders')}</button></th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('totalSpent')} className="hover:text-foreground">{l('Потрачено', 'Spent', 'Iztērēts')}{sortMark('totalSpent')}</button></th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground"><button type="button" onClick={() => changeSort('lastOrderDate')} className="hover:text-foreground">{l('Последний заказ', 'Last order', 'Pēdējais pasūtījums')}{sortMark('lastOrderDate')}</button></th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">{l('Сегмент', 'Segment', 'Segments')}</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">{l('Причина', 'Reason', 'Iemesls')}</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
@@ -438,15 +438,15 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                         <td className="px-4 py-3 text-right text-foreground">€{c.totalSpent.toFixed(2)}</td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {c.lastOrderDate
-                            ? new Date(c.lastOrderDate).toLocaleDateString('ru-RU')
+                            ? new Date(c.lastOrderDate).toLocaleDateString(locale)
                             : '—'}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${SEGMENT_COLORS[c.segment]}`}>
-                            {c.segment}
+                            {segmentLabel(c.segment)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[240px]" title={segmentReason(c)}>{segmentReason(c)}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[240px]" title={segmentReason(c, l)}>{segmentReason(c, l)}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                             <a
@@ -460,7 +460,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                               href={`/admin/customers/profile?email=${encodeURIComponent(c.email)}`}
                               className="text-xs text-primary hover:underline"
                             >
-                              Профиль →
+                              {l('Профиль', 'Profile', 'Profils')} →
                             </Link>
                           </div>
                         </td>
@@ -473,11 +473,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
 
             {total > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-                <span>Показано {(page - 1) * 50 + 1}–{Math.min(page * 50, total)} из {total}</span>
+                <span>{l('Показано', 'Showing', 'Parādīti')} {(page - 1) * 50 + 1}–{Math.min(page * 50, total)} {l('из', 'of', 'no')} {total}</span>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || loading}>← Назад</Button>
-                  <span>Страница {page} из {totalPages}</span>
-                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={page >= totalPages || loading}>Вперёд →</Button>
+                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || loading}>← {l('Назад', 'Back', 'Atpakaļ')}</Button>
+                  <span>{l('Страница', 'Page', 'Lapa')} {page} {l('из', 'of', 'no')} {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={page >= totalPages || loading}>{l('Вперёд', 'Next', 'Tālāk')} →</Button>
                 </div>
               </div>
             )}

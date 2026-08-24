@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { formatEuro } from '@/lib/utils'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -41,17 +42,9 @@ const EMPTY_BREAKDOWN: BreakdownResponse = {
   categoryTrend: [],
 }
 
-const monthLabel = (ym: string): string => {
+const monthLabel = (ym: string, locale: string): string => {
   const [y, m] = ym.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' })
-}
-
-const CAT_LABELS: Record<string, string> = {
-  hair: 'Волосы',
-  face: 'Лицо',
-  body: 'Тело',
-  nails: 'Ногти',
-  equipment: 'Аксессуары и инструменты',
+  return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'short', year: '2-digit' })
 }
 
 const CAT_COLORS: Record<string, string> = {
@@ -62,7 +55,6 @@ const CAT_COLORS: Record<string, string> = {
   equipment: '#3b82f6',
 }
 
-const fmt = (v: number) => formatEuro(v, 'ru-RU')
 const pct = (v: number, total: number) => total > 0 ? `${Math.round((v / total) * 100)}%` : '0%'
 
 // ─── Chart components ─────────────────────────────────────────────────────────
@@ -87,6 +79,9 @@ function StackedBarChart({
   categories: string[]
   metric: Metric
 }) {
+  const { locale, l } = useAdminLocale()
+  const fmt = (value: number) => formatEuro(value, locale)
+  const categoryLabel = (cat: string) => cat === 'hair' ? l('Волосы', 'Hair', 'Mati') : cat === 'face' ? l('Лицо', 'Face', 'Seja') : cat === 'body' ? l('Тело', 'Body', 'Ķermenis') : cat === 'nails' ? l('Ногти', 'Nails', 'Nagi') : cat === 'equipment' ? l('Аксессуары и инструменты', 'Accessories and tools', 'Aksesuāri un instrumenti') : cat
   const [hovered, setHovered] = useState<{ monthIdx: number; cat: string } | null>(null)
 
   const totals = useMemo(
@@ -100,7 +95,7 @@ function StackedBarChart({
   const chartW = Math.max(600, data.length * (barW + gap) + 44)
 
   if (data.length === 0) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">Нет данных</p>
+    return <p className="py-12 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
   }
 
   return (
@@ -109,8 +104,8 @@ function StackedBarChart({
         {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
           const y = 8 + (h - 8) * (1 - frac)
           const label = frac === 0 ? '0' : metric === 'revenue'
-            ? `€${Math.round(max * frac).toLocaleString('ru-RU')}`
-            : Math.round(max * frac).toLocaleString('ru-RU')
+            ? `€${Math.round(max * frac).toLocaleString(locale)}`
+            : Math.round(max * frac).toLocaleString(locale)
           return (
             <g key={frac}>
               <line x1={36} x2={chartW - 8} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
@@ -145,7 +140,7 @@ function StackedBarChart({
                     onMouseEnter={() => setHovered({ monthIdx: i, cat })}
                     onMouseLeave={() => setHovered(null)}
                   >
-                    <title>{CAT_LABELS[cat] ?? cat}: {metric === 'revenue' ? fmt(val) : `${val} шт`}</title>
+                    <title>{categoryLabel(cat)}: {metric === 'revenue' ? fmt(val) : `${val} ${l('шт.', 'pcs', 'gab.')}`}</title>
                   </rect>
                 )
               })}
@@ -169,7 +164,7 @@ function StackedBarChart({
         {categories.map((cat) => (
           <div key={cat} className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: CAT_COLORS[cat] ?? '#94a3b8' }} />
-            {CAT_LABELS[cat] ?? cat}
+            {categoryLabel(cat)}
           </div>
         ))}
       </div>
@@ -180,6 +175,9 @@ function StackedBarChart({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesBreakdownPage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
+  const fmt = (value: number) => formatEuro(value, locale)
+  const categoryLabel = (cat: string) => cat === 'hair' ? l('Волосы', 'Hair', 'Mati') : cat === 'face' ? l('Лицо', 'Face', 'Seja') : cat === 'body' ? l('Тело', 'Body', 'Ķermenis') : cat === 'nails' ? l('Ногти', 'Nails', 'Nagi') : cat === 'equipment' ? l('Аксессуары и инструменты', 'Accessories and tools', 'Aksesuāri un instrumenti') : cat
   const [period, setPeriod] = useState<Period>('30d')
   const [metric, setMetric] = useState<Metric>('revenue')
   const [loaded, setLoaded] = useState<BreakdownResponse | null>(null)
@@ -213,7 +211,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
     const monthMap = new Map<string, StackedMonth>()
     data.categoryTrend.forEach((row) => {
       if (!monthMap.has(row.month)) {
-        monthMap.set(row.month, { month: monthLabel(row.month), sortKey: row.month })
+        monthMap.set(row.month, { month: monthLabel(row.month, locale), sortKey: row.month })
       }
       const entry = monthMap.get(row.month)!
       entry[row.cat] = metric === 'revenue' ? row.revenue : row.qty
@@ -226,16 +224,16 @@ export default function SalesBreakdownPage(): React.ReactElement {
     const active = Array.from(catSet).filter((c) => c !== 'other')
 
     return { categoryTrend: trend, activeCategories: active }
-  }, [data.categoryTrend, metric])
+  }, [data.categoryTrend, metric, locale])
 
   // ── Category summary (donut-like table)
   const categorySummary = data.categorySummary
 
   const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-    { value: '7d', label: '7 дней' },
-    { value: '30d', label: '30 дней' },
-    { value: '90d', label: '90 дней' },
-    { value: 'all', label: 'Всё время' },
+    { value: '7d', label: l('7 дней', '7 days', '7 dienas') },
+    { value: '30d', label: l('30 дней', '30 days', '30 dienas') },
+    { value: '90d', label: l('90 дней', '90 days', '90 dienas') },
+    { value: 'all', label: l('Всё время', 'All time', 'Viss periods') },
   ]
 
   const sectionCls = 'rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
@@ -249,9 +247,9 @@ export default function SalesBreakdownPage(): React.ReactElement {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Аналитика: товары и категории</h1>
+            <h1 className="text-2xl font-bold text-foreground">{l('Аналитика: товары и категории', 'Analytics: products and categories', 'Analītika: produkti un kategorijas')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {loaded === null ? 'Загрузка…' : `${data.orderCount} заказов · ${totalQty} единиц товаров`}
+              {loaded === null ? l('Загрузка…', 'Loading…', 'Ielāde…') : l(`${data.orderCount} заказов · ${totalQty} единиц товаров`, `${data.orderCount} orders · ${totalQty} product units`, `${data.orderCount} pasūtījumi · ${totalQty} produktu vienības`)}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -268,7 +266,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
-                  {m === 'revenue' ? 'Выручка' : 'Кол-во'}
+                  {m === 'revenue' ? l('Выручка', 'Revenue', 'Ieņēmumi') : l('Кол-во', 'Quantity', 'Daudzums')}
                 </button>
               ))}
             </div>
@@ -290,7 +288,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
               ))}
             </div>
             <Link href="/admin/sales/analytics" className="text-sm text-primary hover:underline dark:text-primary">
-              ← Продажи
+              ← {l('Продажи', 'Sales', 'Pārdošana')}
             </Link>
           </div>
         </div>
@@ -298,10 +296,10 @@ export default function SalesBreakdownPage(): React.ReactElement {
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: 'Выручка', value: fmt(totalRevenue) },
-            { label: 'Заказов', value: data.orderCount.toLocaleString('ru-RU') },
-            { label: 'Средний чек', value: fmt(aov) },
-            { label: 'Уникальных товаров', value: uniqueProducts.toLocaleString('ru-RU') },
+            { label: l('Выручка', 'Revenue', 'Ieņēmumi'), value: fmt(totalRevenue) },
+            { label: l('Заказов', 'Orders', 'Pasūtījumi'), value: data.orderCount.toLocaleString(locale) },
+            { label: l('Средний чек', 'Average order', 'Vidējais pasūtījums'), value: fmt(aov) },
+            { label: l('Уникальных товаров', 'Unique products', 'Unikāli produkti'), value: uniqueProducts.toLocaleString(locale) },
           ].map((k) => (
             <div key={k.label} className={sectionCls + ' p-4'}>
               <p className="text-xs text-muted-foreground">{k.label}</p>
@@ -317,17 +315,17 @@ export default function SalesBreakdownPage(): React.ReactElement {
           <div className={sectionCls}>
             <div className={headerCls + ' flex items-center justify-between'}>
               <h2 className="text-sm font-semibold text-foreground">
-                Топ-10 товаров · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
+                {l('Топ-10 товаров', 'Top 10 products', 'Top 10 produkti')} · {metric === 'revenue' ? l('по выручке', 'by revenue', 'pēc ieņēmumiem') : l('по количеству', 'by quantity', 'pēc daudzuma')}
               </h2>
-              <span className="text-xs text-muted-foreground">из {uniqueProducts}</span>
+              <span className="text-xs text-muted-foreground">{l('из', 'of', 'no')} {uniqueProducts}</span>
             </div>
             {topProducts.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных за период</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{l('Нет данных за период', 'No data for this period', 'Šajā periodā nav datu')}</p>
             ) : (
               <div className="divide-y divide-border">
                 {topProducts.map((p, i) => {
                   const val = metric === 'revenue' ? p.revenue : p.qty
-                  const valStr = metric === 'revenue' ? fmt(p.revenue) : `${p.qty} шт`
+                  const valStr = metric === 'revenue' ? fmt(p.revenue) : `${p.qty} ${l('шт.', 'pcs', 'gab.')}`
                   return (
                     <div key={i} className="px-5 py-3">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -355,17 +353,17 @@ export default function SalesBreakdownPage(): React.ReactElement {
           <div className={sectionCls}>
             <div className={headerCls + ' flex items-center justify-between'}>
               <h2 className="text-sm font-semibold text-foreground">
-                Топ бренды · {metric === 'revenue' ? 'по выручке' : 'по количеству'}
+                {l('Топ брендов', 'Top brands', 'Populārākie zīmoli')} · {metric === 'revenue' ? l('по выручке', 'by revenue', 'pēc ieņēmumiem') : l('по количеству', 'by quantity', 'pēc daudzuma')}
               </h2>
-              <span className="text-xs text-muted-foreground">{topBrands.length} брендов</span>
+              <span className="text-xs text-muted-foreground">{topBrands.length} {l('брендов', 'brands', 'zīmoli')}</span>
             </div>
             {topBrands.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных за период</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{l('Нет данных за период', 'No data for this period', 'Šajā periodā nav datu')}</p>
             ) : (
               <div className="divide-y divide-border">
                 {topBrands.map((b, i) => {
                   const val = metric === 'revenue' ? b.revenue : b.qty
-                  const valStr = metric === 'revenue' ? fmt(b.revenue) : `${b.qty} шт`
+                  const valStr = metric === 'revenue' ? fmt(b.revenue) : `${b.qty} ${l('шт.', 'pcs', 'gab.')}`
                   return (
                     <div key={i} className="px-5 py-2.5">
                       <div className="flex items-center justify-between gap-2 mb-1">
@@ -393,10 +391,10 @@ export default function SalesBreakdownPage(): React.ReactElement {
           {/* Category summary */}
           <div className={sectionCls}>
             <div className={headerCls}>
-              <h2 className="text-sm font-semibold text-foreground">По категориям</h2>
+              <h2 className="text-sm font-semibold text-foreground">{l('По категориям', 'By category', 'Pēc kategorijas')}</h2>
             </div>
             {categorySummary.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">Нет данных</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
             ) : (
               <div className={bodyPad + ' space-y-3'}>
                 {categorySummary.map((c) => {
@@ -408,11 +406,11 @@ export default function SalesBreakdownPage(): React.ReactElement {
                       <div className="flex items-center justify-between text-sm mb-1">
                         <div className="flex items-center gap-2">
                           <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: color }} />
-                          <span className="text-foreground">{CAT_LABELS[c.cat] ?? c.cat}</span>
+                          <span className="text-foreground">{categoryLabel(c.cat)}</span>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="font-semibold text-foreground">
-                            {metric === 'revenue' ? fmt(c.revenue) : `${c.qty} шт`}
+                            {metric === 'revenue' ? fmt(c.revenue) : `${c.qty} ${l('шт.', 'pcs', 'gab.')}`}
                           </span>
                           <span className="ml-1.5 text-xs text-muted-foreground">{pct(val, metric === 'revenue' ? totalRevenue : totalQty)}</span>
                         </div>
@@ -429,7 +427,7 @@ export default function SalesBreakdownPage(): React.ReactElement {
           <div className={sectionCls + ' lg:col-span-2'}>
             <div className={headerCls}>
               <h2 className="text-sm font-semibold text-foreground">
-                Динамика по категориям · {metric === 'revenue' ? 'выручка по месяцам' : 'продажи по месяцам'}
+                {l('Динамика по категориям', 'Category trends', 'Kategoriju dinamika')} · {metric === 'revenue' ? l('выручка по месяцам', 'monthly revenue', 'mēneša ieņēmumi') : l('продажи по месяцам', 'monthly sales', 'mēneša pārdošana')}
               </h2>
             </div>
             <div className={bodyPad}>

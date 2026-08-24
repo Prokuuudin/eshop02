@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { formatEuro } from '@/lib/utils';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type Period = '7d' | '30d' | '90d' | 'all';
 
@@ -36,14 +37,14 @@ const dayLabel = (isoDate: string): string => {
     return `${d}.${m}`;
 };
 
-const formatMoney = (v: number) => formatEuro(v, 'ru-RU');
-
 function BarChart({
     data,
     color = '#059669',
+    locale,
 }: {
     data: { label: string; value: number }[];
     color?: string;
+    locale: string;
 }) {
     const max = Math.max(...data.map((d) => d.value), 1);
     const h = 160;
@@ -63,7 +64,7 @@ function BarChart({
                         <g key={frac}>
                             <line x1={32} x2={data.length * (barW + gap) + 32} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
                             <text x={28} y={y + 4} textAnchor="end" fontSize={9} fill="#9ca3af">
-                                {frac === 0 ? '0' : Math.round(max * frac).toLocaleString('ru-RU')}
+                                {frac === 0 ? '0' : Math.round(max * frac).toLocaleString(locale)}
                             </text>
                         </g>
                     );
@@ -104,6 +105,8 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 }
 
 export default function SalesAnalyticsPage(): React.ReactElement {
+    const { locale, l } = useAdminLocale();
+    const formatMoney = (value: number) => formatEuro(value, locale);
     const [period, setPeriod] = useState<Period>('30d');
     const [loaded, setLoaded] = useState<AnalyticsResponse | null>(null);
 
@@ -129,10 +132,10 @@ export default function SalesAnalyticsPage(): React.ReactElement {
     const topCategories = data.topCategories;
 
     const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-        { value: '7d', label: '7 дней' },
-        { value: '30d', label: '30 дней' },
-        { value: '90d', label: '90 дней' },
-        { value: 'all', label: 'Всё время' },
+        { value: '7d', label: l('7 дней', '7 days', '7 dienas') },
+        { value: '30d', label: l('30 дней', '30 days', '30 dienas') },
+        { value: '90d', label: l('90 дней', '90 days', '90 dienas') },
+        { value: 'all', label: l('Всё время', 'All time', 'Viss periods') },
     ];
 
     return (
@@ -141,10 +144,10 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">
-                            Аналитика продаж
+                            {l('Аналитика продаж', 'Sales analytics', 'Pārdošanas analītika')}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {loading ? 'Загрузка…' : `${data.orderCount} заказов за период`}
+                            {loading ? l('Загрузка…', 'Loading…', 'Ielāde…') : l(`${data.orderCount} заказов за период`, `${data.orderCount} orders in this period`, `${data.orderCount} pasūtījumi šajā periodā`)}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +155,7 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                         href="/admin/sales/breakdown"
                         className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 dark:border-primary/40 dark:bg-primary/10 dark:text-primary"
                     >
-                        Товары и категории →
+                        {l('Товары и категории', 'Products and categories', 'Produkti un kategorijas')} →
                     </Link>
                     <div className="flex rounded-lg border border-border bg-card p-1">
                         {PERIOD_OPTIONS.map((opt) => (
@@ -174,32 +177,32 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <KpiCard label="Выручка" value={formatMoney(totalRevenue)} />
-                    <KpiCard label="Заказов" value={String(data.orderCount)} />
-                    <KpiCard label="Средний чек" value={formatMoney(avgOrder)} />
-                    <KpiCard label="Покупателей" value={String(uniqueCustomers)} />
+                    <KpiCard label={l('Выручка', 'Revenue', 'Ieņēmumi')} value={formatMoney(totalRevenue)} />
+                    <KpiCard label={l('Заказов', 'Orders', 'Pasūtījumi')} value={String(data.orderCount)} />
+                    <KpiCard label={l('Средний чек', 'Average order', 'Vidējais pasūtījums')} value={formatMoney(avgOrder)} />
+                    <KpiCard label={l('Покупателей', 'Customers', 'Pircēji')} value={String(uniqueCustomers)} />
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <div className="rounded-xl border border-border bg-card p-4">
                         <h2 className="mb-4 text-sm font-semibold text-foreground">
-                            Выручка по дням
+                            {l('Выручка по дням', 'Revenue by day', 'Ieņēmumi pa dienām')}
                         </h2>
                         {revenueByDay.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
                         ) : (
-                            <BarChart data={revenueByDay} color="#059669" />
+                            <BarChart data={revenueByDay} color="#059669" locale={locale} />
                         )}
                     </div>
 
                     <div className="rounded-xl border border-border bg-card p-4">
                         <h2 className="mb-4 text-sm font-semibold text-foreground">
-                            Количество заказов по дням
+                            {l('Количество заказов по дням', 'Orders by day', 'Pasūtījumi pa dienām')}
                         </h2>
                         {ordersByDay.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
                         ) : (
-                            <BarChart data={ordersByDay} color="#3b82f6" />
+                            <BarChart data={ordersByDay} color="#3b82f6" locale={locale} />
                         )}
                     </div>
                 </div>
@@ -208,11 +211,11 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                     <div className="rounded-xl border border-border bg-card">
                         <div className="border-b border-border px-4 py-3">
                             <h2 className="text-sm font-semibold text-foreground">
-                                Топ товаров по выручке
+                                {l('Топ товаров по выручке', 'Top products by revenue', 'Populārākie produkti pēc ieņēmumiem')}
                             </h2>
                         </div>
                         {topProducts.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
                         ) : (
                             <div className="divide-y divide-border">
                                 {topProducts.map((p, i) => (
@@ -234,11 +237,11 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                     <div className="rounded-xl border border-border bg-card">
                         <div className="border-b border-border px-4 py-3">
                             <h2 className="text-sm font-semibold text-foreground">
-                                Выручка по категориям
+                                {l('Выручка по категориям', 'Revenue by category', 'Ieņēmumi pa kategorijām')}
                             </h2>
                         </div>
                         {topCategories.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">Нет данных</p>
+                            <p className="py-8 text-center text-sm text-muted-foreground">{l('Нет данных', 'No data', 'Nav datu')}</p>
                         ) : (
                             <div className="divide-y divide-border">
                                 {topCategories.map((c, i) => {

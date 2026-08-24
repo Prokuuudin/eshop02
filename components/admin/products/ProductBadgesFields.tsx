@@ -1,8 +1,11 @@
+'use client';
+
 import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AddProductFormValues } from './productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const BADGE_OPTIONS = [
     { value: 'sale', label: 'sale', className: 'bg-red-600 text-white' },
@@ -13,11 +16,12 @@ const BADGE_OPTIONS = [
 type BadgeValue = typeof BADGE_OPTIONS[number]['value'];
 
 const ProductBadgesFields: React.FC = () => {
+    const { l } = useAdminLocale();
     const { control } = useFormContext<AddProductFormValues>();
 
     return (
         <div className="add-product__section add-product__section--badges">
-            <h2 className="add-product__section-title">Бейджи</h2>
+            <h2 className="add-product__section-title">{l('Бейджи', 'Badges', 'Žetoni')}</h2>
             <div className="flex gap-4">
                 <Controller
                     name="badges"

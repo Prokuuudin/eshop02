@@ -5,6 +5,7 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AddProductFormValues, Language } from './productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface ProductTranslationsFieldsProps {
     language: Language;
@@ -12,24 +13,25 @@ interface ProductTranslationsFieldsProps {
 
 const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ language }) => {
     const { register } = useFormContext<AddProductFormValues>();
+    const { l } = useAdminLocale();
 
     if (language === 'ru') {
         return (
             <div className="add-product__section add-product__section--translations">
-                <h2 className="add-product__section-title">Контент (RU)</h2>
+                <h2 className="add-product__section-title">{l('Контент', 'Content', 'Saturs')} (RU)</h2>
                 <div className="add-product__fields-grid">
                     <div>
-                        <label htmlFor="product-translation-title" className="block text-sm font-medium mb-1">Название *</label>
-                        <Input id="product-translation-title" placeholder="Название товара" {...register('title')} />
+                        <label htmlFor="product-translation-title" className="block text-sm font-medium mb-1">{l('Название', 'Title', 'Nosaukums')} *</label>
+                        <Input id="product-translation-title" placeholder={l('Название товара', 'Product title', 'Preces nosaukums')} {...register('title')} />
                     </div>
                     <div>
-                        <label htmlFor="product-translation-description" className="block text-sm font-medium mb-1">Описание</label>
-                        <Textarea id="product-translation-description" placeholder="Описание товара" {...register('description')} />
+                        <label htmlFor="product-translation-description" className="block text-sm font-medium mb-1">{l('Описание', 'Description', 'Apraksts')}</label>
+                        <Textarea id="product-translation-description" placeholder={l('Описание товара', 'Product description', 'Preces apraksts')} {...register('description')} />
                     </div>
                     <div>
-                        <label htmlFor="product-translation-ingredients" className="block text-sm font-medium mb-1">Состав (INCI)</label>
+                        <label htmlFor="product-translation-ingredients" className="block text-sm font-medium mb-1">{l('Состав', 'Ingredients', 'Sastāvs')} (INCI)</label>
                         <p className="text-xs text-muted-foreground mb-1">
-                            Один на все языки — таб «Состав» на странице товара; пустое поле = таб скрыт
+                            {l('Один на все языки — таб «Состав» на странице товара; пустое поле = таб скрыт', 'Shared by all languages — the Ingredients tab on the product page; empty field = hidden tab', 'Kopīgs visām valodām — cilne Sastāvs preces lapā; tukšs lauks = cilne paslēpta')}
                         </p>
                         <Textarea id="product-translation-ingredients"
                             placeholder="Aqua;Glycerin;Parfum;..."
@@ -37,44 +39,44 @@ const ProductTranslationsFields: React.FC<ProductTranslationsFieldsProps> = ({ l
                         />
                     </div>
                     <div>
-                        <label htmlFor="product-translation-application" className="block text-sm font-medium mb-1">Применение</label>
+                        <label htmlFor="product-translation-application" className="block text-sm font-medium mb-1">{l('Применение', 'Application', 'Lietošana')}</label>
                         <p className="text-xs text-muted-foreground mb-1">
-                            Таб «Применение» на странице товара; пустое поле = таб скрыт
+                            {l('Таб «Применение» на странице товара; пустое поле = таб скрыт', 'Application tab on the product page; empty field = hidden tab', 'Cilne Lietošana preces lapā; tukšs lauks = cilne paslēpta')}
                         </p>
                         <Textarea id="product-translation-application"
-                            placeholder="Как использовать товар"
+                            placeholder={l('Как использовать товар', 'How to use the product', 'Kā lietot preci')}
                             {...register('application')}
                         />
                     </div>
                     <div>
-                        <label htmlFor="product-translation-warnings" className="block text-sm font-medium mb-1">Предостережения</label>
+                        <label htmlFor="product-translation-warnings" className="block text-sm font-medium mb-1">{l('Предостережения', 'Warnings', 'Brīdinājumi')}</label>
                         <p className="text-xs text-muted-foreground mb-1">
-                            Таб «Предостережения» на странице товара; пустое поле = таб скрыт
+                            {l('Таб «Предостережения» на странице товара; пустое поле = таб скрыт', 'Warnings tab on the product page; empty field = hidden tab', 'Cilne Brīdinājumi preces lapā; tukšs lauks = cilne paslēpta')}
                         </p>
                         <Textarea id="product-translation-warnings"
-                            placeholder="Меры предосторожности, противопоказания"
+                            placeholder={l('Меры предосторожности, противопоказания', 'Precautions, contraindications', 'Piesardzības pasākumi, kontrindikācijas')}
                             {...register('warnings')}
                         />
                     </div>
                 </div>
 
-                <h3 className="add-product__section-title mt-4">Дополнительные характеристики (1–4)</h3>
+                <h3 className="add-product__section-title mt-4">{l('Дополнительные характеристики', 'Additional features', 'Papildu īpašības')} (1–4)</h3>
                 <div className="add-product__fields-grid">
                     <div>
                         <label htmlFor="product-translation-feature1" className="block text-sm font-medium mb-1">Feature 1</label>
-                        <Input id="product-translation-feature1" placeholder="Например: Натуральный состав" {...register('feature1')} />
+                        <Input id="product-translation-feature1" placeholder={l('Например: Натуральный состав', 'For example: Natural ingredients', 'Piemēram: Dabīgs sastāvs')} {...register('feature1')} />
                     </div>
                     <div>
                         <label htmlFor="product-translation-feature2" className="block text-sm font-medium mb-1">Feature 2</label>
-                        <Input id="product-translation-feature2" placeholder="Например: Без парабенов" {...register('feature2')} />
+                        <Input id="product-translation-feature2" placeholder={l('Например: Без парабенов', 'For example: Paraben-free', 'Piemēram: Bez parabēniem')} {...register('feature2')} />
                     </div>
                     <div>
                         <label htmlFor="product-translation-feature3" className="block text-sm font-medium mb-1">Feature 3</label>
-                        <Input id="product-translation-feature3" placeholder="Например: Дерматологически протестировано" {...register('feature3')} />
+                        <Input id="product-translation-feature3" placeholder={l('Например: Дерматологически протестировано', 'For example: Dermatologically tested', 'Piemēram: Dermatoloģiski pārbaudīts')} {...register('feature3')} />
                     </div>
                     <div>
                         <label htmlFor="product-translation-feature4" className="block text-sm font-medium mb-1">Feature 4</label>
-                        <Input id="product-translation-feature4" placeholder="Например: Подходит всем типам кожи" {...register('feature4')} />
+                        <Input id="product-translation-feature4" placeholder={l('Например: Подходит всем типам кожи', 'For example: Suitable for all skin types', 'Piemēram: Piemērots visiem ādas tipiem')} {...register('feature4')} />
                     </div>
                 </div>
             </div>

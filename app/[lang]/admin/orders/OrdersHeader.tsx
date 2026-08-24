@@ -4,12 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersHeader({ state }: { state: OrdersState }): React.ReactElement {
+    const { l } = useAdminLocale();
     const {
             unhandledCount,
             exportOrdersCSV,
@@ -21,10 +23,10 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
         <>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-bold text-foreground">Заказы</h1>
+                    <h1 className="text-3xl font-bold text-foreground">{l('Заказы', 'Orders', 'Pasūtījumi')}</h1>
                     {unhandledCount > 0 && (
                         <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                            {unhandledCount} необработанных
+                            {l(`${unhandledCount} необработанных`, `${unhandledCount} unprocessed`, `${unhandledCount} neapstrādāti`)}
                         </span>
                     )}
                 </div>
@@ -34,7 +36,7 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                             size="sm"
                             className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
-                            + Создать заказ
+                            + {l('Создать заказ', 'Create order', 'Izveidot pasūtījumu')}
                         </Button>
                     </Link>
                     <Button
@@ -45,7 +47,7 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        {exportingOrders ? 'Экспорт…' : 'Заказы (CSV)'}
+                        {exportingOrders ? l('Экспорт…', 'Exporting…', 'Eksportē…') : l('Заказы (CSV)', 'Orders (CSV)', 'Pasūtījumi (CSV)')}
                     </Button>
                     <Button
                         variant="outline"
@@ -55,10 +57,10 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         className="hidden sm:inline-flex gap-1.5"
                     >
                         <Download className="h-3.5 w-3.5" />
-                        {exportingCustomers ? 'Экспорт…' : 'Клиенты (CSV)'}
+                        {exportingCustomers ? l('Экспорт…', 'Exporting…', 'Eksportē…') : l('Клиенты (CSV)', 'Customers (CSV)', 'Klienti (CSV)')}
                     </Button>
                     <Link href="/admin" className="hidden sm:block">
-                        <Button variant="outline">Назад в админку</Button>
+                        <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
                     </Link>
                 </div>
             </div>

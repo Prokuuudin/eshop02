@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AddProductFormValues } from './productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) => {
+    const { l } = useAdminLocale();
     const { control, register } = useFormContext<AddProductFormValues>();
     const { fields, append, remove } = useFieldArray({
         control,
@@ -20,19 +22,19 @@ const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) 
                 <div key={field.id} className="flex gap-2 items-center flex-wrap">
                     <Input
                         className="w-40"
-                        placeholder="Значение (напр.: A-11)"
+                        placeholder={l('Значение (напр.: A-11)', 'Value (e.g. A-11)', 'Vērtība (piem., A-11)')}
                         {...register(`variantGroups.${groupIndex}.options.${idx}.value`)}
                     />
                     <Input
                         className="w-40"
                         type="number"
                         step="0.01"
-                        placeholder="Надбавка к цене, €"
+                        placeholder={l('Надбавка к цене, €', 'Price adjustment, €', 'Cenas piemaksa, €')}
                         {...register(`variantGroups.${groupIndex}.options.${idx}.priceAdjustment`, { valueAsNumber: true })}
                     />
                     <Input
                         className="flex-1 min-w-48"
-                        placeholder="URL картинки опции"
+                        placeholder={l('URL картинки опции', 'Option image URL', 'Opcijas attēla URL')}
                         {...register(`variantGroups.${groupIndex}.options.${idx}.image`)}
                     />
                     <label htmlFor={`variant-${groupIndex}-option-${idx}-preselected`} className="flex items-center gap-1.5 cursor-pointer text-sm whitespace-nowrap">
@@ -47,7 +49,7 @@ const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) 
                                 />
                             )}
                         />
-                        По умолчанию
+                        {l('По умолчанию', 'Default', 'Noklusējums')}
                     </label>
                     <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
                         ✕
@@ -61,25 +63,26 @@ const VariantOptionsFields: React.FC<{ groupIndex: number }> = ({ groupIndex }) 
                 className="self-start"
                 onClick={() => append({ value: '', priceAdjustment: undefined })}
             >
-                + Добавить значение
+                + {l('Добавить значение', 'Add value', 'Pievienot vērtību')}
             </Button>
         </div>
     );
 };
 
 const ProductVariantGroupsFields: React.FC = () => {
+    const { l } = useAdminLocale();
     const { control, register } = useFormContext<AddProductFormValues>();
     const { fields, append, remove } = useFieldArray({ control, name: 'variantGroups' });
 
     return (
         <div className="add-product__section add-product__section--variants">
-            <h2 className="add-product__section-title">Варианты (цвет / комплектация)</h2>
+            <h2 className="add-product__section-title">{l('Варианты (цвет / комплектация)', 'Variants (color / configuration)', 'Varianti (krāsa / komplektācija)')}</h2>
             <div className="flex flex-col gap-4">
                 {fields.map((field, idx) => (
                     <div key={field.id} className="border border-border rounded-lg p-3">
                         <div className="flex gap-2 items-center">
                             <Input
-                                placeholder="Название группы (напр.: Krāsu numurs)"
+                                placeholder={l('Название группы (напр.: Номер цвета)', 'Group name (e.g. Color number)', 'Grupas nosaukums (piem., Krāsas numurs)')}
                                 {...register(`variantGroups.${idx}.name`)}
                             />
                             <label htmlFor={`variant-${idx}-required`} className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
@@ -94,7 +97,7 @@ const ProductVariantGroupsFields: React.FC = () => {
                                         />
                                     )}
                                 />
-                                Обязательно
+                                {l('Обязательно', 'Required', 'Obligāti')}
                             </label>
                             <label htmlFor={`variant-${idx}-image-squares`} className="flex items-center gap-2 cursor-pointer text-sm whitespace-nowrap">
                                 <Controller
@@ -110,10 +113,10 @@ const ProductVariantGroupsFields: React.FC = () => {
                                         />
                                     )}
                                 />
-                                Плитки с картинками
+                                {l('Плитки с картинками', 'Image tiles', 'Attēlu flīzes')}
                             </label>
                             <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
-                                ✕ Удалить группу
+                                ✕ {l('Удалить группу', 'Delete group', 'Dzēst grupu')}
                             </Button>
                         </div>
                         <VariantOptionsFields groupIndex={idx} />
@@ -126,7 +129,7 @@ const ProductVariantGroupsFields: React.FC = () => {
                     className="add-product__option-add"
                     onClick={() => append({ name: '', required: false, options: [] })}
                 >
-                    + Добавить группу вариантов
+                    + {l('Добавить группу вариантов', 'Add variant group', 'Pievienot variantu grupu')}
                 </Button>
             </div>
         </div>

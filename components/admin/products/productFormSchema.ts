@@ -3,20 +3,24 @@ import * as z from 'zod';
 export const LANGUAGES = ['ru', 'en', 'lv'] as const;
 export type Language = typeof LANGUAGES[number];
 
-export const addProductSchema = z.object({
+type Localize = (ru: string, en: string, lv: string) => string;
+
+// The inferred Zod object type is intentionally preserved for AddProductFormValues.
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export const createAddProductSchema = (l: Localize) => z.object({
   // Идентификация
-  id: z.string().min(1, 'ID обязателен'),
+  id: z.string().min(1, l('ID обязателен', 'ID is required', 'ID ir obligāts')),
   sku: z.string().optional(),
   barcode: z.string().optional(),
 
   // Классификация
-  brand: z.string().min(1, 'Бренд обязателен'),
-  category: z.string().min(1, 'Категория обязательна'),
+  brand: z.string().min(1, l('Бренд обязателен', 'Brand is required', 'Zīmols ir obligāts')),
+  category: z.string().min(1, l('Категория обязательна', 'Category is required', 'Kategorija ir obligāta')),
   // Видимость на витрине: active/hidden ↔ Product.isActive (см. lib/product-form-mapping.ts)
   status: z.enum(['active', 'hidden']),
 
   // Названия (мультиязычные)
-  title: z.string().min(1, 'Название RU обязательно'),
+  title: z.string().min(1, l('Название RU обязательно', 'RU title is required', 'RU nosaukums ir obligāts')),
   titleEn: z.string().optional(),
   titleLv: z.string().optional(),
 
@@ -40,7 +44,7 @@ export const addProductSchema = z.object({
   warningsLv: z.string().optional(),
 
   // Цена
-  price: z.number().min(0, 'Цена обязательна'),
+  price: z.number().min(0, l('Цена обязательна', 'Price is required', 'Cena ir obligāta')),
   oldPrice: z.number().min(0).optional(),
 
   // Оптовые цены (структура совпадает с Product.bulkPricingTiers)
@@ -69,11 +73,11 @@ export const addProductSchema = z.object({
   // Варианты товара (цвет/комплектация) — на диске хранятся внутри technicalSpecs.__variantGroupsJson,
   // в форме отдельное поле, см. lib/product-form-mapping.ts
   variantGroups: z.array(z.object({
-    name: z.string().min(1, 'Название группы обязательно'),
+    name: z.string().min(1, l('Название группы обязательно', 'Group name is required', 'Grupas nosaukums ir obligāts')),
     required: z.boolean(),
     displayType: z.literal('imageSquares').optional().catch(undefined),
     options: z.array(z.object({
-      value: z.string().min(1, 'Значение обязательно'),
+      value: z.string().min(1, l('Значение обязательно', 'Value is required', 'Vērtība ir obligāta')),
       priceAdjustment: z.number().optional().catch(undefined),
       image: z.string().optional(),
       preselected: z.boolean().optional(),
@@ -130,4 +134,4 @@ export const addProductSchema = z.object({
   feature4Lv: z.string().optional(),
 });
 
-export type AddProductFormValues = z.infer<typeof addProductSchema>;
+export type AddProductFormValues = z.infer<ReturnType<typeof createAddProductSchema>>;

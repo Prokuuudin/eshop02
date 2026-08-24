@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { addProductSchema, AddProductFormValues, LANGUAGES, Language } from './productFormSchema';
+import { createAddProductSchema, AddProductFormValues, LANGUAGES, Language } from './productFormSchema';
 import { useTranslation } from '@/lib/use-translation';
 import { mapFormValuesToNewProduct, mapFormValuesToProductPatch } from '@/lib/product-form-mapping';
 
@@ -28,6 +28,7 @@ import ProductPreviewCard from './ProductPreviewCard';
 import { ProductFormModeContext } from './ProductFormModeContext';
 import { NotifyPromoSubscribersButton } from './NotifyPromoSubscribersButton';
 import { ChevronDown } from 'lucide-react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 import './AddProductForm.css';
 
@@ -145,7 +146,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { t } = useTranslation();
+    const { l } = useAdminLocale();
     const isEdit = mode === 'edit';
+    const addProductSchema = useMemo(() => createAddProductSchema(l), [l]);
 
     const methods = useForm<AddProductFormValues>({
         resolver: zodResolver(addProductSchema),
@@ -183,7 +186,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                 });
                 if (!res.ok) {
                     const json = await res.json().catch(() => ({}));
-                    throw new Error(json?.error ?? 'Ошибка сохранения');
+                    throw new Error(json?.error ?? l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda'));
                 }
             } else {
                 const res = await fetch('/api/admin/products', {
@@ -193,12 +196,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                 });
                 if (!res.ok) {
                     const json = await res.json().catch(() => ({}));
-                    throw new Error(json?.error ?? 'Ошибка создания товара');
+                    throw new Error(json?.error ?? l('Ошибка создания товара', 'Failed to create product', 'Preces izveides kļūda'));
                 }
             }
             router.push('/admin/products');
         } catch (err) {
-            setSubmitError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+            setSubmitError(err instanceof Error ? err.message : l('Неизвестная ошибка', 'Unknown error', 'Nezināma kļūda'));
         } finally {
             setIsSubmitting(false);
         }
@@ -237,51 +240,51 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             >
                                 <ProductTranslationsFields language={language} />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="Основная информация">
+                            <ProductFormAccordionSection title={l('Основная информация', 'Basic information', 'Pamatinformācija')}>
                                 <ProductBasicFields />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="Цена">
+                            <ProductFormAccordionSection title={l('Цена', 'Price', 'Cena')}>
                                 <ProductPricingFields />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="Склад и наличие">
+                            <ProductFormAccordionSection title={l('Склад и наличие', 'Inventory and availability', 'Noliktava un pieejamība')}>
                                 <ProductInventoryFields />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="Изображения">
+                            <ProductFormAccordionSection title={l('Изображения', 'Images', 'Attēli')}>
                                 <ProductGalleryFields productId={isEdit ? productId : undefined} />
                             </ProductFormAccordionSection>
                             <div className="add-product__options-row">
-                                <ProductFormAccordionSection title="Совместимое оборудование">
+                                <ProductFormAccordionSection title={l('Совместимое оборудование', 'Compatible equipment', 'Saderīgs aprīkojums')}>
                                     <ProductTechSpecsFields />
                                 </ProductFormAccordionSection>
-                                <ProductFormAccordionSection title="Варианты (цвет / комплектация)">
+                                <ProductFormAccordionSection title={l('Варианты (цвет / комплектация)', 'Variants (color / configuration)', 'Varianti (krāsa / komplektācija)')}>
                                     <ProductVariantGroupsFields />
                                 </ProductFormAccordionSection>
-                                <ProductFormAccordionSection title="Сертификаты">
+                                <ProductFormAccordionSection title={l('Сертификаты', 'Certificates', 'Sertifikāti')}>
                                     <ProductCertificatesFields />
                                 </ProductFormAccordionSection>
-                                <ProductFormAccordionSection title="Оптовое ценообразование">
+                                <ProductFormAccordionSection title={l('Оптовое ценообразование', 'Wholesale pricing', 'Vairumtirdzniecības cenas')}>
                                     <ProductBulkPricingFields />
                                 </ProductFormAccordionSection>
                             </div>
-                            <ProductFormAccordionSection title="Похожие товары">
+                            <ProductFormAccordionSection title={l('Похожие товары', 'Related products', 'Saistītās preces')}>
                                 <ProductPicker
                                     name="relatedProductIds"
-                                    title="Похожие товары"
-                                    hint="Показываются в блоке «Похожие товары». Если список пуст — блок заполняется автоматически товарами того же бренда и категории."
+                                    title={l('Похожие товары', 'Related products', 'Saistītās preces')}
+                                    hint={l('Показываются в блоке «Похожие товары». Если список пуст — блок заполняется автоматически товарами того же бренда и категории.', 'Shown in the Related products section. If empty, products from the same brand and category are selected automatically.', 'Tiek rādītas sadaļā Saistītās preces. Ja saraksts ir tukšs, automātiski tiek atlasītas tā paša zīmola un kategorijas preces.')}
                                 />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="Часто покупают вместе">
+                            <ProductFormAccordionSection title={l('Часто покупают вместе', 'Frequently bought together', 'Bieži pērk kopā')}>
                                 <ProductPicker
                                     name="oftenBoughtTogether"
-                                    title="Часто покупают вместе"
-                                    hint="Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов."
+                                    title={l('Часто покупают вместе', 'Frequently bought together', 'Bieži pērk kopā')}
+                                    hint={l('Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов.', 'Shown in the Frequently bought together section. If empty, the list is generated from actual order statistics.', 'Tiek rādītas sadaļā Bieži pērk kopā. Ja saraksts ir tukšs, tas tiek izveidots no reālo pasūtījumu statistikas.')}
                                 />
                             </ProductFormAccordionSection>
                             <ProductFormAccordionSection
                                 title={
                                     <>
-                                        Производитель и дистрибьютор{' '}
-                                        <span className="text-destructive">(обязательно)</span>
+                                        {l('Производитель и дистрибьютор', 'Manufacturer and distributor', 'Ražotājs un izplatītājs')}{' '}
+                                        <span className="text-destructive">{l('(обязательно)', '(required)', '(obligāti)')}</span>
                                     </>
                                 }
                             >
@@ -295,17 +298,17 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <div className="flex gap-4">
                                 <Button type="submit" disabled={!formState.isValid || isSubmitting}>
                                     {isSubmitting
-                                        ? 'Сохраняю...'
+                                        ? l('Сохраняю...', 'Saving...', 'Saglabā...')
                                         : isEdit
-                                        ? t('admin.editProduct.save', 'Сохранить изменения')
-                                        : t('admin.addProduct.save', 'Сохранить товар')}
+                                        ? t('admin.editProduct.save', l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas'))
+                                        : t('admin.addProduct.save', l('Сохранить товар', 'Save product', 'Saglabāt preci'))}
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="secondary"
                                     onClick={() => router.push('/admin/products')}
                                 >
-                                    {t('admin.addProduct.cancel', 'Отмена')}
+                                    {t('admin.addProduct.cancel', l('Отмена', 'Cancel', 'Atcelt'))}
                                 </Button>
                                 {isEdit && productId && (
                                     <Button
@@ -315,7 +318,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                             window.open(`/product/${productId}`, '_blank')
                                         }
                                     >
-                                        Открыть на сайте ↗
+                                        {l('Открыть на сайте', 'Open on website', 'Atvērt vietnē')} ↗
                                     </Button>
                                 )}
                                 {isEdit && productId && <NotifyPromoSubscribersButton productId={productId} />}

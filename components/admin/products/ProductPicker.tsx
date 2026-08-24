@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { AddProductFormValues } from './productFormSchema';
 import type { AdminProductSearchItem } from '@/app/api/admin/products/search/route';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type PickerFieldName = 'relatedProductIds' | 'oftenBoughtTogether';
 
@@ -20,6 +21,7 @@ interface ProductPickerProps {
 // Пикер товаров по поиску: чипы выбранных + строка поиска с подсказками.
 // Значение в форме остаётся string[] с ID товаров.
 const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
+    const { l } = useAdminLocale();
     const { watch, setValue, getValues } = useFormContext<AddProductFormValues>();
     const selectedIds: string[] = watch(name) ?? [];
 
@@ -50,7 +52,10 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                 if (cancelled || !json?.data?.products) return;
                 cacheItems(json.data.products);
             })
-            .catch(() => reportAdminPartial('Не удалось загрузить названия уже выбранных связанных товаров.', 'Редактор товара'));
+            .catch(() => reportAdminPartial(
+                l('Не удалось загрузить названия уже выбранных связанных товаров.', 'Failed to load the names of selected related products.', 'Neizdevās ielādēt atlasīto saistīto preču nosaukumus.'),
+                l('Редактор товара', 'Product editor', 'Preces redaktors')
+            ));
         return () => {
             cancelled = true;
         };
@@ -143,7 +148,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                                 </span>
                                 {info && !info.isActive && (
                                     <Badge variant="secondary" className="shrink-0">
-                                        скрыт
+                                        {l('скрыт', 'hidden', 'paslēpts')}
                                     </Badge>
                                 )}
                                 <span className="product-picker__chip-id text-xs text-muted-foreground shrink-0">
@@ -154,7 +159,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                                     variant="ghost"
                                     size="sm"
                                     className="shrink-0 px-2"
-                                    aria-label="Убрать товар"
+                                    aria-label={l('Убрать товар', 'Remove product', 'Noņemt preci')}
                                     onClick={() => removeProduct(id)}
                                 >
                                     ✕
@@ -168,7 +173,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
             <div className="product-picker__search relative">
                 <Input
                     value={query}
-                    placeholder="Поиск по названию, бренду, ID или SKU…"
+                    placeholder={l('Поиск по названию, бренду, ID или SKU…', 'Search by name, brand, ID, or SKU…', 'Meklēt pēc nosaukuma, zīmola, ID vai SKU…')}
                     onChange={(e) => {
                         setQuery(e.target.value);
                         setIsOpen(true);
@@ -185,11 +190,11 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                 {isOpen && query.trim().length >= 2 && (
                     <ul className="product-picker__suggestions absolute left-0 right-0 top-full mt-1 z-dropdown max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-md">
                         {isLoading && (
-                            <li className="px-3 py-2 text-sm text-muted-foreground">Поиск…</li>
+                            <li className="px-3 py-2 text-sm text-muted-foreground">{l('Поиск…', 'Searching…', 'Meklē…')}</li>
                         )}
                         {!isLoading && suggestions.length === 0 && (
                             <li className="px-3 py-2 text-sm text-muted-foreground">
-                                Ничего не найдено
+                                {l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}
                             </li>
                         )}
                         {!isLoading &&
@@ -219,12 +224,12 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
                                                 </span>
                                                 <span className="block text-xs text-muted-foreground">
                                                     {item.brand} · ID {item.id}
-                                                    {alreadySelected ? ' · уже добавлен' : ''}
+                                                    {alreadySelected ? ` · ${l('уже добавлен', 'already added', 'jau pievienota')}` : ''}
                                                 </span>
                                             </span>
                                             {!item.isActive && (
                                                 <Badge variant="secondary" className="shrink-0">
-                                                    скрыт
+                                                    {l('скрыт', 'hidden', 'paslēpts')}
                                                 </Badge>
                                             )}
                                         </button>

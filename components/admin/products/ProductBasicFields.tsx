@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 import { useFormContext, Controller } from 'react-hook-form';
@@ -13,6 +15,7 @@ import { AddProductFormValues } from './productFormSchema';
 import { CATEGORY_CARDS } from '@/data/categories';
 import { useTranslation } from '@/lib/i18n-context';
 import { useProductFormMode } from './ProductFormModeContext';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const ProductBasicFields: React.FC = () => {
     const {
@@ -21,30 +24,31 @@ const ProductBasicFields: React.FC = () => {
         control,
     } = useFormContext<AddProductFormValues>();
     const { t } = useTranslation();
+    const { l } = useAdminLocale();
     const { isEdit } = useProductFormMode();
 
     return (
         <div className="add-product__section add-product__section--basic">
-            <h2 className="add-product__section-title">Основная информация</h2>
+            <h2 className="add-product__section-title">{l('Основная информация', 'Basic information', 'Pamatinformācija')}</h2>
             <div className="add-product__fields-grid">
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-id">
-                        ID {isEdit && <span className="text-muted-foreground text-xs">(нельзя изменить)</span>}
+                        ID {isEdit && <span className="text-muted-foreground text-xs">{l('(нельзя изменить)', '(cannot be changed)', '(nevar mainīt)')}</span>}
                     </label>
                     <Input
                         id="add-product-id"
-                        placeholder="Уникальный идентификатор, например: p123"
+                        placeholder={l('Уникальный идентификатор, например: p123', 'Unique identifier, for example: p123', 'Unikāls identifikators, piemēram: p123')}
                         disabled={isEdit}
                         {...register('id')}
                     />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-brand">
-                        Бренд
+                        {l('Бренд', 'Brand', 'Zīmols')}
                     </label>
                     <Input
                         id="add-product-brand"
-                        placeholder="Бренд товара"
+                        placeholder={l('Бренд товара', 'Product brand', 'Preces zīmols')}
                         {...register('brand')}
                     />
                 </div>
@@ -52,14 +56,14 @@ const ProductBasicFields: React.FC = () => {
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-sku">
                         SKU
                     </label>
-                    <Input id="add-product-sku" placeholder="Артикул товара" {...register('sku')} />
+                    <Input id="add-product-sku" placeholder={l('Артикул товара', 'Product SKU', 'Preces artikuls')} {...register('sku')} />
                 </div>
                 <div>
                     <label
                         className="block text-sm font-medium mb-1"
                         htmlFor="add-product-category"
                     >
-                        Категория
+                        {l('Категория', 'Category', 'Kategorija')}
                     </label>
                     <Controller
                         name="category"
@@ -67,7 +71,7 @@ const ProductBasicFields: React.FC = () => {
                         render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger id="add-product-category">
-                                    <SelectValue placeholder="Выберите категорию" />
+                                    <SelectValue placeholder={l('Выберите категорию', 'Select a category', 'Izvēlieties kategoriju')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {CATEGORY_CARDS.map((cat) => (
@@ -85,17 +89,17 @@ const ProductBasicFields: React.FC = () => {
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-barcode">
-                        Штрихкод
+                        {l('Штрихкод', 'Barcode', 'Svītrkods')}
                     </label>
                     <Input
                         id="add-product-barcode"
-                        placeholder="Штрихкод (EAN, UPC)"
+                        placeholder={l('Штрихкод (EAN, UPC)', 'Barcode (EAN, UPC)', 'Svītrkods (EAN, UPC)')}
                         {...register('barcode')}
                     />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-status">
-                        Видимость на витрине
+                        {l('Видимость на витрине', 'Storefront visibility', 'Redzamība veikalā')}
                     </label>
                     <Controller
                         name="status"
@@ -103,11 +107,11 @@ const ProductBasicFields: React.FC = () => {
                         render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
                                 <SelectTrigger id="add-product-status">
-                                    <SelectValue placeholder="Выберите видимость" />
+                                    <SelectValue placeholder={l('Выберите видимость', 'Select visibility', 'Izvēlieties redzamību')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="active">Активен — виден в каталоге</SelectItem>
-                                    <SelectItem value="hidden">Скрыт — не показывается покупателям</SelectItem>
+                                    <SelectItem value="active">{l('Активен — виден в каталоге', 'Active — visible in catalog', 'Aktīvs — redzams katalogā')}</SelectItem>
+                                    <SelectItem value="hidden">{l('Скрыт — не показывается покупателям', 'Hidden — not shown to customers', 'Paslēpts — netiek rādīts klientiem')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         )}

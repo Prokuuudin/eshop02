@@ -8,15 +8,32 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DELIVERY_LABELS, EDIT_DELIVERY_COSTS, PAYMENT_COLORS, PAYMENT_LABELS, STATUS_COLORS, STATUS_LABELS, availableOrderStatuses } from './order-config';
+import { EDIT_DELIVERY_COSTS, PAYMENT_COLORS, STATUS_COLORS, availableOrderStatuses } from './order-config';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
+import { useAdminLocale } from '@/lib/use-admin-locale';
+import type { OrderStatus } from '@/lib/admin-store';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersList({ state }: { state: OrdersState }): React.ReactElement {
+    const { l } = useAdminLocale();
+    const STATUS_LABELS: Record<OrderStatus, string> = {
+        pending: l('Новый', 'New', 'Jauns'), confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
+        shipped: l('Отправлен', 'Shipped', 'Nosūtīts'), delivered: l('Доставлен', 'Delivered', 'Piegādāts'),
+        cancelled: l('Отменён', 'Cancelled', 'Atcelts'),
+    };
+    const PAYMENT_LABELS: Record<string, string> = {
+        unpaid: l('Не оплачен', 'Unpaid', 'Nav apmaksāts'), pending: l('Ожидает оплаты', 'Awaiting payment', 'Gaida apmaksu'),
+        paid: l('Оплачен', 'Paid', 'Apmaksāts'), refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
+        failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
+    };
+    const DELIVERY_LABELS: Record<string, string> = {
+        courier: l('Курьер', 'Courier', 'Kurjers'), pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
+        post: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), venipak: 'Venipak',
+    };
     const {
       totalOrderCount, hydrationStatus, getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity, editPostalCode,
@@ -49,7 +66,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         checked={selectedIds.has(order.id)}
                                         onCheckedChange={() => toggleSelect(order.id)}
                                         onClick={(e) => e.stopPropagation()}
-                                        aria-label={`Выбрать заказ ${order.id}`}
+                                        aria-label={l(`Выбрать заказ ${order.id}`, `Select order ${order.id}`, `Atlasīt pasūtījumu ${order.id}`)}
                                     />
                                 </div>
                                 <button
@@ -94,11 +111,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         </p>
                                         <p className="text-xs text-muted-foreground mt-0.5">
                                             {order.items.length}{' '}
-                                            {order.items.length === 1
-                                                ? 'товар'
-                                                : order.items.length < 5
-                                                ? 'товара'
-                                                : 'товаров'}
+                                            {l('товаров', 'items', 'preces')}
                                         </p>
                                     </div>
                                 </button>
@@ -115,7 +128,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             }
                                             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Скопировать ID
+                                            {l('Скопировать ID', 'Copy ID', 'Kopēt ID')}
                                         </button>
                                         {!['shipped', 'delivered', 'cancelled'].includes(
                                             status
@@ -134,28 +147,28 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                 }`}
                                             >
                                                 {editingOrderId === order.id
-                                                    ? 'Отменить правку'
-                                                    : '✏ Редактировать'}
+                                                    ? l('Отменить правку', 'Cancel editing', 'Atcelt rediģēšanu')
+                                                    : `✏ ${l('Редактировать', 'Edit', 'Rediģēt')}`}
                                             </button>
                                         )}
                                         <a
                                             href={`mailto:${order.email}`}
                                             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Написать клиенту
+                                            {l('Написать клиенту', 'Email customer', 'Rakstīt klientam')}
                                         </a>
                                         <button
                                             type="button"
                                             onClick={() => setInvoiceOrder(order)}
                                             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
                                         >
-                                            📄 Счёт
+                                            📄 {l('Счёт', 'Invoice', 'Rēķins')}
                                         </button>
                                         <a
                                             href={`tel:${order.phone}`}
                                             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Позвонить
+                                            {l('Позвонить', 'Call', 'Zvanīt')}
                                         </a>
                                     </div>
 
@@ -163,13 +176,13 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     {editingOrderId === order.id && (
                                         <div className="rounded-xl border-2 border-primary/30 dark:border-primary/50 bg-primary/5/30 dark:bg-primary/20/10 p-4 space-y-5">
                                             <p className="text-sm font-semibold text-primary dark:text-primary/60">
-                                                Редактирование заказа
+                                                {l('Редактирование заказа', 'Edit order', 'Pasūtījuma rediģēšana')}
                                             </p>
 
                                             {/* Address */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    Адрес доставки
+                                                    {l('Адрес доставки', 'Delivery address', 'Piegādes adrese')}
                                                 </p>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                     <Input
@@ -177,7 +190,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         onChange={(e) =>
                                                             setEditAddress(e.target.value)
                                                         }
-                                                        placeholder="Адрес"
+                                                        placeholder={l('Адрес', 'Address', 'Adrese')}
                                                         className="sm:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                                     />
                                                     <Input
@@ -185,7 +198,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         onChange={(e) =>
                                                             setEditPostalCode(e.target.value)
                                                         }
-                                                        placeholder="Индекс"
+                                                        placeholder={l('Индекс', 'Postal code', 'Pasta indekss')}
                                                         className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                                     />
                                                     <Input
@@ -193,7 +206,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         onChange={(e) =>
                                                             setEditCity(e.target.value)
                                                         }
-                                                        placeholder="Город"
+                                                        placeholder={l('Город', 'City', 'Pilsēta')}
                                                         className="sm:col-span-3 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                                     />
                                                 </div>
@@ -202,7 +215,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {/* Delivery method */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    Способ доставки
+                                                    {l('Способ доставки', 'Delivery method', 'Piegādes veids')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {(['pickup', 'courier', 'post', 'venipak'] as const).map(
@@ -219,7 +232,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                             >
                                                                 {DELIVERY_LABELS[dm]}{' '}
                                                                 {EDIT_DELIVERY_COSTS[dm] === 0
-                                                                    ? '(бесплатно)'
+                                                                    ? l('(бесплатно)', '(free)', '(bez maksas)')
                                                                     : `(€${EDIT_DELIVERY_COSTS[dm]})`}
                                                             </button>
                                                         )
@@ -230,7 +243,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {/* Items */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                    Позиции заказа
+                                                    {l('Позиции заказа', 'Order items', 'Pasūtījuma pozīcijas')}
                                                 </p>
                                                 <div className="rounded-lg border border-border divide-y divide-border bg-card">
                                                     {editItems.map((item) => (
@@ -316,7 +329,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         onChange={(e) =>
                                                             setEditProductSearch(e.target.value)
                                                         }
-                                                        placeholder="Добавить товар (введите название или SKU)..."
+                                                        placeholder={l('Добавить товар (введите название или SKU)...', 'Add product (enter name or SKU)...', 'Pievienot preci (ievadiet nosaukumu vai SKU)...')}
                                                         className="w-full rounded-lg border border-dashed border-primary/50 dark:border-primary/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
                                                     />
                                                     {editProductResults.length > 0 && (
@@ -370,14 +383,14 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                         <div className="flex justify-end">
                                                             <div className="text-sm space-y-1 min-w-[220px]">
                                                                 <div className="flex justify-between gap-4 text-muted-foreground">
-                                                                    <span>Товары</span>
+                                                                    <span>{l('Товары', 'Products', 'Preces')}</span>
                                                                     <span className="tabular-nums">
                                                                         €{newSub.toFixed(2)}
                                                                     </span>
                                                                 </div>
                                                                 {newDisc > 0 && (
                                                                     <div className="flex justify-between gap-4 text-emerald-600 dark:text-emerald-400">
-                                                                        <span>Скидка</span>
+                                                                        <span>{l('Скидка', 'Discount', 'Atlaide')}</span>
                                                                         <span className="tabular-nums">
                                                                             −€
                                                                             {newDisc.toFixed(2)}
@@ -385,17 +398,17 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                                     </div>
                                                                 )}
                                                                 <div className="flex justify-between gap-4 text-muted-foreground">
-                                                                    <span>Доставка</span>
+                                                                    <span>{l('Доставка', 'Delivery', 'Piegāde')}</span>
                                                                     <span className="tabular-nums">
                                                                         {newDel === 0
-                                                                            ? 'Бесплатно'
+                                                                            ? l('Бесплатно', 'Free', 'Bez maksas')
                                                                             : `€${newDel.toFixed(
                                                                                   2
                                                                               )}`}
                                                                     </span>
                                                                 </div>
                                                                 <div className="flex justify-between gap-4 font-bold text-base text-foreground pt-1 border-t border-border">
-                                                                    <span>Итого</span>
+                                                                    <span>{l('Итого', 'Total', 'Kopā')}</span>
                                                                     <span className="tabular-nums">
                                                                         €{newTotal.toFixed(2)}
                                                                     </span>
@@ -414,15 +427,15 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-40 transition-colors"
                                                 >
                                                     {editSaving
-                                                        ? 'Сохранение...'
-                                                        : 'Сохранить изменения'}
+                                                        ? l('Сохранение...', 'Saving...', 'Saglabā...')
+                                                        : l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas')}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={cancelEdit}
                                                     className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                                 >
-                                                    Отмена
+                                                    {l('Отмена', 'Cancel', 'Atcelt')}
                                                 </button>
                                             </div>
                                         </div>
@@ -433,7 +446,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         {/* Customer */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Клиент
+                                                {l('Клиент', 'Customer', 'Klients')}
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
                                                 {order.firstName} {order.lastName}
@@ -455,7 +468,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         {/* Delivery */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Доставка
+                                                {l('Доставка', 'Delivery', 'Piegāde')}
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
                                                 {DELIVERY_LABELS[order.deliveryMethod] ??
@@ -469,7 +482,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         {/* Payment */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Оплата
+                                                {l('Оплата', 'Payment', 'Apmaksa')}
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <span
@@ -483,7 +496,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             </p>
                                             {order.paymentProvider && (
                                                 <p className="text-sm text-muted-foreground">
-                                                    Провайдер:{' '}
+                                                    {l('Провайдер:', 'Provider:', 'Pakalpojuma sniedzējs:')}{' '}
                                                     <span className="text-foreground font-medium">
                                                         {order.paymentProvider}
                                                     </span>
@@ -506,7 +519,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     disabled={paymentSavingIds.has(order.id)}
                                                     onClick={() => markOrderPaid(order.id)}
                                                 >
-                                                    {paymentSavingIds.has(order.id) ? 'Сохранение…' : 'Отметить оплаченным'}
+                                                    {paymentSavingIds.has(order.id) ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Отметить оплаченным', 'Mark as paid', 'Atzīmēt kā apmaksātu')}
                                                 </Button>
                                             )}
                                         </div>
@@ -515,7 +528,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     {/* Items */}
                                     <div>
                                         <p className="text-sm font-semibold text-foreground mb-2">
-                                            Состав заказа
+                                            {l('Состав заказа', 'Order contents', 'Pasūtījuma saturs')}
                                         </p>
                                         <div className="rounded-lg border border-border divide-y divide-border">
                                             {order.items.map((item, index) => (
@@ -545,7 +558,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     </div>
                                                     <div className="text-right shrink-0">
                                                         <p className="text-xs text-muted-foreground">
-                                                            {item.quantity} шт ×{' '}
+                                                            {item.quantity} {l('шт', 'pcs', 'gab.')} ×{' '}
                                                             {formatEuro(item.price, locale)}
                                                         </p>
                                                         <p className="text-sm font-medium text-foreground">
@@ -565,7 +578,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                         <div className="text-sm space-y-1.5 min-w-[260px]">
                                             <div className="flex justify-between gap-6">
                                                 <span className="text-muted-foreground">
-                                                    Сумма за товары
+                                                    {l('Сумма за товары', 'Product subtotal', 'Preču starpsumma')}
                                                 </span>
                                                 <span className="text-foreground">
                                                     {formatEuro(order.subtotal, locale)}
@@ -574,7 +587,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             {order.discount > 0 && (
                                                 <div className="flex justify-between gap-6 text-green-700 dark:text-green-400">
                                                     <span>
-                                                        Скидка
+                                                        {l('Скидка', 'Discount', 'Atlaide')}
                                                         {order.promoCode
                                                             ? ` (${order.promoCode})`
                                                             : ''}
@@ -586,18 +599,18 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             )}
                                             <div className="flex justify-between gap-6">
                                                 <span className="text-muted-foreground">
-                                                    Доставка
+                                                    {l('Доставка', 'Delivery', 'Piegāde')}
                                                 </span>
                                                 <span className="text-foreground">
                                                     {order.delivery === 0
-                                                        ? 'Бесплатно'
+                                                        ? l('Бесплатно', 'Free', 'Bez maksas')
                                                         : formatEuro(order.delivery, locale)}
                                                 </span>
                                             </div>
                                             {order.tax > 0 && (
                                                 <div className="flex justify-between gap-6">
                                                     <span className="text-muted-foreground">
-                                                        Налог (НДС)
+                                                        {l('Налог (НДС)', 'Tax (VAT)', 'Nodoklis (PVN)')}
                                                     </span>
                                                     <span className="text-foreground">
                                                         {formatEuro(order.tax, locale)}
@@ -606,7 +619,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             )}
                                             {(order.bonusSpent ?? 0) > 0 && (
                                                 <div className="flex justify-between gap-6 text-amber-700 dark:text-amber-400">
-                                                    <span>Бонусы использованы</span>
+                                                    <span>{l('Бонусы использованы', 'Bonuses used', 'Izmantotie bonusi')}</span>
                                                     <span>
                                                         −{order.bonusSpent}
                                                         {' '}({formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
@@ -614,13 +627,13 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                 </div>
                                             )}
                                             <div className="flex justify-between gap-6 font-bold text-base pt-2 border-t border-border">
-                                                <span className="text-foreground">Итого</span>
+                                                <span className="text-foreground">{l('Итого', 'Total', 'Kopā')}</span>
                                                 <span className="text-foreground">
                                                     {formatEuro(order.total, locale)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between gap-6 text-emerald-700 dark:text-emerald-400 font-medium">
-                                                <span>Прибыль</span>
+                                                <span>{l('Прибыль', 'Profit', 'Peļņa')}</span>
                                                 <span>
                                                     {formatEuro(
                                                         order.total - order.tax - order.delivery,
@@ -630,7 +643,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                             </div>
                                             {(order.bonusEarned ?? 0) > 0 && (
                                                 <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">
-                                                    <span>Бонусов начислено</span>
+                                                    <span>{l('Бонусов начислено', 'Bonuses earned', 'Piešķirtie bonusi')}</span>
                                                     <span>
                                                         +{order.bonusEarned}
                                                         {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
@@ -643,7 +656,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     {/* Status management */}
                                     <div className="pt-2 border-t border-border">
                                         <p className="text-sm font-semibold text-foreground mb-2">
-                                            Изменить статус
+                                            {l('Изменить статус', 'Change status', 'Mainīt statusu')}
                                         </p>
                                         <div className="flex flex-wrap gap-2">
                                             {availableOrderStatuses(status).map((s) => (
@@ -668,9 +681,9 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                     {/* Manager note */}
                                     <div className="pt-2 border-t border-border">
                                         <p className="text-sm font-semibold text-foreground mb-2">
-                                            Заметка менеджера
+                                            {l('Заметка менеджера', 'Manager note', 'Vadītāja piezīme')}
                                             <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                                — клиент не видит
+                                                {l('— клиент не видит', '— hidden from customer', '— klients neredz')}
                                             </span>
                                         </p>
                                         <Textarea
@@ -682,7 +695,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     [order.id]: e.target.value,
                                                 }))
                                             }
-                                            placeholder="Внутренний комментарий: статус пересылки, договорённости с клиентом..."
+                                            placeholder={l('Внутренний комментарий: статус пересылки, договорённости с клиентом...', 'Internal comment: shipping status, customer arrangements...', 'Iekšējs komentārs: nosūtīšanas statuss, vienošanās ar klientu...')}
                                             className="w-full resize-none text-sm"
                                         />
                                         <div className="flex items-center gap-3 mt-2">
@@ -705,12 +718,12 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
                                                     noteDrafts[order.id] === getOrderNote(order.id)
                                                 }
                                             >
-                                                Сохранить заметку
+                                                {l('Сохранить заметку', 'Save note', 'Saglabāt piezīmi')}
                                             </Button>
                                             {getOrderNote(order.id) &&
                                                 noteDrafts[order.id] === undefined && (
                                                     <span className="text-xs text-muted-foreground">
-                                                        Заметка сохранена
+                                                        {l('Заметка сохранена', 'Note saved', 'Piezīme saglabāta')}
                                                     </span>
                                                 )}
                                         </div>
@@ -723,19 +736,19 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
 
                 {filteredCount === 0 && hydrationStatus === 'loading' && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground" role="status">
-                        Загружаем заказы…
+                        {l('Загружаем заказы…', 'Loading orders…', 'Ielādē pasūtījumus…')}
                     </div>
                 )}
                 {filteredCount === 0 && hydrationStatus === 'error' && (
                     <div className="rounded-xl border border-destructive/40 p-10 bg-destructive/10 text-center text-sm text-destructive" role="alert">
-                        Не удалось загрузить заказы. Обновите страницу и попробуйте ещё раз.
+                        {l('Не удалось загрузить заказы. Обновите страницу и попробуйте ещё раз.', 'Failed to load orders. Refresh the page and try again.', 'Neizdevās ielādēt pasūtījumus. Atsvaidziniet lapu un mēģiniet vēlreiz.')}
                     </div>
                 )}
                 {filteredCount === 0 && hydrationStatus !== 'loading' && hydrationStatus !== 'error' && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
                         {totalOrderCount === 0
-                            ? 'Заказов пока нет'
-                            : 'Нет заказов по выбранным фильтрам'}
+                            ? l('Заказов пока нет', 'No orders yet', 'Pasūtījumu vēl nav')
+                            : l('Нет заказов по выбранным фильтрам', 'No orders match the selected filters', 'Atlasītajiem filtriem nav atbilstošu pasūtījumu')}
                     </div>
                 )}
             </div>

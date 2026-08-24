@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useTranslation } from '@/lib/i18n-context';
 
@@ -10,6 +12,7 @@ import {
 import AddProductForm from './AddProductForm';
 import IconPlus from '@/components/ui/icon-plus';
 import { ChevronDown } from 'lucide-react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface NewProductFormProps {
     title?: string;
@@ -17,6 +20,7 @@ interface NewProductFormProps {
 
 const NewProductForm: React.FC<NewProductFormProps> = ({ title }) => {
     const { t } = useTranslation();
+    const { l } = useAdminLocale();
     return (
         <Accordion type="single" collapsible className="admin-products__new-form">
             <AccordionItem
@@ -29,7 +33,7 @@ const NewProductForm: React.FC<NewProductFormProps> = ({ title }) => {
                             <IconPlus className="w-6 h-6" />
                         </span>
                         <span className="text-base font-semibold">
-                            {title || t('admin.productsPage.addBtn') || 'Добавить товар'}
+                            {title || t('admin.productsPage.addBtn') || l('Добавить товар', 'Add product', 'Pievienot preci')}
                         </span>
                         <ChevronDown className="ml-auto h-5 w-5 text-emerald-700 transition-transform duration-200 group-data-[state=open]:rotate-180 dark:text-emerald-400" />
                     </div>

@@ -12,13 +12,20 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search } from 'lucide-react';
-import { STATUS_LABELS, STATUS_LIST } from './order-config';
+import { STATUS_LIST } from './order-config';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersFilters({ state }: { state: OrdersState }): React.ReactElement {
+    const { l } = useAdminLocale();
+    const statusLabels: Record<OrderStatus, string> = {
+        pending: l('Новый', 'New', 'Jauns'), confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
+        shipped: l('Отправлен', 'Shipped', 'Nosūtīts'), delivered: l('Доставлен', 'Delivered', 'Piegādāts'),
+        cancelled: l('Отменён', 'Cancelled', 'Atcelts'),
+    };
     const {
             totalOrderCount,
             search,
@@ -45,7 +52,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                         <Input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Поиск по ID, имени, email, телефону..."
+                            placeholder={l('Поиск по ID, имени, email, телефону...', 'Search by ID, name, email, or phone...', 'Meklēt pēc ID, vārda, e-pasta vai tālruņa...')}
                             className="h-9 flex-1"
                         />
                         <Search className="h-5 w-5 text-muted-foreground" />
@@ -59,10 +66,10 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Все статусы</SelectItem>
+                                <SelectItem value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</SelectItem>
                                 {STATUS_LIST.map((s) => (
                                     <SelectItem key={s} value={s}>
-                                        {STATUS_LABELS[s]}
+                                        {statusLabels[s]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -72,12 +79,12 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Все оплаты</SelectItem>
-                                <SelectItem value="unpaid">Не оплачен</SelectItem>
-                                <SelectItem value="pending">Ожидает оплаты</SelectItem>
-                                <SelectItem value="paid">Оплачен</SelectItem>
-                                <SelectItem value="refunded">Возвращён</SelectItem>
-                                <SelectItem value="failed">Ошибка оплаты</SelectItem>
+                                <SelectItem value="all">{l('Все оплаты', 'All payments', 'Visi maksājumi')}</SelectItem>
+                                <SelectItem value="unpaid">{l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}</SelectItem>
+                                <SelectItem value="pending">{l('Ожидает оплаты', 'Awaiting payment', 'Gaida apmaksu')}</SelectItem>
+                                <SelectItem value="paid">{l('Оплачен', 'Paid', 'Apmaksāts')}</SelectItem>
+                                <SelectItem value="refunded">{l('Возвращён', 'Refunded', 'Atmaksāts')}</SelectItem>
+                                <SelectItem value="failed">{l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
@@ -85,10 +92,10 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Все доставки</SelectItem>
-                                <SelectItem value="courier">Курьер</SelectItem>
-                                <SelectItem value="pickup">Самовывоз</SelectItem>
-                                <SelectItem value="post">Почта (Omniva)</SelectItem>
+                                <SelectItem value="all">{l('Все доставки', 'All deliveries', 'Visas piegādes')}</SelectItem>
+                                <SelectItem value="courier">{l('Курьер', 'Courier', 'Kurjers')}</SelectItem>
+                                <SelectItem value="pickup">{l('Самовывоз', 'Pickup', 'Saņemšana veikalā')}</SelectItem>
+                                <SelectItem value="post">{l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)')}</SelectItem>
                                 <SelectItem value="venipak">Venipak</SelectItem>
                             </SelectContent>
                         </Select>
@@ -107,9 +114,9 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                             }
                             onCheckedChange={toggleSelectAll}
                         />
-                        <span className="text-xs text-muted-foreground">Выбрать все</span>
+                        <span className="text-xs text-muted-foreground">{l('Выбрать все', 'Select all', 'Atlasīt visu')}</span>
                     </label>
-                    <span className="text-xs">Сортировка:</span>
+                    <span className="text-xs">{l('Сортировка:', 'Sort:', 'Kārtot:')}</span>
                     <button
                         type="button"
                         onClick={() => toggleSort('date')}
@@ -119,7 +126,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
                         }`}
                     >
-                        По дате{' '}
+                        {l('По дате', 'By date', 'Pēc datuma')}{' '}
                         {sortField === 'date' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                     </button>
                     <button
@@ -131,11 +138,11 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-muted-foreground'
                         }`}
                     >
-                        По сумме{' '}
+                        {l('По сумме', 'By total', 'Pēc summas')}{' '}
                         {sortField === 'total' ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                     </button>
                     <span className="ml-auto text-xs text-muted-foreground">
-                        {filteredCount} из {totalOrderCount}
+                        {l(`${filteredCount} из ${totalOrderCount}`, `${filteredCount} of ${totalOrderCount}`, `${filteredCount} no ${totalOrderCount}`)}
                     </span>
                 </div>
             </div>

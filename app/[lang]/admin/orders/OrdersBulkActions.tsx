@@ -11,13 +11,19 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Printer } from 'lucide-react';
-import { STATUS_LABELS } from './order-config';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersBulkActions({ state }: { state: OrdersState }): React.ReactElement {
+    const { l } = useAdminLocale();
+    const statusLabels: Record<OrderStatus, string> = {
+        pending: l('Новый', 'New', 'Jauns'), confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
+        shipped: l('Отправлен', 'Shipped', 'Nosūtīts'), delivered: l('Доставлен', 'Delivered', 'Piegādāts'),
+        cancelled: l('Отменён', 'Cancelled', 'Atcelts'),
+    };
     const {
             selectedIds,
             setSelectedIds,
@@ -32,7 +38,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
             {selectedIds.size > 0 && (
                 <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 dark:border-primary/50 bg-primary/5 dark:bg-primary/15 px-4 py-3">
                     <span className="text-sm font-medium text-primary dark:text-primary/60">
-                        Выбрано: {selectedIds.size}
+                        {l('Выбрано', 'Selected', 'Atlasīti')}: {selectedIds.size}
                     </span>
                     <div className="flex items-center gap-2">
                         <Select
@@ -40,12 +46,12 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                             onValueChange={(v) => setBulkStatus(v as OrderStatus | '')}
                         >
                             <SelectTrigger className="rounded-lg border border-primary/50 dark:border-primary bg-card px-3 py-1.5 text-sm text-foreground">
-                                <SelectValue placeholder="Изменить статус..." />
+                                <SelectValue placeholder={l('Изменить статус...', 'Change status...', 'Mainīt statusu...')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableBulkStatuses.map((s) => (
                                     <SelectItem key={s} value={s}>
-                                        {STATUS_LABELS[s]}
+                                        {statusLabels[s]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -55,12 +61,12 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                             disabled={!bulkStatus || !availableBulkStatuses.includes(bulkStatus)}
                             onClick={applyBulkStatus}
                         >
-                            Применить
+                            {l('Применить', 'Apply', 'Lietot')}
                         </Button>
                     </div>
                     <Button size="sm" variant="outline" onClick={printSelected} className="gap-1.5">
                         <Printer className="h-3.5 w-3.5" />
-                        Печать
+                        {l('Печать', 'Print', 'Drukāt')}
                     </Button>
                     <Button
                         size="sm"
@@ -68,7 +74,7 @@ export default function OrdersBulkActions({ state }: { state: OrdersState }): Re
                         onClick={() => setSelectedIds(new Set())}
                         className="ml-auto text-primary dark:text-primary"
                     >
-                        Снять выбор
+                        {l('Снять выбор', 'Clear selection', 'Noņemt atlasi')}
                     </Button>
                 </div>
             )}

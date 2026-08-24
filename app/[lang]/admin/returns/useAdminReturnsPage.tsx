@@ -9,7 +9,7 @@ import {
     type ReturnItem,
 } from '@/lib/returns-store';
 import type { ServerOrder } from '@/lib/orders-data-store';
-import { useTranslation } from '@/lib/use-translation';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 import { adminFetchJson, reportAdminError } from '@/lib/admin-ui-errors';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
@@ -37,15 +37,14 @@ async function loadAllReturns(): Promise<ReturnType<typeof mapServerReturn>[]> {
 }
 
 function useAdminReturnsPageState() {
+    const { language, locale, l } = useAdminLocale();
     const { returns, addReturn, setReturnStatus, setReturns } = useReturnsStore();
 
     useEffect(() => {
         loadAllReturns()
             .then(setReturns)
-            .catch((error) => reportAdminError(error, 'Возвраты'));
-    }, [setReturns]);
-    const { language } = useTranslation();
-    const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
+            .catch((error) => reportAdminError(error, l('Возвраты', 'Returns', 'Atgriešana')));
+    }, [l, setReturns]);
 
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'all'>('all');
@@ -158,11 +157,11 @@ function useAdminReturnsPageState() {
                 setFormError('');
             } else {
                 setFoundOrder(undefined);
-                setFormError('Заказ не найден. Можно заполнить данные вручную.');
+                setFormError(l('Заказ не найден. Можно заполнить данные вручную.', 'Order not found. You can enter the details manually.', 'Pasūtījums nav atrasts. Datus var ievadīt manuāli.'));
             }
         } catch {
             setFoundOrder(undefined);
-            setFormError('Не удалось найти заказ. Попробуйте ещё раз.');
+            setFormError(l('Не удалось найти заказ. Попробуйте ещё раз.', 'Could not find the order. Try again.', 'Neizdevās atrast pasūtījumu. Mēģiniet vēlreiz.'));
         } finally {
             setLookupPending(false);
         }
@@ -176,12 +175,12 @@ function useAdminReturnsPageState() {
 
     const submitReturn = async () => {
         if (!foundOrder) {
-            setFormError('Сначала найдите существующий заказ.');
+            setFormError(l('Сначала найдите существующий заказ.', 'Find an existing order first.', 'Vispirms atrodiet esošu pasūtījumu.'));
             return;
         }
         const activeItems = formItems.filter((i) => i.quantity > 0);
         if (activeItems.length === 0) {
-            setFormError('Выберите хотя бы один товар для возврата.');
+            setFormError(l('Выберите хотя бы один товар для возврата.', 'Select at least one product to return.', 'Izvēlieties vismaz vienu atgriežamo produktu.'));
             return;
         }
         const result = await addReturn({
@@ -201,8 +200,8 @@ function useAdminReturnsPageState() {
         if (!result.ok) {
             setFormError(
                 result.error
-                    ? `Сервер отклонил заявку: ${result.error}`
-                    : 'Не удалось сохранить заявку. Попробуйте ещё раз.'
+                    ? l(`Сервер отклонил заявку: ${result.error}`, `The server rejected the request: ${result.error}`, `Serveris noraidīja pieprasījumu: ${result.error}`)
+                    : l('Не удалось сохранить заявку. Попробуйте ещё раз.', 'Could not save the request. Try again.', 'Neizdevās saglabāt pieprasījumu. Mēģiniet vēlreiz.')
             );
             return;
         }
@@ -225,6 +224,7 @@ function useAdminReturnsPageState() {
         setReturns,
         language,
         locale,
+        l,
         search,
         setSearch,
         statusFilter,

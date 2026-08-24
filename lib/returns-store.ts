@@ -19,6 +19,18 @@ export const RETURN_REASON_LABELS: Record<ReturnReason, string> = {
   other: 'Другое',
 }
 
+export function getReturnReasonLabels(language: 'ru' | 'en' | 'lv'): Record<ReturnReason, string> {
+  if (language === 'en') return {
+    defective: 'Defective / malfunctioning', wrong_item: 'Wrong item', changed_mind: 'Changed mind',
+    not_as_described: 'Not as described', damaged: 'Damaged in delivery', other: 'Other',
+  }
+  if (language === 'lv') return {
+    defective: 'Brāķis / bojājums', wrong_item: 'Nepareiza prece', changed_mind: 'Pārdomāja',
+    not_as_described: 'Neatbilst aprakstam', damaged: 'Bojāts piegādes laikā', other: 'Cits',
+  }
+  return RETURN_REASON_LABELS
+}
+
 export interface ReturnItem {
   productId: string
   title: string

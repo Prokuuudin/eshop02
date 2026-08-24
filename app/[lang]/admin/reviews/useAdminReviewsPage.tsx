@@ -189,7 +189,11 @@ function useAdminReviewsPageState() {
                 'Delete selected reviews ({count}) permanently?',
                 'Dzest atlasitas atsauksmes ({count}) neatgriezeniski?',
                 { count: selectedReviewIds.length }
-            ), description: 'Отзывы будут удалены без возможности восстановления.', affected: selectedReviewIds, confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
+            ), description: l(
+                'Отзывы будут удалены без возможности восстановления.',
+                'The reviews will be deleted permanently.',
+                'Atsauksmes tiks neatgriezeniski izdzestas.'
+            ), affected: selectedReviewIds, confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
         if (!decision.confirmed) return;
 
         setBulkSaving(true);
@@ -278,7 +282,11 @@ function useAdminReviewsPageState() {
                 'Delete review {id} permanently?',
                 'Dzest atsauksmi {id} neatgriezeniski?',
                 { id }
-            ), description: 'Отзыв будет удалён без возможности восстановления.', affected: [id], requireReason: true, destructive: true });
+            ), description: l(
+                'Отзыв будет удалён без возможности восстановления.',
+                'The review will be deleted permanently.',
+                'Atsauksme tiks neatgriezeniski izdzesta.'
+            ), affected: [id], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
         if (!decision.confirmed) return;
 
         setSavingId(id);
@@ -352,6 +360,10 @@ function useAdminReviewsPageState() {
                 return n;
             });
             await loadReviews();
+            setMessage(
+                l('Ответ сохранён', 'Reply saved', 'Atbilde saglabāta')
+            );
+            setError('');
         } catch {
             setError(
                 l(
@@ -385,6 +397,10 @@ function useAdminReviewsPageState() {
                 return n;
             });
             await loadReviews();
+            setMessage(
+                l('Ответ удалён', 'Reply deleted', 'Atbilde izdzēsta')
+            );
+            setError('');
         } catch {
             setError(
                 l('Не удалось удалить ответ', 'Failed to delete reply', 'Neizdevas dzest atbildi')

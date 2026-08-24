@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { type ReturnStatus, type ReturnReason, RETURN_REASON_LABELS } from '@/lib/returns-store';
+import { type ReturnStatus, type ReturnReason, getReturnReasonLabels } from '@/lib/returns-store';
 import { formatDate, formatEuro } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,14 +19,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
-
-const STATUS_LABELS: Record<ReturnStatus, string> = {
-    pending: 'Новый',
-    approved: 'Одобрен',
-    rejected: 'Отклонён',
-    refunded: 'Возвращён',
-    completed: 'Завершён',
-};
 
 const STATUS_COLORS: Record<ReturnStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -53,6 +45,8 @@ export default function AdminReturnsPage(): React.ReactElement {
             returns,
             setReturnStatus,
             locale,
+            language,
+            l,
             search,
             setSearch,
             statusFilter,
@@ -90,16 +84,22 @@ export default function AdminReturnsPage(): React.ReactElement {
             updateItemQty,
             submitReturn,
           } = pageState;
+    const statusLabels: Record<ReturnStatus, string> = {
+        pending: l('Новый', 'New', 'Jauns'), approved: l('Одобрен', 'Approved', 'Apstiprināts'),
+        rejected: l('Отклонён', 'Rejected', 'Noraidīts'), refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
+        completed: l('Завершён', 'Completed', 'Pabeigts'),
+    };
+    const reasonLabels = getReturnReasonLabels(language);
     return (
         <main className="w-full py-4 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-3xl font-bold text-foreground">Возвраты и отмены</h1>
+                <h1 className="text-3xl font-bold text-foreground">{l('Возвраты и отмены', 'Returns and cancellations', 'Atgriešana un atcelšana')}</h1>
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => setShowCreate((v) => !v)}>
-                        {showCreate ? 'Отмена' : '+ Новый возврат'}
+                        {showCreate ? l('Отмена', 'Cancel', 'Atcelt') : `+ ${l('Новый возврат', 'New return', 'Jauna atgriešana')}`}
                     </Button>
                     <Link href="/admin">
-                        <Button variant="outline">Назад в админку</Button>
+                        <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
                     </Link>
                 </div>
             </div>
@@ -107,12 +107,12 @@ export default function AdminReturnsPage(): React.ReactElement {
             {/* Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <div className="col-span-2 rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs text-muted-foreground">Сумма всех заявок</p>
+                    <p className="text-xs text-muted-foreground">{l('Сумма всех заявок', 'Total requested amount', 'Visu pieprasījumu summa')}</p>
                     <p className="text-2xl font-bold mt-1 text-foreground">
                         {formatEuro(totalRefund, locale)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        {returns.length} заявок всего
+                        {returns.length} {l('заявок всего', 'requests total', 'pieprasījumi kopā')}
                     </p>
                 </div>
                 {STATUS_LIST.map((s) => (
@@ -126,7 +126,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                 : 'border-border bg-card hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                     >
-                        <p className="text-xs text-muted-foreground">{STATUS_LABELS[s]}</p>
+                        <p className="text-xs text-muted-foreground">{statusLabels[s]}</p>
                         <p className="text-2xl font-bold mt-1 text-foreground">
                             {statsByStatus[s] ?? 0}
                         </p>
@@ -138,7 +138,7 @@ export default function AdminReturnsPage(): React.ReactElement {
             {showCreate && (
                 <div className="rounded-xl border border-primary/30 dark:border-primary/40 bg-primary/5 dark:bg-primary/20/10 p-5 space-y-4">
                     <h2 className="text-base font-semibold text-foreground">
-                        Новая заявка на возврат
+                        {l('Новая заявка на возврат', 'New return request', 'Jauns atgriešanas pieprasījums')}
                     </h2>
 
                     {/* Order lookup */}
@@ -147,11 +147,11 @@ export default function AdminReturnsPage(): React.ReactElement {
                             type="text"
                             value={formOrderId}
                             onChange={(e) => setFormOrderId(e.target.value)}
-                            placeholder="ID заказа (например ORD-...)"
+                            placeholder={l('ID заказа (например ORD-...)', 'Order ID (for example ORD-...)', 'Pasūtījuma ID (piemēram, ORD-...)')}
                             className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Button size="sm" variant="outline" onClick={lookupOrder} disabled={lookupPending}>
-                            {lookupPending ? 'Поиск…' : 'Найти заказ'}
+                            {lookupPending ? l('Поиск…', 'Searching…', 'Meklēšana…') : l('Найти заказ', 'Find order', 'Atrast pasūtījumu')}
                         </Button>
                     </div>
 
@@ -161,7 +161,7 @@ export default function AdminReturnsPage(): React.ReactElement {
 
                     {foundOrder && (
                         <div className="rounded-lg border border-border bg-card p-3 text-sm text-foreground">
-                            Найден заказ · {foundOrder.firstName} {foundOrder.lastName} ·{' '}
+                            {l('Найден заказ', 'Order found', 'Pasūtījums atrasts')} · {foundOrder.firstName} {foundOrder.lastName} ·{' '}
                             {formatEuro(foundOrder.total, locale)}
                         </div>
                     )}
@@ -171,13 +171,13 @@ export default function AdminReturnsPage(): React.ReactElement {
                         <Input
                             value={formFirstName}
                             readOnly
-                            placeholder="Имя *"
+                            placeholder={l('Имя *', 'First name *', 'Vārds *')}
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Input
                             value={formLastName}
                             readOnly
-                            placeholder="Фамилия"
+                            placeholder={l('Фамилия', 'Last name', 'Uzvārds')}
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                         <Input
@@ -189,7 +189,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                         <Input
                             value={formPhone}
                             readOnly
-                            placeholder="Телефон"
+                            placeholder={l('Телефон', 'Phone', 'Tālrunis')}
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                     </div>
@@ -206,18 +206,18 @@ export default function AdminReturnsPage(): React.ReactElement {
                             <SelectContent>
                                 {REASON_LIST.map((r) => (
                                     <SelectItem key={r} value={r}>
-                                        {RETURN_REASON_LABELS[r]}
+                                        {reasonLabels[r]}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                         <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
-                            Рассчитано по заказу: {formatEuro(formRefund, locale)}
+                            {l('Рассчитано по заказу:', 'Calculated from order:', 'Aprēķināts no pasūtījuma:')} {formatEuro(formRefund, locale)}
                         </div>
                         <Input
                             value={formComment}
                             onChange={(e) => setFormComment(e.target.value)}
-                            placeholder="Комментарий клиента"
+                            placeholder={l('Комментарий клиента', 'Customer comment', 'Klienta komentārs')}
                             className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                         />
                     </div>
@@ -226,7 +226,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                     {formItems.length > 0 && (
                         <div>
                             <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                                Возвращаемые товары
+                                {l('Возвращаемые товары', 'Products being returned', 'Atgriežamie produkti')}
                             </p>
                             <div className="rounded-lg border border-border divide-y divide-border bg-card">
                                 {formItems.map((item, idx) => (
@@ -264,9 +264,9 @@ export default function AdminReturnsPage(): React.ReactElement {
                     )}
 
                     <div className="flex gap-2">
-                        <Button onClick={submitReturn}>Создать заявку</Button>
+                        <Button onClick={submitReturn}>{l('Создать заявку', 'Create request', 'Izveidot pieprasījumu')}</Button>
                         <Button variant="outline" onClick={() => setShowCreate(false)}>
-                            Отмена
+                            {l('Отмена', 'Cancel', 'Atcelt')}
                         </Button>
                     </div>
                 </div>
@@ -279,7 +279,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Поиск по ID, заказу, имени, email..."
+                        placeholder={l('Поиск по ID, заказу, имени, email...', 'Search by ID, order, name or email...', 'Meklēt pēc ID, pasūtījuma, vārda vai e-pasta...')}
                         className="flex-1 min-w-[220px] rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <Select
@@ -290,10 +290,10 @@ export default function AdminReturnsPage(): React.ReactElement {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Все статусы</SelectItem>
+                            <SelectItem value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</SelectItem>
                             {STATUS_LIST.map((s) => (
                                 <SelectItem key={s} value={s}>
-                                    {STATUS_LABELS[s]}
+                                    {statusLabels[s]}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -306,16 +306,16 @@ export default function AdminReturnsPage(): React.ReactElement {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Все причины</SelectItem>
+                            <SelectItem value="all">{l('Все причины', 'All reasons', 'Visi iemesli')}</SelectItem>
                             {REASON_LIST.map((r) => (
                                 <SelectItem key={r} value={r}>
-                                    {RETURN_REASON_LABELS[r]}
+                                    {reasonLabels[r]}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                     <span className="ml-auto self-center text-xs text-muted-foreground">
-                        {filtered.length} из {returns.length}
+                        {filtered.length} {l('из', 'of', 'no')} {returns.length}
                     </span>
                 </div>
             </div>
@@ -346,17 +346,17 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                 STATUS_COLORS[ret.status]
                                             }`}
                                         >
-                                            {STATUS_LABELS[ret.status]}
+                                            {statusLabels[ret.status]}
                                         </span>
                                         <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
-                                            {RETURN_REASON_LABELS[ret.reason]}
+                                            {reasonLabels[ret.reason]}
                                         </span>
                                     </div>
                                     <p className="text-sm text-foreground">
                                         {ret.firstName} {ret.lastName}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        Заказ: <span className="font-mono">{ret.orderId}</span> ·{' '}
+                                        {l('Заказ:', 'Order:', 'Pasūtījums:')} <span className="font-mono">{ret.orderId}</span> ·{' '}
                                         {ret.email}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
@@ -370,10 +370,10 @@ export default function AdminReturnsPage(): React.ReactElement {
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                         {ret.items.length}{' '}
                                         {ret.items.length === 1
-                                            ? 'товар'
+                                            ? l('товар', 'product', 'produkts')
                                             : ret.items.length < 5
-                                            ? 'товара'
-                                            : 'товаров'}
+                                            ? l('товара', 'products', 'produkti')
+                                            : l('товаров', 'products', 'produkti')}
                                     </p>
                                 </div>
                             </button>
@@ -389,13 +389,13 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             }
                                             className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Скопировать ID
+                                            {l('Скопировать ID', 'Copy ID', 'Kopēt ID')}
                                         </button>
                                         <a
                                             href={`mailto:${ret.email}`}
                                             className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Написать клиенту
+                                            {l('Написать клиенту', 'Email customer', 'Rakstīt klientam')}
                                         </a>
                                         <button
                                             type="button"
@@ -404,24 +404,24 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             className="inline-flex items-center rounded-lg border border-primary/50 dark:border-primary/50 bg-primary/5 dark:bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/10 dark:hover:bg-primary/40 transition-colors disabled:opacity-50"
                                         >
                                             {notifySending === ret.id
-                                                ? 'Отправка...'
-                                                : 'Уведомить клиента'}
+                                                ? l('Отправка...', 'Sending...', 'Nosūtīšana...')
+                                                : l('Уведомить клиента', 'Notify customer', 'Paziņot klientam')}
                                         </button>
                                         {notifyResult[ret.id] === 'ok' && (
                                             <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                                                Письмо отправлено
+                                                {l('Письмо отправлено', 'Email sent', 'E-pasts nosūtīts')}
                                             </span>
                                         )}
                                         {notifyResult[ret.id] === 'error' && (
                                             <span className="text-xs text-red-600 dark:text-red-400">
-                                                Ошибка отправки
+                                                {l('Ошибка отправки', 'Sending failed', 'Nosūtīšanas kļūda')}
                                             </span>
                                         )}
                                         <Link
                                             href="/admin/orders"
                                             className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
-                                            Открыть заказы
+                                            {l('Открыть заказы', 'Open orders', 'Atvērt pasūtījumus')}
                                         </Link>
                                     </div>
 
@@ -430,7 +430,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         {/* Customer */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Клиент
+                                                {l('Клиент', 'Customer', 'Klients')}
                                             </p>
                                             <p className="text-sm font-medium text-foreground">
                                                 {ret.firstName} {ret.lastName}
@@ -454,23 +454,23 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         {/* Order */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Заказ
+                                                {l('Заказ', 'Order', 'Pasūtījums')}
                                             </p>
                                             <p className="font-mono text-xs text-foreground break-all">
                                                 {ret.orderId}
                                             </p>
                                             <div className="pt-1 border-t border-border">
                                                 <p className="text-xs text-muted-foreground">
-                                                    Причина возврата
+                                                    {l('Причина возврата', 'Return reason', 'Atgriešanas iemesls')}
                                                 </p>
                                                 <p className="text-sm font-medium text-foreground">
-                                                    {RETURN_REASON_LABELS[ret.reason]}
+                                                    {reasonLabels[ret.reason]}
                                                 </p>
                                             </div>
                                             {ret.comment && (
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Комментарий клиента
+                                                        {l('Комментарий клиента', 'Customer comment', 'Klienta komentārs')}
                                                     </p>
                                                     <p className="text-sm text-foreground italic">
                                                         «{ret.comment}»
@@ -482,11 +482,11 @@ export default function AdminReturnsPage(): React.ReactElement {
                                         {/* Dates */}
                                         <div className="rounded-lg border border-border p-4 space-y-2">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                                Даты
+                                                {l('Даты', 'Dates', 'Datumi')}
                                             </p>
                                             <div>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Подана заявка
+                                                    {l('Подана заявка', 'Request submitted', 'Pieprasījums iesniegts')}
                                                 </p>
                                                 <p className="text-sm text-foreground">
                                                     {formatDate(ret.createdAt, locale)}
@@ -495,7 +495,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             {ret.resolvedAt && (
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">
-                                                        Обработана
+                                                        {l('Обработана', 'Processed', 'Apstrādāts')}
                                                     </p>
                                                     <p className="text-sm text-foreground">
                                                         {formatDate(ret.resolvedAt, locale)}
@@ -509,7 +509,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                     {ret.items.length > 0 && (
                                         <div>
                                             <p className="text-sm font-semibold text-foreground mb-2">
-                                                Возвращаемые товары
+                                                {l('Возвращаемые товары', 'Products being returned', 'Atgriežamie produkti')}
                                             </p>
                                             <div className="rounded-lg border border-border divide-y divide-border">
                                                 {ret.items.map((item, idx) => (
@@ -532,7 +532,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                         </p>
                                                         <div className="text-right shrink-0">
                                                             <p className="text-xs text-muted-foreground">
-                                                                {item.quantity} шт ×{' '}
+                                                                {item.quantity} {l('шт', 'pcs', 'gab.')} ×{' '}
                                                                 {formatEuro(item.price, locale)}
                                                             </p>
                                                             <p className="text-sm font-medium text-foreground">
@@ -547,7 +547,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                             </div>
                                             <div className="mt-2 flex justify-end">
                                                 <p className="text-sm font-bold text-foreground">
-                                                    К возврату:{' '}
+                                                    {l('К возврату:', 'Refund amount:', 'Atmaksas summa:')}{' '}
                                                     <span className="text-emerald-700 dark:text-emerald-400">
                                                         {formatEuro(ret.refundAmount, locale)}
                                                     </span>
@@ -559,7 +559,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                     {/* Resolution + status */}
                                     <div className="pt-2 border-t border-border space-y-3">
                                         <p className="text-sm font-semibold text-foreground">
-                                            Решение администратора
+                                            {l('Решение администратора', 'Administrator decision', 'Administratora lēmums')}
                                         </p>
 
                                         {ret.resolution && (
@@ -577,7 +577,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                     [ret.id]: e.target.value,
                                                 }))
                                             }
-                                            placeholder="Добавьте комментарий к решению..."
+                                            placeholder={l('Добавьте комментарий к решению...', 'Add a comment to the decision...', 'Pievienojiet lēmuma komentāru...')}
                                             className="w-full resize-none text-sm"
                                         />
 
@@ -601,7 +601,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                             resolutionDraft[ret.id]
                                                         );
                                                         if (!result.ok) {
-                                                            reportAdminError(new Error(result.error ?? 'return_update_failed'), 'Возвраты');
+                                                            reportAdminError(new Error(result.error ?? 'return_update_failed'), l('Возвраты', 'Returns', 'Atgriešana'));
                                                             return;
                                                         }
                                                         logAdminAction(
@@ -618,7 +618,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                         );
                                                     }}
                                                 >
-                                                    {STATUS_LABELS[s]}
+                                                    {statusLabels[s]}
                                                 </Button>
                                             ))}
                                         </div>
@@ -632,8 +632,8 @@ export default function AdminReturnsPage(): React.ReactElement {
                 {filtered.length === 0 && (
                     <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
                         {returns.length === 0
-                            ? 'Заявок на возврат пока нет'
-                            : 'Нет заявок по выбранным фильтрам'}
+                            ? l('Заявок на возврат пока нет', 'No return requests yet', 'Atgriešanas pieprasījumu vēl nav')
+                            : l('Нет заявок по выбранным фильтрам', 'No requests match the selected filters', 'Neviens pieprasījums neatbilst izvēlētajiem filtriem')}
                     </div>
                 )}
             </div>

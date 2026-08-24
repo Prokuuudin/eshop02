@@ -54,7 +54,7 @@ const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
 })
 
 export default function AdminDiscountsPage(): React.ReactElement {
-  const { l } = useAdminLocale()
+  const { locale, l } = useAdminLocale()
   const confirmAction = useAdminConfirm()
   const [items, setItems] = useState<PromoCodeItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -157,9 +157,9 @@ export default function AdminDiscountsPage(): React.ReactElement {
   async function closeFormWithWarning() {
     if (showForm) {
       const decision = await confirmAction({
-        title: editId ? 'Закрыть редактирование?' : 'Отменить создание промокода?',
-        description: editId ? 'Внесённые изменения не сохранятся.' : 'Заполненные данные нового промокода будут потеряны.',
-        affected: [form.code || editId || 'Новый промокод'],
+        title: editId ? l('Закрыть редактирование?', 'Close editing?', 'Aizvērt rediģēšanu?') : l('Отменить создание промокода?', 'Cancel promo code creation?', 'Atcelt promokoda izveidi?'),
+        description: editId ? l('Внесённые изменения не сохранятся.', 'Your changes will not be saved.', 'Veiktās izmaiņas netiks saglabātas.') : l('Заполненные данные нового промокода будут потеряны.', 'The entered promo code data will be lost.', 'Ievadītie jaunā promokoda dati tiks zaudēti.'),
+        affected: [form.code || editId || l('Новый промокод', 'New promo code', 'Jauns promokods')],
         destructive: true,
       })
       if (!decision.confirmed) return
@@ -170,8 +170,8 @@ export default function AdminDiscountsPage(): React.ReactElement {
   async function handleOpenCreate() {
     if (editId) {
       const decision = await confirmAction({
-        title: 'Перейти к новому промокоду?',
-        description: 'Изменения редактируемого промокода не сохранятся.',
+        title: l('Перейти к новому промокоду?', 'Switch to a new promo code?', 'Pāriet uz jaunu promokodu?'),
+        description: l('Изменения редактируемого промокода не сохранятся.', 'Changes to the current promo code will not be saved.', 'Pašreizējā promokoda izmaiņas netiks saglabātas.'),
         affected: [form.code || editId],
         destructive: true,
       })
@@ -194,7 +194,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     if (!editId) {
       const code = form.code.trim().toUpperCase()
       if (items.some((item) => item.code === code)) {
-        setError(`Промокод «${code}» уже существует`)
+        setError(l(`Промокод «${code}» уже существует`, `Promo code “${code}” already exists`, `Promokods “${code}” jau pastāv`))
         return
       }
     }
@@ -214,7 +214,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
           body: JSON.stringify(form)
         })
         if (res.status === 409) {
-          setError(`Промокод «${form.code.trim().toUpperCase()}» уже существует`)
+          setError(l(`Промокод «${form.code.trim().toUpperCase()}» уже существует`, `Promo code “${form.code.trim().toUpperCase()}” already exists`, `Promokods “${form.code.trim().toUpperCase()}” jau pastāv`))
           setSaving(false)
           return
         }
@@ -233,7 +233,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
 
   async function handleDelete(id: string) {
     const target = items.find((i) => i.id === id)
-    const decision = await confirmAction({ title: 'Удалить промокод?', description: 'Код перестанет применяться к новым заказам. Действие необратимо.', affected: [target?.code ?? id], requireReason: true, destructive: true })
+    const decision = await confirmAction({ title: l('Удалить промокод?', 'Delete promo code?', 'Dzēst promokodu?'), description: l('Код перестанет применяться к новым заказам. Действие необратимо.', 'The code will no longer apply to new orders. This action cannot be undone.', 'Kods vairs netiks piemērots jauniem pasūtījumiem. Šo darbību nevar atsaukt.'), affected: [target?.code ?? id], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true })
     if (!decision.confirmed) return
     await fetch(`/api/admin/promo-codes/${id}`, { method: 'DELETE' })
     logAdminAction('promo.deleted', { type: 'promo', id, title: target?.code })
@@ -309,7 +309,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 />
               </label>
               <label htmlFor="admin-discount-field-2" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Размер скидки, {form.discountType === 'fixed' ? '€' : '%'}</span>
+                <span className="text-sm text-muted-foreground">{l('Размер скидки', 'Discount amount', 'Atlaides apmērs')}, {form.discountType === 'fixed' ? '€' : '%'}</span>
                 <Input id="admin-discount-field-2"
                   type="number"
                   className={numberInputCls}
@@ -330,18 +330,18 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 />
               </label>
               <label htmlFor="admin-discount-field-4" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Макс. использований (пусто = без лимита)</span>
+                <span className="text-sm text-muted-foreground">{l('Макс. использований (пусто = без лимита)', 'Maximum uses (empty = unlimited)', 'Maks. lietojumu skaits (tukšs = neierobežots)')}</span>
                 <Input id="admin-discount-field-4"
                   type="number"
                   className={numberInputCls}
                   min={1}
                   value={form.maxUses ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value === '' ? null : Number(e.target.value) }))}
-                  placeholder="Без лимита"
+                  placeholder={l('Без лимита', 'Unlimited', 'Bez ierobežojuma')}
                 />
               </label>
               <label htmlFor="admin-discount-field-5" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Действует до</span>
+                <span className="text-sm text-muted-foreground">{l('Действует до', 'Valid until', 'Derīgs līdz')}</span>
                 <Input id="admin-discount-field-5"
                   type="date"
                   value={form.expiresAt?.slice(0, 10) ?? ''}
@@ -361,29 +361,29 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 </Select>
               </label>
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">Тип скидки</span>
+                <span className="text-sm text-muted-foreground">{l('Тип скидки', 'Discount type', 'Atlaides veids')}</span>
                 <Select value={form.discountType} onValueChange={(v) => setForm((f) => ({ ...f, discountType: v as 'percentage' | 'fixed' }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">Процент</SelectItem><SelectItem value="fixed">Фиксированная сумма</SelectItem></SelectContent>
+                  <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">{l('Процент', 'Percentage', 'Procenti')}</SelectItem><SelectItem value="fixed">{l('Фиксированная сумма', 'Fixed amount', 'Fiksēta summa')}</SelectItem></SelectContent>
                 </Select>
               </label>
-              {form.discountType === 'percentage' && <label className="space-y-1"><span className="text-sm text-muted-foreground">Максимальная скидка, €</span><Input type="number" className={numberInputCls} min={0} value={form.maxDiscount ?? ''} onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value ? Number(e.target.value) : null }))} /></label>}
-              <label className="space-y-1"><span className="text-sm text-muted-foreground">Мин. сумма подходящих товаров, €</span><Input type="number" className={numberInputCls} min={0} value={form.minEligibleAmount} onChange={(e) => setForm((f) => ({ ...f, minEligibleAmount: Number(e.target.value) }))} /></label>
-              <label className="space-y-1"><span className="text-sm text-muted-foreground">Лимит на клиента</span><Input type="number" className={numberInputCls} min={1} value={form.perUserLimit ?? ''} placeholder="Без лимита" onChange={(e) => setForm((f) => ({ ...f, perUserLimit: e.target.value ? Number(e.target.value) : null }))} /></label>
-              <label className="space-y-1"><span className="text-sm text-muted-foreground">Начало действия</span><Input type="date" value={form.startsAt?.slice(0, 10) ?? ''} onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value || null }))} /></label>
-              <label className="space-y-1"><span className="text-sm text-muted-foreground">Область действия</span><Select value={form.appliesTo} onValueChange={(v) => setForm((f) => ({ ...f, appliesTo: v as PromoCodeItem['appliesTo'] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Вся корзина</SelectItem><SelectItem value="products">Отдельные товары</SelectItem><SelectItem value="rules">Бренды и подкатегории</SelectItem><SelectItem value="brands">Только бренды</SelectItem><SelectItem value="categories">Только категории</SelectItem></SelectContent></Select></label>
-              {form.appliesTo === 'products' && <PromoProductPicker label="Товары, на которые действует скидка" selected={form.productIds} onChange={(productIds) => setForm((f) => ({ ...f, productIds }))} />}
-              {(form.appliesTo === 'brands' || form.appliesTo === 'rules') && <PromoMultiSelect label="Бренды" options={catalogOptions.brands} selected={form.brands} onChange={(brands) => setForm((f) => ({ ...f, brands }))} placeholder="Найти бренд…" />}
-              {(form.appliesTo === 'categories' || form.appliesTo === 'rules') && <PromoMultiSelect label="Категории (необязательно)" options={catalogOptions.categories} selected={form.categories} onChange={(categories) => setForm((f) => ({ ...f, categories }))} placeholder="Найти категорию…" />}
-              {form.appliesTo === 'rules' && <PromoMultiSelect label="Подкатегории (необязательно)" options={catalogOptions.subcategories} selected={form.subcategories} onChange={(subcategories) => setForm((f) => ({ ...f, subcategories }))} placeholder="Найти подкатегорию…" />}
-              <PromoProductPicker label="Исключённые товары" selected={form.excludedProductIds} onChange={(excludedProductIds) => setForm((f) => ({ ...f, excludedProductIds }))} />
+              {form.discountType === 'percentage' && <label className="space-y-1"><span className="text-sm text-muted-foreground">{l('Максимальная скидка, €', 'Maximum discount, €', 'Maksimālā atlaide, €')}</span><Input type="number" className={numberInputCls} min={0} value={form.maxDiscount ?? ''} onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value ? Number(e.target.value) : null }))} /></label>}
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">{l('Мин. сумма подходящих товаров, €', 'Minimum eligible product amount, €', 'Minimālā atbilstošo preču summa, €')}</span><Input type="number" className={numberInputCls} min={0} value={form.minEligibleAmount} onChange={(e) => setForm((f) => ({ ...f, minEligibleAmount: Number(e.target.value) }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">{l('Лимит на клиента', 'Limit per customer', 'Limits vienam klientam')}</span><Input type="number" className={numberInputCls} min={1} value={form.perUserLimit ?? ''} placeholder={l('Без лимита', 'Unlimited', 'Bez ierobežojuma')} onChange={(e) => setForm((f) => ({ ...f, perUserLimit: e.target.value ? Number(e.target.value) : null }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">{l('Начало действия', 'Valid from', 'Derīgs no')}</span><Input type="date" value={form.startsAt?.slice(0, 10) ?? ''} onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value || null }))} /></label>
+              <label className="space-y-1"><span className="text-sm text-muted-foreground">{l('Область действия', 'Scope', 'Darbības tvērums')}</span><Select value={form.appliesTo} onValueChange={(v) => setForm((f) => ({ ...f, appliesTo: v as PromoCodeItem['appliesTo'] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{l('Вся корзина', 'Entire cart', 'Viss grozs')}</SelectItem><SelectItem value="products">{l('Отдельные товары', 'Specific products', 'Atsevišķas preces')}</SelectItem><SelectItem value="rules">{l('Бренды и подкатегории', 'Brands and subcategories', 'Zīmoli un apakškategorijas')}</SelectItem><SelectItem value="brands">{l('Только бренды', 'Brands only', 'Tikai zīmoli')}</SelectItem><SelectItem value="categories">{l('Только категории', 'Categories only', 'Tikai kategorijas')}</SelectItem></SelectContent></Select></label>
+              {form.appliesTo === 'products' && <PromoProductPicker label={l('Товары, на которые действует скидка', 'Discounted products', 'Preces, kurām piemēro atlaidi')} selected={form.productIds} onChange={(productIds) => setForm((f) => ({ ...f, productIds }))} />}
+              {(form.appliesTo === 'brands' || form.appliesTo === 'rules') && <PromoMultiSelect label={l('Бренды', 'Brands', 'Zīmoli')} options={catalogOptions.brands} selected={form.brands} onChange={(brands) => setForm((f) => ({ ...f, brands }))} placeholder={l('Найти бренд…', 'Find brand…', 'Meklēt zīmolu…')} />}
+              {(form.appliesTo === 'categories' || form.appliesTo === 'rules') && <PromoMultiSelect label={l('Категории (необязательно)', 'Categories (optional)', 'Kategorijas (neobligāti)')} options={catalogOptions.categories} selected={form.categories} onChange={(categories) => setForm((f) => ({ ...f, categories }))} placeholder={l('Найти категорию…', 'Find category…', 'Meklēt kategoriju…')} />}
+              {form.appliesTo === 'rules' && <PromoMultiSelect label={l('Подкатегории (необязательно)', 'Subcategories (optional)', 'Apakškategorijas (neobligāti)')} options={catalogOptions.subcategories} selected={form.subcategories} onChange={(subcategories) => setForm((f) => ({ ...f, subcategories }))} placeholder={l('Найти подкатегорию…', 'Find subcategory…', 'Meklēt apakškategoriju…')} />}
+              <PromoProductPicker label={l('Исключённые товары', 'Excluded products', 'Izslēgtās preces')} selected={form.excludedProductIds} onChange={(excludedProductIds) => setForm((f) => ({ ...f, excludedProductIds }))} />
               <label htmlFor="admin-discount-field-7" className="space-y-1 sm:col-span-2">
-                <span className="text-sm text-muted-foreground">Краткое описание</span>
-                <Input id="admin-discount-field-7" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Например: скидка для новых клиентов" />
+                <span className="text-sm text-muted-foreground">{l('Краткое описание', 'Short description', 'Īss apraksts')}</span>
+                <Input id="admin-discount-field-7" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder={l('Например: скидка для новых клиентов', 'For example: discount for new customers', 'Piemēram: atlaide jaunajiem klientiem')} />
               </label>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.excludeSaleItems} onChange={(e) => setForm((f) => ({ ...f, excludeSaleItems: e.target.checked }))} />Не применять к уценённым товарам</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />Только первый заказ</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.excludeSaleItems} onChange={(e) => setForm((f) => ({ ...f, excludeSaleItems: e.target.checked }))} />{l('Не применять к уценённым товарам', 'Exclude sale products', 'Neattiecināt uz precēm ar atlaidi')}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />{l('Только первый заказ', 'First order only', 'Tikai pirmajam pasūtījumam')}</label>
             </div>
             <div className="pt-4">
               <PromoProductsPreview categories={form.categories} subcategories={form.subcategories} brands={form.brands} productIds={form.productIds} excludedProductIds={form.excludedProductIds} excludeSaleItems={form.excludeSaleItems} />
@@ -399,7 +399,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center">
             <p className="text-muted-foreground text-sm">{l('Промокодов пока нет.', 'No promo codes yet.', 'Promokodu vēl nav.')}</p>
-            <p className="text-muted-foreground text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
+            <p className="text-muted-foreground text-xs mt-1">{l('Нажмите «+ Добавить промокод», чтобы создать первый.', 'Click “+ Add promo code” to create the first one.', 'Noklikšķiniet “+ Pievienot promokodu”, lai izveidotu pirmo.')}</p>
           </div>
         ) : (
           <div className="ui-disclosure-in grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -421,20 +421,20 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 </div>
 
                 <div className="mt-3 text-xs text-muted-foreground space-y-0.5">
-                  {item.minOrder > 0 && <p>Мин. заказ: €{item.minOrder}</p>}
-                  <p>{item.appliesTo === 'all' ? 'На всю корзину' : item.appliesTo === 'products' ? `На товары: ${item.productIds?.length ?? 0}` : item.appliesTo === 'brands' ? `Бренды: ${(item.brands ?? []).join(', ')}` : item.appliesTo === 'categories' ? `Категории: ${(item.categories ?? []).join(', ')}` : 'Комбинация условий'}</p>
-                  {(item.subcategories?.length ?? 0) > 0 && <p>Подкатегории: {item.subcategories.join(', ')}</p>}
-                  {item.maxDiscount != null && item.discountType === 'percentage' && <p>Макс. скидка: €{item.maxDiscount}</p>}
-                  {item.perUserLimit != null && <p>На клиента: до {item.perUserLimit} раз</p>}
-                  {item.firstOrderOnly && <p>Только первый заказ</p>}
-                  {item.excludeSaleItems && <p>Без уценённых товаров</p>}
+                  {item.minOrder > 0 && <p>{l('Мин. заказ:', 'Minimum order:', 'Min. pasūtījums:')} €{item.minOrder}</p>}
+                  <p>{item.appliesTo === 'all' ? l('На всю корзину', 'Entire cart', 'Visam grozam') : item.appliesTo === 'products' ? l(`На товары: ${item.productIds?.length ?? 0}`, `Products: ${item.productIds?.length ?? 0}`, `Preces: ${item.productIds?.length ?? 0}`) : item.appliesTo === 'brands' ? l(`Бренды: ${(item.brands ?? []).join(', ')}`, `Brands: ${(item.brands ?? []).join(', ')}`, `Zīmoli: ${(item.brands ?? []).join(', ')}`) : item.appliesTo === 'categories' ? l(`Категории: ${(item.categories ?? []).join(', ')}`, `Categories: ${(item.categories ?? []).join(', ')}`, `Kategorijas: ${(item.categories ?? []).join(', ')}`) : l('Комбинация условий', 'Combined conditions', 'Nosacījumu kombinācija')}</p>
+                  {(item.subcategories?.length ?? 0) > 0 && <p>{l('Подкатегории:', 'Subcategories:', 'Apakškategorijas:')} {item.subcategories.join(', ')}</p>}
+                  {item.maxDiscount != null && item.discountType === 'percentage' && <p>{l('Макс. скидка:', 'Maximum discount:', 'Maks. atlaide:')} €{item.maxDiscount}</p>}
+                  {item.perUserLimit != null && <p>{l(`На клиента: до ${item.perUserLimit} раз`, `Per customer: up to ${item.perUserLimit} times`, `Vienam klientam: līdz ${item.perUserLimit} reizēm`)}</p>}
+                  {item.firstOrderOnly && <p>{l('Только первый заказ', 'First order only', 'Tikai pirmajam pasūtījumam')}</p>}
+                  {item.excludeSaleItems && <p>{l('Без уценённых товаров', 'Sale products excluded', 'Bez precēm ar atlaidi')}</p>}
                   {item.maxUses !== null && (
-                    <p>Лимит: {item.usedCount}/{item.maxUses} использований</p>
+                    <p>{l('Лимит:', 'Limit:', 'Limits:')} {item.usedCount}/{item.maxUses} {l('использований', 'uses', 'lietojumi')}</p>
                   )}
                   {item.maxUses === null && item.usedCount > 0 && (
-                    <p>Использований: {item.usedCount}</p>
+                    <p>{l('Использований:', 'Uses:', 'Lietojumi:')} {item.usedCount}</p>
                   )}
-                  {item.expiresAt && <p>До: {new Date(item.expiresAt).toLocaleDateString('ru-RU')}</p>}
+                  {item.expiresAt && <p>{l('До:', 'Until:', 'Līdz:')} {new Date(item.expiresAt).toLocaleDateString(locale)}</p>}
                 </div>
 
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">

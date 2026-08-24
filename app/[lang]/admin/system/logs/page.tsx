@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type ActivityEntry = {
   id: string
@@ -31,6 +32,7 @@ function getActionBadgeClass(action: string): string {
 const PAGE_SIZE = 50
 
 export default function AdminSystemLogsPage(): React.ReactElement {
+  const { l, locale } = useAdminLocale()
   const confirmAction = useAdminConfirm()
   const [entries, setEntries] = useState<ActivityEntry[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -44,8 +46,8 @@ export default function AdminSystemLogsPage(): React.ReactElement {
   useEffect(() => {
     adminFetchJson<{ entries: ActivityEntry[] }>('/api/admin/company-activity-log?take=500')
       .then(({ entries }) => { setEntries(entries); setLoadState('ready') })
-      .catch((error) => { setLoadError(classifyAdminError(error, 'Системные логи').message); setLoadState('error') })
-  }, [])
+      .catch((error) => { setLoadError(classifyAdminError(error, l('Системные логи', 'System logs', 'Sistēmas žurnāli')).message); setLoadState('error') })
+  }, [l])
 
   async function reload() {
     setLoadState('loading')
@@ -54,7 +56,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
       setEntries(entries)
       setLoadState('ready')
     } catch (error) {
-      setLoadError(classifyAdminError(error, 'Системные логи').message)
+      setLoadError(classifyAdminError(error, l('Системные логи', 'System logs', 'Sistēmas žurnāli')).message)
       setLoadState('error')
     }
   }
@@ -105,9 +107,9 @@ export default function AdminSystemLogsPage(): React.ReactElement {
   }
 
   function handleExportCSV() {
-    const header = ['Дата и время', 'Действие', 'userId', 'companyId', 'Details']
+    const header = [l('Дата и время', 'Date and time', 'Datums un laiks'), l('Действие', 'Action', 'Darbība'), 'userId', 'companyId', l('Детали', 'Details', 'Informācija')]
     const rows = filtered.map((e) => [
-      new Date(e.timestamp).toLocaleString('ru-RU'),
+      new Date(e.timestamp).toLocaleString(locale),
       e.action,
       e.userId ?? '',
       e.companyId ?? '',
@@ -126,13 +128,13 @@ export default function AdminSystemLogsPage(): React.ReactElement {
   }
 
   async function handleClear() {
-    const decision = await confirmAction({ title: 'Удалить старые системные логи?', description: 'Все записи старше 90 дней будут удалены. Новые записи останутся доступны.', affected: ['Системные логи старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true })
+    const decision = await confirmAction({ title: l('Удалить старые системные логи?', 'Delete old system logs?', 'Dzēst vecos sistēmas žurnālus?'), description: l('Все записи старше 90 дней будут удалены. Новые записи останутся доступны.', 'All entries older than 90 days will be deleted. Newer entries will remain available.', 'Visi ieraksti, kas vecāki par 90 dienām, tiks dzēsti. Jaunākie ieraksti paliks pieejami.'), affected: [l('Системные логи старше 90 дней', 'System logs older than 90 days', 'Sistēmas žurnāli, kas vecāki par 90 dienām')], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true })
     if (!decision.confirmed) return
     try {
       await adminFetchJson('/api/admin/company-activity-log?olderThanDays=90', { method: 'DELETE' })
       await reload()
     } catch (error) {
-      setLoadError(classifyAdminError(error, 'Удаление логов').message)
+      setLoadError(classifyAdminError(error, l('Удаление логов', 'Deleting logs', 'Žurnālu dzēšana')).message)
       setLoadState('error')
     }
   }
@@ -141,19 +143,19 @@ export default function AdminSystemLogsPage(): React.ReactElement {
     <AdminGate>
       <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl font-bold">Логи и события системы</h1>
+          <h1 className="text-2xl font-bold">{l('Логи и события системы', 'System logs and events', 'Sistēmas žurnāli un notikumi')}</h1>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
-              Экспорт CSV
+              {l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
-              Экспорт JSON
+              {l('Экспорт JSON', 'Export JSON', 'Eksportēt JSON')}
             </Button>
             <Button variant="destructive" size="sm" onClick={handleClear}>
-              Очистить логи старше 90 дней
+              {l('Очистить логи старше 90 дней', 'Delete logs older than 90 days', 'Dzēst žurnālus, kas vecāki par 90 dienām')}
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/admin">← Назад в админку</Link>
+              <Link href="/admin">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
             </Button>
           </div>
         </div>
@@ -162,15 +164,15 @@ export default function AdminSystemLogsPage(): React.ReactElement {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="border rounded-lg p-4">
             <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground mt-1">Всего событий</div>
+            <div className="text-sm text-muted-foreground mt-1">{l('Всего событий', 'Total events', 'Notikumi kopā')}</div>
           </div>
           <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
             <div className="text-2xl font-bold text-blue-700">{stats.last24h}</div>
-            <div className="text-sm text-muted-foreground mt-1">За последние 24 ч</div>
+            <div className="text-sm text-muted-foreground mt-1">{l('За последние 24 ч', 'Last 24 hours', 'Pēdējās 24 stundās')}</div>
           </div>
           <div className="border rounded-lg p-4 bg-primary/5 border-primary/30">
             <div className="text-2xl font-bold text-primary">{stats.last7d}</div>
-            <div className="text-sm text-muted-foreground mt-1">За 7 дней</div>
+            <div className="text-sm text-muted-foreground mt-1">{l('За 7 дней', 'Last 7 days', 'Pēdējās 7 dienās')}</div>
           </div>
         </div>
 
@@ -181,14 +183,14 @@ export default function AdminSystemLogsPage(): React.ReactElement {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все действия</SelectItem>
+              <SelectItem value="all">{l('Все действия', 'All actions', 'Visas darbības')}</SelectItem>
               {uniqueActions.map((a) => (
                 <SelectItem key={a} value={a}>{a}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
-            placeholder="Поиск по userId или details…"
+            placeholder={l('Поиск по userId или details…', 'Search by userId or details…', 'Meklēt pēc userId vai informācijas…')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
             className="max-w-sm"
@@ -197,18 +199,18 @@ export default function AdminSystemLogsPage(): React.ReactElement {
 
         {/* Table */}
         {loadState === 'loading' ? (
-          <div className="text-center text-muted-foreground py-16 border rounded-lg">Загрузка…</div>
+          <div className="text-center text-muted-foreground py-16 border rounded-lg">{l('Загрузка…', 'Loading…', 'Ielāde…')}</div>
         ) : loadState === 'error' ? (
           <div role="alert" className="text-center py-16 border rounded-lg border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
             {loadError}
           </div>
         ) : all.length === 0 ? (
           <div className="text-center text-muted-foreground py-16 border rounded-lg">
-            Системные логи пусты. События появятся после активности в системе.
+            {l('Системные логи пусты. События появятся после активности в системе.', 'System logs are empty. Events will appear after activity in the system.', 'Sistēmas žurnāli ir tukši. Notikumi parādīsies pēc darbībām sistēmā.')}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center text-muted-foreground py-16 border rounded-lg">
-            Логи не найдены по заданным фильтрам.
+            {l('Логи не найдены по заданным фильтрам.', 'No logs match the selected filters.', 'Neviens žurnāla ieraksts neatbilst izvēlētajiem filtriem.')}
           </div>
         ) : (
           <>
@@ -216,11 +218,11 @@ export default function AdminSystemLogsPage(): React.ReactElement {
               <table className="min-w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium whitespace-nowrap">Timestamp</th>
-                    <th className="text-left px-4 py-3 font-medium">Action</th>
+                    <th className="text-left px-4 py-3 font-medium whitespace-nowrap">{l('Дата и время', 'Timestamp', 'Datums un laiks')}</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
                     <th className="text-left px-4 py-3 font-medium">userId</th>
                     <th className="text-left px-4 py-3 font-medium">companyId</th>
-                    <th className="text-left px-4 py-3 font-medium">Details</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -228,7 +230,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
                     <>
                       <tr key={entry.id} className="hover:bg-muted/30">
                         <td className="px-4 py-3 whitespace-nowrap font-mono text-xs">
-                          {new Date(entry.timestamp).toLocaleString('ru-RU', {
+                          {new Date(entry.timestamp).toLocaleString(locale, {
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',
@@ -257,7 +259,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
                             }
                             className="text-xs text-primary underline"
                           >
-                            {expandedId === entry.id ? 'Свернуть' : 'JSON'}
+                            {expandedId === entry.id ? l('Свернуть', 'Collapse', 'Sakļaut') : 'JSON'}
                           </button>
                         </td>
                       </tr>
@@ -279,7 +281,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
             {/* Pagination */}
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm text-muted-foreground">
-                Записей: {filtered.length} | Стр. {page + 1} из {totalPages}
+                {l('Записей:', 'Entries:', 'Ieraksti:')} {filtered.length} | {l('Стр.', 'Page', 'Lapa')} {page + 1} {l('из', 'of', 'no')} {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -288,7 +290,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                 >
-                  ← Назад
+                  ← {l('Назад', 'Back', 'Atpakaļ')}
                 </Button>
                 <Button
                   variant="outline"
@@ -296,7 +298,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                 >
-                  Вперёд →
+                  {l('Вперёд', 'Next', 'Tālāk')} →
                 </Button>
               </div>
             </div>

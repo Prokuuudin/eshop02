@@ -8,6 +8,7 @@ import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/in
 import { buildInvoicePdfBlob } from '@/lib/invoice-pdf'
 import { useToast } from '@/lib/toast-context'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 const LANG_LABELS: Record<InvoiceLang, string> = { lv: '🇱🇻 LV', en: '🇺🇸 EN' }
 
@@ -24,11 +25,12 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [sent, setSent] = useState(false)
   const { showToast } = useToast()
+  const { l } = useAdminLocale()
 
   const handlePreview = async () => {
     const previewWindow = window.open('', '_blank')
     if (!previewWindow) {
-      showToast('Разрешите всплывающие окна, чтобы открыть PDF', 'error')
+      showToast(l('Разрешите всплывающие окна, чтобы открыть PDF', 'Allow pop-ups to open the PDF', 'Atļaujiet uznirstošos logus, lai atvērtu PDF'), 'error')
       return
     }
 
@@ -41,7 +43,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch {
       previewWindow.close()
-      showToast('Не удалось сформировать PDF', 'error')
+      showToast(l('Не удалось сформировать PDF', 'Failed to generate PDF', 'Neizdevās izveidot PDF'), 'error')
     } finally {
       setGeneratingPdf(false)
     }
@@ -58,14 +60,14 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
       })
       if (res.ok) {
         setSent(true)
-        showToast(`Счёт отправлен на ${email}`, 'success')
+        showToast(l(`Счёт отправлен на ${email}`, `Invoice sent to ${email}`, `Rēķins nosūtīts uz ${email}`), 'success')
         setTimeout(onClose, 1500)
       } else {
         const data = await res.json().catch(() => ({}))
-        showToast(`Ошибка отправки: ${data.code ?? 'unknown'}`, 'error')
+        showToast(l(`Ошибка отправки: ${data.code ?? 'unknown'}`, `Sending failed: ${data.code ?? 'unknown'}`, `Nosūtīšanas kļūda: ${data.code ?? 'unknown'}`), 'error')
       }
     } catch {
-      showToast('Ошибка сети', 'error')
+      showToast(l('Ошибка сети', 'Network error', 'Tīkla kļūda'), 'error')
     } finally {
       setSending(false)
     }
@@ -75,19 +77,19 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
       <DialogContent className="max-w-md p-6">
         <DialogDescription className="sr-only">
-          Настройки языка, предпросмотра и отправки счёта клиенту
+          {l('Настройки языка, предпросмотра и отправки счёта клиенту', 'Invoice language, preview and delivery settings', 'Rēķina valodas, priekšskatījuma un nosūtīšanas iestatījumi')}
         </DialogDescription>
         <div className="space-y-5">
         <div className="flex items-center justify-between">
           <DialogTitle className="text-lg font-semibold text-foreground">
-            Счёт по заказу #{order.id}
+            {l('Счёт по заказу', 'Invoice for order', 'Rēķins pasūtījumam')} #{order.id}
           </DialogTitle>
-          <button type="button" onClick={onClose} aria-label="Закрыть окно счёта" className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
+          <button type="button" onClick={onClose} aria-label={l('Закрыть окно счёта', 'Close invoice window', 'Aizvērt rēķina logu')} className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
         </div>
 
         {/* Language selector: LV — стандарт, EN — по запросу покупателя */}
         <div>
-          <p id="invoice-language-label" className="text-sm text-muted-foreground mb-2">Язык счёта</p>
+          <p id="invoice-language-label" className="text-sm text-muted-foreground mb-2">{l('Язык счёта', 'Invoice language', 'Rēķina valoda')}</p>
           <div className="flex gap-2">
             {(['lv', 'en'] as InvoiceLang[]).map((l) => (
               <button
@@ -110,7 +112,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
 
         {/* Email field */}
         <div>
-          <label htmlFor="invoice-recipient-email" className="block text-sm text-muted-foreground mb-2">Email получателя</label>
+          <label htmlFor="invoice-recipient-email" className="block text-sm text-muted-foreground mb-2">{l('Email получателя', 'Recipient email', 'Saņēmēja e-pasts')}</label>
           <Input
             id="invoice-recipient-email"
             type="email"
@@ -128,14 +130,14 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
             onClick={handlePreview}
             disabled={generatingPdf}
           >
-            {generatingPdf ? 'Формирование PDF...' : 'Предпросмотр PDF'}
+            {generatingPdf ? l('Формирование PDF...', 'Generating PDF...', 'PDF izveide...') : l('Предпросмотр PDF', 'Preview PDF', 'PDF priekšskatījums')}
           </Button>
           <Button
             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={handleSend}
             disabled={sending || sent || !email.trim()}
           >
-            {sent ? '✓ Отправлено' : sending ? 'Отправка...' : 'Отправить'}
+            {sent ? l('✓ Отправлено', '✓ Sent', '✓ Nosūtīts') : sending ? l('Отправка...', 'Sending...', 'Nosūtīšana...') : l('Отправить', 'Send', 'Nosūtīt')}
           </Button>
         </div>
         </div>

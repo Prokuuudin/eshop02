@@ -39,6 +39,7 @@ const lvCheckout: Record<string, string> = {
   'checkout.delivery.method': 'Piegādes veids',
   'checkout.delivery.courier': 'Kurjers (2-3 dienas)',
   'checkout.delivery.pickup': 'Saņemšana veikalā',
+  'checkout.delivery.post': 'Pakomāts',
   'checkout.delivery.omniva': 'Omniva pakomāti',
   'checkout.delivery.venipak': 'Venipak pakomāti',
   'checkout.delivery.free': 'Bezmaksas',

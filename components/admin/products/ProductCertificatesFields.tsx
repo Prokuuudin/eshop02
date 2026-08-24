@@ -5,19 +5,21 @@ import { useFormContext, useFieldArray } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductFormValues } from './productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const ProductCertificatesFields: React.FC = () => {
+    const { l } = useAdminLocale();
     const { control, register } = useFormContext<AddProductFormValues>();
     const { fields, append, remove } = useFieldArray({ control, name: 'certificates' as never });
 
     return (
         <div className="add-product__section add-product__section--certificates">
-            <h2 className="add-product__section-title">Сертификаты</h2>
+            <h2 className="add-product__section-title">{l('Сертификаты', 'Certificates', 'Sertifikāti')}</h2>
             <div className="flex flex-col gap-2">
                 {(fields as { id: string }[]).map((field, idx) => (
                     <div key={field.id} className="flex gap-2">
                         <Input
-                            placeholder="URL к PDF сертификата"
+                            placeholder={l('URL к PDF сертификата', 'Certificate PDF URL', 'Sertifikāta PDF URL')}
                             {...register(`certificates.${idx}` as const)}
                         />
                         <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)}>
@@ -32,7 +34,7 @@ const ProductCertificatesFields: React.FC = () => {
                     className="add-product__option-add"
                     onClick={() => append('' as never)}
                 >
-                    + Добавить сертификат
+                    + {l('Добавить сертификат', 'Add certificate', 'Pievienot sertifikātu')}
                 </Button>
             </div>
         </div>

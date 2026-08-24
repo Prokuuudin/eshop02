@@ -49,6 +49,22 @@ test('admin can open client barcodes page', async ({ page }) => {
   await expect(page.getByPlaceholder(/Поиск по карте/)).toBeVisible()
 })
 
+for (const locale of ['en', 'lv'] as const) {
+  test(`shared admin controls are localized in ${locale}`, async ({ page }) => {
+    await loginAs(page, E2E_ADMIN)
+    await seedAdminSession(page)
+    await page.goto(`/${locale}/admin`)
+
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    const searchLabel = locale === 'en' ? 'Search' : 'Meklēt'
+    const placeholder = locale === 'en'
+      ? 'Order, product, customer, promo code...'
+      : 'Pasūtījums, produkts, klients, promokods...'
+    await page.getByRole('button', { name: new RegExp(searchLabel, 'i') }).click()
+    await expect(page.getByPlaceholder(placeholder)).toBeVisible()
+  })
+}
+
 test('admin products page fetches the list once and does not get stuck on empty state', async ({ page }) => {
   // Регрессия, два наложенных бага:
   // 1) useProductsAdmin.loadProducts был в useCallback([t]), а t() из useTranslation

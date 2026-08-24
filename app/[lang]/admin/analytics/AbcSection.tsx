@@ -3,10 +3,12 @@ import Link from 'next/link'
 import { formatEuro } from '@/lib/utils'
 import { GRADE_STYLES, type AbcGrade, type AbcRow, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type RawAbcRow = { id: string; title: string; brand: string; qty: number; revenue: number; revenuePct: number; cumPct: number }
 
 export default function AbcSection(): ReactElement {
+  const { l, locale } = useAdminLocale()
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
   const [loaded, setLoaded] = useState<RawAbcRow[] | null>(null)
 
@@ -42,10 +44,10 @@ export default function AbcSection(): ReactElement {
   const filtered = filter === 'all' ? rows : rows.filter((r) => r.grade === filter)
 
   if (loaded === null) {
-    return <Empty text="Загрузка…" />
+    return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
   }
   if (rows.length === 0) {
-    return <Empty text="Нет данных о заказах. ABC-анализ строится на истории продаж." />
+    return <Empty text={l('Нет данных о заказах. ABC-анализ строится на истории продаж.', 'No order data. ABC analysis is based on sales history.', 'Nav pasūtījumu datu. ABC analīze tiek veidota no pārdošanas vēstures.')} />
   }
 
   return (
@@ -69,20 +71,20 @@ export default function AbcSection(): ReactElement {
               <span className={`rounded-full px-2.5 py-0.5 text-sm font-bold ${GRADE_STYLES[g].badge}`}>
                 {g}
               </span>
-              <span className="text-sm text-muted-foreground">{counts[g]} товаров</span>
+              <span className="text-sm text-muted-foreground">{counts[g]} {l('товаров', 'products', 'produkti')}</span>
             </div>
             <p className="text-xl font-bold text-foreground">
-              {formatEuro(revenue[g], 'ru-RU')}
+              {formatEuro(revenue[g], locale)}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {total > 0 ? Math.round((revenue[g] / total) * 100) : 0}% выручки
+              {total > 0 ? Math.round((revenue[g] / total) * 100) : 0}% {l('выручки', 'of revenue', 'no ieņēmumiem')}
             </p>
           </button>
         ))}
       </div>
 
       <div className="text-xs text-muted-foreground -mt-2">
-        A — 80% выручки · B — следующие 15% · C — оставшиеся 5%
+        {l('A — 80% выручки · B — следующие 15% · C — оставшиеся 5%', 'A — 80% of revenue · B — next 15% · C — remaining 5%', 'A — 80% ieņēmumu · B — nākamie 15% · C — atlikušie 5%')}
       </div>
 
       {/* Table */}
@@ -91,13 +93,13 @@ export default function AbcSection(): ReactElement {
           <thead className="bg-muted sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">#</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Товар</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Бренд</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Кол-во</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Выручка</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">% от итога</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Накопл. %</th>
-              <th className="px-4 py-3 text-center font-medium text-muted-foreground">Группа</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Товар', 'Product', 'Produkts')}</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Бренд', 'Brand', 'Zīmols')}</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Кол-во', 'Qty', 'Daudzums')}</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Выручка', 'Revenue', 'Ieņēmumi')}</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('% от итога', '% of total', '% no kopējā')}</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Накопл. %', 'Cumulative %', 'Kumulatīvie %')}</th>
+              <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Группа', 'Group', 'Grupa')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-card">
@@ -115,7 +117,7 @@ export default function AbcSection(): ReactElement {
                 <td className="px-4 py-2.5 text-muted-foreground">{r.brand}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{r.qty}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums font-medium text-foreground">
-                  {formatEuro(r.revenue, 'ru-RU')}
+                  {formatEuro(r.revenue, locale)}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                   {(r.revenuePct * 100).toFixed(1)}%
@@ -135,7 +137,7 @@ export default function AbcSection(): ReactElement {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-10 text-center text-sm text-muted-foreground">Нет товаров в группе {filter}</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">{l('Нет товаров в группе', 'No products in group', 'Grupā nav produktu')} {filter}</div>
         )}
       </div>
     </div>

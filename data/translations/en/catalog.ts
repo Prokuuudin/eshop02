@@ -18,6 +18,7 @@ const enCatalog: Record<string, string> = {
   'brands.imageAlt': 'Brand logo',
   'categories.imageAlt': 'Category image',
   'product.imageAlt': 'Product image',
+  'product.imageNotSet': 'No image',
   'catalog.searchPlaceholder': 'Search by name, brand...',
   'catalog.search': 'Search',
   'catalog.viewLabel': 'Choose view',

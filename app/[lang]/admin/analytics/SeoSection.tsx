@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { type SeoProduct } from './analytics-shared';
 import type { ReactElement } from 'react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 export default function SeoSection(): ReactElement {
+    const { l } = useAdminLocale();
     const [products, setProducts] = useState<SeoProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [issueFilter, setIssueFilter] = useState<'all' | 'metaTitle' | 'metaDesc' | 'image'>(
@@ -66,7 +68,7 @@ export default function SeoSection(): ReactElement {
     }, [products, issueFilter]);
 
     if (loading)
-        return <div className="py-16 text-center text-sm text-muted-foreground">Загрузка каталога...</div>;
+        return <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка каталога...', 'Loading catalog...', 'Kataloga ielāde...')}</div>;
 
     const allOk = products.length > 0 && counts.all === 0;
 
@@ -77,25 +79,25 @@ export default function SeoSection(): ReactElement {
                 {[
                     {
                         key: 'all' as const,
-                        label: 'С проблемами',
+                        label: l('С проблемами', 'With issues', 'Ar problēmām'),
                         color: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10',
                         text: 'text-red-700 dark:text-red-300',
                     },
                     {
                         key: 'metaTitle' as const,
-                        label: 'Нет metaTitle',
+                        label: l('Нет metaTitle', 'Missing metaTitle', 'Nav metaTitle'),
                         color: 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/10',
                         text: 'text-orange-700 dark:text-orange-300',
                     },
                     {
                         key: 'metaDesc' as const,
-                        label: 'Нет metaDescription',
+                        label: l('Нет metaDescription', 'Missing metaDescription', 'Nav metaDescription'),
                         color: 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/10',
                         text: 'text-yellow-700 dark:text-yellow-300',
                     },
                     {
                         key: 'image' as const,
-                        label: 'Нет изображения',
+                        label: l('Нет изображения', 'Missing image', 'Nav attēla'),
                         color: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800',
                         text: 'text-gray-700 dark:text-gray-300',
                     },
@@ -118,7 +120,7 @@ export default function SeoSection(): ReactElement {
 
             {allOk && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                    Все {products.length} товаров заполнены корректно. SEO-пробелов нет.
+                    {l(`Все ${products.length} товаров заполнены корректно. SEO-пробелов нет.`, `All ${products.length} products are complete. No SEO gaps found.`, `Visi ${products.length} produkti ir aizpildīti pareizi. SEO trūkumu nav.`)}
                 </div>
             )}
 
@@ -128,10 +130,10 @@ export default function SeoSection(): ReactElement {
                         <thead className="bg-muted sticky top-0">
                             <tr>
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                    Товар
+                                    {l('Товар', 'Product', 'Produkts')}
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                    Бренд / Категория
+                                    {l('Бренд / Категория', 'Brand / Category', 'Zīmols / Kategorija')}
                                 </th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">
                                     metaTitle
@@ -140,10 +142,10 @@ export default function SeoSection(): ReactElement {
                                     metaDescription
                                 </th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">
-                                    Фото
+                                    {l('Фото', 'Image', 'Attēls')}
                                 </th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">
-                                    Проблем
+                                    {l('Проблем', 'Issues', 'Problēmas')}
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
                             </tr>
@@ -200,7 +202,7 @@ export default function SeoSection(): ReactElement {
                                             href={`/admin/products/${p.id}`}
                                             className="text-xs text-primary hover:underline dark:text-primary whitespace-nowrap"
                                         >
-                                            Редактировать →
+                                            {l('Редактировать', 'Edit', 'Rediģēt')} →
                                         </Link>
                                     </td>
                                 </tr>
@@ -212,7 +214,7 @@ export default function SeoSection(): ReactElement {
 
             {products.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                    Всего в каталоге: {products.length} товаров · Заполнены корректно:{' '}
+                    {l('Всего в каталоге:', 'Total in catalog:', 'Kopā katalogā:')} {products.length} {l('товаров · Заполнены корректно:', 'products · Complete:', 'produkti · Pareizi aizpildīti:')}{' '}
                     {products.length - counts.all}
                 </p>
             )}

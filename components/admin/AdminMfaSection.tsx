@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { ShieldCheck, ShieldOff, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type Status = { enabled: boolean; enrolledAt: string | null; backupCodesRemaining: number };
 type View = 'idle' | 'enrolling' | 'showing-backup-codes' | 'disabling' | 'regenerating';
 
 export default function AdminMfaSection(): React.ReactElement {
+    const { l, locale } = useAdminLocale();
     const [status, setStatus] = useState<Status | null>(null);
     const [loadError, setLoadError] = useState(false);
     const [view, setView] = useState<View>('idle');
@@ -55,7 +57,7 @@ export default function AdminMfaSection(): React.ReactElement {
             setQrCodeDataUrl(json.qrCodeDataUrl);
             setView('enrolling');
         } catch {
-            setError('Не удалось начать настройку. Попробуйте ещё раз.');
+            setError(l('Не удалось начать настройку. Попробуйте ещё раз.', 'Setup could not be started. Try again.', 'Neizdevās sākt iestatīšanu. Mēģiniet vēlreiz.'));
         } finally {
             setBusy(false);
         }
@@ -71,7 +73,7 @@ export default function AdminMfaSection(): React.ReactElement {
                 body: JSON.stringify({ code }),
             });
             if (!res.ok) {
-                setError('Неверный код. Проверьте приложение-аутентификатор и попробуйте снова.');
+                setError(l('Неверный код. Проверьте приложение-аутентификатор и попробуйте снова.', 'Invalid code. Check your authenticator app and try again.', 'Nederīgs kods. Pārbaudiet autentifikatora lietotni un mēģiniet vēlreiz.'));
                 return;
             }
             const json = await res.json() as { backupCodes: string[] };
@@ -80,7 +82,7 @@ export default function AdminMfaSection(): React.ReactElement {
             setCode('');
             loadStatus();
         } catch {
-            setError('Ошибка сервера. Попробуйте позже.');
+            setError(l('Ошибка сервера. Попробуйте позже.', 'Server error. Try again later.', 'Servera kļūda. Mēģiniet vēlāk.'));
         } finally {
             setBusy(false);
         }
@@ -96,13 +98,13 @@ export default function AdminMfaSection(): React.ReactElement {
                 body: JSON.stringify({ currentPassword, code }),
             });
             if (!res.ok) {
-                setError('Неверный пароль или код.');
+                setError(l('Неверный пароль или код.', 'Invalid password or code.', 'Nederīga parole vai kods.'));
                 return;
             }
             reset();
             loadStatus();
         } catch {
-            setError('Ошибка сервера. Попробуйте позже.');
+            setError(l('Ошибка сервера. Попробуйте позже.', 'Server error. Try again later.', 'Servera kļūda. Mēģiniet vēlāk.'));
         } finally {
             setBusy(false);
         }
@@ -118,7 +120,7 @@ export default function AdminMfaSection(): React.ReactElement {
                 body: JSON.stringify({ code }),
             });
             if (!res.ok) {
-                setError('Неверный код.');
+                setError(l('Неверный код.', 'Invalid code.', 'Nederīgs kods.'));
                 return;
             }
             const json = await res.json() as { backupCodes: string[] };
@@ -127,7 +129,7 @@ export default function AdminMfaSection(): React.ReactElement {
             setCode('');
             loadStatus();
         } catch {
-            setError('Ошибка сервера. Попробуйте позже.');
+            setError(l('Ошибка сервера. Попробуйте позже.', 'Server error. Try again later.', 'Servera kļūda. Mēģiniet vēlāk.'));
         } finally {
             setBusy(false);
         }
@@ -140,14 +142,14 @@ export default function AdminMfaSection(): React.ReactElement {
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-3 flex items-center gap-2">
                     <ShieldOff className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    <h2 className="text-sm font-semibold text-foreground">Двухфакторная аутентификация</h2>
+                    <h2 className="text-sm font-semibold text-foreground">{l('Двухфакторная аутентификация', 'Two-factor authentication', 'Divfaktoru autentifikācija')}</h2>
                 </div>
                 <div className="space-y-3">
                     <p className="text-sm text-red-600 dark:text-red-400">
-                        Не удалось загрузить настройки 2FA. Попробуйте обновить страницу или повторить позже.
+                        {l('Не удалось загрузить настройки 2FA. Попробуйте обновить страницу или повторить позже.', 'Could not load 2FA settings. Refresh the page or try again later.', 'Neizdevās ielādēt 2FA iestatījumus. Atsvaidziniet lapu vai mēģiniet vēlāk.')}
                     </p>
                     <Button size="sm" onClick={() => void loadStatus()}>
-                        Попробовать снова
+                        {l('Попробовать снова', 'Try again', 'Mēģināt vēlreiz')}
                     </Button>
                 </div>
             </div>
@@ -162,17 +164,17 @@ export default function AdminMfaSection(): React.ReactElement {
                 ) : (
                     <ShieldOff className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 )}
-                <h2 className="text-sm font-semibold text-foreground">Двухфакторная аутентификация</h2>
+                <h2 className="text-sm font-semibold text-foreground">{l('Двухфакторная аутентификация', 'Two-factor authentication', 'Divfaktoru autentifikācija')}</h2>
             </div>
 
             {view === 'idle' && !status!.enabled && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        Не включена. Рекомендуем включить, чтобы пароль был не единственной защитой доступа к админке.
+                        {l('Не включена. Рекомендуем включить, чтобы пароль был не единственной защитой доступа к админке.', 'Disabled. Enable it so the password is not the only protection for admin access.', 'Nav ieslēgta. Ieslēdziet to, lai parole nebūtu vienīgā administrācijas piekļuves aizsardzība.')}
                     </p>
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <Button size="sm" onClick={() => void startEnroll()} disabled={busy}>
-                        Включить
+                        {l('Включить', 'Enable', 'Ieslēgt')}
                     </Button>
                 </div>
             )}
@@ -180,16 +182,16 @@ export default function AdminMfaSection(): React.ReactElement {
             {view === 'idle' && status!.enabled && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        Включена{status!.enrolledAt ? ` с ${new Date(status!.enrolledAt).toLocaleDateString('ru-RU')}` : ''}.
-                        Резервных кодов осталось: {status!.backupCodesRemaining}.
+                        {l('Включена', 'Enabled', 'Ieslēgta')}{status!.enrolledAt ? ` ${l('с', 'since', 'kopš')} ${new Date(status!.enrolledAt).toLocaleDateString(locale)}` : ''}.
+                        {l('Резервных кодов осталось:', 'Backup codes remaining:', 'Atlikušie rezerves kodi:')} {status!.backupCodesRemaining}.
                     </p>
                     <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => setView('regenerating')}>
                             <KeyRound className="mr-1.5 h-3.5 w-3.5" />
-                            Новые резервные коды
+                            {l('Новые резервные коды', 'New backup codes', 'Jauni rezerves kodi')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setView('disabling')}>
-                            Отключить
+                            {l('Отключить', 'Disable', 'Izslēgt')}
                         </Button>
                     </div>
                 </div>
@@ -198,9 +200,9 @@ export default function AdminMfaSection(): React.ReactElement {
             {view === 'enrolling' && qrCodeDataUrl && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        Отсканируйте QR-код в Google Authenticator / Microsoft Authenticator и введите текущий код.
+                        {l('Отсканируйте QR-код в Google Authenticator / Microsoft Authenticator и введите текущий код.', 'Scan the QR code in Google Authenticator or Microsoft Authenticator and enter the current code.', 'Noskenējiet QR kodu lietotnē Google Authenticator vai Microsoft Authenticator un ievadiet pašreizējo kodu.')}
                     </p>
-                    <Image src={qrCodeDataUrl} alt="QR-код для 2FA" width={200} height={200} unoptimized />
+                    <Image src={qrCodeDataUrl} alt={l('QR-код для 2FA', 'QR code for 2FA', '2FA QR kods')} width={200} height={200} unoptimized />
                     <Input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
@@ -211,9 +213,9 @@ export default function AdminMfaSection(): React.ReactElement {
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <div className="flex gap-2">
                         <Button size="sm" onClick={() => void confirmEnroll()} disabled={busy || code.length !== 6}>
-                            Подтвердить
+                            {l('Подтвердить', 'Confirm', 'Apstiprināt')}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={reset}>Отмена</Button>
+                        <Button size="sm" variant="outline" onClick={reset}>{l('Отмена', 'Cancel', 'Atcelt')}</Button>
                     </div>
                 </div>
             )}
@@ -221,12 +223,12 @@ export default function AdminMfaSection(): React.ReactElement {
             {view === 'showing-backup-codes' && (
                 <div className="space-y-3">
                     <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                        Сохраните эти коды — они больше не будут показаны. Каждый работает один раз, если приложение-аутентификатор недоступно.
+                        {l('Сохраните эти коды — они больше не будут показаны. Каждый работает один раз, если приложение-аутентификатор недоступно.', 'Save these codes — they will not be shown again. Each can be used once if the authenticator app is unavailable.', 'Saglabājiet šos kodus — tie vairs netiks parādīti. Katru var izmantot vienu reizi, ja autentifikatora lietotne nav pieejama.')}
                     </p>
                     <ul className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-3 font-mono text-sm">
                         {backupCodes.map((c) => <li key={c}>{c}</li>)}
                     </ul>
-                    <Button size="sm" onClick={reset}>Готово</Button>
+                    <Button size="sm" onClick={reset}>{l('Готово', 'Done', 'Gatavs')}</Button>
                 </div>
             )}
 
@@ -236,13 +238,13 @@ export default function AdminMfaSection(): React.ReactElement {
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="Текущий пароль"
+                        placeholder={l('Текущий пароль', 'Current password', 'Pašreizējā parole')}
                         autoComplete="current-password"
                     />
                     <Input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
-                        placeholder="Код из приложения"
+                        placeholder={l('Код из приложения', 'Code from the app', 'Kods no lietotnes')}
                         maxLength={10}
                     />
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -253,9 +255,9 @@ export default function AdminMfaSection(): React.ReactElement {
                             onClick={() => void disable()}
                             disabled={busy || !currentPassword || code.length < 6}
                         >
-                            Отключить 2FA
+                            {l('Отключить 2FA', 'Disable 2FA', 'Izslēgt 2FA')}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={reset}>Отмена</Button>
+                        <Button size="sm" variant="outline" onClick={reset}>{l('Отмена', 'Cancel', 'Atcelt')}</Button>
                     </div>
                 </div>
             )}
@@ -265,15 +267,15 @@ export default function AdminMfaSection(): React.ReactElement {
                     <Input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
-                        placeholder="Код из приложения"
+                        placeholder={l('Код из приложения', 'Code from the app', 'Kods no lietotnes')}
                         maxLength={6}
                     />
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <div className="flex gap-2">
                         <Button size="sm" onClick={() => void regenerateBackupCodes()} disabled={busy || code.length !== 6}>
-                            Перегенерировать
+                            {l('Перегенерировать', 'Regenerate', 'Ģenerēt no jauna')}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={reset}>Отмена</Button>
+                        <Button size="sm" variant="outline" onClick={reset}>{l('Отмена', 'Cancel', 'Atcelt')}</Button>
                     </div>
                 </div>
             )}

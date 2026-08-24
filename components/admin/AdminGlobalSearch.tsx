@@ -1,9 +1,10 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, ShoppingCart, Package, Users, Tag } from 'lucide-react'
 import { adminFetchJson, reportAdminPartial } from '@/lib/admin-ui-errors'
+import { useTranslation } from '@/lib/use-translation'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,8 @@ function match(q: string, ...fields: (string | undefined)[]): boolean {
 
 export default function AdminGlobalSearch(): React.ReactElement {
   const router = useRouter()
+  const { language } = useTranslation()
+  const l = useCallback((ru: string, en: string, lv: string): string => language === 'ru' ? ru : language === 'lv' ? lv : en, [language])
 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -52,12 +55,12 @@ export default function AdminGlobalSearch(): React.ReactElement {
   useEffect(() => {
     adminFetchJson<{ data?: { products?: CatalogProduct[] } }>('/api/admin/products')
       .then((d: { data?: { products?: CatalogProduct[] } }) => setProducts(d.data?.products ?? []))
-      .catch(() => reportAdminPartial('Поиск по товарам временно недоступен.', 'Глобальный поиск'))
+      .catch(() => reportAdminPartial(l('Поиск по товарам временно недоступен.', 'Product search is temporarily unavailable.', 'Produktu meklēšana īslaicīgi nav pieejama.'), l('Глобальный поиск', 'Global search', 'Globālā meklēšana')))
 
     adminFetchJson<unknown>('/api/admin/promo-codes')
       .then((d: unknown) => { if (Array.isArray(d)) setPromos(d as PromoCode[]) })
-      .catch(() => reportAdminPartial('Поиск по промокодам временно недоступен.', 'Глобальный поиск'))
-  }, [])
+      .catch(() => reportAdminPartial(l('Поиск по промокодам временно недоступен.', 'Promo code search is temporarily unavailable.', 'Promokodu meklēšana īslaicīgi nav pieejama.'), l('Глобальный поиск', 'Global search', 'Globālā meklēšana')))
+  }, [l])
 
   // ── Orders + customers are searched server-side (debounced) instead of
   // scanning the entire admin order table in the browser ────────────────────
@@ -134,7 +137,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
     const customerItems: ResultItem[] = customerHits.map((c) => ({
       id: c.email,
       label: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email,
-      sub: `${c.email} · ${c.totalOrders} заказов`,
+      sub: `${c.email} · ${c.totalOrders} ${l('заказов', 'orders', 'pasūtījumi')}`,
       href: `/admin/customers/profile?email=${encodeURIComponent(c.email)}`,
     }))
 
@@ -145,17 +148,17 @@ export default function AdminGlobalSearch(): React.ReactElement {
       .map((p) => ({
         id: p.code,
         label: p.code,
-        sub: `${p.discount}% скидка · ${p.active ? 'активен' : 'скрыт'}`,
+        sub: `${p.discount}% ${l('скидка', 'discount', 'atlaide')} · ${p.active ? l('активен', 'active', 'aktīvs') : l('скрыт', 'hidden', 'paslēpts')}`,
         href: '/admin/marketing/discounts',
       }))
 
     return [
-      { label: 'Заказы', icon: ShoppingCart, color: 'text-blue-600 dark:text-blue-400', items: orderItems },
-      { label: 'Товары', icon: Package, color: 'text-emerald-600 dark:text-emerald-400', items: productItems },
-      { label: 'Клиенты', icon: Users, color: 'text-purple-600 dark:text-purple-400', items: customerItems },
-      { label: 'Промокоды', icon: Tag, color: 'text-orange-600 dark:text-orange-400', items: promoItems },
+      { label: l('Заказы', 'Orders', 'Pasūtījumi'), icon: ShoppingCart, color: 'text-blue-600 dark:text-blue-400', items: orderItems },
+      { label: l('Товары', 'Products', 'Produkti'), icon: Package, color: 'text-emerald-600 dark:text-emerald-400', items: productItems },
+      { label: l('Клиенты', 'Customers', 'Klienti'), icon: Users, color: 'text-purple-600 dark:text-purple-400', items: customerItems },
+      { label: l('Промокоды', 'Promo codes', 'Promokodi'), icon: Tag, color: 'text-orange-600 dark:text-orange-400', items: promoItems },
     ].filter((g) => g.items.length > 0)
-  }, [query, orderHits, customerHits, products, promos])
+  }, [query, orderHits, customerHits, products, promos, l])
 
   const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups])
   const isEmpty = query.trim().length >= 2 && allItems.length === 0
@@ -190,10 +193,10 @@ export default function AdminGlobalSearch(): React.ReactElement {
           setOpen(true)
         }}
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-        title="Глобальный поиск (Ctrl+K)"
+        title={l('Глобальный поиск (Ctrl+K)', 'Global search (Ctrl+K)', 'Globālā meklēšana (Ctrl+K)')}
       >
         <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">Поиск</span>
+        <span className="hidden sm:inline">{l('Поиск', 'Search', 'Meklēt')}</span>
         <kbd className="hidden sm:inline text-xs opacity-50 font-mono">⌘K</kbd>
       </button>
     )
@@ -206,7 +209,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
       {/* Overlay */}
       <button
         type="button"
-        aria-label="Закрыть поиск"
+        aria-label={l('Закрыть поиск', 'Close search', 'Aizvērt meklēšanu')}
         className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
@@ -223,7 +226,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedIdx(0) }}
               onKeyDown={handleKeyDown}
-              placeholder="Заказ, товар, клиент, промокод..."
+              placeholder={l('Заказ, товар, клиент, промокод...', 'Order, product, customer, promo code...', 'Pasūtījums, produkts, klients, promokods...')}
               className="flex-1 bg-transparent text-base text-foreground placeholder:text-gray-400 outline-none"
             />
             {query && (
@@ -244,13 +247,13 @@ export default function AdminGlobalSearch(): React.ReactElement {
           <div className="max-h-[60vh] overflow-y-auto py-2">
             {showHint && (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                Начните вводить для поиска по всей админке
+                {l('Начните вводить для поиска по всей админке', 'Start typing to search the entire admin panel', 'Sāciet rakstīt, lai meklētu visā administrācijas panelī')}
               </p>
             )}
 
             {isEmpty && (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                Ничего не найдено по запросу «{query}»
+                {l(`Ничего не найдено по запросу «${query}»`, `Nothing found for “${query}”`, `Vaicājumam “${query}” nekas netika atrasts`)}
               </p>
             )}
 
@@ -301,9 +304,9 @@ export default function AdminGlobalSearch(): React.ReactElement {
           {/* Footer hint */}
           {allItems.length > 0 && (
             <div className="border-t border-border px-4 py-2 flex gap-4 text-xs text-muted-foreground">
-              <span><kbd className="font-mono">↑↓</kbd> навигация</span>
-              <span><kbd className="font-mono">↵</kbd> открыть</span>
-              <span><kbd className="font-mono">Esc</kbd> закрыть</span>
+              <span><kbd className="font-mono">↑↓</kbd> {l('навигация', 'navigate', 'navigācija')}</span>
+              <span><kbd className="font-mono">↵</kbd> {l('открыть', 'open', 'atvērt')}</span>
+              <span><kbd className="font-mono">Esc</kbd> {l('закрыть', 'close', 'aizvērt')}</span>
             </div>
           )}
         </div>

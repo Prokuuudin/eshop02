@@ -7,6 +7,7 @@ import SeoSection from './SeoSection';
 import { useState } from 'react';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,15 +15,15 @@ type Tab = 'abc' | 'cohort' | 'seo';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-const TABS: { value: Tab; label: string; desc: string }[] = [
-    { value: 'abc', label: 'ABC-анализ', desc: 'Топ товаров по доле в выручке' },
-    { value: 'cohort', label: 'Когортный анализ', desc: 'Retention клиентов по месяцам' },
-    { value: 'seo', label: 'SEO-отчёт', desc: 'Товары с пробелами в метаданных' },
-];
-
 export default function AdminAnalyticsPage(): React.ReactElement {
+    const { l } = useAdminLocale();
+    const tabs: { value: Tab; label: string; desc: string }[] = [
+        { value: 'abc', label: l('ABC-анализ', 'ABC analysis', 'ABC analīze'), desc: l('Топ товаров по доле в выручке', 'Top products by share of revenue', 'Populārākie produkti pēc ieņēmumu daļas') },
+        { value: 'cohort', label: l('Когортный анализ', 'Cohort analysis', 'Kohortu analīze'), desc: l('Удержание клиентов по месяцам', 'Monthly customer retention', 'Klientu noturēšana pa mēnešiem') },
+        { value: 'seo', label: l('SEO-отчёт', 'SEO report', 'SEO pārskats'), desc: l('Товары с пробелами в метаданных', 'Products with missing metadata', 'Produkti ar trūkstošiem metadatiem') },
+    ];
     const [tab, setTab] = useState<Tab>('abc');
-    const active = TABS.find((t) => t.value === tab)!;
+    const active = tabs.find((item) => item.value === tab)!;
 
     return (
         <AdminGate access="full">
@@ -30,20 +31,20 @@ export default function AdminAnalyticsPage(): React.ReactElement {
                 {/* Header */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">Аналитика каталога</h1>
+                        <h1 className="text-2xl font-bold text-foreground">{l('Аналитика каталога', 'Catalog analytics', 'Kataloga analītika')}</h1>
                         <p className="mt-1 text-sm text-muted-foreground">{active.desc}</p>
                     </div>
                     <Link
                         href="/admin"
                         className="text-sm text-primary hover:underline dark:text-primary"
                     >
-                        ← Назад в админку
+                        ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
                     </Link>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2 border-b border-border pb-0">
-                    {TABS.map((t) => (
+                    {tabs.map((t) => (
                         <button
                             key={t.value}
                             type="button"

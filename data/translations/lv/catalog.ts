@@ -18,6 +18,7 @@ const lvCatalog: Record<string, string> = {
   'brands.imageAlt': 'Zīmola logotips',
   'categories.imageAlt': 'Kategorijas attēls',
   'product.imageAlt': 'Produkta attēls',
+  'product.imageNotSet': 'Attēls nav norādīts',
   'catalog.searchPlaceholder': 'Meklēt pēc nosaukuma, zīmola...',
   'catalog.search': 'Meklēt',
   'catalog.viewLabel': 'Izvēlieties skatu',

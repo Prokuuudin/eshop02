@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { monthLabel, retentionColor, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type CohortsResponse = {
   cohortSizes: { cohort: string; size: number }[]
@@ -8,6 +9,7 @@ type CohortsResponse = {
 }
 
 export default function CohortSection(): ReactElement {
+  const { l, locale } = useAdminLocale()
   const [showPct, setShowPct] = useState(true)
   const [loaded, setLoaded] = useState<CohortsResponse | null>(null)
 
@@ -44,10 +46,10 @@ export default function CohortSection(): ReactElement {
   }, [loaded])
 
   if (loaded === null) {
-    return <Empty text="Загрузка…" />
+    return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
   }
   if (cohortMonths.length === 0) {
-    return <Empty text="Недостаточно данных для когортного анализа." />
+    return <Empty text={l('Недостаточно данных для когортного анализа.', 'Not enough data for cohort analysis.', 'Kohortu analīzei nepietiek datu.')} />
   }
 
   const offsets = Array.from({ length: maxOffset + 1 }, (_, i) => i)
@@ -57,10 +59,10 @@ export default function CohortSection(): ReactElement {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
-            Строки — месяц первой покупки когорты. Столбцы — месяцев с момента первой покупки.
+            {l('Строки — месяц первой покупки когорты. Столбцы — месяцы с момента первой покупки.', 'Rows show the cohort’s first-purchase month. Columns show months since the first purchase.', 'Rindās ir kohortas pirmā pirkuma mēnesis. Kolonnās — mēneši kopš pirmā pirkuma.')}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            М+0 = месяц первой покупки, М+1 = следующий месяц и т.д.
+            {l('М+0 = месяц первой покупки, М+1 = следующий месяц и т.д.', 'M+0 = first-purchase month, M+1 = the following month, etc.', 'M+0 = pirmā pirkuma mēnesis, M+1 = nākamais mēnesis utt.')}
           </p>
         </div>
         <div className="flex rounded-lg border border-border p-0.5">
@@ -87,10 +89,10 @@ export default function CohortSection(): ReactElement {
           <thead>
             <tr className="bg-muted">
               <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap sticky left-0 bg-muted z-10 border-r border-border">
-                Когорта
+                {l('Когорта', 'Cohort', 'Kohorta')}
               </th>
               <th className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap">
-                Клиентов
+                {l('Клиентов', 'Customers', 'Klienti')}
               </th>
               {offsets.map((o) => (
                 <th key={o} className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap min-w-[64px]">
@@ -107,7 +109,7 @@ export default function CohortSection(): ReactElement {
               return (
                 <tr key={cohort} className="border-t border-border">
                   <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap sticky left-0 bg-card z-10 border-r border-border">
-                    {monthLabel(cohort)}
+                    {monthLabel(cohort, locale)}
                   </td>
                   <td className="px-3 py-2 text-center text-muted-foreground font-medium">
                     {size}

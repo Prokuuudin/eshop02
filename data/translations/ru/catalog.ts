@@ -24,6 +24,7 @@ const ruCatalog: Record<string, string> = {
   'brands.imageAlt': 'Логотип бренда',
   'categories.imageAlt': 'Изображение категории',
   'product.imageAlt': 'Изображение товара',
+  'product.imageNotSet': 'Изображение не задано',
   'catalog.searchPlaceholder': 'Поиск по названию, бренду...',
   'catalog.search': 'Поиск',
   'catalog.viewLabel': 'Выберите внешний вид',

@@ -3,8 +3,10 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AddProductFormValues } from './productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const ProductSeoFields: React.FC = () => {
+    const { l } = useAdminLocale();
     const { register } = useFormContext<AddProductFormValues>();
 
     return (
@@ -13,11 +15,11 @@ const ProductSeoFields: React.FC = () => {
             <div className="add-product__fields-grid">
                 <div>
                     <label htmlFor="product-meta-title" className="block text-sm font-medium mb-1">Meta Title</label>
-                    <Input id="product-meta-title" placeholder="Заголовок для поисковых систем" {...register('metaTitle')} />
+                    <Input id="product-meta-title" placeholder={l('Заголовок для поисковых систем', 'Search engine title', 'Virsraksts meklētājprogrammām')} {...register('metaTitle')} />
                 </div>
                 <div>
                     <label htmlFor="product-meta-description" className="block text-sm font-medium mb-1">Meta Description</label>
-                    <Textarea id="product-meta-description" placeholder="Описание для поисковых систем" {...register('metaDescription')} />
+                    <Textarea id="product-meta-description" placeholder={l('Описание для поисковых систем', 'Search engine description', 'Apraksts meklētājprogrammām')} {...register('metaDescription')} />
                 </div>
                 <div>
                     <label htmlFor="product-og-image" className="block text-sm font-medium mb-1">OG Image (URL)</label>
@@ -25,7 +27,7 @@ const ProductSeoFields: React.FC = () => {
                 </div>
                 <div>
                     <label htmlFor="product-og-alt" className="block text-sm font-medium mb-1">OG Alt</label>
-                    <Input id="product-og-alt" placeholder="Описание OG-изображения" {...register('ogAlt')} />
+                    <Input id="product-og-alt" placeholder={l('Описание OG-изображения', 'OG image description', 'OG attēla apraksts')} {...register('ogAlt')} />
                 </div>
             </div>
         </div>

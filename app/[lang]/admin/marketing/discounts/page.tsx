@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { PromoMultiSelect, usePromoCatalogOptions } from '@/components/admin/promo/PromoMultiSelect'
 import { PromoProductPicker } from '@/components/admin/promo/PromoProductPicker'
 import { PromoProductsPreview } from '@/components/admin/promo/PromoProductsPreview'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type PromoCodeItem = {
   id: string
@@ -53,6 +54,7 @@ const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
 })
 
 export default function AdminDiscountsPage(): React.ReactElement {
+  const { l } = useAdminLocale()
   const confirmAction = useAdminConfirm()
   const [items, setItems] = useState<PromoCodeItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,7 +72,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
   }, [])
 
-  async function load(showLoadingState = true) {
+  const load = useCallback(async (showLoadingState = true) => {
     if (showLoadingState) setLoading(true)
     try {
       const res = await fetch('/api/admin/promo-codes')
@@ -90,11 +92,11 @@ export default function AdminDiscountsPage(): React.ReactElement {
         firstOrderOnly: item.firstOrderOnly ?? false,
       } as PromoCodeItem)) : [])
     } catch {
-      setError('Ошибка загрузки данных')
+      setError(l('Ошибка загрузки данных', 'Failed to load data', 'Neizdevās ielādēt datus'))
     } finally {
       if (showLoadingState) setLoading(false)
     }
-  }
+  }, [l])
 
   useEffect(() => {
     let cancelled = false
@@ -104,7 +106,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [load])
 
   function openCreate() {
     if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
@@ -185,7 +187,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
       || (form.appliesTo === 'categories' && form.categories.length === 0)
       || (form.appliesTo === 'rules' && form.brands.length + form.categories.length + form.subcategories.length === 0)
     if (scopeIsEmpty) {
-      setError('Выберите хотя бы один товар, бренд или категорию для выбранной области действия')
+      setError(l('Выберите хотя бы один товар, бренд или категорию для выбранной области действия', 'Select at least one product, brand or category for the chosen scope', 'Izvēlētajam tvērumam atlasiet vismaz vienu produktu, zīmolu vai kategoriju'))
       return
     }
     // Client-side duplicate check
@@ -223,7 +225,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
       }, { after: { discount: form.discount, active: form.active } })
       cancelForm()
     } catch {
-      setError('Ошибка сохранения')
+      setError(l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda'))
     } finally {
       setSaving(false)
     }
@@ -260,11 +262,11 @@ export default function AdminDiscountsPage(): React.ReactElement {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
-              ← Назад в админку
+              ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
             </Link>
-            <h1 className="text-2xl font-bold text-foreground">Промокоды</h1>
+            <h1 className="text-2xl font-bold text-foreground">{l('Промокоды', 'Promo codes', 'Promokodi')}</h1>
           </div>
-          <Button onClick={() => void handleOpenCreate()} disabled={showForm && !editId}>+ Добавить промокод</Button>
+          <Button onClick={() => void handleOpenCreate()} disabled={showForm && !editId}>+ {l('Добавить промокод', 'Add promo code', 'Pievienot promokodu')}</Button>
         </div>
 
         {error && (
@@ -281,25 +283,25 @@ export default function AdminDiscountsPage(): React.ReactElement {
           }`}>
             <div className={`${formCollapsed && !editId ? 'flex flex-wrap items-center gap-3' : '-mx-6 -mt-6 flex flex-wrap items-center gap-3 rounded-t-xl border-b border-border/70 bg-background/55 px-6 py-4 backdrop-blur-sm'}`}>
               <h2 className="text-lg font-semibold text-foreground">
-                {editId ? 'Редактировать промокод' : 'Новый промокод'}
+                {editId ? l('Редактировать промокод', 'Edit promo code', 'Rediģēt promokodu') : l('Новый промокод', 'New promo code', 'Jauns promokods')}
               </h2>
               <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
                 <Button type="button" variant="outline" size="sm" onClick={() => {
                   setFormCollapsed((value) => !value)
                 }}>
-                  {formCollapsed ? 'Развернуть' : 'Свернуть'}
+                  {formCollapsed ? l('Развернуть', 'Expand', 'Izvērst') : l('Свернуть', 'Collapse', 'Sakļaut')}
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={saving || !form.code.trim()}>
-                  {saving ? 'Сохранение...' : editId ? 'Сохранить' : 'Создать'}
+                  {saving ? l('Сохранение...', 'Saving...', 'Saglabāšana...') : editId ? l('Сохранить', 'Save', 'Saglabāt') : l('Создать', 'Create', 'Izveidot')}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => void closeFormWithWarning()}>{editId ? 'Закрыть' : 'Отмена'}</Button>
+                <Button size="sm" variant="outline" onClick={() => void closeFormWithWarning()}>{editId ? l('Закрыть', 'Close', 'Aizvērt') : l('Отмена', 'Cancel', 'Atcelt')}</Button>
               </div>
             </div>
             <div className={`grid transition-[grid-template-rows,opacity] duration-[280ms] ease-in-out ${formCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`} aria-hidden={formCollapsed} inert={formCollapsed ? true : undefined}>
             <div className="min-h-0 overflow-hidden">
             <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               <label htmlFor="admin-discount-field-1" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Код *</span>
+                <span className="text-sm text-muted-foreground">{l('Код', 'Code', 'Kods')} *</span>
                 <Input id="admin-discount-field-1"
                   value={form.code}
                   onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
@@ -318,7 +320,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 />
               </label>
               <label htmlFor="admin-discount-field-3" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Мин. сумма заказа, €</span>
+                <span className="text-sm text-muted-foreground">{l('Мин. сумма заказа, €', 'Minimum order, €', 'Minimālā pasūtījuma summa, €')}</span>
                 <Input id="admin-discount-field-3"
                   type="number"
                   className={numberInputCls}
@@ -347,14 +349,14 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 />
               </label>
               <label htmlFor="admin-discount-field-6" className="space-y-1">
-                <span className="text-sm text-muted-foreground">Статус</span>
+                <span className="text-sm text-muted-foreground">{l('Статус', 'Status', 'Statuss')}</span>
                 <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
                   <SelectTrigger id="admin-discount-field-6" className={selectCls}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true">Активен</SelectItem>
-                    <SelectItem value="false">Скрыт</SelectItem>
+                    <SelectItem value="true">{l('Активен', 'Active', 'Aktīvs')}</SelectItem>
+                    <SelectItem value="false">{l('Скрыт', 'Hidden', 'Paslēpts')}</SelectItem>
                   </SelectContent>
                 </Select>
               </label>
@@ -393,10 +395,10 @@ export default function AdminDiscountsPage(): React.ReactElement {
 
         {/* List */}
         {loading ? (
-          <p className="text-muted-foreground text-sm">Загрузка...</p>
+          <p className="text-muted-foreground text-sm">{l('Загрузка...', 'Loading...', 'Ielāde...')}</p>
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-12 text-center">
-            <p className="text-muted-foreground text-sm">Промокодов пока нет.</p>
+            <p className="text-muted-foreground text-sm">{l('Промокодов пока нет.', 'No promo codes yet.', 'Promokodu vēl nav.')}</p>
             <p className="text-muted-foreground text-xs mt-1">Нажмите «+ Добавить промокод», чтобы создать первый.</p>
           </div>
         ) : (
@@ -409,7 +411,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 <div className="flex items-start justify-between gap-2">
                   <span className="rounded-lg border border-primary/25 bg-background/80 px-3 py-1 font-mono text-xl font-bold tracking-wider text-primary shadow-sm">{item.code}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'}`}>
-                    {item.active ? 'Активен' : 'Скрыт'}
+                    {item.active ? l('Активен', 'Active', 'Aktīvs') : l('Скрыт', 'Hidden', 'Paslēpts')}
                   </span>
                 </div>
 
@@ -436,14 +438,14 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 </div>
 
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                  <Button size="sm" variant="outline" onClick={() => openEdit(item)}>Изменить</Button>
+                  <Button size="sm" variant="outline" onClick={() => openEdit(item)}>{l('Изменить', 'Edit', 'Rediģēt')}</Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleToggle(item)}
                     className={item.active ? 'text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-900/20' : 'text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20'}
                   >
-                    {item.active ? 'Скрыть' : 'Активировать'}
+                    {item.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Активировать', 'Activate', 'Aktivizēt')}
                   </Button>
                   <Button
                     size="sm"
@@ -451,7 +453,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
                     onClick={() => handleDelete(item.id)}
                     className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
                   >
-                    Удалить
+                    {l('Удалить', 'Delete', 'Dzēst')}
                   </Button>
                 </div>
               </div>

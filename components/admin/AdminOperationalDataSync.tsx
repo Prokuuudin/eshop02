@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useAdminStore } from '@/lib/admin-store'
 import { useCompanyStore } from '@/lib/company-store'
 import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 /**
  * Hydrates non-persisted Zustand caches from PostgreSQL for admin consumers.
@@ -24,18 +25,19 @@ import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
  * which are unrelated to and much smaller than the admin's full order table.
  */
 export default function AdminOperationalDataSync(): null {
+  const { l } = useAdminLocale()
   useEffect(() => {
     const controller = new AbortController()
 
     void fetch('/api/bonus-config', { cache: 'no-store', signal: controller.signal })
       .then((response) => response.ok ? response.json() : null)
       .then((config) => { if (config) useAdminStore.getState().setBonusProgram(config) })
-      .catch(() => { if (!controller.signal.aborted) reportAdminPartial('Настройки бонусной программы временно недоступны.', 'Операционные данные') })
+      .catch(() => { if (!controller.signal.aborted) reportAdminPartial(l('Настройки бонусной программы временно недоступны.', 'Bonus program settings are temporarily unavailable.', 'Bonusu programmas iestatījumi īslaicīgi nav pieejami.'), l('Операционные данные', 'Operational data', 'Darbības dati')) })
 
-    void useCompanyStore.getState().syncFromDb().catch((error) => reportAdminError(error, 'Компании и участники'))
+    void useCompanyStore.getState().syncFromDb().catch((error) => reportAdminError(error, l('Компании и участники', 'Companies and members', 'Uzņēmumi un dalībnieki')))
 
     return () => controller.abort()
-  }, [])
+  }, [l])
 
   return null
 }

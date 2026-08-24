@@ -33,10 +33,10 @@ export function monthDiff(from: string, to: string): number {
     return (ty - fy) * 12 + (tm - fm);
 }
 
-export function monthLabel(key: string): string {
+export function monthLabel(key: string, locale = 'ru-RU'): string {
     const [y, m] = key.split('-').map(Number);
     const date = new Date(y, m - 1, 1);
-    return date.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' });
+    return date.toLocaleDateString(locale, { month: 'short', year: '2-digit' });
 }
 
 export function retentionColor(pct: number): string {

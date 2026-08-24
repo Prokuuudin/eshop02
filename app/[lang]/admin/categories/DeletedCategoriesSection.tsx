@@ -13,13 +13,13 @@ export default function DeletedCategoriesSection({
     state: CategoriesState;
 }): React.ReactElement {
     const {
-            language,
-            tl,
-            deletedCategories,
-            saving,
-            handleRestoreCategory,
-            handleDeleteCategoryForever,
-          } = state;
+        language,
+        tl,
+        deletedCategories,
+        saving,
+        handleRestoreCategory,
+        handleDeleteCategoryForever,
+    } = state;
     return (
         <>
             <section className="rounded-lg border border-border bg-card p-4">
@@ -28,7 +28,7 @@ export default function DeletedCategoriesSection({
                         'admin.categories.trashTitle',
                         'Корзина категорий',
                         'Categories trash',
-                        'Kategoriju grozs'
+                        'Kategoriju atkritne'
                     )}{' '}
                     ({deletedCategories.length})
                 </h2>
@@ -60,7 +60,7 @@ export default function DeletedCategoriesSection({
                                         'admin.categories.subcategoriesCount',
                                         'Подпунктов',
                                         'Subcategories',
-                                        'Apakskategorijas'
+                                        'Apakškategorijas'
                                     )}
                                     : {category.subcategories.length}
                                 </span>
@@ -90,7 +90,7 @@ export default function DeletedCategoriesSection({
                                             'admin.categories.deleteForeverButton',
                                             'Удалить навсегда',
                                             'Delete forever',
-                                            'Dzest neatgriezeniski'
+                                            'Dzēst neatgriezeniski'
                                         )}
                                     </Button>
                                 </div>

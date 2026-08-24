@@ -21,49 +21,49 @@ import { useAdminReviewsPage } from './useAdminReviewsPage';
 export default function AdminReviewsPage(): React.ReactElement {
     const pageState = useAdminReviewsPage();
     const {
-            language,
-            l,
-            STATUS_LABELS,
-            STATUS_COLORS,
-            loading,
-            savingId,
-            bulkSaving,
-            selectedReviewIds,
-            search,
-            setSearch,
-            status,
-            setStatus,
-            message,
-            error,
-            replyDrafts,
-            setReplyDrafts,
-            replyExpanded,
-            replySavingId,
-            filteredClientSide,
-            selectedCount,
-            allVisibleSelected,
-            toggleReviewSelection,
-            toggleSelectAllVisible,
-            applyBulkStatus,
-            removeSelectedReviews,
-            updateStatus,
-            removeReview,
-            toggleReply,
-            saveReply,
-            removeReply,
-          } = pageState;
+        language,
+        l,
+        STATUS_LABELS,
+        STATUS_COLORS,
+        loading,
+        savingId,
+        bulkSaving,
+        selectedReviewIds,
+        search,
+        setSearch,
+        status,
+        setStatus,
+        message,
+        error,
+        replyDrafts,
+        setReplyDrafts,
+        replyExpanded,
+        replySavingId,
+        filteredClientSide,
+        selectedCount,
+        allVisibleSelected,
+        toggleReviewSelection,
+        toggleSelectAllVisible,
+        applyBulkStatus,
+        removeSelectedReviews,
+        updateStatus,
+        removeReview,
+        toggleReply,
+        saveReply,
+        removeReply,
+    } = pageState;
     return (
         <AdminGate>
             <main className="w-full space-y-3 text-foreground">
                 <div className="rounded-lg border border-border bg-card p-4">
                     <h1 className="text-2xl font-bold">
-                        {l('Отзывы: модерация', 'Reviews: moderation', 'Atsauksmes: moderacija')}
+                        {l('Отзывы: модерация', 'Reviews: moderation', 'Atsauksmju moderēšana')}
                     </h1>
                     <p className="mt-1 text-xs text-muted-foreground">
                         {l(
                             'Просмотр, скрытие, возврат в публикацию и удаление отзывов.',
                             'View, hide, restore publication, and delete reviews.',
-                            'Skatisana, slegsana, publicesanas atjaunosana un dzesana.'
+                            'Atsauksmju skatīšana, slēpšana, atkārtota publicēšana un dzēšana.'
                         )}
                     </p>
 
@@ -74,7 +74,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                             placeholder={l(
                                 'Поиск по товару, автору, заголовку и тексту',
                                 'Search by product, author, title and text',
-                                'Meklet pec produkta, autora, virsraksta un teksta'
+                                'Meklēt pēc produkta, autora, virsraksta un teksta'
                             )}
                             className="h-9"
                         />
@@ -95,7 +95,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                             </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
-                            {l('Всего', 'Total', 'Kopa')}: {filteredClientSide.length}
+                            {l('Всего', 'Total', 'Kopā')}: {filteredClientSide.length}
                         </p>
                     </div>
 
@@ -111,12 +111,12 @@ export default function AdminReviewsPage(): React.ReactElement {
                                 {l(
                                     'Выбрать все видимые',
                                     'Select all visible',
-                                    'Atlasit visas redzamas'
+                                    'Atlasīt visas redzamās'
                                 )}
                             </label>
 
                             <span className="text-xs text-muted-foreground">
-                                {l('Выбрано', 'Selected', 'Atlasits')}: {selectedCount}
+                                {l('Выбрано', 'Selected', 'Atlasīts')}: {selectedCount}
                             </span>
 
                             <div className="ml-auto flex flex-wrap gap-2">
@@ -126,7 +126,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                     disabled={bulkSaving || selectedCount === 0}
                                     onClick={() => void applyBulkStatus('approved')}
                                 >
-                                    {l('Показать выбранные', 'Show selected', 'Radit atlasitas')}
+                                    {l('Показать выбранные', 'Show selected', 'Rādīt atlasītās')}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -134,7 +134,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                     disabled={bulkSaving || selectedCount === 0}
                                     onClick={() => void applyBulkStatus('pending')}
                                 >
-                                    {l('На модерацию', 'Send to moderation', 'Uz moderaciju')}
+                                    {l('На модерацию', 'Send to moderation', 'Uz moderāciju')}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -142,7 +142,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                     disabled={bulkSaving || selectedCount === 0}
                                     onClick={() => void applyBulkStatus('hidden')}
                                 >
-                                    {l('Скрыть выбранные', 'Hide selected', 'Slept atlasitas')}
+                                    {l('Скрыть выбранные', 'Hide selected', 'Slēpt atlasītās')}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -150,7 +150,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                     disabled={bulkSaving || selectedCount === 0}
                                     onClick={() => void removeSelectedReviews()}
                                 >
-                                    {l('Удалить выбранные', 'Delete selected', 'Dzest atlasitas')}
+                                    {l('Удалить выбранные', 'Delete selected', 'Dzēst atlasītās')}
                                 </Button>
                             </div>
                         </div>
@@ -171,7 +171,11 @@ export default function AdminReviewsPage(): React.ReactElement {
                 <div className="space-y-2">
                     {loading && (
                         <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                            {l('Загрузка отзывов...', 'Loading reviews...', 'Ielade atsauksmes...')}
+                            {l(
+                                'Загрузка отзывов...',
+                                'Loading reviews...',
+                                'Notiek atsauksmju ielāde...'
+                            )}
                         </div>
                     )}
 
@@ -229,8 +233,8 @@ export default function AdminReviewsPage(): React.ReactElement {
                                         <p className="text-sm font-semibold">{review.title}</p>
                                         <p className="text-xs text-muted-foreground">
                                             {l('Автор', 'Author', 'Autors')}: {review.author} ·{' '}
-                                            {l('Оценка', 'Rating', 'Vertejums')}: {review.rating} ·{' '}
-                                            {l('Полезно', 'Helpful', 'Noderigi')}: {review.helpful}
+                                            {l('Оценка', 'Rating', 'Vērtējums')}: {review.rating} ·{' '}
+                                            {l('Полезно', 'Helpful', 'Noderīgi')}: {review.helpful}
                                         </p>
                                         <p className="text-sm text-foreground whitespace-pre-wrap">
                                             {review.text}
@@ -244,7 +248,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                             disabled={isSaving}
                                             onClick={() => void updateStatus(review.id, 'approved')}
                                         >
-                                            {l('Показать', 'Show', 'Radit')}
+                                            {l('Показать', 'Show', 'Rādīt')}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -255,7 +259,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                             {l(
                                                 'На модерацию',
                                                 'Send to moderation',
-                                                'Uz moderaciju'
+                                                'Uz moderāciju'
                                             )}
                                         </Button>
                                         <Button
@@ -264,7 +268,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                             disabled={isSaving}
                                             onClick={() => void updateStatus(review.id, 'hidden')}
                                         >
-                                            {l('Скрыть', 'Hide', 'Slept')}
+                                            {l('Скрыть', 'Hide', 'Slēpt')}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -272,7 +276,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                             disabled={isSaving}
                                             onClick={() => void removeReview(review.id)}
                                         >
-                                            {l('Удалить', 'Delete', 'Dzest')}
+                                            {l('Удалить', 'Delete', 'Dzēst')}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -357,12 +361,12 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                         ? l(
                                                               'Сохранение...',
                                                               'Saving...',
-                                                              'Saglaba...'
+                                                              'Saglabā...'
                                                           )
                                                         : l(
                                                               'Сохранить ответ',
                                                               'Save reply',
-                                                              'Saglabat atbildi'
+                                                              'Saglabāt atbildi'
                                                           )}
                                                 </Button>
                                                 {review.adminReply && (
@@ -376,7 +380,7 @@ export default function AdminReviewsPage(): React.ReactElement {
                                                         {l(
                                                             'Удалить ответ',
                                                             'Delete reply',
-                                                            'Dzest atbildi'
+                                                            'Dzēst atbildi'
                                                         )}
                                                     </Button>
                                                 )}

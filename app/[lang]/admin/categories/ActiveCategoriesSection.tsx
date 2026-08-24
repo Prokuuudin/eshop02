@@ -75,7 +75,7 @@ export default function ActiveCategoriesSection({
                                 'admin.categories.loading',
                                 'Загрузка категорий...',
                                 'Loading categories...',
-                                'Ieladejam kategorijas...'
+                                'Notiek kategoriju ielāde...'
                             )}
                         </div>
                     ) : (
@@ -102,13 +102,13 @@ export default function ActiveCategoriesSection({
                                                           'admin.categories.saving',
                                                           'Сохранение...',
                                                           'Saving...',
-                                                          'Saglabasana...'
+                                                          'Saglabāšana...'
                                                       )
                                                     : tl(
                                                           'admin.categories.saveButton',
                                                           'Сохранить',
                                                           'Save',
-                                                          'Saglabat'
+                                                          'Saglabāt'
                                                       )}
                                             </Button>
                                             <Button
@@ -123,7 +123,7 @@ export default function ActiveCategoriesSection({
                                                     'admin.categories.resetButton',
                                                     'Сбросить',
                                                     'Reset',
-                                                    'Atiestatit'
+                                                    'Atiestatīt'
                                                 )}
                                             </Button>
                                             <Button
@@ -138,7 +138,7 @@ export default function ActiveCategoriesSection({
                                                     'admin.categories.moveToTrashButton',
                                                     'В корзину',
                                                     'Move to trash',
-                                                    'Uz grozu'
+                                                    'Uz atkritni'
                                                 )}
                                             </Button>
                                         </div>
@@ -245,7 +245,7 @@ export default function ActiveCategoriesSection({
                                                 'admin.categories.subcategories',
                                                 'Подпункты',
                                                 'Subcategories',
-                                                'Apakskategorijas'
+                                                'Apakškategorijas'
                                             )}{' '}
                                             ({category.subcategories.length})
                                         </span>
@@ -276,7 +276,7 @@ export default function ActiveCategoriesSection({
                                                                 'admin.categories.deleteButton',
                                                                 'Удалить',
                                                                 'Delete',
-                                                                'Dzest'
+                                                                'Dzēst'
                                                             )}
                                                         </Button>
                                                     </div>
@@ -433,13 +433,13 @@ export default function ActiveCategoriesSection({
                                                           'admin.categories.saving',
                                                           'Сохранение...',
                                                           'Saving...',
-                                                          'Saglabasana...'
+                                                          'Saglabāšana...'
                                                       )
                                                     : tl(
                                                           'admin.categories.addSubButton',
                                                           'Добавить подпункт',
                                                           'Add subcategory',
-                                                          'Pievienot apakskategoriju'
+                                                          'Pievienot apakškategoriju'
                                                       )}
                                             </Button>
                                         </div>

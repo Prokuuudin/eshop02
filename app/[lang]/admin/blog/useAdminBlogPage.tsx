@@ -135,7 +135,7 @@ function useAdminBlogPageState() {
                     'admin.blog.msg.loadFailed',
                     'Не удалось загрузить статьи блога',
                     'Failed to load blog posts',
-                    'Neizdevas ieladet bloga rakstus'
+                    'Neizdevās ielādēt bloga rakstus'
                 )
             );
         } finally {
@@ -267,13 +267,13 @@ function useAdminBlogPageState() {
                           'admin.blog.msg.updated',
                           'Статья обновлена',
                           'Post updated',
-                          'Raksts atjauninats'
+                          'Raksts atjaunināts'
                       )
                     : tl(
                           'admin.blog.msg.saved',
                           'Статья сохранена',
                           'Post saved',
-                          'Raksts saglabats'
+                          'Raksts saglabāts'
                       )
             );
             setBlogForm(INITIAL_BLOG_FORM);
@@ -287,14 +287,14 @@ function useAdminBlogPageState() {
                           'admin.blog.msg.saveFailed',
                           'Ошибка сохранения',
                           'Save failed',
-                          'Saglabasana neizdevas'
+                          'Saglabāšana neizdevās'
                       );
             setBlogError(
                 tl(
                     'admin.blog.msg.saveFailedWithReason',
                     'Ошибка сохранения: {reason}',
                     'Save error: {reason}',
-                    'Saglabasanas kluda: {reason}',
+                    'Saglabāšanas kļūda: {reason}',
                     { reason }
                 )
             );
@@ -314,7 +314,7 @@ function useAdminBlogPageState() {
             }
 
             setBlogMessage(
-                tl('admin.blog.msg.deleted', 'Статья удалена', 'Post deleted', 'Raksts dzests')
+                tl('admin.blog.msg.deleted', 'Статья удалена', 'Post deleted', 'Raksts dzēsts')
             );
             if (editingBlogId === id) {
                 setEditingBlogId(null);
@@ -327,7 +327,7 @@ function useAdminBlogPageState() {
                     'admin.blog.msg.deleteFailed',
                     'Не удалось удалить статью',
                     'Failed to delete post',
-                    'Neizdevas dzest rakstu'
+                    'Neizdevās dzēst rakstu'
                 )
             );
         }
@@ -411,5 +411,5 @@ function useAdminBlogPageState() {
 }
 
 export function useAdminBlogPage(): ReturnType<typeof useAdminBlogPageState> {
-  return useAdminBlogPageState()
+    return useAdminBlogPageState();
 }

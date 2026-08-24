@@ -24,7 +24,7 @@ export default function CategoriesHeader({
                                 'admin.categories.title',
                                 'Категории: управление структурой',
                                 'Categories: structure management',
-                                'Kategorijas: strukturas parvaldiba'
+                                'Kategoriju struktūras pārvaldība'
                             )}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -32,7 +32,7 @@ export default function CategoriesHeader({
                                 'admin.categories.subtitle',
                                 'Создавайте новые категории, добавляйте и удаляйте подпункты, редактируйте названия на RU/EN/LV.',
                                 'Create categories, add/remove subcategories, edit labels in RU/EN/LV.',
-                                'Izveidojiet kategorijas, pievienojiet/dzesiet apakskategorijas, redigejiet nosaukumus RU/EN/LV.'
+                                'Izveidojiet kategorijas, pievienojiet vai dzēsiet apakškategorijas un rediģējiet nosaukumus RU/EN/LV valodā.'
                             )}
                         </p>
                     </div>
@@ -42,7 +42,7 @@ export default function CategoriesHeader({
                                 'admin.categories.backToAdmin',
                                 'Назад в админку',
                                 'Back to admin',
-                                'Atpakal uz admin'
+                                'Atpakaļ uz administrēšanu'
                             )}
                         </Button>
                     </Link>

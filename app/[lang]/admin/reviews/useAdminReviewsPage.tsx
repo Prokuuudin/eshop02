@@ -39,12 +39,12 @@ function useAdminReviewsPageState() {
     );
     const STATUS_LABELS: Record<ReviewStatus, string> = {
         approved: tl('admin.reviews.status.approved', 'Показывается', 'Visible', 'Redzams'),
-        hidden: tl('admin.reviews.status.hidden', 'Скрыт', 'Hidden', 'Slepts'),
+        hidden: tl('admin.reviews.status.hidden', 'Скрыт', 'Hidden', 'Slēpts'),
         pending: tl(
             'admin.reviews.status.pending',
             'На модерации',
             'Pending moderation',
-            'Moderacija'
+            'Moderācijā'
         ),
     };
 
@@ -94,7 +94,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.loadFailed',
                     'Не удалось загрузить отзывы',
                     'Failed to load reviews',
-                    'Neizdevas ieladet atsauksmes'
+                    'Neizdevās ielādēt atsauksmes'
                 )
             );
         } finally {
@@ -172,7 +172,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.bulkStatusFailed',
                     'Не удалось выполнить массовое обновление статуса',
                     'Failed to perform bulk status update',
-                    'Neizdevas veikt masveida statusa atjaunosanu'
+                    'Neizdevās veikt masveida statusa atjaunināšanu'
                 )
             );
         } finally {
@@ -183,17 +183,24 @@ function useAdminReviewsPageState() {
     const removeSelectedReviews = async () => {
         if (selectedReviewIds.length === 0) return;
 
-        const decision = await confirmAction({ title: tl(
+        const decision = await confirmAction({
+            title: tl(
                 'admin.reviews.confirm.deleteSelected',
                 'Удалить выбранные отзывы ({count}) без возможности восстановления?',
                 'Delete selected reviews ({count}) permanently?',
-                'Dzest atlasitas atsauksmes ({count}) neatgriezeniski?',
+                'Vai neatgriezeniski dzēst atlasītās atsauksmes ({count})?',
                 { count: selectedReviewIds.length }
-            ), description: l(
+            ),
+            description: l(
                 'Отзывы будут удалены без возможности восстановления.',
                 'The reviews will be deleted permanently.',
-                'Atsauksmes tiks neatgriezeniski izdzestas.'
-            ), affected: selectedReviewIds, confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
+                'Atsauksmes tiks neatgriezeniski izdzēstas.'
+            ),
+            affected: selectedReviewIds,
+            confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'),
+            requireReason: true,
+            destructive: true,
+        });
         if (!decision.confirmed) return;
 
         setBulkSaving(true);
@@ -213,7 +220,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.bulkDeleted',
                     'Удалено отзывов: {count}',
                     'Deleted reviews: {count}',
-                    'Dzesu atsauksmju skaits: {count}',
+                    'Dzēsto atsauksmju skaits: {count}',
                     { count: selectedReviewIds.length }
                 )
             );
@@ -227,7 +234,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.bulkDeleteFailed',
                     'Не удалось удалить выбранные отзывы',
                     'Failed to delete selected reviews',
-                    'Neizdevas dzest atlasitas atsauksmes'
+                    'Neizdevās dzēst atlasītās atsauksmes'
                 )
             );
         } finally {
@@ -266,7 +273,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.statusUpdateFailed',
                     'Не удалось обновить статус отзыва {id}',
                     'Failed to update review status {id}',
-                    'Neizdevas atjaunot atsauksmes statusu {id}',
+                    'Neizdevās atjaunināt atsauksmes {id} statusu',
                     { id }
                 )
             );
@@ -276,17 +283,24 @@ function useAdminReviewsPageState() {
     };
 
     const removeReview = async (id: string) => {
-        const decision = await confirmAction({ title: tl(
+        const decision = await confirmAction({
+            title: tl(
                 'admin.reviews.confirm.deleteOne',
                 'Удалить отзыв {id} без возможности восстановления?',
                 'Delete review {id} permanently?',
-                'Dzest atsauksmi {id} neatgriezeniski?',
+                'Vai neatgriezeniski dzēst atsauksmi {id}?',
                 { id }
-            ), description: l(
+            ),
+            description: l(
                 'Отзыв будет удалён без возможности восстановления.',
                 'The review will be deleted permanently.',
-                'Atsauksme tiks neatgriezeniski izdzesta.'
-            ), affected: [id], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
+                'Atsauksme tiks neatgriezeniski izdzēsta.'
+            ),
+            affected: [id],
+            confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'),
+            requireReason: true,
+            destructive: true,
+        });
         if (!decision.confirmed) return;
 
         setSavingId(id);
@@ -306,7 +320,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.deletedOne',
                     'Отзыв {id} удален',
                     'Review {id} deleted',
-                    'Atsauksme {id} izdzesta',
+                    'Atsauksme {id} izdzēsta',
                     { id }
                 )
             );
@@ -319,7 +333,7 @@ function useAdminReviewsPageState() {
                     'admin.reviews.msg.deleteOneFailed',
                     'Не удалось удалить отзыв {id}',
                     'Failed to delete review {id}',
-                    'Neizdevas dzest atsauksmi {id}',
+                    'Neizdevās dzēst atsauksmi {id}',
                     { id }
                 )
             );
@@ -360,16 +374,14 @@ function useAdminReviewsPageState() {
                 return n;
             });
             await loadReviews();
-            setMessage(
-                l('Ответ сохранён', 'Reply saved', 'Atbilde saglabāta')
-            );
+            setMessage(l('Ответ сохранён', 'Reply saved', 'Atbilde saglabāta'));
             setError('');
         } catch {
             setError(
                 l(
                     'Не удалось сохранить ответ',
                     'Failed to save reply',
-                    'Neizdevas saglabat atbildi'
+                    'Neizdevās saglabāt atbildi'
                 )
             );
         } finally {
@@ -397,13 +409,11 @@ function useAdminReviewsPageState() {
                 return n;
             });
             await loadReviews();
-            setMessage(
-                l('Ответ удалён', 'Reply deleted', 'Atbilde izdzēsta')
-            );
+            setMessage(l('Ответ удалён', 'Reply deleted', 'Atbilde izdzēsta'));
             setError('');
         } catch {
             setError(
-                l('Не удалось удалить ответ', 'Failed to delete reply', 'Neizdevas dzest atbildi')
+                l('Не удалось удалить ответ', 'Failed to delete reply', 'Neizdevās dzēst atbildi')
             );
         } finally {
             setReplySavingId(null);
@@ -458,5 +468,5 @@ function useAdminReviewsPageState() {
 }
 
 export function useAdminReviewsPage(): ReturnType<typeof useAdminReviewsPageState> {
-  return useAdminReviewsPageState()
+    return useAdminReviewsPageState();
 }

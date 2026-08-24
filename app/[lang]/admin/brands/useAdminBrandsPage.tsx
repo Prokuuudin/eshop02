@@ -92,7 +92,7 @@ function useAdminBrandsPageState() {
                         language === 'ru'
                             ? 'Не удалось загрузить бренды'
                             : language === 'lv'
-                            ? 'Neizdevas ieladet zimolus'
+                            ? 'Neizdevās ielādēt zīmolus'
                             : 'Failed to load brands'
                     )
                 );
@@ -128,7 +128,7 @@ function useAdminBrandsPageState() {
                     'admin.brands.msg.saveFailed',
                     'Не удалось сохранить изменения',
                     'Failed to save changes',
-                    'Neizdevas saglabat izmainas'
+                    'Neizdevās saglabāt izmaiņas'
                 )
             );
         } finally {
@@ -201,7 +201,7 @@ function useAdminBrandsPageState() {
                     'admin.brands.msg.duplicateId',
                     'Бренд с таким ID уже существует',
                     'Brand with this ID already exists',
-                    'Zimols ar so ID jau pastav'
+                    'Zīmols ar šo ID jau pastāv'
                 )
             );
             return;
@@ -225,7 +225,7 @@ function useAdminBrandsPageState() {
 
         await saveBrands(
             next,
-            tl('admin.brands.msg.added', 'Бренд добавлен', 'Brand added', 'Zimols pievienots')
+            tl('admin.brands.msg.added', 'Бренд добавлен', 'Brand added', 'Zīmols pievienots')
         );
         setNewBrand(EMPTY_NEW_BRAND);
     };
@@ -237,7 +237,7 @@ function useAdminBrandsPageState() {
                 'admin.brands.msg.changesSaved',
                 'Изменения брендов сохранены',
                 'Brand changes saved',
-                'Zimolu izmainas saglabatas'
+                'Zīmola izmaiņas saglabātas'
             )
         );
     };
@@ -250,7 +250,7 @@ function useAdminBrandsPageState() {
                     'admin.brands.msg.savedVersionNotFound',
                     'Не найдена сохраненная версия бренда',
                     'Saved brand version not found',
-                    'Saglabata zimola versija nav atrasta'
+                    'Saglabātā zīmola versija nav atrasta'
                 )
             );
             return;
@@ -262,33 +262,45 @@ function useAdminBrandsPageState() {
                 'admin.brands.msg.cardReset',
                 'Изменения карточки бренда сброшены',
                 'Brand card changes reset',
-                'Zimola kartites izmainas atiestatitas'
+                'Zīmola kartītes izmaiņas atiestatītas'
             )
         );
         setError('');
     };
 
     const handleDeleteBrand = async (brandId: string) => {
-        const decision = await confirmAction({ title: tl(
+        const decision = await confirmAction({
+            title: tl(
                 'admin.brands.msg.deleteConfirmWithId',
                 'Удалить бренд {id}?',
                 'Delete brand {id}?',
-                'Dzest zimolu {id}?',
+                'Vai dzēst zīmolu {id}?',
                 { id: brandId }
-            ), description: tl('admin.brands.msg.deleteDescription', 'Бренд будет удалён из каталога. Проверьте связанные товары перед продолжением.', 'The brand will be removed from the catalog. Check related products before continuing.', 'Zīmols tiks noņemts no kataloga. Pirms turpināt, pārbaudiet saistītos produktus.'), affected: [brandId], confirmText: brandId, requireReason: true, destructive: true });
+            ),
+            description: tl(
+                'admin.brands.msg.deleteDescription',
+                'Бренд будет удалён из каталога. Проверьте связанные товары перед продолжением.',
+                'The brand will be removed from the catalog. Check related products before continuing.',
+                'Zīmols tiks noņemts no kataloga. Pirms turpināt, pārbaudiet saistītos produktus.'
+            ),
+            affected: [brandId],
+            confirmText: brandId,
+            requireReason: true,
+            destructive: true,
+        });
         if (!decision.confirmed) return;
 
         const next = brands.filter((brand) => brand.id !== brandId);
         await saveBrands(
             next,
-            tl('admin.brands.msg.deleted', 'Бренд удален', 'Brand deleted', 'Zimols dzests')
+            tl('admin.brands.msg.deleted', 'Бренд удален', 'Brand deleted', 'Zīmols dzēsts')
         );
     };
 
     const newBrandTitle =
         newBrand.name.trim() ||
         sanitizeSlug(newBrand.id) ||
-        tl('admin.brands.newBrandDefault', 'Новый бренд', 'New brand', 'Jauns zimols');
+        tl('admin.brands.newBrandDefault', 'Новый бренд', 'New brand', 'Jauns zīmols');
 
     return {
         t,
@@ -327,5 +339,5 @@ function useAdminBrandsPageState() {
 }
 
 export function useAdminBrandsPage(): ReturnType<typeof useAdminBrandsPageState> {
-  return useAdminBrandsPageState()
+    return useAdminBrandsPageState();
 }

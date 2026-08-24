@@ -15,24 +15,24 @@ import { useAdminBlogPage } from './useAdminBlogPage';
 export default function AdminBlogPage(): React.ReactElement {
     const pageState = useAdminBlogPage();
     const {
-            router,
-            t,
-            l,
-            tl,
-            locale,
-            blogPosts,
-            blogLoading,
-            blogSaving,
-            blogMessage,
-            blogError,
-            blogForm,
-            setBlogForm,
-            editingBlogId,
-            handleBlogCreate,
-            handleBlogDelete,
-            handleStartEditBlog,
-            handleCancelBlogEdit,
-          } = pageState;
+        router,
+        t,
+        l,
+        tl,
+        locale,
+        blogPosts,
+        blogLoading,
+        blogSaving,
+        blogMessage,
+        blogError,
+        blogForm,
+        setBlogForm,
+        editingBlogId,
+        handleBlogCreate,
+        handleBlogDelete,
+        handleStartEditBlog,
+        handleCancelBlogEdit,
+    } = pageState;
     return (
         <AdminGate>
             <main className="admin-blog-page w-full py-4 text-foreground">
@@ -43,7 +43,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                 'admin.blog.title',
                                 'Управление блогом',
                                 'Blog management',
-                                'Bloga parvaldiba'
+                                'Bloga pārvaldība'
                             )}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -51,7 +51,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                 'admin.blog.subtitle',
                                 'Создание, редактирование и удаление статей',
                                 'Create, edit, and delete posts',
-                                'Rakstu izveide, redigesana un dzesana'
+                                'Rakstu izveide, rediģēšana un dzēšana'
                             )}
                         </p>
                     </div>
@@ -62,7 +62,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                     'admin.blog.backToAdmin',
                                     'Назад в админ-панель',
                                     'Back to admin panel',
-                                    'Atpakal uz admin paneli'
+                                    'Atpakaļ uz administrēšanas paneli'
                                 )}
                             </Button>
                         </Link>
@@ -160,7 +160,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-excerpt" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            {l('Краткое описание', 'Short description', 'Īss apraksts')}
+                                            {l(
+                                                'Краткое описание',
+                                                'Short description',
+                                                'Īss apraksts'
+                                            )}
                                         </span>
                                         <Textarea
                                             id="blog-excerpt"
@@ -196,7 +200,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-read-time" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
-                                            {l('Время чтения (мин)', 'Reading time (min)', 'Lasīšanas laiks (min)')}
+                                            {l(
+                                                'Время чтения (мин)',
+                                                'Reading time (min)',
+                                                'Lasīšanas laiks (min)'
+                                            )}
                                         </span>
                                         <Input
                                             id="blog-read-time"
@@ -216,7 +224,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-image" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            {l('Обложка (путь)', 'Cover (path)', 'Vāka attēls (ceļš)')}
+                                            {l(
+                                                'Обложка (путь)',
+                                                'Cover (path)',
+                                                'Vāka attēls (ceļš)'
+                                            )}
                                         </span>
                                         <Input
                                             id="blog-image"
@@ -259,7 +271,10 @@ export default function AdminBlogPage(): React.ReactElement {
                                         />
                                     </label>
 
-                                    <label htmlFor="blog-content-blocks" className="text-sm md:col-span-2">
+                                    <label
+                                        htmlFor="blog-content-blocks"
+                                        className="text-sm md:col-span-2"
+                                    >
                                         <span className="block text-muted-foreground mb-1">
                                             contentBlocks JSON
                                             <span className="ml-2 text-xs text-muted-foreground">
@@ -325,7 +340,12 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
-                                                {l('Краткое описание', 'Short description', 'Īss apraksts')} ({lang})
+                                                {l(
+                                                    'Краткое описание',
+                                                    'Short description',
+                                                    'Īss apraksts'
+                                                )}{' '}
+                                                ({lang})
                                             </span>
                                             <Textarea
                                                 value={blogForm.translations[lang].excerpt}
@@ -475,7 +495,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                 'admin.blog.featuredToggle',
                                 'Показать как featured',
                                 'Mark as featured',
-                                'Atzimet ka izceltu'
+                                'Atzīmēt kā izceltu'
                             )}
                         </label>
 
@@ -499,19 +519,43 @@ export default function AdminBlogPage(): React.ReactElement {
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <label className="text-sm">
-                                <span className="mb-1 block">{tl('admin.blog.authorRole', 'Должность автора', 'Author role', 'Autora amats')}</span>
+                                <span className="mb-1 block">
+                                    {tl(
+                                        'admin.blog.authorRole',
+                                        'Должность автора',
+                                        'Author role',
+                                        'Autora amats'
+                                    )}
+                                </span>
                                 <Input
                                     className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
                                     value={blogForm.authorRole}
-                                    onChange={(event) => setBlogForm((prev) => ({ ...prev, authorRole: event.target.value }))}
+                                    onChange={(event) =>
+                                        setBlogForm((prev) => ({
+                                            ...prev,
+                                            authorRole: event.target.value,
+                                        }))
+                                    }
                                 />
                             </label>
                             <label className="text-sm">
-                                <span className="mb-1 block">{tl('admin.blog.authorBio', 'Экспертность автора', 'Author expertise', 'Autora kompetence')}</span>
+                                <span className="mb-1 block">
+                                    {tl(
+                                        'admin.blog.authorBio',
+                                        'Экспертность автора',
+                                        'Author expertise',
+                                        'Autora kompetence'
+                                    )}
+                                </span>
                                 <Input
                                     className="w-full rounded border border-border bg-card px-3 py-2 text-foreground"
                                     value={blogForm.authorBio}
-                                    onChange={(event) => setBlogForm((prev) => ({ ...prev, authorBio: event.target.value }))}
+                                    onChange={(event) =>
+                                        setBlogForm((prev) => ({
+                                            ...prev,
+                                            authorBio: event.target.value,
+                                        }))
+                                    }
                                 />
                             </label>
                         </div>
@@ -523,7 +567,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                           'admin.blog.saving',
                                           'Сохранение...',
                                           'Saving...',
-                                          'Saglabasana...'
+                                          'Saglabāšana...'
                                       )
                                     : editingBlogId
                                     ? tl(
@@ -536,7 +580,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                           'admin.blog.savePost',
                                           'Сохранить статью',
                                           'Save post',
-                                          'Saglabat rakstu'
+                                          'Saglabāt rakstu'
                                       )}
                             </Button>
                             {editingBlogId && (
@@ -549,7 +593,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                         'admin.blog.cancelEdit',
                                         'Отменить редактирование',
                                         'Cancel editing',
-                                        'Atcelt redigesanu'
+                                        'Atcelt rediģēšanu'
                                     )}
                                 </Button>
                             )}
@@ -571,7 +615,7 @@ export default function AdminBlogPage(): React.ReactElement {
                         </h3>
                         {blogLoading ? (
                             <p className="text-muted-foreground">
-                                {tl('admin.blog.loading', 'Загрузка...', 'Loading...', 'Ielade...')}
+                                {tl('admin.blog.loading', 'Загрузка...', 'Loading...', 'Ielāde...')}
                             </p>
                         ) : blogPosts.length === 0 ? (
                             <p className="text-muted-foreground">
@@ -579,7 +623,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                     'admin.blog.empty',
                                     'Статей пока нет',
                                     'No posts yet',
-                                    'Rakstu vel nav'
+                                    'Rakstu vēl nav'
                                 )}
                             </p>
                         ) : (
@@ -606,7 +650,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                                     'admin.blog.edit',
                                                     'Редактировать',
                                                     'Edit',
-                                                    'Rediget'
+                                                    'Rediģēt'
                                                 )}
                                             </Button>
                                             <a
@@ -615,7 +659,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >
-                                                {tl('admin.blog.open', 'Открыть', 'Open', 'Atvert')}
+                                                {tl('admin.blog.open', 'Открыть', 'Open', 'Atvērt')}
                                             </a>
                                             <Button
                                                 type="button"
@@ -627,7 +671,7 @@ export default function AdminBlogPage(): React.ReactElement {
                                                     'admin.blog.delete',
                                                     'Удалить',
                                                     'Delete',
-                                                    'Dzest'
+                                                    'Dzēst'
                                                 )}
                                             </Button>
                                         </div>

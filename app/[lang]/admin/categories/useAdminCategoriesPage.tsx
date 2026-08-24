@@ -116,7 +116,7 @@ function useAdminCategoriesPageState() {
                         'admin.categories.msg.loadFailed',
                         'Не удалось загрузить категории',
                         'Failed to load categories',
-                        'Neizdevas ieladet kategorijas'
+                        'Neizdevās ielādēt kategorijas'
                     )
                 );
             } finally {
@@ -159,7 +159,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.saveFailed',
                     'Не удалось сохранить изменения',
                     'Failed to save changes',
-                    'Neizdevas saglabat izmainas'
+                    'Neizdevās saglabāt izmaiņas'
                 )
             );
         } finally {
@@ -218,7 +218,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.idRequired',
                     'Укажите ID категории',
                     'Provide category ID',
-                    'Noradiet kategorijas ID'
+                    'Norādiet kategorijas ID'
                 )
             );
             return;
@@ -230,7 +230,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.idExists',
                     'Категория с таким ID уже существует',
                     'Category with this ID already exists',
-                    'Kategorija ar so ID jau pastav'
+                    'Kategorija ar šo ID jau pastāv'
                 )
             );
             return;
@@ -287,7 +287,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.subSlugRequired',
                     'Укажите slug подпункта',
                     'Provide subcategory slug',
-                    'Noradiet apakskategorijas slug'
+                    'Norādiet apakškategorijas slug'
                 )
             );
             return;
@@ -302,7 +302,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.subSlugExists',
                     'Подпункт с таким slug уже есть',
                     'Subcategory slug already exists',
-                    'Apakskategorijas slug jau pastav'
+                    'Apakškategorijas slug jau pastāv'
                 )
             );
             return;
@@ -336,7 +336,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.subAdded',
                 'Подпункт добавлен',
                 'Subcategory added',
-                'Apakskategorija pievienota'
+                'Apakškategorija pievienota'
             )
         );
         setNewSubByCategory((prev) => ({
@@ -363,7 +363,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.subRemoved',
                 'Подпункт удален',
                 'Subcategory removed',
-                'Apakskategorija dzesta'
+                'Apakškategorija dzēsta'
             )
         );
     };
@@ -376,7 +376,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.saved',
                 'Изменения категории сохранены',
                 'Category changes saved',
-                'Kategorijas izmainas saglabatas'
+                'Kategorijas izmaiņas saglabātas'
             )
         );
     };
@@ -389,7 +389,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.savedVersionMissing',
                     'Не удалось найти сохраненную версию категории',
                     'Saved category version not found',
-                    'Saglabata kategorijas versija nav atrasta'
+                    'Saglabātā kategorijas versija nav atrasta'
                 )
             );
             return;
@@ -410,7 +410,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.cardReset',
                 'Изменения карточки сброшены',
                 'Card changes were reset',
-                'Kartites izmainas atiestatitas'
+                'Kartītes izmaiņas atiestatītas'
             )
         );
     };
@@ -419,13 +419,24 @@ function useAdminCategoriesPageState() {
         const category = categories.find((item) => item.id === categoryId);
         if (!category) return;
 
-        const decision = await confirmAction({ title: tl(
+        const decision = await confirmAction({
+            title: tl(
                 'admin.categories.confirm.moveToTrash',
                 'Переместить категорию {id} в корзину?',
                 'Move category {id} to trash?',
-                'Parvietot kategoriju {id} uz grozu?',
+                'Vai pārvietot kategoriju {id} uz atkritni?',
                 { id: categoryId }
-            ), description: tl('admin.categories.confirm.moveToTrashDescription', 'Категория исчезнет из активного каталога и будет перемещена в корзину.', 'The category will disappear from the active catalog and move to trash.', 'Kategorija pazudīs no aktīvā kataloga un tiks pārvietota uz atkritni.'), affected: [categoryId], requireReason: true, destructive: true });
+            ),
+            description: tl(
+                'admin.categories.confirm.moveToTrashDescription',
+                'Категория исчезнет из активного каталога и будет перемещена в корзину.',
+                'The category will disappear from the active catalog and move to trash.',
+                'Kategorija pazudīs no aktīvā kataloga un tiks pārvietota uz atkritni.'
+            ),
+            affected: [categoryId],
+            requireReason: true,
+            destructive: true,
+        });
         if (!decision.confirmed) return;
 
         const nextCategories = categories.filter((item) => item.id !== categoryId);
@@ -441,7 +452,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.movedToTrash',
                 'Категория перемещена в корзину',
                 'Category moved to trash',
-                'Kategorija parvietota uz grozu'
+                'Kategorija pārvietota uz atkritni'
             )
         );
     };
@@ -456,7 +467,7 @@ function useAdminCategoriesPageState() {
                     'admin.categories.msg.idExistsActive',
                     'Категория с таким ID уже существует среди активных',
                     'Category with this ID already exists among active items',
-                    'Kategorija ar so ID jau ir aktivajas'
+                    'Kategorija ar šo ID jau ir aktīvajā sarakstā'
                 )
             );
             return;
@@ -478,13 +489,25 @@ function useAdminCategoriesPageState() {
     };
 
     const handleDeleteCategoryForever = async (categoryId: string) => {
-        const decision = await confirmAction({ title: tl(
+        const decision = await confirmAction({
+            title: tl(
                 'admin.categories.confirm.deleteForever',
                 'Удалить категорию {id} из корзины навсегда?',
                 'Delete category {id} from trash permanently?',
-                'Neatgriezeniski dzest kategoriju {id} no groza?',
+                'Vai neatgriezeniski dzēst kategoriju {id} no atkritnes?',
                 { id: categoryId }
-            ), description: tl('admin.categories.confirm.deleteForeverDescription', 'Категория будет удалена без возможности восстановления.', 'The category will be deleted permanently and cannot be restored.', 'Kategorija tiks neatgriezeniski dzēsta bez atjaunošanas iespējas.'), affected: [categoryId], confirmText: categoryId, requireReason: true, destructive: true });
+            ),
+            description: tl(
+                'admin.categories.confirm.deleteForeverDescription',
+                'Категория будет удалена без возможности восстановления.',
+                'The category will be deleted permanently and cannot be restored.',
+                'Kategorija tiks neatgriezeniski dzēsta bez atjaunošanas iespējas.'
+            ),
+            affected: [categoryId],
+            confirmText: categoryId,
+            requireReason: true,
+            destructive: true,
+        });
         if (!decision.confirmed) return;
 
         const nextDeletedCategories = deletedCategories.filter((item) => item.id !== categoryId);
@@ -495,7 +518,7 @@ function useAdminCategoriesPageState() {
                 'admin.categories.msg.deletedFromTrash',
                 'Категория удалена из корзины',
                 'Category removed from trash',
-                'Kategorija dzesta no groza'
+                'Kategorija dzēsta no atkritnes'
             )
         );
     };
@@ -532,5 +555,5 @@ function useAdminCategoriesPageState() {
 }
 
 export function useAdminCategoriesPage(): ReturnType<typeof useAdminCategoriesPageState> {
-  return useAdminCategoriesPageState()
+    return useAdminCategoriesPageState();
 }

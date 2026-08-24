@@ -160,7 +160,7 @@ export default function NewCategorySection({
                                     'admin.categories.previewCard',
                                     'Превью карточки',
                                     'Card preview',
-                                    'Kartites priekskats'
+                                    'Kartītes priekšskatījums'
                                 )}
                             </p>
                             <div className="overflow-hidden rounded-md border border-border bg-card">
@@ -190,7 +190,7 @@ export default function NewCategorySection({
                                 'admin.categories.firstSubOptional',
                                 'Первый подпункт (опционально)',
                                 'First subcategory (optional)',
-                                'Pirma apakskategorija (neobligata)'
+                                'Pirmā apakškategorija (neobligāta)'
                             )}
                         </p>
                         <div className="mt-2 grid gap-2 md:grid-cols-4">
@@ -276,7 +276,7 @@ export default function NewCategorySection({
                                       'admin.categories.saving',
                                       'Сохранение...',
                                       'Saving...',
-                                      'Saglabasana...'
+                                      'Saglabāšana...'
                                   )
                                 : tl(
                                       'admin.categories.createButton',

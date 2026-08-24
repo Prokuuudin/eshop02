@@ -69,8 +69,18 @@ type CardDef = {
   linkText: string
 }
 
+type UnansweredContactMessage = {
+  id: string
+  name: string
+  email: string
+  subject: string
+  message: string
+  createdAt: string
+}
+
 export default function AdminPage(): React.ReactElement {
   const { t, language } = useTranslation()
+  const [dashboardTimestamp] = useState(Date.now)
   const { getOrderStatus, setOrderStatus, loadOrderMeta, cardOrder, setCardOrder, resetCardOrder } = useAdminStore()
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
@@ -121,6 +131,9 @@ export default function AdminPage(): React.ReactElement {
   // in a scrollable list anyway.
   const RECENT_ORDERS_LIMIT = 10
   const [recentOrders, setRecentOrders] = useState<Order[] | null>(null)
+  const [contactRequests, setContactRequests] = useState<UnansweredContactMessage[] | null>(null)
+  const [contactRequestTotal, setContactRequestTotal] = useState(0)
+  const [answeringRequestId, setAnsweringRequestId] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -135,6 +148,35 @@ export default function AdminPage(): React.ReactElement {
       .catch(() => { /* aborted or offline - widget just keeps showing a loading state */ })
     return () => controller.abort()
   }, [loadOrderMeta])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/admin/contact-messages?limit=5', { cache: 'no-store', signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { messages?: UnansweredContactMessage[]; total?: number } | null) => {
+        if (!data) return
+        setContactRequests(data.messages ?? [])
+        setContactRequestTotal(data.total ?? 0)
+      })
+      .catch(() => { /* aborted or offline - widget keeps its loading state */ })
+    return () => controller.abort()
+  }, [])
+
+  const markContactRequestAnswered = async (id: string) => {
+    setAnsweringRequestId(id)
+    try {
+      const response = await fetch('/api/admin/contact-messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!response.ok) return
+      setContactRequests((current) => current?.filter((request) => request.id !== id) ?? [])
+      setContactRequestTotal((current) => Math.max(0, current - 1))
+    } finally {
+      setAnsweringRequestId(null)
+    }
+  }
 
   const statusColors: Record<OrderStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -355,6 +397,70 @@ export default function AdminPage(): React.ReactElement {
             </div>
           )
         })()}
+
+        {contactRequests !== null && contactRequestTotal > 0 && (
+          <section className="mt-4 mb-8 overflow-hidden rounded-xl border border-rose-200 bg-card shadow-sm dark:border-rose-900/70">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-rose-50 px-5 py-4 dark:bg-rose-950/20">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-rose-600 px-2 text-sm font-bold text-white">
+                    {contactRequestTotal}
+                  </span>
+                  <h2 className="font-semibold text-foreground">
+                    {l('Запросы покупателей без ответа', 'Unanswered customer requests', 'Neatbildeti klientu pieprasijumi')}
+                  </h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {l('Сначала показаны самые старые', 'Oldest requests are shown first', 'Vispirms tiek raditi vecakie pieprasijumi')}
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {contactRequests.map((request) => {
+                const createdAt = new Date(request.createdAt)
+                const ageHours = Math.max(0, Math.floor((dashboardTimestamp - createdAt.getTime()) / 3_600_000))
+                const waitingLabel = ageHours < 1
+                  ? l('меньше часа', 'less than an hour', 'mazak par stundu')
+                  : ageHours < 24
+                    ? l(`${ageHours} ч`, `${ageHours}h`, `${ageHours} st.`)
+                    : l(`${Math.floor(ageHours / 24)} дн.`, `${Math.floor(ageHours / 24)}d`, `${Math.floor(ageHours / 24)} d.`)
+                const mailto = `mailto:${request.email}?subject=${encodeURIComponent(`Re: ${request.subject}`)}`
+                return (
+                  <article key={request.id} className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="font-medium text-foreground">{request.subject}</p>
+                        <span className={`text-xs ${ageHours >= 24 ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
+                          {l('ожидает', 'waiting', 'gaida')} {waitingLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {request.name} · {request.email} · {createdAt.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
+                      <p className="mt-2 line-clamp-2 text-sm text-foreground/80">{request.message}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm">
+                        <a href={mailto}>{l('Ответить', 'Reply', 'Atbildet')}</a>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={answeringRequestId === request.id}
+                        onClick={() => void markContactRequestAnswered(request.id)}
+                      >
+                        {answeringRequestId === request.id
+                          ? l('Сохраняю…', 'Saving…', 'Saglabaju…')
+                          : l('Отметить отвеченным', 'Mark answered', 'Atzimet ka atbildetu')}
+                      </Button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Revenue Chart */}
         <div className="hidden sm:block bg-card rounded-lg border border-border p-6 mb-8">

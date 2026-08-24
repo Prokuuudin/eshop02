@@ -66,6 +66,7 @@ export function getAdminPermissions(subject: PermissionSubject): AdminPermission
 
 /** Required permission for every navigable admin area. Longest prefixes win. */
 const ADMIN_PATH_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> = [
+  ['/admin/contact-messages', 'customers.read'],
   ['/admin/orders/new', 'orders.update'],
   ['/admin/orders', 'orders.read'],
   ['/admin/rfq', 'rfq.read'],

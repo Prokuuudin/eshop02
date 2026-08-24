@@ -21,7 +21,7 @@ import {
     ClipboardList,
 } from 'lucide-react';
 import { type User } from '@/lib/auth';
-import AdminMfaSection from '@/components/admin/AdminMfaSection';
+import UnansweredCustomerRequests from '@/components/admin/UnansweredCustomerRequests';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -266,8 +266,6 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                 </div>
             </div>
 
-            <AdminMfaSection />
-
             {/* Pending requests banner */}
             {pendingRequestCount > 0 && (
                 <Link
@@ -334,6 +332,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         href="/admin/client-barcodes"
                         color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
                     />
+                    <UnansweredCustomerRequests />
                 </div>
             </div>
 

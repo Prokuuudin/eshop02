@@ -704,8 +704,11 @@ model ContactMessage {
   ipAddress    String?
   emailStatus  String    @default("pending")
   emailError   String?
+  answeredAt   DateTime?
+  answeredById String?
   createdAt    DateTime  @default(now())
 
+  @@index([answeredAt, createdAt])
   @@index([createdAt])
 }
 

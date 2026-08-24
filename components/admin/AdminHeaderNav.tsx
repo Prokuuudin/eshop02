@@ -75,6 +75,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
             { title: 'customers.segments', href: '/admin/customers/segments' },
             { title: 'customers.history', href: '/admin/customers/history' },
             { title: 'customers.notifications', href: '/admin/notifications/send' },
+            { title: 'customers.requests', href: '/admin/contact-messages' },
         ],
     },
     {

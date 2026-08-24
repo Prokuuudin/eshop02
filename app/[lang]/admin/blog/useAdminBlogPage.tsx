@@ -78,7 +78,7 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
     excerpt: '',
     author: '',
     image: '/blog/default.jpg',
-    category: 'уход за лицом',
+    category: '',
     readTime: 4,
     content: '',
     featured: false,

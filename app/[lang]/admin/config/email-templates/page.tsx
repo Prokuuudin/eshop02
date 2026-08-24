@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type EmailTemplate = {
     id: string;
@@ -14,15 +15,21 @@ type EmailTemplate = {
     updatedAt: string;
 };
 
-function renderPreview(body: string, vars: string[]): string {
+function renderPreview(body: string, vars: string[], language: 'ru' | 'en' | 'lv'): string {
     const SAMPLE: Record<string, string> = {
         order_id: 'ORD-2025-001',
-        first_name: 'Иван',
-        last_name: 'Петров',
+        first_name: language === 'ru' ? 'Иван' : language === 'lv' ? 'Jānis' : 'John',
+        last_name: language === 'ru' ? 'Петров' : language === 'lv' ? 'Bērziņš' : 'Smith',
         total: '15 500',
-        items_list: 'Шампунь Pro 500мл × 2, Маска Hair × 1',
+        items_list:
+            language === 'ru'
+                ? 'Шампунь Pro 500 мл × 2, Маска Hair × 1'
+                : language === 'lv'
+                  ? 'Šampūns Pro 500 ml × 2, Maska Hair × 1'
+                  : 'Pro Shampoo 500 ml × 2, Hair Mask × 1',
         tracking_number: 'RU123456789',
-        delivery_date: '30 мая 2025',
+        delivery_date:
+            language === 'ru' ? '30 мая 2025' : language === 'lv' ? '2025. gada 30. maijs' : 'May 30, 2025',
         store_name: 'ProBeauty',
         email: 'ivan@example.com',
         reset_link: '#',
@@ -36,6 +43,7 @@ function renderPreview(body: string, vars: string[]): string {
 }
 
 export default function EmailTemplatesPage(): React.ReactElement {
+    const { language, l } = useAdminLocale();
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [selected, setSelected] = useState<EmailTemplate | null>(null);
@@ -117,14 +125,22 @@ export default function EmailTemplatesPage(): React.ReactElement {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
-                        Редактор email-шаблонов
+                        {l('Редактор email-шаблонов', 'Email template editor', 'E-pasta veidņu redaktors')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Настройка текстов для транзакционных писем. Используйте{' '}
+                        {l(
+                            'Настройка текстов для транзакционных писем. Используйте',
+                            'Configure transactional email content. Use',
+                            'Pielāgojiet transakciju e-pastu saturu. Izmantojiet'
+                        )}{' '}
                         <code className="rounded bg-muted px-1 py-0.5 text-xs">
                             {'{{variable}}'}
                         </code>{' '}
-                        для подстановки данных.
+                        {l(
+                            'для подстановки данных.',
+                            'to insert data.',
+                            'datu ievietošanai.'
+                        )}
                     </p>
                 </div>
 
@@ -133,11 +149,13 @@ export default function EmailTemplatesPage(): React.ReactElement {
                         <div className="overflow-hidden rounded-xl border border-border bg-card">
                             <div className="border-b border-border px-4 py-3">
                                 <h2 className="text-sm font-semibold text-foreground">
-                                    Шаблоны
+                                    {l('Шаблоны', 'Templates', 'Veidnes')}
                                 </h2>
                             </div>
                             {loading ? (
-                                <div className="py-8 text-center text-sm text-muted-foreground">Загрузка...</div>
+                                <div className="py-8 text-center text-sm text-muted-foreground">
+                                    {l('Загрузка...', 'Loading...', 'Ielāde...')}
+                                </div>
                             ) : (
                                 <ul className="divide-y divide-border">
                                     {templates.map((t) => (
@@ -174,7 +192,11 @@ export default function EmailTemplatesPage(): React.ReactElement {
                     <div className="lg:col-span-2">
                         {!selected ? (
                             <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-                                Выберите шаблон для редактирования
+                                {l(
+                                    'Выберите шаблон для редактирования',
+                                    'Select a template to edit',
+                                    'Izvēlieties veidni rediģēšanai'
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -193,7 +215,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                         : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
                                                 }`}
                                             >
-                                                Редактор
+                                                {l('Редактор', 'Editor', 'Redaktors')}
                                             </button>
                                             <button
                                                 type="button"
@@ -204,7 +226,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                         : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
                                                 }`}
                                             >
-                                                Превью
+                                                {l('Превью', 'Preview', 'Priekšskatījums')}
                                             </button>
                                         </div>
                                     </div>
@@ -214,7 +236,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                     <div className="space-y-3">
                                         <div>
                                             <label htmlFor="email-template-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
-                                                Тема письма
+                                                {l('Тема письма', 'Email subject', 'E-pasta temats')}
                                             </label>
                                             <Input
                                                 id="email-template-subject"
@@ -225,7 +247,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                         </div>
                                         <div>
                                             <label htmlFor="email-template-body" className="mb-1 block text-xs font-medium text-muted-foreground">
-                                                HTML-тело письма
+                                                {l('HTML-тело письма', 'Email HTML body', 'E-pasta HTML saturs')}
                                             </label>
                                             <Textarea
                                                 id="email-template-body"
@@ -238,7 +260,11 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                         {selected.variables.length > 0 && (
                                             <div className="rounded-lg bg-muted px-3 py-2">
                                                 <p className="mb-1 text-xs font-medium text-muted-foreground">
-                                                    Доступные переменные:
+                                                    {l(
+                                                        'Доступные переменные:',
+                                                        'Available variables:',
+                                                        'Pieejamie mainīgie:'
+                                                    )}
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {selected.variables.map((v) => (
@@ -259,7 +285,9 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 disabled={saving || !isDirty}
                                                 className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
                                             >
-                                                {saving ? 'Сохранение...' : 'Сохранить'}
+                                                {saving
+                                                    ? l('Сохранение...', 'Saving...', 'Saglabā...')
+                                                    : l('Сохранить', 'Save', 'Saglabāt')}
                                             </button>
                                             {isDirty && (
                                                 <button
@@ -267,19 +295,23 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                     onClick={reset}
                                                     className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-gray-50"
                                                 >
-                                                    Отменить
+                                                    {l('Отменить', 'Cancel', 'Atcelt')}
                                                 </button>
                                             )}
                                             {saved && !isDirty && (
                                                 <span className="text-sm text-emerald-600 dark:text-emerald-400">
-                                                    Сохранено
+                                                    {l('Сохранено', 'Saved', 'Saglabāts')}
                                                 </span>
                                             )}
                                         </div>
 
                                         <div className="rounded-lg border border-border px-4 py-3 space-y-2">
                                             <p className="text-xs font-medium text-muted-foreground">
-                                                Отправить тестовое письмо
+                                                {l(
+                                                    'Отправить тестовое письмо',
+                                                    'Send a test email',
+                                                    'Nosūtīt testa e-pastu'
+                                                )}
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <Input
@@ -295,42 +327,62 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                     disabled={testSending || !testEmail}
                                                     className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 whitespace-nowrap"
                                                 >
-                                                    {testSending ? 'Отправка...' : 'Отправить'}
+                                                    {testSending
+                                                        ? l('Отправка...', 'Sending...', 'Nosūta...')
+                                                        : l('Отправить', 'Send', 'Nosūtīt')}
                                                 </button>
                                             </div>
                                             {testResult === 'ok' && (
                                                 <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                                                    Письмо отправлено на {testEmail}
+                                                    {l(
+                                                        `Письмо отправлено на ${testEmail}`,
+                                                        `Email sent to ${testEmail}`,
+                                                        `E-pasts nosūtīts uz ${testEmail}`
+                                                    )}
                                                 </p>
                                             )}
                                             {testResult === 'error' && (
                                                 <p className="text-xs text-red-600 dark:text-red-400">
-                                                    Не удалось отправить. Проверьте настройки SMTP.
+                                                    {l(
+                                                        'Не удалось отправить. Проверьте настройки SMTP.',
+                                                        'Failed to send. Check the SMTP settings.',
+                                                        'Neizdevās nosūtīt. Pārbaudiet SMTP iestatījumus.'
+                                                    )}
                                                 </p>
                                             )}
                                             <p className="text-xs text-muted-foreground">
-                                                Используются тестовые данные вместо переменных.
+                                                {l(
+                                                    'Используются тестовые данные вместо переменных.',
+                                                    'Sample data is used in place of variables.',
+                                                    'Mainīgo vietā tiek izmantoti testa dati.'
+                                                )}
                                             </p>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
                                         <div className="rounded-md border border-border bg-muted px-3 py-2">
-                                            <span className="text-xs text-muted-foreground">Тема: </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {l('Тема:', 'Subject:', 'Temats:')}{' '}
+                                            </span>
                                             <span className="text-sm font-medium text-foreground">
-                                                {renderPreview(subject, selected.variables)}
+                                                {renderPreview(subject, selected.variables, language)}
                                             </span>
                                         </div>
                                         <div className="rounded-xl border border-border bg-card p-6">
                                             <div
                                                 className="prose prose-sm max-w-none dark:prose-invert"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: renderPreview(body, selected.variables),
+                                                    __html: renderPreview(body, selected.variables, language),
                                                 }}
                                             />
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            Превью использует тестовые данные для подстановки переменных
+                                            {l(
+                                                'Превью использует тестовые данные для подстановки переменных',
+                                                'The preview uses sample data for variable substitution',
+                                                'Priekšskatījumā mainīgo aizstāšanai tiek izmantoti testa dati'
+                                            )}
                                         </p>
                                     </div>
                                 )}

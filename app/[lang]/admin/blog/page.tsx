@@ -17,6 +17,7 @@ export default function AdminBlogPage(): React.ReactElement {
     const {
             router,
             t,
+            l,
             tl,
             locale,
             blogPosts,
@@ -88,7 +89,9 @@ export default function AdminBlogPage(): React.ReactElement {
                     >
                         <Tabs defaultValue="base">
                             <TabsList className="mb-4">
-                                <TabsTrigger value="base">Основное (RU)</TabsTrigger>
+                                <TabsTrigger value="base">
+                                    {l('Основное (RU)', 'Primary (RU)', 'Pamata (RU)')}
+                                </TabsTrigger>
                                 <TabsTrigger value="en">English</TabsTrigger>
                                 <TabsTrigger value="lv">Latviešu</TabsTrigger>
                             </TabsList>
@@ -116,7 +119,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-category" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
-                                            Категория
+                                            {l('Категория', 'Category', 'Kategorija')}
                                         </span>
                                         <Input
                                             id="blog-category"
@@ -128,14 +131,18 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 }))
                                             }
                                             className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
-                                            placeholder="уход за лицом"
+                                            placeholder={l(
+                                                'уход за лицом',
+                                                'facial care',
+                                                'sejas kopšana'
+                                            )}
                                             required
                                         />
                                     </label>
 
                                     <label htmlFor="blog-title" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            Заголовок
+                                            {l('Заголовок', 'Title', 'Virsraksts')}
                                         </span>
                                         <Input
                                             id="blog-title"
@@ -153,7 +160,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-excerpt" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            Краткое описание
+                                            {l('Краткое описание', 'Short description', 'Īss apraksts')}
                                         </span>
                                         <Textarea
                                             id="blog-excerpt"
@@ -171,7 +178,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-author" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
-                                            Автор
+                                            {l('Автор', 'Author', 'Autors')}
                                         </span>
                                         <Input
                                             id="blog-author"
@@ -189,7 +196,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-read-time" className="text-sm">
                                         <span className="block text-muted-foreground mb-1">
-                                            Время чтения (мин)
+                                            {l('Время чтения (мин)', 'Reading time (min)', 'Lasīšanas laiks (min)')}
                                         </span>
                                         <Input
                                             id="blog-read-time"
@@ -209,7 +216,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-image" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            Обложка (путь)
+                                            {l('Обложка (путь)', 'Cover (path)', 'Vāka attēls (ceļš)')}
                                         </span>
                                         <Input
                                             id="blog-image"
@@ -228,7 +235,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                     <label htmlFor="blog-content" className="text-sm md:col-span-2">
                                         <span className="block text-muted-foreground mb-1">
-                                            Legacy content (опционально)
+                                            {l(
+                                                'Legacy content (опционально)',
+                                                'Legacy content (optional)',
+                                                'Mantotais saturs (neobligāts)'
+                                            )}
                                         </span>
                                         <Textarea
                                             id="blog-content"
@@ -240,7 +251,11 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 }))
                                             }
                                             className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[120px]"
-                                            placeholder="# Заголовок&#10;&#10;Текст..."
+                                            placeholder={l(
+                                                '# Заголовок\n\nТекст...',
+                                                '# Heading\n\nText...',
+                                                '# Virsraksts\n\nTeksts...'
+                                            )}
                                         />
                                     </label>
 
@@ -271,13 +286,16 @@ export default function AdminBlogPage(): React.ReactElement {
                             {(['en', 'lv'] as const).map((lang) => (
                                 <TabsContent key={lang} value={lang}>
                                     <p className="text-xs text-muted-foreground mb-4">
-                                        Пустые поля наследуют значение из основной (RU) вкладки.
-                                        Заполните только те поля, которые отличаются.
+                                        {l(
+                                            'Пустые поля наследуют значение из основной (RU) вкладки. Заполните только те поля, которые отличаются.',
+                                            'Empty fields inherit the value from the primary (RU) tab. Fill in only the fields that differ.',
+                                            'Tukšie lauki pārmanto vērtību no pamata (RU) cilnes. Aizpildiet tikai atšķirīgos laukus.'
+                                        )}
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
-                                                Заголовок ({lang})
+                                                {l('Заголовок', 'Title', 'Virsraksts')} ({lang})
                                             </span>
                                             <Input
                                                 value={blogForm.translations[lang].title}
@@ -295,14 +313,19 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 }
                                                 className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
                                                 placeholder={
-                                                    blogForm.title || `Заголовок на ${lang}`
+                                                    blogForm.title ||
+                                                    l(
+                                                        `Заголовок на ${lang}`,
+                                                        `Title in ${lang}`,
+                                                        `Virsraksts ${lang} valodā`
+                                                    )
                                                 }
                                             />
                                         </label>
 
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
-                                                Краткое описание ({lang})
+                                                {l('Краткое описание', 'Short description', 'Īss apraksts')} ({lang})
                                             </span>
                                             <Textarea
                                                 value={blogForm.translations[lang].excerpt}
@@ -320,14 +343,19 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 }
                                                 className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[72px]"
                                                 placeholder={
-                                                    blogForm.excerpt || `Описание на ${lang}`
+                                                    blogForm.excerpt ||
+                                                    l(
+                                                        `Описание на ${lang}`,
+                                                        `Description in ${lang}`,
+                                                        `Apraksts ${lang} valodā`
+                                                    )
                                                 }
                                             />
                                         </label>
 
                                         <label className="text-sm">
                                             <span className="block text-muted-foreground mb-1">
-                                                Автор ({lang})
+                                                {l('Автор', 'Author', 'Autors')} ({lang})
                                             </span>
                                             <Input
                                                 value={blogForm.translations[lang].author}
@@ -350,7 +378,7 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                         <label className="text-sm">
                                             <span className="block text-muted-foreground mb-1">
-                                                Категория ({lang})
+                                                {l('Категория', 'Category', 'Kategorija')} ({lang})
                                             </span>
                                             <Input
                                                 value={blogForm.translations[lang].category}
@@ -375,7 +403,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
-                                                Legacy content ({lang}, опционально)
+                                                {l(
+                                                    `Legacy content (${lang}, опционально)`,
+                                                    `Legacy content (${lang}, optional)`,
+                                                    `Mantotais saturs (${lang}, neobligāts)`
+                                                )}
                                             </span>
                                             <Textarea
                                                 value={blogForm.translations[lang].content}
@@ -398,7 +430,11 @@ export default function AdminBlogPage(): React.ReactElement {
 
                                         <label className="text-sm md:col-span-2">
                                             <span className="block text-muted-foreground mb-1">
-                                                contentBlocks JSON ({lang}, опционально)
+                                                {l(
+                                                    `contentBlocks JSON (${lang}, опционально)`,
+                                                    `contentBlocks JSON (${lang}, optional)`,
+                                                    `contentBlocks JSON (${lang}, neobligāts)`
+                                                )}
                                                 <span className="ml-2 text-xs text-muted-foreground">
                                                     heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
                                                 </span>

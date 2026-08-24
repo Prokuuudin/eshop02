@@ -207,6 +207,7 @@ const enCommon: Record<string, string> = {
   'breadcrumb.reviews': 'Reviews',
   'breadcrumb.accounts': 'Accounts',
   'breadcrumb.clientBarcodes': 'Client cards',
+  'breadcrumb.contactMessages': 'Customer requests',
   'breadcrumb.content': 'Content',
   'breadcrumb.media': 'Media library',
   'breadcrumb.banners': 'Banners',

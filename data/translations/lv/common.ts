@@ -208,6 +208,7 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.reviews': 'Atsauksmes',
   'breadcrumb.accounts': 'Konti',
   'breadcrumb.clientBarcodes': 'Klientu kartes',
+  'breadcrumb.contactMessages': 'Klientu pieprasijumi',
   'breadcrumb.content': 'Saturs',
   'breadcrumb.media': 'Mediju bibliotēka',
   'breadcrumb.banners': 'Baneri',

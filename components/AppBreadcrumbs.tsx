@@ -72,6 +72,7 @@ const segmentLabelKeys: Record<string, string> = {
     customers: 'breadcrumb.customers',
     accounts: 'breadcrumb.accounts',
     'client-barcodes': 'breadcrumb.clientBarcodes',
+    'contact-messages': 'breadcrumb.contactMessages',
     invitations: 'breadcrumb.invitations',
     segments: 'breadcrumb.segments',
     history: 'breadcrumb.history',

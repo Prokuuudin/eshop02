@@ -304,6 +304,7 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.reviews': 'Отзывы',
   'breadcrumb.accounts': 'Аккаунты',
   'breadcrumb.clientBarcodes': 'Карты клиентов',
+  'breadcrumb.contactMessages': 'Запросы покупателей',
   'breadcrumb.content': 'Контент',
   'breadcrumb.media': 'Медиа-библиотека',
   'breadcrumb.banners': 'Баннеры',

@@ -10,6 +10,7 @@ import { getAdminAccessLevel } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
 import { hasAdminPermission } from '@/lib/admin-permissions'
 import { formatOrderAddressLatvian } from '@/lib/order-address'
+import { ArrowRight } from 'lucide-react'
 
 function RevenueBarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -262,8 +263,16 @@ export default function AdminPage(): React.ReactElement {
                 : tl('admin.dashboard.accessPartial', 'Частичный доступ менеджера', 'Partial manager access', 'Daleja menedzera piekluve')}
             </p>
           </div>
-          {hasFullAccess && (
-            <div className="hidden sm:flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+              <Link
+                href="/account"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+              >
+                {l('На дашборд', 'Go to dashboard', 'Uz informacijas paneli')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            {hasFullAccess && (
+              <>
               {editMode && (
                 <Button variant="outline" size="sm" onClick={() => { resetCardOrder(); setEditMode(false) }}>
                   {l('Сбросить порядок', 'Reset order', 'Atiestatit kartibu')}
@@ -272,8 +281,9 @@ export default function AdminPage(): React.ReactElement {
               <Button variant={editMode ? 'default' : 'outline'} size="sm" onClick={() => setEditMode((v) => !v)}>
                 {editMode ? l('Готово', 'Done', 'Gatavs') : l('Настроить панель', 'Customize panel', 'Pielaqot paneli')}
               </Button>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
         {editMode && (

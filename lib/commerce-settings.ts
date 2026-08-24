@@ -166,21 +166,22 @@ export function normalizeCommerceSettings(value: unknown): CommerceSettings {
   return next
 }
 
-export function getCommerceSettingsIssues(settings: CommerceSettings): string[] {
+export function getCommerceSettingsIssues(settings: CommerceSettings, language: 'ru' | 'en' | 'lv' = 'ru'): string[] {
+  const l = (ru: string, en: string, lv: string): string => language === 'ru' ? ru : language === 'lv' ? lv : en
   const issues: string[] = []
   for (const [id, method] of Object.entries(settings.delivery)) {
-    if (method.enabled && method.status !== 'ready') issues.push(`Доставка «${method.label}»: не подтверждена готовность`)
-    if (method.enabled && method.price === null) issues.push(`Доставка «${method.label}»: не указана цена`)
-    if (method.enabled && method.requiresLocation && !method.maxWeightKg) issues.push(`Доставка «${method.label}»: не указан лимит веса`)
-    if ((id === 'dpd' || id === 'venipak') && method.enabled && !method.notes) issues.push(`Доставка «${method.label}»: нет условий интеграции`)
+    if (method.enabled && method.status !== 'ready') issues.push(l(`Доставка «${method.label}»: не подтверждена готовность`, `Delivery “${method.label}”: readiness is not confirmed`, `Piegāde “${method.label}”: gatavība nav apstiprināta`))
+    if (method.enabled && method.price === null) issues.push(l(`Доставка «${method.label}»: не указана цена`, `Delivery “${method.label}”: price is missing`, `Piegāde “${method.label}”: nav norādīta cena`))
+    if (method.enabled && method.requiresLocation && !method.maxWeightKg) issues.push(l(`Доставка «${method.label}»: не указан лимит веса`, `Delivery “${method.label}”: weight limit is missing`, `Piegāde “${method.label}”: nav norādīts svara ierobežojums`))
+    if ((id === 'dpd' || id === 'venipak') && method.enabled && !method.notes) issues.push(l(`Доставка «${method.label}»: нет условий интеграции`, `Delivery “${method.label}”: integration terms are missing`, `Piegāde “${method.label}”: nav integrācijas nosacījumu`))
   }
   for (const method of Object.values(settings.payment)) {
-    if (method.enabled && method.status !== 'ready') issues.push(`Оплата «${method.label}»: не подтверждена готовность`)
-    if (method.enabled && method.allowedDeliveryMethods.length === 0) issues.push(`Оплата «${method.label}»: не выбраны способы доставки`)
+    if (method.enabled && method.status !== 'ready') issues.push(l(`Оплата «${method.label}»: не подтверждена готовность`, `Payment “${method.label}”: readiness is not confirmed`, `Maksājums “${method.label}”: gatavība nav apstiprināta`))
+    if (method.enabled && method.allowedDeliveryMethods.length === 0) issues.push(l(`Оплата «${method.label}»: не выбраны способы доставки`, `Payment “${method.label}”: no delivery methods selected`, `Maksājums “${method.label}”: nav izvēlēti piegādes veidi`))
   }
   for (const [name, provider] of Object.entries(settings.providers)) {
     if (Object.values(settings.payment).some((method) => method.enabled && method.provider === name) && provider.accountStatus !== 'ready') {
-      issues.push(`${name === 'paysera' ? 'Paysera' : 'PayPal'}: merchant-аккаунт не готов`)
+      issues.push(`${name === 'paysera' ? 'Paysera' : 'PayPal'}: ${l('merchant-аккаунт не готов', 'merchant account is not ready', 'tirgotāja konts nav gatavs')}`)
     }
   }
   return issues

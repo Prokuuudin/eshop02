@@ -258,12 +258,12 @@ const NAV_LABELS = {
         'customers.invitations': 'Klientu ielūgumi',
         'customers.segments': 'Segmenti un statusi',
         'customers.history': 'Mijiedarbības vēsture',
-        'customers.notifications': 'Paziņojumu izplatīšana',
+        'customers.notifications': 'Paziņojumu izsūtīšana',
         'customers.requests': 'Klientu pieprasījumi',
-        marketing: 'Marketings',
-        'marketing.campaigns': 'Promo kampaņas',
+        marketing: 'Mārketings',
+        'marketing.campaigns': 'Reklāmas kampaņas',
         'marketing.discounts': 'Promokodi',
-        'marketing.analytics': 'Promo analītika',
+        'marketing.analytics': 'Reklāmas analītika',
         'marketing.priceGroups': 'Cenu saraksti',
         content: 'Saturs',
         'content.blog': 'Blogs',
@@ -301,16 +301,14 @@ export default function AdminHeaderNav(): React.ReactElement {
     const labels = NAV_LABELS[language];
     const tr = (key: string) => labels[key as keyof typeof labels] ?? key;
     const user = useAuthStore((state) => state.user);
-    const visibleSections = NAV_SECTIONS
-        .map((section) => ({
-            ...section,
-            items: section.items.filter((item) =>
-                item.href.startsWith('/admin')
-                    ? hasAdminPermission(user, permissionForAdminPath(item.href))
-                    : hasAdminPermission(user, 'settings.manage')
-            ),
-        }))
-        .filter((section) => section.items.length > 0);
+    const visibleSections = NAV_SECTIONS.map((section) => ({
+        ...section,
+        items: section.items.filter((item) =>
+            item.href.startsWith('/admin')
+                ? hasAdminPermission(user, permissionForAdminPath(item.href))
+                : hasAdminPermission(user, 'settings.manage')
+        ),
+    })).filter((section) => section.items.length > 0);
     const activeMobileSection = visibleSections.find((section) =>
         section.items.some((item) => isActive(pathname, item.href))
     )?.title;
@@ -330,7 +328,10 @@ export default function AdminHeaderNav(): React.ReactElement {
                             <ChevronDown className="h-4 w-4 opacity-70" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="max-h-[75vh] w-[min(340px,calc(100vw-24px))] overflow-y-auto p-2">
+                    <DropdownMenuContent
+                        align="start"
+                        className="max-h-[75vh] w-[min(340px,calc(100vw-24px))] overflow-y-auto p-2"
+                    >
                         <Accordion
                             key={pathname}
                             type="single"
@@ -340,10 +341,16 @@ export default function AdminHeaderNav(): React.ReactElement {
                         >
                             {visibleSections.map((section) => {
                                 const Icon = section.icon;
-                                const sectionActive = section.items.some((item) => isActive(pathname, item.href));
+                                const sectionActive = section.items.some((item) =>
+                                    isActive(pathname, item.href)
+                                );
 
                                 return (
-                                    <AccordionItem key={section.title} value={section.title} className="rounded-md border border-border">
+                                    <AccordionItem
+                                        key={section.title}
+                                        value={section.title}
+                                        className="rounded-md border border-border"
+                                    >
                                         <AccordionTrigger
                                             className={`min-h-11 rounded-md px-3 py-2.5 hover:no-underline ${
                                                 sectionActive
@@ -369,7 +376,9 @@ export default function AdminHeaderNav(): React.ReactElement {
                                                                 : ''
                                                         }`}
                                                     >
-                                                        <Link href={item.href}>{tr(item.title)}</Link>
+                                                        <Link href={item.href}>
+                                                            {tr(item.title)}
+                                                        </Link>
                                                     </DropdownMenuItem>
                                                 );
                                             })}

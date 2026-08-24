@@ -7,15 +7,7 @@ import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
 import { useTranslation } from '@/lib/use-translation';
 import { reportAdminError } from '@/lib/admin-ui-errors';
-import {
-    ALLOWED_STATUS_TRANSITIONS,
-    ORDERS_PAGE_SIZE,
-    STATUS_LIST,
-    type CatalogProduct,
-    type EditItem,
-    type SortDir,
-    type SortField,
-} from './order-config';
+import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
 
 type HydrationStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -33,12 +25,22 @@ type OrdersStatsResponse = {
 };
 
 const EMPTY_STATUS_COUNTS: Record<OrderStatus, number> = {
-    pending: 0, confirmed: 0, shipped: 0, delivered: 0, cancelled: 0,
+    pending: 0,
+    confirmed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
 };
 
 function buildOrdersQuery(params: {
-    search: string; status: OrderStatus | 'all'; payment: string; delivery: string;
-    sortField: SortField; sortDir: SortDir; skip?: number; take?: number;
+    search: string;
+    status: OrderStatus | 'all';
+    payment: string;
+    delivery: string;
+    sortField: SortField;
+    sortDir: SortDir;
+    skip?: number;
+    take?: number;
 }): URLSearchParams {
     const qs = new URLSearchParams();
     if (params.search) qs.set('search', params.search);
@@ -57,8 +59,7 @@ function toOrder(row: RawOrder): Order {
 }
 
 function useAdminOrdersPageState() {
-    const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } =
-        useAdminStore();
+    const { getOrderStatus, setOrderStatus: persistOrderStatus, getOrderNote, setOrderNote: persistOrderNote } = useAdminStore();
     const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
     // ── Edit mode ─────────────────────────────────────────────────────────────
@@ -94,7 +95,9 @@ function useAdminOrdersPageState() {
             if (!res.ok) throw new Error(payload?.error ?? 'payment_update_failed');
             patchPageItem(payload.order as Order);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : l('Не удалось отметить заказ оплаченным', 'Failed to mark the order as paid', 'Neizdevās atzīmēt pasūtījumu kā apmaksātu'));
+            setMutationError(
+                error instanceof Error ? error.message : l('Не удалось отметить заказ оплаченным', 'Failed to mark the order as paid', 'Neizdevās atzīmēt pasūtījumu kā apmaksātu')
+            );
         } finally {
             setPaymentSavingIds((prev) => {
                 const next = new Set(prev);
@@ -125,7 +128,7 @@ function useAdminOrdersPageState() {
     };
     const { language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
-    const l = React.useCallback((ru: string, en: string, lv: string) => language === 'ru' ? ru : language === 'lv' ? lv : en, [language]);
+    const l = React.useCallback((ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en), [language]);
     const STATUS_LABELS: Record<OrderStatus, string> = {
         pending: l('Новый', 'New', 'Jauns'),
         confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
@@ -188,10 +191,19 @@ function useAdminOrdersPageState() {
     useEffect(() => {
         const controller = new AbortController();
         const qs = buildOrdersQuery({
-            search: debouncedSearch, status: statusFilter, payment: paymentFilter, delivery: deliveryFilter,
-            sortField, sortDir, skip: page * ORDERS_PAGE_SIZE, take: ORDERS_PAGE_SIZE,
+            search: debouncedSearch,
+            status: statusFilter,
+            payment: paymentFilter,
+            delivery: deliveryFilter,
+            sortField,
+            sortDir,
+            skip: page * ORDERS_PAGE_SIZE,
+            take: ORDERS_PAGE_SIZE,
         });
-        fetch(`/api/admin/orders?${qs.toString()}`, { signal: controller.signal, cache: 'no-store' })
+        fetch(`/api/admin/orders?${qs.toString()}`, {
+            signal: controller.signal,
+            cache: 'no-store',
+        })
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
             .then((data: OrdersPageResponse) => {
                 const rows = (data.orders ?? []).map(toOrder);
@@ -311,11 +323,7 @@ function useAdminOrdersPageState() {
     };
 
     const printSelected = () => {
-        const escapeHtml = (s: string): string =>
-            s.replace(
-                /[&<>"']/g,
-                (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!)
-            );
+        const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
         const selected = pageItems.filter((o) => selectedIds.has(o.id));
         const rows = selected
             .map((order) => {
@@ -325,41 +333,25 @@ function useAdminOrdersPageState() {
                     .map(
                         (item) =>
                             `<div style="display:flex;justify-content:space-between;font-size:12px;margin:3px 0">
-          <span>${escapeHtml(item.title)}${
-                                item.variantLabel
-                                    ? ` <span style="color:#6b7280">(${escapeHtml(
-                                          item.variantLabel
-                                      )})</span>`
-                                    : ''
-                            } × ${item.quantity}</span>
+          <span>${escapeHtml(item.title)}${item.variantLabel ? ` <span style="color:#6b7280">(${escapeHtml(item.variantLabel)})</span>` : ''} × ${item.quantity}</span>
           <span>${formatEuro(item.price * item.quantity, locale)}</span>
         </div>`
                     )
                     .join('');
                 return `<div style="margin-bottom:20px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;page-break-inside:avoid">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-family:monospace;font-size:11px;color:#6b7280">${escapeHtml(
-              order.id
-          )}</span>
+          <span style="font-family:monospace;font-size:11px;color:#6b7280">${escapeHtml(order.id)}</span>
           <div style="display:flex;gap:8px">
             <span style="font-size:12px;font-weight:600">${STATUS_LABELS[status]}</span>
             <span style="font-size:12px;color:#6b7280">${PAYMENT_LABELS[payStatus]}</span>
           </div>
         </div>
-        <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(
-            order.firstName
-        )} ${escapeHtml(order.lastName)}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(
-            order.email
-        )} · ${escapeHtml(order.phone)}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(
-            order.address
-        )}, ${escapeHtml(order.city)}${
+        <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(order.firstName)} ${escapeHtml(order.lastName)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.email)} · ${escapeHtml(order.phone)}</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.address)}, ${escapeHtml(order.city)}${
                     order.postalCode ? ', ' + escapeHtml(order.postalCode) : ''
                 }</p>
-        <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(
-            order.createdAt
-        ).toLocaleDateString('ru-RU')}</p>
+        <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(order.createdAt).toLocaleDateString(locale)}</p>
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
         ${items}
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
@@ -385,14 +377,7 @@ function useAdminOrdersPageState() {
     const editProductResults = useMemo(() => {
         const q = editProductSearch.trim().toLowerCase();
         if (!q || q.length < 2) return [];
-        return catalog
-            .filter(
-                (p) =>
-                    p.title.toLowerCase().includes(q) ||
-                    p.brand.toLowerCase().includes(q) ||
-                    (p.sku ?? '').toLowerCase().includes(q)
-            )
-            .slice(0, 8);
+        return catalog.filter((p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q)).slice(0, 8);
     }, [catalog, editProductSearch]);
 
     const startEdit = (order: Order) => {
@@ -418,9 +403,7 @@ function useAdminOrdersPageState() {
         if (catalog.length === 0) {
             fetch('/api/admin/products')
                 .then((r) => r.json())
-                .then((d: { data?: { products?: CatalogProduct[] } }) =>
-                    setCatalog(d.data?.products ?? [])
-                )
+                .then((d: { data?: { products?: CatalogProduct[] } }) => setCatalog(d.data?.products ?? []))
                 .catch((error) => reportAdminError(error, l('Каталог для редактирования заказа', 'Catalog for order editing', 'Katalogs pasūtījuma rediģēšanai')));
         }
     };
@@ -439,7 +422,12 @@ function useAdminOrdersPageState() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orderId: order.id,
-                    items: editItems.map(({ id, quantity, lineKey, variantLabel }) => ({ id, quantity, lineKey, variantLabel })),
+                    items: editItems.map(({ id, quantity, lineKey, variantLabel }) => ({
+                        id,
+                        quantity,
+                        lineKey,
+                        variantLabel,
+                    })),
                     address: editAddress.trim() || order.address,
                     city: editCity.trim() || order.city,
                     postalCode: editPostalCode.trim() || undefined,
@@ -462,19 +450,14 @@ function useAdminOrdersPageState() {
         if (qty <= 0) {
             setEditItems((prev) => prev.filter((i) => i.lineKey !== lineKey));
         } else {
-            setEditItems((prev) =>
-                prev.map((i) => (i.lineKey === lineKey ? { ...i, quantity: qty } : i))
-            );
+            setEditItems((prev) => prev.map((i) => (i.lineKey === lineKey ? { ...i, quantity: qty } : i)));
         }
     };
 
     const editAddProduct = (p: CatalogProduct) => {
         setEditItems((prev) => {
             const existing = prev.find((i) => i.lineKey === p.id);
-            if (existing)
-                return prev.map((i) =>
-                    i.lineKey === p.id ? { ...i, quantity: i.quantity + 1 } : i
-                );
+            if (existing) return prev.map((i) => (i.lineKey === p.id ? { ...i, quantity: i.quantity + 1 } : i));
             return [
                 ...prev,
                 {
@@ -500,9 +483,7 @@ function useAdminOrdersPageState() {
     };
 
     const downloadCSV = (rows: string[][], filename: string) => {
-        const content = rows
-            .map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
-            .join('\n');
+        const content = rows.map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
         const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -526,8 +507,14 @@ function useAdminOrdersPageState() {
         const take = 200;
         for (;;) {
             const qs = buildOrdersQuery({
-                search: debouncedSearch, status: statusFilter, payment: paymentFilter, delivery: deliveryFilter,
-                sortField, sortDir, skip, take,
+                search: debouncedSearch,
+                status: statusFilter,
+                payment: paymentFilter,
+                delivery: deliveryFilter,
+                sortField,
+                sortDir,
+                skip,
+                take,
             });
             const res = await fetch(`/api/admin/orders?${qs.toString()}`, { cache: 'no-store' });
             if (!res.ok) throw new Error(`export_fetch_failed:${res.status}`);
@@ -545,14 +532,26 @@ function useAdminOrdersPageState() {
         try {
             const all = await fetchAllMatchingOrders();
             const header = [
-                'ID', l('Дата', 'Date', 'Datums'), l('Имя', 'First name', 'Vārds'), l('Фамилия', 'Last name', 'Uzvārds'), 'Email', l('Телефон', 'Phone', 'Tālrunis'), l('Статус', 'Status', 'Statuss'), l('Оплата', 'Payment', 'Apmaksa'),
-                l('Доставка', 'Delivery', 'Piegāde'), l('Адрес', 'Address', 'Adrese'), l('Город', 'City', 'Pilsēta'), l('Индекс', 'Postal code', 'Pasta indekss'), l('Товары', 'Products', 'Produkti'), l('Сумма', 'Total', 'Summa'),
+                'ID',
+                l('Дата', 'Date', 'Datums'),
+                l('Имя', 'First name', 'Vārds'),
+                l('Фамилия', 'Last name', 'Uzvārds'),
+                'Email',
+                l('Телефон', 'Phone', 'Tālrunis'),
+                l('Статус', 'Status', 'Statuss'),
+                l('Оплата', 'Payment', 'Apmaksa'),
+                l('Доставка', 'Delivery', 'Piegāde'),
+                l('Адрес', 'Address', 'Adrese'),
+                l('Город', 'City', 'Pilsēta'),
+                l('Индекс', 'Postal code', 'Pasta indekss'),
+                l('Товары', 'Products', 'Produkti'),
+                l('Сумма', 'Total', 'Summa'),
             ];
             const rows = all.map((o) => {
                 const status = getOrderStatus(o.id);
                 return [
                     o.id,
-                    new Date(o.createdAt).toLocaleDateString('ru-RU'),
+                    new Date(o.createdAt).toLocaleDateString(locale),
                     o.firstName,
                     o.lastName,
                     o.email,
@@ -580,17 +579,22 @@ function useAdminOrdersPageState() {
         try {
             const all = await fetchAllMatchingOrders();
             const seen = new Set<string>();
-            const header = [l('Имя', 'First name', 'Vārds'), l('Фамилия', 'Last name', 'Uzvārds'), 'Email', l('Телефон', 'Phone', 'Tālrunis'), l('Город', 'City', 'Pilsēta'), l('Заказов', 'Orders', 'Pasūtījumi'), l('Сумма (€)', 'Total (€)', 'Summa (€)')];
+            const header = [
+                l('Имя', 'First name', 'Vārds'),
+                l('Фамилия', 'Last name', 'Uzvārds'),
+                'Email',
+                l('Телефон', 'Phone', 'Tālrunis'),
+                l('Город', 'City', 'Pilsēta'),
+                l('Заказов', 'Orders', 'Pasūtījumi'),
+                l('Сумма (€)', 'Total (€)', 'Summa (€)'),
+            ];
             const rows: string[][] = [];
             all.forEach((o) => {
                 if (seen.has(o.email)) return;
                 seen.add(o.email);
                 const customerOrders = all.filter((x) => x.email === o.email);
                 const spent = customerOrders.reduce((s, x) => s + x.total, 0);
-                rows.push([
-                    o.firstName, o.lastName, o.email, o.phone, o.city,
-                    String(customerOrders.length), spent.toFixed(2),
-                ]);
+                rows.push([o.firstName, o.lastName, o.email, o.phone, o.city, String(customerOrders.length), spent.toFixed(2)]);
             });
             downloadCSV([header, ...rows], `customers-${csvDate()}.csv`);
         } catch (error) {
@@ -675,5 +679,5 @@ function useAdminOrdersPageState() {
 }
 
 export function useAdminOrdersPage(): ReturnType<typeof useAdminOrdersPageState> {
-  return useAdminOrdersPageState()
+    return useAdminOrdersPageState();
 }

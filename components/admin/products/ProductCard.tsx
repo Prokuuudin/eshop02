@@ -6,6 +6,7 @@ import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface ProductCardProps {
     product: Product;
@@ -13,13 +14,11 @@ interface ProductCardProps {
     onDelete?: () => void;
 }
 
-const BADGE_LABELS: Record<string, string> = {
-    new: 'Новинка',
-    sale: 'Скидка',
-    bestseller: 'Хит',
-};
-
 const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
+    const { l } = useAdminLocale();
+    const badgeLabels: Record<string, string> = {
+        new: l('Новинка', 'New', 'Jaunums'), sale: l('Скидка', 'Sale', 'Atlaide'), bestseller: l('Хит', 'Bestseller', 'Bestsellers'),
+    };
     const [stock, setStock] = useState(product.stock);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
@@ -34,9 +33,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 body: JSON.stringify({ id: product.id, changes: { stock } }),
             });
             if (!res.ok) throw new Error('save failed');
-            setSaveMsg('Сохранено');
+            setSaveMsg(l('Сохранено', 'Saved', 'Saglabāts'));
         } catch {
-            setSaveMsg('Ошибка');
+            setSaveMsg(l('Ошибка', 'Error', 'Kļūda'));
         } finally {
             setSaving(false);
             setTimeout(() => setSaveMsg(''), 2500);
@@ -60,14 +59,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                         className="object-contain w-full h-full p-2"
                     />
                 ) : (
-                    <span className="text-xs text-muted-foreground">Нет фото</span>
+                    <span className="text-xs text-muted-foreground">{l('Нет фото', 'No image', 'Nav attēla')}</span>
                 )}
                 {/* Бейджи поверх изображения */}
                 {product.badges && product.badges.length > 0 && (
                     <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                         {product.badges.map((badge) => (
                             <Badge key={badge} className="text-[10px] px-1.5 py-0.5 leading-none">
-                                {BADGE_LABELS[badge] ?? badge}
+                                {badgeLabels[badge] ?? badge}
                             </Badge>
                         ))}
                     </div>
@@ -75,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 {product.stock === 0 && (
                     <div className="absolute top-2 right-2">
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 leading-none">
-                            Нет в наличии
+                            {l('Нет в наличии', 'Out of stock', 'Nav noliktavā')}
                         </Badge>
                     </div>
                 )}
@@ -108,7 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
 
             {/* Управление остатком */}
             <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/50">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Остаток:</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{l('Остаток:', 'Stock:', 'Atlikums:')}</span>
                 <Input
                     type="number"
                     min={0}
@@ -122,7 +121,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     disabled={saving}
                     className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
                 >
-                    {saving ? '...' : 'Сохр.'}
+                    {saving ? '...' : l('Сохр.', 'Save', 'Saglabāt')}
                 </button>
                 {saveMsg && (
                     <span className="text-[11px] text-green-600 dark:text-green-400 ml-auto">{saveMsg}</span>
@@ -137,7 +136,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
                 >
                     <Pencil className="w-3.5 h-3.5" />
-                    Редактировать
+                    {l('Редактировать', 'Edit', 'Rediģēt')}
                 </button>
                 <div className="w-px bg-secondary" />
                 <button
@@ -146,7 +145,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Удалить
+                    {l('Удалить', 'Delete', 'Dzēst')}
                 </button>
             </div>
         </article>

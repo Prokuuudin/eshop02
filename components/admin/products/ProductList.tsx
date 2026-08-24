@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import type { Product } from '@/data/products';
 import ProductCard from './ProductCard';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface ProductListProps {
     products: Product[];
@@ -9,10 +12,11 @@ interface ProductListProps {
 }
 
 const ProductList: React.FC<ProductListProps> = ({ products, onEditProduct, onDeleteProduct }) => {
+    const { l } = useAdminLocale();
     if (products.length === 0) {
         return (
             <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                Нет результатов поиска
+                {l('Нет результатов поиска', 'No search results', 'Nav meklēšanas rezultātu')}
             </div>
         );
     }

@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface NotifyPromoSubscribersButtonProps {
     productId: string;
 }
 
 export const NotifyPromoSubscribersButton: React.FC<NotifyPromoSubscribersButtonProps> = ({ productId }) => {
+    const { l } = useAdminLocale();
     const [open, setOpen] = useState(false);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
@@ -24,13 +26,13 @@ export const NotifyPromoSubscribersButton: React.FC<NotifyPromoSubscribersButton
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: message.trim() || undefined }),
             });
-            setResult(res.ok ? 'Отправлено' : 'Ошибка');
+            setResult(res.ok ? l('Отправлено', 'Sent', 'Nosūtīts') : l('Ошибка', 'Error', 'Kļūda'));
             if (res.ok) {
                 setOpen(false);
                 setMessage('');
             }
         } catch {
-            setResult('Ошибка');
+            setResult(l('Ошибка', 'Error', 'Kļūda'));
         } finally {
             setSending(false);
             setTimeout(() => setResult(''), 2500);
@@ -42,7 +44,7 @@ export const NotifyPromoSubscribersButton: React.FC<NotifyPromoSubscribersButton
             <div className="flex items-center gap-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(true)}>
                     <Bell className="w-4 h-4 mr-2" />
-                    Уведомить подписчиков
+                    {l('Уведомить подписчиков', 'Notify subscribers', 'Paziņot abonentiem')}
                 </Button>
                 {result && <span className="text-xs text-muted-foreground">{result}</span>}
             </div>
@@ -54,14 +56,14 @@ export const NotifyPromoSubscribersButton: React.FC<NotifyPromoSubscribersButton
             <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Текст акции (необязательно)"
+                placeholder={l('Текст акции (необязательно)', 'Promotion text (optional)', 'Akcijas teksts (neobligāti)')}
                 className="w-64"
             />
             <Button type="button" onClick={() => void handleSend()} disabled={sending}>
-                {sending ? 'Отправка...' : 'Отправить'}
+                {sending ? l('Отправка...', 'Sending...', 'Nosūta...') : l('Отправить', 'Send', 'Nosūtīt')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Отмена
+                {l('Отмена', 'Cancel', 'Atcelt')}
             </Button>
         </div>
     );

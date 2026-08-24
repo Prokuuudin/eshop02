@@ -20,6 +20,7 @@
     "test": "npm run test:unit && npm run test:integration",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:admin-i18n": "playwright test e2e/admin-locales.spec.ts --project=chromium --workers=1",
     "test:e2e:smoke": "playwright test e2e/critical-flows.spec.ts e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts e2e/wishlist.spec.ts e2e/demo-b2b-invoices.spec.ts --project=chromium --workers=1",
     "test:e2e:smoke:critical": "playwright test e2e/critical-flows.spec.ts --project=chromium",
     "test:e2e:smoke:admin": "playwright test e2e/admin-flows.spec.ts e2e/admin-rbac.spec.ts --project=chromium",

@@ -219,7 +219,7 @@ export function buildInvoiceHtml(
   const customerAddress = [buyerAddress, buyerCity, !pickup ? order.postalCode : ''].filter(Boolean).map(esc).join(', ')
   const created = new Date(order.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')
   const words = amountInWords(order.total, lang)
-  const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/invoice-logo.png`
+  const logoUrl = `${assetBaseUrl.replace(/\/$/, '')}/invoice-logo-2026.png`
 
   // Payer identity follows what the customer picked at checkout (individual vs
   // company) — see app/[lang]/checkout/CheckoutFormSections.tsx. The recipient

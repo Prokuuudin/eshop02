@@ -76,7 +76,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
     name: 'Hairshop-Pro',
     legalName: COMPANY.name,
     url: siteUrl,
-    logo: `${siteUrl}/logo.svg`,
+    logo: `${siteUrl}/logo-2026.svg`,
     email: COMPANY.email,
     telephone: COMPANY.phone,
     sameAs: COMPANY.sameAs,

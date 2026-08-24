@@ -197,7 +197,7 @@ export default function ContactPage(): React.ReactElement {
         name: 'Hairshop-Pro',
         legalName: COMPANY.name,
         url: siteUrl,
-        logo: `${siteUrl}/logo.svg`,
+        logo: `${siteUrl}/logo-2026.svg`,
         telephone: COMPANY.phone,
         email: COMPANY.email,
         taxID: COMPANY.regNumber,

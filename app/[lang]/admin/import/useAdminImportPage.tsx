@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { PreviewResult } from '@/app/api/admin/import/preview/route';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── CSV parser (no external deps) ───────────────────────────────────────────
 
@@ -65,6 +66,7 @@ const REQUIRED_COLS = ['id', 'title', 'brand', 'price', 'stock', 'category'];
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function useAdminImportPageState() {
+    const { l } = useAdminLocale();
     const [rows, setRows] = React.useState<Record<string, string>[]>([]);
     const [fileName, setFileName] = React.useState('');
     const [mode, setMode] = React.useState<ImportMode>('upsert');
@@ -93,7 +95,13 @@ function useAdminImportPageState() {
             try {
                 const parsed = csvToObjects(text);
                 if (parsed.length === 0) {
-                    setParseError('Файл пуст или не содержит строк данных.');
+                    setParseError(
+                        l(
+                            'Файл пуст или не содержит строк данных.',
+                            'The file is empty or contains no data rows.',
+                            'Fails ir tukšs vai nesatur datu rindas.'
+                        )
+                    );
                     return;
                 }
 
@@ -102,7 +110,13 @@ function useAdminImportPageState() {
                 setMissingCols(missing);
                 setRows(parsed);
             } catch {
-                setParseError('Не удалось разобрать CSV. Проверьте формат файла.');
+                setParseError(
+                    l(
+                        'Не удалось разобрать CSV. Проверьте формат файла.',
+                        'Could not parse the CSV. Check the file format.',
+                        'Neizdevās apstrādāt CSV. Pārbaudiet faila formātu.'
+                    )
+                );
             }
         };
         reader.readAsText(file, 'utf-8');
@@ -139,7 +153,13 @@ function useAdminImportPageState() {
             const data = (await res.json()) as PreviewResult;
             setPreviewResult(data);
         } catch {
-            setParseError('Не удалось получить предпросмотр. Проверьте соединение.');
+            setParseError(
+                l(
+                    'Не удалось получить предпросмотр. Проверьте соединение.',
+                    'Could not load the preview. Check your connection.',
+                    'Neizdevās ielādēt priekšskatījumu. Pārbaudiet savienojumu.'
+                )
+            );
         } finally {
             setPreviewing(false);
         }
@@ -164,7 +184,17 @@ function useAdminImportPageState() {
                 created: 0,
                 updated: 0,
                 skipped: 0,
-                errors: [{ row: 0, id: '', message: 'Ошибка соединения с сервером.' }],
+                errors: [
+                    {
+                        row: 0,
+                        id: '',
+                        message: l(
+                            'Ошибка соединения с сервером.',
+                            'Could not connect to the server.',
+                            'Neizdevās izveidot savienojumu ar serveri.'
+                        ),
+                    },
+                ],
             });
         } finally {
             setImporting(false);
@@ -209,5 +239,5 @@ function useAdminImportPageState() {
 }
 
 export function useAdminImportPage(): ReturnType<typeof useAdminImportPageState> {
-  return useAdminImportPageState()
+    return useAdminImportPageState();
 }

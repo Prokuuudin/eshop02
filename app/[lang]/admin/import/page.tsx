@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import type { RowAction } from '@/app/api/admin/import/preview/route';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── CSV parser (no external deps) ───────────────────────────────────────────
 
@@ -51,29 +52,11 @@ const ALL_COLS = [
     'metaDescription',
 ];
 
-const MODE_LABELS: Record<ImportMode, string> = {
-    create: 'Только создание — новые товары, существующие пропускаются',
-    update: 'Только обновление — существующие товары, новые пропускаются',
-    upsert: 'Создание + обновление — новые создаются, существующие обновляются',
-};
-
-const ACTION_STYLES: Record<RowAction, { label: string; chip: string }> = {
-    create: {
-        label: 'Создать',
-        chip: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-    },
-    update: {
-        label: 'Обновить',
-        chip: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    },
-    skip: {
-        label: 'Пропустить',
-        chip: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
-    },
-    error: {
-        label: 'Ошибка',
-        chip: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-    },
+const ACTION_CHIPS: Record<RowAction, string> = {
+    create: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+    update: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    skip: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    error: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -81,26 +64,50 @@ const ACTION_STYLES: Record<RowAction, { label: string; chip: string }> = {
 import { useAdminImportPage } from './useAdminImportPage';
 
 export default function AdminImportPage(): React.ReactElement {
+    const { l } = useAdminLocale();
     const pageState = useAdminImportPage();
+    const modeLabels: Record<ImportMode, string> = {
+        create: l(
+            'Только создание — новые товары, существующие пропускаются',
+            'Create only — add new products and skip existing ones',
+            'Tikai izveide — pievienot jaunus produktus un izlaist esošos'
+        ),
+        update: l(
+            'Только обновление — существующие товары, новые пропускаются',
+            'Update only — update existing products and skip new ones',
+            'Tikai atjaunināšana — atjaunināt esošos produktus un izlaist jaunos'
+        ),
+        upsert: l(
+            'Создание + обновление — новые создаются, существующие обновляются',
+            'Create + update — add new products and update existing ones',
+            'Izveide + atjaunināšana — pievienot jaunus un atjaunināt esošos produktus'
+        ),
+    };
+    const actionLabels: Record<RowAction, string> = {
+        create: l('Создать', 'Create', 'Izveidot'),
+        update: l('Обновить', 'Update', 'Atjaunināt'),
+        skip: l('Пропустить', 'Skip', 'Izlaist'),
+        error: l('Ошибка', 'Error', 'Kļūda'),
+    };
     const {
-            rows,
-            fileName,
-            mode,
-            importing,
-            previewing,
-            result,
-            previewResult,
-            parseError,
-            missingCols,
-            fileRef,
-            onFileChange,
-            onReset,
-            onModeChange,
-            onPreview,
-            onImport,
-            detectedCols,
-            canImport,
-          } = pageState;
+        rows,
+        fileName,
+        mode,
+        importing,
+        previewing,
+        result,
+        previewResult,
+        parseError,
+        missingCols,
+        fileRef,
+        onFileChange,
+        onReset,
+        onModeChange,
+        onPreview,
+        onImport,
+        detectedCols,
+        canImport,
+    } = pageState;
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -108,37 +115,62 @@ export default function AdminImportPage(): React.ReactElement {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                            Импорт и обновление каталога
+                            {l(
+                                'Импорт и обновление каталога',
+                                'Catalog import and update',
+                                'Kataloga imports un atjaunināšana'
+                            )}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Загрузка товаров из CSV, массовое обновление цен и остатков, экспорт
-                            каталога.
+                            {l(
+                                'Загрузка товаров из CSV, массовое обновление цен и остатков, экспорт каталога.',
+                                'Upload products from CSV, update prices and inventory in bulk, and export the catalog.',
+                                'Augšupielādējiet produktus no CSV, masveidā atjauniniet cenas un krājumus un eksportējiet katalogu.'
+                            )}
                         </p>
                     </div>
                     <Link href="/admin">
-                        <Button variant="outline">Назад в админку</Button>
+                        <Button variant="outline">
+                            {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrēšanu')}
+                        </Button>
                     </Link>
                 </div>
 
                 {/* ══ EXPORT ══════════════════════════════════════════════════════════ */}
                 <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-                    <h2 className="text-base font-semibold text-foreground">Экспорт каталога</h2>
+                    <h2 className="text-base font-semibold text-foreground">
+                        {l('Экспорт каталога', 'Catalog export', 'Kataloga eksports')}
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                        Скачайте все товары в формате CSV — включая базовые и добавленные через
-                        админку. Используйте этот файл как основу для редактирования и последующего
-                        импорта.
+                        {l(
+                            'Скачайте все товары в формате CSV — включая базовые и добавленные через админку. Используйте этот файл как основу для редактирования и последующего импорта.',
+                            'Download all products as CSV, including built-in products and those added in admin. Use this file as a basis for editing and reimporting.',
+                            'Lejupielādējiet visus produktus CSV formātā, tostarp pamata un administrēšanā pievienotos. Izmantojiet šo failu rediģēšanai un atkārtotam importam.'
+                        )}
                     </p>
                     <div className="flex flex-wrap gap-3">
                         <a href="/api/admin/export" download>
-                            <Button>Скачать каталог (CSV)</Button>
+                            <Button>
+                                {l(
+                                    'Скачать каталог (CSV)',
+                                    'Download catalog (CSV)',
+                                    'Lejupielādēt katalogu (CSV)'
+                                )}
+                            </Button>
                         </a>
                         <a href="/api/admin/export?template=1" download>
-                            <Button variant="outline">Скачать шаблон (1 пример)</Button>
+                            <Button variant="outline">
+                                {l(
+                                    'Скачать шаблон (1 пример)',
+                                    'Download template (1 example)',
+                                    'Lejupielādēt veidni (1 piemērs)'
+                                )}
+                            </Button>
                         </a>
                     </div>
                     <div className="rounded-md bg-muted border border-border p-3">
                         <p className="text-xs font-medium text-foreground mb-1">
-                            Колонки в CSV:
+                            {l('Колонки в CSV:', 'CSV columns:', 'CSV kolonnas:')}
                         </p>
                         <p className="text-xs text-muted-foreground leading-relaxed font-mono">
                             <span className="text-red-600 dark:text-red-400">
@@ -148,9 +180,19 @@ export default function AdminImportPage(): React.ReactElement {
                             {ALL_COLS.slice(REQUIRED_COLS.length).join(', ')}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            Красным — обязательные. Остальные — необязательные, можно не включать в
-                            файл. Для <code>badges</code> используйте разделитель <code>;</code>{' '}
-                            (например: <code>sale;new</code>). Категории:{' '}
+                            {l(
+                                'Красным — обязательные. Остальные — необязательные, их можно не включать в файл.',
+                                'Required columns are red. The rest are optional and may be omitted.',
+                                'Obligātās kolonnas ir sarkanas. Pārējās nav obligātas un tās var neiekļaut failā.'
+                            )}{' '}
+                            {l('Для', 'For', 'Laukam')} <code>badges</code>{' '}
+                            {l(
+                                'используйте разделитель',
+                                'use the separator',
+                                'izmantojiet atdalītāju'
+                            )}{' '}
+                            <code>;</code> ({l('например', 'for example', 'piemēram')}:{' '}
+                            <code>sale;new</code>). {l('Категории:', 'Categories:', 'Kategorijas:')}{' '}
                             <code>hair, face, body, nails, equipment, new</code>.
                         </p>
                     </div>
@@ -158,16 +200,24 @@ export default function AdminImportPage(): React.ReactElement {
 
                 {/* ══ IMPORT ══════════════════════════════════════════════════════════ */}
                 <section className="rounded-lg border border-border bg-card p-5 space-y-5">
-                    <h2 className="text-base font-semibold text-foreground">Импорт из CSV</h2>
+                    <h2 className="text-base font-semibold text-foreground">
+                        {l('Импорт из CSV', 'Import from CSV', 'Imports no CSV')}
+                    </h2>
 
                     {/* Step 1: Upload */}
                     <div className="space-y-2">
                         <p className="text-sm font-medium text-foreground">
-                            1. Выберите файл
+                            {l('1. Выберите файл', '1. Choose a file', '1. Izvēlieties failu')}
                         </p>
                         <div className="flex items-center gap-3 flex-wrap">
                             <Button variant="outline" onClick={() => fileRef.current?.click()}>
-                                {fileName ? 'Заменить файл' : 'Выбрать CSV-файл'}
+                                {fileName
+                                    ? l('Заменить файл', 'Replace file', 'Aizstāt failu')
+                                    : l(
+                                          'Выбрать CSV-файл',
+                                          'Choose CSV file',
+                                          'Izvēlēties CSV failu'
+                                      )}
                             </Button>
                             {fileName && (
                                 <>
@@ -175,14 +225,14 @@ export default function AdminImportPage(): React.ReactElement {
                                         {fileName}
                                     </span>
                                     <span className="text-sm text-muted-foreground">
-                                        — {rows.length} строк
+                                        — {rows.length} {l('строк', 'rows', 'rindas')}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={onReset}
                                         className="text-xs text-red-500 hover:underline"
                                     >
-                                        Очистить
+                                        {l('Очистить', 'Clear', 'Notīrīt')}
                                     </button>
                                 </>
                             )}
@@ -207,7 +257,11 @@ export default function AdminImportPage(): React.ReactElement {
                     {rows.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-foreground">
-                                Обнаруженные колонки:
+                                {l(
+                                    'Обнаруженные колонки:',
+                                    'Detected columns:',
+                                    'Atrastas kolonnas:'
+                                )}
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {detectedCols.map((col) => (
@@ -225,13 +279,21 @@ export default function AdminImportPage(): React.ReactElement {
                             </div>
                             {missingCols.length > 0 && (
                                 <div className="rounded-md border border-red-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300">
-                                    Отсутствуют обязательные колонки:{' '}
+                                    {l(
+                                        'Отсутствуют обязательные колонки:',
+                                        'Required columns are missing:',
+                                        'Trūkst obligāto kolonnu:'
+                                    )}{' '}
                                     <strong>{missingCols.join(', ')}</strong>
                                 </div>
                             )}
                             {missingCols.length === 0 && (
                                 <p className="text-xs text-green-600 dark:text-green-400">
-                                    Все обязательные колонки присутствуют.
+                                    {l(
+                                        'Все обязательные колонки присутствуют.',
+                                        'All required columns are present.',
+                                        'Ir visas obligātās kolonnas.'
+                                    )}
                                 </p>
                             )}
                         </div>
@@ -241,10 +303,10 @@ export default function AdminImportPage(): React.ReactElement {
                     {canImport && (
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-foreground">
-                                2. Режим импорта
+                                {l('2. Режим импорта', '2. Import mode', '2. Importa režīms')}
                             </p>
                             <div className="space-y-2">
-                                {(Object.keys(MODE_LABELS) as ImportMode[]).map((m) => (
+                                {(Object.keys(modeLabels) as ImportMode[]).map((m) => (
                                     <label
                                         key={m}
                                         className="flex items-start gap-2 cursor-pointer"
@@ -259,7 +321,7 @@ export default function AdminImportPage(): React.ReactElement {
                                         />
                                         <span className="text-sm text-foreground">
                                             <strong className="capitalize">{m}</strong> —{' '}
-                                            {MODE_LABELS[m]}
+                                            {modeLabels[m]}
                                         </span>
                                     </label>
                                 ))}
@@ -272,7 +334,7 @@ export default function AdminImportPage(): React.ReactElement {
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 flex-wrap">
                                 <p className="text-sm font-medium text-foreground">
-                                    3. Предпросмотр
+                                    {l('3. Предпросмотр', '3. Preview', '3. Priekšskatījums')}
                                 </p>
                                 <Button
                                     variant="outline"
@@ -281,17 +343,24 @@ export default function AdminImportPage(): React.ReactElement {
                                     disabled={previewing}
                                 >
                                     {previewing
-                                        ? 'Анализируется...'
+                                        ? l('Анализируется...', 'Analyzing...', 'Notiek analīze...')
                                         : previewResult
-                                        ? 'Обновить предпросмотр'
-                                        : 'Проверить файл'}
+                                        ? l(
+                                              'Обновить предпросмотр',
+                                              'Refresh preview',
+                                              'Atjaunināt priekšskatījumu'
+                                          )
+                                        : l('Проверить файл', 'Check file', 'Pārbaudīt failu')}
                                 </Button>
                             </div>
 
                             {!previewResult && !previewing && (
                                 <p className="text-xs text-muted-foreground">
-                                    Нажмите «Проверить файл» — мы сравним CSV с каталогом и покажем
-                                    что будет создано, обновлено или пропущено.
+                                    {l(
+                                        'Нажмите «Проверить файл» — мы сравним CSV с каталогом и покажем, что будет создано, обновлено или пропущено.',
+                                        'Select “Check file” to compare the CSV with the catalog and see what will be created, updated, or skipped.',
+                                        'Nospiediet “Pārbaudīt failu”, lai salīdzinātu CSV ar katalogu un redzētu, kas tiks izveidots, atjaunināts vai izlaists.'
+                                    )}
                                 </p>
                             )}
 
@@ -301,22 +370,26 @@ export default function AdminImportPage(): React.ReactElement {
                                     <div className="flex flex-wrap gap-2 text-sm">
                                         {previewResult.summary.create > 0 && (
                                             <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 font-medium">
-                                                Создать: {previewResult.summary.create}
+                                                {l('Создать', 'Create', 'Izveidot')}:{' '}
+                                                {previewResult.summary.create}
                                             </span>
                                         )}
                                         {previewResult.summary.update > 0 && (
                                             <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
-                                                Обновить: {previewResult.summary.update}
+                                                {l('Обновить', 'Update', 'Atjaunināt')}:{' '}
+                                                {previewResult.summary.update}
                                             </span>
                                         )}
                                         {previewResult.summary.skip > 0 && (
                                             <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-muted text-muted-foreground font-medium">
-                                                Пропустить: {previewResult.summary.skip}
+                                                {l('Пропустить', 'Skip', 'Izlaist')}:{' '}
+                                                {previewResult.summary.skip}
                                             </span>
                                         )}
                                         {previewResult.summary.error > 0 && (
                                             <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
-                                                Ошибок: {previewResult.summary.error}
+                                                {l('Ошибок', 'Errors', 'Kļūdas')}:{' '}
+                                                {previewResult.summary.error}
                                             </span>
                                         )}
                                     </div>
@@ -330,22 +403,22 @@ export default function AdminImportPage(): React.ReactElement {
                                                         #
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
-                                                        Действие
+                                                        {l('Действие', 'Action', 'Darbība')}
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
                                                         ID
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
-                                                        Название
+                                                        {l('Название', 'Title', 'Nosaukums')}
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
-                                                        Бренд
+                                                        {l('Бренд', 'Brand', 'Zīmols')}
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
-                                                        Цена
+                                                        {l('Цена', 'Price', 'Cena')}
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
-                                                        Остаток
+                                                        {l('Остаток', 'Inventory', 'Krājumi')}
                                                     </th>
                                                     <th className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap">
                                                         SKU
@@ -354,7 +427,7 @@ export default function AdminImportPage(): React.ReactElement {
                                             </thead>
                                             <tbody className="divide-y divide-border">
                                                 {previewResult.rows.map((row) => {
-                                                    const style = ACTION_STYLES[row.action];
+                                                    const chip = ACTION_CHIPS[row.action];
                                                     return (
                                                         <tr
                                                             key={row.rowNum}
@@ -372,9 +445,9 @@ export default function AdminImportPage(): React.ReactElement {
                                                             </td>
                                                             <td className="px-3 py-2 whitespace-nowrap">
                                                                 <span
-                                                                    className={`rounded-full px-2 py-0.5 font-medium text-[11px] ${style.chip}`}
+                                                                    className={`rounded-full px-2 py-0.5 font-medium text-[11px] ${chip}`}
                                                                 >
-                                                                    {style.label}
+                                                                    {actionLabels[row.action]}
                                                                 </span>
                                                             </td>
                                                             <td className="px-3 py-2 font-mono text-muted-foreground max-w-[120px] truncate">
@@ -422,7 +495,7 @@ export default function AdminImportPage(): React.ReactElement {
                     {canImport && previewResult && !result && (
                         <div className="pt-3 border-t border-border flex items-center gap-3 flex-wrap">
                             <p className="text-sm font-medium text-foreground w-full">
-                                4. Запустить импорт
+                                {l('4. Запустить импорт', '4. Run import', '4. Sākt importu')}
                             </p>
                             <Button
                                 onClick={onImport}
@@ -432,16 +505,24 @@ export default function AdminImportPage(): React.ReactElement {
                                 }
                             >
                                 {importing
-                                    ? 'Импортируется...'
-                                    : `Запустить (${
+                                    ? l('Импортируется...', 'Importing...', 'Notiek importēšana...')
+                                    : `${l('Запустить', 'Run', 'Sākt')} (${
                                           previewResult.summary.create +
                                           previewResult.summary.update
-                                      } из ${rows.length} строк)`}
+                                      } ${l('из', 'of', 'no')} ${rows.length} ${l(
+                                          'строк',
+                                          'rows',
+                                          'rindām'
+                                      )})`}
                             </Button>
                             {previewResult.summary.error > 0 && (
                                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                                    {previewResult.summary.error} строк содержат ошибки и будут
-                                    пропущены.
+                                    {previewResult.summary.error}{' '}
+                                    {l(
+                                        'строк содержат ошибки и будут пропущены.',
+                                        'rows contain errors and will be skipped.',
+                                        'rindās ir kļūdas, un tās tiks izlaistas.'
+                                    )}
                                 </p>
                             )}
                         </div>
@@ -456,7 +537,7 @@ export default function AdminImportPage(): React.ReactElement {
                                         {result.created}
                                     </p>
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-                                        Создано
+                                        {l('Создано', 'Created', 'Izveidoti')}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 text-center">
@@ -464,7 +545,7 @@ export default function AdminImportPage(): React.ReactElement {
                                         {result.updated}
                                     </p>
                                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                                        Обновлено
+                                        {l('Обновлено', 'Updated', 'Atjaunināti')}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-border bg-muted p-3 text-center">
@@ -472,7 +553,7 @@ export default function AdminImportPage(): React.ReactElement {
                                         {result.skipped}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        Пропущено
+                                        {l('Пропущено', 'Skipped', 'Izlaisti')}
                                     </p>
                                 </div>
                                 <div
@@ -498,7 +579,7 @@ export default function AdminImportPage(): React.ReactElement {
                                                 : 'text-muted-foreground'
                                         }`}
                                     >
-                                        Ошибок
+                                        {l('Ошибок', 'Errors', 'Kļūdas')}
                                     </p>
                                 </div>
                             </div>
@@ -506,14 +587,14 @@ export default function AdminImportPage(): React.ReactElement {
                             {result.errors.length > 0 && (
                                 <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-3 space-y-1 max-h-48 overflow-y-auto">
                                     <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-2">
-                                        Ошибки импорта:
+                                        {l('Ошибки импорта:', 'Import errors:', 'Importa kļūdas:')}
                                     </p>
                                     {result.errors.map((e, i) => (
                                         <p
                                             key={i}
                                             className="text-xs text-red-600 dark:text-red-400 font-mono"
                                         >
-                                            Строка {e.row}
+                                            {l('Строка', 'Row', 'Rinda')} {e.row}
                                             {e.id ? ` (${e.id})` : ''}: {e.message}
                                         </p>
                                     ))}
@@ -523,11 +604,17 @@ export default function AdminImportPage(): React.ReactElement {
                             <div className="flex items-center gap-3">
                                 {result.created + result.updated > 0 && (
                                     <Link href="/admin/products">
-                                        <Button size="sm">Открыть каталог →</Button>
+                                        <Button size="sm">
+                                            {l(
+                                                'Открыть каталог →',
+                                                'Open catalog →',
+                                                'Atvērt katalogu →'
+                                            )}
+                                        </Button>
                                     </Link>
                                 )}
                                 <Button size="sm" variant="outline" onClick={onReset}>
-                                    Новый импорт
+                                    {l('Новый импорт', 'New import', 'Jauns imports')}
                                 </Button>
                             </div>
                         </div>
@@ -536,17 +623,33 @@ export default function AdminImportPage(): React.ReactElement {
 
                 {/* ══ HINTS ═══════════════════════════════════════════════════════════ */}
                 <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground space-y-1">
-                    <p className="font-medium text-foreground">Сценарии использования</p>
+                    <p className="font-medium text-foreground">
+                        {l('Сценарии использования', 'Use cases', 'Lietošanas scenāriji')}
+                    </p>
                     <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>
-                            Первичная загрузка каталога: режим <strong>create</strong>
+                            {l(
+                                'Первичная загрузка каталога: режим',
+                                'Initial catalog upload: use',
+                                'Sākotnējā kataloga augšupielāde: izmantojiet'
+                            )}{' '}
+                            <strong>create</strong>
                         </li>
                         <li>
-                            Массовое обновление цен/остатков: скачайте экспорт, отредактируйте
-                            нужные колонки, загрузите в режиме <strong>update</strong>
+                            {l(
+                                'Массовое обновление цен/остатков: скачайте экспорт, отредактируйте нужные колонки, загрузите в режиме',
+                                'Bulk price/inventory update: download the export, edit the required columns, and upload using',
+                                'Cenu/krājumu masveida atjaunināšana: lejupielādējiet eksportu, rediģējiet vajadzīgās kolonnas un augšupielādējiet ar'
+                            )}{' '}
+                            <strong>update</strong>
                         </li>
                         <li>
-                            Синхронизация с прайс-листом поставщика: режим <strong>upsert</strong>
+                            {l(
+                                'Синхронизация с прайс-листом поставщика: режим',
+                                'Supplier price list synchronization: use',
+                                'Sinhronizācija ar piegādātāja cenrādi: izmantojiet'
+                            )}{' '}
+                            <strong>upsert</strong>
                         </li>
                     </ul>
                 </section>

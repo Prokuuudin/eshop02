@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ type FilterType = 'all' | 'image' | 'other';
 
 function useAdminMediaPageState() {
     const confirmAction = useAdminConfirm();
+    const { l } = useAdminLocale();
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -62,11 +64,11 @@ function useAdminMediaPageState() {
             const data = (await res.json()) as { files: MediaFile[] };
             setFiles(data.files);
         } catch {
-            showMsg('Не удалось загрузить файлы.', true);
+            showMsg(l('Не удалось загрузить файлы.', 'Failed to load files.', 'Neizdevās ielādēt failus.'), true);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [l]);
 
     useEffect(() => {
         let cancelled = false;
@@ -98,8 +100,8 @@ function useAdminMediaPageState() {
                 });
                 setUsageMap(map);
             })
-            .catch(() => reportAdminPartial('Файлы загружены, но сведения об их использовании в товарах недоступны.', 'Медиатека'));
-    }, []);
+            .catch(() => reportAdminPartial(l('Файлы загружены, но сведения об их использовании в товарах недоступны.', 'Files loaded, but product usage information is unavailable.', 'Faili ielādēti, bet informācija par to izmantošanu produktos nav pieejama.'), l('Медиатека', 'Media library', 'Mediju bibliotēka')));
+    }, [l]);
 
     // ── Derived: filtered + sorted ──────────────────────────────────────────────
 
@@ -160,7 +162,7 @@ function useAdminMediaPageState() {
         e.target.value = '';
         setUploading(false);
         showMsg(
-            fail === 0 ? `Загружено: ${ok}` : `Загружено: ${ok}, ошибок: ${fail}`,
+            fail === 0 ? l(`Загружено: ${ok}`, `Uploaded: ${ok}`, `Augšupielādēti: ${ok}`) : l(`Загружено: ${ok}, ошибок: ${fail}`, `Uploaded: ${ok}, errors: ${fail}`, `Augšupielādēti: ${ok}, kļūdas: ${fail}`),
             fail > 0 && ok === 0
         );
         await loadFiles();
@@ -179,10 +181,10 @@ function useAdminMediaPageState() {
             fd.append('file', file);
             const res = await fetch('/api/admin/media/replace', { method: 'POST', body: fd });
             if (!res.ok) throw new Error();
-            showMsg(`Файл «${selected.name}» заменён. Все ссылки на него обновлены автоматически.`);
+            showMsg(l(`Файл «${selected.name}» заменён. Все ссылки на него обновлены автоматически.`, `File “${selected.name}” replaced. All references were updated automatically.`, `Fails “${selected.name}” aizstāts. Visas atsauces atjauninātas automātiski.`));
             await loadFiles();
         } catch {
-            showMsg('Не удалось заменить файл.', true);
+            showMsg(l('Не удалось заменить файл.', 'Failed to replace file.', 'Neizdevās aizstāt failu.'), true);
         } finally {
             setReplacing(false);
             e.target.value = '';
@@ -192,7 +194,7 @@ function useAdminMediaPageState() {
     // ── Delete single ───────────────────────────────────────────────────────────
 
     const onDelete = async (file: MediaFile) => {
-        const decision = await confirmAction({ title: `Удалить «${file.name}»?`, description: 'Файл будет удалён безвозвратно. Если он используется в товарах, ссылки на него перестанут работать.', affected: [file.name, ...(usageMap.get(file.path) ?? []).map((title) => `Товар: ${title}`)], confirmText: file.name, requireReason: true, destructive: true });
+        const decision = await confirmAction({ title: l(`Удалить «${file.name}»?`, `Delete “${file.name}”?`, `Dzēst “${file.name}”?`), description: l('Файл будет удалён безвозвратно. Если он используется в товарах, ссылки на него перестанут работать.', 'The file will be deleted permanently. Product references to it will stop working.', 'Fails tiks neatgriezeniski dzēsts. Atsauces uz to produktos vairs nedarbosies.'), affected: [file.name, ...(usageMap.get(file.path) ?? []).map((title) => `${l('Товар', 'Product', 'Produkts')}: ${title}`)], confirmText: file.name, requireReason: true, destructive: true });
         if (!decision.confirmed) return;
         const res = await fetch('/api/admin/media', {
             method: 'DELETE',
@@ -201,10 +203,10 @@ function useAdminMediaPageState() {
         });
         if (res.ok) {
             if (selected?.name === file.name) setSelected(null);
-            showMsg(`Файл «${file.name}» удалён.`);
+            showMsg(l(`Файл «${file.name}» удалён.`, `File “${file.name}” deleted.`, `Fails “${file.name}” dzēsts.`));
             await loadFiles();
         } else {
-            showMsg('Не удалось удалить файл.', true);
+            showMsg(l('Не удалось удалить файл.', 'Failed to delete file.', 'Neizdevās dzēst failu.'), true);
         }
     };
 
@@ -213,7 +215,7 @@ function useAdminMediaPageState() {
     const onBulkDelete = async () => {
         const names = Array.from(checkedNames);
         if (!names.length) return;
-        const decision = await confirmAction({ title: `Удалить ${names.length} файлов?`, description: 'Файлы будут удалены безвозвратно. Связанные изображения в товарах перестанут работать.', affected: names, confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true });
+        const decision = await confirmAction({ title: l(`Удалить ${names.length} файлов?`, `Delete ${names.length} files?`, `Dzēst ${names.length} failus?`), description: l('Файлы будут удалены безвозвратно. Связанные изображения в товарах перестанут работать.', 'Files will be deleted permanently. Related product images will stop working.', 'Faili tiks neatgriezeniski dzēsti. Saistītie produktu attēli vairs nedarbosies.'), affected: names, confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
         if (!decision.confirmed) return;
         setBulkDeleting(true);
         try {
@@ -226,13 +228,11 @@ function useAdminMediaPageState() {
             setCheckedNames(new Set());
             if (selected && names.includes(selected.name)) setSelected(null);
             showMsg(
-                `Удалено: ${data.deleted}${
-                    data.errors.length ? `, ошибок: ${data.errors.length}` : ''
-                }`
+                l(`Удалено: ${data.deleted}${data.errors.length ? `, ошибок: ${data.errors.length}` : ''}`, `Deleted: ${data.deleted}${data.errors.length ? `, errors: ${data.errors.length}` : ''}`, `Dzēsti: ${data.deleted}${data.errors.length ? `, kļūdas: ${data.errors.length}` : ''}`)
             );
             await loadFiles();
         } catch {
-            showMsg('Ошибка при удалении.', true);
+            showMsg(l('Ошибка при удалении.', 'Deletion failed.', 'Dzēšanas kļūda.'), true);
         } finally {
             setBulkDeleting(false);
         }

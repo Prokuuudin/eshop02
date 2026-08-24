@@ -10,15 +10,9 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/lib/toast-context'
 import { adminFetchJson, reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
 import { fetchAllProducts } from '@/lib/client-products'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const STATUS_LABELS: Record<RFQStatus, string> = {
-  pending:  'Новая',
-  quoted:   'Котировка отправлена',
-  accepted: 'Принята',
-  rejected: 'Отклонена',
-}
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
   pending:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',
@@ -36,14 +30,6 @@ const STATUS_CARD_BORDER: Record<RFQStatus, string> = {
 
 type TimelineEventType = RFQTimelineEvent['type']
 
-const EVENT_LABELS: Record<TimelineEventType, string> = {
-  created:    'Заявка создана',
-  quote_sent: 'Котировка отправлена',
-  accepted:   'Принята клиентом',
-  rejected:   'Отклонена',
-  note:       'Заметка',
-}
-
 const EVENT_DOT: Record<TimelineEventType, string> = {
   created:    'bg-gray-400 dark:bg-gray-500',
   quote_sent: 'bg-blue-500',
@@ -55,6 +41,8 @@ const EVENT_DOT: Record<TimelineEventType, string> = {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Timeline({ events }: { events: RFQTimelineEvent[] }) {
+  const { locale, l } = useAdminLocale()
+  const eventLabel = (type: TimelineEventType) => type === 'created' ? l('Заявка создана', 'Request created', 'Pieprasījums izveidots') : type === 'quote_sent' ? l('Котировка отправлена', 'Quote sent', 'Piedāvājums nosūtīts') : type === 'accepted' ? l('Принята клиентом', 'Accepted by customer', 'Klients pieņēma') : type === 'rejected' ? l('Отклонена', 'Rejected', 'Noraidīts') : l('Заметка', 'Note', 'Piezīme')
   if (!events.length) return null
   const sorted = [...events].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
 
@@ -72,23 +60,23 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2 flex-wrap">
                 <p className="text-sm font-medium text-foreground">
-                  {EVENT_LABELS[ev.type]}
+                  {eventLabel(ev.type)}
                 </p>
                 <time className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                  {formatDate(ev.at, 'ru-RU')}
+                  {formatDate(ev.at, locale)}
                 </time>
               </div>
 
               {ev.type === 'quote_sent' && ev.quotePrice !== undefined && (
                 <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
-                  <p>Сумма: <span className="font-medium text-foreground">{formatEuro(ev.quotePrice, 'ru-RU')}</span></p>
-                  {ev.quoteTerms && <p>Условия: {ev.quoteTerms}</p>}
-                  {ev.quoteValidUntil && <p>Действует до: {formatDate(ev.quoteValidUntil, 'ru-RU')}</p>}
+                  <p>{l('Сумма:', 'Total:', 'Summa:')} <span className="font-medium text-foreground">{formatEuro(ev.quotePrice, locale)}</span></p>
+                  {ev.quoteTerms && <p>{l('Условия:', 'Terms:', 'Nosacījumi:')} {ev.quoteTerms}</p>}
+                  {ev.quoteValidUntil && <p>{l('Действует до:', 'Valid until:', 'Derīgs līdz:')} {formatDate(ev.quoteValidUntil, locale)}</p>}
                 </div>
               )}
 
               {ev.note && ev.type !== 'quote_sent' && (
-                <p className="mt-0.5 text-xs text-muted-foreground italic">{ev.internal ? 'Внутренняя заметка: ' : ''}{ev.note}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground italic">{ev.internal ? l('Внутренняя заметка: ', 'Internal note: ', 'Iekšēja piezīme: ') : ''}{ev.note}</p>
               )}
             </div>
           </div>
@@ -101,6 +89,8 @@ function Timeline({ events }: { events: RFQTimelineEvent[] }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AdminRFQPage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
+  const statusLabel = (status: RFQStatus) => status === 'pending' ? l('Новая', 'New', 'Jauns') : status === 'quoted' ? l('Котировка отправлена', 'Quote sent', 'Piedāvājums nosūtīts') : status === 'accepted' ? l('Принята', 'Accepted', 'Pieņemts') : l('Отклонена', 'Rejected', 'Noraidīts')
   const [loadedProducts, setLoadedProducts] = useState<Product[]>([])
   const [quotePrice, setQuotePrice] = useState<Record<string, string>>({})
   const [quoteTerms, setQuoteTerms] = useState<Record<string, string>>({})
@@ -116,8 +106,8 @@ export default function AdminRFQPage(): React.ReactElement {
   React.useEffect(() => {
     fetchAllProducts()
       .then(setLoadedProducts)
-      .catch(() => { setLoadedProducts([]); reportAdminPartial('RFQ загружены, но названия и цены товаров недоступны.', 'RFQ') })
-  }, [])
+      .catch(() => { setLoadedProducts([]); reportAdminPartial(l('RFQ загружены, но названия и цены товаров недоступны.', 'RFQs loaded, but product names and prices are unavailable.', 'RFQ ielādēti, bet produktu nosaukumi un cenas nav pieejami.'), 'RFQ') })
+  }, [l])
 
   React.useEffect(() => {
     const loadAll = async () => {
@@ -133,8 +123,8 @@ export default function AdminRFQPage(): React.ReactElement {
     }
     loadAll()
       .then(setRequests)
-      .catch((error) => reportAdminError(error, 'RFQ-заявки'))
-  }, [setRequests])
+      .catch((error) => reportAdminError(error, l('RFQ-заявки', 'RFQ requests', 'RFQ pieprasījumi')))
+  }, [setRequests, l])
 
   const products = loadedProducts
 
@@ -168,7 +158,7 @@ export default function AdminRFQPage(): React.ReactElement {
     validUntil.setDate(validUntil.getDate() + Math.min(365, Math.max(1, days || 7)))
     const ok = await setQuote(rfqId, { totalPrice: price, terms, validUntil })
     if (!ok) {
-      showToast('Не удалось отправить котировку. Попробуйте ещё раз.', 'error')
+      showToast(l('Не удалось отправить котировку. Попробуйте ещё раз.', 'Failed to send the quote. Try again.', 'Neizdevās nosūtīt piedāvājumu. Mēģiniet vēlreiz.'), 'error')
       return
     }
     setQuotePrice((p) => { const n = { ...p }; delete n[rfqId]; return n })
@@ -181,18 +171,18 @@ export default function AdminRFQPage(): React.ReactElement {
     if (!note) return
     const ok = await addNote(rfqId, note)
     if (!ok) {
-      showToast('Не удалось сохранить заметку. Попробуйте ещё раз.', 'error')
+      showToast(l('Не удалось сохранить заметку. Попробуйте ещё раз.', 'Failed to save the note. Try again.', 'Neizdevās saglabāt piezīmi. Mēģiniet vēlreiz.'), 'error')
       return
     }
     setNoteDraft((p) => { const n = { ...p }; delete n[rfqId]; return n })
   }
 
   const STATUS_TABS: { value: RFQStatus | 'all'; label: string }[] = [
-    { value: 'all',      label: `Все (${counts.all})` },
-    { value: 'pending',  label: `Новые (${counts.pending})` },
-    { value: 'quoted',   label: `Котировки (${counts.quoted})` },
-    { value: 'accepted', label: `Принятые (${counts.accepted})` },
-    { value: 'rejected', label: `Отклонённые (${counts.rejected})` },
+    { value: 'all',      label: `${l('Все', 'All', 'Visi')} (${counts.all})` },
+    { value: 'pending',  label: `${l('Новые', 'New', 'Jauni')} (${counts.pending})` },
+    { value: 'quoted',   label: `${l('Котировки', 'Quotes', 'Piedāvājumi')} (${counts.quoted})` },
+    { value: 'accepted', label: `${l('Принятые', 'Accepted', 'Pieņemtie')} (${counts.accepted})` },
+    { value: 'rejected', label: `${l('Отклонённые', 'Rejected', 'Noraidītie')} (${counts.rejected})` },
   ]
 
   return (
@@ -201,12 +191,12 @@ export default function AdminRFQPage(): React.ReactElement {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">RFQ заявки</h1>
+          <h1 className="text-3xl font-bold text-foreground">{l('RFQ-заявки', 'RFQ requests', 'RFQ pieprasījumi')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Запросы на котировку от B2B клиентов
+            {l('Запросы на котировку от B2B-клиентов', 'Quote requests from B2B customers', 'B2B klientu cenu piedāvājumu pieprasījumi')}
           </p>
         </div>
-        <Link href="/admin"><Button variant="outline">← Назад в админку</Button></Link>
+        <Link href="/admin"><Button variant="outline">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button></Link>
       </div>
 
       {/* Status filter tabs */}
@@ -254,30 +244,30 @@ export default function AdminRFQPage(): React.ReactElement {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-xs text-muted-foreground">{rfq.id}</span>
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[rfq.status]}`}>
-                      {STATUS_LABELS[rfq.status]}
+                      {statusLabel(rfq.status)}
                     </span>
                   </div>
                   <p className="text-sm font-medium text-foreground">
-                    Компания: <span className="font-medium">{rfq.companyName ?? rfq.companyId}</span>
+                    {l('Компания:', 'Company:', 'Uzņēmums:')} <span className="font-medium">{rfq.companyName ?? rfq.companyId}</span>
                   </p>
                   {(rfq.contactEmail || rfq.contactPhone) && (
                     <p className="text-xs text-muted-foreground">{[rfq.contactEmail, rfq.contactPhone].filter(Boolean).join(' · ')}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Создана: {formatDate(rfq.createdAt, 'ru-RU')}
+                    {l('Создана:', 'Created:', 'Izveidots:')} {formatDate(rfq.createdAt, locale)}
                     {rfq.timeline.length > 1 && lastEvent && (
-                      <> · Последнее обновление: {formatDate(lastEvent.at, 'ru-RU')}</>
+                      <> · {l('Последнее обновление:', 'Last updated:', 'Pēdējās izmaiņas:')} {formatDate(lastEvent.at, locale)}</>
                     )}
                   </p>
                 </div>
 
                 <div className="shrink-0 text-right space-y-1">
                   <p className="text-sm text-muted-foreground">
-                    {rfq.items.length} {rfq.items.length === 1 ? 'позиция' : rfq.items.length < 5 ? 'позиции' : 'позиций'}
+                    {rfq.items.length} {l('позиций', 'items', 'pozīcijas')}
                   </p>
                   {rfq.quote && (
                     <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                      {formatEuro(rfq.quote.totalPrice, 'ru-RU')}
+                      {formatEuro(rfq.quote.totalPrice, locale)}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">{isExpanded ? '▲' : '▼'}</p>
@@ -290,7 +280,7 @@ export default function AdminRFQPage(): React.ReactElement {
 
                   {/* Items */}
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Состав заявки</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{l('Состав заявки', 'Request items', 'Pieprasījuma saturs')}</p>
                     <div className="rounded-lg border border-border divide-y divide-border">
                       {rfq.items.map((item, idx) => {
                         const product = products.find((p) => p.id === item.productId)
@@ -305,10 +295,10 @@ export default function AdminRFQPage(): React.ReactElement {
                               )}
                             </div>
                             <div className="shrink-0 text-right">
-                              <p className="text-sm text-muted-foreground">{item.quantity} шт</p>
+                              <p className="text-sm text-muted-foreground">{item.quantity} {l('шт.', 'pcs', 'gab.')}</p>
                               {(item.listPrice ?? product?.price) !== undefined && (
                                 <p className="text-xs text-muted-foreground">
-                                  Прайс на момент запроса: {formatEuro((item.listPrice ?? product?.price ?? 0) * item.quantity, 'ru-RU')}
+                                  {l('Цена на момент запроса:', 'Price at request time:', 'Cena pieprasījuma brīdī:')} {formatEuro((item.listPrice ?? product?.price ?? 0) * item.quantity, locale)}
                                 </p>
                               )}
                             </div>
@@ -318,7 +308,7 @@ export default function AdminRFQPage(): React.ReactElement {
                     </div>
                     {rfq.notes && (
                       <p className="mt-2 text-sm text-muted-foreground italic">
-                        Комментарий клиента: «{rfq.notes}»
+                        {l('Комментарий клиента:', 'Customer comment:', 'Klienta komentārs:')} «{rfq.notes}»
                       </p>
                     )}
                   </div>
@@ -327,7 +317,7 @@ export default function AdminRFQPage(): React.ReactElement {
                   {rfq.status !== 'accepted' && rfq.status !== 'rejected' && (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-                        {rfq.status === 'quoted' ? 'Обновить котировку' : 'Отправить котировку'}
+                        {rfq.status === 'quoted' ? l('Обновить котировку', 'Update quote', 'Atjaunināt piedāvājumu') : l('Отправить котировку', 'Send quote', 'Nosūtīt piedāvājumu')}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <Input
@@ -337,7 +327,7 @@ export default function AdminRFQPage(): React.ReactElement {
                           value={quotePrice[rfq.id] ?? (rfq.quote?.totalPrice ?? '')}
                           onChange={(e) => setQuotePrice((p) => ({ ...p, [rfq.id]: e.target.value }))}
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          placeholder="Сумма, €"
+                          placeholder={l('Сумма, €', 'Total, €', 'Summa, €')}
                         />
                         <Input
                           type="number"
@@ -346,14 +336,14 @@ export default function AdminRFQPage(): React.ReactElement {
                           value={quoteValidDays[rfq.id] ?? '7'}
                           onChange={(e) => setQuoteValidDays((p) => ({ ...p, [rfq.id]: e.target.value }))}
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          placeholder="Действует, дней"
+                          placeholder={l('Действует, дней', 'Valid for, days', 'Derīgs, dienas')}
                         />
                         <Input
                           type="text"
                           value={quoteTerms[rfq.id] ?? (rfq.quote?.terms ?? '')}
                           onChange={(e) => setQuoteTerms((p) => ({ ...p, [rfq.id]: e.target.value }))}
                           className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          placeholder="Условия оплаты/поставки"
+                          placeholder={l('Условия оплаты/поставки', 'Payment/delivery terms', 'Apmaksas/piegādes nosacījumi')}
                         />
                       </div>
                       <div className="flex flex-wrap gap-2 mt-3">
@@ -363,9 +353,9 @@ export default function AdminRFQPage(): React.ReactElement {
                           disabled={!(parseFloat(quotePrice[rfq.id] ?? '') > 0) && !rfq.quote}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          {rfq.status === 'quoted' ? 'Обновить котировку' : 'Отправить котировку'}
+                          {rfq.status === 'quoted' ? l('Обновить котировку', 'Update quote', 'Atjaunināt piedāvājumu') : l('Отправить котировку', 'Send quote', 'Nosūtīt piedāvājumu')}
                         </Button>
-                        {rfq.status === 'quoted' && <p className="self-center text-xs text-muted-foreground">Ожидается решение клиента</p>}
+                        {rfq.status === 'quoted' && <p className="self-center text-xs text-muted-foreground">{l('Ожидается решение клиента', 'Waiting for the customer’s decision', 'Gaida klienta lēmumu')}</p>}
                       </div>
                     </div>
                   )}
@@ -373,7 +363,7 @@ export default function AdminRFQPage(): React.ReactElement {
                   {/* Add note */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                      Добавить заметку в историю
+                      {l('Добавить заметку в историю', 'Add note to history', 'Pievienot piezīmi vēsturei')}
                     </p>
                     <div className="flex gap-2">
                       <Input
@@ -381,7 +371,7 @@ export default function AdminRFQPage(): React.ReactElement {
                         value={noteDraft[rfq.id] ?? ''}
                         onChange={(e) => setNoteDraft((p) => ({ ...p, [rfq.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && submitNote(rfq.id)}
-                        placeholder="Внутренний комментарий..."
+                        placeholder={l('Внутренний комментарий...', 'Internal comment...', 'Iekšējs komentārs...')}
                         className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground"
                       />
                       <Button
@@ -390,7 +380,7 @@ export default function AdminRFQPage(): React.ReactElement {
                         onClick={() => submitNote(rfq.id)}
                         disabled={!(noteDraft[rfq.id] ?? '').trim()}
                       >
-                        Добавить
+                        {l('Добавить', 'Add', 'Pievienot')}
                       </Button>
                     </div>
                   </div>
@@ -398,7 +388,7 @@ export default function AdminRFQPage(): React.ReactElement {
                   {/* Timeline */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-4">
-                      История событий
+                      {l('История событий', 'Event history', 'Notikumu vēsture')}
                     </p>
                     <Timeline events={rfq.timeline} />
                   </div>
@@ -410,7 +400,7 @@ export default function AdminRFQPage(): React.ReactElement {
 
         {filtered.length === 0 && (
           <div className="rounded-xl border border-border p-10 bg-muted text-center text-sm text-muted-foreground">
-            {requests.length === 0 ? 'RFQ заявок пока нет' : 'Нет заявок по выбранным фильтрам'}
+            {requests.length === 0 ? l('RFQ-заявок пока нет', 'There are no RFQ requests yet', 'RFQ pieprasījumu vēl nav') : l('Нет заявок по выбранным фильтрам', 'No requests match the selected filters', 'Atlasītajiem filtriem neatbilst neviens pieprasījums')}
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ import NewProductForm from '@/components/admin/products/NewProductForm';
 import { logAdminAction } from '@/lib/admin-log-store';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 import type { Product } from '@/data/products';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 export default function AdminProductsPage(): React.ReactElement {
     const confirmAction = useAdminConfirm();
@@ -19,13 +20,14 @@ export default function AdminProductsPage(): React.ReactElement {
     const admin = useProductsAdmin();
     const { language } = useI18n();
     const { t } = useTranslation();
+    const { l } = useAdminLocale();
     const [archiveOpen, setArchiveOpen] = React.useState(false);
     return (
         <AdminGate>
             <main className="admin-products w-full space-y-3 text-foreground">
                 <div className="admin-products__panel rounded-lg bg-white p-4 dark:bg-gray-900">
                     <h1 className="text-2xl font-bold mb-6">
-                        {t('admin.productsPage.title') || 'Товары: управление'}
+                        {t('admin.productsPage.title') || l('Товары: управление', 'Product management', 'Produktu pārvaldība')}
                     </h1>
                     {admin.message && (
                         <p className="mb-4 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-700 dark:bg-green-900/30 dark:text-green-200">
@@ -51,7 +53,7 @@ export default function AdminProductsPage(): React.ReactElement {
                             archiveItems={admin.archiveItems}
                             onRestoreArchive={admin.handleRestoreProduct}
                             onDeleteArchive={async (id) => {
-                                const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: 'Товар будет окончательно удалён из архива без возможности восстановления.', affected: [id], confirmText: id, requireReason: true, destructive: true });
+                                const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: l('Товар будет окончательно удалён из архива без возможности восстановления.', 'The product will be permanently deleted from the archive.', 'Produkts tiks neatgriezeniski dzēsts no arhīva.'), affected: [id], confirmText: id, requireReason: true, destructive: true });
                                 if (decision.confirmed) admin.handlePurgeArchivedProduct(id);
                             }}
                         />
@@ -64,14 +66,14 @@ export default function AdminProductsPage(): React.ReactElement {
                             </h2>
                             {admin.loading ? (
                                 <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground" role="status">
-                                    Загрузка товаров…
+                                    {l('Загрузка товаров…', 'Loading products…', 'Produktu ielāde…')}
                                 </div>
                             ) : admin.viewMode === 'cards' ? (
                                 <ProductList
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={async (product: Product) => {
-                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: 'Товар исчезнет с витрины и будет перемещён в архив.', affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
+                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: l('Товар исчезнет с витрины и будет перемещён в архив.', 'The product will disappear from the storefront and move to the archive.', 'Produkts pazudīs no veikala un tiks pārvietots uz arhīvu.'), affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
                                         if (!decision.confirmed) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
@@ -84,7 +86,7 @@ export default function AdminProductsPage(): React.ReactElement {
                                     products={admin.products}
                                     onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
                                     onDeleteProduct={async (product: Product) => {
-                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: 'Товар исчезнет с витрины и будет перемещён в архив.', affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
+                                        const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: l('Товар исчезнет с витрины и будет перемещён в архив.', 'The product will disappear from the storefront and move to the archive.', 'Produkts pazudīs no veikala un tiks pārvietots uz arhīvu.'), affected: [`${product.id} — ${product.title}`], requireReason: true, destructive: true });
                                         if (!decision.confirmed) return;
                                         admin.handleDeleteProduct(product)
                                         logAdminAction('product.deleted', {
@@ -94,7 +96,7 @@ export default function AdminProductsPage(): React.ReactElement {
                                     onQuickSave={async (id, changes) => {
                                         const product = admin.products.find((p) => p.id === id)
                                         if (!product?.revision) {
-                                            throw new Error('Не удалось определить версию товара')
+                                            throw new Error(l('Не удалось определить версию товара', 'Failed to determine the product version', 'Neizdevās noteikt produkta versiju'))
                                         }
                                         const response = await fetch('/api/admin/products', {
                                             method: 'PUT',
@@ -102,7 +104,7 @@ export default function AdminProductsPage(): React.ReactElement {
                                             body: JSON.stringify({ id, revision: product.revision, changes }),
                                         })
                                         if (!response.ok) {
-                                            throw new Error('Не удалось сохранить изменения товара')
+                                            throw new Error(l('Не удалось сохранить изменения товара', 'Failed to save product changes', 'Neizdevās saglabāt produkta izmaiņas'))
                                         }
                                         await admin.reload()
                                         if (changes.price !== undefined) {
@@ -126,7 +128,7 @@ export default function AdminProductsPage(): React.ReactElement {
                                         disabled={admin.loadingMore}
                                         className="rounded-md border border-border bg-card px-5 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:cursor-wait disabled:opacity-60"
                                     >
-                                        {admin.loadingMore ? 'Загрузка…' : `Показать ещё (${admin.products.length} из ${admin.total})`}
+                                        {admin.loadingMore ? l('Загрузка…', 'Loading…', 'Ielāde…') : l(`Показать ещё (${admin.products.length} из ${admin.total})`, `Show more (${admin.products.length} of ${admin.total})`, `Rādīt vairāk (${admin.products.length} no ${admin.total})`)}
                                     </button>
                                 </div>
                             )}

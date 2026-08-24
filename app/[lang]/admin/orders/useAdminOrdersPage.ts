@@ -8,11 +8,8 @@ import { formatEuro } from '@/lib/utils';
 import { useTranslation } from '@/lib/use-translation';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 import {
-    DELIVERY_LABELS,
     ALLOWED_STATUS_TRANSITIONS,
     ORDERS_PAGE_SIZE,
-    PAYMENT_LABELS,
-    STATUS_LABELS,
     STATUS_LIST,
     type CatalogProduct,
     type EditItem,
@@ -97,7 +94,7 @@ function useAdminOrdersPageState() {
             if (!res.ok) throw new Error(payload?.error ?? 'payment_update_failed');
             patchPageItem(payload.order as Order);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось отметить заказ оплаченным');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось отметить заказ оплаченным', 'Failed to mark the order as paid', 'Neizdevās atzīmēt pasūtījumu kā apmaksātu'));
         } finally {
             setPaymentSavingIds((prev) => {
                 const next = new Set(prev);
@@ -113,7 +110,7 @@ function useAdminOrdersPageState() {
             setStatsRefreshTick((t) => t + 1);
             setPageRefreshTick((t) => t + 1);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось изменить статус');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось изменить статус', 'Failed to change status', 'Neizdevās mainīt statusu'));
         }
     };
     const setOrderNote = async (orderId: string, note: string): Promise<boolean> => {
@@ -122,12 +119,33 @@ function useAdminOrdersPageState() {
             await persistOrderNote(orderId, note);
             return true;
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось сохранить заметку');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось сохранить заметку', 'Failed to save note', 'Neizdevās saglabāt piezīmi'));
             return false;
         }
     };
     const { language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
+    const l = React.useCallback((ru: string, en: string, lv: string) => language === 'ru' ? ru : language === 'lv' ? lv : en, [language]);
+    const STATUS_LABELS: Record<OrderStatus, string> = {
+        pending: l('Новый', 'New', 'Jauns'),
+        confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
+        shipped: l('Отправлен', 'Shipped', 'Nosūtīts'),
+        delivered: l('Доставлен', 'Delivered', 'Piegādāts'),
+        cancelled: l('Отменён', 'Cancelled', 'Atcelts'),
+    };
+    const PAYMENT_LABELS: Record<string, string> = {
+        unpaid: l('Не оплачен', 'Unpaid', 'Nav apmaksāts'),
+        pending: l('Ожидает оплаты', 'Awaiting payment', 'Gaida apmaksu'),
+        paid: l('Оплачен', 'Paid', 'Apmaksāts'),
+        refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
+        failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
+    };
+    const DELIVERY_LABELS: Record<string, string> = {
+        courier: l('Курьер', 'Courier', 'Kurjers'),
+        pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
+        post: l('Почта (Omniva)', 'Post (Omniva)', 'Pasts (Omniva)'),
+        venipak: 'Venipak',
+    };
 
     const searchParams = useSearchParams();
     const [search, setSearch] = useState('');
@@ -187,10 +205,10 @@ function useAdminOrdersPageState() {
                 setPageItems([]);
                 setFilteredCount(0);
                 setHydrationStatus('error');
-                reportAdminError(error instanceof Error ? error : new Error('orders_page_load_failed'), 'Заказы');
+                reportAdminError(error instanceof Error ? error : new Error('orders_page_load_failed'), l('Заказы', 'Orders', 'Pasūtījumi'));
             });
         return () => controller.abort();
-    }, [debouncedSearch, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir, page, pageRefreshTick]);
+    }, [debouncedSearch, statusFilter, paymentFilter, deliveryFilter, sortField, sortDir, page, pageRefreshTick, l]);
 
     // ── Global stats (independent of which page is currently shown) ──────────
     const [statsByStatus, setStatsByStatus] = useState<Record<OrderStatus, number>>(EMPTY_STATUS_COUNTS);
@@ -288,7 +306,7 @@ function useAdminOrdersPageState() {
             setStatsRefreshTick((t) => t + 1);
             setPageRefreshTick((t) => t + 1);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось изменить статусы');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось изменить статусы', 'Failed to change statuses', 'Neizdevās mainīt statusus'));
         }
     };
 
@@ -346,7 +364,7 @@ function useAdminOrdersPageState() {
         ${items}
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
         <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px">
-          <span>Итого</span><span>${formatEuro(order.total, locale)}</span>
+          <span>${l('Итого', 'Total', 'Kopā')}</span><span>${formatEuro(order.total, locale)}</span>
         </div>
       </div>`;
             })
@@ -354,7 +372,7 @@ function useAdminOrdersPageState() {
 
         const win = window.open('', '_blank', 'width=820,height=700');
         if (!win) return;
-        win.document.write(`<!DOCTYPE html><html><head><title>Заказы</title>
+        win.document.write(`<!DOCTYPE html><html><head><title>${l('Заказы', 'Orders', 'Pasūtījumi')}</title>
       <style>body{font-family:sans-serif;padding:20px;max-width:760px;margin:0 auto}@media print{body{padding:0}}</style>
       </head><body>${rows}</body></html>`);
         win.document.close();
@@ -403,7 +421,7 @@ function useAdminOrdersPageState() {
                 .then((d: { data?: { products?: CatalogProduct[] } }) =>
                     setCatalog(d.data?.products ?? [])
                 )
-                .catch((error) => reportAdminError(error, 'Каталог для редактирования заказа'));
+                .catch((error) => reportAdminError(error, l('Каталог для редактирования заказа', 'Catalog for order editing', 'Katalogs pasūtījuma rediģēšanai')));
         }
     };
 
@@ -434,7 +452,7 @@ function useAdminOrdersPageState() {
             setEditingOrderId(null);
             setEditProductSearch('');
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось сохранить заказ');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось сохранить заказ', 'Failed to save order', 'Neizdevās saglabāt pasūtījumu'));
         } finally {
             setEditSaving(false);
         }
@@ -527,8 +545,8 @@ function useAdminOrdersPageState() {
         try {
             const all = await fetchAllMatchingOrders();
             const header = [
-                'ID', 'Дата', 'Имя', 'Фамилия', 'Email', 'Телефон', 'Статус', 'Оплата',
-                'Доставка', 'Адрес', 'Город', 'Индекс', 'Товары', 'Сумма',
+                'ID', l('Дата', 'Date', 'Datums'), l('Имя', 'First name', 'Vārds'), l('Фамилия', 'Last name', 'Uzvārds'), 'Email', l('Телефон', 'Phone', 'Tālrunis'), l('Статус', 'Status', 'Statuss'), l('Оплата', 'Payment', 'Apmaksa'),
+                l('Доставка', 'Delivery', 'Piegāde'), l('Адрес', 'Address', 'Adrese'), l('Город', 'City', 'Pilsēta'), l('Индекс', 'Postal code', 'Pasta indekss'), l('Товары', 'Products', 'Produkti'), l('Сумма', 'Total', 'Summa'),
             ];
             const rows = all.map((o) => {
                 const status = getOrderStatus(o.id);
@@ -551,7 +569,7 @@ function useAdminOrdersPageState() {
             });
             downloadCSV([header, ...rows], `orders-${csvDate()}.csv`);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось выгрузить заказы');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось выгрузить заказы', 'Failed to export orders', 'Neizdevās eksportēt pasūtījumus'));
         } finally {
             setExportingOrders(false);
         }
@@ -562,7 +580,7 @@ function useAdminOrdersPageState() {
         try {
             const all = await fetchAllMatchingOrders();
             const seen = new Set<string>();
-            const header = ['Имя', 'Фамилия', 'Email', 'Телефон', 'Город', 'Заказов', 'Сумма (€)'];
+            const header = [l('Имя', 'First name', 'Vārds'), l('Фамилия', 'Last name', 'Uzvārds'), 'Email', l('Телефон', 'Phone', 'Tālrunis'), l('Город', 'City', 'Pilsēta'), l('Заказов', 'Orders', 'Pasūtījumi'), l('Сумма (€)', 'Total (€)', 'Summa (€)')];
             const rows: string[][] = [];
             all.forEach((o) => {
                 if (seen.has(o.email)) return;
@@ -576,7 +594,7 @@ function useAdminOrdersPageState() {
             });
             downloadCSV([header, ...rows], `customers-${csvDate()}.csv`);
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : 'Не удалось выгрузить клиентов');
+            setMutationError(error instanceof Error ? error.message : l('Не удалось выгрузить клиентов', 'Failed to export customers', 'Neizdevās eksportēt klientus'));
         } finally {
             setExportingCustomers(false);
         }

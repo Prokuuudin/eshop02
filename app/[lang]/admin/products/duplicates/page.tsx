@@ -7,6 +7,7 @@ import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { formatEuro } from '@/lib/utils'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ function normalizeTitle(t: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function DuplicatesPage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -48,9 +50,9 @@ export default function DuplicatesPage(): React.ReactElement {
       .then((data: { data?: { products?: CatalogProduct[] } }) => {
         setProducts(data.data?.products ?? [])
       })
-      .catch((error) => setLoadError(classifyAdminError(error, 'Каталог').message))
+      .catch((error) => setLoadError(classifyAdminError(error, l('Каталог', 'Catalog', 'Katalogs')).message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [l])
 
   const groups = useMemo<DuplicateGroup[]>(() => {
     const result: DuplicateGroup[] = []
@@ -68,7 +70,7 @@ export default function DuplicatesPage(): React.ReactElement {
       result.push({
         key: `title:${key}`,
         reason: 'title',
-        reasonLabel: 'Одинаковое название',
+        reasonLabel: l('Одинаковое название', 'Identical title', 'Vienāds nosaukums'),
         products: group,
       })
       group.forEach((p) => seen.add(p.id))
@@ -88,13 +90,13 @@ export default function DuplicatesPage(): React.ReactElement {
       result.push({
         key: `sku:${key}`,
         reason: 'sku',
-        reasonLabel: `Одинаковый SKU: ${group[0].sku}`,
+        reasonLabel: l(`Одинаковый SKU: ${group[0].sku}`, `Identical SKU: ${group[0].sku}`, `Vienāds SKU: ${group[0].sku}`),
         products: group,
       })
     })
 
     return result.sort((a, b) => b.products.length - a.products.length)
-  }, [products])
+  }, [products, l])
 
   const filtered = filter === 'all' ? groups : groups.filter((g) => g.reason === filter)
 
@@ -119,25 +121,25 @@ export default function DuplicatesPage(): React.ReactElement {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Дубликаты товаров</h1>
+            <h1 className="text-2xl font-bold text-foreground">{l('Дубликаты товаров', 'Duplicate products', 'Produktu dublikāti')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Товары с одинаковым названием или SKU — возможные дубликаты после импорта.
+              {l('Товары с одинаковым названием или SKU — возможные дубликаты после импорта.', 'Products with the same title or SKU may be duplicates created during import.', 'Produkti ar vienādu nosaukumu vai SKU var būt importa laikā izveidoti dublikāti.')}
             </p>
           </div>
           <div className="flex gap-2">
-            <Link href="/admin/products"><Button variant="outline">← Товары</Button></Link>
+            <Link href="/admin/products"><Button variant="outline">← {l('Товары', 'Products', 'Produkti')}</Button></Link>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">Загрузка каталога...</div>
+          <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка каталога...', 'Loading catalog...', 'Kataloga ielāde...')}</div>
         ) : loadError ? (
           <div role="alert" className="rounded-xl border border-red-300 bg-red-50 px-5 py-8 text-center text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
         ) : groups.length === 0 ? (
           <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 px-5 py-8 text-center">
-            <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">Дубликатов не найдено</p>
+            <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">{l('Дубликатов не найдено', 'No duplicates found', 'Dublikāti nav atrasti')}</p>
             <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
-              Все {products.length} товаров имеют уникальные названия и SKU.
+              {l(`Все ${products.length} товаров имеют уникальные названия и SKU.`, `All ${products.length} products have unique titles and SKUs.`, `Visiem ${products.length} produktiem ir unikāli nosaukumi un SKU.`)}
             </p>
           </div>
         ) : (
@@ -146,9 +148,9 @@ export default function DuplicatesPage(): React.ReactElement {
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-wrap gap-2">
                 {([
-                  { value: 'all' as const, label: `Все (${groups.length})` },
-                  { value: 'title' as const, label: `По названию (${counts.title})` },
-                  { value: 'sku' as const, label: `По SKU (${counts.sku})` },
+                  { value: 'all' as const, label: `${l('Все', 'All', 'Visi')} (${groups.length})` },
+                  { value: 'title' as const, label: `${l('По названию', 'By title', 'Pēc nosaukuma')} (${counts.title})` },
+                  { value: 'sku' as const, label: `${l('По SKU', 'By SKU', 'Pēc SKU')} (${counts.sku})` },
                 ]).map((tab) => (
                   <button
                     key={tab.value}
@@ -166,7 +168,7 @@ export default function DuplicatesPage(): React.ReactElement {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground ml-auto">
-                {products.length} товаров проверено
+                {products.length} {l('товаров проверено', 'products checked', 'produkti pārbaudīti')}
               </p>
             </div>
 
@@ -202,7 +204,7 @@ export default function DuplicatesPage(): React.ReactElement {
                             ? 'bg-amber-200 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
                             : 'bg-orange-200 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300',
                         ].join(' ')}>
-                          {group.products.length} товара
+                          {group.products.length} {l('товара', 'products', 'produkti')}
                         </span>
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">
@@ -223,7 +225,7 @@ export default function DuplicatesPage(): React.ReactElement {
                             <div className="h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-muted border border-border">
                               {p.image
                                 ? <Image unoptimized src={p.image} alt={p.title} width={48} height={48} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">нет</div>
+                                : <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">{l('нет', 'none', 'nav')}</div>
                               }
                             </div>
 
@@ -234,7 +236,7 @@ export default function DuplicatesPage(): React.ReactElement {
                                   {p.title}
                                 </p>
                                 {i === 0 && (
-                                  <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">оригинал?</span>
+                                  <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{l('оригинал?', 'original?', 'oriģināls?')}</span>
                                 )}
                               </div>
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
@@ -248,10 +250,10 @@ export default function DuplicatesPage(): React.ReactElement {
                             {/* Price + stock */}
                             <div className="shrink-0 text-right">
                               <p className="text-sm font-semibold text-foreground">
-                                {formatEuro(p.price, 'ru-RU')}
+                                {formatEuro(p.price, locale)}
                               </p>
                               <p className={`text-xs mt-0.5 ${p.stock === 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                                {p.stock === 0 ? 'Нет в наличии' : `${p.stock} шт`}
+                                {p.stock === 0 ? l('Нет в наличии', 'Out of stock', 'Nav noliktavā') : `${p.stock} ${l('шт.', 'pcs', 'gab.')}`}
                               </p>
                             </div>
 
@@ -260,7 +262,7 @@ export default function DuplicatesPage(): React.ReactElement {
                               href={`/admin/products/${p.id}`}
                               className="shrink-0 rounded-lg border border-primary/50 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors whitespace-nowrap"
                             >
-                              Редактировать
+                              {l('Редактировать', 'Edit', 'Rediģēt')}
                             </Link>
                           </div>
                         ))}

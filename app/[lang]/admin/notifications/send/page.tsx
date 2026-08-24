@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 import { reportAdminError } from '@/lib/admin-ui-errors'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type DbUser = {
   id: string
@@ -26,6 +27,7 @@ type SendResult = {
 
 export default function AdminNotificationsSendPage(): React.ReactElement {
   const { t } = useTranslation()
+  const { l } = useAdminLocale()
 
   // Users state
   const [users, setUsers] = useState<DbUser[]>([])
@@ -58,11 +60,11 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
           setUsers(data.users)
         }
       })
-      .catch((error) => reportAdminError(error, 'Получатели рассылки'))
+      .catch((error) => reportAdminError(error, l('Получатели рассылки', 'Broadcast recipients', 'Izsūtnes saņēmēji')))
       .finally(() => {
         setUsersLoading(false)
       })
-  }, [])
+  }, [l])
 
   // Filtered users
   const filteredUsers = useMemo(() => {

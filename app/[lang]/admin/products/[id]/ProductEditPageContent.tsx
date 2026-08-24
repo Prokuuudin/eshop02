@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import AddProductForm from '@/components/admin/products/AddProductForm';
 import type { AddProductFormValues } from '@/components/admin/products/productFormSchema';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface ProductEditPageContentProps {
     productId: string;
@@ -19,6 +20,7 @@ export default function ProductEditPageContent({
     initialValues,
     revision,
 }: ProductEditPageContentProps): React.ReactElement {
+    const { l } = useAdminLocale();
     return (
         <AdminGate>
             <main className="admin-products w-full space-y-4 text-foreground">
@@ -28,13 +30,13 @@ export default function ProductEditPageContent({
                             href="/admin/products"
                             className="text-sm text-primary hover:underline"
                         >
-                            ← Все товары
+                            ← {l('Все товары', 'All products', 'Visi produkti')}
                         </Link>
                         <span className="text-muted-foreground">/</span>
                         <span className="text-sm text-muted-foreground truncate">{productTitle}</span>
                     </div>
                     <h1 className="text-2xl font-bold mb-6">
-                        Редактирование: {productTitle}
+                        {l('Редактирование:', 'Editing:', 'Rediģēšana:')} {productTitle}
                     </h1>
                     <AddProductForm
                         mode="edit"

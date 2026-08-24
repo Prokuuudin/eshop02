@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Download, Grid2X2, LayoutList } from 'lucide-react';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,8 +28,8 @@ function fmtBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function fmtDate(iso: string): string {
-    return new Date(iso).toLocaleString('ru-RU', {
+function fmtDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleString(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -42,6 +43,7 @@ function fmtDate(iso: string): string {
 import { useAdminMediaPage } from './useAdminMediaPage';
 
 export default function AdminMediaPage(): React.ReactElement {
+    const { locale, l } = useAdminLocale();
     const pageState = useAdminMediaPage();
     const {
             files,
@@ -86,19 +88,18 @@ export default function AdminMediaPage(): React.ReactElement {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                            Медиа-библиотека
+                            {l('Медиа-библиотека', 'Media library', 'Mediju bibliotēka')}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Хранилище в базе данных · {files.length} файлов · {imgCount} изображений
-                            · {fmtBytes(totalSize)}
+                            {l('Хранилище в базе данных', 'Database storage', 'Datu bāzes krātuve')} · {files.length} {l('файлов', 'files', 'faili')} · {imgCount} {l('изображений', 'images', 'attēli')} · {fmtBytes(totalSize)}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/admin/content">
-                            <Button variant="outline">← Контент</Button>
+                            <Button variant="outline">← {l('Контент', 'Content', 'Saturs')}</Button>
                         </Link>
                         <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                            {uploading ? 'Загрузка...' : '+ Загрузить'}
+                            {uploading ? l('Загрузка...', 'Uploading...', 'Augšupielāde...') : `+ ${l('Загрузить', 'Upload', 'Augšupielādēt')}`}
                         </Button>
                         <input
                             ref={fileInputRef}
@@ -136,7 +137,7 @@ export default function AdminMediaPage(): React.ReactElement {
                     <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Поиск по имени..."
+                        placeholder={l('Поиск по имени...', 'Search by name...', 'Meklēt pēc nosaukuma...')}
                         className="w-52 h-8 text-sm"
                     />
 
@@ -153,7 +154,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                         : 'text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800'
                                 }`}
                             >
-                                {f === 'all' ? 'Все' : f === 'image' ? 'Изображения' : 'Прочие'}
+                                {f === 'all' ? l('Все', 'All', 'Visi') : f === 'image' ? l('Изображения', 'Images', 'Attēli') : l('Прочие', 'Other', 'Citi')}
                             </button>
                         ))}
                     </div>
@@ -164,9 +165,9 @@ export default function AdminMediaPage(): React.ReactElement {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="date">По дате</SelectItem>
-                            <SelectItem value="name">По имени</SelectItem>
-                            <SelectItem value="size">По размеру</SelectItem>
+                            <SelectItem value="date">{l('По дате', 'By date', 'Pēc datuma')}</SelectItem>
+                            <SelectItem value="name">{l('По имени', 'By name', 'Pēc nosaukuma')}</SelectItem>
+                            <SelectItem value="size">{l('По размеру', 'By size', 'Pēc izmēra')}</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -197,7 +198,7 @@ export default function AdminMediaPage(): React.ReactElement {
                     </div>
 
                     <span className="text-xs text-muted-foreground ml-1">
-                        {displayed.length} из {files.length}
+                        {displayed.length} {l('из', 'of', 'no')} {files.length}
                     </span>
                 </div>
 
@@ -205,7 +206,7 @@ export default function AdminMediaPage(): React.ReactElement {
                 {checkedNames.size > 0 && (
                     <div className="flex items-center gap-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-2.5">
                         <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                            Выбрано: {checkedNames.size}
+                            {l('Выбрано:', 'Selected:', 'Atlasīti:')} {checkedNames.size}
                         </span>
                         <Button
                             size="sm"
@@ -213,7 +214,7 @@ export default function AdminMediaPage(): React.ReactElement {
                             disabled={bulkDeleting}
                             onClick={() => void onBulkDelete()}
                         >
-                            {bulkDeleting ? 'Удаление...' : `Удалить ${checkedNames.size}`}
+                            {bulkDeleting ? l('Удаление...', 'Deleting...', 'Dzēšana...') : `${l('Удалить', 'Delete', 'Dzēst')} ${checkedNames.size}`}
                         </Button>
                         <Button
                             size="sm"
@@ -221,24 +222,24 @@ export default function AdminMediaPage(): React.ReactElement {
                             onClick={() => setCheckedNames(new Set())}
                             className="ml-auto text-red-700 dark:text-red-300"
                         >
-                            Снять выбор
+                            {l('Снять выбор', 'Clear selection', 'Noņemt atlasi')}
                         </Button>
                     </div>
                 )}
 
                 {loading ? (
-                    <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
+                    <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка...', 'Loading...', 'Ielāde...')}</div>
                 ) : files.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-border p-12 text-center">
                         <p className="text-sm text-muted-foreground mb-3">
-                            Нет загруженных файлов.
+                            {l('Нет загруженных файлов.', 'No files uploaded.', 'Nav augšupielādētu failu.')}
                         </p>
                         <Button onClick={() => fileInputRef.current?.click()}>
-                            Загрузить первый файл
+                            {l('Загрузить первый файл', 'Upload first file', 'Augšupielādēt pirmo failu')}
                         </Button>
                     </div>
                 ) : displayed.length === 0 ? (
-                    <div className="py-10 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+                    <div className="py-10 text-center text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</div>
                 ) : (
                     <div className="flex gap-4 items-start">
                         {/* Main area */}
@@ -256,7 +257,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                         }
                                         onCheckedChange={toggleAll}
                                     />
-                                    Выбрать все ({displayed.length})
+                                    {l('Выбрать все', 'Select all', 'Atlasīt visu')} ({displayed.length})
                                 </label>
                             </div>
 
@@ -283,7 +284,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                                 {/* Checkbox */}
                                                 <div className="absolute top-1.5 left-1.5 z-10 cursor-pointer">
                                                     <Checkbox
-                                                        aria-label={`Выбрать ${file.name}`}
+                                                        aria-label={`${l('Выбрать', 'Select', 'Atlasīt')} ${file.name}`}
                                                         checked={isChecked}
                                                         onCheckedChange={() =>
                                                             toggleCheck(file.name)
@@ -347,16 +348,16 @@ export default function AdminMediaPage(): React.ReactElement {
                                             <tr>
                                                 <th className="w-8 px-3 py-2.5"></th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
-                                                    Файл
+                                                    {l('Файл', 'File', 'Fails')}
                                                 </th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
-                                                    Размер
+                                                    {l('Размер', 'Size', 'Izmērs')}
                                                 </th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
-                                                    Дата
+                                                    {l('Дата', 'Date', 'Datums')}
                                                 </th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
-                                                    Используется
+                                                    {l('Используется', 'Used in', 'Izmantots')}
                                                 </th>
                                                 <th className="px-3 py-2.5"></th>
                                             </tr>
@@ -414,12 +415,12 @@ export default function AdminMediaPage(): React.ReactElement {
                                                             {fmtBytes(file.size)}
                                                         </td>
                                                         <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">
-                                                            {fmtDate(file.modifiedAt)}
+                                                            {fmtDate(file.modifiedAt, locale)}
                                                         </td>
                                                         <td className="px-3 py-2.5 text-xs text-muted-foreground">
                                                             {usedIn?.length ? (
                                                                 <span className="text-primary">
-                                                                    {usedIn.length} товаров
+                                                                    {usedIn.length} {l('товаров', 'products', 'produkti')}
                                                                 </span>
                                                             ) : (
                                                                 '—'
@@ -447,7 +448,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                                             >
                                                                 {copied === file.path
                                                                     ? '✓'
-                                                                    : 'Копировать'}
+                                                                    : l('Копировать', 'Copy', 'Kopēt')}
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -496,12 +497,12 @@ export default function AdminMediaPage(): React.ReactElement {
                                 {/* Meta */}
                                 <div className="text-xs text-muted-foreground space-y-1">
                                     <p>
-                                        Размер: <strong>{fmtBytes(selected.size)}</strong>
+                                        {l('Размер:', 'Size:', 'Izmērs:')} <strong>{fmtBytes(selected.size)}</strong>
                                     </p>
                                     <p>
-                                        Тип: <strong>{selected.ext.toUpperCase()}</strong>
+                                        {l('Тип:', 'Type:', 'Tips:')} <strong>{selected.ext.toUpperCase()}</strong>
                                     </p>
-                                    <p>Изменён: {fmtDate(selected.modifiedAt)}</p>
+                                    <p>{l('Изменён:', 'Modified:', 'Mainīts:')} {fmtDate(selected.modifiedAt, locale)}</p>
                                 </div>
 
                                 {/* Usage */}
@@ -510,13 +511,13 @@ export default function AdminMediaPage(): React.ReactElement {
                                     if (!usedIn?.length)
                                         return (
                                             <p className="text-xs text-muted-foreground">
-                                                Не используется в товарах
+                                                {l('Не используется в товарах', 'Not used in products', 'Netiek izmantots produktos')}
                                             </p>
                                         );
                                     return (
                                         <div className="text-xs">
                                             <p className="font-medium text-primary dark:text-primary mb-1">
-                                                Используется в {usedIn.length} товарах:
+                                                {l(`Используется в ${usedIn.length} товарах:`, `Used in ${usedIn.length} products:`, `Izmantots ${usedIn.length} produktos:`)}
                                             </p>
                                             <div className="space-y-0.5 max-h-24 overflow-y-auto">
                                                 {usedIn.map((t, i) => (
@@ -534,7 +535,7 @@ export default function AdminMediaPage(): React.ReactElement {
 
                                 {/* Path copy */}
                                 <div className="space-y-1.5">
-                                    <p className="text-xs text-muted-foreground">Путь:</p>
+                                    <p className="text-xs text-muted-foreground">{l('Путь:', 'Path:', 'Ceļš:')}</p>
                                     <code className="block text-xs bg-muted rounded px-2 py-1.5 break-all text-foreground">
                                         {selected.path}
                                     </code>
@@ -552,8 +553,8 @@ export default function AdminMediaPage(): React.ReactElement {
                                         }
                                     >
                                         {copied === selected.path
-                                            ? '✓ Скопировано!'
-                                            : 'Копировать путь'}
+                                            ? l('✓ Скопировано!', '✓ Copied!', '✓ Nokopēts!')
+                                            : l('Копировать путь', 'Copy path', 'Kopēt ceļu')}
                                     </Button>
                                 </div>
 
@@ -565,7 +566,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                         rel="noreferrer"
                                         className="flex items-center justify-center gap-1.5 text-xs rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                     >
-                                        <Download className="h-3.5 w-3.5" /> Открыть ↗
+                                        <Download className="h-3.5 w-3.5" /> {l('Открыть', 'Open', 'Atvērt')} ↗
                                     </a>
 
                                     {selected.isImage && (
@@ -576,8 +577,8 @@ export default function AdminMediaPage(): React.ReactElement {
                                             className="text-xs rounded-lg border border-primary/50 dark:border-primary/50 px-3 py-1.5 text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors disabled:opacity-50"
                                         >
                                             {replacing
-                                                ? 'Замена...'
-                                                : 'Заменить файл (путь не изменится)'}
+                                                ? l('Замена...', 'Replacing...', 'Aizstāšana...')
+                                                : l('Заменить файл (путь не изменится)', 'Replace file (path stays unchanged)', 'Aizstāt failu (ceļš nemainīsies)')}
                                         </button>
                                     )}
 
@@ -587,7 +588,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                         className="w-full text-xs"
                                         onClick={() => void onDelete(selected)}
                                     >
-                                        Удалить файл
+                                        {l('Удалить файл', 'Delete file', 'Dzēst failu')}
                                     </Button>
                                 </div>
                             </div>

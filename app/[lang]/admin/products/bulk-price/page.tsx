@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type Product = {
     id: string;
@@ -85,8 +86,8 @@ async function mapWithConcurrency<T, R>(items: T[], worker: (item: T) => Promise
     return results;
 }
 
-function formatMoney(v: number) {
-    return v.toLocaleString('ru-RU', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatMoney(v: number, locale: string) {
+    return v.toLocaleString(locale, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
@@ -95,18 +96,19 @@ function calcNewPrice(price: number, mode: AdjustMode, value: number): number {
     return Math.max(0, value);
 }
 
-function describeChange(mode: AdjustMode, value: number, oldPriceAction: OldPriceAction): string {
-    if (!Number.isFinite(value) && oldPriceAction === 'clear') return 'Убрать зачёркнутую цену';
+function describeChange(mode: AdjustMode, value: number, oldPriceAction: OldPriceAction, locale: string, l: (ru: string, en: string, lv: string) => string): string {
+    if (!Number.isFinite(value) && oldPriceAction === 'clear') return l('Убрать зачёркнутую цену', 'Remove crossed-out price', 'Noņemt pārsvītroto cenu');
     const base = mode === 'percent'
         ? `${value > 0 ? '+' : ''}${value}%`
         : mode === 'fixed_add'
-            ? `${value > 0 ? '+' : ''}${formatMoney(value)}`
-            : `цена = ${formatMoney(value)}`;
-    if (oldPriceAction === 'save_current') return `${base}, старая цена зачёркнута`;
-    return `${base}, старая цена убрана`;
+            ? `${value > 0 ? '+' : ''}${formatMoney(value, locale)}`
+            : `${l('цена', 'price', 'cena')} = ${formatMoney(value, locale)}`;
+    if (oldPriceAction === 'save_current') return `${base}, ${l('старая цена зачёркнута', 'old price crossed out', 'vecā cena pārsvītrota')}`;
+    return `${base}, ${l('старая цена убрана', 'old price removed', 'vecā cena noņemta')}`;
 }
 
 export default function BulkPricePage(): React.ReactElement {
+    const { locale, l } = useAdminLocale();
     const [products, setProducts] = useState<Product[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -146,7 +148,7 @@ export default function BulkPricePage(): React.ReactElement {
     }, []);
 
     useEffect(() => {
-        refreshBatches();
+        queueMicrotask(() => void refreshBatches());
     }, [refreshBatches]);
 
     useEffect(() => {
@@ -155,7 +157,7 @@ export default function BulkPricePage(): React.ReactElement {
     }, [searchInput]);
 
     useEffect(() => {
-        setPage(1);
+        queueMicrotask(() => setPage(1));
     }, [search, catFilter]);
 
     const buildParams = useCallback((pageToLoad: number) => {
@@ -178,7 +180,7 @@ export default function BulkPricePage(): React.ReactElement {
     }, [buildParams]);
 
     useEffect(() => {
-        loadPage(page);
+        queueMicrotask(() => void loadPage(page));
     }, [page, loadPage]);
 
     const numValue = parseFloat(value);
@@ -223,7 +225,7 @@ export default function BulkPricePage(): React.ReactElement {
 
     const getAllProducts = async (): Promise<Product[]> => {
         const res = await fetch('/api/admin/products');
-        if (!res.ok) throw new Error('Не удалось загрузить актуальные данные товаров');
+        if (!res.ok) throw new Error(l('Не удалось загрузить актуальные данные товаров', 'Failed to load current product data', 'Neizdevās ielādēt aktuālos produktu datus'));
         const json: { data?: { products?: Product[] } } = await res.json();
         return Array.isArray(json.data?.products) ? json.data.products : [];
     };
@@ -238,15 +240,15 @@ export default function BulkPricePage(): React.ReactElement {
             const json: { error?: string; data?: { product?: { revision?: number } } } = await res.json().catch(() => ({}));
             if (!res.ok) {
                 const error = res.status === 409
-                    ? 'Товар уже изменён. Обновите данные и проверьте рассчитанную цену.'
+                    ? l('Товар уже изменён. Обновите данные и проверьте рассчитанную цену.', 'The product has already changed. Refresh the data and verify the calculated price.', 'Produkts jau ir mainīts. Atjauniniet datus un pārbaudiet aprēķināto cenu.')
                     : res.status === 400 && json.error === 'invalid_product'
-                        ? 'Рассчитанная цена недопустима. Допустимый диапазон: от 0 до 99 999 999,99 €.'
-                    : json.error || (res.status >= 500 ? 'Ошибка сервера. Попробуйте ещё раз.' : 'Изменение отклонено сервером.');
+                        ? l('Рассчитанная цена недопустима. Допустимый диапазон: от 0 до 99 999 999,99 €.', 'The calculated price is invalid. Allowed range: €0 to €99,999,999.99.', 'Aprēķinātā cena nav derīga. Atļautais diapazons: no 0 līdz 99 999 999,99 €.')
+                    : json.error || (res.status >= 500 ? l('Ошибка сервера. Попробуйте ещё раз.', 'Server error. Try again.', 'Servera kļūda. Mēģiniet vēlreiz.') : l('Изменение отклонено сервером.', 'The change was rejected by the server.', 'Serveris noraidīja izmaiņu.'));
                 return { status: 'err', revision, error, httpStatus: res.status };
             }
             return { status: 'ok', revision: json.data?.product?.revision ?? revision };
         } catch {
-            return { status: 'err', revision, error: 'Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.' };
+            return { status: 'err', revision, error: l('Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.', 'Cannot reach the server. Check your connection and try again.', 'Nav savienojuma ar serveri. Pārbaudiet savienojumu un mēģiniet vēlreiz.') };
         }
     };
 
@@ -271,7 +273,7 @@ export default function BulkPricePage(): React.ReactElement {
         const ok = items.filter((i) => i.status === 'ok').length;
         const err = items.length - ok;
         setLastResult({
-            kind: 'apply', appliedAt: new Date(), description: describeChange(mode, numValue, oldPriceAction),
+            kind: 'apply', appliedAt: new Date(), description: describeChange(mode, numValue, oldPriceAction, locale, l),
             ok, err, items, mode, value: priceAdjustmentValid ? numValue : undefined, oldPriceAction,
         });
         if (ok > 0) await Promise.all([loadPage(page), refreshBatches()]);
@@ -286,17 +288,17 @@ export default function BulkPricePage(): React.ReactElement {
             const res = await fetch(`/api/admin/products/price-batches/${batch.requestId}/revert`, { method: 'POST' });
             const json: { data?: { ok?: number; err?: number; items?: ResultItem[] }; error?: string } = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setActionMessage(json.error || 'Не удалось выполнить возврат цен.');
+                setActionMessage(json.error || l('Не удалось выполнить возврат цен.', 'Failed to revert prices.', 'Neizdevās atjaunot cenas.'));
             } else {
                 const items = json.data?.items ?? [];
                 setLastResult({
                     kind: 'revert', appliedAt: new Date(),
-                    description: `Возврат цен: партия от ${new Date(batch.appliedAt).toLocaleString('ru-RU')}`,
+                    description: l(`Возврат цен: партия от ${new Date(batch.appliedAt).toLocaleString(locale)}`, `Price revert: batch from ${new Date(batch.appliedAt).toLocaleString(locale)}`, `Cenu atjaunošana: partija no ${new Date(batch.appliedAt).toLocaleString(locale)}`),
                     ok: json.data?.ok ?? 0, err: json.data?.err ?? 0, items,
                 });
             }
         } catch {
-            setActionMessage('Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.');
+            setActionMessage(l('Нет связи с сервером. Проверьте подключение и попробуйте ещё раз.', 'Cannot reach the server. Check your connection and try again.', 'Nav savienojuma ar serveri. Pārbaudiet savienojumu un mēģiniet vēlreiz.'));
         } finally {
             setSaving(false);
             await Promise.all([loadPage(page), refreshBatches()]);
@@ -318,19 +320,19 @@ export default function BulkPricePage(): React.ReactElement {
             setActionMessage(
                 current.length > 0
                     ? `Загружены актуальные данные для ${current.length} товар(ов). Проверьте новые цены в таблице и снова нажмите «Применить».`
-                    : 'Не удалось найти товары для повторной проверки. Возможно, они были удалены.'
+                    : l('Не удалось найти товары для повторной проверки. Возможно, они были удалены.', 'Products for rechecking could not be found. They may have been deleted.', 'Atkārtotai pārbaudei produkti netika atrasti. Iespējams, tie ir dzēsti.')
             );
         } catch (error) {
-            setActionMessage(error instanceof Error ? error.message : 'Не удалось загрузить актуальные данные товаров.');
+            setActionMessage(error instanceof Error ? error.message : l('Не удалось загрузить актуальные данные товаров.', 'Failed to load current product data.', 'Neizdevās ielādēt aktuālos produktu datus.'));
         } finally {
             setSaving(false);
         }
     };
 
     const MODE_OPTIONS: { value: AdjustMode; label: string; placeholder: string }[] = [
-        { value: 'percent', label: '% изменение', placeholder: 'напр. -10 или 5' },
-        { value: 'fixed_add', label: 'Добавить сумму', placeholder: 'напр. 50 или -100' },
-        { value: 'fixed_set', label: 'Установить цену', placeholder: 'новая цена' },
+        { value: 'percent', label: l('% изменение', '% change', '% izmaiņa'), placeholder: l('напр. -10 или 5', 'e.g. -10 or 5', 'piem., -10 vai 5') },
+        { value: 'fixed_add', label: l('Добавить сумму', 'Add amount', 'Pievienot summu'), placeholder: l('напр. 50 или -100', 'e.g. 50 or -100', 'piem., 50 vai -100') },
+        { value: 'fixed_set', label: l('Установить цену', 'Set price', 'Iestatīt cenu'), placeholder: l('новая цена', 'new price', 'jaunā cena') },
     ];
 
     return (
@@ -338,20 +340,20 @@ export default function BulkPricePage(): React.ReactElement {
             <div className="flex flex-col gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
-                        Массовый редактор цен
+                        {l('Массовый редактор цен', 'Bulk price editor', 'Masveida cenu redaktors')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Выберите товары и примените изменение цены
+                        {l('Выберите товары и примените изменение цены', 'Select products and apply a price change', 'Atlasiet produktus un piemērojiet cenas izmaiņu')}
                     </p>
                 </div>
 
                 <div className="rounded-xl border border-border bg-card p-4">
                     <h2 className="mb-3 text-sm font-semibold text-foreground">
-                        Настройка изменения
+                        {l('Настройка изменения', 'Change settings', 'Izmaiņu iestatījumi')}
                     </h2>
                     <div className="flex flex-wrap items-end gap-4">
                         <div>
-                            <p className="mb-1 block text-xs text-muted-foreground">Тип изменения</p>
+                            <p className="mb-1 block text-xs text-muted-foreground">{l('Тип изменения', 'Change type', 'Izmaiņas veids')}</p>
                             <div className="flex h-10 items-center rounded-lg border border-border bg-muted p-1">
                                 {MODE_OPTIONS.map((opt) => (
                                     <button
@@ -370,7 +372,7 @@ export default function BulkPricePage(): React.ReactElement {
                             </div>
                         </div>
                         <div>
-                            <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-muted-foreground">Значение</label>
+                            <label htmlFor="bulk-price-value" className="mb-1 block text-xs text-muted-foreground">{l('Значение', 'Value', 'Vērtība')}</label>
                             <Input
                                 id="bulk-price-value"
                                 type="number"
@@ -381,7 +383,7 @@ export default function BulkPricePage(): React.ReactElement {
                             />
                         </div>
                         <div>
-                            <p className="mb-1 block text-xs text-muted-foreground">Старая цена</p>
+                            <p className="mb-1 block text-xs text-muted-foreground">{l('Старая цена', 'Old price', 'Vecā cena')}</p>
                             <Select
                                 value={oldPriceAction}
                                 onValueChange={(next) => {
@@ -392,8 +394,8 @@ export default function BulkPricePage(): React.ReactElement {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="save_current">Зачеркнуть старую цену</SelectItem>
-                                    <SelectItem value="clear">Убрать старую цену</SelectItem>
+                                    <SelectItem value="save_current">{l('Зачеркнуть старую цену', 'Cross out old price', 'Pārsvītrot veco cenu')}</SelectItem>
+                                    <SelectItem value="clear">{l('Убрать старую цену', 'Remove old price', 'Noņemt veco cenu')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -405,7 +407,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 disabled={!operationValid || selected.size === 0 || saving}
                                 className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
                             >
-                                {saving ? 'Сохранение...' : `Применить к ${selected.size} товарам`}
+                                {saving ? l('Сохранение...', 'Saving...', 'Saglabāšana...') : l(`Применить к ${selected.size} товарам`, `Apply to ${selected.size} products`, `Piemērot ${selected.size} produktiem`)}
                             </button>
                         </div>
                     </div>
@@ -416,16 +418,15 @@ export default function BulkPricePage(): React.ReactElement {
                         {pendingAction?.type === 'revert' ? (
                             <>
                                 <DialogHeader>
-                                    <DialogTitle>Вернуть предыдущие цены</DialogTitle>
+                                    <DialogTitle>{l('Вернуть предыдущие цены', 'Restore previous prices', 'Atjaunot iepriekšējās cenas')}</DialogTitle>
                                     <DialogDescription>
-                                        Будет восстановлена цена {pendingAction.batch.items.length} товар(ов) до состояния на {new Date(pendingAction.batch.appliedAt).toLocaleString('ru-RU')}.
-                                        Если товар после этой операции уже менялся, автоматический возврат будет безопасно пропущен.
+                                        {l(`Будут восстановлены цены ${pendingAction.batch.items.length} товаров до состояния на ${new Date(pendingAction.batch.appliedAt).toLocaleString(locale)}. Товары, изменённые позже, будут безопасно пропущены.`, `Prices for ${pendingAction.batch.items.length} products will be restored to their state at ${new Date(pendingAction.batch.appliedAt).toLocaleString(locale)}. Products changed later will be skipped safely.`, `${pendingAction.batch.items.length} produktu cenas tiks atjaunotas uz stāvokli ${new Date(pendingAction.batch.appliedAt).toLocaleString(locale)}. Vēlāk mainītie produkti tiks droši izlaisti.`)}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
                                     <DialogClose asChild>
                                         <button type="button" className="h-10 rounded-md border border-border px-4 text-sm font-medium text-foreground hover:bg-muted">
-                                            Отмена
+                                            {l('Отмена', 'Cancel', 'Atcelt')}
                                         </button>
                                     </DialogClose>
                                     <button
@@ -433,22 +434,22 @@ export default function BulkPricePage(): React.ReactElement {
                                         onClick={() => performRevert(pendingAction.batch)}
                                         className="h-10 rounded-md bg-amber-600 px-4 text-sm font-medium text-white hover:bg-amber-700"
                                     >
-                                        Вернуть цены
+                                        {l('Вернуть цены', 'Restore prices', 'Atjaunot cenas')}
                                     </button>
                                 </DialogFooter>
                             </>
                         ) : (
                             <>
                                 <DialogHeader>
-                                    <DialogTitle>Подтвердите изменение цены</DialogTitle>
+                                    <DialogTitle>{l('Подтвердите изменение цены', 'Confirm price change', 'Apstipriniet cenas izmaiņu')}</DialogTitle>
                                     <DialogDescription>
-                                        Изменение «{describeChange(mode, numValue, oldPriceAction)}» будет применено к {selected.size} товар{selected.size === 1 ? 'у' : 'ам'} и сразу записано в базу данных. Вернуть прежние цены можно будет из результатов операций ниже.
+                                        {l(`Изменение «${describeChange(mode, numValue, oldPriceAction, locale, l)}» будет применено к ${selected.size} товарам и сразу записано в базу данных.`, `The “${describeChange(mode, numValue, oldPriceAction, locale, l)}” change will be applied to ${selected.size} products and saved immediately.`, `Izmaiņa “${describeChange(mode, numValue, oldPriceAction, locale, l)}” tiks piemērota ${selected.size} produktiem un uzreiz saglabāta.`)}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
                                     <DialogClose asChild>
                                         <button type="button" className="h-10 rounded-md border border-border px-4 text-sm font-medium text-foreground hover:bg-muted">
-                                            Отмена
+                                            {l('Отмена', 'Cancel', 'Atcelt')}
                                         </button>
                                     </DialogClose>
                                     <button
@@ -456,7 +457,7 @@ export default function BulkPricePage(): React.ReactElement {
                                         onClick={applyChanges}
                                         className="h-10 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"
                                     >
-                                        Применить
+                                        {l('Применить', 'Apply', 'Piemērot')}
                                     </button>
                                 </DialogFooter>
                             </>
@@ -474,11 +475,11 @@ export default function BulkPricePage(): React.ReactElement {
                         }`}
                     >
                         <div className="font-semibold">
-                            {lastResult.kind === 'apply' ? 'Изменение цен завершено' : 'Возврат цен завершён'}
+                            {lastResult.kind === 'apply' ? l('Изменение цен завершено', 'Price change completed', 'Cenu maiņa pabeigta') : l('Возврат цен завершён', 'Price revert completed', 'Cenu atjaunošana pabeigta')}
                         </div>
                         <p className="mt-1 text-sm">
-                            Успешно: {lastResult.ok} из {lastResult.items.length}.
-                            {lastResult.err > 0 && ` Не удалось: ${lastResult.err}. Причины указаны в результатах операции ниже.`}
+                            {l('Успешно:', 'Successful:', 'Veiksmīgi:')} {lastResult.ok} {l('из', 'of', 'no')} {lastResult.items.length}.
+                            {lastResult.err > 0 && l(` Не удалось: ${lastResult.err}. Причины указаны ниже.`, ` Failed: ${lastResult.err}. Reasons are listed below.`, ` Neizdevās: ${lastResult.err}. Iemesli norādīti zemāk.`)}
                         </p>
                         {lastResult.kind === 'apply' && lastResult.err > 0 && (
                             <button
@@ -487,7 +488,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 disabled={saving}
                                 className="mt-3 rounded-md border border-current px-3 py-1.5 text-sm font-medium disabled:opacity-40"
                             >
-                                Обновить данные и проверить неудавшиеся товары
+                                {l('Обновить данные и проверить неудавшиеся товары', 'Refresh and review failed products', 'Atjaunināt un pārbaudīt neveiksmīgos produktus')}
                             </button>
                         )}
                         {lastResult.items.some((item) => item.status === 'err') && (
@@ -511,7 +512,7 @@ export default function BulkPricePage(): React.ReactElement {
                 <div className="order-2 flex flex-wrap items-center gap-3">
                     <Input
                         type="text"
-                        placeholder="Поиск по названию, бренду, SKU..."
+                        placeholder={l('Поиск по названию, бренду, SKU...', 'Search by title, brand, SKU...', 'Meklēt pēc nosaukuma, zīmola, SKU...')}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         className="w-full text-sm sm:w-72"
@@ -521,7 +522,7 @@ export default function BulkPricePage(): React.ReactElement {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Все категории</SelectItem>
+                            <SelectItem value="all">{l('Все категории', 'All categories', 'Visas kategorijas')}</SelectItem>
                             {CATEGORY_OPTIONS.map((c) => (
                                 <SelectItem key={c} value={c}>
                                     {c}
@@ -530,44 +531,44 @@ export default function BulkPricePage(): React.ReactElement {
                         </SelectContent>
                     </Select>
                     <span className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-                        <span>Выбрано: {selected.size}</span>
+                        <span>{l('Выбрано:', 'Selected:', 'Atlasīti:')} {selected.size}</span>
                         {selected.size > 0 && (
                             <button
                                 type="button"
                                 onClick={clearSelection}
                                 className="underline hover:no-underline"
                             >
-                                Снять выбор
+                                {l('Снять выбор', 'Clear selection', 'Noņemt atlasi')}
                             </button>
                         )}
-                        <span>· Показано {products.length} из {total}</span>
+                        <span>· {l('Показано', 'Showing', 'Parādīti')} {products.length} {l('из', 'of', 'no')} {total}</span>
                     </span>
                 </div>
 
                 <div className="order-2 overflow-x-auto rounded-xl border border-border bg-card">
                     {loading ? (
-                        <div className="py-16 text-center text-sm text-muted-foreground">Загрузка...</div>
+                        <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка...', 'Loading...', 'Ielāde...')}</div>
                     ) : products.length === 0 ? (
-                        <div className="py-16 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+                        <div className="py-16 text-center text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</div>
                     ) : (
                         <table className="w-full text-sm">
                             <thead className="border-b border-border bg-muted">
                                 <tr>
                                     <th className="w-10 px-4 py-3" />
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                        Товар
+                                        {l('Товар', 'Product', 'Produkts')}
                                     </th>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                        Бренд
+                                        {l('Бренд', 'Brand', 'Zīmols')}
                                     </th>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                        Категория
+                                        {l('Категория', 'Category', 'Kategorija')}
                                     </th>
                                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                                        Текущая цена
+                                        {l('Текущая цена', 'Current price', 'Pašreizējā cena')}
                                     </th>
                                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                                        Новая цена
+                                        {l('Новая цена', 'New price', 'Jaunā cena')}
                                     </th>
                                 </tr>
                             </thead>
@@ -608,7 +609,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                 {p.category}
                                             </td>
                                             <td className="px-4 py-3 text-right text-foreground">
-                                                {formatMoney(p.price)}
+                                                {formatMoney(p.price, locale)}
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 {newPrice !== null ? (
@@ -621,7 +622,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                                 : 'text-muted-foreground'
                                                         }`}
                                                     >
-                                                        {formatMoney(newPrice)}
+                                                        {formatMoney(newPrice, locale)}
                                                     </span>
                                                 ) : (
                                                     <span className="text-muted-foreground">—</span>
@@ -643,16 +644,16 @@ export default function BulkPricePage(): React.ReactElement {
                             disabled={page <= 1 || loading}
                             className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40"
                         >
-                            Назад
+                            {l('Назад', 'Back', 'Atpakaļ')}
                         </button>
-                        <span>Страница {page} из {totalPages}</span>
+                        <span>{l('Страница', 'Page', 'Lapa')} {page} {l('из', 'of', 'no')} {totalPages}</span>
                         <button
                             type="button"
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={page >= totalPages || loading}
                             className="rounded-md border border-border px-3 py-1.5 disabled:opacity-40"
                         >
-                            Вперёд
+                            {l('Вперёд', 'Next', 'Tālāk')}
                         </button>
                     </div>
                 )}
@@ -665,9 +666,9 @@ export default function BulkPricePage(): React.ReactElement {
                             className="flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 p-4 text-left text-sm font-semibold text-foreground"
                         >
                             <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`} />
-                            История изменений цен
+                            {l('История изменений цен', 'Price change history', 'Cenu izmaiņu vēsture')}
                             <span className="text-xs font-normal text-muted-foreground">
-                                — когда, кто и сколько товаров менял; можно раскрыть операцию и вернуть цены к прежним значениям
+                                — {l('когда, кто и сколько товаров менял; операцию можно раскрыть и вернуть прежние цены', 'when, who, and how many products were changed; expand an operation to restore previous prices', 'kad, kas un cik produktus mainīja; izvērsiet darbību, lai atjaunotu iepriekšējās cenas')}
                             </span>
                         </button>
                         <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${historyOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -675,7 +676,7 @@ export default function BulkPricePage(): React.ReactElement {
                                 <div className="px-4 pb-4">
                                     <p className="mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
                                         <Info className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
-                                        Постоянная история из журнала аудита — переживает обновление страницы и доступна с любого устройства. Показаны последние 30 операций.
+                                        {l('Постоянная история из журнала аудита доступна после обновления страницы и с любого устройства. Показаны последние 30 операций.', 'Persistent audit history remains available after refresh and from any device. The latest 30 operations are shown.', 'Pastāvīgā audita vēsture ir pieejama pēc lapas atjaunošanas un no jebkuras ierīces. Parādītas pēdējās 30 darbības.')}
                                     </p>
                                     <div className="space-y-2">
                                         {serverBatches.map((batch) => {
@@ -691,19 +692,19 @@ export default function BulkPricePage(): React.ReactElement {
                                                         >
                                                             <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${batchOpen ? 'rotate-180' : ''}`} />
                                                             <span className="text-muted-foreground">
-                                                                {new Date(batch.appliedAt).toLocaleString('ru-RU')}
+                                                                {new Date(batch.appliedAt).toLocaleString(locale)}
                                                             </span>
                                                             <span className="font-medium text-foreground">
-                                                                {batch.action === 'product.revert' ? 'Возврат' : 'Изменение'} · {batch.items.length} товар(ов) · {batch.adminEmail}
+                                                                {batch.action === 'product.revert' ? l('Возврат', 'Revert', 'Atjaunošana') : l('Изменение', 'Change', 'Izmaiņa')} · {batch.items.length} {l('товаров', 'products', 'produkti')} · {batch.adminEmail}
                                                             </span>
                                                         </button>
                                                         {batch.revertState === 'reverted' ? (
                                                             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                                цены возвращены
+                                                                {l('цены возвращены', 'prices restored', 'cenas atjaunotas')}
                                                             </span>
                                                         ) : batch.revertState === 'not_available' ? (
                                                             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                                                товары изменены позже — откат недоступен
+                                                                {l('товары изменены позже — откат недоступен', 'products changed later — revert unavailable', 'produkti mainīti vēlāk — atjaunošana nav pieejama')}
                                                             </span>
                                                         ) : (
                                                             <button
@@ -712,7 +713,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                                 disabled={saving}
                                                                 className="text-xs font-medium text-amber-700 underline hover:no-underline disabled:opacity-40 dark:text-amber-400"
                                                             >
-                                                                {batch.revertState === 'partial' ? `Вернуть оставшиеся ${availableCount}` : 'Вернуть предыдущие цены'}
+                                                                {batch.revertState === 'partial' ? l(`Вернуть оставшиеся ${availableCount}`, `Restore remaining ${availableCount}`, `Atjaunot atlikušos ${availableCount}`) : l('Вернуть предыдущие цены', 'Restore previous prices', 'Atjaunot iepriekšējās cenas')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -725,10 +726,10 @@ export default function BulkPricePage(): React.ReactElement {
                                                                             <tr key={item.id}>
                                                                                 <td className="px-3 py-2 text-foreground">{item.title}</td>
                                                                                 <td className="px-3 py-2 text-right text-muted-foreground">
-                                                                                    {formatMoney(item.before.price)}
+                                                                                    {formatMoney(item.before.price, locale)}
                                                                                 </td>
                                                                                 <td className="px-3 py-2 text-right font-medium text-foreground">
-                                                                                    → {formatMoney(item.after.price)}
+                                                                                    → {formatMoney(item.after.price, locale)}
                                                                                 </td>
                                                                                 <td className="px-3 py-2 text-right">
                                                                                     <span className={
@@ -738,7 +739,7 @@ export default function BulkPricePage(): React.ReactElement {
                                                                                                 ? 'text-emerald-600 dark:text-emerald-400'
                                                                                                 : 'text-amber-600 dark:text-amber-400'
                                                                                     }>
-                                                                                        {item.state === 'reverted' ? 'возвращено' : item.state === 'available' ? 'действует' : 'изменено позже'}
+                                                                                        {item.state === 'reverted' ? l('возвращено', 'restored', 'atjaunots') : item.state === 'available' ? l('действует', 'active', 'aktīvs') : l('изменено позже', 'changed later', 'mainīts vēlāk')}
                                                                                     </span>
                                                                                 </td>
                                                                             </tr>

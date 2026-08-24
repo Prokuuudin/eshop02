@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 interface ProductSkuInputProps {
     productId: string;
@@ -8,6 +9,7 @@ interface ProductSkuInputProps {
 }
 
 export default function ProductSkuInput({ productId, initialSku }: ProductSkuInputProps): React.ReactElement {
+    const { l } = useAdminLocale();
     const [sku, setSku] = useState(initialSku || '');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -23,10 +25,10 @@ export default function ProductSkuInput({ productId, initialSku }: ProductSkuInp
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: productId, changes: { sku } }),
             });
-            if (!res.ok) throw new Error('Ошибка сохранения');
+            if (!res.ok) throw new Error(l('Ошибка сохранения', 'Save failed', 'Saglabāšanas kļūda'));
             setSuccess(true);
         } catch {
-            setError('Ошибка сохранения');
+            setError(l('Ошибка сохранения', 'Save failed', 'Saglabāšanas kļūda'));
         } finally {
             setSaving(false);
             setTimeout(() => setSuccess(false), 1500);
@@ -39,7 +41,7 @@ export default function ProductSkuInput({ productId, initialSku }: ProductSkuInp
                 className="w-48"
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="SKU / Артикул"
+                placeholder={l('SKU / Артикул', 'SKU / Item number', 'SKU / Artikuls')}
                 disabled={saving}
             />
             <button
@@ -48,9 +50,9 @@ export default function ProductSkuInput({ productId, initialSku }: ProductSkuInp
                 disabled={saving}
                 type="button"
             >
-                {saving ? 'Сохраняю...' : 'Сохранить'}
+                {saving ? l('Сохраняю...', 'Saving...', 'Saglabā...') : l('Сохранить', 'Save', 'Saglabāt')}
             </button>
-            {success && <span className="text-green-600 text-xs ml-2">Сохранено</span>}
+            {success && <span className="text-green-600 text-xs ml-2">{l('Сохранено', 'Saved', 'Saglabāts')}</span>}
             {error && <span className="text-red-600 text-xs ml-2">{error}</span>}
         </div>
     );

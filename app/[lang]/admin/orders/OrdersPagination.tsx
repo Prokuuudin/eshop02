@@ -2,12 +2,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersPagination({ state }: { state: OrdersState }): React.ReactElement {
+    const { l } = useAdminLocale();
     const {
             page,
             setPage,
@@ -19,7 +21,7 @@ export default function OrdersPagination({ state }: { state: OrdersState }): Rea
             {totalPages > 1 && (
                 <div className="flex items-center justify-between gap-4 pt-2">
                     <span className="text-sm text-muted-foreground">
-                        {page + 1} / {totalPages} · {filteredCount} заказов
+                        {page + 1} / {totalPages} · {filteredCount} {l('заказов', 'orders', 'pasūtījumi')}
                     </span>
                     <div className="flex items-center gap-1">
                         <Button

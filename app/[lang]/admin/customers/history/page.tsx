@@ -10,6 +10,7 @@ import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { useAuthStore } from '@/lib/auth-store'
 import { hasAdminPermission } from '@/lib/admin-permissions'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type ActivityEntry = {
   id: string
@@ -45,6 +46,7 @@ function actionColor(action: string) {
 }
 
 export default function AdminCustomerHistoryPage(): React.ReactElement {
+  const { locale, l } = useAdminLocale()
   const confirmAction = useAdminConfirm()
   const currentUser = useAuthStore((state) => state.user)
   const canClearHistory = hasAdminPermission(currentUser, 'audit.read')
@@ -62,8 +64,8 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
   useEffect(() => {
     adminFetchJson<{ entries: ActivityEntry[] }>('/api/admin/customer-activity?take=500')
       .then(({ entries }) => { setEntries(entries); setLoadState('ready') })
-      .catch((error) => { setLoadError(classifyAdminError(error, 'История клиентов').message); setLoadState('error') })
-  }, [])
+      .catch((error) => { setLoadError(classifyAdminError(error, l('История клиентов', 'Customer history', 'Klientu vēsture')).message); setLoadState('error') })
+  }, [l])
 
   async function reload() {
     setLoadState('loading')
@@ -72,7 +74,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
       setEntries(entries)
       setLoadState('ready')
     } catch (error) {
-      setLoadError(classifyAdminError(error, 'История клиентов').message)
+      setLoadError(classifyAdminError(error, l('История клиентов', 'Customer history', 'Klientu vēsture')).message)
       setLoadState('error')
     }
   }
@@ -113,13 +115,13 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
   const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   async function handleClear() {
-    const decision = await confirmAction({ title: 'Удалить старую историю клиентов?', description: 'Записи старше 90 дней будут удалены без возможности восстановления.', affected: ['История клиентов старше 90 дней'], confirmText: 'УДАЛИТЬ', requireReason: true, destructive: true })
+    const decision = await confirmAction({ title: l('Удалить старую историю клиентов?', 'Delete old customer history?', 'Dzēst veco klientu vēsturi?'), description: l('Записи старше 90 дней будут удалены без возможности восстановления.', 'Records older than 90 days will be deleted permanently.', 'Ieraksti, kas vecāki par 90 dienām, tiks neatgriezeniski dzēsti.'), affected: [l('История клиентов старше 90 дней', 'Customer history older than 90 days', 'Klientu vēsture, kas vecāka par 90 dienām')], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true })
     if (!decision.confirmed) return
     try {
       await adminFetchJson('/api/admin/company-activity-log?olderThanDays=90', { method: 'DELETE' })
       await reload()
     } catch (error) {
-      setLoadError(classifyAdminError(error, 'Удаление истории').message)
+      setLoadError(classifyAdminError(error, l('Удаление истории', 'History deletion', 'Vēstures dzēšana')).message)
       setLoadState('error')
     }
   }
@@ -128,15 +130,15 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
     <AdminGate>
       <main className="w-full py-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl font-bold">История взаимодействий</h1>
+          <h1 className="text-2xl font-bold">{l('История взаимодействий', 'Interaction history', 'Mijiedarbību vēsture')}</h1>
           <div className="flex gap-2 flex-wrap">
             {canClearHistory && (
               <Button variant="destructive" size="sm" onClick={handleClear}>
-                Очистить старые записи (&gt; 90 дней)
+                {l('Очистить старые записи (> 90 дней)', 'Clear old records (> 90 days)', 'Notīrīt vecos ierakstus (> 90 dienām)')}
               </Button>
             )}
             <Button variant="outline" asChild>
-              <Link href="/admin">← Назад в админку</Link>
+              <Link href="/admin">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
             </Button>
           </div>
         </div>
@@ -144,7 +146,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <Input
-            placeholder="Поиск по email или userId…"
+            placeholder={l('Поиск по email или userId…', 'Search by email or user ID…', 'Meklēt pēc e-pasta vai lietotāja ID…')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
             className="max-w-xs"
@@ -154,14 +156,14 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все действия</SelectItem>
+              <SelectItem value="all">{l('Все действия', 'All actions', 'Visas darbības')}</SelectItem>
               {uniqueActions.map((a) => (
                 <SelectItem key={a} value={a}>{a}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2 text-sm">
-            <label htmlFor="customer-history-date-from" className="text-muted-foreground">От:</label>
+            <label htmlFor="customer-history-date-from" className="text-muted-foreground">{l('От:', 'From:', 'No:')}</label>
             <Input
               id="customer-history-date-from"
               type="date"
@@ -169,7 +171,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
               onChange={(e) => { setDateFrom(e.target.value); setPage(0) }}
               className="h-8 w-auto px-2 py-1.5 text-sm"
             />
-            <label htmlFor="customer-history-date-to" className="text-muted-foreground">До:</label>
+            <label htmlFor="customer-history-date-to" className="text-muted-foreground">{l('До:', 'To:', 'Līdz:')}</label>
             <Input
               id="customer-history-date-to"
               type="date"
@@ -182,18 +184,18 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
 
         {/* Table */}
         {loadState === 'loading' ? (
-          <div className="text-center text-muted-foreground py-16 border rounded-lg">Загрузка…</div>
+          <div className="text-center text-muted-foreground py-16 border rounded-lg">{l('Загрузка…', 'Loading…', 'Ielāde…')}</div>
         ) : loadState === 'error' ? (
           <div role="alert" className="text-center py-16 border rounded-lg border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
             {loadError}
           </div>
         ) : all.length === 0 ? (
           <div className="text-center text-muted-foreground py-16 border rounded-lg">
-            История взаимодействий пуста. События появятся после активности пользователей.
+            {l('История взаимодействий пуста. События появятся после активности пользователей.', 'The interaction history is empty. Events will appear after user activity.', 'Mijiedarbību vēsture ir tukša. Notikumi parādīsies pēc lietotāju aktivitātes.')}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center text-muted-foreground py-16 border rounded-lg">
-            Записи не найдены по заданным фильтрам.
+            {l('Записи не найдены по заданным фильтрам.', 'No records match the selected filters.', 'Atlasītajiem filtriem neatbilst neviens ieraksts.')}
           </div>
         ) : (
           <>
@@ -201,11 +203,11 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
               <table className="min-w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">Дата</th>
-                    <th className="text-left px-4 py-3 font-medium">Пользователь</th>
-                    <th className="text-left px-4 py-3 font-medium">Действие</th>
-                    <th className="text-left px-4 py-3 font-medium">Компания</th>
-                    <th className="text-left px-4 py-3 font-medium">Детали</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Дата', 'Date', 'Datums')}</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Пользователь', 'User', 'Lietotājs')}</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Компания', 'Company', 'Uzņēmums')}</th>
+                    <th className="text-left px-4 py-3 font-medium">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -213,7 +215,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                     <React.Fragment key={entry.id}>
                       <tr className="hover:bg-muted/30">
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {new Date(entry.timestamp).toLocaleString('ru-RU')}
+                          {new Date(entry.timestamp).toLocaleString(locale)}
                         </td>
                         <td className="px-4 py-3">
                           <div>{entry.userName ?? entry.userId}</div>
@@ -236,7 +238,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                             }
                             className="text-xs text-primary underline"
                           >
-                            {expandedId === entry.id ? 'Свернуть' : 'Развернуть'}
+                            {expandedId === entry.id ? l('Свернуть', 'Collapse', 'Sakļaut') : l('Развернуть', 'Expand', 'Izvērst')}
                           </button>
                         </td>
                       </tr>
@@ -258,7 +260,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
             {/* Pagination */}
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm text-muted-foreground">
-                Записей: {filtered.length} | Стр. {page + 1} из {totalPages}
+                {l(`Записей: ${filtered.length} | Стр. ${page + 1} из ${totalPages}`, `Records: ${filtered.length} | Page ${page + 1} of ${totalPages}`, `Ieraksti: ${filtered.length} | Lapa ${page + 1} no ${totalPages}`)}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -267,7 +269,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
                 >
-                  ← Назад
+                  ← {l('Назад', 'Back', 'Atpakaļ')}
                 </Button>
                 <Button
                   variant="outline"
@@ -275,7 +277,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
                 >
-                  Вперёд →
+                  {l('Вперёд', 'Next', 'Tālāk')} →
                 </Button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React from 'react'
 import { resolveLocaleText } from '@/lib/locale-text'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 import {
   EMPTY_BANNER,
   type Banner,
@@ -9,6 +10,7 @@ import {
 
 function useBannerContentManagerState() {
   const confirmAction = useAdminConfirm()
+  const { l } = useAdminLocale()
   const [banners, setBanners] = React.useState<Banner[]>([])
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -36,11 +38,11 @@ function useBannerContentManagerState() {
       const data = (await res.json()) as { banners: Banner[] }
       setBanners(data.banners.sort((a, b) => a.order - b.order))
     } catch {
-      showMsg('Не удалось загрузить данные.', true)
+      showMsg(l('Не удалось загрузить данные.', 'Failed to load data.', 'Neizdevās ielādēt datus.'), true)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [l])
 
   React.useEffect(() => {
     let cancelled = false
@@ -70,9 +72,9 @@ function useBannerContentManagerState() {
     const path = await uploadImage(file)
     if (path) {
       setBannerForm((f) => ({ ...f, image: path }))
-      showMsg('Изображение загружено.')
+      showMsg(l('Изображение загружено.', 'Image uploaded.', 'Attēls augšupielādēts.'))
     } else {
-      showMsg('Не удалось загрузить изображение.', true)
+      showMsg(l('Не удалось загрузить изображение.', 'Failed to upload image.', 'Neizdevās augšupielādēt attēlu.'), true)
     }
     setUploadingBannerImage(false)
     e.target.value = ''
@@ -81,7 +83,7 @@ function useBannerContentManagerState() {
   // ── Banner CRUD ───────────────────────────────────────────────────────────────
 
   const onSaveBanner = async () => {
-    if (!resolveLocaleText(bannerForm.title, 'ru').trim()) { showMsg('Укажите заголовок баннера.', true); return }
+    if (!resolveLocaleText(bannerForm.title, 'ru').trim()) { showMsg(l('Укажите заголовок баннера.', 'Enter a banner title.', 'Norādiet banera virsrakstu.'), true); return }
     setSaving(true)
     try {
       if (editingBannerId) {
@@ -91,7 +93,7 @@ function useBannerContentManagerState() {
           body: JSON.stringify({ kind: 'banner', item: bannerForm })
         })
         if (!res.ok) throw new Error()
-        showMsg('Баннер сохранен.')
+        showMsg(l('Баннер сохранён.', 'Banner saved.', 'Baneris saglabāts.'))
       } else {
         const res = await fetch('/api/admin/banners', {
           method: 'POST',
@@ -99,19 +101,19 @@ function useBannerContentManagerState() {
           body: JSON.stringify({ kind: 'banner', item: bannerForm })
         })
         if (!res.ok) throw new Error()
-        showMsg('Баннер создан.')
+        showMsg(l('Баннер создан.', 'Banner created.', 'Baneris izveidots.'))
       }
       resetBannerForm()
       await loadData()
     } catch {
-      showMsg('Не удалось сохранить баннер.', true)
+      showMsg(l('Не удалось сохранить баннер.', 'Failed to save banner.', 'Neizdevās saglabāt baneri.'), true)
     } finally {
       setSaving(false)
     }
   }
 
   const onDeleteBanner = async (id: string) => {
-    const decision = await confirmAction({ title: 'Удалить баннер?', description: 'Баннер перестанет отображаться на сайте.', affected: [id], requireReason: true, destructive: true })
+    const decision = await confirmAction({ title: l('Удалить баннер?', 'Delete banner?', 'Dzēst baneri?'), description: l('Баннер перестанет отображаться на сайте.', 'The banner will no longer appear on the site.', 'Baneris vietnē vairs netiks rādīts.'), affected: [id], requireReason: true, destructive: true })
     if (!decision.confirmed) return
     setSaving(true)
     try {
@@ -121,10 +123,10 @@ function useBannerContentManagerState() {
         body: JSON.stringify({ kind: 'banner' })
       })
       if (!res.ok) throw new Error()
-      showMsg('Баннер удален.')
+      showMsg(l('Баннер удалён.', 'Banner deleted.', 'Baneris dzēsts.'))
       await loadData()
     } catch {
-      showMsg('Не удалось удалить баннер.', true)
+      showMsg(l('Не удалось удалить баннер.', 'Failed to delete banner.', 'Neizdevās dzēst baneri.'), true)
     } finally {
       setSaving(false)
     }
@@ -141,7 +143,7 @@ function useBannerContentManagerState() {
       if (!res.ok) throw new Error()
       await loadData()
     } catch {
-      showMsg('Не удалось изменить статус.', true)
+      showMsg(l('Не удалось изменить статус.', 'Failed to change status.', 'Neizdevās mainīt statusu.'), true)
     } finally {
       setSaving(false)
     }
@@ -171,7 +173,7 @@ function useBannerContentManagerState() {
       if (responses.some((response) => !response.ok)) throw new Error()
       await loadData()
     } catch {
-      showMsg('Не удалось изменить порядок.', true)
+      showMsg(l('Не удалось изменить порядок.', 'Failed to change order.', 'Neizdevās mainīt secību.'), true)
     } finally {
       setSaving(false)
     }

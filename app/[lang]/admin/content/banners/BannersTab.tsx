@@ -16,17 +16,17 @@ import { encodeLocaleText, resolveLocaleText } from '@/lib/locale-text';
 import SaleBanner from '@/components/SaleBanner';
 import { LocaleTextField } from './LocaleTextField';
 import {
-    BANNER_TYPE_LABELS,
-    CTA_STYLE_LABELS,
     toLocaleForm,
     type CtaStyle,
     type TextColor,
 } from './banner-model';
 import type { useBannerContentManager } from './useBannerContentManager';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type BannerContentState = ReturnType<typeof useBannerContentManager>;
 
 export default function BannersTab({ state }: { state: BannerContentState }): React.ReactElement {
+    const { language, l } = useAdminLocale();
     const {
             banners,
             saving,
@@ -54,7 +54,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     }}
                     disabled={saving}
                 >
-                    + Добавить баннер
+                    + {l('Добавить баннер', 'Add banner', 'Pievienot baneri')}
                 </Button>
             </div>
 
@@ -68,26 +68,26 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     }`}
                 >
                     <h2 className="text-base font-semibold text-foreground">
-                        {editingBannerId ? 'Редактировать баннер' : 'Новый баннер'}
+                        {editingBannerId ? l('Редактировать баннер', 'Edit banner', 'Rediģēt baneri') : l('Новый баннер', 'New banner', 'Jauns baneris')}
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <LocaleTextField
-                            label="Заголовок * (RU / EN / LV)"
+                            label={l('Заголовок * (RU / EN / LV)', 'Title * (RU / EN / LV)', 'Virsraksts * (RU / EN / LV)')}
                             value={toLocaleForm(bannerForm.title)}
                             onChange={(next) =>
                                 setBannerForm((f) => ({ ...f, title: encodeLocaleText(next) }))
                             }
-                            placeholder="Заголовок баннера"
+                            placeholder={l('Заголовок баннера', 'Banner title', 'Banera virsraksts')}
                         />
 
                         <LocaleTextField
-                            label="Подзаголовок (RU / EN / LV)"
+                            label={l('Подзаголовок (RU / EN / LV)', 'Subtitle (RU / EN / LV)', 'Apakšvirsraksts (RU / EN / LV)')}
                             value={toLocaleForm(bannerForm.subtitle)}
                             onChange={(next) =>
                                 setBannerForm((f) => ({ ...f, subtitle: encodeLocaleText(next) }))
                             }
-                            placeholder="Короткий текст под заголовком"
+                            placeholder={l('Короткий текст под заголовком', 'Short text below the title', 'Īss teksts zem virsraksta')}
                         />
 
                         <div className="space-y-1">
@@ -95,7 +95,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-2"
                                 className="text-xs text-muted-foreground"
                             >
-                                Изображение (src)
+                                {l('Изображение (src)', 'Image (src)', 'Attēls (src)')}
                             </label>
                             <Input
                                 id="admin-banner-field-2"
@@ -112,7 +112,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-3"
                                 className="text-xs text-muted-foreground"
                             >
-                                Загрузить изображение
+                                {l('Загрузить изображение', 'Upload image', 'Augšupielādēt attēlu')}
                             </label>
                             <Input
                                 id="admin-banner-field-3"
@@ -128,7 +128,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-4"
                                 className="text-xs text-muted-foreground"
                             >
-                                Ссылка (href)
+                                {l('Ссылка (href)', 'Link (href)', 'Saite (href)')}
                             </label>
                             <Input
                                 id="admin-banner-field-4"
@@ -136,17 +136,17 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 onChange={(e) =>
                                     setBannerForm((f) => ({ ...f, link: e.target.value }))
                                 }
-                                placeholder="/catalog или https://..."
+                                placeholder={l('/catalog или https://...', '/catalog or https://...', '/catalog vai https://...')}
                             />
                         </div>
 
                         <LocaleTextField
-                            label="Текст кнопки CTA (RU / EN / LV)"
+                            label={l('Текст кнопки CTA (RU / EN / LV)', 'CTA button text (RU / EN / LV)', 'CTA pogas teksts (RU / EN / LV)')}
                             value={toLocaleForm(bannerForm.ctaLabel)}
                             onChange={(next) =>
                                 setBannerForm((f) => ({ ...f, ctaLabel: encodeLocaleText(next) }))
                             }
-                            placeholder="Смотреть каталог"
+                            placeholder={l('Смотреть каталог', 'View catalog', 'Skatīt katalogu')}
                         />
 
                         <div className="space-y-1">
@@ -154,7 +154,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-5"
                                 className="text-xs text-muted-foreground"
                             >
-                                Стиль кнопки
+                                {l('Стиль кнопки', 'Button style', 'Pogas stils')}
                             </label>
                             <Select
                                 value={bannerForm.ctaStyle}
@@ -169,9 +169,9 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(Object.keys(CTA_STYLE_LABELS) as CtaStyle[]).map((s) => (
+                                    {(['primary', 'secondary', 'outline'] as CtaStyle[]).map((s) => (
                                         <SelectItem key={s} value={s}>
-                                            {CTA_STYLE_LABELS[s]}
+                                            {s === 'primary' ? l('Основная', 'Primary', 'Primārā') : s === 'secondary' ? l('Вторичная', 'Secondary', 'Sekundārā') : l('Контурная', 'Outline', 'Kontūra')}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -183,7 +183,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-6"
                                 className="text-xs text-muted-foreground"
                             >
-                                Цвет текста
+                                {l('Цвет текста', 'Text color', 'Teksta krāsa')}
                             </label>
                             <Select
                                 value={bannerForm.textColor}
@@ -198,8 +198,8 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="dark">Тёмный</SelectItem>
-                                    <SelectItem value="light">Светлый</SelectItem>
+                                    <SelectItem value="dark">{l('Тёмный', 'Dark', 'Tumšs')}</SelectItem>
+                                    <SelectItem value="light">{l('Светлый', 'Light', 'Gaišs')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -209,7 +209,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-7"
                                 className="text-xs text-muted-foreground"
                             >
-                                Цвет фона
+                                {l('Цвет фона', 'Background color', 'Fona krāsa')}
                             </label>
                             <div className="flex items-center gap-2">
                                 <input
@@ -237,7 +237,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-8"
                                 className="text-xs text-muted-foreground"
                             >
-                                Активен
+                                {l('Активен', 'Active', 'Aktīvs')}
                             </label>
                             <Select
                                 value={bannerForm.active ? 'yes' : 'no'}
@@ -252,8 +252,8 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="yes">Да — отображается на сайте</SelectItem>
-                                    <SelectItem value="no">Нет — скрыт</SelectItem>
+                                    <SelectItem value="yes">{l('Да — отображается на сайте', 'Yes — shown on the site', 'Jā — tiek rādīts vietnē')}</SelectItem>
+                                    <SelectItem value="no">{l('Нет — скрыт', 'No — hidden', 'Nē — paslēpts')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -265,17 +265,17 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 id="admin-banner-preview-title"
                                 className="text-sm font-semibold text-foreground"
                             >
-                                Предпросмотр на витрине
+                                {l('Предпросмотр на витрине', 'Storefront preview', 'Veikala priekšskatījums')}
                             </h3>
                             <span className="text-xs text-muted-foreground">
-                                Обновляется автоматически
+                                {l('Обновляется автоматически', 'Updates automatically', 'Atjaunojas automātiski')}
                             </span>
                         </div>
                         <div className="pointer-events-none rounded-2xl border border-dashed border-border bg-muted/30 p-2 sm:p-3">
                             <SaleBanner
                                 banner={{
                                     id: editingBannerId ?? 'banner-preview',
-                                    title: bannerForm.title || 'Заголовок баннера',
+                                    title: bannerForm.title || l('Заголовок баннера', 'Banner title', 'Banera virsraksts'),
                                     subtitle: bannerForm.subtitle,
                                     image: bannerForm.image,
                                     link: bannerForm.link,
@@ -287,16 +287,16 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Текст отображается на языке текущей версии админки. Ссылки в предпросмотре отключены.
+                            {l('Текст отображается на языке текущей версии админки. Ссылки в предпросмотре отключены.', 'Text is shown in the current admin language. Preview links are disabled.', 'Teksts tiek rādīts pašreizējā administrācijas valodā. Priekšskatījuma saites ir atspējotas.')}
                         </p>
                     </section>
 
                     <div className="flex items-center gap-2 pt-1">
                         <Button onClick={onSaveBanner} disabled={saving}>
-                            {editingBannerId ? 'Сохранить изменения' : 'Создать баннер'}
+                            {editingBannerId ? l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas') : l('Создать баннер', 'Create banner', 'Izveidot baneri')}
                         </Button>
                         <Button variant="outline" onClick={resetBannerForm} disabled={saving}>
-                            Отмена
+                            {l('Отмена', 'Cancel', 'Atcelt')}
                         </Button>
                     </div>
                 </div>
@@ -305,13 +305,13 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             {/* Banner list */}
             {banners.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    Баннеров пока нет. Нажмите «+ Добавить баннер», чтобы создать первый.
+                    {l('Баннеров пока нет. Нажмите «+ Добавить баннер», чтобы создать первый.', 'There are no banners yet. Click “+ Add banner” to create the first one.', 'Baneru vēl nav. Noklikšķiniet “+ Pievienot baneri”, lai izveidotu pirmo.')}
                 </div>
             ) : (
                 <div className="space-y-3">
                     {banners.map((banner, idx) => {
-                        const previewTitle = resolveLocaleText(banner.title, 'ru');
-                        const previewSubtitle = resolveLocaleText(banner.subtitle, 'ru');
+                        const previewTitle = resolveLocaleText(banner.title, language);
+                        const previewSubtitle = resolveLocaleText(banner.subtitle, language);
                         return (
                             <div
                                 key={banner.id}
@@ -334,7 +334,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         className="h-16 w-24 rounded flex-shrink-0 flex items-center justify-center text-xs text-muted-foreground"
                                         style={{ backgroundColor: banner.bgColor }}
                                     >
-                                        Нет фото
+                                        {l('Нет фото', 'No image', 'Nav attēla')}
                                     </div>
                                 )}
 
@@ -345,7 +345,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                             {previewTitle}
                                         </span>
                                         <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
-                                            {BANNER_TYPE_LABELS[banner.type]}
+                                            {l('Скидка/Акция', 'Discount/Promotion', 'Atlaide/Akcija')}
                                         </span>
                                         <span
                                             className={`text-xs rounded-full px-2 py-0.5 font-medium ${
@@ -354,7 +354,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                                     : 'bg-muted text-gray-500'
                                             }`}
                                         >
-                                            {banner.active ? 'Активен' : 'Скрыт'}
+                                            {banner.active ? l('Активен', 'Active', 'Aktīvs') : l('Скрыт', 'Hidden', 'Paslēpts')}
                                         </span>
                                     </div>
                                     {previewSubtitle && (
@@ -376,7 +376,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         size="sm"
                                         disabled={idx === 0 || saving}
                                         onClick={() => void onMoveBanner(banner.id, 'up')}
-                                        title="Выше"
+                                        title={l('Выше', 'Move up', 'Pārvietot augšup')}
                                     >
                                         ▲
                                     </Button>
@@ -385,7 +385,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         size="sm"
                                         disabled={idx === banners.length - 1 || saving}
                                         onClick={() => void onMoveBanner(banner.id, 'down')}
-                                        title="Ниже"
+                                        title={l('Ниже', 'Move down', 'Pārvietot lejup')}
                                     >
                                         ▼
                                     </Button>
@@ -394,9 +394,9 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         size="sm"
                                         disabled={saving}
                                         onClick={() => void onToggleBanner(banner)}
-                                        title={banner.active ? 'Скрыть' : 'Показать'}
+                                        title={banner.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Показать', 'Show', 'Parādīt')}
                                     >
-                                        {banner.active ? 'Скрыть' : 'Показать'}
+                                        {banner.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Показать', 'Show', 'Parādīt')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -404,7 +404,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         disabled={saving}
                                         onClick={() => onEditBanner(banner)}
                                     >
-                                        Изменить
+                                        {l('Изменить', 'Edit', 'Rediģēt')}
                                     </Button>
                                     <Button
                                         variant="destructive"
@@ -412,7 +412,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         disabled={saving}
                                         onClick={() => void onDeleteBanner(banner.id)}
                                     >
-                                        Удалить
+                                        {l('Удалить', 'Delete', 'Dzēst')}
                                     </Button>
                                 </div>
                             </div>

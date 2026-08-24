@@ -9,6 +9,7 @@ import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type Language = 'ru' | 'en' | 'lv';
 
@@ -23,9 +24,10 @@ async function uploadImageFile(file: File): Promise<string> {
 }
 
 function ChangedBadge() {
+    const { l } = useAdminLocale();
     return (
         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-            изменено
+            {l('изменено', 'changed', 'mainīts')}
         </span>
     );
 }
@@ -43,6 +45,7 @@ function TextEntryRow({
     onSave: (value: string) => Promise<void>;
     onReset: () => Promise<void>;
 }) {
+    const { l } = useAdminLocale();
     const currentValue = overrideValue ?? baseValue ?? '';
     const [value, setValue] = React.useState(currentValue);
     const [busy, setBusy] = React.useState(false);
@@ -92,7 +95,7 @@ function TextEntryRow({
             )}
             <div className="flex gap-2">
                 <Button size="sm" onClick={() => void save()} disabled={busy || !dirty}>
-                    Сохранить
+                    {l('Сохранить', 'Save', 'Saglabāt')}
                 </Button>
                 {overrideValue !== undefined && (
                     <Button
@@ -101,7 +104,7 @@ function TextEntryRow({
                         onClick={() => void reset()}
                         disabled={busy}
                     >
-                        Сбросить к базовому
+                        {l('Сбросить к базовому', 'Reset to default', 'Atiestatīt uz pamata vērtību')}
                     </Button>
                 )}
             </div>
@@ -122,6 +125,7 @@ function ImageEntryRow({
     onUploadAndSet: (file: File) => Promise<void>;
     onReset: () => Promise<void>;
 }) {
+    const { l } = useAdminLocale();
     const [busy, setBusy] = React.useState(false);
 
     const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +171,7 @@ function ImageEntryRow({
                             void onReset().finally(() => setBusy(false));
                         }}
                     >
-                        Сбросить
+                        {l('Сбросить', 'Reset', 'Atiestatīt')}
                     </Button>
                 )}
             </div>
@@ -178,6 +182,7 @@ function ImageEntryRow({
 import { useAdminContentPage } from './useAdminContentPage';
 
 export default function AdminContentPage(): React.ReactElement {
+    const { l } = useAdminLocale();
     const pageState = useAdminContentPage();
     const {
             overrides,
@@ -219,19 +224,18 @@ export default function AdminContentPage(): React.ReactElement {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                            Управление контентом сайта
+                            {l('Управление контентом сайта', 'Website content management', 'Vietnes satura pārvaldība')}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Тексты и картинки сайта по разделам. Изменения применяются сразу, без
-                            деплоя.
+                            {l('Тексты и изображения сайта по разделам. Изменения применяются сразу, без деплоя.', 'Website text and images organized by section. Changes apply immediately without a deployment.', 'Vietnes teksti un attēli pa sadaļām. Izmaiņas stājas spēkā uzreiz bez izvietošanas.')}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/admin/content/banners">
-                            <Button variant="outline">Баннеры</Button>
+                            <Button variant="outline">{l('Баннеры', 'Banners', 'Baneri')}</Button>
                         </Link>
                         <Link href="/admin">
-                            <Button variant="outline">Назад в админку</Button>
+                            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
                         </Link>
                         <Button
                             variant="destructive"
@@ -239,12 +243,12 @@ export default function AdminContentPage(): React.ReactElement {
                             onClick={() =>
                                 void run(
                                     clearAll,
-                                    'Все override очищены.',
-                                    'Не удалось очистить override.'
+                                    l('Все переопределения очищены.', 'All overrides cleared.', 'Visi pārrakstījumi notīrīti.'),
+                                    l('Не удалось очистить переопределения.', 'Failed to clear overrides.', 'Neizdevās notīrīt pārrakstījumus.')
                                 )
                             }
                         >
-                            Сбросить все
+                            {l('Сбросить все', 'Reset all', 'Atiestatīt visu')}
                         </Button>
                     </div>
                 </div>
@@ -294,7 +298,7 @@ export default function AdminContentPage(): React.ReactElement {
                                     </span>
                                     {changedCount > 0 && (
                                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                                            {changedCount} изм.
+                                            {changedCount} {l('изм.', 'changed', 'mainīti')}
                                         </span>
                                     )}
                                     <ChevronDown
@@ -319,15 +323,15 @@ export default function AdminContentPage(): React.ReactElement {
                                                         run(
                                                             () =>
                                                                 setText(language, entry.key, value),
-                                                            'Текст сохранен.',
-                                                            'Не удалось сохранить текст.'
+                                                            l('Текст сохранён.', 'Text saved.', 'Teksts saglabāts.'),
+                                                            l('Не удалось сохранить текст.', 'Failed to save text.', 'Neizdevās saglabāt tekstu.')
                                                         )
                                                     }
                                                     onReset={() =>
                                                         run(
                                                             () => removeText(language, entry.key),
-                                                            'Override удален.',
-                                                            'Не удалось удалить override.'
+                                                            l('Переопределение удалено.', 'Override removed.', 'Pārrakstījums noņemts.'),
+                                                            l('Не удалось удалить переопределение.', 'Failed to remove override.', 'Neizdevās noņemt pārrakstījumu.')
                                                         )
                                                     }
                                                 />
@@ -347,15 +351,15 @@ export default function AdminContentPage(): React.ReactElement {
                                                                 );
                                                                 await setImage(entry.src, path);
                                                             },
-                                                            'Картинка заменена.',
-                                                            'Не удалось заменить картинку.'
+                                                            l('Изображение заменено.', 'Image replaced.', 'Attēls aizstāts.'),
+                                                            l('Не удалось заменить изображение.', 'Failed to replace image.', 'Neizdevās aizstāt attēlu.')
                                                         );
                                                     }}
                                                     onReset={() =>
                                                         run(
                                                             () => removeImage(entry.src),
-                                                            'Override удален.',
-                                                            'Не удалось удалить override.'
+                                                            l('Переопределение удалено.', 'Override removed.', 'Pārrakstījums noņemts.'),
+                                                            l('Не удалось удалить переопределение.', 'Failed to remove override.', 'Neizdevās noņemt pārrakstījumu.')
                                                         )
                                                     }
                                                 />
@@ -371,61 +375,59 @@ export default function AdminContentPage(): React.ReactElement {
                 {/* Expert mode: free-form editors + active override lists (logic unchanged) */}
                 <details className="rounded-lg border border-border bg-card">
                     <summary className="cursor-pointer px-4 py-3 font-semibold text-foreground">
-                        Экспертный режим (произвольные ключи и пути)
+                        {l('Экспертный режим (произвольные ключи и пути)', 'Expert mode (custom keys and paths)', 'Eksperta režīms (pielāgotas atslēgas un ceļi)')}
                     </summary>
                     <div className="space-y-4 border-t border-border p-4">
                         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                                <h2 className="text-lg font-semibold text-foreground">Тексты</h2>
+                                <h2 className="text-lg font-semibold text-foreground">{l('Тексты', 'Text', 'Teksti')}</h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Редактируйте тексты по ключам переводов (например: hero.title,
-                                    newsletter.title).
+                                    {l('Редактируйте тексты по ключам переводов (например: hero.title, newsletter.title).', 'Edit text using translation keys (for example: hero.title, newsletter.title).', 'Rediģējiet tekstus pēc tulkojumu atslēgām (piemēram: hero.title, newsletter.title).')}
                                 </p>
 
                                 <Input
                                     value={textKey}
                                     onChange={(e) => setTextKey(e.target.value)}
-                                    placeholder="Ключ текста, например hero.title"
+                                    placeholder={l('Ключ текста, например hero.title', 'Text key, for example hero.title', 'Teksta atslēga, piemēram, hero.title')}
                                 />
                                 <Textarea
                                     value={textValue}
                                     onChange={(e) => setTextValue(e.target.value)}
-                                    placeholder="Новое значение текста"
+                                    placeholder={l('Новое значение текста', 'New text value', 'Jaunā teksta vērtība')}
                                     className="min-h-[120px]"
                                 />
 
                                 {(normalizedTextKey || textValue.trim()) && (
                                     <div className="space-y-2 rounded-md border border-border p-3">
                                         <p className="text-xs text-muted-foreground">
-                                            Сравнение текста до сохранения:
+                                            {l('Сравнение текста до сохранения:', 'Text comparison before saving:', 'Teksta salīdzinājums pirms saglabāšanas:')}
                                         </p>
 
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <div className="space-y-2">
                                                 <p className="text-xs font-medium text-foreground">
-                                                    Было (Текущее на сайте)
+                                                    {l('Было (Текущее на сайте)', 'Before (Currently on the site)', 'Pirms (Pašlaik vietnē)')}
                                                 </p>
                                                 <div className="min-h-[96px] rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground whitespace-pre-wrap">
                                                     {currentText ||
-                                                        'Значение для этого ключа пока не найдено.'}
+                                                        l('Значение для этого ключа пока не найдено.', 'No value has been found for this key yet.', 'Šai atslēgai vērtība vēl nav atrasta.')}
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
                                                 <p className="text-xs font-medium text-foreground">
-                                                    Стало (После сохранения)
+                                                    {l('Стало (После сохранения)', 'After (Once saved)', 'Pēc (Pēc saglabāšanas)')}
                                                 </p>
                                                 <div className="min-h-[96px] rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground whitespace-pre-wrap">
                                                     {nextText ||
-                                                        'Пусто. Если сохранить, override будет удален.'}
+                                                        l('Пусто. При сохранении переопределение будет удалено.', 'Empty. Saving will remove the override.', 'Tukšs. Saglabājot pārrakstījums tiks noņemts.')}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {normalizedTextKey && !baseTranslation && (
                                             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                                                В базовом словаре переводов ключ не найден. Будет
-                                                создан только override.
+                                                {l('Ключ не найден в базовом словаре переводов. Будет создано только переопределение.', 'The key was not found in the base translation dictionary. Only an override will be created.', 'Atslēga nav atrasta pamata tulkojumu vārdnīcā. Tiks izveidots tikai pārrakstījums.')}
                                             </div>
                                         )}
                                     </div>
@@ -436,21 +438,20 @@ export default function AdminContentPage(): React.ReactElement {
                                         if (!textKey.trim()) return;
                                         void run(
                                             () => setText(language, textKey, textValue),
-                                            'Текст сохранен.',
-                                            'Не удалось сохранить текст.'
+                                            l('Текст сохранён.', 'Text saved.', 'Teksts saglabāts.'),
+                                            l('Не удалось сохранить текст.', 'Failed to save text.', 'Neizdevās saglabāt tekstu.')
                                         );
                                     }}
                                     disabled={saving}
                                 >
-                                    Сохранить текст
+                                    {l('Сохранить текст', 'Save text', 'Saglabāt tekstu')}
                                 </Button>
                             </div>
 
                             <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                                <h2 className="text-lg font-semibold text-foreground">Картинки</h2>
+                                <h2 className="text-lg font-semibold text-foreground">{l('Изображения', 'Images', 'Attēli')}</h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Заменяйте изображения, подменяя исходный src на новый путь или
-                                    URL.
+                                    {l('Заменяйте изображения, подменяя исходный src на новый путь или URL.', 'Replace images by mapping the original src to a new path or URL.', 'Aizstājiet attēlus, piesaistot sākotnējo src jaunam ceļam vai URL.')}
                                 </p>
 
                                 <Input
@@ -459,7 +460,7 @@ export default function AdminContentPage(): React.ReactElement {
                                         setImageFrom(e.target.value);
                                         setSourcePreviewFailed(false);
                                     }}
-                                    placeholder="Исходный src, например /icons/originals.svg"
+                                    placeholder={l('Исходный src, например /icons/originals.svg', 'Original src, for example /icons/originals.svg', 'Sākotnējais src, piemēram, /icons/originals.svg')}
                                 />
                                 <Input
                                     value={imageTo}
@@ -467,26 +468,26 @@ export default function AdminContentPage(): React.ReactElement {
                                         setImageTo(e.target.value);
                                         setTargetPreviewFailed(false);
                                     }}
-                                    placeholder="Новый src, например /api/media/new-icon.png"
+                                    placeholder={l('Новый src, например /api/media/new-icon.png', 'New src, for example /api/media/new-icon.png', 'Jaunais src, piemēram, /api/media/new-icon.png')}
                                 />
 
                                 {(imageFrom.trim() || imageTo.trim()) && (
                                     <div className="space-y-2 rounded-md border border-border p-3">
                                         <p className="text-xs text-muted-foreground">
-                                            Сравнение изображений до сохранения:
+                                            {l('Сравнение изображений до сохранения:', 'Image comparison before saving:', 'Attēlu salīdzinājums pirms saglabāšanas:')}
                                         </p>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="space-y-2">
                                                 <p className="text-xs font-medium text-foreground">
-                                                    Было (Исходный src)
+                                                    {l('Было (Исходный src)', 'Before (Original src)', 'Pirms (Sākotnējais src)')}
                                                 </p>
                                                 {imageFrom.trim() ? (
                                                     !sourcePreviewFailed ? (
                                                         // eslint-disable-next-line @next/next/no-img-element
                                                         <img
                                                             src={imageFrom}
-                                                            alt="Исходное изображение"
+                                                            alt={l('Исходное изображение', 'Original image', 'Sākotnējais attēls')}
                                                             className="h-36 w-full rounded-md border border-border object-contain bg-muted"
                                                             onLoad={() =>
                                                                 setSourcePreviewFailed(false)
@@ -497,27 +498,26 @@ export default function AdminContentPage(): React.ReactElement {
                                                         />
                                                     ) : (
                                                         <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                                                            Не удалось загрузить исходное
-                                                            изображение.
+                                                            {l('Не удалось загрузить исходное изображение.', 'Failed to load the original image.', 'Neizdevās ielādēt sākotnējo attēlu.')}
                                                         </div>
                                                     )
                                                 ) : (
                                                     <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                                                        Укажите исходный src для превью.
+                                                        {l('Укажите исходный src для предпросмотра.', 'Enter the original src for preview.', 'Norādiet sākotnējo src priekšskatījumam.')}
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="space-y-2">
                                                 <p className="text-xs font-medium text-foreground">
-                                                    Стало (Новый src)
+                                                    {l('Стало (Новый src)', 'After (New src)', 'Pēc (Jaunais src)')}
                                                 </p>
                                                 {imageTo.trim() ? (
                                                     !targetPreviewFailed ? (
                                                         // eslint-disable-next-line @next/next/no-img-element
                                                         <img
                                                             src={imageTo}
-                                                            alt="Новое изображение"
+                                                            alt={l('Новое изображение', 'New image', 'Jaunais attēls')}
                                                             className="h-36 w-full rounded-md border border-border object-contain bg-muted"
                                                             onLoad={() =>
                                                                 setTargetPreviewFailed(false)
@@ -528,12 +528,12 @@ export default function AdminContentPage(): React.ReactElement {
                                                         />
                                                     ) : (
                                                         <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                                                            Не удалось загрузить новое изображение.
+                                                            {l('Не удалось загрузить новое изображение.', 'Failed to load the new image.', 'Neizdevās ielādēt jauno attēlu.')}
                                                         </div>
                                                     )
                                                 ) : (
                                                     <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                                                        Укажите новый src для превью.
+                                                        {l('Укажите новый src для предпросмотра.', 'Enter the new src for preview.', 'Norādiet jauno src priekšskatījumam.')}
                                                     </div>
                                                 )}
                                             </div>
@@ -543,7 +543,7 @@ export default function AdminContentPage(): React.ReactElement {
 
                                 <div className="space-y-2 rounded-md border border-dashed border-border p-3">
                                     <p className="text-xs text-muted-foreground">
-                                        Или загрузите новый файл изображения (до 10MB):
+                                        {l('Или загрузите новый файл изображения (до 10 МБ):', 'Or upload a new image file (up to 10 MB):', 'Vai augšupielādējiet jaunu attēla failu (līdz 10 MB):')}
                                     </p>
                                     <Input
                                         type="file"
@@ -557,13 +557,13 @@ export default function AdminContentPage(): React.ReactElement {
                                         if (!imageFrom.trim()) return;
                                         void run(
                                             () => setImage(imageFrom, imageTo),
-                                            'Переопределение картинки сохранено.',
-                                            'Не удалось сохранить переопределение картинки.'
+                                            l('Переопределение изображения сохранено.', 'Image override saved.', 'Attēla pārrakstījums saglabāts.'),
+                                            l('Не удалось сохранить переопределение изображения.', 'Failed to save the image override.', 'Neizdevās saglabāt attēla pārrakstījumu.')
                                         );
                                     }}
                                     disabled={saving}
                                 >
-                                    Сохранить картинку
+                                    {l('Сохранить изображение', 'Save image', 'Saglabāt attēlu')}
                                 </Button>
                             </div>
                         </section>
@@ -571,7 +571,7 @@ export default function AdminContentPage(): React.ReactElement {
                         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="rounded-lg border border-border bg-card p-4">
                                 <h3 className="font-semibold mb-3 text-foreground">
-                                    Текущие text override ({language.toUpperCase()})
+                                    {l('Текущие переопределения текста', 'Current text overrides', 'Pašreizējie teksta pārrakstījumi')} ({language.toUpperCase()})
                                 </h3>
                                 <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
                                     {Object.entries(overrides.text[language] ?? {}).map(
@@ -594,12 +594,12 @@ export default function AdminContentPage(): React.ReactElement {
                                                         onClick={() =>
                                                             void run(
                                                                 () => removeText(language, key),
-                                                                'Текстовый override удален.',
-                                                                'Не удалось удалить text override.'
+                                                                l('Переопределение текста удалено.', 'Text override removed.', 'Teksta pārrakstījums noņemts.'),
+                                                                l('Не удалось удалить переопределение текста.', 'Failed to remove the text override.', 'Neizdevās noņemt teksta pārrakstījumu.')
                                                             )
                                                         }
                                                     >
-                                                        Удалить
+                                                        {l('Удалить', 'Delete', 'Dzēst')}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -607,7 +607,7 @@ export default function AdminContentPage(): React.ReactElement {
                                     )}
                                     {Object.keys(overrides.text[language] ?? {}).length === 0 && (
                                         <p className="text-sm text-muted-foreground">
-                                            Пока нет override для этого языка.
+                                            {l('Для этого языка пока нет переопределений.', 'There are no overrides for this language yet.', 'Šai valodai vēl nav pārrakstījumu.')}
                                         </p>
                                     )}
                                 </div>
@@ -615,7 +615,7 @@ export default function AdminContentPage(): React.ReactElement {
 
                             <div className="rounded-lg border border-border bg-card p-4">
                                 <h3 className="font-semibold mb-3 text-foreground">
-                                    Текущие image override
+                                    {l('Текущие переопределения изображений', 'Current image overrides', 'Pašreizējie attēlu pārrakstījumi')}
                                 </h3>
                                 <div className="space-y-2 max-h-[380px] overflow-auto pr-1">
                                     {Object.entries(overrides.images).map(([from, to]) => (
@@ -635,19 +635,19 @@ export default function AdminContentPage(): React.ReactElement {
                                                     onClick={() =>
                                                         void run(
                                                             () => removeImage(from),
-                                                            'Переопределение картинки удалено.',
-                                                            'Не удалось удалить image override.'
+                                                            l('Переопределение изображения удалено.', 'Image override removed.', 'Attēla pārrakstījums noņemts.'),
+                                                            l('Не удалось удалить переопределение изображения.', 'Failed to remove the image override.', 'Neizdevās noņemt attēla pārrakstījumu.')
                                                         )
                                                     }
                                                 >
-                                                    Удалить
+                                                    {l('Удалить', 'Delete', 'Dzēst')}
                                                 </Button>
                                             </div>
                                         </div>
                                     ))}
                                     {Object.keys(overrides.images).length === 0 && (
                                         <p className="text-sm text-muted-foreground">
-                                            Пока нет image override.
+                                            {l('Переопределений изображений пока нет.', 'There are no image overrides yet.', 'Attēlu pārrakstījumu vēl nav.')}
                                         </p>
                                     )}
                                 </div>

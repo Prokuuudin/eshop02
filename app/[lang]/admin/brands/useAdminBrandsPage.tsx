@@ -275,7 +275,7 @@ function useAdminBrandsPageState() {
                 'Delete brand {id}?',
                 'Dzest zimolu {id}?',
                 { id: brandId }
-            ), description: 'Бренд будет удалён из каталога. Проверьте связанные товары перед продолжением.', affected: [brandId], confirmText: brandId, requireReason: true, destructive: true });
+            ), description: tl('admin.brands.msg.deleteDescription', 'Бренд будет удалён из каталога. Проверьте связанные товары перед продолжением.', 'The brand will be removed from the catalog. Check related products before continuing.', 'Zīmols tiks noņemts no kataloga. Pirms turpināt, pārbaudiet saistītos produktus.'), affected: [brandId], confirmText: brandId, requireReason: true, destructive: true });
         if (!decision.confirmed) return;
 
         const next = brands.filter((brand) => brand.id !== brandId);

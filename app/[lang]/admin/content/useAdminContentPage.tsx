@@ -4,6 +4,7 @@ import React from 'react';
 import { useSiteContent } from '@/lib/use-site-content';
 import { translations } from '@/data/translations';
 import { CONTENT_REGISTRY } from '@/lib/content-registry';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type Language = 'ru' | 'en' | 'lv';
 
@@ -18,6 +19,7 @@ async function uploadImageFile(file: File): Promise<string> {
 }
 
 function useAdminContentPageState() {
+    const { l } = useAdminLocale();
     const { overrides, resolveImageSrc, setText, setImage, removeText, removeImage, clearAll } =
         useSiteContent();
 
@@ -67,9 +69,9 @@ function useAdminContentPageState() {
             const path = await uploadImageFile(file);
             setImageTo(path);
             setTargetPreviewFailed(false);
-            setMessage('Файл загружен. Новый путь подставлен в поле "Новый src".');
+            setMessage(l('Файл загружен. Новый путь подставлен в поле «Новый src».', 'File uploaded. The new path was inserted into the “New src” field.', 'Fails augšupielādēts. Jaunais ceļš ievietots laukā “Jaunais src”.'));
         } catch {
-            setMessage('Не удалось загрузить файл.');
+            setMessage(l('Не удалось загрузить файл.', 'Failed to upload file.', 'Neizdevās augšupielādēt failu.'));
         } finally {
             setUploadingImage(false);
             event.target.value = '';

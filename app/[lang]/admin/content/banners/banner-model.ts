@@ -28,14 +28,6 @@ export const EMPTY_BANNER: BannerForm = {
   ctaStyle: 'primary', bgColor: '#ffffff', textColor: 'dark', active: true,
 }
 
-export const BANNER_TYPE_LABELS: Record<BannerType, string> = {
-  sale: 'Скидка/Акция',
-}
-
-export const CTA_STYLE_LABELS: Record<CtaStyle, string> = {
-  primary: 'Основная', secondary: 'Вторичная', outline: 'Контурная',
-}
-
 export function toLocaleForm(raw: string): LocaleText {
   const parsed = parseLocaleText(raw)
   if (parsed) return parsed

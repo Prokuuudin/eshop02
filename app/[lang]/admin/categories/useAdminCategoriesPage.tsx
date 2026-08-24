@@ -425,7 +425,7 @@ function useAdminCategoriesPageState() {
                 'Move category {id} to trash?',
                 'Parvietot kategoriju {id} uz grozu?',
                 { id: categoryId }
-            ), description: 'Категория исчезнет из активного каталога и будет перемещена в корзину.', affected: [categoryId], requireReason: true, destructive: true });
+            ), description: tl('admin.categories.confirm.moveToTrashDescription', 'Категория исчезнет из активного каталога и будет перемещена в корзину.', 'The category will disappear from the active catalog and move to trash.', 'Kategorija pazudīs no aktīvā kataloga un tiks pārvietota uz atkritni.'), affected: [categoryId], requireReason: true, destructive: true });
         if (!decision.confirmed) return;
 
         const nextCategories = categories.filter((item) => item.id !== categoryId);
@@ -484,7 +484,7 @@ function useAdminCategoriesPageState() {
                 'Delete category {id} from trash permanently?',
                 'Neatgriezeniski dzest kategoriju {id} no groza?',
                 { id: categoryId }
-            ), description: 'Категория будет удалена без возможности восстановления.', affected: [categoryId], confirmText: categoryId, requireReason: true, destructive: true });
+            ), description: tl('admin.categories.confirm.deleteForeverDescription', 'Категория будет удалена без возможности восстановления.', 'The category will be deleted permanently and cannot be restored.', 'Kategorija tiks neatgriezeniski dzēsta bez atjaunošanas iespējas.'), affected: [categoryId], confirmText: categoryId, requireReason: true, destructive: true });
         if (!decision.confirmed) return;
 
         const nextDeletedCategories = deletedCategories.filter((item) => item.id !== categoryId);

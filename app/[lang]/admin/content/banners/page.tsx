@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBannerContentManager } from './useBannerContentManager';
 import BannersTab from './BannersTab';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminBannersPage(): React.ReactElement {
+    const { l } = useAdminLocale();
     const state = useBannerContentManager();
     const { banners, loading, message } = state;
 
@@ -23,18 +25,18 @@ export default function AdminBannersPage(): React.ReactElement {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                            Баннеры
+                            {l('Баннеры', 'Banners', 'Baneri')}
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Управление промо-баннерами главной страницы.
+                            {l('Управление промо-баннерами главной страницы.', 'Manage homepage promotional banners.', 'Sākumlapas reklāmas baneru pārvaldība.')}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/admin/content">
-                            <Button variant="outline">← Контент</Button>
+                            <Button variant="outline">← {l('Контент', 'Content', 'Saturs')}</Button>
                         </Link>
                         <Link href="/admin">
-                            <Button variant="outline">Назад в админку</Button>
+                            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
                         </Link>
                     </div>
                 </div>
@@ -54,12 +56,12 @@ export default function AdminBannersPage(): React.ReactElement {
 
                 {loading ? (
                     <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-                        Загрузка...
+                        {l('Загрузка...', 'Loading...', 'Ielāde...')}
                     </div>
                 ) : (
                     <Tabs defaultValue="banners">
                         <TabsList>
-                            <TabsTrigger value="banners">Баннеры ({banners.length})</TabsTrigger>
+                            <TabsTrigger value="banners">{l('Баннеры', 'Banners', 'Baneri')} ({banners.length})</TabsTrigger>
                         </TabsList>
 
                         {/* ══════════════════════ BANNERS TAB ══════════════════════ */}

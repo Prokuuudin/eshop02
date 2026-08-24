@@ -59,7 +59,8 @@ for (const file of adminFiles) {
   const source = ts.createSourceFile(file, sourceText, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
   function visit(node) {
     const text = ts.isJsxText(node) || ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) ? node.text.trim() : ''
-    if (text && cyrillicPattern.test(text) && !isInsideLocalizedExpression(node)) {
+    const isObjectKey = ts.isStringLiteral(node) && ts.isPropertyAssignment(node.parent) && node.parent.name === node
+    if (text && cyrillicPattern.test(text) && !isObjectKey && !isInsideLocalizedExpression(node)) {
       const position = source.getLineAndCharacterOfPosition(node.getStart(source))
       hardcoded.push(`${path.relative(root, file)}:${position.line + 1}: ${text.replace(/\s+/g, ' ').slice(0, 120)}`)
     }

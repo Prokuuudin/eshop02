@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { type User } from '@/lib/auth';
 import UnansweredCustomerRequests from '@/components/admin/UnansweredCustomerRequests';
+import { useAdminLocale } from '@/lib/use-admin-locale';
 
 type NavItem = { label: string; href: string };
 type NavSection = {
@@ -124,8 +125,8 @@ const NAV_SECTIONS: NavSection[] = [
     },
 ];
 
-function formatMoney(v: number) {
-    return v.toLocaleString('ru-RU', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+function formatMoney(v: number, locale: string) {
+    return v.toLocaleString(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 }
 
 function KpiCard({
@@ -162,6 +163,30 @@ function KpiCard({
 }
 
 export default function AdminAccountDashboard({ user }: { user: User }): React.ReactElement {
+    const { locale, l } = useAdminLocale();
+    const navLabels: Record<string, string> = {
+        'Каталог': l('Каталог', 'Catalog', 'Katalogs'), 'Товары': l('Товары', 'Products', 'Preces'),
+        'Категории': l('Категории', 'Categories', 'Kategorijas'), 'Бренды': l('Бренды', 'Brands', 'Zīmoli'),
+        'Импорт': l('Импорт', 'Import', 'Imports'), 'Алерты остатков': l('Алерты остатков', 'Stock alerts', 'Krājumu brīdinājumi'),
+        'Массовый редактор цен': l('Массовый редактор цен', 'Bulk pricing', 'Masveida cenu redaktors'),
+        'Продажи': l('Продажи', 'Sales', 'Pārdošana'), 'Заказы': l('Заказы', 'Orders', 'Pasūtījumi'),
+        'RFQ заявки': l('RFQ заявки', 'RFQ requests', 'RFQ pieprasījumi'), 'Возвраты': l('Возвраты', 'Returns', 'Atgriešana'),
+        'Аналитика продаж': l('Аналитика продаж', 'Sales analytics', 'Pārdošanas analītika'),
+        'Клиенты': l('Клиенты', 'Customers', 'Klienti'), 'Зарегистрированные клиенты': l('Зарегистрированные клиенты', 'Registered customers', 'Reģistrētie klienti'),
+        'База клиентов': l('База клиентов', 'Customer database', 'Klientu datubāze'), 'Приглашения клиентов': l('Приглашения клиентов', 'Customer invitations', 'Klientu ielūgumi'),
+        'Сегменты': l('Сегменты', 'Segments', 'Segmenti'), 'История': l('История', 'History', 'Vēsture'),
+        'Рассылка уведомлений': l('Рассылка уведомлений', 'Notification broadcast', 'Paziņojumu izsūtīšana'), 'Запросы покупателей': l('Запросы покупателей', 'Customer requests', 'Klientu pieprasījumi'),
+        'Маркетинг': l('Маркетинг', 'Marketing', 'Mārketings'), 'Кампании': l('Кампании', 'Campaigns', 'Kampaņas'),
+        'Промокоды': l('Промокоды', 'Promo codes', 'Promokodi'), 'Прайс-листы': l('Прайс-листы', 'Price lists', 'Cenu lapas'),
+        'Контент': l('Контент', 'Content', 'Saturs'), 'Блог': l('Блог', 'Blog', 'Blogs'),
+        'Страницы': l('Страницы', 'Pages', 'Lapas'), 'Баннеры': l('Баннеры', 'Banners', 'Baneri'), 'Медиа': l('Медиа', 'Media', 'Mediji'),
+        'Конфигурация': l('Конфигурация', 'Configuration', 'Konfigurācija'), 'Доставка и оплата': l('Доставка и оплата', 'Delivery and payment', 'Piegāde un apmaksa'),
+        'Бонусная программа': l('Бонусная программа', 'Bonus program', 'Bonusu programma'), 'Локализация': l('Локализация', 'Localization', 'Lokalizācija'),
+        'Email-шаблоны': l('Email-шаблоны', 'Email templates', 'E-pasta veidnes'), 'Система': l('Система', 'System', 'Sistēma'),
+        'Журнал аудита': l('Журнал аудита', 'Audit log', 'Audita žurnāls'), 'Логи': l('Логи', 'Logs', 'Žurnāli'),
+        'Резервные копии': l('Резервные копии', 'Backups', 'Rezerves kopijas'), 'Помощь': l('Помощь', 'Help', 'Palīdzība'),
+        'База знаний': l('База знаний', 'Knowledge base', 'Zināšanu bāze'), 'Онбординг': l('Онбординг', 'Onboarding', 'Ievadapmācība'),
+    };
     const [statsTimestamp] = useState(Date.now);
     const [lowStockCount, setLowStockCount] = useState<number | null>(null);
     const [totalCustomers, setTotalCustomers] = useState<number>(0);
@@ -175,7 +200,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
         fetch('/api/admin/access-requests?status=pending')
             .then((r) => r.json())
             .then((json: { total?: number }) => setPendingRequestCount(json.total ?? 0))
-            .catch(() => reportAdminPartial('Счётчик заявок недоступен.', 'Dashboard'));
+            .catch(() => reportAdminPartial(l('Счётчик заявок недоступен.', 'Application count is unavailable.', 'Pieteikumu skaits nav pieejams.'), 'Dashboard'));
         fetch('/api/admin/products')
             .then((r) => r.json())
             .then((products: { stock: number }[]) => {
@@ -183,7 +208,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                     setLowStockCount(products.filter((p) => p.stock <= 5).length);
                 }
             })
-            .catch(() => reportAdminPartial('Счётчик низких остатков недоступен.', 'Dashboard'));
+            .catch(() => reportAdminPartial(l('Счётчик низких остатков недоступен.', 'Low-stock count is unavailable.', 'Zemu krājumu skaits nav pieejams.'), 'Dashboard'));
         const sevenDaysAgo = new Date(statsTimestamp - 7 * 86400000).toISOString();
         Promise.all([
             fetch('/api/admin/users?role=customer&take=1', { cache: 'no-store' }),
@@ -195,7 +220,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                 setTotalCustomers(allData.total ?? 0);
                 setNewCustomers7d(recentData.total ?? 0);
             })
-            .catch(() => reportAdminPartial('Статистика клиентов недоступна.', 'Dashboard'));
+            .catch(() => reportAdminPartial(l('Статистика клиентов недоступна.', 'Customer statistics are unavailable.', 'Klientu statistika nav pieejama.'), 'Dashboard'));
         // Order KPIs are computed server-side instead of scanning the entire
         // admin order table in the browser (see /api/admin/orders/stats).
         fetch('/api/admin/orders/stats', { cache: 'no-store' })
@@ -208,16 +233,16 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                     totalOrders: json.totalOrderCount ?? 0,
                 });
             })
-            .catch(() => reportAdminPartial('Статистика заказов недоступна.', 'Dashboard'));
-    }, [statsTimestamp]);
+            .catch(() => reportAdminPartial(l('Статистика заказов недоступна.', 'Order statistics are unavailable.', 'Pasūtījumu statistika nav pieejama.'), 'Dashboard'));
+    }, [l, statsTimestamp]);
 
     const stats = orderStats;
 
     const now = new Date();
     const hour = now.getHours();
     const greeting =
-        hour < 6 ? 'Доброй ночи' : hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер';
-    const currentDate = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        hour < 6 ? l('Доброй ночи', 'Good night', 'Labvakar') : hour < 12 ? l('Доброе утро', 'Good morning', 'Labrīt') : hour < 18 ? l('Добрый день', 'Good afternoon', 'Labdien') : l('Добрый вечер', 'Good evening', 'Labvakar');
+    const currentDate = now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
         <div className="space-y-8">
@@ -246,7 +271,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                             {user.name || user.email}
                         </h1>
                         <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            Администратор
+                            {l('Администратор', 'Administrator', 'Administrators')}
                         </span>
                     </div>
                 </div>
@@ -255,13 +280,13 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         href="/account/profile"
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                        Редактировать профиль
+                        {l('Редактировать профиль', 'Edit profile', 'Rediģēt profilu')}
                     </Link>
                     <Link
                         href="/admin"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
                     >
-                        Открыть админ-панель
+                        {l('Открыть админ-панель', 'Open admin panel', 'Atvērt administrācijas paneli')}
                         <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                 </div>
@@ -280,10 +305,10 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         <div>
                             <p className="font-semibold text-amber-900 dark:text-amber-200">
                                 {pendingRequestCount === 1
-                                    ? 'Заявка на карту клиента ждёт одобрения'
-                                    : `${pendingRequestCount} заявки на карту клиента ждут одобрения`}
+                                    ? l('Заявка на карту клиента ждёт одобрения', 'A customer card application awaits approval', 'Klienta kartes pieteikums gaida apstiprinājumu')
+                                    : l(`${pendingRequestCount} заявки на карту клиента ждут одобрения`, `${pendingRequestCount} customer card applications await approval`, `${pendingRequestCount} klientu karšu pieteikumi gaida apstiprinājumu`)}
                             </p>
-                            <p className="text-xs text-amber-700 dark:text-amber-400">Нажмите, чтобы перейти к заявкам</p>
+                            <p className="text-xs text-amber-700 dark:text-amber-400">{l('Нажмите, чтобы перейти к заявкам', 'Click to review applications', 'Noklikšķiniet, lai skatītu pieteikumus')}</p>
                         </div>
                     </div>
                     <ArrowRight className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -293,42 +318,42 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
             {/* KPI cards */}
             <div>
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Сводка
+                    {l('Сводка', 'Summary', 'Kopsavilkums')}
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <KpiCard
                         icon={ClipboardList}
-                        label="Заказов сегодня"
+                        label={l('Заказов сегодня', 'Orders today', 'Pasūtījumi šodien')}
                         value={String(stats.ordersToday)}
-                        sub={`Всего: ${stats.totalOrders}`}
+                        sub={l(`Всего: ${stats.totalOrders}`, `Total: ${stats.totalOrders}`, `Kopā: ${stats.totalOrders}`)}
                         href="/admin/orders"
                         color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
                     />
                     <KpiCard
                         icon={TrendingUp}
-                        label="Выручка за 7 дней"
-                        value={formatMoney(stats.revenue7d)}
+                        label={l('Выручка за 7 дней', 'Revenue for 7 days', 'Ieņēmumi par 7 dienām')}
+                        value={formatMoney(stats.revenue7d, locale)}
                         href="/admin/sales/analytics"
                         color="text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
                     />
                     <KpiCard
                         icon={AlertTriangle}
-                        label="Мало на складе (≤5)"
+                        label={l('Мало на складе (≤5)', 'Low stock (≤5)', 'Mazs atlikums (≤5)')}
                         value={lowStockCount === null ? '...' : String(lowStockCount)}
-                        sub="Требуют внимания"
+                        sub={l('Требуют внимания', 'Needs attention', 'Jāpievērš uzmanība')}
                         href="/admin/stock-alerts"
                         color="text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400"
                     />
                     <KpiCard
                         icon={Package}
-                        label="Всего заказов"
+                        label={l('Всего заказов', 'Total orders', 'Pasūtījumi kopā')}
                         value={String(stats.totalOrders)}
                         href="/admin/orders"
                         color="text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400"
                     />
                     <KpiCard
                         icon={Users}
-                        label="Новые клиенты за 7 дней / Всего"
+                        label={l('Новые клиенты за 7 дней / Всего', 'New customers in 7 days / Total', 'Jaunie klienti 7 dienās / Kopā')}
                         value={`${newCustomers7d} / ${totalCustomers}`}
                         href="/admin/client-barcodes"
                         color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
@@ -340,7 +365,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
             {/* Quick navigation */}
             <div>
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Быстрый доступ
+                    {l('Быстрый доступ', 'Quick access', 'Ātrā piekļuve')}
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {NAV_SECTIONS.map((section) => {
@@ -357,7 +382,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                                         <Icon className="h-4 w-4" />
                                     </div>
                                     <span className="text-sm font-semibold text-foreground">
-                                        {section.title}
+                                        {navLabels[section.title] ?? section.title}
                                     </span>
                                 </div>
                                 <ul className="space-y-1">
@@ -367,7 +392,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                                                 href={item.href}
                                                 className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                                             >
-                                                {item.label}
+                                                {navLabels[item.label] ?? item.label}
                                             </Link>
                                         </li>
                                     ))}

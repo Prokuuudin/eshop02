@@ -62,20 +62,20 @@ export default function AdminGate({ children, access = 'full' }: AdminGateProps)
       partialAccessWithUser: (email: string) => `User ${email} has no access to the admin panel.`
     },
     lv: {
-      loading: 'Parbauda admin piekluvi...',
-      loginRequired: 'Nepieciesama pieslegsanas',
-      loginRedirect: 'Notiek novirzisana uz pieslegsanas lapu. Ja tas nestrada, atveriet pieslegsanos manuali.',
-      goToLogin: 'Doties uz pieslegsanos',
-      setupRequired: 'Nepieciesama sakotneja iestatisana',
-      setupRedirect: 'Notiek novirzisana uz administratora iestatisanas lapu. Ja tas nestrada, atveriet to manuali.',
-      openSetup: 'Atvert administratora iestatisanu',
+      loading: 'Pārbauda administratora piekļuvi...',
+      loginRequired: 'Nepieciešama pieteikšanās',
+      loginRedirect: 'Notiek novirzīšana uz pieteikšanās lapu. Ja tā nedarbojas, atveriet pieteikšanās lapu manuāli.',
+      goToLogin: 'Doties uz pieteikšanos',
+      setupRequired: 'Nepieciešama sākotnējā iestatīšana',
+      setupRedirect: 'Notiek novirzīšana uz administratora iestatīšanas lapu. Ja tā nedarbojas, atveriet to manuāli.',
+      openSetup: 'Atvērt administratora iestatīšanu',
       noRole: 'bez lomas',
-      forbidden: 'Piekluve liegta',
-      needFullAccess: 'Nepieciesama pilna administratora piekluve.',
-      needPartialAccess: 'Nepieciesama menedzera vai administratora loma.',
+      forbidden: 'Piekļuve liegta',
+      needFullAccess: 'Nepieciešama pilna administratora piekļuve.',
+      needPartialAccess: 'Nepieciešama vadītāja vai administratora loma.',
       goToAccount: 'Doties uz kontu',
-      fullAccessWithUser: (email: string, role: string) => `Lietotajam ${email} ir loma ${role}. Sai sadalai nepieciesama pilna administratora piekluve.`,
-      partialAccessWithUser: (email: string) => `Lietotajam ${email} nav piekluves admin panelim.`
+      fullAccessWithUser: (email: string, role: string) => `Lietotājam ${email} ir loma ${role}. Šai sadaļai nepieciešama pilna administratora piekļuve.`,
+      partialAccessWithUser: (email: string) => `Lietotājam ${email} nav piekļuves administratora panelim.`
     }
   }[language]
 

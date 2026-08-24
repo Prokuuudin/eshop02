@@ -176,12 +176,12 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         if (!draft) return;
         const digits = draft.cardNumber.replace(/\D/g, '');
         if (digits.length < 4 || digits.length > 6) {
-            setFormError('Номер карты должен содержать от 4 до 6 цифр.');
+            setFormError(l('Номер карты должен содержать от 4 до 6 цифр.', 'The card number must contain 4 to 6 digits.', 'Kartes numurā jābūt no 4 līdz 6 cipariem.'));
             return;
         }
         const registrationNumber = draft.registrationNumber.replace(/\D/g, '');
         if (draft.customerType === 'company' && (!draft.companyName.trim() || registrationNumber.length !== 11)) {
-            setFormError('Для юрлица укажите название и регистрационный номер из 11 цифр.');
+            setFormError(l('Для юрлица укажите название и регистрационный номер из 11 цифр.', 'For a company, specify its name and an 11-digit registration number.', 'Uzņēmumam norādiet nosaukumu un 11 ciparu reģistrācijas numuru.'));
             return;
         }
         setEmailBusy((prev) => ({ ...prev, [requestId]: true }));
@@ -198,21 +198,21 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 if (res.status === 502 && json.emailStatus === 'error') {
                     setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
                     setFormError('');
-                    setMessage(`Карта выдана: ${digits}, но письмо не отправлено. Повторите отправку в разделе «Приглашения».`);
+                    setMessage(l(`Карта выдана: ${digits}, но письмо не отправлено. Повторите отправку в разделе «Приглашения».`, `Card ${digits} was issued, but the email was not sent. Try again in Invitations.`, `Karte ${digits} ir izsniegta, bet e-pasts netika nosūtīts. Mēģiniet vēlreiz sadaļā Ielūgumi.`));
                     return;
                 }
                 setFormError(
                     json.error === 'card_taken'
-                        ? `Номер ${digits} уже занят — укажите другой.`
+                        ? l(`Номер ${digits} уже занят — укажите другой.`, `Number ${digits} is already in use — specify another.`, `Numurs ${digits} jau tiek izmantots — norādiet citu.`)
                         : json.error === 'user_has_card'
-                        ? `У клиента уже есть карта №${json.cardNumber}.`
-                        : 'Не удалось одобрить заявку'
+                        ? l(`У клиента уже есть карта №${json.cardNumber}.`, `The customer already has card No. ${json.cardNumber}.`, `Klientam jau ir karte Nr. ${json.cardNumber}.`)
+                        : l('Не удалось одобрить заявку', 'Failed to approve the application', 'Neizdevās apstiprināt pieteikumu')
                 );
                 setMessage('');
                 return;
             }
             setNoCardDrafts((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
-            setMessage(`Карта выдана: ${digits}. Одноразовое приглашение отправлено на ${email}.`);
+            setMessage(l(`Карта выдана: ${digits}. Одноразовое приглашение отправлено на ${email}.`, `Card ${digits} was issued. A one-time invitation was sent to ${email}.`, `Karte ${digits} ir izsniegta. Vienreizējs ielūgums nosūtīts uz ${email}.`));
             setFormError('');
         } finally {
             setEmailBusy((prev) => { const next = { ...prev }; delete next[requestId]; return next; });
@@ -233,7 +233,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         const edit = getClientEdit(holder);
         const registrationNumber = edit.registrationNumber.replace(/\D/g, '');
         if (edit.customerType === 'company' && registrationNumber.length !== 11) {
-            setFormError('Регистрационный номер юрлица должен содержать 11 цифр.');
+            setFormError(l('Регистрационный номер юрлица должен содержать 11 цифр.', 'The company registration number must contain 11 digits.', 'Uzņēmuma reģistrācijas numurā jābūt 11 cipariem.'));
             return;
         }
         setClientSaveBusy(holder.id);
@@ -252,11 +252,11 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             });
             const payload = await response.json().catch(() => null);
             if (!response.ok) throw new Error(payload?.error ?? 'client_update_failed');
-            setMessage('Данные клиента обновлены.');
+            setMessage(l('Данные клиента обновлены.', 'Customer details updated.', 'Klienta dati atjaunināti.'));
             setFormError('');
             await loadCardHolders();
         } catch (cause) {
-            setFormError(cause instanceof Error ? cause.message : 'Не удалось обновить клиента.');
+            setFormError(cause instanceof Error ? cause.message : l('Не удалось обновить клиента.', 'Failed to update the customer.', 'Neizdevās atjaunināt klienta datus.'));
         } finally {
             setClientSaveBusy(null);
         }
@@ -269,10 +269,10 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             const res = await fetch(`/api/admin/access-requests/${encodeURIComponent(requestId)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'rejected', reviewNote: note ?? 'Отклонено администратором' }),
+                body: JSON.stringify({ status: 'rejected', reviewNote: note ?? l('Отклонено администратором', 'Rejected by administrator', 'Administrators noraidīja') }),
             });
             if (!res.ok) {
-                setFormError('Не удалось отклонить заявку');
+                setFormError(l('Не удалось отклонить заявку', 'Failed to reject the application', 'Neizdevās noraidīt pieteikumu'));
                 setMessage('');
                 return;
             }
@@ -282,9 +282,9 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'reject', email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
                 });
-                setMessage(`Заявка отклонена. Уведомление отправлено на ${email}.`);
+                setMessage(l(`Заявка отклонена. Уведомление отправлено на ${email}.`, `Application rejected. A notification was sent to ${email}.`, `Pieteikums noraidīts. Paziņojums nosūtīts uz ${email}.`));
             } catch {
-                setMessage('Заявка отклонена. Не удалось отправить уведомление.');
+                setMessage(l('Заявка отклонена. Не удалось отправить уведомление.', 'Application rejected. Failed to send the notification.', 'Pieteikums noraidīts. Paziņojumu neizdevās nosūtīt.'));
             }
             setFormError('');
         } finally {

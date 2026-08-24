@@ -7,112 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog';
-import type { CustomerRow as ApiCustomerRow } from '@/app/api/admin/customers/route';
 import { useAdminLocale } from '@/lib/use-admin-locale';
-
-type ApiSegment = 'vip' | 'regular' | 'new' | 'inactive';
-type Segment = ApiSegment;
-type CustomerSort = 'lastOrderDate' | 'totalSpent' | 'totalOrders' | 'email';
-
-interface CustomerRow extends Omit<ApiCustomerRow, 'segment'> {
-    segment: Segment;
-}
-
-const SEGMENT_COLORS: Record<Segment, string> = {
-    vip: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-    regular: 'bg-blue-100 text-blue-800 border border-blue-300',
-    new: 'bg-green-100 text-green-800 border border-green-300',
-    inactive: 'bg-gray-100 text-gray-600 border border-gray-300',
-};
-
-const SEGMENT_CARD_COLORS: Record<Segment, string> = {
-    vip: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800',
-    regular: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800',
-    new: 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800',
-    inactive: 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700',
-};
-
-type FilterTab = 'all' | Segment;
-
-type BroadcastResult = { sent: number; failed: number; failedEmails: string[] };
-type SegmentAnalytics = {
-    previousCounts: Record<ApiSegment, number>;
-    revenue: Record<ApiSegment, number>;
-    becameVip: number;
-    becameInactive: number;
-    comparisonDays: number;
-};
-
-function renderPreview(text: string, vars: Record<string, string>): string {
-    return text.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
-}
-
-const EMPTY_ANALYTICS: SegmentAnalytics = {
-    previousCounts: { vip: 0, regular: 0, new: 0, inactive: 0 },
-    revenue: { vip: 0, regular: 0, new: 0, inactive: 0 },
-    becameVip: 0,
-    becameInactive: 0,
-    comparisonDays: 30,
-};
-
-function segmentReason(
-    customer: CustomerRow,
-    l: (ru: string, en: string, lv: string) => string
-): string {
-    if (customer.segment === 'vip')
-        return l(
-            `Потрачено €${customer.totalSpent.toFixed(2)} — больше €500`,
-            `Spent €${customer.totalSpent.toFixed(2)} — over €500`,
-            `Iztērēti €${customer.totalSpent.toFixed(2)} — vairāk nekā €500`
-        );
-    if (customer.segment === 'regular')
-        return l(
-            `${customer.totalOrders} заказов — больше 3`,
-            `${customer.totalOrders} orders — more than 3`,
-            `${customer.totalOrders} pasūtījumi — vairāk nekā 3`
-        );
-    if (customer.segment === 'inactive' && customer.lastOrderDate) {
-        const days = Math.max(
-            0,
-            Math.floor((Date.now() - new Date(customer.lastOrderDate).getTime()) / 86_400_000)
-        );
-        return l(
-            `${days} дней без заказов — больше 180`,
-            `${days} days without orders — over 180`,
-            `${days} dienas bez pasūtījumiem — vairāk nekā 180`
-        );
-    }
-    return l(
-        `${customer.totalOrders} заказов и покупка за последние 180 дней`,
-        `${customer.totalOrders} orders and a purchase in the last 180 days`,
-        `${customer.totalOrders} pasūtījumi un pirkums pēdējās 180 dienās`
-    );
-}
+import {
+    EMPTY_ANALYTICS,
+    SEGMENT_CARD_COLORS,
+    SEGMENT_COLORS,
+    getSegmentDescription,
+    getSegmentLabel,
+    renderPreview,
+    segmentReason,
+    type BroadcastResult,
+    type CustomerRow,
+    type CustomerSort,
+    type FilterTab,
+    type Segment,
+    type SegmentAnalytics,
+} from './segment-model';
 
 export default function AdminCustomerSegmentsPage(): React.ReactElement {
     const { locale, l } = useAdminLocale();
-    const segmentLabel = (segment: Segment | 'all') =>
-        segment === 'all'
-            ? l('Все', 'All', 'Visi')
-            : segment === 'vip'
-            ? 'VIP'
-            : segment === 'regular'
-            ? l('Постоянный', 'Regular', 'Pastāvīgs')
-            : segment === 'new'
-            ? l('Новый', 'New', 'Jauns')
-            : l('Неактивный', 'Inactive', 'Neaktīvs');
-    const segmentDescription = (segment: Segment) =>
-        segment === 'vip'
-            ? l('потратили более €500', 'spent more than €500', 'iztērējuši vairāk nekā €500')
-            : segment === 'regular'
-            ? l('более 3 заказов', 'more than 3 orders', 'vairāk nekā 3 pasūtījumi')
-            : segment === 'new'
-            ? l('до 3 заказов, активные', 'up to 3 orders, active', 'līdz 3 pasūtījumiem, aktīvi')
-            : l(
-                  'не покупали более 180 дней',
-                  'no purchases for over 180 days',
-                  'nav pirkuši vairāk nekā 180 dienas'
-              );
+    const segmentLabel = (segment: Segment | 'all') => getSegmentLabel(segment, l);
+    const segmentDescription = (segment: Segment) => getSegmentDescription(segment, l);
     const sampleVars = {
         first_name: l('Иван', 'John', 'Jānis'),
         last_name: l('Петров', 'Smith', 'Bērziņš'),
@@ -174,10 +89,10 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
             .then(async (res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = (await res.json()) as {
-                    customers: Array<Omit<ApiCustomerRow, 'segment'> & { segment: ApiSegment }>;
+                    customers: CustomerRow[];
                     total: number;
                     totalPages: number;
-                    counts: Record<ApiSegment, number>;
+                    counts: Record<Segment, number>;
                     analytics: SegmentAnalytics;
                 };
                 if (cancelled) return;

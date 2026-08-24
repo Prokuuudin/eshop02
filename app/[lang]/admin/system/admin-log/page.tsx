@@ -6,8 +6,9 @@ import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAdminLogStore, mapServerLogEntry, ACTION_LABELS, type AdminLogAction } from '@/lib/admin-log-store'
+import { useAdminLogStore, mapServerLogEntry, getAdminActionLabels, type AdminLogAction } from '@/lib/admin-log-store'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
+import { useAdminLocale } from '@/lib/use-admin-locale'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -25,8 +26,8 @@ function actionBadgeCls(action: string): string {
   return ACTION_BADGE[prefix] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
 }
 
-function fmtDate(d: Date | string): string {
-  return new Date(d).toLocaleString('ru-RU', {
+function fmtDate(d: Date | string, locale: string): string {
+  return new Date(d).toLocaleString(locale, {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
@@ -37,6 +38,8 @@ const PAGE_SIZE = 50
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminLogPage(): React.ReactElement {
+  const { l, locale, language } = useAdminLocale()
+  const actionLabels = getAdminActionLabels(language)
   const [now] = useState(Date.now)
   const entries = useAdminLogStore((s) => s.entries)
   const setEntries = useAdminLogStore((s) => s.setEntries)
@@ -53,8 +56,8 @@ export default function AdminLogPage(): React.ReactElement {
         if (Array.isArray(dbEntries)) setEntries(dbEntries.map(mapServerLogEntry))
       })
       .then(() => setLoadState('ready'))
-      .catch((error) => { setLoadError(classifyAdminError(error, 'Журнал аудита').message); setLoadState('error') })
-  }, [setEntries])
+      .catch((error) => { setLoadError(classifyAdminError(error, l('Журнал аудита', 'Audit log', 'Audita žurnāls')).message); setLoadState('error') })
+  }, [l, setEntries])
 
   const [search, setSearch] = useState('')
   const [actionFilter, setActionFilter] = useState<AdminLogAction | ''>('')
@@ -105,12 +108,12 @@ export default function AdminLogPage(): React.ReactElement {
   }, [entries, now])
 
   const downloadCSV = () => {
-    const header = ['Дата', 'Администратор', 'Email', 'Действие', 'Тип', 'ID', 'Объект', 'До', 'После', 'Детали']
+    const header = [l('Дата', 'Date', 'Datums'), l('Администратор', 'Administrator', 'Administrators'), 'Email', l('Действие', 'Action', 'Darbība'), l('Тип', 'Type', 'Tips'), 'ID', l('Объект', 'Object', 'Objekts'), l('До', 'Before', 'Pirms'), l('После', 'After', 'Pēc'), l('Детали', 'Details', 'Informācija')]
     const rows = filtered.map((e) => [
-      fmtDate(e.at),
+      fmtDate(e.at, locale),
       e.adminName ?? '',
       e.adminEmail,
-      ACTION_LABELS[e.action as AdminLogAction] ?? e.action,
+      actionLabels[e.action as AdminLogAction] ?? e.action,
       e.entityType,
       e.entityId,
       e.entityTitle ?? '',
@@ -137,23 +140,23 @@ export default function AdminLogPage(): React.ReactElement {
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Лог действий администраторов</h1>
+            <h1 className="text-2xl font-bold text-foreground">{l('Лог действий администраторов', 'Administrator activity log', 'Administratoru darbību žurnāls')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Кто, когда и что изменил в системе
+              {l('Кто, когда и что изменил в системе', 'Who changed what in the system and when', 'Kas, kad un ko mainīja sistēmā')}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={downloadCSV}>Экспорт CSV</Button>
+            <Button variant="outline" size="sm" onClick={downloadCSV}>{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setHideOlderThan90((v) => !v)}
-              title="Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется"
+              title={l('Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется', 'Hides entries in this view only; the audit log is immutable and is not deleted', 'Paslēpj ierakstus tikai šajā skatā; audita žurnāls ir nemainīgs un netiek dzēsts')}
             >
-              {hideOlderThan90 ? 'Показать все записи' : 'Скрыть старше 90 дней'}
+              {hideOlderThan90 ? l('Показать все записи', 'Show all entries', 'Rādīt visus ierakstus') : l('Скрыть старше 90 дней', 'Hide entries older than 90 days', 'Slēpt ierakstus, kas vecāki par 90 dienām')}
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/admin/system/logs">← Системные логи</Link>
+              <Link href="/admin/system/logs">← {l('Системные логи', 'System logs', 'Sistēmas žurnāli')}</Link>
             </Button>
           </div>
         </div>
@@ -161,9 +164,9 @@ export default function AdminLogPage(): React.ReactElement {
         {/* Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            { label: 'Всего событий', value: stats.total },
-            { label: 'За последние 24 ч', value: stats.today, cls: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
-            { label: 'За 7 дней', value: stats.week, cls: 'bg-primary/5 border-primary/30 dark:bg-primary/20/10 dark:border-primary/40' },
+            { label: l('Всего событий', 'Total events', 'Notikumi kopā'), value: stats.total },
+            { label: l('За последние 24 ч', 'Last 24 hours', 'Pēdējās 24 stundās'), value: stats.today, cls: 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' },
+            { label: l('За 7 дней', 'Last 7 days', 'Pēdējās 7 dienās'), value: stats.week, cls: 'bg-primary/5 border-primary/30 dark:bg-primary/20/10 dark:border-primary/40' },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border p-4 ${s.cls ?? 'border-border bg-card'}`}>
               <p className="text-2xl font-bold text-foreground">{s.value}</p>
@@ -177,7 +180,7 @@ export default function AdminLogPage(): React.ReactElement {
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            placeholder="Поиск по объекту, email, деталям..."
+            placeholder={l('Поиск по объекту, email, деталям...', 'Search by object, email or details...', 'Meklēt pēc objekta, e-pasta vai informācijas...')}
             className="w-64"
           />
           <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v as AdminLogAction); setPage(0) }}>
@@ -185,9 +188,9 @@ export default function AdminLogPage(): React.ReactElement {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все действия</SelectItem>
+              <SelectItem value="all">{l('Все действия', 'All actions', 'Visas darbības')}</SelectItem>
               {uniqueActions.map((a) => (
-                <SelectItem key={a} value={a}>{ACTION_LABELS[a as AdminLogAction] ?? a}</SelectItem>
+                <SelectItem key={a} value={a}>{actionLabels[a as AdminLogAction] ?? a}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -196,27 +199,27 @@ export default function AdminLogPage(): React.ReactElement {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Все администраторы</SelectItem>
+              <SelectItem value="all">{l('Все администраторы', 'All administrators', 'Visi administratori')}</SelectItem>
               {uniqueAdmins.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
           <span className="self-center text-sm text-muted-foreground ml-auto">
-            {filtered.length} из {entries.length}
+            {filtered.length} {l('из', 'of', 'no')} {entries.length}
           </span>
         </div>
 
         {/* Table */}
         {loadState === 'loading' ? (
-          <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">Загрузка журнала…</div>
+          <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">{l('Загрузка журнала…', 'Loading audit log…', 'Audita žurnāla ielāde…')}</div>
         ) : loadState === 'error' ? (
           <div role="alert" className="rounded-xl border border-red-300 bg-red-50 py-10 text-center text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">{loadError}</div>
         ) : entries.length === 0 ? (
           <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
-            Действия пока не зарегистрированы. Лог наполнится после первых операций в админке.
+            {l('Действия пока не зарегистрированы. Лог наполнится после первых операций в админке.', 'No actions have been recorded yet. The log will populate after the first admin operations.', 'Darbības vēl nav reģistrētas. Žurnāls tiks aizpildīts pēc pirmajām darbībām administrācijas panelī.')}
           </div>
         ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-border py-10 text-center text-sm text-muted-foreground">
-            Нет событий по заданным фильтрам
+            {l('Нет событий по заданным фильтрам', 'No events match the selected filters', 'Neviens notikums neatbilst izvēlētajiem filtriem')}
           </div>
         ) : (
           <>
@@ -224,12 +227,12 @@ export default function AdminLogPage(): React.ReactElement {
               <table className="min-w-full text-sm bg-card">
                 <thead className="bg-muted sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">Время</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Кто</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Действие</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Объект</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">До → После</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Детали</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">{l('Время', 'Time', 'Laiks')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Кто', 'Who', 'Kas')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Действие', 'Action', 'Darbība')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Объект', 'Object', 'Objekts')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('До → После', 'Before → After', 'Pirms → Pēc')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -241,7 +244,7 @@ export default function AdminLogPage(): React.ReactElement {
                         onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                       >
                         <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
-                          {fmtDate(entry.at)}
+                          {fmtDate(entry.at, locale)}
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-xs font-medium text-foreground">{entry.adminName ?? entry.adminEmail}</p>
@@ -249,7 +252,7 @@ export default function AdminLogPage(): React.ReactElement {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${actionBadgeCls(entry.action)}`}>
-                            {ACTION_LABELS[entry.action as AdminLogAction] ?? entry.action}
+                            {actionLabels[entry.action as AdminLogAction] ?? entry.action}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -274,16 +277,16 @@ export default function AdminLogPage(): React.ReactElement {
                           <td colSpan={6} className="px-4 py-3">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                               <div>
-                                <p className="font-semibold text-muted-foreground mb-1">ID события</p>
+                                <p className="font-semibold text-muted-foreground mb-1">{l('ID события', 'Event ID', 'Notikuma ID')}</p>
                                 <code className="font-mono text-foreground">{entry.id}</code>
                               </div>
                               <div>
-                                <p className="font-semibold text-muted-foreground mb-1">Тип / ID объекта</p>
+                                <p className="font-semibold text-muted-foreground mb-1">{l('Тип / ID объекта', 'Object type / ID', 'Objekta tips / ID')}</p>
                                 <code className="font-mono text-foreground">{entry.entityType} / {entry.entityId}</code>
                               </div>
                               {entry.before && (
                                 <div>
-                                  <p className="font-semibold text-muted-foreground mb-1">До</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">{l('До', 'Before', 'Pirms')}</p>
                                   <pre className="bg-red-50 dark:bg-red-900/10 rounded p-2 overflow-x-auto text-red-700 dark:text-red-300">
                                     {JSON.stringify(entry.before, null, 2)}
                                   </pre>
@@ -291,7 +294,7 @@ export default function AdminLogPage(): React.ReactElement {
                               )}
                               {entry.after && (
                                 <div>
-                                  <p className="font-semibold text-muted-foreground mb-1">После</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">{l('После', 'After', 'Pēc')}</p>
                                   <pre className="bg-green-50 dark:bg-green-900/10 rounded p-2 overflow-x-auto text-green-700 dark:text-green-300">
                                     {JSON.stringify(entry.after, null, 2)}
                                   </pre>
@@ -299,7 +302,7 @@ export default function AdminLogPage(): React.ReactElement {
                               )}
                               {entry.details && (
                                 <div className="md:col-span-2">
-                                  <p className="font-semibold text-muted-foreground mb-1">Детали</p>
+                                  <p className="font-semibold text-muted-foreground mb-1">{l('Детали', 'Details', 'Informācija')}</p>
                                   <p className="text-foreground">{entry.details}</p>
                                 </div>
                               )}
@@ -317,7 +320,7 @@ export default function AdminLogPage(): React.ReactElement {
             {totalPages > 1 && (
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-muted-foreground">
-                  Стр. {page + 1} из {totalPages}
+                  {l('Стр.', 'Page', 'Lapa')} {page + 1} {l('из', 'of', 'no')} {totalPages}
                 </span>
                 <div className="flex gap-1">
                   <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0}>«</Button>

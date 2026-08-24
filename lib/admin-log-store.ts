@@ -55,6 +55,50 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'review.deleted':            'Удаление отзыва',
 }
 
+const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
+  'order.updated': 'Order edited',
+  'order.status_changed': 'Order status changed',
+  'order.bulk_status_changed': 'Bulk status change',
+  'order.note_saved': 'Order note saved',
+  'product.price_changed': 'Price changed',
+  'product.stock_changed': 'Stock changed',
+  'product.deleted': 'Product deleted',
+  'product.created': 'Product created',
+  'promo.created': 'Promo code created',
+  'promo.updated': 'Promo code updated',
+  'promo.deleted': 'Promo code deleted',
+  'promo.toggled': 'Promo code enabled/disabled',
+  'return.status_changed': 'Return status changed',
+  'rfq.quote_sent': 'Quote sent',
+  'rfq.status_changed': 'RFQ status changed',
+  'review.status_changed': 'Review status changed',
+  'review.deleted': 'Review deleted',
+}
+
+const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
+  'order.updated': 'Pasūtījums rediģēts',
+  'order.status_changed': 'Pasūtījuma statuss mainīts',
+  'order.bulk_status_changed': 'Masveida statusa maiņa',
+  'order.note_saved': 'Pasūtījuma piezīme saglabāta',
+  'product.price_changed': 'Cena mainīta',
+  'product.stock_changed': 'Atlikums mainīts',
+  'product.deleted': 'Produkts dzēsts',
+  'product.created': 'Produkts izveidots',
+  'promo.created': 'Promokods izveidots',
+  'promo.updated': 'Promokods atjaunināts',
+  'promo.deleted': 'Promokods dzēsts',
+  'promo.toggled': 'Promokods ieslēgts/izslēgts',
+  'return.status_changed': 'Atgriešanas statuss mainīts',
+  'rfq.quote_sent': 'Piedāvājums nosūtīts',
+  'rfq.status_changed': 'RFQ statuss mainīts',
+  'review.status_changed': 'Atsauksmes statuss mainīts',
+  'review.deleted': 'Atsauksme dzēsta',
+}
+
+export function getAdminActionLabels(language: 'ru' | 'en' | 'lv'): Record<AdminLogAction, string> {
+  return language === 'ru' ? ACTION_LABELS : language === 'lv' ? ACTION_LABELS_LV : ACTION_LABELS_EN
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 type AdminLogStore = {

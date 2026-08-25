@@ -7,7 +7,7 @@ vi.mock('@/lib/api-guard', () => ({ guardCookieAuthenticatedApiMutation: guard }
 import { proxy } from '../proxy'
 
 const request = (path: string, init?: ConstructorParameters<typeof NextRequest>[1]) =>
-  new NextRequest(`https://hairshop-pro.lv${path}`, init)
+  new NextRequest(`https://hairshoppro.lv${path}`, init)
 
 describe('proxy', () => {
   beforeEach(() => guard.mockReset().mockReturnValue(null))
@@ -15,18 +15,18 @@ describe('proxy', () => {
   it('strips the explicit default-language prefix permanently', () => {
     const response = proxy(request('/ru/catalog?brand=test'))
     expect(response.status).toBe(308)
-    expect(response.headers.get('location')).toBe('https://hairshop-pro.lv/catalog?brand=test')
+    expect(response.headers.get('location')).toBe('https://hairshoppro.lv/catalog?brand=test')
   })
 
   it('honours a persisted non-default language', () => {
     const response = proxy(request('/catalog', { headers: { cookie: 'eshop_language=lv' } }))
     expect(response.status).toBe(307)
-    expect(response.headers.get('location')).toBe('https://hairshop-pro.lv/lv/catalog')
+    expect(response.headers.get('location')).toBe('https://hairshoppro.lv/lv/catalog')
   })
 
   it('rewrites an unprefixed default-language URL', () => {
     const response = proxy(request('/catalog'))
-    expect(response.headers.get('x-middleware-rewrite')).toBe('https://hairshop-pro.lv/ru/catalog')
+    expect(response.headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru/catalog')
   })
 
   it('propagates a valid API correlation id', () => {

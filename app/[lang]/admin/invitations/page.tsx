@@ -196,9 +196,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
             const digits = h.phone.replace(/\D/g, '');
             const waPhone = digits.length === 8 ? `371${digits}` : digits;
             const text = l(
-                `Здравствуйте${h.name ? `, ${h.name}` : ''}! Приглашаем вас в hairshop-pro.lv. Ваша карта клиента: ${h.cardNumber}. Активировать аккаунт: ${inviteUrl}`,
-                `Hello${h.name ? `, ${h.name}` : ''}! You're invited to hairshop-pro.lv. Your client card: ${h.cardNumber}. Activate your account: ${inviteUrl}`,
-                `Sveiki${h.name ? `, ${h.name}` : ''}! Jūs esat aicināts uz hairshop-pro.lv. Jūsu klienta karte: ${h.cardNumber}. Aktivizējiet kontu: ${inviteUrl}`
+                `Здравствуйте${h.name ? `, ${h.name}` : ''}! Приглашаем вас в hairshoppro.lv. Ваша карта клиента: ${h.cardNumber}. Активировать аккаунт: ${inviteUrl}`,
+                `Hello${h.name ? `, ${h.name}` : ''}! You're invited to hairshoppro.lv. Your client card: ${h.cardNumber}. Activate your account: ${inviteUrl}`,
+                `Sveiki${h.name ? `, ${h.name}` : ''}! Jūs esat aicināts uz hairshoppro.lv. Jūsu klienta karte: ${h.cardNumber}. Aktivizējiet kontu: ${inviteUrl}`
             );
             window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
             await loadHolders();

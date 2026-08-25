@@ -17,7 +17,7 @@
 - Wording and word order of source descriptions must never change — only structure (paragraphs, sentence grouping).
 - Reserved keys convention: `technicalSpecs` keys starting with `__` are internal (`__variantGroupsJson`, `__descriptionEn`, `__descriptionLv`) and must never render publicly or be lost by admin saves.
 - After each task's commit: `git push origin main` (user preference).
-- Windows environment; run node scripts from repo root `c:/Users/User/Desktop/hairshop-pro.lv`.
+- Windows environment; run node scripts from repo root `c:/Users/User/Desktop/hairshoppro.lv`.
 
 ---
 

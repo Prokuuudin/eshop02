@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildShareChannelUrl } from './share-order'
 
 describe('buildShareChannelUrl', () => {
-  const text = 'hairshop-pro.lv — заказ №1234, сумма 45,90 €'
+  const text = 'hairshoppro.lv — заказ №1234, сумма 45,90 €'
 
   it('builds a mailto link with the text as both subject and body', () => {
     const url = buildShareChannelUrl('email', text)

@@ -25,7 +25,7 @@ describe('parseGrinsXml', () => {
     expect(glue?.title).toBe('SF0301/GL')
   })
 
-  it('maps Product.price from price2 (hairshop-pro.lv public price), not price1', () => {
+  it('maps Product.price from price2 (hairshoppro.lv public price), not price1', () => {
     const products = parseGrinsXml(sampleXml)
     const remover = products.find(p => p.externalId === '6580075')
     // price1=9, price2=7 in the sample file for this item

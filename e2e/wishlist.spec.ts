@@ -13,7 +13,7 @@ const seedAuthedState = async (page: Page): Promise<void> => {
       'eshop_current_user',
       JSON.stringify({
         id: 'u_e2e_customer_fixture',
-        email: 'e2e-customer@hairshop-pro.lv.local',
+        email: 'e2e-customer@hairshoppro.lv.local',
         platformRole: 'customer'
       })
     )

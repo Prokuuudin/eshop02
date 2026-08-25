@@ -148,9 +148,9 @@ export function buildCardActivatedEmail(vars: { name: string; cardNumber: string
   const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
     <h2 style="color:#4f46e5">Karte aktivizēta · Карта активирована · Card activated</h2>
     ${safe.name ? `<p>${safe.name},</p>` : ''}
-    <p><strong>LV</strong> — Jūsu klienta karte Nr. <strong>${safe.card_number}</strong> tikko tika aktivizēta vietnē hairshop-pro.lv. Ja tas nebijāt jūs, nekavējoties sazinieties ar mums: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
-    <p><strong>RU</strong> — Ваша карта клиента № <strong>${safe.card_number}</strong> только что была активирована на hairshop-pro.lv. Если это были не вы, срочно свяжитесь с нами: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
-    <p><strong>EN</strong> — Your client card No. <strong>${safe.card_number}</strong> was just activated on hairshop-pro.lv. If this wasn't you, contact us immediately: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
+    <p><strong>LV</strong> — Jūsu klienta karte Nr. <strong>${safe.card_number}</strong> tikko tika aktivizēta vietnē hairshoppro.lv. Ja tas nebijāt jūs, nekavējoties sazinieties ar mums: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
+    <p><strong>RU</strong> — Ваша карта клиента № <strong>${safe.card_number}</strong> только что была активирована на hairshoppro.lv. Если это были не вы, срочно свяжитесь с нами: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
+    <p><strong>EN</strong> — Your client card No. <strong>${safe.card_number}</strong> was just activated on hairshoppro.lv. If this wasn't you, contact us immediately: ${OFFICE_PHONE} / ${OFFICE_EMAIL}.</p>
   </div>`
   return { subject, html }
 }

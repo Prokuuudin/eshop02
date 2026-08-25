@@ -38,7 +38,7 @@ import { describe, it, expect } from 'vitest'
 import { buildShareChannelUrl } from './share-order'
 
 describe('buildShareChannelUrl', () => {
-  const text = 'hairshop-pro.lv — заказ №1234, сумма 45,90 €'
+  const text = 'hairshoppro.lv — заказ №1234, сумма 45,90 €'
 
   it('builds a mailto link with the text as both subject and body', () => {
     const url = buildShareChannelUrl('email', text)
@@ -122,7 +122,7 @@ In the `ru` block, right after line 1016 (`'order.downloadInvoiceEn': 'Скач�
 
 ```ts
     'order.share': 'Поделиться',
-    'order.shareText': 'hairshop-pro.lv — заказ №{orderId}, сумма {total}',
+    'order.shareText': 'hairshoppro.lv — заказ №{orderId}, сумма {total}',
     'order.shareEmail': 'Email',
     'order.shareWhatsapp': 'WhatsApp',
     'order.shareTelegram': 'Telegram',
@@ -132,7 +132,7 @@ In the `en` block, right after line 2511 (`'order.downloadInvoiceEn': 'Download 
 
 ```ts
     'order.share': 'Share',
-    'order.shareText': 'hairshop-pro.lv — order #{orderId}, total {total}',
+    'order.shareText': 'hairshoppro.lv — order #{orderId}, total {total}',
     'order.shareEmail': 'Email',
     'order.shareWhatsapp': 'WhatsApp',
     'order.shareTelegram': 'Telegram',
@@ -142,7 +142,7 @@ In the `lv` block, right after line 4324 (`'order.downloadInvoiceEn': 'Lejupiel�
 
 ```ts
     'order.share': 'Kopīgot',
-    'order.shareText': 'hairshop-pro.lv — pasūtījums Nr.{orderId}, summa {total}',
+    'order.shareText': 'hairshoppro.lv — pasūtījums Nr.{orderId}, summa {total}',
     'order.shareEmail': 'E-pasts',
     'order.shareWhatsapp': 'WhatsApp',
     'order.shareTelegram': 'Telegram',
@@ -195,7 +195,7 @@ export default function ShareOrderButton({ order }: ShareOrderButtonProps) {
     const shareLabel = t('order.share', 'Share');
     const shareText = t(
         'order.shareText',
-        'hairshop-pro.lv — заказ №{orderId}, сумма {total}',
+        'hairshoppro.lv — заказ №{orderId}, сумма {total}',
         { orderId: order.id, total: formatEuro(order.total, getLocaleFromLanguage(language)) }
     );
 

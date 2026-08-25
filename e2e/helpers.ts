@@ -17,7 +17,7 @@ export type E2eUserFixture = {
 // настоящую сессионную куку через /api/auth/sync.
 export const E2E_MANAGER: E2eUserFixture = {
   id: 'u_e2e_manager_fixture',
-  email: 'e2e-manager@hairshop-pro.lv.local',
+  email: 'e2e-manager@hairshoppro.lv.local',
   password: 'StrongPass123',
   name: 'E2E Manager',
   platformRole: 'customer',
@@ -30,7 +30,7 @@ export const E2E_MANAGER: E2eUserFixture = {
 
 export const E2E_ADMIN: E2eUserFixture = {
   id: 'u_e2e_admin_fixture',
-  email: 'e2e-admin@hairshop-pro.lv.local',
+  email: 'e2e-admin@hairshoppro.lv.local',
   password: 'StrongPass123',
   name: 'E2E Admin',
   platformRole: 'admin',
@@ -39,7 +39,7 @@ export const E2E_ADMIN: E2eUserFixture = {
 
 export const E2E_CUSTOMER: E2eUserFixture = {
   id: 'u_e2e_customer_fixture',
-  email: 'e2e-customer@hairshop-pro.lv.local',
+  email: 'e2e-customer@hairshoppro.lv.local',
   password: 'StrongPass123',
   name: 'E2E Customer',
   platformRole: 'customer'

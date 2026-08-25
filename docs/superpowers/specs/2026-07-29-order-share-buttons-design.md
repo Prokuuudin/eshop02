@@ -16,7 +16,7 @@ On the order confirmation page (`app/[lang]/order/[id]/page.tsx`), the sidebar h
 
 ## Behavior on click
 
-1. Build `shareText` from `t('order.shareText', ...)` — store name, order number, total (e.g. "hairshop-pro.lv — заказ №1234, сумма 45,90 €"), localized per `ru`/`en`/`lv`.
+1. Build `shareText` from `t('order.shareText', ...)` — store name, order number, total (e.g. "hairshoppro.lv — заказ №1234, сумма 45,90 €"), localized per `ru`/`en`/`lv`.
 2. Rebuild the invoice as a `File` (same `buildInvoiceHtml`/`fetchInvoiceTitles` call already used by `handleDownloadInvoice`), not a revoked blob URL.
 3. If `navigator.canShare?.({ files: [file] })` is true: call `navigator.share({ files: [file], text: shareText, title: shareText })`. The OS share sheet lists whatever apps the user has (Gmail, WhatsApp, Telegram, etc.) with the real invoice file attached.
 4. Else if `navigator.share` exists (no file support): call `navigator.share({ text: shareText, title: shareText })` — text only, no attachment.

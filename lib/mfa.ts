@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
 import { generateSecret, verify, generateURI } from 'otplib'
 
-const ISSUER = 'hairshop-pro.lv'
+const ISSUER = 'hairshoppro.lv'
 const BACKUP_CODE_COUNT = 8
 const BACKUP_CODE_BCRYPT_COST = 12
 const EPOCH_TOLERANCE_SECONDS = 30 // +/- one 30s TOTP step, covers normal clock drift

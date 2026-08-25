@@ -171,7 +171,7 @@ const ruCheckout: Record<string, string> = {
   'order.generatingInvoice': 'Формирование PDF…',
   'order.invoiceDownloadFailed': 'Не удалось сформировать PDF. Попробуйте ещё раз.',
   'order.share': 'Поделиться',
-  'order.shareText': 'hairshop-pro.lv — заказ №{orderId}, сумма {total}',
+  'order.shareText': 'hairshoppro.lv — заказ №{orderId}, сумма {total}',
   'order.shareEmail': 'Email',
   'order.shareWhatsapp': 'WhatsApp',
   'order.shareTelegram': 'Telegram',

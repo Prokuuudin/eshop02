@@ -171,7 +171,7 @@ const enCheckout: Record<string, string> = {
   'order.generatingInvoice': 'Generating PDF…',
   'order.invoiceDownloadFailed': 'Could not generate the PDF. Please try again.',
   'order.share': 'Share',
-  'order.shareText': 'hairshop-pro.lv — order #{orderId}, total {total}',
+  'order.shareText': 'hairshoppro.lv — order #{orderId}, total {total}',
   'order.shareEmail': 'Email',
   'order.shareWhatsapp': 'WhatsApp',
   'order.shareTelegram': 'Telegram',

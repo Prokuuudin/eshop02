@@ -66,7 +66,7 @@ export default function ShareOrderButton({ order, invoiceLang }: ShareOrderButto
     const shareLabel = t('order.share', 'Share');
     const shareText = t(
         'order.shareText',
-        'hairshop-pro.lv — заказ №{orderId}, сумма {total}',
+        'hairshoppro.lv — заказ №{orderId}, сумма {total}',
         { orderId: order.id, total: formatEuro(order.total, getLocaleFromLanguage(language)) }
     );
 

@@ -171,7 +171,7 @@ const lvCheckout: Record<string, string> = {
   'order.generatingInvoice': 'PDF izveide…',
   'order.invoiceDownloadFailed': 'Neizdevās izveidot PDF. Lūdzu, mēģiniet vēlreiz.',
   'order.share': 'Kopīgot',
-  'order.shareText': 'hairshop-pro.lv — pasūtījums Nr.{orderId}, summa {total}',
+  'order.shareText': 'hairshoppro.lv — pasūtījums Nr.{orderId}, summa {total}',
   'order.shareEmail': 'E-pasts',
   'order.shareWhatsapp': 'WhatsApp',
   'order.shareTelegram': 'Telegram',

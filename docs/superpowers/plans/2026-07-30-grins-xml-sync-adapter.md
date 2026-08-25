@@ -14,7 +14,7 @@
 - Every new/changed code path needs a Vitest unit test; run `npx vitest run lib/sync/` after each task.
 - `npm run typecheck` must stay clean after each task.
 - Secrets (`GRINS_FTPS_*`) come from environment variables only — never hardcoded, never committed. This plan does not add them to `.env.local` or Vercel; that's a manual step for the user once the code is reviewed.
-- **Confirmed 2026-07-30 mapping used throughout this plan:** `warehouse id="1"`..`"9"` in the XML → real ids `10000, 10001, 10002, 10003, 10004, 10005, 10006, 10007, 10010` in that exact order (verified against `export_sample.xml`: item `6580075`'s `warehouse id="1"` = 22, already included in the 51-vs-53 sum). `price2` is the hairshop-pro.lv public price (masters/pros audience, confirmed 07-27) — **`Product.price` is fed from `price2`, not `price1`.** `price1`, `price3`, `price4` are stored for reference only, never used as the displayed price. `capacity` is ignored entirely (GrinS ticket-printing field, confirmed 07-23 as not needed). `title`/`brand`/`category`/`description`/`images` are admin-owned forever for synced products — the parser never reads the feed's `<title>` into a display name; a brand-new pending row is seeded with its SKU as a neutral placeholder title, never the feed's LV+EN+brand mashup string.
+- **Confirmed 2026-07-30 mapping used throughout this plan:** `warehouse id="1"`..`"9"` in the XML → real ids `10000, 10001, 10002, 10003, 10004, 10005, 10006, 10007, 10010` in that exact order (verified against `export_sample.xml`: item `6580075`'s `warehouse id="1"` = 22, already included in the 51-vs-53 sum). `price2` is the hairshoppro.lv public price (masters/pros audience, confirmed 07-27) — **`Product.price` is fed from `price2`, not `price1`.** `price1`, `price3`, `price4` are stored for reference only, never used as the displayed price. `capacity` is ignored entirely (GrinS ticket-printing field, confirmed 07-23 as not needed). `title`/`brand`/`category`/`description`/`images` are admin-owned forever for synced products — the parser never reads the feed's `<title>` into a display name; a brand-new pending row is seeded with its SKU as a neutral placeholder title, never the feed's LV+EN+brand mashup string.
 - **Not in scope for this plan** (each is either a separate spec/business decision or a one-time operational step, not part of the recurring adapter):
   - Admin UI to review/approve pending (`isActive=false`, `externalId` set) products — this plan only makes the *data-layer* safety property true (new synced SKUs never auto-publish); a review screen is a follow-up plan.
   - Safety-buffer stock display transform, checkout capture/refund redesign — blocked on a business-supplied buffer value and a separate checkout spec (see `docs/superpowers/specs/2026-07-22-live-db-sync-design-correction.md`, section D).
@@ -203,7 +203,7 @@ describe('parseGrinsXml', () => {
     expect(glue?.title).toBe('SF0301/GL')
   })
 
-  it('maps Product.price from price2 (hairshop-pro.lv public price), not price1', () => {
+  it('maps Product.price from price2 (hairshoppro.lv public price), not price1', () => {
     const products = parseGrinsXml(sampleXml)
     const remover = products.find(p => p.externalId === '6580075')
     // price1=9, price2=7 in the sample file for this item
@@ -819,7 +819,7 @@ git commit -m "feat(sync): add FTPS client wrapper for the GrinS export"
   export async function getSnapshotContent(slot: number): Promise<string | undefined>
   ```
 
-Owner confirmed (2026-07-27) GrinS's own backup RPO/RTO is unknown/untested — this is the *only* reliable rollback for a bad import on the hairshop-pro.lv side. Keeps the last 3 raw downloads (content + checksum + size + timestamp), round-robin across 3 fixed `KeyValueSetting` slots so metadata lookups never have to load megabytes of XML text. Uses the `@/lib/prisma` singleton (like `lib/product-overrides-store.ts`), not DI — this store isn't part of the tightly-mocked `sync-runner.ts` DB pipeline; it's called directly from inside the adapter (Task 7), which has no `db` handle to thread through (`ErpAdapter.fetchPage()` takes no such parameter, by design — adapters only talk to the external source).
+Owner confirmed (2026-07-27) GrinS's own backup RPO/RTO is unknown/untested — this is the *only* reliable rollback for a bad import on the hairshoppro.lv side. Keeps the last 3 raw downloads (content + checksum + size + timestamp), round-robin across 3 fixed `KeyValueSetting` slots so metadata lookups never have to load megabytes of XML text. Uses the `@/lib/prisma` singleton (like `lib/product-overrides-store.ts`), not DI — this store isn't part of the tightly-mocked `sync-runner.ts` DB pipeline; it's called directly from inside the adapter (Task 7), which has no `db` handle to thread through (`ErpAdapter.fetchPage()` takes no such parameter, by design — adapters only talk to the external source).
 
 - [ ] **Step 1: Write the failing tests**
 

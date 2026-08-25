@@ -29,7 +29,7 @@ export default function B2BChat(): React.ReactElement | null {
     () => ({
       name: 'Анна Петрова',
       phone: '+7 (999) 123-45-67',
-      email: 'account.manager@hairshop-pro.lv.local'
+      email: 'account.manager@hairshoppro.lv.local'
     }),
     []
   )

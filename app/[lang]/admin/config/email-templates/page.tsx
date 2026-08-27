@@ -34,6 +34,11 @@ function renderPreview(body: string, vars: string[], language: 'ru' | 'en' | 'lv
         email: 'ivan@example.com',
         reset_link: '#',
         rfq_id: 'RFQ-2025-042',
+        name: language === 'ru' ? 'Иван Петров' : language === 'lv' ? 'Jānis Bērziņš' : 'John Smith',
+        card_number: '123456',
+        invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
+        site_url: 'https://hairshoppro.lv',
+        note_block: '',
     };
     let result = body;
     vars.forEach((v) => {
@@ -53,7 +58,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [saveError, setSaveError] = useState(false);
-    const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+    const [tab, setTab] = useState<'edit' | 'preview'>('preview');
     const [testEmail, setTestEmail] = useState('');
     const [testSending, setTestSending] = useState(false);
     const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null);
@@ -110,7 +115,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
         setBody(t.body);
         setSaved(false);
         setSaveError(false);
-        setTab('edit');
+        setTab('preview');
     };
 
     const save = async () => {

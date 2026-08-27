@@ -18,6 +18,11 @@ type TemplatesData = {
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'email-templates.json')
 const KV_KEY = 'email-templates'
+const RETIRED_TEMPLATE_IDS = new Set([
+  'store-launch-ru', 'store-launch-en', 'store-launch-lv',
+  'access-request-approved-ru', 'access-request-approved-en', 'access-request-approved-lv',
+  'registration', 'registration-ru', 'registration-en', 'registration-lv',
+])
 
 async function readFromFile(): Promise<TemplatesData> {
   try {
@@ -30,7 +35,8 @@ async function readFromFile(): Promise<TemplatesData> {
 
 function mergeWithDefaults(stored: TemplatesData, defaults: TemplatesData): TemplatesData {
   const defaultById = new Map(defaults.templates.map((template) => [template.id, template]))
-  const templates = stored.templates.map((current) => {
+  const activeStoredTemplates = stored.templates.filter((template) => !RETIRED_TEMPLATE_IDS.has(template.id))
+  const templates = activeStoredTemplates.map((current) => {
     const template = defaultById.get(current.id)
     if (!template) return current
     const currentUpdatedAt = Date.parse(current.updatedAt)
@@ -44,7 +50,7 @@ function mergeWithDefaults(stored: TemplatesData, defaults: TemplatesData): Temp
   // tests and may be deliberate custom installations. Complete only an existing
   // full registry, without deleting any custom templates.
   if (stored.templates.length >= 10) {
-    const storedIds = new Set(stored.templates.map((template) => template.id))
+    const storedIds = new Set(activeStoredTemplates.map((template) => template.id))
     templates.push(...defaults.templates.filter((template) => !storedIds.has(template.id)))
   }
   return {

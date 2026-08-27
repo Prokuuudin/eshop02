@@ -3,7 +3,6 @@ import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
-import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 
 export const runtime = 'nodejs'
 
@@ -11,7 +10,6 @@ type Lang = 'ru' | 'en' | 'lv'
 
 const OFFICE_PHONE = '+371 27067730'
 const OFFICE_EMAIL = 'office@miksplus.eu'
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hairshoppro.lv'
 
 function escapeHtml(str: string): string {
   return str
@@ -38,26 +36,11 @@ function buildNoteBlock(note: string, lang: Lang): string {
 
 // Fallback HTML builders (used if template not found in JSON)
 const FALLBACK_SUBJECTS: Record<string, Record<Lang, string>> = {
-  approval: {
-    ru: 'Добро пожаловать! Ваша карта клиента готова',
-    en: 'Welcome! Your client card is ready',
-    lv: 'Laipni lūdzam! Jūsu klienta karte ir gatava',
-  },
   rejection: {
     ru: 'О вашей заявке на карту клиента',
     en: 'About your client card application',
     lv: 'Par jūsu klienta kartes pieteikumu',
   },
-}
-
-function buildFallbackApproval(name: string, cardNumber: string): string {
-  const safeName = escapeHtml(name)
-  const safeCard = escapeHtml(cardNumber)
-  const safePass = escapeHtml(FIRST_LOGIN_PASSWORD)
-  return interpolate(
-    `<p>Dear {{name}},</p><p>Card: {{card_number}}</p><p>Password: {{password}}</p><p><a href="{{site_url}}/auth/register">Register</a></p>`,
-    { name: safeName, card_number: safeCard, password: safePass, site_url: SITE_URL }
-  )
 }
 
 function buildFallbackRejection(name: string, lang: Lang, note?: string): string {
@@ -93,21 +76,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const findTemplate = (id: string) => templates.find((t) => t.id === id)
 
     if (action === 'approve') {
-      const { cardNumber } = payload as ApprovePayload
-      if (!cardNumber) return NextResponse.json({ ok: false, code: 'missing_card' }, { status: 422 })
-
-      const tpl = findTemplate(`access-request-approved-${lang}`)
-      const subject = tpl?.subject ?? FALLBACK_SUBJECTS.approval[lang]
-      const html = tpl
-        ? interpolate(tpl.body, {
-            name: escapeHtml(name),
-            card_number: escapeHtml(cardNumber),
-            password: escapeHtml(FIRST_LOGIN_PASSWORD),
-            site_url: SITE_URL,
-          })
-        : buildFallbackApproval(name, cardNumber)
-
-      await sendEmail(email, subject, html)
+      // Approval must go through /api/admin/access-requests/:id. That workflow
+      // creates a one-time /auth/invite token and sends the canonical pro-invite
+      // template; the retired shared-password registration email is forbidden.
+      return NextResponse.json({ ok: false, code: 'legacy_approval_disabled' }, { status: 410 })
 
     } else if (action === 'reject') {
       const { note } = payload as RejectPayload
@@ -132,6 +104,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
 
 

@@ -18,7 +18,6 @@ const REQUIRED_TEMPLATE_IDS = [
   'order-shipped', 'order-shipped-en', 'order-shipped-lv',
   'order-delivered', 'order-delivered-en', 'order-delivered-lv',
   'password-reset', 'password-reset-ru', 'password-reset-en', 'password-reset-lv',
-  'access-request-approved-ru', 'access-request-approved-en', 'access-request-approved-lv',
   'access-request-rejected-ru', 'access-request-rejected-en', 'access-request-rejected-lv',
   'card-rules-ru', 'pro-invite',
 ]
@@ -51,5 +50,18 @@ describe('email template inventory', () => {
     const allText = templates.map((template) => `${template.subject}\n${template.body}`).join('\n')
     expect(allText).not.toMatch(/HairShop\.lv|Hairshop-Pro|MiksPlus|Миксплюс|ProBeauty/)
     expect(allText).toContain('hairshoppro.lv')
+  })
+
+  it('does not expose templates from the retired shared-password registration flow', () => {
+    const ids = new Set(templates.map((template) => template.id))
+    const retiredIds = [
+      'store-launch-ru', 'store-launch-en', 'store-launch-lv',
+      'access-request-approved-ru', 'access-request-approved-en', 'access-request-approved-lv',
+      'registration', 'registration-ru', 'registration-en', 'registration-lv',
+    ]
+    expect(retiredIds.filter((id) => ids.has(id))).toEqual([])
+
+    const allText = templates.map((template) => template.body).join('\n')
+    expect(allText).not.toMatch(/начальн(?:ый|ого) пароль|initial password|sākotnējo paroli/i)
   })
 })

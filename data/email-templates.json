@@ -1,236 +1,224 @@
 {
-  "templates": [
-    {
-      "id": "order-confirmation",
-      "name": "Подтверждение заказа",
-      "subject": "Ваш заказ №{{order_id}} принят",
-      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Заказ <strong>№{{order_id}}</strong> успешно оформлен.</p>\n<p><strong>Итого:</strong> {{total}}</p>\n<p>Статус заказа можно отслеживать в личном кабинете. Об изменениях мы сообщим отдельным письмом.</p>\n<p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-shipped",
-      "name": "Заказ отправлен",
-      "subject": "Ваш заказ №{{order_id}} отправлен",
-      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Ваш заказ <strong>№{{order_id}}</strong> передан в службу доставки.</p>\n<p>Данные для отслеживания, если они предоставлены перевозчиком, будут доступны в сообщении службы доставки.</p>\n<p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-delivered",
-      "name": "Заказ доставлен",
-      "subject": "Ваш заказ №{{order_id}} доставлен",
-      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Ваш заказ <strong>№{{order_id}}</strong> успешно доставлен.</p>\n<p>Надеемся, что вы довольны покупкой! Будем рады вашему отзыву.</p>\n<p>С уважением,<br>Команда магазина</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "registration",
-      "name": "Регистрация",
-      "subject": "Добро пожаловать в {{store_name}}!",
-      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>Для адреса <strong>{{email}}</strong> создан аккаунт в магазине <strong>{{store_name}}</strong>.</p>\n<p>После входа вы сможете оформлять заказы и отслеживать их статус в личном кабинете.</p>\n<p>Если вы не создавали аккаунт, сообщите нам: info@hairshop.lv.</p>\n<p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p>",
-      "variables": ["first_name", "email", "store_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "password-reset",
-      "name": "Сброс пароля",
-      "subject": "Сброс пароля для {{email}}",
-      "body": "<h2>Сброс пароля</h2>\n<p>Мы получили запрос на сброс пароля для аккаунта <strong>{{email}}</strong>.</p>\n<p><a href=\"{{reset_link}}\">Установить новый пароль</a></p>\n<p>Ссылка действительна в течение 1 часа. Если вы не отправляли запрос, проигнорируйте письмо — пароль останется прежним.</p>\n<p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p>",
-      "variables": ["email", "reset_link"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "rfq-response",
-      "name": "Ответ на RFQ",
-      "subject": "Ответ на ваш запрос котировок №{{rfq_id}}",
-      "body": "<h2>Здравствуйте, {{first_name}}!</h2>\n<p>По запросу <strong>№{{rfq_id}}</strong> подготовлено коммерческое предложение.</p>\n<p><strong>Стоимость предложения:</strong> {{total}}</p>\n<p>Откройте запрос в личном кабинете, чтобы проверить условия и принять или отклонить предложение. Принятие предложения само по себе не является оплатой заказа.</p>\n<p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p>",
-      "variables": ["rfq_id", "first_name", "total"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "store-launch-ru",
-      "name": "Анонс запуска магазина (RU)",
-      "subject": "hairshoppro.lv открывает интернет-магазин — эксклюзивно для держателей карты клиента",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#059669,#0d9488);padding:40px 24px 32px;border-radius:12px 12px 0 0;text-align:center\">\n    <p style=\"color:rgba(255,255,255,0.8);font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.1em\">Только для обладателей карты клиента</p>\n    <h1 style=\"color:#fff;margin:0;font-size:26px;font-weight:700;line-height:1.3\">hairshoppro.lv открывает<br>интернет-магазин для профессионалов</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:12px 0 0;font-size:15px\">Эксклюзивные цены. Уникальный ассортимент.<br>Для вас — с первого дня.</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Уважаемый(-ая) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Мы рады сообщить вам, что интернет-магазин <strong>hairshoppro.lv</strong> начинает работу. Как обладатель карты клиента, вы получаете доступ ко всему ассортименту, специальным ценам и эксклюзивным предложениям, недоступным широкой публике.</p>\n    <div style=\"display:flex;gap:12px;margin:24px 0;flex-wrap:wrap\">\n      <div style=\"flex:1;min-width:160px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🏷️</p>\n        <p style=\"font-size:13px;font-weight:600;color:#166534;margin:0 0 4px\">Эксклюзивные цены</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Специальные условия только для держателей карты клиента</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">📦</p>\n        <p style=\"font-size:13px;font-weight:600;color:#1e40af;margin:0 0 4px\">Профессиональный ассортимент</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Специализированные товары, которых нет в обычной рознице</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🎁</p>\n        <p style=\"font-size:13px;font-weight:600;color:#c2410c;margin:0 0 4px\">Бонусная программа</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Бонусные баллы за каждую покупку — копите и оплачивайте ими заказы</p>\n      </div>\n    </div>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Напоминаем ваш номер карты клиента</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">Как зарегистрироваться и начать покупки:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 24px\">\n      <li>Перейдите на <a href=\"{{site_url}}/auth/register\" style=\"color:#059669;text-decoration:none;font-weight:500\">{{site_url}}/auth/register</a></li>\n      <li>Выберите вариант <strong>«Есть карта клиента»</strong></li>\n      <li>Введите номер карты: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Используйте начальный пароль: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>После входа смените пароль в разделе <strong>«Профиль»</strong> — это обязательно</li>\n    </ol>\n    <div style=\"text-align:center;margin:28px 0\">\n      <a href=\"{{site_url}}\" style=\"display:inline-block;background:#059669;color:#fff;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.02em\">Перейти в магазин →</a>\n    </div>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Если возникнут вопросы — мы на связи:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#059669;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#059669;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">С уважением,<br><strong>Команда hairshoppro.lv</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "store-launch-en",
-      "name": "Анонс запуска магазина (EN)",
-      "subject": "hairshoppro.lv launches online store — exclusively for professionals",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#059669,#0d9488);padding:40px 24px 32px;border-radius:12px 12px 0 0;text-align:center\">\n    <p style=\"color:rgba(255,255,255,0.8);font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.1em\">Exclusively for client card holders</p>\n    <h1 style=\"color:#fff;margin:0;font-size:26px;font-weight:700;line-height:1.3\">hairshoppro.lv launches<br>its online store</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:12px 0 0;font-size:15px\">Professional range. Exclusive prices.<br>For you — from day one.</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Dear {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">We are pleased to announce that the <strong>hairshoppro.lv</strong> online store is now open. As a client card holder, you get early access — to the full range, special prices, and exclusive offers unavailable to the general public.</p>\n    <div style=\"display:flex;gap:12px;margin:24px 0;flex-wrap:wrap\">\n      <div style=\"flex:1;min-width:160px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🏷️</p>\n        <p style=\"font-size:13px;font-weight:600;color:#166534;margin:0 0 4px\">Exclusive prices</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Special terms for client card holders only</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">📦</p>\n        <p style=\"font-size:13px;font-weight:600;color:#1e40af;margin:0 0 4px\">Professional range</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Products for professionals not found in regular stores</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🕐</p>\n        <p style=\"font-size:13px;font-weight:600;color:#6b21a8;margin:0 0 4px\">Order 24/7</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Place orders at any convenient time</p>\n      </div>\n    </div>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Your client card number</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">How to register and start shopping:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 24px\">\n      <li>Go to <a href=\"{{site_url}}/auth/register\" style=\"color:#059669;text-decoration:none;font-weight:500\">{{site_url}}/auth/register</a></li>\n      <li>Select <strong>\"I have a client card\"</strong></li>\n      <li>Enter your card number: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Use the initial password: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>After signing in, change your password in <strong>\"Profile\"</strong> — this is required</li>\n    </ol>\n    <div style=\"text-align:center;margin:28px 0\">\n      <a href=\"{{site_url}}\" style=\"display:inline-block;background:#059669;color:#fff;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.02em\">Go to the store →</a>\n    </div>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">If you have any questions, we are here to help:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#059669;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#059669;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Kind regards,<br><strong>hairshoppro.lv Team</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "store-launch-lv",
-      "name": "Анонс запуска магазина (LV)",
-      "subject": "hairshoppro.lv atver interneta veikalu — tikai profesionāļiem",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#059669,#0d9488);padding:40px 24px 32px;border-radius:12px 12px 0 0;text-align:center\">\n    <p style=\"color:rgba(255,255,255,0.8);font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.1em\">Tikai klienta kartes turētājiem</p>\n    <h1 style=\"color:#fff;margin:0;font-size:26px;font-weight:700;line-height:1.3\">hairshoppro.lv atver<br>interneta veikalu</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:12px 0 0;font-size:15px\">Profesionāls sortiments. Ekskluzīvas cenas.<br>Jums — no pirmās dienas.</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Cienījamais(-ā) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Mēs ar prieku paziņojam, ka <strong>hairshoppro.lv</strong> interneta veikals sāk darbu. Kā klienta kartes turētājs(-a), jūs saņemat piekļuvi pirms citiem — visam sortimentam, īpašām cenām un piedāvājumiem, kas nav pieejami plašai sabiedrībai.</p>\n    <div style=\"display:flex;gap:12px;margin:24px 0;flex-wrap:wrap\">\n      <div style=\"flex:1;min-width:160px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🏷️</p>\n        <p style=\"font-size:13px;font-weight:600;color:#166534;margin:0 0 4px\">Ekskluzīvas cenas</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Īpaši nosacījumi tikai klienta kartes turētājiem</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">📦</p>\n        <p style=\"font-size:13px;font-weight:600;color:#1e40af;margin:0 0 4px\">Profesionāls sortiments</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Preces profesionāļiem, kuru nav parastajā tirdzniecībā</p>\n      </div>\n      <div style=\"flex:1;min-width:160px;background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:16px;text-align:center\">\n        <p style=\"font-size:22px;margin:0 0 6px\">🕐</p>\n        <p style=\"font-size:13px;font-weight:600;color:#6b21a8;margin:0 0 4px\">Pasūtījumi 24/7</p>\n        <p style=\"font-size:12px;color:#4b5563;margin:0\">Veiciet pasūtījumus jebkurā ērtā laikā</p>\n      </div>\n    </div>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Jūsu klienta kartes numurs</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">Kā reģistrēties un sākt iepirkties:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 24px\">\n      <li>Dodieties uz <a href=\"{{site_url}}/auth/register\" style=\"color:#059669;text-decoration:none;font-weight:500\">{{site_url}}/auth/register</a></li>\n      <li>Izvēlieties <strong>\"Man ir klienta karte\"</strong></li>\n      <li>Ievadiet kartes numuru: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Izmantojiet sākotnējo paroli: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>Pēc pieteikšanās nomainiet paroli sadaļā <strong>\"Profils\"</strong> — tas ir obligāti</li>\n    </ol>\n    <div style=\"text-align:center;margin:28px 0\">\n      <a href=\"{{site_url}}\" style=\"display:inline-block;background:#059669;color:#fff;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.02em\">Doties uz veikalu →</a>\n    </div>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Ja jums rodas jautājumi — mēs esam sasniedzami:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#059669;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#059669;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Ar cieņu,<br><strong>hairshoppro.lv komanda</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-approved-ru",
-      "name": "Заявка на карту: одобрена (RU)",
-      "subject": "Добро пожаловать! Ваша карта клиента готова",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700\">Добро пожаловать!</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px\">Ваша карта клиента готова</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Дорогой(-ая) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Рады приветствовать вас в нашем сообществе профессионалов! Благодарим за доверие — ваша заявка рассмотрена и одобрена.</p>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Номер карты</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">Как зарегистрироваться на сайте:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 20px\">\n      <li>Перейдите на <a href=\"{{site_url}}/auth/register\" style=\"color:#4f46e5;text-decoration:none\">{{site_url}}/auth/register</a></li>\n      <li>Выберите вариант <strong>«Есть карта клиента»</strong></li>\n      <li>Введите номер карты: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Используйте начальный пароль: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>После входа вы сможете изменить пароль в разделе <strong>«Профиль»</strong>. <strong>Смена пароля обязательна!</strong></li>\n    </ol>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Если возникнут вопросы — мы всегда готовы помочь:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">С уважением,<br><strong>Команда hairshoppro.lv</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-approved-en",
-      "name": "Заявка на карту: одобрена (EN)",
-      "subject": "Welcome! Your client card is ready",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700\">Welcome!</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px\">Your client card is ready</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Dear {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">We are happy to welcome you to our community of professionals! Thank you for your trust — your application has been reviewed and approved.</p>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Card number</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">How to register on the website:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 20px\">\n      <li>Go to <a href=\"{{site_url}}/auth/register\" style=\"color:#4f46e5;text-decoration:none\">{{site_url}}/auth/register</a></li>\n      <li>Select the option <strong>\"I have a client card\"</strong></li>\n      <li>Enter your card number: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Use the initial password: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>After logging in, go to <strong>\"Profile\"</strong> to set your own password. <strong>Changing the password is required!</strong></li>\n    </ol>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">If you have any questions, we are always ready to help:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Kind regards,<br><strong>hairshoppro.lv Team</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-approved-lv",
-      "name": "Заявка на карту: одобрена (LV)",
-      "subject": "Laipni lūdzam! Jūsu klienta karte ir gatava",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h1 style=\"color:#fff;margin:0;font-size:24px;font-weight:700\">Laipni lūdzam!</h1>\n    <p style=\"color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px\">Jūsu klienta karte ir gatava</p>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Cienījamais(-ā) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Priecājamies jūs uzņemt mūsu profesionāļu kopienā! Paldies par uzticību — jūsu pieteikums ir izskatīts un apstiprināts.</p>\n    <div style=\"background:#f5f3ff;border:2px solid #7c3aed;border-radius:10px;padding:16px 24px;text-align:center;margin:24px 0\">\n      <p style=\"color:#5b21b6;font-size:12px;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em\">Kartes numurs</p>\n      <p style=\"color:#1a1a2e;font-size:36px;font-weight:700;margin:0;letter-spacing:0.15em;font-family:monospace\">{{card_number}}</p>\n    </div>\n    <p style=\"font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:8px\">Kā reģistrēties vietnē:</p>\n    <ol style=\"font-size:15px;line-height:1.9;color:#374151;padding-left:20px;margin:0 0 20px\">\n      <li>Dodieties uz <a href=\"{{site_url}}/auth/register\" style=\"color:#4f46e5;text-decoration:none\">{{site_url}}/auth/register</a></li>\n      <li>Izvēlieties opciju <strong>\"Man ir klienta karte\"</strong></li>\n      <li>Ievadiet kartes numuru: <strong style=\"font-family:monospace\">{{card_number}}</strong></li>\n      <li>Izmantojiet sākotnējo paroli: <strong style=\"font-family:monospace;background:#f3f4f6;padding:2px 6px;border-radius:4px\">{{password}}</strong></li>\n      <li>Pēc pieteikšanās dodieties uz <strong>\"Profils\"</strong>, lai iestatītu savu paroli. <strong>Paroles maiņa ir obligāta!</strong></li>\n    </ol>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Ja jums rodas jautājumi — mēs vienmēr esam gatavi palīdzēt:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Ar cieņu,<br><strong>hairshoppro.lv komanda</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "card_number", "password", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-rejected-ru",
-      "name": "Заявка на карту: отклонена (RU)",
-      "subject": "О вашей заявке на карту клиента",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\">\n    <h1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\">О вашей заявке</h1>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Уважаемый(-ая) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Благодарим за интерес к нашей компании и время, которое вы уделили для подачи заявки.</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">К сожалению, в настоящее время мы не можем выдать карту клиента по вашей заявке. Мы ценим ваш интерес и приносим свои извинения за возможные неудобства.</p>\n    {{note_block}}\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Если вы хотите узнать подробности или у вас остались вопросы — пожалуйста, свяжитесь с нашим офисом:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">С уважением,<br><strong>Команда hairshoppro.lv</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "note_block"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-rejected-en",
-      "name": "Заявка на карту: отклонена (EN)",
-      "subject": "About your client card application",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\">\n    <h1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\">About your application</h1>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Dear {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Thank you for your interest in our company and the time you took to submit your application.</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Unfortunately, we are currently unable to issue a client card for your application. We appreciate your interest and apologize for any inconvenience.</p>\n    {{note_block}}\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">If you would like to know more details or have any questions, please contact our office:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Kind regards,<br><strong>hairshoppro.lv Team</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "note_block"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "access-request-rejected-lv",
-      "name": "Заявка на карту: отклонена (LV)",
-      "subject": "Par jūsu klienta kartes pieteikumu",
-      "body": "<div style=\"font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\">\n  <div style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\">\n    <h1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\">Par jūsu pieteikumu</h1>\n  </div>\n  <div style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\">\n    <p style=\"font-size:16px;margin-top:0\">Cienījamais(-ā) {{name}},</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Paldies par interesi par mūsu uzņēmumu un laiku, ko veltījāt pieteikuma iesniegšanai.</p>\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Diemžēl šobrīd mēs nevaram izsniegt klienta karti jūsu pieteikumam. Mēs novērtējam jūsu interesi un atvainojamies par sagādātajām neērtībām.</p>\n    {{note_block}}\n    <p style=\"font-size:15px;line-height:1.7;color:#374151\">Ja vēlaties uzzināt sīkāku informāciju vai jums ir kādi jautājumi — lūdzu, sazinieties ar mūsu biroju:</p>\n    <div style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\">\n      <p style=\"margin:4px 0\">📞 <a href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\">+371 27067730</a></p>\n      <p style=\"margin:4px 0\">✉️ <a href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\">office@miksplus.eu</a></p>\n    </div>\n    <p style=\"font-size:15px;color:#374151;margin-bottom:0\">Ar cieņu,<br><strong>hairshoppro.lv komanda</strong></p>\n  </div>\n</div>",
-      "variables": ["name", "note_block"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-confirmation-en",
-      "name": "Order Confirmation (EN)",
-      "subject": "Your order #{{order_id}} has been received",
-      "body": "<h2>Hello, {{first_name}}!</h2><p>Order <strong>#{{order_id}}</strong> has been successfully placed.</p><p><strong>Total:</strong> {{total}}</p><p>You can track its status in your account. We will email you when the status changes.</p><p>Kind regards,<br>hairshoppro.lv team<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-confirmation-lv",
-      "name": "Pasūtījuma apstiprinājums (LV)",
-      "subject": "Jūsu pasūtījums №{{order_id}} ir saņemts",
-      "body": "<h2>Labdien, {{first_name}}!</h2><p>Pasūtījums <strong>Nr. {{order_id}}</strong> ir veiksmīgi noformēts.</p><p><strong>Kopā:</strong> {{total}}</p><p>Pasūtījuma statusam varat sekot savā kontā. Par statusa izmaiņām nosūtīsim e-pastu.</p><p>Ar cieņu,<br>hairshoppro.lv komanda<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name", "last_name", "total", "items_list"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-shipped-en",
-      "name": "Order Shipped (EN)",
-      "subject": "Your order #{{order_id}} has been shipped",
-      "body": "<h2>Hello, {{first_name}}!</h2><p>Your order <strong>#{{order_id}}</strong> has been handed over to the delivery service.</p><p>If the carrier provides tracking details, you will receive them directly from the carrier.</p><p>Kind regards,<br>hairshoppro.lv team<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-shipped-lv",
-      "name": "Pasūtījums nosūtīts (LV)",
-      "subject": "Jūsu pasūtījums №{{order_id}} ir nosūtīts",
-      "body": "<h2>Labdien, {{first_name}}!</h2><p>Jūsu pasūtījums <strong>Nr. {{order_id}}</strong> ir nodots piegādes dienestam.</p><p>Ja pārvadātājs nodrošina izsekošanas informāciju, to saņemsiet no pārvadātāja.</p><p>Ar cieņu,<br>hairshoppro.lv komanda<br>SIA Miks Plus</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-delivered-en",
-      "name": "Order Delivered (EN)",
-      "subject": "Your order #{{order_id}} has been delivered",
-      "body": "<h2>Hello, {{first_name}}!</h2><p>Your order <strong>#{{order_id}}</strong> has been delivered. Thank you for your purchase!</p><p>If you have any questions, please contact us.</p><p>Best regards,<br>The store team</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "order-delivered-lv",
-      "name": "Pasūtījums piegādāts (LV)",
-      "subject": "Jūsu pasūtījums №{{order_id}} ir piegādāts",
-      "body": "<h2>Labdien, {{first_name}}!</h2><p>Jūsu pasūtījums <strong>№{{order_id}}</strong> ir piegādāts. Paldies par pirkumu!</p><p>Ja jums ir jautājumi, lūdzu, sazinieties ar mums.</p><p>Ar cieņu,<br>Veikala komanda</p>",
-      "variables": ["order_id", "first_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "password-reset-ru",
-      "name": "Сброс пароля (RU)",
-      "subject": "Сброс пароля для {{email}}",
-      "body": "<h2 style=\"color:#4f46e5\">Сброс пароля</h2><p>Мы получили запрос на сброс пароля для аккаунта <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Сбросить пароль</a></p><p style=\"color:#6b7280;font-size:13px\">Ссылка действительна 1 час. Если вы не запрашивали сброс — проигнорируйте это письмо.</p>",
-      "variables": ["email", "reset_link"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "password-reset-en",
-      "name": "Password Reset (EN)",
-      "subject": "Password reset for {{email}}",
-      "body": "<h2 style=\"color:#4f46e5\">Password reset</h2><p>We received a request to reset the password for account <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Reset password</a></p><p style=\"color:#6b7280;font-size:13px\">The link is valid for 1 hour. If you did not request a reset, please ignore this email.</p>",
-      "variables": ["email", "reset_link"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "password-reset-lv",
-      "name": "Paroles atjaunošana (LV)",
-      "subject": "Paroles atjaunošana kontam {{email}}",
-      "body": "<h2 style=\"color:#4f46e5\">Paroles atjaunošana</h2><p>Mēs saņēmām pieprasījumu atjaunot paroli kontam <strong>{{email}}</strong>.</p><p style=\"margin:24px 0\"><a href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Atjaunot paroli</a></p><p style=\"color:#6b7280;font-size:13px\">Saite ir derīga 1 stundu. Ja jūs to neprasījāt, vienkārši ignorējiet šo e-pastu.</p>",
-      "variables": ["email", "reset_link"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "registration-ru",
-      "name": "Регистрация (RU)",
-      "subject": "Добро пожаловать в {{store_name}}!",
-      "body": "<h2>Добро пожаловать, {{first_name}}!</h2><p>Для адреса <strong>{{email}}</strong> создан аккаунт в магазине <strong>{{store_name}}</strong>.</p><p>Теперь вы можете войти и начать оформлять заказы.</p><p>Если вы не создавали аккаунт, сообщите нам: info@hairshop.lv.</p>",
-      "variables": ["first_name", "email", "store_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "registration-en",
-      "name": "Registration (EN)",
-      "subject": "Welcome to {{store_name}}!",
-      "body": "<h2>Welcome, {{first_name}}!</h2><p>An account at <strong>{{store_name}}</strong> has been created for <strong>{{email}}</strong>.</p><p>You can now sign in and start placing orders.</p><p>If you did not create this account, contact us at info@hairshop.lv.</p>",
-      "variables": ["first_name", "email", "store_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "registration-lv",
-      "name": "Reģistrācija (LV)",
-      "subject": "Laipni lūdzam {{store_name}}!",
-      "body": "<h2>Laipni lūdzam, {{first_name}}!</h2><p>Adresei <strong>{{email}}</strong> ir izveidots konts veikalā <strong>{{store_name}}</strong>.</p><p>Tagad varat pieteikties un sākt veikt pasūtījumus.</p><p>Ja kontu neizveidojāt jūs, sazinieties ar mums: info@hairshop.lv.</p>",
-      "variables": ["first_name", "email", "store_name"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "card-rules-ru",
-      "name": "Как получить карту клиента (RU)",
-      "subject": "Как получить карту клиента hairshoppro.lv",
-      "body": "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1f2937\"><h2>Здравствуйте, {{name}}!</h2><p>hairshoppro.lv — интернет-магазин профессиональной косметики компании SIA Miks Plus.</p><p>Для доступа к профессиональным ценам и оформлению заказов нужна карта клиента. Подайте заявку на сайте и приложите документ, подтверждающий профессиональную деятельность, либо сведения о салоне.</p><p><a href=\"{{site_url}}/auth/register\" style=\"display:inline-block;padding:12px 20px;background:#059669;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Подать заявку</a></p><p>После проверки заявки мы сообщим решение по электронной почте. Одобрение заявки не гарантируется.</p><p>Вопросы: info@hairshop.lv · +371 27067730</p><p>С уважением,<br>Команда hairshoppro.lv<br>SIA Miks Plus</p></div>",
-      "variables": ["name", "site_url"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    },
-    {
-      "id": "pro-invite",
-      "name": "Инвайт держателю карты (LV+RU+EN)",
-      "subject": "Klienta karte — aktivizējiet kontu · Карта клиента — активируйте аккаунт · Activate your account",
-      "body": "<div style=\"font-family:sans-serif;max-width:560px;margin:0 auto\"><h2 style=\"color:#4f46e5\">Laipni lūdzam! · Добро пожаловать! · Welcome!</h2><p>{{name}}</p><p><strong>LV</strong> — Jums ir klienta karte Nr. <strong>{{card_number}}</strong>. Esam atvēruši jaunu interneta veikalu profesionāļiem, un jūsu konts tajā jau ir izveidots. Kā sākt:</p><ol style=\"margin:4px 0 16px;padding-left:20px\"><li>Nospiediet pogu “Aktivizēt kontu”.</li><li>Izveidojiet paroli (vismaz 8 simboli).</li><li>Ielogojieties ar savu e-pastu un jauno paroli.</li></ol><p><strong>RU</strong> — У вас есть карта клиента № <strong>{{card_number}}</strong>. Мы открыли новый интернет-магазин для профессионалов, и ваш аккаунт в нём уже создан. Как начать:</p><ol style=\"margin:4px 0 16px;padding-left:20px\"><li>Нажмите кнопку «Активировать аккаунт».</li><li>Придумайте пароль (не менее 8 символов).</li><li>Войдите на сайт со своим e-mail и новым паролем.</li></ol><p><strong>EN</strong> — You hold client card No. <strong>{{card_number}}</strong>. We have launched a new online store for professionals, and your account is already set up. How to start:</p><ol style=\"margin:4px 0 16px;padding-left:20px\"><li>Click the “Activate account” button.</li><li>Create a password (at least 8 characters).</li><li>Log in with your email and your new password.</li></ol><p><a href=\"{{invite_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\">Aktivizēt kontu · Активировать аккаунт · Activate account</a></p><p style=\"color:#6b7280;font-size:13px\">Ja poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:<br><a href=\"{{invite_link}}\">{{invite_link}}</a></p><p style=\"color:#6b7280;font-size:13px\">Saite ir derīga 7 dienas · Ссылка действительна 7 дней · The link is valid for 7 days.</p></div>",
-      "variables": ["name", "card_number", "invite_link"],
-      "updatedAt": "2026-08-27T00:00:00.000Z"
-    }
-  ]
+    "templates":  [
+                      {
+                          "id":  "order-confirmation",
+                          "name":  "Подтверждение заказа",
+                          "subject":  "Ваш заказ №{{order_id}} принят",
+                          "body":  "\u003ch2\u003eЗдравствуйте, {{first_name}}!\u003c/h2\u003e\n\u003cp\u003eЗаказ \u003cstrong\u003e№{{order_id}}\u003c/strong\u003e успешно оформлен.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eИтого:\u003c/strong\u003e {{total}}\u003c/p\u003e\n\u003cp\u003eСтатус заказа можно отслеживать в личном кабинете. Об изменениях мы сообщим отдельным письмом.\u003c/p\u003e\n\u003cp\u003eС уважением,\u003cbr\u003eКоманда hairshoppro.lv\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name",
+                                            "last_name",
+                                            "total",
+                                            "items_list"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-shipped",
+                          "name":  "Заказ отправлен",
+                          "subject":  "Ваш заказ №{{order_id}} отправлен",
+                          "body":  "\u003ch2\u003eЗдравствуйте, {{first_name}}!\u003c/h2\u003e\n\u003cp\u003eВаш заказ \u003cstrong\u003e№{{order_id}}\u003c/strong\u003e передан в службу доставки.\u003c/p\u003e\n\u003cp\u003eДанные для отслеживания, если они предоставлены перевозчиком, будут доступны в сообщении службы доставки.\u003c/p\u003e\n\u003cp\u003eС уважением,\u003cbr\u003eКоманда hairshoppro.lv\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-delivered",
+                          "name":  "Заказ доставлен",
+                          "subject":  "Ваш заказ №{{order_id}} доставлен",
+                          "body":  "\u003ch2\u003eЗдравствуйте, {{first_name}}!\u003c/h2\u003e\n\u003cp\u003eВаш заказ \u003cstrong\u003e№{{order_id}}\u003c/strong\u003e успешно доставлен.\u003c/p\u003e\n\u003cp\u003eНадеемся, что вы довольны покупкой! Будем рады вашему отзыву.\u003c/p\u003e\n\u003cp\u003eС уважением,\u003cbr\u003eКоманда магазина\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "password-reset",
+                          "name":  "Сброс пароля",
+                          "subject":  "Сброс пароля для {{email}}",
+                          "body":  "\u003ch2\u003eСброс пароля\u003c/h2\u003e\n\u003cp\u003eМы получили запрос на сброс пароля для аккаунта \u003cstrong\u003e{{email}}\u003c/strong\u003e.\u003c/p\u003e\n\u003cp\u003e\u003ca href=\"{{reset_link}}\"\u003eУстановить новый пароль\u003c/a\u003e\u003c/p\u003e\n\u003cp\u003eСсылка действительна в течение 1 часа. Если вы не отправляли запрос, проигнорируйте письмо — пароль останется прежним.\u003c/p\u003e\n\u003cp\u003eС уважением,\u003cbr\u003eКоманда hairshoppro.lv\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "email",
+                                            "reset_link"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "rfq-response",
+                          "name":  "Ответ на RFQ",
+                          "subject":  "Ответ на ваш запрос котировок №{{rfq_id}}",
+                          "body":  "\u003ch2\u003eЗдравствуйте, {{first_name}}!\u003c/h2\u003e\n\u003cp\u003eПо запросу \u003cstrong\u003e№{{rfq_id}}\u003c/strong\u003e подготовлено коммерческое предложение.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eСтоимость предложения:\u003c/strong\u003e {{total}}\u003c/p\u003e\n\u003cp\u003eОткройте запрос в личном кабинете, чтобы проверить условия и принять или отклонить предложение. Принятие предложения само по себе не является оплатой заказа.\u003c/p\u003e\n\u003cp\u003eС уважением,\u003cbr\u003eКоманда hairshoppro.lv\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "rfq_id",
+                                            "first_name",
+                                            "total"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "access-request-rejected-ru",
+                          "name":  "Заявка на карту: отклонена (RU)",
+                          "subject":  "О вашей заявке на карту клиента",
+                          "body":  "\u003cdiv style=\"font-family:\u0027Helvetica Neue\u0027,Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\"\u003e\n  \u003cdiv style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\"\u003e\n    \u003ch1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\"\u003eО вашей заявке\u003c/h1\u003e\n  \u003c/div\u003e\n  \u003cdiv style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\"\u003e\n    \u003cp style=\"font-size:16px;margin-top:0\"\u003eУважаемый(-ая) {{name}},\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eБлагодарим за интерес к нашей компании и время, которое вы уделили для подачи заявки.\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eК сожалению, в настоящее время мы не можем выдать карту клиента по вашей заявке. Мы ценим ваш интерес и приносим свои извинения за возможные неудобства.\u003c/p\u003e\n    {{note_block}}\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eЕсли вы хотите узнать подробности или у вас остались вопросы — пожалуйста, свяжитесь с нашим офисом:\u003c/p\u003e\n    \u003cdiv style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\"\u003e\n      \u003cp style=\"margin:4px 0\"\u003e📞 \u003ca href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\"\u003e+371 27067730\u003c/a\u003e\u003c/p\u003e\n      \u003cp style=\"margin:4px 0\"\u003e✉️ \u003ca href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\"\u003eoffice@miksplus.eu\u003c/a\u003e\u003c/p\u003e\n    \u003c/div\u003e\n    \u003cp style=\"font-size:15px;color:#374151;margin-bottom:0\"\u003eС уважением,\u003cbr\u003e\u003cstrong\u003eКоманда hairshoppro.lv\u003c/strong\u003e\u003c/p\u003e\n  \u003c/div\u003e\n\u003c/div\u003e",
+                          "variables":  [
+                                            "name",
+                                            "note_block"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "access-request-rejected-en",
+                          "name":  "Заявка на карту: отклонена (EN)",
+                          "subject":  "About your client card application",
+                          "body":  "\u003cdiv style=\"font-family:\u0027Helvetica Neue\u0027,Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\"\u003e\n  \u003cdiv style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\"\u003e\n    \u003ch1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\"\u003eAbout your application\u003c/h1\u003e\n  \u003c/div\u003e\n  \u003cdiv style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\"\u003e\n    \u003cp style=\"font-size:16px;margin-top:0\"\u003eDear {{name}},\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eThank you for your interest in our company and the time you took to submit your application.\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eUnfortunately, we are currently unable to issue a client card for your application. We appreciate your interest and apologize for any inconvenience.\u003c/p\u003e\n    {{note_block}}\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eIf you would like to know more details or have any questions, please contact our office:\u003c/p\u003e\n    \u003cdiv style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\"\u003e\n      \u003cp style=\"margin:4px 0\"\u003e📞 \u003ca href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\"\u003e+371 27067730\u003c/a\u003e\u003c/p\u003e\n      \u003cp style=\"margin:4px 0\"\u003e✉️ \u003ca href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\"\u003eoffice@miksplus.eu\u003c/a\u003e\u003c/p\u003e\n    \u003c/div\u003e\n    \u003cp style=\"font-size:15px;color:#374151;margin-bottom:0\"\u003eKind regards,\u003cbr\u003e\u003cstrong\u003ehairshoppro.lv Team\u003c/strong\u003e\u003c/p\u003e\n  \u003c/div\u003e\n\u003c/div\u003e",
+                          "variables":  [
+                                            "name",
+                                            "note_block"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "access-request-rejected-lv",
+                          "name":  "Заявка на карту: отклонена (LV)",
+                          "subject":  "Par jūsu klienta kartes pieteikumu",
+                          "body":  "\u003cdiv style=\"font-family:\u0027Helvetica Neue\u0027,Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e\"\u003e\n  \u003cdiv style=\"background:#f9fafb;padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;border:1px solid #e5e7eb;border-bottom:none\"\u003e\n    \u003ch1 style=\"color:#374151;margin:0;font-size:22px;font-weight:600\"\u003ePar jūsu pieteikumu\u003c/h1\u003e\n  \u003c/div\u003e\n  \u003cdiv style=\"background:#ffffff;padding:32px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px\"\u003e\n    \u003cp style=\"font-size:16px;margin-top:0\"\u003eCienījamais(-ā) {{name}},\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003ePaldies par interesi par mūsu uzņēmumu un laiku, ko veltījāt pieteikuma iesniegšanai.\u003c/p\u003e\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eDiemžēl šobrīd mēs nevaram izsniegt klienta karti jūsu pieteikumam. Mēs novērtējam jūsu interesi un atvainojamies par sagādātajām neērtībām.\u003c/p\u003e\n    {{note_block}}\n    \u003cp style=\"font-size:15px;line-height:1.7;color:#374151\"\u003eJa vēlaties uzzināt sīkāku informāciju vai jums ir kādi jautājumi — lūdzu, sazinieties ar mūsu biroju:\u003c/p\u003e\n    \u003cdiv style=\"background:#f9fafb;border-radius:8px;padding:14px 20px;margin:12px 0 24px;font-size:14px;color:#4b5563\"\u003e\n      \u003cp style=\"margin:4px 0\"\u003e📞 \u003ca href=\"tel:+37127067730\" style=\"color:#4f46e5;text-decoration:none\"\u003e+371 27067730\u003c/a\u003e\u003c/p\u003e\n      \u003cp style=\"margin:4px 0\"\u003e✉️ \u003ca href=\"mailto:office@miksplus.eu\" style=\"color:#4f46e5;text-decoration:none\"\u003eoffice@miksplus.eu\u003c/a\u003e\u003c/p\u003e\n    \u003c/div\u003e\n    \u003cp style=\"font-size:15px;color:#374151;margin-bottom:0\"\u003eAr cieņu,\u003cbr\u003e\u003cstrong\u003ehairshoppro.lv komanda\u003c/strong\u003e\u003c/p\u003e\n  \u003c/div\u003e\n\u003c/div\u003e",
+                          "variables":  [
+                                            "name",
+                                            "note_block"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-confirmation-en",
+                          "name":  "Order Confirmation (EN)",
+                          "subject":  "Your order #{{order_id}} has been received",
+                          "body":  "\u003ch2\u003eHello, {{first_name}}!\u003c/h2\u003e\u003cp\u003eOrder \u003cstrong\u003e#{{order_id}}\u003c/strong\u003e has been successfully placed.\u003c/p\u003e\u003cp\u003e\u003cstrong\u003eTotal:\u003c/strong\u003e {{total}}\u003c/p\u003e\u003cp\u003eYou can track its status in your account. We will email you when the status changes.\u003c/p\u003e\u003cp\u003eKind regards,\u003cbr\u003ehairshoppro.lv team\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name",
+                                            "last_name",
+                                            "total",
+                                            "items_list"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-confirmation-lv",
+                          "name":  "Pasūtījuma apstiprinājums (LV)",
+                          "subject":  "Jūsu pasūtījums №{{order_id}} ir saņemts",
+                          "body":  "\u003ch2\u003eLabdien, {{first_name}}!\u003c/h2\u003e\u003cp\u003ePasūtījums \u003cstrong\u003eNr. {{order_id}}\u003c/strong\u003e ir veiksmīgi noformēts.\u003c/p\u003e\u003cp\u003e\u003cstrong\u003eKopā:\u003c/strong\u003e {{total}}\u003c/p\u003e\u003cp\u003ePasūtījuma statusam varat sekot savā kontā. Par statusa izmaiņām nosūtīsim e-pastu.\u003c/p\u003e\u003cp\u003eAr cieņu,\u003cbr\u003ehairshoppro.lv komanda\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name",
+                                            "last_name",
+                                            "total",
+                                            "items_list"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-shipped-en",
+                          "name":  "Order Shipped (EN)",
+                          "subject":  "Your order #{{order_id}} has been shipped",
+                          "body":  "\u003ch2\u003eHello, {{first_name}}!\u003c/h2\u003e\u003cp\u003eYour order \u003cstrong\u003e#{{order_id}}\u003c/strong\u003e has been handed over to the delivery service.\u003c/p\u003e\u003cp\u003eIf the carrier provides tracking details, you will receive them directly from the carrier.\u003c/p\u003e\u003cp\u003eKind regards,\u003cbr\u003ehairshoppro.lv team\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-shipped-lv",
+                          "name":  "Pasūtījums nosūtīts (LV)",
+                          "subject":  "Jūsu pasūtījums №{{order_id}} ir nosūtīts",
+                          "body":  "\u003ch2\u003eLabdien, {{first_name}}!\u003c/h2\u003e\u003cp\u003eJūsu pasūtījums \u003cstrong\u003eNr. {{order_id}}\u003c/strong\u003e ir nodots piegādes dienestam.\u003c/p\u003e\u003cp\u003eJa pārvadātājs nodrošina izsekošanas informāciju, to saņemsiet no pārvadātāja.\u003c/p\u003e\u003cp\u003eAr cieņu,\u003cbr\u003ehairshoppro.lv komanda\u003cbr\u003eSIA Miks Plus\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-delivered-en",
+                          "name":  "Order Delivered (EN)",
+                          "subject":  "Your order #{{order_id}} has been delivered",
+                          "body":  "\u003ch2\u003eHello, {{first_name}}!\u003c/h2\u003e\u003cp\u003eYour order \u003cstrong\u003e#{{order_id}}\u003c/strong\u003e has been delivered. Thank you for your purchase!\u003c/p\u003e\u003cp\u003eIf you have any questions, please contact us.\u003c/p\u003e\u003cp\u003eBest regards,\u003cbr\u003eThe store team\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "order-delivered-lv",
+                          "name":  "Pasūtījums piegādāts (LV)",
+                          "subject":  "Jūsu pasūtījums №{{order_id}} ir piegādāts",
+                          "body":  "\u003ch2\u003eLabdien, {{first_name}}!\u003c/h2\u003e\u003cp\u003eJūsu pasūtījums \u003cstrong\u003e№{{order_id}}\u003c/strong\u003e ir piegādāts. Paldies par pirkumu!\u003c/p\u003e\u003cp\u003eJa jums ir jautājumi, lūdzu, sazinieties ar mums.\u003c/p\u003e\u003cp\u003eAr cieņu,\u003cbr\u003eVeikala komanda\u003c/p\u003e",
+                          "variables":  [
+                                            "order_id",
+                                            "first_name"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "password-reset-ru",
+                          "name":  "Сброс пароля (RU)",
+                          "subject":  "Сброс пароля для {{email}}",
+                          "body":  "\u003ch2 style=\"color:#4f46e5\"\u003eСброс пароля\u003c/h2\u003e\u003cp\u003eМы получили запрос на сброс пароля для аккаунта \u003cstrong\u003e{{email}}\u003c/strong\u003e.\u003c/p\u003e\u003cp style=\"margin:24px 0\"\u003e\u003ca href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\"\u003eСбросить пароль\u003c/a\u003e\u003c/p\u003e\u003cp style=\"color:#6b7280;font-size:13px\"\u003eСсылка действительна 1 час. Если вы не запрашивали сброс — проигнорируйте это письмо.\u003c/p\u003e",
+                          "variables":  [
+                                            "email",
+                                            "reset_link"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "password-reset-en",
+                          "name":  "Password Reset (EN)",
+                          "subject":  "Password reset for {{email}}",
+                          "body":  "\u003ch2 style=\"color:#4f46e5\"\u003ePassword reset\u003c/h2\u003e\u003cp\u003eWe received a request to reset the password for account \u003cstrong\u003e{{email}}\u003c/strong\u003e.\u003c/p\u003e\u003cp style=\"margin:24px 0\"\u003e\u003ca href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\"\u003eReset password\u003c/a\u003e\u003c/p\u003e\u003cp style=\"color:#6b7280;font-size:13px\"\u003eThe link is valid for 1 hour. If you did not request a reset, please ignore this email.\u003c/p\u003e",
+                          "variables":  [
+                                            "email",
+                                            "reset_link"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "password-reset-lv",
+                          "name":  "Paroles atjaunošana (LV)",
+                          "subject":  "Paroles atjaunošana kontam {{email}}",
+                          "body":  "\u003ch2 style=\"color:#4f46e5\"\u003eParoles atjaunošana\u003c/h2\u003e\u003cp\u003eMēs saņēmām pieprasījumu atjaunot paroli kontam \u003cstrong\u003e{{email}}\u003c/strong\u003e.\u003c/p\u003e\u003cp style=\"margin:24px 0\"\u003e\u003ca href=\"{{reset_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\"\u003eAtjaunot paroli\u003c/a\u003e\u003c/p\u003e\u003cp style=\"color:#6b7280;font-size:13px\"\u003eSaite ir derīga 1 stundu. Ja jūs to neprasījāt, vienkārši ignorējiet šo e-pastu.\u003c/p\u003e",
+                          "variables":  [
+                                            "email",
+                                            "reset_link"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "card-rules-ru",
+                          "name":  "Как получить карту клиента (RU)",
+                          "subject":  "Как получить карту клиента hairshoppro.lv",
+                          "body":  "\u003cdiv style=\"font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1f2937\"\u003e\u003ch2\u003eЗдравствуйте, {{name}}!\u003c/h2\u003e\u003cp\u003ehairshoppro.lv — интернет-магазин профессиональной косметики компании SIA Miks Plus.\u003c/p\u003e\u003cp\u003eДля доступа к профессиональным ценам и оформлению заказов нужна карта клиента. Подайте заявку на сайте и приложите документ, подтверждающий профессиональную деятельность, либо сведения о салоне.\u003c/p\u003e\u003cp\u003e\u003ca href=\"{{site_url}}/auth/register\" style=\"display:inline-block;padding:12px 20px;background:#059669;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\"\u003eПодать заявку\u003c/a\u003e\u003c/p\u003e\u003cp\u003eПосле проверки заявки мы сообщим решение по электронной почте. Одобрение заявки не гарантируется.\u003c/p\u003e\u003cp\u003eВопросы: info@hairshop.lv · +371 27067730\u003c/p\u003e\u003cp\u003eС уважением,\u003cbr\u003eКоманда hairshoppro.lv\u003cbr\u003eSIA Miks Plus\u003c/p\u003e\u003c/div\u003e",
+                          "variables":  [
+                                            "name",
+                                            "site_url"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      },
+                      {
+                          "id":  "pro-invite",
+                          "name":  "Инвайт держателю карты (LV+RU+EN)",
+                          "subject":  "Klienta karte — aktivizējiet kontu · Карта клиента — активируйте аккаунт · Activate your account",
+                          "body":  "\u003cdiv style=\"font-family:sans-serif;max-width:560px;margin:0 auto\"\u003e\u003ch2 style=\"color:#4f46e5\"\u003eLaipni lūdzam! · Добро пожаловать! · Welcome!\u003c/h2\u003e\u003cp\u003e{{name}}\u003c/p\u003e\u003cp\u003e\u003cstrong\u003eLV\u003c/strong\u003e — Jums ir klienta karte Nr. \u003cstrong\u003e{{card_number}}\u003c/strong\u003e. Esam atvēruši jaunu interneta veikalu profesionāļiem, un jūsu konts tajā jau ir izveidots. Kā sākt:\u003c/p\u003e\u003col style=\"margin:4px 0 16px;padding-left:20px\"\u003e\u003cli\u003eNospiediet pogu “Aktivizēt kontu”.\u003c/li\u003e\u003cli\u003eIzveidojiet paroli (vismaz 8 simboli).\u003c/li\u003e\u003cli\u003eIelogojieties ar savu e-pastu un jauno paroli.\u003c/li\u003e\u003c/ol\u003e\u003cp\u003e\u003cstrong\u003eRU\u003c/strong\u003e — У вас есть карта клиента № \u003cstrong\u003e{{card_number}}\u003c/strong\u003e. Мы открыли новый интернет-магазин для профессионалов, и ваш аккаунт в нём уже создан. Как начать:\u003c/p\u003e\u003col style=\"margin:4px 0 16px;padding-left:20px\"\u003e\u003cli\u003eНажмите кнопку «Активировать аккаунт».\u003c/li\u003e\u003cli\u003eПридумайте пароль (не менее 8 символов).\u003c/li\u003e\u003cli\u003eВойдите на сайт со своим e-mail и новым паролем.\u003c/li\u003e\u003c/ol\u003e\u003cp\u003e\u003cstrong\u003eEN\u003c/strong\u003e — You hold client card No. \u003cstrong\u003e{{card_number}}\u003c/strong\u003e. We have launched a new online store for professionals, and your account is already set up. How to start:\u003c/p\u003e\u003col style=\"margin:4px 0 16px;padding-left:20px\"\u003e\u003cli\u003eClick the “Activate account” button.\u003c/li\u003e\u003cli\u003eCreate a password (at least 8 characters).\u003c/li\u003e\u003cli\u003eLog in with your email and your new password.\u003c/li\u003e\u003c/ol\u003e\u003cp\u003e\u003ca href=\"{{invite_link}}\" style=\"display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600\"\u003eAktivizēt kontu · Активировать аккаунт · Activate account\u003c/a\u003e\u003c/p\u003e\u003cp style=\"color:#6b7280;font-size:13px\"\u003eJa poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:\u003cbr\u003e\u003ca href=\"{{invite_link}}\"\u003e{{invite_link}}\u003c/a\u003e\u003c/p\u003e\u003cp style=\"color:#6b7280;font-size:13px\"\u003eSaite ir derīga 7 dienas · Ссылка действительна 7 дней · The link is valid for 7 days.\u003c/p\u003e\u003c/div\u003e",
+                          "variables":  [
+                                            "name",
+                                            "card_number",
+                                            "invite_link"
+                                        ],
+                          "updatedAt":  "2026-08-27T00:00:00.000Z"
+                      }
+                  ]
 }

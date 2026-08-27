@@ -20,6 +20,11 @@ const SAMPLE: Record<string, string> = {
   email: 'ivan@example.com',
   reset_link: '#',
   rfq_id: 'RFQ-2025-042',
+  name: 'Иван Петров',
+  card_number: '123456',
+  invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
+  site_url: 'https://hairshoppro.lv',
+  note_block: '',
 }
 
 function renderTemplate(text: string, variables: string[]): string {
@@ -63,7 +68,6 @@ export async function POST(
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
-
 
 
 

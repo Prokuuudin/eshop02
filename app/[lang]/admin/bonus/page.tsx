@@ -1,501 +1,102 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAdminStore } from '@/lib/admin-store'
 import { type User } from '@/lib/auth'
-import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program'
+import { eurosToPoints, pointsToEuros, type BonusProgramConfig } from '@/lib/bonus-program'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
-import { reportAdminError, reportAdminPartial } from '@/lib/admin-ui-errors'
+import { reportAdminError } from '@/lib/admin-ui-errors'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 
-type BonusHistoryRow = {
-  id: string
-  createdAt: string
-  firstName: string
-  lastName: string
-  email: string
-  total: number
-  bonusEarned: number
-  bonusSpent: number
-}
+type HistoryRow = { id: string; createdAt: string; userName: string | null; userEmail: string; orderId: string | null; type: string; points: number; balanceAfter: number; reason: string | null; expiresAt: string | null }
+type TopUser = Pick<User, 'id' | 'name' | 'email' | 'bonusPoints'>
+type Stats = { totalEarned: number; totalSpent: number; ordersWithBonus: number; usersWithBalance: number; totalBalance: number; manualAdjustmentTotal: number; segments: number[]; top5: TopUser[]; history: HistoryRow[]; historyTotal: number; page: number; pageSize: number }
+const EMPTY: Stats = { totalEarned: 0, totalSpent: 0, ordersWithBonus: 0, usersWithBalance: 0, totalBalance: 0, manualAdjustmentTotal: 0, segments: [0, 0, 0, 0], top5: [], history: [], historyTotal: 0, page: 1, pageSize: 25 }
 
-type BonusStats = {
-  totalEarned: number
-  totalSpent: number
-  ordersWithBonus: number
-  history: BonusHistoryRow[]
+function Disclosure({ id, title, open, setOpen, children }: { id: string; title: string; open: boolean; setOpen: (v: boolean) => void; children: React.ReactNode }) {
+  return <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <button type="button" aria-expanded={open} aria-controls={`${id}-panel`} onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+      <span className="text-lg font-semibold">{title}</span><span aria-hidden className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+    </button>
+    {open && <div id={`${id}-panel`} className="ui-disclosure-in border-t border-border px-5 py-4">{children}</div>}
+  </section>
 }
-
-const EMPTY_BONUS_STATS: BonusStats = { totalEarned: 0, totalSpent: 0, ordersWithBonus: 0, history: [] }
 
 export default function AdminBonusPage(): React.ReactElement {
-  const { t } = useTranslation()
-  const { locale, l } = useAdminLocale()
+  const { t } = useTranslation(); const { locale, l } = useAdminLocale()
   const { bonusProgram, updateBonusProgram } = useAdminStore()
-  const [bonusStats, setBonusStats] = useState<BonusStats>(EMPTY_BONUS_STATS)
-  const [draft, setDraft] = useState(bonusProgram)
-  const [saved, setSaved] = useState(false)
-
-  const [users, setUsers] = useState<User[]>([])
-  const [userSearch, setUserSearch] = useState('')
-  const [adjustDelta, setAdjustDelta] = useState<Record<string, string>>({})
-  const [adjustMsg, setAdjustMsg] = useState<Record<string, string>>({})
-
+  const [savedConfig, setSavedConfig] = useState(bonusProgram); const [draft, setDraft] = useState(bonusProgram)
+  const [settingsOpen, setSettingsOpen] = useState(true); const [calcOpen, setCalcOpen] = useState(false); const [balancesOpen, setBalancesOpen] = useState(false)
+  const [saving, setSaving] = useState(false); const [settingsError, setSettingsError] = useState(''); const [saved, setSaved] = useState(false)
+  const [stats, setStats] = useState(EMPTY); const [statsLoading, setStatsLoading] = useState(true); const [statsError, setStatsError] = useState('')
+  const [historySearch, setHistorySearch] = useState(''); const [historyType, setHistoryType] = useState('all'); const [historyFrom, setHistoryFrom] = useState(''); const [historyTo, setHistoryTo] = useState(''); const [historyPage, setHistoryPage] = useState(1)
+  const [users, setUsers] = useState<User[]>([]); const [userTotal, setUserTotal] = useState(0); const [userPage, setUserPage] = useState(1); const [userSearch, setUserSearch] = useState(''); const [userSearchDraft, setUserSearchDraft] = useState(''); const [usersLoading, setUsersLoading] = useState(false); const [usersError, setUsersError] = useState('')
+  const [adjustDelta, setAdjustDelta] = useState<Record<string, string>>({}); const [adjustReason, setAdjustReason] = useState<Record<string, string>>({}); const [adjustMsg, setAdjustMsg] = useState<Record<string, string>>({}); const [adjusting, setAdjusting] = useState<string | null>(null); const [confirmDeduct, setConfirmDeduct] = useState<string | null>(null)
   const [calcOrder, setCalcOrder] = useState('')
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [calcOpen, setCalcOpen] = useState(false)
-  const [balancesOpen, setBalancesOpen] = useState(false)
+  const dirty = JSON.stringify(draft) !== JSON.stringify(savedConfig)
 
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async (): Promise<void> => {
-      const loaded: User[] = []
-      let skip = 0
-      for (;;) {
-        const response = await fetch(`/api/admin/users?skip=${skip}&take=100`, { cache: 'no-store', signal: controller.signal })
-        if (!response.ok) throw new Error(`users_load_failed:${response.status}`)
-        const payload = await response.json() as { users?: Array<Omit<User, 'password'>>; total?: number }
-        const page = (payload.users ?? []).map((user) => ({ ...user, password: '' }))
-        loaded.push(...page)
-        if (loaded.length >= (payload.total ?? loaded.length) || page.length < 100) break
-        skip += page.length
-      }
-      setUsers(loaded.filter((user) => user.platformRole !== 'admin'))
-    }
-    void load().catch(() => { if (!controller.signal.aborted) { setUsers([]); reportAdminPartial(l('Настройки доступны, но список клиентов не загрузился.', 'Settings are available, but the customer list failed to load.', 'Iestatījumi ir pieejami, bet klientu sarakstu neizdevās ielādēt.'), l('Бонусная программа', 'Bonus program', 'Bonusu programma')) } })
-    return () => controller.abort()
-  }, [l])
+  useEffect(() => { const controller = new AbortController(); void (async () => { try { const response = await fetch('/api/admin/bonus-config', { cache: 'no-store', signal: controller.signal }); if (!response.ok) throw new Error(`config:${response.status}`); const config = await response.json() as BonusProgramConfig; setDraft(config); setSavedConfig(config) } catch (error) { if (!controller.signal.aborted) { setSettingsError(l('Не удалось загрузить настройки.', 'Failed to load settings.', 'Neizdevās ielādēt iestatījumus.')); reportAdminError(error, 'Bonus program') } } })(); return () => controller.abort() }, [l])
 
-  // Load the admin-authoritative config directly — the shared useAdminStore value may
-  // still be the pre-hydration default when this page mounts, and editing must start
-  // from the real saved settings, not a stale local guess.
-  useEffect(() => {
-    fetch('/api/admin/bonus-config')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((config) => { if (config) setDraft(config) })
-      .catch((error) => reportAdminError(error, l('Настройки бонусной программы', 'Bonus program settings', 'Bonusu programmas iestatījumi')))
-  }, [l])
+  const loadStats = useCallback(async () => { setStatsLoading(true); setStatsError(''); try { const q = new URLSearchParams({ page: String(historyPage), type: historyType }); if (historySearch.trim()) q.set('search', historySearch.trim()); if (historyFrom) q.set('from', historyFrom); if (historyTo) q.set('to', historyTo); const response = await fetch(`/api/admin/bonus/stats?${q}`, { cache: 'no-store' }); if (!response.ok) throw new Error(`stats:${response.status}`); setStats(await response.json()) } catch (error) { setStatsError(l('Не удалось загрузить статистику.', 'Failed to load statistics.', 'Neizdevās ielādēt statistiku.')); reportAdminError(error, 'Bonus statistics') } finally { setStatsLoading(false) } }, [historyFrom, historyPage, historySearch, historyTo, historyType, l])
+  useEffect(() => { const timer = setTimeout(() => void loadStats(), 250); return () => clearTimeout(timer) }, [loadStats])
 
-  useEffect(() => {
-    fetch('/api/admin/bonus/stats', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((stats) => { if (stats) setBonusStats(stats) })
-      .catch((error) => reportAdminError(error, l('Статистика бонусной программы', 'Bonus program statistics', 'Bonusu programmas statistika')))
-  }, [l])
+  const loadUsers = useCallback(async () => { setUsersLoading(true); setUsersError(''); try { const q = new URLSearchParams({ skip: String((userPage - 1) * 25), take: '25', role: 'customer' }); if (userSearch) q.set('search', userSearch); const response = await fetch(`/api/admin/users?${q}`, { cache: 'no-store' }); if (!response.ok) throw new Error(`users:${response.status}`); const payload = await response.json() as { users: Array<Omit<User, 'password'>>; total: number }; setUsers(payload.users.map(user => ({ ...user, password: '' }))); setUserTotal(payload.total) } catch (error) { setUsersError(l('Не удалось загрузить клиентов.', 'Failed to load customers.', 'Neizdevās ielādēt klientus.')); reportAdminError(error, 'Bonus customers') } finally { setUsersLoading(false) } }, [l, userPage, userSearch])
+  useEffect(() => { if (!balancesOpen) return; const timer = setTimeout(() => void loadUsers(), 0); return () => clearTimeout(timer) }, [balancesOpen, loadUsers])
 
-  const saveSettings = async () => {
-    try {
-      const authoritative = await updateBonusProgram(draft)
-      setDraft(authoritative)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 1500)
-    } catch {
-      setSaved(false)
-    }
-  }
+  useEffect(() => { if (!dirty) return; const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault() }; window.addEventListener('beforeunload', beforeUnload); return () => window.removeEventListener('beforeunload', beforeUnload) }, [dirty])
+  const setNumber = (key: keyof BonusProgramConfig, value: string) => setDraft(p => ({ ...p, [key]: Number(value) }))
+  const saveSettings = async () => { setSaving(true); setSettingsError(''); try { const authoritative = await updateBonusProgram(draft); setDraft(authoritative); setSavedConfig(authoritative); setSaved(true); setTimeout(() => setSaved(false), 2000) } catch (error) { setSettingsError(l('Настройки не сохранены. Повторите попытку.', 'Settings were not saved. Try again.', 'Iestatījumi netika saglabāti. Mēģiniet vēlreiz.')); reportAdminError(error, 'Bonus settings') } finally { setSaving(false) } }
 
-  const applyAdjustment = async (userId: string, sign: 1 | -1) => {
-    const raw = adjustDelta[userId] ?? ''
-    const amount = parseInt(raw, 10)
-    if (!raw || isNaN(amount) || amount <= 0) return
+  const applyAdjustment = async (userId: string, sign: 1 | -1) => { const amount = Number.parseInt(adjustDelta[userId] ?? '', 10); const reason = adjustReason[userId]?.trim() ?? ''; if (!amount || amount < 1 || reason.length < 3) { setAdjustMsg(p => ({ ...p, [userId]: l('Укажите количество и причину (минимум 3 символа).', 'Enter an amount and a reason (at least 3 characters).', 'Norādiet daudzumu un iemeslu (vismaz 3 rakstzīmes).') })); return } setAdjusting(userId); setAdjustMsg(p => ({ ...p, [userId]: '' })); try { const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/bonus`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta: sign * amount, reason }) }); const result = await response.json().catch(() => null) as { user?: { bonusPoints: number }; error?: string } | null; if (!response.ok || !result?.user) throw new Error(result?.error ?? `adjust:${response.status}`); setUsers(p => p.map(u => u.id === userId ? { ...u, bonusPoints: result.user!.bonusPoints } : u)); setAdjustDelta(p => ({ ...p, [userId]: '' })); setAdjustReason(p => ({ ...p, [userId]: '' })); setAdjustMsg(p => ({ ...p, [userId]: l(`Баланс обновлён: ${result.user!.bonusPoints}`, `Balance updated: ${result.user!.bonusPoints}`, `Bilance atjaunināta: ${result.user!.bonusPoints}`) })); await loadStats() } catch (error) { setAdjustMsg(p => ({ ...p, [userId]: l('Операция не выполнена. Проверьте права и повторите попытку.', 'The operation failed. Check permissions and try again.', 'Darbība neizdevās. Pārbaudiet tiesības un mēģiniet vēlreiz.') })); reportAdminError(error, 'Bonus adjustment') } finally { setAdjusting(null); setConfirmDeduct(null) } }
 
-    const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/bonus`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delta: sign * amount }),
-    })
-    const result = await response.json().catch(() => null) as { user?: { bonusPoints: number } } | null
-    if (response.ok && result?.user) {
-      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, bonusPoints: result.user!.bonusPoints } : u))
-      setAdjustMsg((prev) => ({ ...prev, [userId]: l(`Баланс: ${result.user!.bonusPoints} баллов (${formatEuro(pointsToEuros(result.user!.bonusPoints), locale)})`, `Balance: ${result.user!.bonusPoints} points (${formatEuro(pointsToEuros(result.user!.bonusPoints), locale)})`, `Bilance: ${result.user!.bonusPoints} punkti (${formatEuro(pointsToEuros(result.user!.bonusPoints), locale)})`) }))
-      setAdjustDelta((prev) => ({ ...prev, [userId]: '' }))
-      setTimeout(() => setAdjustMsg((prev) => ({ ...prev, [userId]: '' })), 2500)
-    }
-  }
+  const calcAmount = Math.max(0, Number.parseFloat(calcOrder) || 0); const rawEarned = eurosToPoints(calcAmount * draft.earnRatePercent / 100); const calcEarned = calcAmount >= draft.minOrderForEarn ? (draft.maxEarnPerOrder > 0 ? Math.min(rawEarned, draft.maxEarnPerOrder) : rawEarned) : 0; const calcSpend = eurosToPoints(calcAmount * draft.maxSpendPercent / 100)
+  const segmentLabels = [l('0 баллов', '0 points', '0 punkti'), '1–100', '101–500', '500+']
+  const historyPages = Math.max(1, Math.ceil(stats.historyTotal / stats.pageSize)); const userPages = Math.max(1, Math.ceil(userTotal / 25))
+  const typeLabel = useCallback((type: string) => ({ order_earn: l('Начисление за заказ', 'Order earning', 'Punkti par pasūtījumu'), order_spend: l('Списание в заказе', 'Order redemption', 'Punktu izmantošana'), admin_adjustment: l('Ручная корректировка', 'Manual adjustment', 'Manuāla korekcija'), expiry: l('Сгорание', 'Expiry', 'Derīguma beigas') }[type] ?? type), [l])
+  const exportCsv = () => { const rows = [['Date', 'Customer', 'Email', 'Type', 'Points', 'Balance', 'Order', 'Reason'], ...stats.history.map(row => [row.createdAt, row.userName ?? '', row.userEmail, typeLabel(row.type), row.points, row.balanceAfter, row.orderId ?? '', row.reason ?? ''])]; const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n'); const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })); const a = document.createElement('a'); a.href = url; a.download = 'bonus-transactions.csv'; a.click(); URL.revokeObjectURL(url) }
+  const cards = useMemo(() => [
+    [l('Начислено всего', 'Total earned', 'Kopā nopelnīts'), `${stats.totalEarned} (${formatEuro(pointsToEuros(stats.totalEarned), locale)})`, 'bg-green-50 dark:bg-green-950/20'],
+    [l('Списано всего', 'Total spent', 'Kopā iztērēts'), `${stats.totalSpent} (${formatEuro(pointsToEuros(stats.totalSpent), locale)})`, 'bg-rose-50 dark:bg-rose-950/20'],
+    [l('Заказов с бонусами', 'Orders with points', 'Pasūtījumi ar punktiem'), stats.ordersWithBonus, 'bg-blue-50 dark:bg-blue-950/20'],
+    [l('Активных клиентов', 'Active customers', 'Aktīvie klienti'), stats.usersWithBalance, 'bg-purple-50 dark:bg-purple-950/20'],
+    [l('Суммарный баланс', 'Total balance', 'Kopējā bilance'), `${stats.totalBalance} (${formatEuro(pointsToEuros(stats.totalBalance), locale)})`, 'bg-amber-50 dark:bg-amber-950/20'],
+    [l('Ручные корректировки', 'Manual adjustments', 'Manuālās korekcijas'), stats.manualAdjustmentTotal, 'bg-cyan-50 dark:bg-cyan-950/20'],
+  ], [l, locale, stats])
 
-  const { totalEarned, totalSpent, ordersWithBonus } = bonusStats
-  const usersWithBalance = users.filter((u) => (u.bonusPoints ?? 0) > 0).length
-  const totalBalance = users.reduce((s, u) => s + (u.bonusPoints ?? 0), 0)
+  return <AdminGate><main className="admin-bonus-page w-full py-4 space-y-6 text-foreground">
+    <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{l('Настройка, статистика и управление балансами', 'Settings, statistics, and balance management', 'Iestatījumi, statistika un bilanču pārvaldība')}</p></div><Link href="/admin"><Button variant="outline">← {l('Назад', 'Back', 'Atpakaļ')}</Button></Link></header>
+    {statsError && <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{statsError} <Button size="sm" variant="outline" onClick={() => void loadStats()}>{l('Повторить', 'Retry', 'Atkārtot')}</Button></div>}
+    <div aria-busy={statsLoading} className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">{cards.map(([label, value, bg]) => <div key={String(label)} className={`${bg} rounded-xl border border-border p-4 shadow-sm`}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-bold">{statsLoading ? '…' : value}</p></div>)}</div>
 
-  const filteredUsers = userSearch.trim()
-    ? users.filter((u) => {
-        const q = userSearch.trim().toLowerCase()
-        return (
-          u.name?.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.phone?.toLowerCase().includes(q) ||
-          u.cardNumber?.toLowerCase().includes(q) ||
-          u.companyName?.toLowerCase().includes(q)
-        )
-      })
-    : users
+    <Disclosure id="bonus-settings" title={l('Настройки программы', 'Program settings', 'Programmas iestatījumi')} open={settingsOpen} setOpen={setSettingsOpen}><div className="space-y-4">
+      {!draft.enabled && <p role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">{l('Программа отключена: новые баллы не начисляются и не применяются.', 'The program is disabled: new points are not earned or redeemed.', 'Programma ir izslēgta: jauni punkti netiek piešķirti vai izmantoti.')}</p>}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="text-sm"><span className="mb-1 block text-muted-foreground">{t('admin.bonus.enabled')}</span><Select value={draft.enabled ? 'yes' : 'no'} onValueChange={v => setDraft(p => ({ ...p, enabled: v === 'yes' }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">{t('common.yes')}</SelectItem><SelectItem value="no">{t('common.no')}</SelectItem></SelectContent></Select></label>
+        {([['earnRatePercent', l('Начисление от суммы заказа (%)', 'Earn rate (%)', 'Uzkrāšanas likme (%)'), 100, l('Например: заказ €100 при 0,5% принесёт 50 баллов.', 'Example: a €100 order at 0.5% earns 50 points.', 'Piemērs: €100 pasūtījums ar 0,5% dod 50 punktus.')], ['maxSpendPercent', l('Максимальная доля оплаты баллами (%)', 'Maximum redeemable share (%)', 'Maksimālā apmaksas daļa (%)'), 100, l('100% разрешает оплатить баллами весь заказ.', '100% allows the whole order to be paid with points.', '100% ļauj visu pasūtījumu apmaksāt ar punktiem.')], ['minOrderForEarn', l('Минимальная сумма заказа для начисления (€)', 'Minimum order for earning (€)', 'Minimālais pasūtījums (€)'), 1000000, l('Ниже этой суммы баллы не начисляются.', 'Orders below this amount earn no points.', 'Zem šīs summas punkti netiek piešķirti.')], ['minPointsToSpend', l('Минимальный баланс для списания', 'Minimum balance to redeem', 'Minimālā bilance'), 1000000, l('0 — без минимального порога.', '0 means no minimum threshold.', '0 nozīmē, ka minimālā sliekšņa nav.')], ['maxEarnPerOrder', l('Максимум баллов за заказ', 'Maximum points per order', 'Maks. punkti pasūtījumā'), 1000000, l('0 — без ограничения.', '0 means unlimited.', '0 nozīmē bez ierobežojuma.')], ['pointsExpiryDays', l('Срок жизни новых баллов (дней)', 'Lifetime of new points (days)', 'Jauno punktu termiņš (dienas)'), 3650, l('0 — бессрочно; изменение применяется только к новым начислениям.', '0 means no expiry; changes apply only to new earnings.', '0 nozīmē bez termiņa; izmaiņas attiecas tikai uz jauniem punktiem.')]] as const).map(([key, label, max, hint]) => <label key={key} htmlFor={`bonus-${key}`} className="text-sm"><span className="mb-1 block text-muted-foreground">{label}</span><Input id={`bonus-${key}`} type="number" min={0} max={max} step={key === 'earnRatePercent' ? .1 : 1} value={draft[key]} onChange={e => setNumber(key, e.target.value)} /><span className="mt-1 block text-xs text-muted-foreground">{hint}</span></label>)}
+      </div><div className="flex flex-wrap items-center gap-3"><Button disabled={!dirty || saving} onClick={() => void saveSettings()}>{saving ? l('Сохранение…', 'Saving…', 'Saglabā…') : t('common.save')}</Button><Button variant="outline" disabled={!dirty || saving} onClick={() => { setDraft(savedConfig); setSettingsError('') }}>{l('Отменить изменения', 'Discard changes', 'Atcelt izmaiņas')}</Button>{dirty && <span className="text-sm text-amber-700">{l('Есть несохранённые изменения', 'Unsaved changes', 'Ir nesaglabātas izmaiņas')}</span>}{saved && <span role="status" className="text-sm text-green-700">{t('admin.bonus.saved')}</span>}{settingsError && <span role="alert" className="text-sm text-red-600">{settingsError}</span>}</div>
+    </div></Disclosure>
 
-  const calcAmount = parseFloat(calcOrder) || 0
-  // Баллы: евро-эквивалент по курсу 1 балл = 1 цент
-  const calcEarned = eurosToPoints(calcAmount * (draft.earnRatePercent / 100))
-  const calcEarnedCapped = draft.maxEarnPerOrder > 0 ? Math.min(calcEarned, draft.maxEarnPerOrder) : calcEarned
-  const calcEligible = calcAmount >= draft.minOrderForEarn
-  const calcMaxSpend = eurosToPoints(calcAmount * (draft.maxSpendPercent / 100))
+    <Disclosure id="bonus-calculator" title={l('Предпросмотр логики', 'Logic preview', 'Loģikas priekšskatījums')} open={calcOpen} setOpen={setCalcOpen}><div className="flex flex-wrap items-end gap-5"><label htmlFor="bonus-order" className="text-sm"><span className="mb-1 block text-muted-foreground">{l('Сумма заказа (€)', 'Order amount (€)', 'Pasūtījuma summa (€)')}</span><Input id="bonus-order" className="w-44" type="number" min={0} value={calcOrder} onChange={e => setCalcOrder(e.target.value)} placeholder="100" /></label><div className="space-y-1 text-sm"><p className="font-medium text-green-700">{l('Будет начислено', 'Will be earned', 'Tiks nopelnīts')}: {draft.enabled ? calcEarned : 0}</p><p>{l('Максимум к списанию', 'Maximum redeemable', 'Maks. izmantošanai')}: {draft.enabled ? calcSpend : 0} ({formatEuro(pointsToEuros(draft.enabled ? calcSpend : 0), locale)})</p><p className="text-xs text-muted-foreground">{formatEuro(calcAmount, locale)} × {draft.earnRatePercent}% · 1 {l('балл', 'point', 'punkts')} = €0.01</p></div></div></Disclosure>
 
-  const segments = [
-    { label: l('0 баллов', '0 points', '0 punkti'),  range: (p: number) => p === 0             },
-    { label: '1 – 100',   range: (p: number) => p >= 1 && p <= 100  },
-    { label: '101 – 500', range: (p: number) => p >= 101 && p <= 500 },
-    { label: '500+',      range: (p: number) => p > 500             },
-  ].map((s) => ({ ...s, count: users.filter((u) => s.range(u.bonusPoints ?? 0)).length }))
+    <Disclosure id="bonus-balances" title={l('Балансы клиентов', 'Customer balances', 'Klientu bilances')} open={balancesOpen} setOpen={setBalancesOpen}><div className="space-y-3">
+      <form className="flex max-w-xl gap-2" onSubmit={e => { e.preventDefault(); setUserPage(1); setUserSearch(userSearchDraft.trim()) }}><Input aria-label={l('Поиск клиентов', 'Search customers', 'Meklēt klientus')} value={userSearchDraft} onChange={e => setUserSearchDraft(e.target.value)} placeholder={l('Имя, email, телефон, карта или компания', 'Name, email, phone, card, or company', 'Vārds, e-pasts, tālrunis, karte vai uzņēmums')} /><Button type="submit" variant="outline">{l('Найти', 'Search', 'Meklēt')}</Button></form>
+      {usersError && <p role="alert" className="text-sm text-red-600">{usersError}</p>}{usersLoading ? <p role="status">{l('Загрузка…', 'Loading…', 'Ielāde…')}</p> : <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="pb-2">{l('Клиент', 'Customer', 'Klients')}</th><th>{l('Баланс', 'Balance', 'Bilance')}</th><th>{l('Корректировка и обязательная причина', 'Adjustment and required reason', 'Korekcija un obligāts iemesls')}</th></tr></thead><tbody>{users.map(user => <tr key={user.id} className="border-b border-border/60"><td className="py-3"><p className="font-medium">{user.name || user.email}</p><p className="text-xs text-muted-foreground">{user.email}</p></td><td className="font-semibold">{user.bonusPoints ?? 0} <span className="font-normal text-muted-foreground">({formatEuro(pointsToEuros(user.bonusPoints ?? 0), locale)})</span></td><td className="py-2"><div className="flex flex-wrap gap-2"><Input aria-label={l('Количество баллов', 'Point amount', 'Punktu skaits')} className="h-8 w-28" type="number" min={1} value={adjustDelta[user.id] ?? ''} onChange={e => setAdjustDelta(p => ({ ...p, [user.id]: e.target.value }))} placeholder="100"/><Input aria-label={l('Причина', 'Reason', 'Iemesls')} className="h-8 w-56" value={adjustReason[user.id] ?? ''} onChange={e => setAdjustReason(p => ({ ...p, [user.id]: e.target.value }))} placeholder={l('Причина корректировки', 'Adjustment reason', 'Korekcijas iemesls')}/><Button size="sm" variant="outline" disabled={adjusting === user.id} onClick={() => void applyAdjustment(user.id, 1)}>+ {l('Начислить', 'Add', 'Pieskaitīt')}</Button><Button size="sm" variant="outline" className="text-red-600" disabled={adjusting === user.id} onClick={() => setConfirmDeduct(user.id)}>− {l('Списать', 'Deduct', 'Atņemt')}</Button></div>{adjustMsg[user.id] && <p role="status" className="mt-1 text-xs">{adjustMsg[user.id]}</p>}</td></tr>)}</tbody></table>{users.length === 0 && <p className="py-4 text-sm text-muted-foreground">{l('Клиенты не найдены.', 'No customers found.', 'Klienti nav atrasti.')}</p>}</div>}
+      <div className="flex items-center gap-3"><Button size="sm" variant="outline" disabled={userPage <= 1 || usersLoading} onClick={() => setUserPage(p => p - 1)}>←</Button><span className="text-sm">{userPage} / {userPages} · {userTotal}</span><Button size="sm" variant="outline" disabled={userPage >= userPages || usersLoading} onClick={() => setUserPage(p => p + 1)}>→</Button></div>
+    </div></Disclosure>
 
-  const top5 = [...users]
-    .sort((a, b) => (b.bonusPoints ?? 0) - (a.bonusPoints ?? 0))
-    .slice(0, 5)
-    .filter((u) => (u.bonusPoints ?? 0) > 0)
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2"><section className="rounded-xl border bg-card p-5 shadow-sm"><h2 className="mb-3 text-lg font-semibold">{l('Сегментация по балансу', 'Balance segmentation', 'Segmentācija pēc bilances')}</h2>{segmentLabels.map((label, i) => <div key={label} className="mb-2 flex justify-between rounded-lg border px-4 py-2 text-sm"><span>{label}</span><strong>{stats.segments[i] ?? 0}</strong></div>)}</section><section className="rounded-xl border bg-card p-5 shadow-sm"><h2 className="mb-3 text-lg font-semibold">{l('Топ-5 по балансу', 'Top 5 by balance', 'Top 5 pēc bilances')}</h2>{stats.top5.map((user, i) => <div key={user.id} className="flex items-center gap-3 py-1.5 text-sm"><strong className="w-5">{i + 1}</strong><span className="min-w-0 flex-1 truncate">{user.name || user.email}</span><strong>{user.bonusPoints}</strong></div>)}{!stats.top5.length && <p className="text-sm text-muted-foreground">{l('Нет клиентов с баллами.', 'No customers have points.', 'Nevienam klientam nav punktu.')}</p>}</section></div>
 
-  const bonusOrders = bonusStats.history
+    <section className="rounded-xl border bg-card p-5 shadow-sm"><div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">{l('История операций', 'Transaction history', 'Darījumu vēsture')}</h2><Button size="sm" variant="outline" disabled={!stats.history.length} onClick={exportCsv}>{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</Button></div><div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><Input aria-label={l('Поиск в истории', 'Search history', 'Meklēt vēsturē')} value={historySearch} onChange={e => { setHistorySearch(e.target.value); setHistoryPage(1) }} placeholder={l('Клиент или email', 'Customer or email', 'Klients vai e-pasts')} /><Select value={historyType} onValueChange={v => { setHistoryType(v); setHistoryPage(1) }}><SelectTrigger aria-label={l('Тип операции', 'Transaction type', 'Darījuma tips')}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{l('Все операции', 'All transactions', 'Visi darījumi')}</SelectItem><SelectItem value="order_earn">{typeLabel('order_earn')}</SelectItem><SelectItem value="order_spend">{typeLabel('order_spend')}</SelectItem><SelectItem value="admin_adjustment">{typeLabel('admin_adjustment')}</SelectItem><SelectItem value="expiry">{typeLabel('expiry')}</SelectItem></SelectContent></Select><Input aria-label={l('Дата от', 'From date', 'Datums no')} type="date" value={historyFrom} onChange={e => { setHistoryFrom(e.target.value); setHistoryPage(1) }} /><Input aria-label={l('Дата до', 'To date', 'Datums līdz')} type="date" value={historyTo} onChange={e => { setHistoryTo(e.target.value); setHistoryPage(1) }} /></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="pb-2">{l('Дата', 'Date', 'Datums')}</th><th>{l('Клиент', 'Customer', 'Klients')}</th><th>{l('Тип', 'Type', 'Tips')}</th><th className="text-right">{l('Баллы', 'Points', 'Punkti')}</th><th className="text-right">{l('Баланс', 'Balance', 'Bilance')}</th><th>{l('Основание', 'Reason', 'Iemesls')}</th></tr></thead><tbody>{stats.history.map(row => <tr key={row.id} className="border-b border-border/60"><td className="py-2 whitespace-nowrap">{new Date(row.createdAt).toLocaleString(locale)}</td><td><p>{row.userName || row.userEmail}</p><p className="text-xs text-muted-foreground">{row.userEmail}</p></td><td>{typeLabel(row.type)}</td><td className={`text-right font-semibold ${row.points >= 0 ? 'text-green-700' : 'text-red-600'}`}>{row.points > 0 ? '+' : ''}{row.points}</td><td className="text-right">{row.balanceAfter}</td><td className="max-w-56 truncate" title={row.reason ?? ''}>{row.reason || row.orderId || '—'}</td></tr>)}</tbody></table>{!statsLoading && !stats.history.length && <p className="py-4 text-sm text-muted-foreground">{l('Операции не найдены.', 'No transactions found.', 'Darījumi nav atrasti.')}</p>}</div><div className="mt-3 flex items-center gap-3"><Button size="sm" variant="outline" disabled={historyPage <= 1 || statsLoading} onClick={() => setHistoryPage(p => p - 1)}>←</Button><span className="text-sm">{historyPage} / {historyPages} · {stats.historyTotal}</span><Button size="sm" variant="outline" disabled={historyPage >= historyPages || statsLoading} onClick={() => setHistoryPage(p => p + 1)}>→</Button></div>
+    </section>
 
-  return (
-    <AdminGate>
-      <main className="admin-bonus-page w-full py-4 space-y-6 text-foreground">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{l('Настройка, статистика и управление балансами', 'Settings, statistics, and balance management', 'Iestatījumi, statistika un bilanču pārvaldība')}</p>
-          </div>
-          <Link href="/admin"><Button variant="outline">← {l('Назад', 'Back', 'Atpakaļ')}</Button></Link>
-        </div>
-
-        {/* Статистика */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { label: l('Начислено всего', 'Total earned', 'Kopā nopelnīts'), value: l(`${totalEarned} баллов (${formatEuro(pointsToEuros(totalEarned), locale)})`, `${totalEarned} points (${formatEuro(pointsToEuros(totalEarned), locale)})`, `${totalEarned} punkti (${formatEuro(pointsToEuros(totalEarned), locale)})`), bg: 'bg-green-50 dark:bg-green-950/20' },
-            { label: l('Списано всего', 'Total spent', 'Kopā iztērēts'), value: l(`${totalSpent} баллов (${formatEuro(pointsToEuros(totalSpent), locale)})`, `${totalSpent} points (${formatEuro(pointsToEuros(totalSpent), locale)})`, `${totalSpent} punkti (${formatEuro(pointsToEuros(totalSpent), locale)})`), bg: 'bg-rose-50 dark:bg-rose-950/20' },
-            { label: l('Заказов с бонусами', 'Orders with points', 'Pasūtījumi ar punktiem'), value: ordersWithBonus, bg: 'bg-blue-50 dark:bg-blue-950/20' },
-            { label: l('Активных пользователей', 'Active users', 'Aktīvie lietotāji'), value: usersWithBalance, bg: 'bg-purple-50 dark:bg-purple-950/20' },
-            { label: l('Суммарный баланс', 'Total balance', 'Kopējā bilance'), value: l(`${totalBalance} баллов (${formatEuro(pointsToEuros(totalBalance), locale)})`, `${totalBalance} points (${formatEuro(pointsToEuros(totalBalance), locale)})`, `${totalBalance} punkti (${formatEuro(pointsToEuros(totalBalance), locale)})`), bg: 'bg-amber-50 dark:bg-amber-950/20' },
-          ].map(({ label, value, bg }) => (
-            <div key={label} className={`${bg} rounded-xl border border-border p-4 shadow-sm`}>
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-xl font-bold mt-1">{value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Настройки */}
-        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setSettingsOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            <span className="text-lg font-semibold">{l('Настройки программы', 'Program settings', 'Programmas iestatījumi')}</span>
-            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${settingsOpen ? 'rotate-180' : ''}`}>▾</span>
-          </button>
-
-          {settingsOpen && (
-            <div className="ui-disclosure-in px-5 pb-5 space-y-4 border-t border-border pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.enabled')}</span>
-                  <Select value={draft.enabled ? 'yes' : 'no'} onValueChange={(v) => setDraft((p) => ({ ...p, enabled: v === 'yes' }))}>
-                    <SelectTrigger className="w-full rounded border border-border bg-card px-3 py-2 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                      <SelectItem value="no">{t('common.no')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
-
-                <label htmlFor="admin-bonus-field-1" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.earnRate')} (%)</span>
-                  <Input id="admin-bonus-field-1" type="number" min={0} max={100} step={0.1} value={draft.earnRatePercent}
-                    onChange={(e) => setDraft((p) => ({ ...p, earnRatePercent: Number(e.target.value) }))} />
-                </label>
-
-                <label htmlFor="admin-bonus-field-2" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.maxSpend')} (%)</span>
-                  <Input id="admin-bonus-field-2" type="number" min={0} max={100} value={draft.maxSpendPercent}
-                    onChange={(e) => setDraft((p) => ({ ...p, maxSpendPercent: Number(e.target.value) }))} />
-                </label>
-
-                <label htmlFor="admin-bonus-field-3" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{t('admin.bonus.minOrderForEarn')} (€)</span>
-                  <Input id="admin-bonus-field-3" type="number" min={0} value={draft.minOrderForEarn}
-                    onChange={(e) => setDraft((p) => ({ ...p, minOrderForEarn: Number(e.target.value) }))} />
-                </label>
-
-                <label htmlFor="admin-bonus-field-4" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{l('Минимум баллов для списания', 'Minimum points to redeem', 'Minimālais punktu skaits izmantošanai')}</span>
-                  <Input id="admin-bonus-field-4" type="number" min={0} value={draft.minPointsToSpend}
-                    onChange={(e) => setDraft((p) => ({ ...p, minPointsToSpend: Number(e.target.value) }))} />
-                </label>
-
-                <label htmlFor="admin-bonus-field-5" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{l('Макс. баллов за один заказ (0 = без лимита)', 'Maximum points per order (0 = unlimited)', 'Maks. punkti vienā pasūtījumā (0 = bez ierobežojuma)')}</span>
-                  <Input id="admin-bonus-field-5" type="number" min={0} value={draft.maxEarnPerOrder}
-                    onChange={(e) => setDraft((p) => ({ ...p, maxEarnPerOrder: Number(e.target.value) }))} />
-                </label>
-
-                <label htmlFor="admin-bonus-field-6" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{l('Срок жизни баллов (дней, 0 = бессрочно)', 'Point lifetime (days, 0 = no expiry)', 'Punktu derīguma termiņš (dienas, 0 = bez termiņa)')}</span>
-                  <Input id="admin-bonus-field-6" type="number" min={0} max={3650} value={draft.pointsExpiryDays}
-                    onChange={(e) => setDraft((p) => ({ ...p, pointsExpiryDays: Number(e.target.value) }))} />
-                </label>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Button onClick={saveSettings}>{t('common.save')}</Button>
-                {saved && <span className="text-sm text-green-700 dark:text-green-400">{t('admin.bonus.saved')}</span>}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Калькулятор */}
-        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setCalcOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            <span className="text-lg font-semibold">{l('Предпросмотр логики', 'Logic preview', 'Loģikas priekšskatījums')}</span>
-            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${calcOpen ? 'rotate-180' : ''}`}>▾</span>
-          </button>
-
-          {calcOpen && (
-            <div className="ui-disclosure-in px-5 pb-5 space-y-4 border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground">
-                {l('Введите произвольную сумму заказа — калькулятор покажет, сколько баллов получит клиент и сколько сможет потратить на следующую покупку, исходя из текущих настроек выше.', 'Enter any order amount to see how many points the customer will earn and can spend on the next purchase using the current settings.', 'Ievadiet jebkuru pasūtījuma summu, lai redzētu, cik punktu klients nopelnīs un varēs izmantot nākamajam pirkumam ar pašreizējiem iestatījumiem.')}
-              </p>
-              <div className="flex items-end gap-4 flex-wrap">
-                <label htmlFor="admin-bonus-field-7" className="text-sm">
-                  <span className="block text-muted-foreground mb-1">{l('Сумма заказа (€)', 'Order amount (€)', 'Pasūtījuma summa (€)')}</span>
-                  <Input id="admin-bonus-field-7"
-                    type="number"
-                    min={0}
-                    value={calcOrder}
-                    onChange={(e) => setCalcOrder(e.target.value)}
-                    placeholder={l('например, 100', 'for example, 100', 'piemēram, 100')}
-                    className="w-40"
-                  />
-                </label>
-
-                <div className="text-sm space-y-2 pb-0.5">
-                  {!draft.enabled && (
-                    <p className="text-red-600 dark:text-red-400">{l('Программа отключена', 'Program is disabled', 'Programma ir izslēgta')}</p>
-                  )}
-                  {draft.enabled && calcOrder && !calcEligible && (
-                    <p className="text-yellow-700 dark:text-yellow-400">
-                      {l(`Заказ ниже минимума €${draft.minOrderForEarn} — баллы не начисляются`, `The order is below the €${draft.minOrderForEarn} minimum — no points will be earned`, `Pasūtījums ir mazāks par €${draft.minOrderForEarn} minimumu — punkti netiks piešķirti`)}
-                    </p>
-                  )}
-                  {draft.enabled && (
-                    <>
-                      <div>
-                        <p className="text-green-700 dark:text-green-400 font-medium">
-                          {l('Начислено:', 'Earned:', 'Nopelnīts:')} <strong>{calcEligible ? calcEarnedCapped : 0} {l('баллов', 'points', 'punkti')}</strong>
-                          {draft.maxEarnPerOrder > 0 && calcEligible && calcEarned > draft.maxEarnPerOrder && (
-                            <span className="ml-1 text-muted-foreground font-normal">{l(`(ограничено с ${calcEarned} баллов)`, `(capped from ${calcEarned} points)`, `(ierobežots no ${calcEarned} punktiem)`)}</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          €{calcAmount} × {draft.earnRatePercent}% = {calcEarned} {l('баллов (1 балл = 1 евроцент)', 'points (1 point = 1 euro cent)', 'punkti (1 punkts = 1 eiro cents)')}{draft.maxEarnPerOrder > 0 ? l(`, лимит ${draft.maxEarnPerOrder} баллов`, `, limit ${draft.maxEarnPerOrder} points`, `, limits ${draft.maxEarnPerOrder} punkti`) : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-foreground font-medium">
-                          {l('Макс. списать:', 'Maximum redeemable:', 'Maks. izmantošanai:')} <strong>{calcMaxSpend} {l('баллов', 'points', 'punkti')}</strong> (−€{pointsToEuros(calcMaxSpend).toFixed(2)})
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          €{calcAmount} × {draft.maxSpendPercent}% = {calcMaxSpend} {l('баллов, 1 балл = 1 евроцент', 'points, 1 point = 1 euro cent', 'punkti, 1 punkts = 1 eiro cents')}
-                          {draft.minPointsToSpend > 0 && l(` · минимум на балансе для списания: ${draft.minPointsToSpend} баллов`, ` · minimum balance to redeem: ${draft.minPointsToSpend} points`, ` · minimālā bilance izmantošanai: ${draft.minPointsToSpend} punkti`)}
-                        </p>
-                      </div>
-                      {draft.pointsExpiryDays > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          {l(`Начисленные баллы сгорят через ${draft.pointsExpiryDays} дней`, `Earned points will expire in ${draft.pointsExpiryDays} days`, `Nopelnītie punkti beigsies pēc ${draft.pointsExpiryDays} dienām`)}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Балансы пользователей */}
-        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setBalancesOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            <span className="text-lg font-semibold">{l('Балансы пользователей', 'User balances', 'Lietotāju bilances')}</span>
-            <span className={`text-gray-400 transition-transform duration-[280ms] ease-in-out ${balancesOpen ? 'rotate-180' : ''}`}>▾</span>
-          </button>
-
-          {balancesOpen && (
-            <div className="ui-disclosure-in border-t border-border px-5 pb-5 pt-4 space-y-3">
-              <Input
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder={l('Поиск по имени, email, телефону, карте, компании', 'Search by name, email, phone, card, or company', 'Meklēt pēc vārda, e-pasta, tālruņa, kartes vai uzņēmuma')}
-                className="h-8 text-sm w-full max-w-sm"
-              />
-              {users.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{l('Пользователи не найдены', 'No users found', 'Lietotāji nav atrasti')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                        <th className="pb-2 pr-4 font-medium">{l('Пользователь', 'User', 'Lietotājs')}</th>
-                        <th className="pb-2 pr-4 font-medium">{l('Баллы', 'Points', 'Punkti')}</th>
-                        <th className="pb-2 font-medium">{l('Корректировка', 'Adjustment', 'Korekcija')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.length === 0 && (
-                        <tr><td colSpan={3} className="py-4 text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</td></tr>
-                      )}
-                      {filteredUsers.map((user, idx) => (
-                        <tr key={user.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted'}>
-                          <td className="py-2 pr-4">
-                            <p className="font-medium">{user.name || user.email}</p>
-                            {user.name && <p className="text-xs text-muted-foreground">{user.email}</p>}
-                          </td>
-                          <td className="py-2 pr-4">
-                            <span className={`font-semibold ${(user.bonusPoints ?? 0) > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-400'}`}>
-                              {user.bonusPoints ?? 0} {l('баллов', 'points', 'punkti')}
-                              <span className="ml-1 font-normal opacity-70">
-                                ({formatEuro(pointsToEuros(user.bonusPoints ?? 0), locale)})
-                              </span>
-                            </span>
-                          </td>
-                          <td className="py-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Input
-                                type="number"
-                                min={1}
-                                value={adjustDelta[user.id] ?? ''}
-                                onChange={(e) => setAdjustDelta((p) => ({ ...p, [user.id]: e.target.value }))}
-                                placeholder={l('Кол-во баллов', 'Point amount', 'Punktu skaits')}
-                                className="w-36 h-8 text-sm [&::-webkit-inner-spin-button]:opacity-100 [&::-webkit-outer-spin-button]:opacity-100"
-                              />
-                              <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700" onClick={() => applyAdjustment(user.id, 1)}>
-                                + {l('Начислить', 'Add', 'Pieskaitīt')}
-                              </Button>
-                              <Button size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700" onClick={() => applyAdjustment(user.id, -1)}>
-                                − {l('Списать', 'Deduct', 'Atņemt')}
-                              </Button>
-                              {adjustMsg[user.id] && (
-                                <span className="text-xs text-green-700 dark:text-green-400">{adjustMsg[user.id]}</span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Сегментация + Топ-5 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
-            <h2 className="text-lg font-semibold mb-3">{l('Сегментация по балансу', 'Balance segmentation', 'Segmentācija pēc bilances')}</h2>
-            <div className="space-y-2">
-              {segments.map((s) => (
-                <div key={s.label} className="rounded-lg border border-border px-4 py-2 flex items-center justify-between">
-                  <span className="text-sm text-foreground">{s.label}</span>
-                  <span className="font-semibold text-foreground">{s.count} {l('польз.', 'users', 'lietotāji')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
-            <h2 className="text-lg font-semibold mb-3">{l('Топ-5 по балансу', 'Top 5 by balance', 'Top 5 pēc bilances')}</h2>
-            {top5.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{l('Ни у кого нет баллов', 'No one has points yet', 'Nevienam vēl nav punktu')}</p>
-            ) : (
-              <ol className="space-y-2">
-                {top5.map((u, i) => (
-                  <li key={u.id} className="flex items-center gap-3">
-                    <span className="w-6 text-center text-sm font-bold text-muted-foreground">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{u.name || u.email}</p>
-                      {u.name && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
-                    </div>
-                    <span className="text-sm font-semibold text-green-700 dark:text-green-400 shrink-0">
-                      {u.bonusPoints} {l('баллов', 'points', 'punkti')} ({formatEuro(pointsToEuros(u.bonusPoints ?? 0), locale)})
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        </div>
-
-        {/* История операций */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
-          <h2 className="text-lg font-semibold mb-3">{l('История операций', 'Transaction history', 'Darījumu vēsture')}</h2>
-          {bonusOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{l('Операций с бонусами пока не было', 'There have been no point transactions yet', 'Punktu darījumu vēl nav bijis')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="pb-2 pr-4 font-medium">{l('Дата', 'Date', 'Datums')}</th>
-                    <th className="pb-2 pr-4 font-medium">{l('Покупатель', 'Customer', 'Pircējs')}</th>
-                    <th className="pb-2 pr-4 font-medium text-right">{l('Сумма заказа', 'Order total', 'Pasūtījuma summa')}</th>
-                    <th className="pb-2 pr-4 font-medium text-right">{l('Начислено', 'Earned', 'Nopelnīts')}</th>
-                    <th className="pb-2 font-medium text-right">{l('Списано', 'Spent', 'Iztērēts')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bonusOrders.map((o, idx) => (
-                    <tr key={o.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
-                      <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
-                        {new Date(o.createdAt).toLocaleDateString(locale)}
-                      </td>
-                      <td className="py-2 pr-4">
-                        <p className="font-medium">{o.firstName} {o.lastName}</p>
-                        <p className="text-xs text-muted-foreground">{o.email}</p>
-                      </td>
-                      <td className="py-2 pr-4 text-right">{formatEuro(o.total, locale)}</td>
-                      <td className="py-2 pr-4 text-right">
-                        {(o.bonusEarned ?? 0) > 0
-                          ? <span className="text-green-700 dark:text-green-400 font-medium">
-                              +{o.bonusEarned} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusEarned ?? 0), locale)})</span>
-                            </span>
-                          : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="py-2 text-right">
-                        {(o.bonusSpent ?? 0) > 0
-                          ? <span className="text-rose-600 dark:text-rose-400 font-medium">
-                              −{o.bonusSpent} <span className="font-normal opacity-70">({formatEuro(pointsToEuros(o.bonusSpent ?? 0), locale)})</span>
-                            </span>
-                          : <span className="text-muted-foreground">—</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </main>
-    </AdminGate>
-  )
+    <Dialog open={confirmDeduct !== null} onOpenChange={open => { if (!open) setConfirmDeduct(null) }}><DialogContent><DialogHeader><DialogTitle>{l('Подтвердить списание', 'Confirm deduction', 'Apstiprināt atņemšanu')}</DialogTitle><DialogDescription>{l('Баланс клиента будет уменьшен. Операция и указанная причина сохранятся в истории и аудите.', 'The customer balance will be reduced. The transaction and reason will be recorded.', 'Klienta bilance tiks samazināta. Darījums un iemesls tiks saglabāts.')}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setConfirmDeduct(null)}>{l('Отмена', 'Cancel', 'Atcelt')}</Button><Button className="bg-red-600 text-white hover:bg-red-700" onClick={() => confirmDeduct && void applyAdjustment(confirmDeduct, -1)}>{l('Списать баллы', 'Deduct points', 'Atņemt punktus')}</Button></DialogFooter></DialogContent></Dialog>
+  </main></AdminGate>
 }

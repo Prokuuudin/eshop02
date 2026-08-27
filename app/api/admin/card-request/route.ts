@@ -11,7 +11,7 @@ type Lang = 'ru' | 'en' | 'lv'
 
 const OFFICE_PHONE = '+371 27067730'
 const OFFICE_EMAIL = 'office@miksplus.eu'
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://miksplus.eu'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://hairshoppro.lv'
 
 function escapeHtml(str: string): string {
   return str
@@ -132,7 +132,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
 
 
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,20 +17,20 @@ type EmailTemplate = {
 
 function renderPreview(body: string, vars: string[], language: 'ru' | 'en' | 'lv'): string {
     const SAMPLE: Record<string, string> = {
-        order_id: 'ORD-2025-001',
+        order_id: 'ORD-2026-001',
         first_name: language === 'ru' ? 'Иван' : language === 'lv' ? 'Jānis' : 'John',
         last_name: language === 'ru' ? 'Петров' : language === 'lv' ? 'Bērziņš' : 'Smith',
-        total: '15 500',
+        total: '€155.00',
         items_list:
             language === 'ru'
                 ? 'Шампунь Pro 500 мл × 2, Маска Hair × 1'
                 : language === 'lv'
                   ? 'Šampūns Pro 500 ml × 2, Maska Hair × 1'
                   : 'Pro Shampoo 500 ml × 2, Hair Mask × 1',
-        tracking_number: 'RU123456789',
+        tracking_number: 'LV123456789',
         delivery_date:
             language === 'ru' ? '30 мая 2025' : language === 'lv' ? '2025. gada 30. maijs' : 'May 30, 2025',
-        store_name: 'ProBeauty',
+        store_name: 'hairshoppro.lv',
         email: 'ivan@example.com',
         reset_link: '#',
         rfq_id: 'RFQ-2025-042',
@@ -46,21 +46,43 @@ export default function EmailTemplatesPage(): React.ReactElement {
     const { language, l } = useAdminLocale();
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [selected, setSelected] = useState<EmailTemplate | null>(null);
     const [subject, setSubject] = useState('');
     const [body, setBody] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [saveError, setSaveError] = useState(false);
     const [tab, setTab] = useState<'edit' | 'preview'>('edit');
     const [testEmail, setTestEmail] = useState('');
     const [testSending, setTestSending] = useState(false);
     const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null);
+    const subjectRef = useRef(subject);
+    const bodyRef = useRef(body);
+    const selectedRef = useRef(selected);
+
+    subjectRef.current = subject;
+    bodyRef.current = body;
+    selectedRef.current = selected;
+
+    const hasUnsavedChanges = (): boolean => {
+        const current = selectedRef.current;
+        return Boolean(current && (subjectRef.current !== current.subject || bodyRef.current !== current.body));
+    };
 
     const load = () => {
         setLoading(true);
+        setLoadError(false);
         fetch('/api/admin/email-templates')
-            .then((r) => r.json())
+            .then((r) => {
+                if (!r.ok) throw new Error('load_failed');
+                return r.json();
+            })
             .then((data: EmailTemplate[]) => setTemplates(Array.isArray(data) ? data : []))
+            .catch(() => {
+                setTemplates([]);
+                setLoadError(true);
+            })
             .finally(() => setLoading(false));
     };
 
@@ -68,11 +90,26 @@ export default function EmailTemplatesPage(): React.ReactElement {
         queueMicrotask(() => void load());
     }, []);
 
+    useEffect(() => {
+        const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges()) return;
+            event.preventDefault();
+        };
+        window.addEventListener('beforeunload', warnBeforeUnload);
+        return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+    }, []);
+
     const select = (t: EmailTemplate) => {
+        if (hasUnsavedChanges() && !window.confirm(l(
+            'Несохранённые изменения будут потеряны. Продолжить?',
+            'Unsaved changes will be lost. Continue?',
+            'Nesaglabātās izmaiņas tiks zaudētas. Vai turpināt?'
+        ))) return;
         setSelected(t);
         setSubject(t.subject);
         setBody(t.body);
         setSaved(false);
+        setSaveError(false);
         setTab('edit');
     };
 
@@ -80,17 +117,23 @@ export default function EmailTemplatesPage(): React.ReactElement {
         if (!selected) return;
         setSaving(true);
         setSaved(false);
-        await fetch(`/api/admin/email-templates/${selected.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject, body }),
-        });
-        setSaving(false);
-        setSaved(true);
-        setTemplates((prev) =>
-            prev.map((t) => (t.id === selected.id ? { ...t, subject, body } : t))
-        );
-        setSelected((prev) => (prev ? { ...prev, subject, body } : null));
+        setSaveError(false);
+        try {
+            const response = await fetch(`/api/admin/email-templates/${selected.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, body }),
+            });
+            if (!response.ok) throw new Error('save_failed');
+            const savedTemplate = await response.json() as EmailTemplate;
+            setTemplates((prev) => prev.map((t) => (t.id === selected.id ? savedTemplate : t)));
+            setSelected(savedTemplate);
+            setSaved(true);
+        } catch {
+            setSaveError(true);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const reset = () => {
@@ -98,6 +141,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
         setSubject(selected.subject);
         setBody(selected.body);
         setSaved(false);
+        setSaveError(false);
     };
 
     const sendTest = async () => {
@@ -156,8 +200,21 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                 <div className="py-8 text-center text-sm text-muted-foreground">
                                     {l('Загрузка...', 'Loading...', 'Ielāde...')}
                                 </div>
+                            ) : loadError ? (
+                                <div className="space-y-3 px-4 py-6 text-center" role="alert">
+                                    <p className="text-sm text-red-700 dark:text-red-300">
+                                        {l('Не удалось загрузить шаблоны.', 'Failed to load templates.', 'Neizdevās ielādēt veidnes.')}
+                                    </p>
+                                    <button type="button" onClick={load} className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                                        {l('Повторить', 'Retry', 'Mēģināt vēlreiz')}
+                                    </button>
+                                </div>
+                            ) : templates.length === 0 ? (
+                                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                                    {l('Шаблоны не найдены.', 'No templates found.', 'Veidnes nav atrastas.')}
+                                </p>
                             ) : (
-                                <ul className="divide-y divide-border">
+                                <ul className="max-h-[70vh] divide-y divide-border overflow-y-auto">
                                     {templates.map((t) => (
                                         <li key={t.id}>
                                             <button
@@ -303,6 +360,11 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                     {l('Сохранено', 'Saved', 'Saglabāts')}
                                                 </span>
                                             )}
+                                            {saveError && (
+                                                <span className="text-sm text-red-700 dark:text-red-300" role="alert">
+                                                    {l('Не удалось сохранить изменения.', 'Failed to save changes.', 'Neizdevās saglabāt izmaiņas.')}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div className="rounded-lg border border-border px-4 py-3 space-y-2">
@@ -369,12 +431,12 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 {renderPreview(subject, selected.variables, language)}
                                             </span>
                                         </div>
-                                        <div className="rounded-xl border border-border bg-card p-6">
-                                            <div
-                                                className="prose prose-sm max-w-none dark:prose-invert"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: renderPreview(body, selected.variables, language),
-                                                }}
+                                        <div className="overflow-hidden rounded-xl border border-border bg-white">
+                                            <iframe
+                                                title={l('Предпросмотр письма', 'Email preview', 'E-pasta priekšskatījums')}
+                                                sandbox=""
+                                                srcDoc={renderPreview(body, selected.variables, language)}
+                                                className="h-[32rem] w-full border-0 bg-white"
                                             />
                                         </div>
                                         <p className="text-xs text-muted-foreground">

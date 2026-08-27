@@ -139,7 +139,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     const templates = await getTemplates()
     const tpl = templates.find((t) => t.id === 'card-rules-ru')
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://miksplus.eu'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hairshoppro.lv'
 
     let processed = 0
     for (const u of users) {

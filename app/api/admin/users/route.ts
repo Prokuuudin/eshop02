@@ -58,6 +58,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         { name: { contains: search, mode: 'insensitive' } },
         { cardNumber: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
+        { companyName: { contains: search, mode: 'insensitive' } },
         { registrationNumber: { contains: search, mode: 'insensitive' } },
       ]
     }

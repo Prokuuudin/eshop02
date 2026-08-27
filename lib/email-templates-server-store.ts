@@ -28,19 +28,49 @@ async function readFromFile(): Promise<TemplatesData> {
   }
 }
 
+function mergeWithDefaults(stored: TemplatesData, defaults: TemplatesData): TemplatesData {
+  const defaultById = new Map(defaults.templates.map((template) => [template.id, template]))
+  const templates = stored.templates.map((current) => {
+    const template = defaultById.get(current.id)
+    if (!template) return current
+    const currentUpdatedAt = Date.parse(current.updatedAt)
+    const defaultUpdatedAt = Date.parse(template.updatedAt)
+    return Number.isFinite(defaultUpdatedAt) && (!Number.isFinite(currentUpdatedAt) || defaultUpdatedAt > currentUpdatedAt)
+      ? template
+      : current
+  })
+
+  // A real registry contains many templates; tiny collections are also used by
+  // tests and may be deliberate custom installations. Complete only an existing
+  // full registry, without deleting any custom templates.
+  if (stored.templates.length >= 10) {
+    const storedIds = new Set(stored.templates.map((template) => template.id))
+    templates.push(...defaults.templates.filter((template) => !storedIds.has(template.id)))
+  }
+  return {
+    templates,
+  }
+}
+
 export async function readTemplatesData(): Promise<TemplatesData> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return readFromFile()
-  return row.value as TemplatesData
+  const [row, defaults] = await Promise.all([
+    prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } }),
+    readFromFile(),
+  ])
+  if (!row) return defaults
+  return mergeWithDefaults(row.value as TemplatesData, defaults)
 }
 
 // Same read, but against the transaction client passed into `prisma.$transaction`
 // rather than the top-level `prisma` handle - used by upsertTemplate so its
 // read-modify-write of the single shared KV row happens inside the lock below.
 const readTemplatesDataTx = async (tx: ExtendedTransactionClient): Promise<TemplatesData> => {
-  const row = await tx.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return readFromFile()
-  return row.value as TemplatesData
+  const [row, defaults] = await Promise.all([
+    tx.keyValueSetting.findUnique({ where: { key: KV_KEY } }),
+    readFromFile(),
+  ])
+  if (!row) return defaults
+  return mergeWithDefaults(row.value as TemplatesData, defaults)
 }
 
 const writeTemplatesDataTx = async (tx: ExtendedTransactionClient, data: TemplatesData): Promise<void> => {

@@ -625,12 +625,15 @@ model BonusTransaction {
   balanceAfter Int
   actorUserId  String?
   reason       String?
+  expiresAt    DateTime?
+  remainingPoints Int    @default(0)
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([orderId])
   @@index([type, createdAt])
+  @@index([userId, expiresAt])
 }
 
 model SyncRun {

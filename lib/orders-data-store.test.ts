@@ -47,7 +47,14 @@ function makeTx() {
       fields: { maxUses: Symbol('maxUses') },
       updateMany: vi.fn(async () => ({ count: 1 })),
     },
-    user: { findUnique: vi.fn(), updateMany: vi.fn(async () => ({ count: 1 })) },
+    user: { findUnique: vi.fn(), updateMany: vi.fn(async () => ({ count: 1 })), update: vi.fn() },
+    bonusTransaction: {
+      findMany: vi.fn(async () => []),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    keyValueSetting: { findUnique: vi.fn(async () => null) },
   }
 }
 

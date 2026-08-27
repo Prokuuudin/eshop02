@@ -7,6 +7,7 @@ import { toNum } from '@/lib/decimal'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
 import { appendServerAudit } from '@/lib/server-audit'
+import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDays } from '@/lib/bonus-ledger'
 
 export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
 
@@ -202,6 +203,7 @@ function buildOrderData(order: Omit<ServerOrder, 'id'>) {
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
 const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder): Promise<PrismaOrder> => {
   return prisma.$transaction(async (tx) => {
+    if (initialOrder.userId) await expireBonusPoints(tx, initialOrder.userId)
     const currentUser = initialOrder.userId
       ? await tx.user.findUnique({ where: { id: initialOrder.userId }, select: { bonusPoints: true } })
       : null
@@ -217,6 +219,7 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
         data: { bonusPoints: { decrement: spent } },
       })
       if (debit.count !== 1) throw new InsufficientBonusPointsError()
+      await consumeBonusLots(tx, order.userId, spent)
     }
 
     const data = buildOrderData(order)
@@ -288,6 +291,7 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
     // Credit earned points separately after the guarded debit.
     const earned = Math.max(0, Math.round(order.bonusEarned ?? 0))
     if (order.userId && earned > 0) {
+      const expiryDays = await getBonusExpiryDays(tx)
       await tx.user.updateMany({
         where: { id: order.userId },
         data: { bonusPoints: { increment: earned } },
@@ -299,6 +303,8 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
           type: 'order_earn',
           points: earned,
           balanceAfter: (currentUser?.bonusPoints ?? 0) - spent + earned,
+          remainingPoints: earned,
+          expiresAt: bonusExpiryDate(expiryDays),
           reason: `Order ${created.id}`,
         },
       })

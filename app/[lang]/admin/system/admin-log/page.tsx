@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,9 @@ function fmtDate(d: Date | string, locale: string): string {
 }
 
 const PAGE_SIZE = 50
+const API_PAGE_SIZE = 200
+
+type IntegrityResult = { valid: boolean; checked: number; invalidId?: string }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -49,14 +52,38 @@ export default function AdminLogPage(): React.ReactElement {
   const [hideOlderThan90, setHideOlderThan90] = useState(false)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [loadError, setLoadError] = useState('')
+  const [integrity, setIntegrity] = useState<IntegrityResult | null>(null)
+  const [integrityError, setIntegrityError] = useState(false)
 
   useEffect(() => {
-    adminFetchJson<{ entries?: Array<Parameters<typeof mapServerLogEntry>[0]> }>('/api/admin/audit-log?take=200')
-      .then(({ entries: dbEntries }) => {
-        if (Array.isArray(dbEntries)) setEntries(dbEntries.map(mapServerLogEntry))
-      })
-      .then(() => setLoadState('ready'))
-      .catch((error) => { setLoadError(classifyAdminError(error, l('Журнал аудита', 'Audit log', 'Audita žurnāls')).message); setLoadState('error') })
+    const controller = new AbortController()
+    const loadAllEntries = async (): Promise<void> => {
+      const all: Array<Parameters<typeof mapServerLogEntry>[0]> = []
+      let total = 0
+      do {
+        const payload = await adminFetchJson<{
+          entries?: Array<Parameters<typeof mapServerLogEntry>[0]>
+          total?: number
+        }>(`/api/admin/audit-log?skip=${all.length}&take=${API_PAGE_SIZE}`, { signal: controller.signal })
+        const batch = Array.isArray(payload.entries) ? payload.entries : []
+        all.push(...batch)
+        total = typeof payload.total === 'number' ? payload.total : all.length
+        if (batch.length === 0) break
+      } while (all.length < total)
+      setEntries(all.map(mapServerLogEntry))
+    }
+
+    void Promise.all([
+      loadAllEntries().then(() => setLoadState('ready')),
+      adminFetchJson<IntegrityResult>('/api/admin/audit-log/verify', { signal: controller.signal })
+        .then((result) => { setIntegrity(result); setIntegrityError(false) })
+        .catch(() => setIntegrityError(true)),
+    ]).catch((error) => {
+      if (controller.signal.aborted) return
+      setLoadError(classifyAdminError(error, l('Журнал аудита', 'Audit log', 'Audita žurnāls')).message)
+      setLoadState('error')
+    })
+    return () => controller.abort()
   }, [l, setEntries])
 
   const [search, setSearch] = useState('')
@@ -150,7 +177,7 @@ export default function AdminLogPage(): React.ReactElement {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setHideOlderThan90((v) => !v)}
+              onClick={() => { setHideOlderThan90((v) => !v); setPage(0) }}
               title={l('Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется', 'Hides entries in this view only; the audit log is immutable and is not deleted', 'Paslēpj ierakstus tikai šajā skatā; audita žurnāls ir nemainīgs un netiek dzēsts')}
             >
               {hideOlderThan90 ? l('Показать все записи', 'Show all entries', 'Rādīt visus ierakstus') : l('Скрыть старше 90 дней', 'Hide entries older than 90 days', 'Slēpt ierakstus, kas vecāki par 90 dienām')}
@@ -159,6 +186,25 @@ export default function AdminLogPage(): React.ReactElement {
               <Link href="/admin/system/logs">← {l('Системные логи', 'System logs', 'Sistēmas žurnāli')}</Link>
             </Button>
           </div>
+        </div>
+
+        <div
+          role="status"
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            integrity?.valid
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+              : 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200'
+          }`}
+        >
+          {integrity?.valid
+            ? l(
+                `Целостность подтверждена: проверено записей — ${integrity.checked}.`,
+                `Integrity verified: ${integrity.checked} entries checked.`,
+                `Integritāte apstiprināta: pārbaudīti ${integrity.checked} ieraksti.`,
+              )
+            : integrityError
+              ? l('Не удалось проверить целостность журнала.', 'Audit-log integrity could not be checked.', 'Neizdevās pārbaudīt audita žurnāla integritāti.')
+              : l('Проверка целостности журнала…', 'Checking audit-log integrity…', 'Pārbauda audita žurnāla integritāti…')}
         </div>
 
         {/* Stats */}
@@ -237,11 +283,19 @@ export default function AdminLogPage(): React.ReactElement {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {pageItems.map((entry) => (
-                    <>
+                    <Fragment key={entry.id}>
                       <tr
-                        key={entry.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
                         onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            setExpandedId(expandedId === entry.id ? null : entry.id)
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-expanded={expandedId === entry.id}
+                        aria-label={l(`Подробнее: ${entry.entityTitle ?? entry.entityId}`, `Details: ${entry.entityTitle ?? entry.entityId}`, `Informācija: ${entry.entityTitle ?? entry.entityId}`)}
                       >
                         <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
                           {fmtDate(entry.at, locale)}
@@ -273,7 +327,7 @@ export default function AdminLogPage(): React.ReactElement {
                         </td>
                       </tr>
                       {expandedId === entry.id && (
-                        <tr key={`${entry.id}-exp`} className="bg-muted/30">
+                        <tr className="bg-muted/30">
                           <td colSpan={6} className="px-4 py-3">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                               <div>
@@ -310,7 +364,7 @@ export default function AdminLogPage(): React.ReactElement {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

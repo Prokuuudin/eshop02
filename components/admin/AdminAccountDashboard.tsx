@@ -108,7 +108,7 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Cog,
         color: 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400',
         items: [
-            { label: 'Журнал аудита', href: '/account/audit-logs' },
+            { label: 'Журнал аудита', href: '/admin/system/admin-log' },
             { label: 'Логи', href: '/admin/system/logs' },
             { label: 'Резервные копии', href: '/admin/system/backup' },
         ],

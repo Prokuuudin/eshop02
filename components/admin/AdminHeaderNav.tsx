@@ -113,7 +113,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         title: 'system',
         icon: Cog,
         items: [
-            { title: 'system.audit', href: '/account/audit-logs' },
+            { title: 'system.audit', href: '/admin/system/admin-log' },
             { title: 'system.logs', href: '/admin/system/logs' },
             { title: 'system.backup', href: '/admin/system/backup' },
         ],

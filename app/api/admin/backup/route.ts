@@ -8,10 +8,9 @@ export const runtime = 'nodejs'
 const DATA_DIR = path.join(process.cwd(), 'data')
 
 const ALLOWED_FILES = [
-  'orders.json',
-  'reviews.json',
   'blog-posts.json',
   'site-content.json',
+  'custom-products.json',
   'product-overrides.json',
   'banners.json',
   'promo-codes.json',
@@ -47,7 +46,10 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (__gate instanceof NextResponse) return __gate
 
   void request
-  return NextResponse.json({ error: 'configuration_restore_disabled_use_controlled_maintenance' }, { status: 405 })
+  return NextResponse.json(
+    { error: 'configuration_restore_disabled_use_controlled_maintenance' },
+    { status: 405, headers: { Allow: 'GET' } },
+  )
 
   /* let body: { files?: Record<string, unknown>; confirmConfigurationRestore?: boolean }
 

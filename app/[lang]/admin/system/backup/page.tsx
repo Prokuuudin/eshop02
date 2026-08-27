@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
-import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 
 const LS_KEY = 'admin_backup_last_download'
@@ -21,8 +20,6 @@ function countEntries(value: unknown, l: (ru: string, en: string, lv: string) =>
 export default function AdminBackupPage(): React.ReactElement {
   const { l, locale } = useAdminLocale()
   const includedFiles = [
-    { name: 'orders.json', label: l('Заказы', 'Orders', 'Pasūtījumi') },
-    { name: 'reviews.json', label: l('Отзывы', 'Reviews', 'Atsauksmes') },
     { name: 'blog-posts.json', label: l('Блог', 'Blog', 'Blogs') },
     { name: 'site-content.json', label: l('Контент сайта', 'Site content', 'Vietnes saturs') },
     { name: 'custom-products.json', label: l('Кастомные товары', 'Custom products', 'Pielāgotie produkti') },
@@ -31,16 +28,12 @@ export default function AdminBackupPage(): React.ReactElement {
     { name: 'promo-codes.json', label: l('Промокоды', 'Promo codes', 'Promokodi') },
     { name: 'shipping-settings.json', label: l('Настройки доставки', 'Delivery settings', 'Piegādes iestatījumi') },
   ]
-  const confirmAction = useAdminConfirm()
   const [lastDownload, setLastDownload] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
 
   const [previewFiles, setPreviewFiles] = useState<Record<string, unknown> | null>(null)
-  const [restoring, setRestoring] = useState(false)
-  const [restoreResult, setRestoreResult] = useState<{ ok: boolean; message: string } | null>(null)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewError, setPreviewError] = useState('')
 
   useEffect(() => {
     const saved = localStorage.getItem(LS_KEY)
@@ -76,52 +69,23 @@ export default function AdminBackupPage(): React.ReactElement {
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setRestoreResult(null)
+    setPreviewError('')
     setPreviewFiles(null)
 
     const reader = new FileReader()
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target?.result as string)
-        if (!parsed?.files || typeof parsed.files !== 'object') {
-          setRestoreResult({ ok: false, message: l('Неверный формат файла. Ожидается backup с полем "files".', 'Invalid file format. Expected a backup with a “files” field.', 'Nederīgs faila formāts. Nepieciešama rezerves kopija ar lauku “files”.') })
+        if (parsed?.kind !== 'configuration-export' || !parsed.files || typeof parsed.files !== 'object' || Array.isArray(parsed.files)) {
+          setPreviewError(l('Неверный формат. Выберите JSON-файл конфигурации, скачанный из этого раздела.', 'Invalid format. Select a configuration JSON file downloaded from this section.', 'Nederīgs formāts. Izvēlieties konfigurācijas JSON failu, kas lejupielādēts no šīs sadaļas.'))
           return
         }
         setPreviewFiles(parsed.files)
       } catch {
-        setRestoreResult({ ok: false, message: l('Не удалось прочитать файл. Убедитесь, что это корректный JSON.', 'Could not read the file. Make sure it contains valid JSON.', 'Neizdevās nolasīt failu. Pārliecinieties, ka tajā ir derīgs JSON.') })
+        setPreviewError(l('Не удалось прочитать файл. Убедитесь, что это корректный JSON.', 'Could not read the file. Make sure it contains valid JSON.', 'Neizdevās nolasīt failu. Pārliecinieties, ka tajā ir derīgs JSON.'))
       }
     }
     reader.readAsText(file)
-  }
-
-  async function handleRestore() {
-    if (!previewFiles) return
-    const decision = await confirmAction({ title: l('Восстановить резервную копию?', 'Restore backup?', 'Atjaunot rezerves kopiju?'), description: l('Текущие данные будут перезаписаны содержимым выбранной копии. Операцию нельзя отменить.', 'Current data will be overwritten with the selected backup. This cannot be undone.', 'Pašreizējie dati tiks pārrakstīti ar izvēlēto rezerves kopiju. Šo darbību nevar atsaukt.'), affected: Object.keys(previewFiles), confirmText: l('ВОССТАНОВИТЬ', 'RESTORE', 'ATJAUNOT'), requireReason: true, destructive: true })
-    if (!decision.confirmed) return
-
-    setRestoring(true)
-    setRestoreResult(null)
-    try {
-      const res = await fetch('/api/admin/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: previewFiles, confirmConfigurationRestore: true }),
-      })
-      const data = await res.json()
-      if (data.ok) {
-        setRestoreResult({
-          ok: true,
-          message: `${l('Восстановлено:', 'Restored:', 'Atjaunots:')} ${data.restored?.join(', ') || l('нет файлов', 'no files', 'nav failu')}${data.skipped?.length ? `. ${l('Пропущено:', 'Skipped:', 'Izlaists:')} ${data.skipped.join(', ')}` : ''}`,
-        })
-      } else {
-        setRestoreResult({ ok: false, message: data.error ?? l('Ошибка восстановления', 'Restore failed', 'Atjaunošanas kļūda') })
-      }
-    } catch (e: unknown) {
-      setRestoreResult({ ok: false, message: e instanceof Error ? e.message : l('Неизвестная ошибка', 'Unknown error', 'Nezināma kļūda') })
-    } finally {
-      setRestoring(false)
-    }
   }
 
   return (
@@ -174,17 +138,16 @@ export default function AdminBackupPage(): React.ReactElement {
 
         {/* === Restore section === */}
         <section className="border rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-semibold">{l('Восстановить из файла', 'Restore from file', 'Atjaunot no faila')}</h2>
+          <h2 className="text-lg font-semibold">{l('Проверить файл экспорта', 'Inspect export file', 'Pārbaudīt eksporta failu')}</h2>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 text-sm text-yellow-800">
-            {l('Восстановление перезапишет текущие данные. Сначала сделайте резервную копию.', 'Restoring will overwrite current data. Create a backup first.', 'Atjaunošana pārrakstīs pašreizējos datus. Vispirms izveidojiet rezerves kopiju.')}
+            {l('Автоматическое восстановление отключено. Здесь можно только проверить состав файла; восстановление выполняется в рамках контролируемого технического обслуживания.', 'Automatic restore is disabled. You can inspect the file contents here; restoration is performed only during controlled maintenance.', 'Automātiskā atjaunošana ir atspējota. Šeit var tikai pārbaudīt faila saturu; atjaunošanu veic kontrolētas apkopes laikā.')}
           </div>
 
           <div>
             <label htmlFor="backup-file" className="block text-sm font-medium mb-2">{l('Выберите файл backup (.json)', 'Select backup file (.json)', 'Izvēlieties rezerves kopijas failu (.json)')}</label>
             <input
               id="backup-file"
-              ref={fileInputRef}
               type="file"
               accept=".json"
               onChange={handleFileSelect}
@@ -203,27 +166,12 @@ export default function AdminBackupPage(): React.ReactElement {
                   </li>
                 ))}
               </ul>
-
-              <Button
-                variant="destructive"
-                className="mt-4"
-                onClick={handleRestore}
-                disabled={restoring}
-              >
-                {restoring ? l('Восстановление…', 'Restoring…', 'Atjaunošana…') : l('Восстановить', 'Restore', 'Atjaunot')}
-              </Button>
             </div>
           )}
 
-          {restoreResult && (
-            <div
-              className={`rounded-md px-4 py-3 text-sm ${
-                restoreResult.ok
-                  ? 'bg-green-50 border border-green-200 text-green-800'
-                  : 'bg-red-50 border border-red-200 text-red-800'
-              }`}
-            >
-              {restoreResult.message}
+          {previewError && (
+            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {previewError}
             </div>
           )}
         </section>

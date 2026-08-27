@@ -58,7 +58,7 @@ beforeEach(() => {
 })
 
 const tmplA: EmailTemplate = {
-  id: 'order-confirmation',
+  id: 'order-confirmation-ru',
   name: 'Order confirmation',
   subject: 'Original A subject',
   body: 'Body A',
@@ -67,7 +67,7 @@ const tmplA: EmailTemplate = {
 }
 
 const tmplB: EmailTemplate = {
-  id: 'password-reset',
+  id: 'password-reset-ru',
   name: 'Password reset',
   subject: 'Original B subject',
   body: 'Body B',
@@ -91,7 +91,7 @@ describe('upsertTemplate', () => {
   it('performs the read-modify-write inside a single advisory-locked transaction', async () => {
     seedTemplates([tmplA, tmplB])
 
-    const result = await upsertTemplate('order-confirmation', { subject: 'Edited subject' })
+    const result = await upsertTemplate('order-confirmation-ru', { subject: 'Edited subject' })
 
     expect(result.success).toBe(true)
     expect(result.template?.subject).toBe('Edited subject')
@@ -117,8 +117,8 @@ describe('upsertTemplate', () => {
     seedTemplates([tmplA, tmplB])
 
     const [resultA, resultB] = await Promise.all([
-      upsertTemplate('order-confirmation', { subject: 'Edited by admin A' }),
-      upsertTemplate('password-reset', { subject: 'Edited by admin B' }),
+      upsertTemplate('order-confirmation-ru', { subject: 'Edited by admin A' }),
+      upsertTemplate('password-reset-ru', { subject: 'Edited by admin B' }),
     ])
 
     expect(resultA.success).toBe(true)
@@ -132,7 +132,7 @@ describe('upsertTemplate', () => {
 
     const templates = await getTemplates()
     expect(templates).toHaveLength(2)
-    expect(templates.find((t) => t.id === 'order-confirmation')?.subject).toBe('Edited by admin A')
-    expect(templates.find((t) => t.id === 'password-reset')?.subject).toBe('Edited by admin B')
+    expect(templates.find((t) => t.id === 'order-confirmation-ru')?.subject).toBe('Edited by admin A')
+    expect(templates.find((t) => t.id === 'password-reset-ru')?.subject).toBe('Edited by admin B')
   })
 })

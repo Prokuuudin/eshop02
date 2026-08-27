@@ -78,9 +78,9 @@ const steps: OnboardingStep[] = [
         id: 8,
         group: 'week1',
         icon: '📊',
-        text: 'Откройте аналитику и изучите три вкладки: ABC-анализ товаров, когортный retention, SEO-отчёт',
+        text: 'Откройте аналитику каталога и изучите три вкладки: ABC-анализ товаров, когортный retention, SEO-отчёт',
         href: '/admin/analytics',
-        linkLabel: 'Аналитика',
+        linkLabel: 'Аналитика каталога',
     },
     {
         id: 9,
@@ -186,6 +186,38 @@ const steps: OnboardingStep[] = [
         href: '/admin/bonus',
         linkLabel: 'Бонусы',
     },
+    {
+        id: 22,
+        group: 'week1',
+        icon: '📉',
+        text: 'Откройте алерты низкого остатка: настройте порог и включите фильтр «Скрыть неподтверждённые ERP», если остаток вызывает сомнение',
+        href: '/admin/stock-alerts',
+        linkLabel: 'Остатки',
+    },
+    {
+        id: 23,
+        group: 'month1',
+        icon: '↩️',
+        text: 'Обработайте возврат или отмену по регламенту: проверьте причину и статус заказа перед решением. Реальное решение принимайте только по согласованному сценарию',
+        href: '/admin/returns',
+        linkLabel: 'Возвраты',
+    },
+    {
+        id: 24,
+        group: 'month1',
+        icon: '💬',
+        text: 'Откройте запросы покупателей и изучите фильтры «без ответа / отвечено». Реальному клиенту отвечайте только после проверки регламента ответа',
+        href: '/admin/contact-messages',
+        linkLabel: 'Запросы',
+    },
+    {
+        id: 25,
+        group: 'month1',
+        icon: '📩',
+        text: 'Изучите приглашения клиентов: как формируется и отправляется письмо с картой доступа. Реальное приглашение отправляйте только по согласованному списку',
+        href: '/admin/invitations',
+        linkLabel: 'Приглашения',
+    },
 ];
 
 type StepTranslation = Pick<OnboardingStep, 'text' | 'linkLabel'>;
@@ -221,8 +253,8 @@ const stepsEn = toStepTranslations([
         'Media library',
     ],
     [
-        'Open analytics and review product ABC analysis, cohort retention, and the SEO report',
-        'Analytics',
+        'Open catalog analytics and review product ABC analysis, cohort retention, and the SEO report',
+        'Catalog analytics',
     ],
     [
         'Open the blog editor and review language fields, SEO, and publishing controls. Keep test articles as drafts',
@@ -273,6 +305,22 @@ const stepsEn = toStepTranslations([
         'Review bonus-program earning and spending rules. Change production values only after approval and scenario testing',
         'Bonuses',
     ],
+    [
+        'Open low-stock alerts: set a threshold and enable the "Hide ERP-unconfirmed" filter when a stock figure looks unreliable',
+        'Stock alerts',
+    ],
+    [
+        'Process a return or cancellation per procedure: check the reason and order status before deciding. Only act on real cases per an approved scenario',
+        'Returns',
+    ],
+    [
+        'Open customer requests and review the "unanswered / answered" filters. Reply to a real customer only after checking the response procedure',
+        'Requests',
+    ],
+    [
+        'Review client invitations: how the access-card email is generated and sent. Send a real invitation only from an approved list',
+        'Invitations',
+    ],
 ]);
 
 const stepsLv = toStepTranslations([
@@ -305,8 +353,8 @@ const stepsLv = toStepTranslations([
         'Mediju bibliotēka',
     ],
     [
-        'Atveriet analītiku un izpētiet produktu ABC analīzi, kohortu noturēšanu un SEO pārskatu',
-        'Analītika',
+        'Atveriet kataloga analītiku un izpētiet produktu ABC analīzi, kohortu noturēšanu un SEO pārskatu',
+        'Kataloga analītika',
     ],
     [
         'Atveriet bloga redaktoru un izpētiet valodu un SEO laukus un publicēšanu. Testa rakstu saglabājiet kā melnrakstu',
@@ -359,6 +407,22 @@ const stepsLv = toStepTranslations([
     [
         'Izpētiet bonusu programmas uzkrāšanas un izmantošanas noteikumus. Darba vērtības mainiet tikai pēc saskaņošanas un pārbaudes',
         'Bonusi',
+    ],
+    [
+        'Atveriet zema atlikuma brīdinājumus: iestatiet slieksni un ieslēdziet filtru "Slēpt ERP neapstiprinātos", ja atlikums šķiet neuzticams',
+        'Atlikumi',
+    ],
+    [
+        'Apstrādājiet atgriešanu vai atcelšanu pēc kārtības: pirms lēmuma pārbaudiet iemeslu un pasūtījuma statusu. Reālus lēmumus pieņemiet tikai pēc saskaņota scenārija',
+        'Atgriešana',
+    ],
+    [
+        'Atveriet klientu pieprasījumus un izpētiet filtrus "bez atbildes / atbildēts". Reālam klientam atbildiet tikai pēc atbildes kārtības pārbaudes',
+        'Pieprasījumi',
+    ],
+    [
+        'Izpētiet klientu ielūgumus: kā tiek izveidota un nosūtīta piekļuves kartes vēstule. Reālu ielūgumu sūtiet tikai pēc saskaņota saraksta',
+        'Ielūgumi',
     ],
 ]);
 

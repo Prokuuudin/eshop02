@@ -249,6 +249,7 @@ const lvAdmin: Record<string, string> = {
   'admin.sidebar.catalog.import': 'Imports un atjaunojumi',
   'admin.sidebar.catalog.stockAlerts': 'Krājumu brīdinājumi',
   'admin.sidebar.catalog.bulkPrice': 'Masveida cenas',
+  'admin.sidebar.catalog.analytics': 'Kataloga analītika',
   'admin.sidebar.sales': 'Pārdošana',
   'admin.sidebar.sales.dashboard': 'Pārdošanas panelis',
   'admin.sidebar.sales.orders': 'Pasūtījumi',

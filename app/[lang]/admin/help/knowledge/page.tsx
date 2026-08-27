@@ -139,7 +139,7 @@ const articles: KnowledgeArticle[] = [
         icon: '💾',
         title: 'Резервное копирование',
         description:
-            'Скачивайте резервную копию поддерживаемых данных магазина и восстанавливайте её из сохранённого файла. Восстановление перезаписывает текущие данные, поэтому перед ним обязательно создайте свежую копию и проверьте список файлов в предпросмотре.',
+            'Скачивайте экспорт файловых настроек магазина (блог, контент сайта, баннеры, промокоды, настройки доставки) в JSON. Автоматическое восстановление из файла отключено — здесь можно только проверить состав выбранного файла; фактическое восстановление выполняется вручную в рамках техобслуживания. Заказы, пользователи, счета и товары из PostgreSQL сюда не входят.',
         href: '/admin/system/backup',
         linkLabel: 'Открыть Backup',
     },
@@ -235,7 +235,7 @@ const articles: KnowledgeArticle[] = [
         icon: '🚚',
         title: 'Доставка, локализация и цены B2B',
         description:
-            'В конфигурации настраиваются способы доставки и оплаты, параметры локализации и группы B2B-цен. После изменения проверьте результат на тестовом сценарии оформления заказа с подходящим аккаунтом.',
+            'В конфигурации настраиваются способы доставки и оплаты, параметры локализации. Группы B2B-цен пока можно только создавать и редактировать здесь — на фактические цены в каталоге и чекауте они не влияют. После изменения доставки или оплаты проверьте результат на тестовом сценарии оформления заказа с подходящим аккаунтом.',
         href: '/admin/config/shipping',
         linkLabel: 'Открыть доставку и оплату',
     },
@@ -329,7 +329,7 @@ const articlesEn: ArticleTranslation[] = [
     ],
     [
         'Backup and restore',
-        'Download a supported store-data backup and preview its contents before restoring. Always create a fresh backup first.',
+        'Download a JSON export of file-based store settings (blog, site content, banners, promo codes, delivery settings). Automatic restore from file is disabled — you can only inspect the selected file’s contents here; restoring is done manually during maintenance. Orders, users, invoices, and products in PostgreSQL are not included.',
         'Open backup',
     ],
     [
@@ -389,7 +389,7 @@ const articlesEn: ArticleTranslation[] = [
     ],
     [
         'Shipping, localization, and B2B prices',
-        'Configure shipping and payment methods, localization settings, and B2B price groups, then verify checkout with a test account.',
+        'Configure shipping and payment methods and localization settings here. B2B price groups can currently only be created and edited on this screen — they do not yet affect actual catalog or checkout prices. After changing shipping or payment settings, verify the result with a test checkout on a suitable account.',
         'Open shipping and payment',
     ],
     [
@@ -477,7 +477,7 @@ const articlesLv: ArticleTranslation[] = [
     ],
     [
         'Rezerves kopēšana',
-        'Lejupielādējiet veikala datu kopiju un pirms atjaunošanas pārbaudiet tās saturu. Vispirms vienmēr izveidojiet jaunu kopiju.',
+        'Lejupielādējiet veikala failu iestatījumu (blogs, vietnes saturs, baneri, promokodi, piegādes iestatījumi) JSON eksportu. Automātiskā atjaunošana no faila ir atspējota — šeit var tikai pārbaudīt izvēlētā faila saturu; atjaunošanu veic manuāli apkopes laikā. Pasūtījumi, lietotāji, rēķini un produkti PostgreSQL datubāzē šeit netiek iekļauti.',
         'Atvērt rezerves kopijas',
     ],
     [
@@ -537,7 +537,7 @@ const articlesLv: ArticleTranslation[] = [
     ],
     [
         'Piegāde, lokalizācija un B2B cenas',
-        'Konfigurējiet piegādi, apmaksu, lokalizāciju un B2B cenu grupas un pārbaudiet pirkuma noformēšanu ar testa kontu.',
+        'Šeit konfigurējiet piegādes un apmaksas veidus, kā arī lokalizācijas iestatījumus. B2B cenu grupas pagaidām var tikai izveidot un rediģēt šajā ekrānā — tās vēl neietekmē faktiskās cenas katalogā vai pasūtījuma noformēšanā. Pēc piegādes vai apmaksas iestatījumu maiņas pārbaudiet rezultātu ar testa pasūtījumu piemērotā kontā.',
         'Atvērt piegādi un apmaksu',
     ],
     [

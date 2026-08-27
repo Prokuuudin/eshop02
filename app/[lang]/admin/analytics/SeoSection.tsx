@@ -13,34 +13,23 @@ export default function SeoSection(): ReactElement {
     );
 
     useEffect(() => {
-        fetch('/api/admin/products')
-            .then((r) => r.json())
-            .then((data: { data?: { products?: Record<string, unknown>[] } }) => {
-                const raw = data.data?.products ?? [];
-                const mapped: SeoProduct[] = raw.map((p) => {
-                    const hasMetaTitle = Boolean((p.metaTitle as string | undefined)?.trim());
-                    const hasMetaDesc = Boolean((p.metaDescription as string | undefined)?.trim());
-                    const hasImage = Boolean(
-                        (p.image as string | undefined)?.trim() ||
-                            ((p.images as string[] | undefined)?.length ?? 0) > 0
-                    );
-                    const issueCount =
-                        (hasMetaTitle ? 0 : 1) + (hasMetaDesc ? 0 : 1) + (hasImage ? 0 : 1);
-                    return {
-                        id: p.id as string,
-                        title: (p.title as string) || '—',
-                        brand: (p.brand as string) || '—',
-                        category: (p.category as string) || '—',
-                        hasMetaTitle,
-                        hasMetaDesc,
-                        hasImage,
-                        issueCount,
-                    };
-                });
+        const controller = new AbortController();
+        fetch('/api/admin/analytics/seo', { signal: controller.signal, cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`status_${r.status}`))))
+            .then((data: { products: Omit<SeoProduct, 'issueCount'>[] }) => {
+                const mapped: SeoProduct[] = data.products.map((p) => ({
+                    ...p,
+                    title: p.title || '—',
+                    brand: p.brand || '—',
+                    category: p.category || '—',
+                    issueCount:
+                        (p.hasMetaTitle ? 0 : 1) + (p.hasMetaDesc ? 0 : 1) + (p.hasImage ? 0 : 1),
+                }));
                 setProducts(mapped);
             })
-            .catch(() => setProducts([]))
+            .catch((e) => { if ((e as Error).name !== 'AbortError') setProducts([]); })
             .finally(() => setLoading(false));
+        return () => controller.abort();
     }, []);
 
     const counts = useMemo(

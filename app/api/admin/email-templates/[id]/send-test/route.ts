@@ -23,6 +23,7 @@ const SAMPLE: Record<string, string> = {
   name: 'Иван Петров',
   card_number: '123456',
   invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
+  registration_link: 'https://hairshoppro.lv/auth/register',
   site_url: 'https://hairshoppro.lv',
   note_block: '',
 }
@@ -68,7 +69,6 @@ export async function POST(
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
-
 
 
 

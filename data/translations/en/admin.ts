@@ -249,6 +249,7 @@ const enAdmin: Record<string, string> = {
   'admin.sidebar.catalog.import': 'Import and updates',
   'admin.sidebar.catalog.stockAlerts': 'Stock alerts',
   'admin.sidebar.catalog.bulkPrice': 'Bulk pricing',
+  'admin.sidebar.catalog.analytics': 'Catalog analytics',
   'admin.sidebar.sales': 'Sales',
   'admin.sidebar.sales.dashboard': 'Sales dashboard',
   'admin.sidebar.sales.orders': 'Orders',

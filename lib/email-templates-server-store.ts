@@ -22,6 +22,7 @@ const RETIRED_TEMPLATE_IDS = new Set([
   'store-launch-ru', 'store-launch-en', 'store-launch-lv',
   'access-request-approved-ru', 'access-request-approved-en', 'access-request-approved-lv',
   'registration', 'registration-ru', 'registration-en', 'registration-lv',
+  'order-confirmation', 'order-shipped', 'order-delivered', 'password-reset', 'rfq-response',
 ])
 
 async function readFromFile(): Promise<TemplatesData> {

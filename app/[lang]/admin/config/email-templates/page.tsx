@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,25 @@ type EmailTemplate = {
     variables: string[];
     updatedAt: string;
 };
+
+type TemplateGuide = {
+    category: 'orders' | 'access' | 'security';
+    language: 'RU' | 'EN' | 'LV' | 'RU · EN · LV';
+    trigger: [string, string, string];
+    audience: [string, string, string];
+};
+
+function guideFor(id: string): TemplateGuide {
+    const language = id.endsWith('-en') ? 'EN' : id.endsWith('-lv') ? 'LV' : id === 'pro-invite' ? 'RU · EN · LV' : 'RU';
+    if (id.startsWith('order-confirmation')) return { category: 'orders', language, trigger: ['Сразу после оформления заказа', 'Immediately after checkout', 'Uzreiz pēc pasūtījuma noformēšanas'], audience: ['Покупатель', 'Customer', 'Klients'] };
+    if (id.startsWith('order-shipped')) return { category: 'orders', language, trigger: ['При смене статуса на «Отправлен»', 'When status changes to Shipped', 'Kad statuss mainās uz Nosūtīts'], audience: ['Покупатель', 'Customer', 'Klients'] };
+    if (id.startsWith('order-delivered')) return { category: 'orders', language, trigger: ['При смене статуса на «Доставлен»', 'When status changes to Delivered', 'Kad statuss mainās uz Piegādāts'], audience: ['Покупатель', 'Customer', 'Klients'] };
+    if (id.startsWith('password-reset')) return { category: 'security', language, trigger: ['После запроса сброса пароля; ссылка действует 1 час', 'After a password reset request; link valid for 1 hour', 'Pēc paroles atiestatīšanas pieprasījuma; saite derīga 1 stundu'], audience: ['Пользователь аккаунта', 'Account user', 'Konta lietotājs'] };
+    if (id.startsWith('access-request-rejected')) return { category: 'access', language, trigger: ['После отклонения заявки на карту', 'After a client-card request is rejected', 'Pēc klienta kartes pieteikuma noraidīšanas'], audience: ['Заявитель', 'Applicant', 'Pieteikuma iesniedzējs'] };
+    if (id === 'card-rules-ru') return { category: 'access', language, trigger: ['Ручная рассылка правил получения карты', 'Manual client-card rules campaign', 'Manuāla klienta kartes noteikumu kampaņa'], audience: ['Потенциальный профессиональный клиент', 'Prospective professional customer', 'Potenciālais profesionālais klients'] };
+    if (id === 'card-activated') return { category: 'security', language: 'RU · EN · LV', trigger: ['Сразу после самостоятельной активации существующей карты', 'Immediately after an existing card is self-activated', 'Uzreiz pēc esošas kartes pašaktivizācijas'], audience: ['Владелец карты — уведомление безопасности', 'Cardholder — security notice', 'Kartes turētājs — drošības paziņojums'] };
+    return { category: 'access', language, trigger: ['После одобрения заявки или ручной отправки приглашения; ссылка действует 7 дней', 'After approval or a manual invitation; link valid for 7 days', 'Pēc apstiprināšanas vai manuāla ielūguma; saite derīga 7 dienas'], audience: ['Одобренный держатель карты', 'Approved cardholder', 'Apstiprināts kartes turētājs'] };
+}
 
 function renderPreview(body: string, vars: string[], language: 'ru' | 'en' | 'lv'): string {
     const SAMPLE: Record<string, string> = {
@@ -37,6 +56,7 @@ function renderPreview(body: string, vars: string[], language: 'ru' | 'en' | 'lv
         name: language === 'ru' ? 'Иван Петров' : language === 'lv' ? 'Jānis Bērziņš' : 'John Smith',
         card_number: '123456',
         invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
+        registration_link: 'https://hairshoppro.lv/auth/register',
         site_url: 'https://hairshoppro.lv',
         note_block: '',
     };
@@ -62,6 +82,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
     const [testEmail, setTestEmail] = useState('');
     const [testSending, setTestSending] = useState(false);
     const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null);
+    const [search, setSearch] = useState('');
     const subjectRef = useRef(subject);
     const bodyRef = useRef(body);
     const selectedRef = useRef(selected);
@@ -83,7 +104,15 @@ export default function EmailTemplatesPage(): React.ReactElement {
                 if (!r.ok) throw new Error('load_failed');
                 return r.json();
             })
-            .then((data: EmailTemplate[]) => setTemplates(Array.isArray(data) ? data : []))
+            .then((data: EmailTemplate[]) => {
+                const loaded = Array.isArray(data) ? data : [];
+                setTemplates(loaded);
+                if (!selectedRef.current && loaded[0]) {
+                    setSelected(loaded[0]);
+                    setSubject(loaded[0].subject);
+                    setBody(loaded[0].body);
+                }
+            })
             .catch(() => {
                 setTemplates([]);
                 setLoadError(true);
@@ -168,6 +197,20 @@ export default function EmailTemplatesPage(): React.ReactElement {
     };
 
     const isDirty = selected && (subject !== selected.subject || body !== selected.body);
+    const filteredTemplates = useMemo(() => {
+        const query = search.trim().toLocaleLowerCase();
+        if (!query) return templates;
+        return templates.filter((template) => {
+            const guide = guideFor(template.id);
+            return `${template.name} ${template.subject} ${guide.language}`.toLocaleLowerCase().includes(query);
+        });
+    }, [search, templates]);
+    const selectedGuide = selected ? guideFor(selected.id) : null;
+    const categoryLabel = (category: TemplateGuide['category']): string => ({
+        orders: l('Заказы', 'Orders', 'Pasūtījumi'),
+        access: l('Доступ и карты', 'Access & cards', 'Piekļuve un kartes'),
+        security: l('Безопасность', 'Security', 'Drošība'),
+    })[category];
 
     return (
         <AdminGate access="full">
@@ -193,13 +236,23 @@ export default function EmailTemplatesPage(): React.ReactElement {
                     </p>
                 </div>
 
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border bg-card p-4"><p className="text-2xl font-bold">{templates.length}</p><p className="text-xs text-muted-foreground">{l('актуальных шаблонов', 'active templates', 'aktīvās veidnes')}</p></div>
+                    <div className="rounded-xl border border-border bg-card p-4"><p className="text-2xl font-bold">3</p><p className="text-xs text-muted-foreground">{l('языка: RU, EN, LV', 'languages: RU, EN, LV', 'valodas: RU, EN, LV')}</p></div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30"><p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">{l('Invite-регистрация', 'Invite registration', 'Reģistrācija ar ielūgumu')}</p><p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{l('Одноразовая ссылка, 7 дней', 'One-time link, 7 days', 'Vienreizēja saite, 7 dienas')}</p></div>
+                </div>
+
+                <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                    <p className="font-semibold">{l('Как работать с шаблонами', 'How templates work', 'Kā darbojas veidnes')}</p>
+                    <p className="mt-1 text-xs leading-5">{l('Выберите письмо, проверьте событие отправки и получателя, затем откройте редактор. Не удаляйте переменные в фигурных скобках: система заменяет их реальными данными.', 'Choose an email, verify its trigger and recipient, then open the editor. Do not remove variables in braces: the system replaces them with real data.', 'Izvēlieties e-pastu, pārbaudiet nosūtīšanas notikumu un saņēmēju, pēc tam atveriet redaktoru. Neizdzēsiet mainīgos figūriekavās: sistēma tos aizstāj ar reāliem datiem.')}</p>
+                </div>
+
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-1">
                         <div className="overflow-hidden rounded-xl border border-border bg-card">
                             <div className="border-b border-border px-4 py-3">
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    {l('Шаблоны', 'Templates', 'Veidnes')}
-                                </h2>
+                                <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-foreground">{l('Шаблоны', 'Templates', 'Veidnes')}</h2><span className="text-xs text-muted-foreground">{filteredTemplates.length}/{templates.length}</span></div>
+                                <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={l('Поиск по названию или языку', 'Search by name or language', 'Meklēt pēc nosaukuma vai valodas')} className="mt-3 h-9 text-sm" />
                             </div>
                             {loading ? (
                                 <div className="py-8 text-center text-sm text-muted-foreground">
@@ -214,13 +267,15 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                         {l('Повторить', 'Retry', 'Mēģināt vēlreiz')}
                                     </button>
                                 </div>
-                            ) : templates.length === 0 ? (
+                            ) : filteredTemplates.length === 0 ? (
                                 <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                                    {l('Шаблоны не найдены.', 'No templates found.', 'Veidnes nav atrastas.')}
+                                    {l('Подходящие шаблоны не найдены.', 'No matching templates found.', 'Atbilstošas veidnes nav atrastas.')}
                                 </p>
                             ) : (
                                 <ul className="max-h-[70vh] divide-y divide-border overflow-y-auto">
-                                    {templates.map((t) => (
+                                    {filteredTemplates.map((t) => {
+                                        const guide = guideFor(t.id);
+                                        return (
                                         <li key={t.id}>
                                             <button
                                                 type="button"
@@ -243,9 +298,10 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                                                     {t.subject}
                                                 </p>
+                                                <div className="mt-2 flex gap-1.5"><span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">{categoryLabel(guide.category)}</span><span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">{guide.language}</span></div>
                                             </button>
                                         </li>
-                                    ))}
+                                    )})}
                                 </ul>
                             )}
                         </div>
@@ -294,6 +350,13 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                     </div>
                                 </div>
 
+                                {selectedGuide && (
+                                    <div className="grid gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:grid-cols-2">
+                                        <div><p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{l('Когда отправляется', 'When it is sent', 'Kad tiek nosūtīts')}</p><p className="mt-1 text-sm">{l(...selectedGuide.trigger)}</p></div>
+                                        <div><p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{l('Получатель', 'Recipient', 'Saņēmējs')}</p><p className="mt-1 text-sm">{l(...selectedGuide.audience)}</p></div>
+                                    </div>
+                                )}
+
                                 {tab === 'edit' ? (
                                     <div className="space-y-3">
                                         <div>
@@ -330,12 +393,15 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {selected.variables.map((v) => (
-                                                        <code
+                                                        <button
+                                                            type="button"
                                                             key={v}
-                                                            className="rounded bg-white px-1.5 py-0.5 text-xs text-emerald-700 shadow-sm dark:bg-gray-700 dark:text-emerald-400"
+                                                            onClick={() => setBody((current) => `${current}${current.endsWith('\n') ? '' : '\n'}{{${v}}}`)}
+                                                            title={l('Добавить переменную в конец письма', 'Append variable to email', 'Pievienot mainīgo e-pasta beigās')}
+                                                            className="rounded bg-white px-1.5 py-0.5 text-xs text-emerald-700 shadow-sm hover:bg-emerald-50 dark:bg-gray-700 dark:text-emerald-400"
                                                         >
                                                             {`{{${v}}}`}
-                                                        </code>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </div>

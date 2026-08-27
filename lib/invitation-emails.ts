@@ -27,44 +27,40 @@ export function pickInviteTemplate<T extends { id: string }>(
   )
 }
 
-// Письмо-инвайт трёхъязычное (LV/RU/EN) — аудитория смешанная, язык получателя
-// неизвестен. Каждый блок с пошаговой инструкцией.
+// Трёхъязычное письмо ведёт держателя карты в обычную регистрацию.
 const INVITE_SUBJECT =
-  'Klienta karte — aktivizējiet kontu · Карта клиента — активируйте аккаунт · Activate your account'
+  'Jauns veikals profesionāļiem · Новый магазин для профессионалов · A new store for professionals'
 
 const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
   {
-    intro: '<strong>LV</strong> — Jums ir klienta karte Nr. <strong>{{card_number}}</strong>. Esam atvēruši jaunu interneta veikalu profesionāļiem, un jūsu konts tajā jau ir izveidots. Kā sākt:',
+    intro: '<strong>LV</strong> — MIKS PLUS ir atvēris jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:',
     steps: [
-      'Nospiediet pogu “Aktivizēt kontu”.',
-      'Izveidojiet paroli (vismaz 8 simboli).',
-      'Ielogojieties ar savu e-pastu un jauno paroli.',
+      'Atveriet reģistrācijas lapu un izvēlieties “Man ir klienta karte”.',
+      'Ievadiet MIKS PLUS kartes numuru un personas koda pēdējos 3 ciparus; uzņēmuma kartei — reģistrācijas numura pēdējos 3 ciparus.',
+      'Apstipriniet reģistrāciju un pēc pierakstīšanās izveidojiet savu paroli.',
     ],
   },
   {
-    intro: '<strong>RU</strong> — У вас есть карта клиента № <strong>{{card_number}}</strong>. Мы открыли новый интернет-магазин для профессионалов, и ваш аккаунт в нём уже создан. Как начать:',
+    intro: '<strong>RU</strong> — MIKS PLUS открыл новый интернет-магазин для профессионалов индустрии красоты — <strong>hairshoppro.lv</strong>. Напоминаем: у вас есть карта клиента MIKS PLUS № <strong>{{card_number}}</strong>. После регистрации вам будут доступны профессиональные цены, онлайн-заказы, накопление бонусных баллов и их использование при следующих покупках. Как зарегистрироваться:',
     steps: [
-      'Нажмите кнопку «Активировать аккаунт».',
-      'Придумайте пароль (не менее 8 символов).',
-      'Войдите на сайт со своим e-mail и новым паролем.',
+      'Откройте страницу регистрации и выберите «Есть карта клиента».',
+      'Введите номер карты MIKS PLUS и последние 3 цифры персонального кода; для карты компании — последние 3 цифры регистрационного номера.',
+      'Подтвердите регистрацию и после входа установите собственный пароль.',
     ],
   },
   {
-    intro: '<strong>EN</strong> — You hold client card No. <strong>{{card_number}}</strong>. We have launched a new online store for professionals, and your account is already set up. How to start:',
+    intro: '<strong>EN</strong> — MIKS PLUS has opened a new online store for beauty professionals — <strong>hairshoppro.lv</strong>. A reminder: you have MIKS PLUS client card No. <strong>{{card_number}}</strong>. Once registered, you can access professional prices, order online, earn bonus points and redeem them on future purchases. How to register:',
     steps: [
-      'Click the “Activate account” button.',
-      'Create a password (at least 8 characters).',
-      'Log in with your email and your new password.',
+      'Open the registration page and select “I have a client card”.',
+      'Enter your MIKS PLUS card number and the last 3 digits of your personal code; for a company card, use the last 3 digits of the registration number.',
+      'Confirm registration and set your own password after signing in.',
     ],
   },
 ]
 
-const INVITE_BUTTON = 'Aktivizēt kontu · Активировать аккаунт · Activate account'
+const INVITE_BUTTON = 'Reģistrēties · Зарегистрироваться · Register'
 const INVITE_LINK_FALLBACK =
   'Ja poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:'
-const INVITE_EXPIRY =
-  'Saite ir derīga 7 dienas · Ссылка действительна 7 дней · The link is valid for 7 days.'
-
 const RULES_CONTENT: Record<InviteLang, { subject: string; title: string; body1: string; body2: string; button: string }> = {
   ru: {
     subject: 'Как получить карту клиента',
@@ -107,10 +103,14 @@ export function buildInviteEmail(
   vars: { name: string; cardNumber: string; inviteUrl: string },
   tpl?: Tpl
 ): { subject: string; html: string } {
+  const registrationLink = (() => {
+    try { return `${new URL(vars.inviteUrl).origin}/auth/register` } catch { return '/auth/register' }
+  })()
   const safe = {
     name: escapeHtml(vars.name),
     card_number: escapeHtml(vars.cardNumber),
     invite_link: vars.inviteUrl,
+    registration_link: registrationLink,
   }
   if (tpl) {
     return { subject: interpolate(tpl.subject, safe), html: interpolate(tpl.body, safe) }
@@ -125,12 +125,11 @@ export function buildInviteEmail(
     ${safe.name ? `<p>${safe.name}</p>` : ''}
     ${blocks.join('\n    ')}
     <p>
-      <a href="${vars.inviteUrl}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
+      <a href="${registrationLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
         ${INVITE_BUTTON}
       </a>
     </p>
-    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${vars.inviteUrl}">${vars.inviteUrl}</a></p>
-    <p style="color:#6b7280;font-size:13px">${INVITE_EXPIRY}</p>
+    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${registrationLink}">${registrationLink}</a></p>
   </div>`
   return { subject: INVITE_SUBJECT, html }
 }
@@ -142,8 +141,11 @@ const OFFICE_EMAIL = 'office@miksplus.eu'
 // number is the only thing standing between an attacker and someone else's
 // account. This has no button/CTA on purpose — it's a "was this you?" alert,
 // sent right after a card is successfully activated, not an invitation.
-export function buildCardActivatedEmail(vars: { name: string; cardNumber: string }): { subject: string; html: string } {
+export function buildCardActivatedEmail(vars: { name: string; cardNumber: string }, tpl?: Tpl): { subject: string; html: string } {
   const safe = { name: escapeHtml(vars.name), card_number: escapeHtml(vars.cardNumber) }
+  if (tpl) {
+    return { subject: interpolate(tpl.subject, safe), html: interpolate(tpl.body, safe) }
+  }
   const subject = 'Karte aktivizēta · Карта активирована · Card activated'
   const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
     <h2 style="color:#4f46e5">Karte aktivizēta · Карта активирована · Card activated</h2>

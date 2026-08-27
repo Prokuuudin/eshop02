@@ -4,12 +4,14 @@ import { formatEuro } from '@/lib/utils'
 import { GRADE_STYLES, type AbcGrade, type AbcRow, Empty } from './analytics-shared'
 import type { ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { Input } from '@/components/ui/input'
 
 type RawAbcRow = { id: string; title: string; brand: string; qty: number; revenue: number; revenuePct: number; cumPct: number }
 
 export default function AbcSection(): ReactElement {
   const { l, locale } = useAdminLocale()
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
+  const [query, setQuery] = useState('')
   const [loaded, setLoaded] = useState<RawAbcRow[] | null>(null)
 
   useEffect(() => {
@@ -41,7 +43,11 @@ export default function AbcSection(): ReactElement {
   }, [rows])
 
   const total = rows.reduce((s, r) => s + r.revenue, 0)
-  const filtered = filter === 'all' ? rows : rows.filter((r) => r.grade === filter)
+  const byGrade = filter === 'all' ? rows : rows.filter((r) => r.grade === filter)
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? byGrade.filter((r) => r.title.toLowerCase().includes(q) || r.brand.toLowerCase().includes(q))
+    : byGrade
 
   if (loaded === null) {
     return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
@@ -86,6 +92,14 @@ export default function AbcSection(): ReactElement {
       <div className="text-xs text-muted-foreground -mt-2">
         {l('A — 80% выручки · B — следующие 15% · C — оставшиеся 5%', 'A — 80% of revenue · B — next 15% · C — remaining 5%', 'A — 80% ieņēmumu · B — nākamie 15% · C — atlikušie 5%')}
       </div>
+
+      {/* Search */}
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={l('Поиск по товару или бренду…', 'Search by product or brand…', 'Meklēt pēc produkta vai zīmola…')}
+        className="max-w-sm"
+      />
 
       {/* Table */}
       <div className="overflow-auto rounded-xl border border-border">
@@ -137,7 +151,11 @@ export default function AbcSection(): ReactElement {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-10 text-center text-sm text-muted-foreground">{l('Нет товаров в группе', 'No products in group', 'Grupā nav produktu')} {filter}</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            {q
+              ? l('Ничего не найдено', 'Nothing found', 'Nekas netika atrasts')
+              : `${l('Нет товаров в группе', 'No products in group', 'Grupā nav produktu')} ${filter}`}
+          </div>
         )}
       </div>
     </div>

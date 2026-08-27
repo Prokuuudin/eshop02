@@ -14,12 +14,12 @@ const templates = (JSON.parse(
 ) as { templates: Template[] }).templates
 
 const REQUIRED_TEMPLATE_IDS = [
-  'order-confirmation', 'order-confirmation-en', 'order-confirmation-lv',
-  'order-shipped', 'order-shipped-en', 'order-shipped-lv',
-  'order-delivered', 'order-delivered-en', 'order-delivered-lv',
-  'password-reset', 'password-reset-ru', 'password-reset-en', 'password-reset-lv',
+  'order-confirmation-ru', 'order-confirmation-en', 'order-confirmation-lv',
+  'order-shipped-ru', 'order-shipped-en', 'order-shipped-lv',
+  'order-delivered-ru', 'order-delivered-en', 'order-delivered-lv',
+  'password-reset-ru', 'password-reset-en', 'password-reset-lv',
   'access-request-rejected-ru', 'access-request-rejected-en', 'access-request-rejected-lv',
-  'card-rules-ru', 'pro-invite',
+  'card-rules-ru', 'pro-invite', 'card-activated',
 ]
 
 describe('email template inventory', () => {
@@ -58,6 +58,7 @@ describe('email template inventory', () => {
       'store-launch-ru', 'store-launch-en', 'store-launch-lv',
       'access-request-approved-ru', 'access-request-approved-en', 'access-request-approved-lv',
       'registration', 'registration-ru', 'registration-en', 'registration-lv',
+      'order-confirmation', 'order-shipped', 'order-delivered', 'password-reset', 'rfq-response',
     ]
     expect(retiredIds.filter((id) => ids.has(id))).toEqual([])
 

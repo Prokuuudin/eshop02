@@ -53,6 +53,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
             { title: 'catalog.import', href: '/admin/import' },
             { title: 'catalog.stockAlerts', href: '/admin/stock-alerts' },
             { title: 'catalog.bulkPrice', href: '/admin/products/bulk-price' },
+            { title: 'catalog.analytics', href: '/admin/analytics' },
         ],
     },
     {

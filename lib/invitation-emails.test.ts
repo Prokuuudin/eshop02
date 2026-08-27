@@ -19,7 +19,8 @@ describe('buildInviteEmail', () => {
     })
     expect(subject.length).toBeGreaterThan(0)
     expect(html).toContain('1001')
-    expect(html).toContain('https://x.lv/auth/invite?token=t')
+    expect(html).toContain('https://x.lv/auth/register')
+    expect(html).not.toContain('/auth/invite?token=')
     expect(html).toContain('Anna')
   })
 
@@ -47,9 +48,9 @@ describe('buildInviteEmail — трёхъязычный дефолт', () => {
     const { subject, html } = buildInviteEmail('lv', {
       name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t',
     })
-    expect(html).toContain('Aktivizēt')
-    expect(html).toContain('Активировать')
-    expect(html).toContain('Activate')
+    expect(html).toContain('Reģistrēties')
+    expect(html).toContain('Зарегистрироваться')
+    expect(html).toContain('Register')
     expect(subject.length).toBeGreaterThan(0)
     expect(subject).not.toContain('{{') // без неподставленных плейсхолдеров
   })
@@ -66,7 +67,7 @@ describe('buildInviteEmail — трёхъязычный дефолт', () => {
     const { html } = buildInviteEmail('en', {
       name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc',
     })
-    const occurrences = html.split('https://x.lv/auth/invite?token=abc').length - 1
+    const occurrences = html.split('https://x.lv/auth/register').length - 1
     expect(occurrences).toBeGreaterThanOrEqual(2)
   })
 })
@@ -93,21 +94,33 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
   ) as { templates: { id: string; subject: string; body: string; variables: string[] }[] }
   const tpl = data.templates.find((t) => t.id === 'pro-invite')
 
-  it('существует и содержит критичный {{invite_link}} в body', () => {
+  it('существует и ведёт на обычную регистрацию', () => {
     expect(tpl).toBeDefined()
-    expect(tpl!.body).toContain('{{invite_link}}')
+    expect(tpl!.body).toContain('{{registration_link}}')
+    expect(tpl!.body).not.toContain('{{invite_link}}')
   })
 
-  it('трёхъязычный с номером карты и пошаговой инструкцией', () => {
+  it('трёхъязычный с номером карты, инструкцией и общей кнопкой', () => {
     expect(tpl!.body).toContain('{{card_number}}')
-    expect(tpl!.body).toContain('Aktivizēt')
-    expect(tpl!.body).toContain('Активировать')
-    expect(tpl!.body).toContain('Activate')
+    expect(tpl!.body).toContain('Reģistrēties')
+    expect(tpl!.body).toContain('Зарегистрироваться')
+    expect(tpl!.body).toContain('Register')
     expect(tpl!.body).toContain('<ol')
   })
 
+  it('сообщает об открытии магазина, карте MIKS PLUS и реальных бонусах', () => {
+    expect(tpl!.body).toContain('новый интернет-магазин для профессионалов')
+    expect(tpl!.body).toContain('карта MIKS PLUS')
+    expect(tpl!.body).toContain('профессиональные цены')
+    expect(tpl!.body).toContain('бонусных баллов')
+    expect(tpl!.body).toContain('следующих покупках')
+    expect(tpl!.body).toContain('Есть карта клиента')
+    expect(tpl!.body).toContain('последние 3 цифры персонального кода')
+    expect(tpl!.body).not.toMatch(/войдите.*e-?mail/i)
+  })
+
   it('variables описывают все плейсхолдеры', () => {
-    expect(tpl!.variables).toEqual(expect.arrayContaining(['name', 'card_number', 'invite_link']))
+    expect(tpl!.variables).toEqual(expect.arrayContaining(['name', 'card_number', 'registration_link']))
   })
 })
 

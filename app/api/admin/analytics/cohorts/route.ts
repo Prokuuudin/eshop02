@@ -43,12 +43,12 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
         SELECT
           fm.cohort_month AS cohort,
           ((EXTRACT(YEAR FROM om.order_month) - EXTRACT(YEAR FROM fm.cohort_month)) * 12 +
-           (EXTRACT(MONTH FROM om.order_month) - EXTRACT(MONTH FROM fm.cohort_month)))::int AS offset,
+           (EXTRACT(MONTH FROM om.order_month) - EXTRACT(MONTH FROM fm.cohort_month)))::int AS "offset",
           COUNT(DISTINCT om.email)::int AS count
         FROM order_months om
         JOIN first_month fm ON fm.email = om.email
-        GROUP BY fm.cohort_month, offset
-        ORDER BY cohort, offset
+        GROUP BY fm.cohort_month, "offset"
+        ORDER BY cohort, "offset"
       `,
     ])
 

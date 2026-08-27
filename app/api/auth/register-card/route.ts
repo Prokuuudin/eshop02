@@ -7,6 +7,7 @@ import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
+import { getTemplates } from '@/lib/email-templates-server-store'
 import { normalizeSubmittedCode } from '@/lib/personal-code'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
@@ -16,7 +17,13 @@ import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 async function notifyCardActivated(email: string | null | undefined, name: string, cardNumber: string): Promise<void> {
   if (!email) return
   try {
-    const { subject, html } = buildCardActivatedEmail({ name, cardNumber })
+    // A template-store outage must not suppress this security notification.
+    const templates = await getTemplates().catch(() => [])
+    const tpl = templates.find((template) => template.id === 'card-activated')
+    const { subject, html } = buildCardActivatedEmail(
+      { name, cardNumber },
+      tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
+    )
     await sendEmail(email, subject, html)
   } catch (e) {
     logApiError("[auth/register-card] activation notice failed", e)
@@ -209,7 +216,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
 
 

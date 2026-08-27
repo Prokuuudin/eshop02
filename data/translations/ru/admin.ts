@@ -249,6 +249,7 @@ const ruAdmin: Record<string, string> = {
   'admin.sidebar.catalog.import': 'Импорт и обновления',
   'admin.sidebar.catalog.stockAlerts': 'Алерты остатков',
   'admin.sidebar.catalog.bulkPrice': 'Массовый редактор цен',
+  'admin.sidebar.catalog.analytics': 'Аналитика каталога',
   'admin.sidebar.sales': 'Продажи',
   'admin.sidebar.sales.dashboard': 'Дашборд продаж',
   'admin.sidebar.sales.orders': 'Заказы',

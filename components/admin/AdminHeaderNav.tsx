@@ -141,6 +141,7 @@ const NAV_LABELS = {
         'catalog.import': 'Импорт и обновления',
         'catalog.stockAlerts': 'Алерты остатков',
         'catalog.bulkPrice': 'Массовый редактор цен',
+        'catalog.analytics': 'Аналитика каталога',
         sales: 'Продажи',
 
         'sales.orders': 'Заказы',
@@ -193,6 +194,7 @@ const NAV_LABELS = {
         'catalog.import': 'Import and updates',
         'catalog.stockAlerts': 'Stock alerts',
         'catalog.bulkPrice': 'Bulk pricing',
+        'catalog.analytics': 'Catalog analytics',
         sales: 'Sales',
 
         'sales.orders': 'Orders',
@@ -245,6 +247,7 @@ const NAV_LABELS = {
         'catalog.import': 'Imports un atjaunojumi',
         'catalog.stockAlerts': 'Krājumu brīdinājumi',
         'catalog.bulkPrice': 'Masveida cenas',
+        'catalog.analytics': 'Kataloga analītika',
         sales: 'Pārdošana',
 
         'sales.orders': 'Pasūtījumi',

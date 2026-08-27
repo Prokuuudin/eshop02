@@ -42,13 +42,17 @@ export async function PATCH(req: NextRequest, context: Context): Promise<NextRes
     const { id } = await context.params
     const body = (await req.json()) as {
       paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed'
-      paymentProvider?: 'stripe' | 'manual'
+      paymentProvider?: unknown
       paymentSessionId?: string
+    }
+
+    if (body.paymentProvider !== undefined && body.paymentProvider !== 'manual') {
+      return NextResponse.json({ error: 'Unsupported payment provider' }, { status: 400 })
     }
 
     const updated = await updateServerOrderPayment(id, {
       paymentStatus: body.paymentStatus,
-      paymentProvider: body.paymentProvider,
+      paymentProvider: body.paymentProvider as 'manual' | undefined,
       paymentSessionId: body.paymentSessionId
     })
 
@@ -62,8 +66,6 @@ export async function PATCH(req: NextRequest, context: Context): Promise<NextRes
     return NextResponse.json({ error: 'Failed to update order payment' }, { status: 500 })
   }
 }
-
-
 
 
 

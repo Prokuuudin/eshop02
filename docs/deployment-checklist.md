@@ -11,7 +11,7 @@
 - [ ] `npm run test:e2e:smoke` passes with one worker.
 - [ ] `npm run test:erp:performance` and the staging `npm run test:load:smoke` budgets pass.
 - [ ] Accessibility Chromium checks pass; WebKit checkout job is green.
-- [ ] Production environment has `DATABASE_URL`, Stripe, SMTP, Turnstile, MFA and unsubscribe secrets; no private value uses a `NEXT_PUBLIC_` name.
+- [ ] Production environment has `DATABASE_URL`, SMTP, Turnstile, MFA and unsubscribe secrets; no private value uses a `NEXT_PUBLIC_` name.
 
 ## Database and recovery
 
@@ -24,9 +24,8 @@
 
 ## Payments and integrations
 
-- [ ] Stripe webhook endpoint uses the production signing secret.
-- [ ] Deliver a signed Stripe test event and confirm the event is processed once.
-- [ ] Confirm an unpaid `checkout.session.completed` event does not mark an order paid.
+- [ ] Confirm checkout exposes only the approved manual payment methods.
+- [ ] Confirm bank-transfer, invoice and office-payment orders remain unpaid until a manager records payment.
 - [ ] Confirm ERP sync completes and its failure alert reaches the on-call channel.
 - [ ] Send one test transactional email and verify delivery plus SMTP failure alerting.
 
@@ -35,7 +34,7 @@
 - [ ] Connect the production log drain/monitoring provider.
 - [ ] Configure alerts for payment failures/mismatches, ERP sync failures, SMTP failures, health DB failures and elevated API 5xx rates.
 - [ ] Verify correlation IDs appear in request and operational logs.
-- [ ] Confirm telemetry redacts emails, Stripe secrets and sensitive query parameters.
+- [ ] Confirm telemetry redacts emails, credentials and sensitive query parameters.
 
 ## Release and rollback
 

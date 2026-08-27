@@ -76,7 +76,7 @@ function useOrderPageState({ params }: PageProps) {
                         bonusSpent?: number;
                         bonusEarned?: number;
                         paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed';
-                        paymentProvider?: 'stripe' | 'manual';
+                        paymentProvider?: 'manual';
                         paymentSessionId?: string;
                         legalDetails?: OrderLegalDetails;
                     };

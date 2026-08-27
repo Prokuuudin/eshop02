@@ -136,10 +136,10 @@ describe('applyPaymentUpdate (mirrors updateOrderPayment)', () => {
   it('can set paymentProvider and paymentSessionId together', () => {
     const orders = [makeOrder({ id: 'ord-1' })]
     const result = applyPaymentUpdate(orders, 'ord-1', {
-      paymentProvider: 'stripe',
+      paymentProvider: 'manual',
       paymentSessionId: 'sess_123'
     })
-    expect(result[0].paymentProvider).toBe('stripe')
+    expect(result[0].paymentProvider).toBe('manual')
     expect(result[0].paymentSessionId).toBe('sess_123')
   })
 

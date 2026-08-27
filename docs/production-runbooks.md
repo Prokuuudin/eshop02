@@ -7,14 +7,11 @@
 | Event | Реакция |
 |---|---|
 | `health_db_failed` | Проверить статус PostgreSQL, connection limits и latency; не перезапускать миграции вслепую |
-| `stripe_webhook_failed` | Проверить Stripe delivery и подпись, затем безопасно повторить событие из Stripe Dashboard |
-| `stripe_webhook_amount_mismatch` | Не помечать заказ оплаченным; сверить сумму Order и Stripe session |
-| `stripe_payment_failed` | Проверить статус сессии и reservation expiry; связаться с клиентом только после сверки |
 | `order_create_failed` | Найти запрос и связанные события по `correlationId`, проверить stock/promo/DB |
 | `erp_sync_failed` | Проверить последний SyncRun; не запускать конкурентный sync и не деактивировать товары вручную |
 | `smtp_send_failed` | Проверить SMTP provider и credentials; повторить только идемпотентное письмо |
 
-Рекомендуемые пороги: API 5xx >2%/5m; p95 >2s/10m; DB health 503 сразу; ERP failed или нет успешного run более двух расписаний; SMTP ≥3 failures/10m; Stripe webhook failure сразу.
+Рекомендуемые пороги: API 5xx >2%/5m; p95 >2s/10m; DB health 503 сразу; ERP failed или нет успешного run более двух расписаний; SMTP ≥3 failures/10m.
 
 ## PostgreSQL restore drill
 

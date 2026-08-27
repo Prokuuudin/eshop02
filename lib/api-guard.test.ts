@@ -93,7 +93,7 @@ describe('guardCookieAuthenticatedApiMutation', () => {
   it('does not apply browser CSRF checks to cookieless webhook/API calls', () => {
     const req = makeRequest({
       method: 'POST',
-      url: 'https://shop.test/api/payments/stripe/webhook',
+      url: 'https://shop.test/api/payments/provider/webhook',
     })
     expect(guardCookieAuthenticatedApiMutation(req)).toBeNull()
   })

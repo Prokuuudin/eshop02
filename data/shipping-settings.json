@@ -7,7 +7,7 @@
   "payment": {
     "card": { "enabled": true, "label": "Банковская карта" },
     "cash": { "enabled": true, "label": "Наличные" },
-    "online": { "enabled": true, "label": "Онлайн (Stripe)" },
+    "online": { "enabled": false, "label": "Онлайн-оплата недоступна" },
     "invoice": { "enabled": false, "label": "По счёту (B2B)" }
   }
 }

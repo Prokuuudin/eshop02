@@ -69,7 +69,7 @@ export async function upsertTemplate(
       // edit. hashtext(KV_KEY) namespaces this lock to that one row - it's derived
       // from the 'email-templates' string itself, so it's automatically distinct
       // from the other hashtext(<key>) locks in this codebase (product-overrides,
-      // deleted-products-archive, stripe-payments, per-order-meta locks) and from
+      // deleted-products-archive, payment records, per-order-meta locks) and from
       // the unrelated literal-integer lock server-audit.ts uses for the audit-log
       // hash chain (203948721) - no shared bottleneck with either.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${KV_KEY}))`

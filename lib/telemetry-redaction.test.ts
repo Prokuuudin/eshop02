@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { redactTelemetryText } from './telemetry-redaction'
 
 describe('telemetry redaction', () => {
-  it('removes email addresses, Stripe secrets and sensitive query values', () => {
+  it('removes email addresses, payment secrets and sensitive query values', () => {
     const value = redactTelemetryText(
       'buyer@example.com sk_live_abc123 /order/1?session_id=cs_secret&code=reset-me',
       500,

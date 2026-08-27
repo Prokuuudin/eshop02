@@ -60,7 +60,7 @@ export type ServerOrder = {
   bonusSpent?: number
   bonusEarned?: number
   paymentStatus?: ServerPaymentStatus
-  paymentProvider?: 'stripe' | 'manual'
+  paymentProvider?: 'manual'
   paymentSessionId?: string
   stockReservationStatus?: 'reserved' | 'committed' | 'released'
   stockReservedUntil?: string
@@ -154,7 +154,7 @@ function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     bonusSpent: row.bonusSpent ?? undefined,
     bonusEarned: row.bonusEarned ?? undefined,
     paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
-    paymentProvider: (row.paymentProvider as 'stripe' | 'manual') ?? undefined,
+    paymentProvider: row.paymentProvider === 'manual' ? 'manual' : undefined,
     paymentSessionId: row.paymentSessionId ?? undefined,
     stockReservationStatus: row.stockReservationStatus as ServerOrder['stockReservationStatus'],
     stockReservedUntil: row.stockReservedUntil?.toISOString(),

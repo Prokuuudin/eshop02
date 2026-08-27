@@ -16,7 +16,6 @@ Stack:
 * PostgreSQL / Neon
 * shadcn/ui
 * Zustand
-* Stripe
 * Vercel
 
 The application is multilingual.

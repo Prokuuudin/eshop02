@@ -160,17 +160,17 @@ export default function AdminFaqPage(): React.ReactElement {
 
   return (
     <AdminGate>
-      <main className="w-full py-4 space-y-6">
-        <div className="flex items-start justify-between gap-4">
+      <section className="w-full py-4 space-y-6" aria-labelledby="admin-faq-title">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{l('Частые вопросы (FAQ)', 'Frequently asked questions (FAQ)', 'Biežāk uzdotie jautājumi (BUJ)')}</h1>
+            <h1 id="admin-faq-title" className="text-3xl font-bold text-foreground">{l('Частые вопросы (FAQ)', 'Frequently asked questions (FAQ)', 'Biežāk uzdotie jautājumi (BUJ)')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {l('Ответы на типовые вопросы по работе с системой', 'Answers to common questions about using the system', 'Atbildes uz biežākajiem jautājumiem par sistēmas lietošanu')}
             </p>
           </div>
-          <Link href="/admin">
-            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-          </Link>
+          <Button asChild variant="outline">
+            <Link href="/admin">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
+          </Button>
         </div>
 
         <div className="relative">
@@ -184,6 +184,7 @@ export default function AdminFaqPage(): React.ReactElement {
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setOpenId(null) }}
+              aria-label={l('Очистить поиск', 'Clear search', 'Notīrīt meklēšanu')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xs">
               ✕
             </button>
@@ -231,13 +232,13 @@ export default function AdminFaqPage(): React.ReactElement {
         <div className="rounded-xl border border-primary/10 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-foreground">{l('Не нашли ответ?', 'Did not find an answer?', 'Neatradāt atbildi?')}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">{l('Обратитесь в службу поддержки — мы поможем разобраться.', 'Contact support and we will help you.', 'Sazinieties ar atbalsta dienestu — mēs palīdzēsim.')}</p>
+            <p className="mt-0.5 text-sm text-gray-700 dark:text-gray-300">{l('Обратитесь в службу поддержки — мы поможем разобраться.', 'Contact support and we will help you.', 'Sazinieties ar atbalsta dienestu — mēs palīdzēsim.')}</p>
           </div>
-          <Link href="/contact">
-            <Button variant="outline" className="shrink-0">{l('Поддержка', 'Support', 'Atbalsts')} →</Button>
-          </Link>
+          <Button asChild variant="outline" className="shrink-0">
+            <Link href="/contact">{l('Поддержка', 'Support', 'Atbalsts')} →</Link>
+          </Button>
         </div>
-      </main>
+      </section>
     </AdminGate>
   )
 }

@@ -27,8 +27,9 @@ import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 import { ProductFormModeContext } from './ProductFormModeContext';
 import { NotifyPromoSubscribersButton } from './NotifyPromoSubscribersButton';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, RotateCcw } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
 import './AddProductForm.css';
 
@@ -142,9 +143,11 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     revision,
 }) => {
     const router = useRouter();
+    const confirmAction = useAdminConfirm();
     const [language, setLanguage] = useState<Language>('ru');
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
     const { t } = useTranslation();
     const { l } = useAdminLocale();
     const isEdit = mode === 'edit';
@@ -173,6 +176,33 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     });
 
     const localizedTitle = language === 'en' ? titleEn : language === 'lv' ? titleLv : title;
+
+    const restorePreviousVersion = async () => {
+        if (!productId || !revision) return;
+        const decision = await confirmAction({
+            title: l('Вернуть предыдущую версию товара?', 'Restore the previous product version?', 'Atjaunot preces iepriekšējo versiju?'),
+            description: l('Последнее сохранение будет отменено. Текущее состояние останется в истории, поэтому откат тоже можно будет отменить.', 'The latest save will be undone. The current state remains in history, so this restore can also be undone.', 'Pēdējā saglabāšana tiks atsaukta. Pašreizējais stāvoklis paliks vēsturē, tāpēc arī šo atjaunošanu varēs atsaukt.'),
+            affected: [localizedTitle || productId],
+            destructive: true,
+            confirmLabel: l('Вернуть версию', 'Restore version', 'Atjaunot versiju'),
+        });
+        if (!decision.confirmed) return;
+        setIsRestoring(true);
+        setSubmitError('');
+        try {
+            const response = await fetch(`/api/admin/products/${encodeURIComponent(productId)}/restore-previous`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ revision }),
+            });
+            const result = await response.json().catch(() => ({})) as { error?: string };
+            if (!response.ok) throw new Error(result.error || l('Не удалось восстановить версию', 'Failed to restore version', 'Neizdevās atjaunot versiju'));
+            window.location.reload();
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : l('Не удалось восстановить версию', 'Failed to restore version', 'Neizdevās atjaunot versiju'));
+            setIsRestoring(false);
+        }
+    };
 
     const onSubmit: SubmitHandler<AddProductFormValues> = async (data) => {
         setSubmitError('');
@@ -322,6 +352,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                     </Button>
                                 )}
                                 {isEdit && productId && <NotifyPromoSubscribersButton productId={productId} />}
+                                {isEdit && productId && (
+                                    <Button type="button" variant="outline" disabled={isSubmitting || isRestoring} onClick={() => void restorePreviousVersion()}>
+                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        {isRestoring ? l('Восстанавливаю…', 'Restoring…', 'Atjauno…') : l('Вернуть предыдущую версию', 'Restore previous version', 'Atjaunot iepriekšējo versiju')}
+                                    </Button>
+                                )}
                             </div>
                             {submitError && (
                                 <p className="text-red-600 text-sm">{submitError}</p>

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
@@ -19,29 +18,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
     const badgeLabels: Record<string, string> = {
         new: l('Новинка', 'New', 'Jaunums'), sale: l('Скидка', 'Sale', 'Atlaide'), bestseller: l('Хит', 'Bestseller', 'Bestsellers'),
     };
-    const [stock, setStock] = useState(product.stock);
-    const [saving, setSaving] = useState(false);
-    const [saveMsg, setSaveMsg] = useState('');
-
-    const handleSaveStock = async () => {
-        setSaving(true);
-        setSaveMsg('');
-        try {
-            const res = await fetch('/api/admin/products', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: product.id, changes: { stock } }),
-            });
-            if (!res.ok) throw new Error('save failed');
-            setSaveMsg(l('Сохранено', 'Saved', 'Saglabāts'));
-        } catch {
-            setSaveMsg(l('Ошибка', 'Error', 'Kļūda'));
-        } finally {
-            setSaving(false);
-            setTimeout(() => setSaveMsg(''), 2500);
-        }
-    };
-
     const imageUrl = product.image || product.images?.[0];
 
     return (
@@ -105,27 +81,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                 </div>
             </div>
 
-            {/* Управление остатком */}
-            <div className="admin-product-card__stock flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/50">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{l('Остаток:', 'Stock:', 'Atlikums:')}</span>
-                <Input
-                    type="number"
-                    min={0}
-                    value={stock}
-                    onChange={(e) => setStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-16 h-6 px-1 text-xs text-center"
-                />
-                <button
-                    type="button"
-                    onClick={handleSaveStock}
-                    disabled={saving}
-                    className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                    {saving ? '...' : l('Сохр.', 'Save', 'Saglabāt')}
-                </button>
-                {saveMsg && (
-                    <span className="text-[11px] text-green-600 dark:text-green-400 ml-auto">{saveMsg}</span>
-                )}
+            {/* Остаток редактируется в основной форме товара. */}
+            <div className="admin-product-card__stock flex items-center justify-between gap-2 border-t border-border bg-muted/50 px-3 py-2">
+                <span className="text-xs text-muted-foreground">{l('Остаток', 'Stock', 'Atlikums')}</span>
+                <span className="text-xs font-semibold text-foreground">{product.stock}</span>
             </div>
 
             {/* Кнопки действий */}

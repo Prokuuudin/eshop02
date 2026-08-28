@@ -145,6 +145,11 @@ export default function ContactMessagesPage(): React.ReactElement {
             </section>
 
             <div className="mb-6 flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                    <Link href="/admin/content?section=contact">
+                        {l('Редактировать форму', 'Edit form', 'Rediģēt formu')}
+                    </Link>
+                </Button>
                 <Button asChild variant="outline" size="sm">
                     <Link href="/contact" target="_blank">
                         <ExternalLink className="mr-1.5 h-4 w-4" />

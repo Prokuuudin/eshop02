@@ -39,6 +39,18 @@ function useAdminContentPageState() {
     const [sourcePreviewFailed, setSourcePreviewFailed] = React.useState(false);
     const [targetPreviewFailed, setTargetPreviewFailed] = React.useState(false);
 
+    React.useEffect(() => {
+        const requestedSection = new URLSearchParams(window.location.search).get('section');
+        if (requestedSection && CONTENT_REGISTRY.some((section) => section.id === requestedSection)) {
+            window.requestAnimationFrame(() => {
+                setOpenSectionId(requestedSection);
+                window.requestAnimationFrame(() => {
+                    document.getElementById(`content-section-${requestedSection}`)?.scrollIntoView({ block: 'start' });
+                });
+            });
+        }
+    }, []);
+
     const normalizedTextKey = textKey.trim();
     const baseTranslation = normalizedTextKey
         ? translations[language][normalizedTextKey]

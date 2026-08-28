@@ -285,6 +285,7 @@ export default function AdminContentPage(): React.ReactElement {
                         return (
                             <div
                                 key={section.id}
+                                id={`content-section-${section.id}`}
                                 className="rounded-lg border border-border bg-card"
                             >
                                 <button

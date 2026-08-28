@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       : status === 'answered'
         ? { answeredAt: { not: null } }
         : { answeredAt: null }
-    const [messages, total] = await Promise.all([
+    const [messages, total, unanswered, answered, lastDelivery] = await Promise.all([
       prisma.contactMessage.findMany({
         where,
         orderBy: { createdAt: 'asc' },
@@ -38,9 +38,28 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         },
       }),
       prisma.contactMessage.count({ where }),
+      prisma.contactMessage.count({ where: { answeredAt: null } }),
+      prisma.contactMessage.count({ where: { answeredAt: { not: null } } }),
+      prisma.contactMessage.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { emailStatus: true, createdAt: true },
+      }),
     ])
 
-    return NextResponse.json({ messages, total })
+    const notificationConfigured = Boolean((process.env.CONTACT_TO ?? process.env.SMTP_USER ?? '').trim())
+      && Boolean(process.env.SMTP_HOST?.trim())
+
+    return NextResponse.json({
+      messages,
+      total,
+      summary: {
+        all: unanswered + answered,
+        unanswered,
+        answered,
+        notificationConfigured,
+        lastDelivery,
+      },
+    })
   } catch (error) {
     logApiError('[admin/contact-messages GET]', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

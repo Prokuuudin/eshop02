@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Mail, MessageSquareText, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
+import { Check, CircleAlert, ExternalLink, Mail, MessageSquareText, RotateCcw, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
@@ -16,12 +17,20 @@ type ContactMessage = {
     createdAt: string;
     answeredAt: string | null;
 };
+type ContactSummary = {
+    all: number;
+    unanswered: number;
+    answered: number;
+    notificationConfigured: boolean;
+    lastDelivery: { emailStatus: string; createdAt: string } | null;
+};
 
 export default function ContactMessagesPage(): React.ReactElement {
     const { l, locale } = useAdminLocale();
     const [filter, setFilter] = useState<Filter>('unanswered');
     const [messages, setMessages] = useState<ContactMessage[] | null>(null);
     const [total, setTotal] = useState(0);
+    const [summary, setSummary] = useState<ContactSummary | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const loadMessages = useCallback(async () => {
         try {
@@ -29,9 +38,10 @@ export default function ContactMessagesPage(): React.ReactElement {
                 cache: 'no-store',
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = (await response.json()) as { messages?: ContactMessage[]; total?: number };
+            const data = (await response.json()) as { messages?: ContactMessage[]; total?: number; summary?: ContactSummary };
             setMessages(data.messages ?? []);
             setTotal(data.total ?? 0);
+            setSummary(data.summary ?? null);
         } catch {
             setMessages([]);
             reportAdminPartial(
@@ -80,6 +90,12 @@ export default function ContactMessagesPage(): React.ReactElement {
         answered: l('Отвеченные', 'Answered', 'Atbildēti'),
         all: l('Все', 'All', 'Visi'),
     };
+    const deliveryLabel = (status: string): string => ({
+        sent: l('доставлено', 'delivered', 'piegādāts'),
+        failed: l('ошибка доставки', 'delivery failed', 'piegādes kļūda'),
+        not_configured: l('канал не настроен', 'channel not configured', 'kanāls nav konfigurēts'),
+        pending: l('отправляется', 'sending', 'tiek sūtīts'),
+    }[status] ?? status);
 
     return (
         <main className="py-4 text-foreground">
@@ -87,19 +103,54 @@ export default function ContactMessagesPage(): React.ReactElement {
                 <div>
                     <h1 className="flex items-center gap-2 text-3xl font-bold">
                         <MessageSquareText className="h-7 w-7 text-rose-600" />
-                        {l('Запросы покупателей', 'Customer requests', 'Klientu pieprasījumi')}
+                        {l('Контакты и обращения клиентов', 'Client contacts and requests', 'Klientu kontakti un pieprasījumi')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                         {l(
-                            'Обращения из контактной формы сайта',
-                            'Messages from the website contact form',
-                            'Ziņojumi no vietnes kontaktformas'
+                            'Рабочая очередь сообщений, отправленных клиентами через сайт',
+                            'Work queue for messages submitted by clients through the website',
+                            'Darba rinda klientu ziņojumiem, kas nosūtīti vietnē'
                         )}
                     </p>
                 </div>
                 <span className="text-sm text-muted-foreground">
                     {l('Найдено', 'Found', 'Atrasti')}: {total}
                 </span>
+            </div>
+
+            <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={l('Сводка обращений', 'Request summary', 'Pieprasījumu kopsavilkums')}>
+                {[
+                    { label: l('Все обращения', 'All requests', 'Visi pieprasījumi'), value: summary?.all ?? '—', icon: Users },
+                    { label: l('Ждут ответа', 'Awaiting reply', 'Gaida atbildi'), value: summary?.unanswered ?? '—', icon: CircleAlert },
+                    { label: l('Обработано', 'Handled', 'Apstrādāti'), value: summary?.answered ?? '—', icon: Check },
+                ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                        <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground"><span>{label}</span><Icon className="h-4 w-4" /></div>
+                        <p className="mt-2 text-2xl font-bold">{value}</p>
+                    </div>
+                ))}
+                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground"><span>{l('Email-уведомления', 'Email notifications', 'E-pasta paziņojumi')}</span><Mail className="h-4 w-4" /></div>
+                    <p className={`mt-2 font-semibold ${summary?.notificationConfigured ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {summary === null ? '—' : summary.notificationConfigured
+                            ? l('Настроены', 'Configured', 'Konfigurēti')
+                            : l('Не настроены', 'Not configured', 'Nav konfigurēti')}
+                    </p>
+                    {summary?.lastDelivery && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            {l('Последнее уведомление', 'Latest notification', 'Jaunākais paziņojums')}: {deliveryLabel(summary.lastDelivery.emailStatus)}
+                        </p>
+                    )}
+                </div>
+            </section>
+
+            <div className="mb-6 flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/contact" target="_blank">
+                        <ExternalLink className="mr-1.5 h-4 w-4" />
+                        {l('Открыть форму клиента', 'Open client form', 'Atvērt klienta formu')}
+                    </Link>
+                </Button>
             </div>
 
             <div className="mb-5 flex flex-wrap gap-2">

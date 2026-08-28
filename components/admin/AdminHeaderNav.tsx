@@ -126,7 +126,7 @@ const NAV_SECTIONS: HeaderNavSection[] = [
             { title: 'help.knowledge', href: '/admin/help/knowledge' },
             { title: 'help.onboarding', href: '/admin/help/onboarding' },
             { title: 'help.faq', href: '/admin/help/faq' },
-            { title: 'help.support', href: '/contact' },
+            { title: 'help.support', href: '/admin/contact-messages' },
         ],
     },
 ];
@@ -157,7 +157,7 @@ const NAV_LABELS = {
         'customers.segments': 'Сегменты и статусы',
         'customers.history': 'История взаимодействий',
         'customers.notifications': 'Рассылка уведомлений',
-        'customers.requests': 'Запросы покупателей',
+        'customers.requests': 'Обращения клиентов',
         marketing: 'Продвижение',
         'marketing.campaigns': 'Промо-кампании',
         'marketing.discounts': 'Промокоды',
@@ -183,7 +183,7 @@ const NAV_LABELS = {
         'help.knowledge': 'База знаний',
         'help.onboarding': 'Онбординг сотрудников',
         'help.faq': 'Частые вопросы',
-        'help.support': 'Поддержка',
+        'help.support': 'Контакты и обращения',
     },
     en: {
         menu: 'Menu',
@@ -210,7 +210,7 @@ const NAV_LABELS = {
         'customers.segments': 'Segments and statuses',
         'customers.history': 'Interaction history',
         'customers.notifications': 'Notification Broadcast',
-        'customers.requests': 'Customer requests',
+        'customers.requests': 'Client requests',
         marketing: 'Marketing',
         'marketing.campaigns': 'Promo campaigns',
         'marketing.discounts': 'Promo codes',
@@ -236,7 +236,7 @@ const NAV_LABELS = {
         'help.knowledge': 'Knowledge base',
         'help.onboarding': 'Staff onboarding',
         'help.faq': 'FAQ',
-        'help.support': 'Support',
+        'help.support': 'Contacts and requests',
     },
     lv: {
         menu: 'Izvēlne',
@@ -289,7 +289,7 @@ const NAV_LABELS = {
         'help.knowledge': 'Zināšanu bāze',
         'help.onboarding': 'Darbinieku ievads',
         'help.faq': 'Biežāk uzdotie jautājumi',
-        'help.support': 'Atbalsts',
+        'help.support': 'Kontakti un pieprasījumi',
     },
 } as const;
 

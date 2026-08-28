@@ -13,7 +13,7 @@ const localeCases: Record<Locale, Array<{ path: string; heading: string }>> = {
         { path: '/admin/help/onboarding', heading: 'Онбординг сотрудника' },
         { path: '/admin/design-system', heading: 'Дизайн-система' },
         { path: '/admin/reviews', heading: 'Отзывы: модерация' },
-        { path: '/admin/contact-messages', heading: 'Запросы покупателей' },
+        { path: '/admin/contact-messages', heading: 'Контакты и обращения клиентов' },
     ],
     en: [
         { path: '/admin/help/faq', heading: 'Frequently asked questions (FAQ)' },
@@ -22,7 +22,7 @@ const localeCases: Record<Locale, Array<{ path: string; heading: string }>> = {
         { path: '/admin/help/onboarding', heading: 'Employee onboarding' },
         { path: '/admin/design-system', heading: 'Design system' },
         { path: '/admin/reviews', heading: 'Reviews: moderation' },
-        { path: '/admin/contact-messages', heading: 'Customer requests' },
+        { path: '/admin/contact-messages', heading: 'Client contacts and requests' },
     ],
     lv: [
         { path: '/admin/help/faq', heading: 'Biežāk uzdotie jautājumi (BUJ)' },
@@ -31,7 +31,7 @@ const localeCases: Record<Locale, Array<{ path: string; heading: string }>> = {
         { path: '/admin/help/onboarding', heading: 'Darbinieka ievadīšana darbā' },
         { path: '/admin/design-system', heading: 'Dizaina sistēma' },
         { path: '/admin/reviews', heading: 'Atsauksmju moderēšana' },
-        { path: '/admin/contact-messages', heading: 'Klientu pieprasījumi' },
+        { path: '/admin/contact-messages', heading: 'Klientu kontakti un pieprasījumi' },
     ],
 };
 

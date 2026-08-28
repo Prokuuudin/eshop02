@@ -9,7 +9,7 @@ import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
-import { Bell } from 'lucide-react';
+import { Bell, Pencil } from 'lucide-react';
 
 import { formatEuro } from '@/lib/utils';
 import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
@@ -39,6 +39,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
     // until the real auth state is known, instead of flashing the login prompt for logged-in users.
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isHydrated = useAuthStore((s) => s.isHydrated);
+    const isAdmin = useAuthStore((s) => s.isAdmin);
 
     return (
         <Card
@@ -49,7 +50,17 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 <div className="product-card__brand flex-1 truncate text-xs font-semibold uppercase tracking-wide text-foreground">
                     {product.brand}
                 </div>
-                <div className="relative z-10 shrink-0">
+                <div className="relative z-10 flex shrink-0 items-center gap-1">
+                    {isAdmin && (
+                        <Link
+                            href={localizePath(`/admin/products/${product.id}`, language)}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            title={t('admin.quickEdit', 'Редактировать')}
+                            aria-label={t('admin.quickEdit', 'Редактировать')}
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Link>
+                    )}
                     <WishlistButton product={product} />
                 </div>
             </div>

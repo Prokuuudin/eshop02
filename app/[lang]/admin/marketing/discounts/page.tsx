@@ -233,7 +233,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
 
   async function handleDelete(id: string) {
     const target = items.find((i) => i.id === id)
-    const decision = await confirmAction({ title: l('Удалить промокод?', 'Delete promo code?', 'Dzēst promokodu?'), description: l('Код перестанет применяться к новым заказам. Действие необратимо.', 'The code will no longer apply to new orders. This action cannot be undone.', 'Kods vairs netiks piemērots jauniem pasūtījumiem. Šo darbību nevar atsaukt.'), affected: [target?.code ?? id], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true })
+    const decision = await confirmAction({ title: l('Удалить промокод?', 'Delete promo code?', 'Dzēst promokodu?'), description: l('Код перестанет применяться к новым заказам. Действие необратимо.', 'The code will no longer apply to new orders. This action cannot be undone.', 'Kods vairs netiks piemērots jauniem pasūtījumiem. Šo darbību nevar atsaukt.'), affected: [target?.code ?? id], confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), destructive: true })
     if (!decision.confirmed) return
     await fetch(`/api/admin/promo-codes/${id}`, { method: 'DELETE' })
     logAdminAction('promo.deleted', { type: 'promo', id, title: target?.code })

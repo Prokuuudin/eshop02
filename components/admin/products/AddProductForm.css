@@ -27,9 +27,12 @@
 }
 .add-product__preview {
     width: 340px;
+    flex: 0 0 340px;
     position: sticky;
-    top: 2rem;
     align-self: flex-start;
+}
+.add-product__preview .product-card {
+    min-height: 0;
 }
 .add-product__actions {
     position: sticky;
@@ -142,11 +145,17 @@
     }
     .add-product__preview {
         width: 100%;
+        flex-basis: auto;
         position: static;
         margin-bottom: 2rem;
     }
     .add-product__options-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1025px) and (max-height: 720px) {
+    .add-product__preview .product-card__media > .relative {
+        height: 8rem;
     }
 }
 @media (max-width: 640px) {

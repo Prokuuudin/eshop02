@@ -148,6 +148,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
+    const [previewTop, setPreviewTop] = useState(166);
     const { t } = useTranslation();
     const { l } = useAdminLocale();
     const isEdit = mode === 'edit';
@@ -169,6 +170,20 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     useEffect(() => {
         void trigger();
     }, [trigger]);
+
+    useEffect(() => {
+        const header = document.querySelector('header.header');
+        if (!(header instanceof HTMLElement)) return;
+        const updatePreviewTop = () => setPreviewTop(Math.ceil(header.getBoundingClientRect().bottom) + 16);
+        updatePreviewTop();
+        const observer = new ResizeObserver(updatePreviewTop);
+        observer.observe(header);
+        window.addEventListener('resize', updatePreviewTop);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updatePreviewTop);
+        };
+    }, []);
 
     const [image, title, titleEn, titleLv, brand, price, oldPrice, badges, stock, rating, bulkPricingTiers] = useWatch({
         control: methods.control,
@@ -324,7 +339,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             </ProductFormAccordionSection>
                         </div>
                         <div className="add-product__actions flex flex-col gap-2">
-                            <div className="flex gap-4">
+                            <div className="flex flex-wrap gap-4">
                                 <Button type="submit" disabled={!formState.isValid || isSubmitting}>
                                     {isSubmitting
                                         ? l('Сохраняю...', 'Saving...', 'Saglabā...')
@@ -334,7 +349,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant="secondary"
+                                    variant="outline"
                                     onClick={() => router.push('/admin/products')}
                                 >
                                     {t('admin.addProduct.cancel', l('Отмена', 'Cancel', 'Atcelt'))}
@@ -363,7 +378,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             )}
                         </div>
                     </div>
-                    <aside className="add-product__preview sticky top-4 self-start">
+                    <aside className="add-product__preview" style={{ top: previewTop }}>
                         <ProductPreviewCard
                             image={image}
                             title={localizedTitle || ''}

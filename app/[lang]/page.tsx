@@ -9,7 +9,6 @@ import SaleSection from '@/components/SaleSection';
 import Brands from '@/components/Brands';
 import FAQSection from '@/components/FAQSection';
 import ProductRequestSection from '@/components/ProductRequestSection';
-import { translations } from '@/data/translations';
 import { resolveLanguage } from '@/lib/i18n-routing';
 import { buildPublicPageMetadata } from '@/lib/page-metadata';
 import HomeRetailBanner from '@/components/HomeRetailBanner';
@@ -31,10 +30,10 @@ type PageProps = { params: Promise<{ lang: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const language = resolveLanguage((await params).lang);
-    const t = translations[language];
-    const pageTitle = t['meta.homeTitle'] ?? 'Hairshop-Pro - Professional Hair Instruments and Cosmetics';
+    const { t } = await getServerContent(language);
+    const pageTitle = t('meta.homeTitle', 'Hairshop-Pro - Professional Hair Instruments and Cosmetics');
     const pageDescription =
-        t['meta.homeDescription'] ?? 'Online store of professional cosmetics and equipment';
+        t('meta.homeDescription', 'Online store of professional cosmetics and equipment');
 
     return buildPublicPageMetadata({ language, path: '/', title: pageTitle, description: pageDescription });
 }

@@ -512,6 +512,8 @@ const ruCommon: Record<string, string> = {
   'footer.privacy': 'Политика конфиденциальности',
   'footer.terms': 'Условия использования',
   'footer.allRightsReserved': 'Все права защищены.',
+  'footer.cookies': 'Файлы cookie',
+  'footer.cookieSettings': 'Настройки cookie',
   'footer.shipping': 'Доставка',
   'footer.subscribe': 'Подписаться',
   'footer.followUs': 'Следите за нами',

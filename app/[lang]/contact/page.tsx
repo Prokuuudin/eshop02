@@ -149,7 +149,8 @@ export default function ContactPage(): React.ReactElement {
   }
 
   const storeSchemas = stores.map((store) => {
-    const addressParts = store.address.lv.split(',').map((part) => part.trim())
+    const resolvedAddress = t(`stores.${store.id}.address`, store.address[language])
+    const addressParts = resolvedAddress.split(',').map((part) => part.trim())
     const postalCode = addressParts.find((part) => /^LV-\d{4}$/.test(part))
     const addressLocality = store.city.lv
     const streetAddress = addressParts
@@ -165,7 +166,7 @@ export default function ContactPage(): React.ReactElement {
       url: storeUrl,
       image: `${siteUrl}/stores/${store.id}.jpg`,
       telephone: t(`stores.${store.id}.phone`),
-      email: COMPANY.email,
+      email: t('company.email', COMPANY.email),
       parentOrganization: { '@id': `${siteUrl}/#organization` },
       address: {
         '@type': 'PostalAddress',
@@ -181,7 +182,7 @@ export default function ContactPage(): React.ReactElement {
           longitude: geo.longitude,
         },
       } : {}),
-      hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address.lv)}`,
+      hasMap: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedAddress)}`,
       openingHoursSpecification: openingHoursFor(store.id),
       areaServed: { '@type': 'Country', name: 'Latvia' },
       priceRange: '€€',
@@ -198,14 +199,14 @@ export default function ContactPage(): React.ReactElement {
         legalName: COMPANY.name,
         url: siteUrl,
         logo: `${siteUrl}/logo-2026.svg`,
-        telephone: COMPANY.phone,
-        email: COMPANY.email,
+        telephone: t('company.phone', COMPANY.phone),
+        email: t('company.email', COMPANY.email),
         taxID: COMPANY.regNumber,
         vatID: COMPANY.vatNumber,
         sameAs: COMPANY.sameAs,
         address: {
           '@type': 'PostalAddress',
-          streetAddress: 'Rencēnu iela 10A',
+          streetAddress: t('company.officeAddress', COMPANY.officeAddress),
           addressLocality: 'Rīga',
           postalCode: 'LV-1073',
           addressCountry: 'LV',
@@ -301,10 +302,10 @@ export default function ContactPage(): React.ReactElement {
             <section className="rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
               <h2 className="mb-3 text-lg font-semibold text-foreground">{t('contact.info')}</h2>
               <div className="space-y-3 leading-6">
-                {COMPANY_CONTACT_LINES.map(({ labelKey, value }) => (
+                {COMPANY_CONTACT_LINES.map(({ labelKey, contentKey, value }) => (
                   <div key={labelKey}>
                     <p className="font-semibold text-foreground">{t(labelKey)}:</p>
-                    <p className="text-muted-foreground">{value}</p>
+                    <p className="text-muted-foreground">{t(contentKey, value)}</p>
                   </div>
                 ))}
               </div>

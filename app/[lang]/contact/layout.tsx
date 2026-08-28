@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { translations } from '@/data/translations'
+import { getServerContent } from '@/lib/server-translation'
 import { resolveLanguage } from '@/lib/i18n-routing'
 import { buildPublicPageMetadata } from '@/lib/page-metadata'
 
@@ -11,9 +11,9 @@ type LayoutProps = {
 
 export async function generateMetadata({ params }: LayoutProps): Promise<Metadata> {
   const language = resolveLanguage((await params).lang)
-  const t = translations[language]
-  const pageTitle = t['nav.contact'] ?? 'Contact'
-  const pageDescription = t['contact.info'] ?? 'Hairshop-Pro support contacts: email, phone, address and working hours'
+  const { t } = await getServerContent(language)
+  const pageTitle = t('contact.title', 'Contact')
+  const pageDescription = t('contact.info', 'Hairshop-Pro support contacts: email, phone, address and working hours')
 
   return buildPublicPageMetadata({ language, path: '/contact', title: pageTitle, description: pageDescription })
 }

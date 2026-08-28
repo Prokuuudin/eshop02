@@ -13,14 +13,14 @@ export const COMPANY = {
   sameAs: ['https://hairshop.lv/'],
 } as const
 
-export const COMPANY_CONTACT_LINES: ReadonlyArray<{ labelKey: string; value: string }> = [
-  { labelKey: 'contact.legalAddressLabel', value: COMPANY.legalAddress },
-  { labelKey: 'contact.regNumberLabel', value: COMPANY.regNumber },
-  { labelKey: 'contact.vatLabel', value: COMPANY.vatNumber },
-  { labelKey: 'contact.bankLabel', value: COMPANY.bankName },
-  { labelKey: 'contact.bankAccountLabel', value: COMPANY.bankAccount },
-  { labelKey: 'contact.swiftLabel', value: COMPANY.swift },
-  { labelKey: 'contact.officeAddressLabel', value: COMPANY.officeAddress },
-  { labelKey: 'contact.phoneLabel', value: COMPANY.phone },
-  { labelKey: 'contact.emailLabel', value: COMPANY.email },
+export const COMPANY_CONTACT_LINES: ReadonlyArray<{ labelKey: string; contentKey: string; value: string }> = [
+  { labelKey: 'contact.legalAddressLabel', contentKey: 'company.legalAddress', value: COMPANY.legalAddress },
+  { labelKey: 'contact.regNumberLabel', contentKey: 'company.regNumber', value: COMPANY.regNumber },
+  { labelKey: 'contact.vatLabel', contentKey: 'company.vatNumber', value: COMPANY.vatNumber },
+  { labelKey: 'contact.bankLabel', contentKey: 'company.bankName', value: COMPANY.bankName },
+  { labelKey: 'contact.bankAccountLabel', contentKey: 'company.bankAccount', value: COMPANY.bankAccount },
+  { labelKey: 'contact.swiftLabel', contentKey: 'company.swift', value: COMPANY.swift },
+  { labelKey: 'contact.officeAddressLabel', contentKey: 'company.officeAddress', value: COMPANY.officeAddress },
+  { labelKey: 'contact.phoneLabel', contentKey: 'company.phone', value: COMPANY.phone },
+  { labelKey: 'contact.emailLabel', contentKey: 'company.email', value: COMPANY.email },
 ]

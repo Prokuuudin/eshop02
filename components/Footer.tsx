@@ -7,13 +7,21 @@ import { resolveLocaleText } from '@/lib/locale-text'
 
 type FooterPromo = { title: string; link: string }
 
+const safeExternalUrl = (value: string, fallback: string): string => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : fallback
+  } catch {
+    return fallback
+  }
+}
+
 export default function Footer({ initialPromo = null }: { initialPromo?: FooterPromo | null }): React.ReactElement {
   const { t, language } = useTranslation()
   const promo = initialPromo
 
-  const cookieLabel = language === 'ru' ? 'Файлы cookie' : language === 'en' ? 'Cookies' : 'Sīkdatnes'
-  const cookieSettingsLabel =
-    language === 'ru' ? 'Настройки cookie' : language === 'en' ? 'Cookie settings' : 'Sīkdatņu iestatījumi'
+  const cookieLabel = t('footer.cookies')
+  const cookieSettingsLabel = t('footer.cookieSettings')
 
   const promoTitle = promo ? resolveLocaleText(promo.title, language) : ''
 
@@ -39,8 +47,8 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
           <div className="footer__section footer__contacts min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
             <h2 className="footer__title font-semibold mb-3 text-foreground">{t('footer.contact')}</h2>
             <address className="not-italic text-sm text-gray-800 dark:text-gray-300 space-y-1">
-              {COMPANY_CONTACT_LINES.map(({ labelKey, value }) => (
-                <div key={labelKey} className="footer__contact-item">{t(labelKey)}: {value}</div>
+            {COMPANY_CONTACT_LINES.map(({ labelKey, contentKey, value }) => (
+                <div key={labelKey} className="footer__contact-item">{t(labelKey)}: {t(contentKey, value)}</div>
               ))}
             </address>
           </div>
@@ -67,13 +75,13 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
         <div className="footer__bottom mt-6 flex flex-col items-start justify-between gap-2 border-t border-border pt-4 text-sm text-gray-700 dark:text-gray-300 min-[360px]:flex-row min-[360px]:items-center sm:mt-8 sm:gap-3">
           <div className="footer__copyright min-w-0 text-left">© {new Date().getFullYear()} Hairshop-Pro. {t('footer.allRightsReserved')}</div>
           <div className="footer__socials flex shrink-0 items-center gap-1">
-            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.instagram')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-pink-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-pink-400">
+            <a href={safeExternalUrl(t('footer.instagramUrl', 'https://instagram.com/'), 'https://instagram.com/')} target="_blank" rel="noopener noreferrer" aria-label={t('footer.instagram')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-pink-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-pink-400">
               <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
             </a>
-            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.facebook')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-blue-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-blue-400">
+            <a href={safeExternalUrl(t('footer.facebookUrl', 'https://facebook.com/'), 'https://facebook.com/')} target="_blank" rel="noopener noreferrer" aria-label={t('footer.facebook')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-blue-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-blue-400">
               <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><path d="M15 8h-2a1 1 0 0 0-1 1v2h3l-.5 2H12v6h-2v-6H8v-2h2V9a3 3 0 0 1 3-3h2v2z" fill="currentColor" stroke="none"/></svg>
             </a>
-            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label={t('footer.youtube')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-red-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-red-400">
+            <a href={safeExternalUrl(t('footer.youtubeUrl', 'https://youtube.com/'), 'https://youtube.com/')} target="_blank" rel="noopener noreferrer" aria-label={t('footer.youtube')} className="rounded-md p-2 text-brand transition-colors hover:bg-black/5 hover:text-red-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-red-400">
               <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
             </a>
           </div>

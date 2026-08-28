@@ -88,7 +88,7 @@ function TextEntryRow({
                 <Textarea
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
-                    className="min-h-[96px]"
+                    className={entry.key.startsWith('legal.') ? 'min-h-[360px] font-mono text-xs' : 'min-h-[96px]'}
                 />
             ) : (
                 <Input value={value} onChange={(e) => setValue(e.target.value)} />
@@ -319,7 +319,7 @@ export default function AdminContentPage(): React.ReactElement {
                                                     overrideValue={
                                                         overrides.text[language]?.[entry.key]
                                                     }
-                                                    baseValue={translations[language][entry.key]}
+                                                    baseValue={entry.defaults?.[language] ?? translations[language][entry.key]}
                                                     onSave={(value) =>
                                                         run(
                                                             () =>

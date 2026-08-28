@@ -6,7 +6,7 @@ import type { Language } from '@/data/translations';
 import { getServerContent } from '@/lib/server-translation';
 
 export default async function Stores({ language }: { language: Language }): Promise<React.JSX.Element> {
-    const { t } = await getServerContent(language);
+    const { t, resolveImageSrc } = await getServerContent(language);
 
     return (
         <section className="stores py-10 text-foreground" id="stores">
@@ -25,14 +25,14 @@ export default async function Stores({ language }: { language: Language }): Prom
                             className="store-card p-4 border rounded-lg flex flex-col items-center bg-slate-50 dark:bg-gray-800 shadow overflow-hidden"
                         >
                             <Image
-                                src={`/stores/${store.id}.jpg`}
+                                src={resolveImageSrc(`/stores/${store.id}.jpg`)}
                                 alt={t(`stores.${store.id}.name`)}
                                 width={320}
                                 height={180}
                                 className="mb-2 rounded w-full h-40 object-cover"
                             />
                             <h3 className="text-lg font-bold mb-1">{t(`stores.${store.id}.name`)}</h3>
-                            <p className="mb-1 text-sm text-slate-700 dark:text-gray-300">{store.address.lv}</p>
+                            <p className="mb-1 text-sm text-slate-700 dark:text-gray-300">{t(`stores.${store.id}.address`, store.address[language])}</p>
                             <p className="mb-1 text-sm text-slate-700 dark:text-gray-300">
                                 {t('stores.phone') ?? 'Телефон'}: {t(`stores.${store.id}.phone`)}
                             </p>

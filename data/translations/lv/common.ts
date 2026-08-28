@@ -490,6 +490,8 @@ const lvCommon: Record<string, string> = {
   'footer.privacy': 'Privātuma politika',
   'footer.terms': 'Pakalpojuma noteikumi',
   'footer.allRightsReserved': 'Visas tiesības aizsargātas.',
+  'footer.cookies': 'Sīkdatnes',
+  'footer.cookieSettings': 'Sīkdatņu iestatījumi',
   'footer.shipping': 'Piegāde',
   'footer.subscribe': 'Abonēt',
   'footer.followUs': 'Sekojiet mums',

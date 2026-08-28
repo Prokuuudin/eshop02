@@ -489,6 +489,8 @@ const enCommon: Record<string, string> = {
   'footer.privacy': 'Privacy Policy',
   'footer.terms': 'Terms of Service',
   'footer.allRightsReserved': 'All rights reserved.',
+  'footer.cookies': 'Cookies',
+  'footer.cookieSettings': 'Cookie settings',
   'footer.shipping': 'Shipping',
   'footer.subscribe': 'Subscribe',
   'footer.followUs': 'Follow Us',

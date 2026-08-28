@@ -17,7 +17,7 @@ describe('CONTENT_REGISTRY validity', () => {
         if (entry.type !== 'text') continue
         for (const lang of LANGUAGES) {
           expect(
-            translations[lang][entry.key],
+            entry.defaults?.[lang] ?? translations[lang][entry.key],
             `key "${entry.key}" (section "${section.id}") missing in "${lang}"`
           ).toBeTruthy()
         }

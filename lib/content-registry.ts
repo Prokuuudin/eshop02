@@ -1,3 +1,10 @@
+import { privacyContent } from '@/data/privacy-content'
+import { termsContent } from '@/data/terms-content'
+import { cookieContent } from '@/data/cookie-content'
+import { returnPolicyContent } from '@/data/return-policy-content'
+import { COMPANY } from '@/data/company'
+import { stores } from '@/data/stores'
+
 // Curated registry of admin-editable site content. Each text entry names a
 // translation key already rendered through t(); each image entry names a base
 // src already passed through resolveImageSrc(). The /admin/content page renders
@@ -5,8 +12,17 @@
 // When new t()-wired content is added to the site, add it here too —
 // lib/content-registry.test.ts validates every key and file path.
 
+type ContentDefaults = Record<'ru' | 'en' | 'lv', string>
+
+const storeAddressDefaults = (id: string): ContentDefaults => {
+  const store = stores.find((item) => item.id === id)
+  return store
+    ? { ru: store.address.ru, en: store.address.en, lv: store.address.lv }
+    : { ru: '', en: '', lv: '' }
+}
+
 export type ContentEntry =
-  | { type: 'text'; key: string; label: string; multiline?: boolean }
+  | { type: 'text'; key: string; label: string; multiline?: boolean; defaults?: ContentDefaults }
   | { type: 'image'; src: string; label: string }
 
 export type ContentSection = {
@@ -22,6 +38,9 @@ export const CONTENT_REGISTRY: ContentSection[] = [
     entries: [
       { type: 'text', key: 'hero.title', label: 'Заголовок' },
       { type: 'text', key: 'hero.subtitle', label: 'Подзаголовок' },
+      { type: 'text', key: 'hero.cta', label: 'Кнопка' },
+      { type: 'text', key: 'meta.homeTitle', label: 'SEO — заголовок главной' },
+      { type: 'text', key: 'meta.homeDescription', label: 'SEO — описание главной', multiline: true },
       { type: 'text', key: 'hero.alt', label: 'Alt-текст фоновой картинки' },
       { type: 'image', src: '/hero.jpg', label: 'Фоновая картинка' },
     ],
@@ -42,6 +61,48 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'image', src: '/icons/goods.svg', label: 'Иконка «Товары на складе»' },
       { type: 'image', src: '/icons/originals.svg', label: 'Иконка «Оригинальные бренды»' },
       { type: 'image', src: '/icons/bonuses.svg', label: 'Иконка «Бонусы»' },
+    ],
+  },
+  {
+    id: 'home-showcase',
+    title: 'Главная — Витрина и промо-блоки',
+    entries: [
+      { type: 'text', key: 'products.bestSellers', label: 'Заголовок бестселлеров' },
+      { type: 'text', key: 'categories.title', label: 'Заголовок категорий' },
+      { type: 'text', key: 'brands.popular', label: 'Заголовок популярных брендов' },
+      { type: 'text', key: 'brands.alphabeticalTitle', label: 'Заголовок списка брендов' },
+      { type: 'text', key: 'sale.title', label: 'Распродажа — заголовок' },
+      { type: 'text', key: 'sale.subtitle', label: 'Распродажа — подзаголовок', multiline: true },
+      { type: 'text', key: 'sale.allProducts', label: 'Распродажа — ссылка на все товары' },
+      { type: 'text', key: 'home.retailBanner.eyebrow', label: 'Розничный баннер — надзаголовок' },
+      { type: 'text', key: 'home.retailBanner.retailOnly', label: 'Розничный баннер — текст', multiline: true },
+      { type: 'text', key: 'home.retailBanner.button', label: 'Розничный баннер — кнопка' },
+      { type: 'text', key: 'home.productRequest.title', label: 'Запрос товара — заголовок' },
+      { type: 'text', key: 'home.productRequest.titleAccent', label: 'Запрос товара — акцент' },
+      { type: 'text', key: 'home.productRequest.open', label: 'Запрос товара — кнопка открытия' },
+      { type: 'text', key: 'home.productRequest.product', label: 'Запрос товара — поле товара' },
+      { type: 'text', key: 'home.productRequest.productPlaceholder', label: 'Запрос товара — подсказка товара' },
+      { type: 'text', key: 'home.productRequest.phone', label: 'Запрос товара — поле телефона' },
+      { type: 'text', key: 'home.productRequest.phonePlaceholder', label: 'Запрос товара — подсказка телефона' },
+      { type: 'text', key: 'home.productRequest.comment', label: 'Запрос товара — поле комментария' },
+      { type: 'text', key: 'home.productRequest.commentPlaceholder', label: 'Запрос товара — подсказка комментария' },
+      { type: 'text', key: 'home.productRequest.note', label: 'Запрос товара — примечание', multiline: true },
+      { type: 'text', key: 'home.productRequest.send', label: 'Запрос товара — отправка' },
+      { type: 'text', key: 'home.productRequest.success', label: 'Запрос товара — успешная отправка', multiline: true },
+    ],
+  },
+  {
+    id: 'home-bonus',
+    title: 'Главная — Бонусная программа',
+    entries: [
+      { type: 'text', key: 'bonus.section.title', label: 'Заголовок' },
+      { type: 'text', key: 'bonus.section.subtitle', label: 'Подзаголовок', multiline: true },
+      { type: 'text', key: 'bonus.section.step.earn.title', label: 'Начисление — заголовок' },
+      { type: 'text', key: 'bonus.section.step.earn.desc', label: 'Начисление — описание', multiline: true },
+      { type: 'text', key: 'bonus.section.step.spend.title', label: 'Использование — заголовок' },
+      { type: 'text', key: 'bonus.section.step.spend.desc', label: 'Использование — описание', multiline: true },
+      { type: 'text', key: 'bonus.section.step.grow.title', label: 'Рост — заголовок' },
+      { type: 'text', key: 'bonus.section.step.grow.desc', label: 'Рост — описание', multiline: true },
     ],
   },
   {
@@ -113,6 +174,11 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'footer.privacy', label: 'Политика конфиденциальности' },
       { type: 'text', key: 'footer.terms', label: 'Условия использования' },
       { type: 'text', key: 'footer.allRightsReserved', label: 'Копирайт (текст после года)' },
+      { type: 'text', key: 'footer.cookies', label: 'Ссылка на политику cookie' },
+      { type: 'text', key: 'footer.cookieSettings', label: 'Кнопка настроек cookie' },
+      { type: 'text', key: 'footer.instagramUrl', label: 'Ссылка Instagram', defaults: { ru: 'https://instagram.com/', en: 'https://instagram.com/', lv: 'https://instagram.com/' } },
+      { type: 'text', key: 'footer.facebookUrl', label: 'Ссылка Facebook', defaults: { ru: 'https://facebook.com/', en: 'https://facebook.com/', lv: 'https://facebook.com/' } },
+      { type: 'text', key: 'footer.youtubeUrl', label: 'Ссылка YouTube', defaults: { ru: 'https://youtube.com/', en: 'https://youtube.com/', lv: 'https://youtube.com/' } },
     ],
   },
   {
@@ -134,6 +200,15 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'contact.errorRateLimited', label: 'Сообщение при слишком частых отправках', multiline: true },
       { type: 'text', key: 'contact.errorSpam', label: 'Сообщение при срабатывании защиты от спама', multiline: true },
       { type: 'text', key: 'contact.errorCaptcha', label: 'Сообщение при ошибке проверки CAPTCHA', multiline: true },
+      { type: 'text', key: 'company.legalAddress', label: 'Юридический адрес', defaults: { ru: COMPANY.legalAddress, en: COMPANY.legalAddress, lv: COMPANY.legalAddress } },
+      { type: 'text', key: 'company.officeAddress', label: 'Адрес офиса', defaults: { ru: COMPANY.officeAddress, en: COMPANY.officeAddress, lv: COMPANY.officeAddress } },
+      { type: 'text', key: 'company.regNumber', label: 'Регистрационный номер', defaults: { ru: COMPANY.regNumber, en: COMPANY.regNumber, lv: COMPANY.regNumber } },
+      { type: 'text', key: 'company.vatNumber', label: 'Номер НДС', defaults: { ru: COMPANY.vatNumber, en: COMPANY.vatNumber, lv: COMPANY.vatNumber } },
+      { type: 'text', key: 'company.bankName', label: 'Банк', defaults: { ru: COMPANY.bankName, en: COMPANY.bankName, lv: COMPANY.bankName } },
+      { type: 'text', key: 'company.bankAccount', label: 'Банковский счёт', defaults: { ru: COMPANY.bankAccount, en: COMPANY.bankAccount, lv: COMPANY.bankAccount } },
+      { type: 'text', key: 'company.swift', label: 'SWIFT', defaults: { ru: COMPANY.swift, en: COMPANY.swift, lv: COMPANY.swift } },
+      { type: 'text', key: 'company.phone', label: 'Телефон', defaults: { ru: COMPANY.phone, en: COMPANY.phone, lv: COMPANY.phone } },
+      { type: 'text', key: 'company.email', label: 'Email', defaults: { ru: COMPANY.email, en: COMPANY.email, lv: COMPANY.email } },
       { type: 'text', key: 'contact.faq.q1', label: 'FAQ — вопрос 1' },
       { type: 'text', key: 'contact.faq.a1', label: 'FAQ — ответ 1', multiline: true },
       { type: 'text', key: 'contact.faq.q2', label: 'FAQ — вопрос 2' },
@@ -225,6 +300,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.riga-office.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.riga-office.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.riga-office.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.riga-office.address', label: 'Адрес', defaults: storeAddressDefaults('riga-office') },
+      { type: 'image', src: '/stores/riga-office.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -236,6 +313,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.imanta.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.imanta.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.imanta.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.imanta.address', label: 'Адрес', defaults: storeAddressDefaults('imanta') },
+      { type: 'image', src: '/stores/imanta.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -247,6 +326,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.plavnieki.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.plavnieki.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.plavnieki.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.plavnieki.address', label: 'Адрес', defaults: storeAddressDefaults('plavnieki') },
+      { type: 'image', src: '/stores/plavnieki.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -258,6 +339,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.daugavpils.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.daugavpils.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.daugavpils.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.daugavpils.address', label: 'Адрес', defaults: storeAddressDefaults('daugavpils') },
+      { type: 'image', src: '/stores/daugavpils.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -269,6 +352,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.liepaja.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.liepaja.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.liepaja.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.liepaja.address', label: 'Адрес', defaults: storeAddressDefaults('liepaja') },
+      { type: 'image', src: '/stores/liepaja.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -280,6 +365,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.valmiera.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.valmiera.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.valmiera.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.valmiera.address', label: 'Адрес', defaults: storeAddressDefaults('valmiera') },
+      { type: 'image', src: '/stores/valmiera.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -291,6 +378,8 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.rezekne.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.rezekne.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.rezekne.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.rezekne.address', label: 'Адрес', defaults: storeAddressDefaults('rezekne') },
+      { type: 'image', src: '/stores/rezekne.jpg', label: 'Фотография' },
     ],
   },
   {
@@ -302,6 +391,22 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'stores.jelgava.hours2', label: 'Часы работы — строка 2' },
       { type: 'text', key: 'stores.jelgava.hours3', label: 'Часы работы — строка 3' },
       { type: 'text', key: 'stores.jelgava.phone', label: 'Телефон' },
+      { type: 'text', key: 'stores.jelgava.address', label: 'Адрес', defaults: storeAddressDefaults('jelgava') },
+      { type: 'image', src: '/stores/jelgava.jpg', label: 'Фотография' },
+    ],
+  },
+  {
+    id: 'legal-pages',
+    title: 'Юридические страницы',
+    entries: [
+      { type: 'text', key: 'legal.privacy.title', label: 'Конфиденциальность — заголовок', defaults: { ru: privacyContent.ru.title, en: privacyContent.en.title, lv: privacyContent.lv.title } },
+      { type: 'text', key: 'legal.privacy.html', label: 'Конфиденциальность — HTML', multiline: true, defaults: { ru: privacyContent.ru.html, en: privacyContent.en.html, lv: privacyContent.lv.html } },
+      { type: 'text', key: 'legal.terms.title', label: 'Условия — заголовок', defaults: { ru: termsContent.ru.title, en: termsContent.en.title, lv: termsContent.lv.title } },
+      { type: 'text', key: 'legal.terms.html', label: 'Условия — HTML', multiline: true, defaults: { ru: termsContent.ru.html, en: termsContent.en.html, lv: termsContent.lv.html } },
+      { type: 'text', key: 'legal.cookies.title', label: 'Cookie — заголовок', defaults: { ru: cookieContent.ru.title, en: cookieContent.en.title, lv: cookieContent.lv.title } },
+      { type: 'text', key: 'legal.cookies.html', label: 'Cookie — HTML', multiline: true, defaults: { ru: cookieContent.ru.html, en: cookieContent.en.html, lv: cookieContent.lv.html } },
+      { type: 'text', key: 'legal.returnPolicy.title', label: 'Возврат — заголовок', defaults: { ru: returnPolicyContent.ru.title, en: returnPolicyContent.en.title, lv: returnPolicyContent.lv.title } },
+      { type: 'text', key: 'legal.returnPolicy.html', label: 'Возврат — HTML', multiline: true, defaults: { ru: returnPolicyContent.ru.html, en: returnPolicyContent.en.html, lv: returnPolicyContent.lv.html } },
     ],
   },
 ]

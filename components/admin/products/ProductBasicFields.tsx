@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { AddProductFormValues } from './productFormSchema';
 import { CATEGORY_CARDS } from '@/data/categories';
+import { BRANDS } from '@/data/brands';
 import { useTranslation } from '@/lib/i18n-context';
 import { useProductFormMode } from './ProductFormModeContext';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -46,11 +47,30 @@ const ProductBasicFields: React.FC = () => {
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-brand">
                         {l('Бренд', 'Brand', 'Zīmols')}
                     </label>
-                    <Input
-                        id="add-product-brand"
-                        placeholder={l('Бренд товара', 'Product brand', 'Preces zīmols')}
-                        {...register('brand')}
+                    <Controller
+                        name="brand"
+                        control={control}
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger id="add-product-brand">
+                                    <SelectValue placeholder={l('Выберите бренд', 'Select a brand', 'Izvēlieties zīmolu')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {field.value && !BRANDS.some((b) => b.name === field.value) && (
+                                        <SelectItem value={field.value}>{field.value}</SelectItem>
+                                    )}
+                                    {BRANDS.map((b) => (
+                                        <SelectItem key={b.id} value={b.name}>
+                                            {b.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     />
+                    {errors.brand?.message && (
+                        <div className="text-red-500 text-xs mt-1">{errors.brand.message}</div>
+                    )}
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" htmlFor="add-product-sku">

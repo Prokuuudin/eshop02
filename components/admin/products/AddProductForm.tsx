@@ -266,7 +266,6 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <Separator />
                             <ProductFormAccordionSection
                                 title={language === 'ru' ? 'Контент (RU)' : language === 'en' ? 'Content (EN)' : 'Saturs (LV)'}
-                                defaultOpen
                             >
                                 <ProductTranslationsFields language={language} />
                             </ProductFormAccordionSection>

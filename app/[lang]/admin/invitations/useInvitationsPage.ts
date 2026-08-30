@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import {
-    HOLDER_STATUS_RANK,
     INVITATIONS_PAGE_SIZE as PAGE_SIZE,
     INVITE_BATCH_SIZE as INVITE_BATCH,
     type CampaignState,
@@ -12,6 +11,10 @@ import {
     type Holder,
     type HolderSortKey,
     type SortDir,
+    isEligibleUserSent,
+    nextSort,
+    sortEligibleByStatus,
+    sortHoldersByStatus,
 } from './invitation-models';
 
 function useInvitationsPageState() {
@@ -356,17 +359,12 @@ function useInvitationsPageState() {
 
     const displayedHolders = useMemo(() => {
         if (!holderSort || holderSort.key !== 'status') return holders;
-        const mul = holderSort.dir === 'asc' ? 1 : -1;
-        return [...holders].sort((a, b) => (HOLDER_STATUS_RANK[a.status] - HOLDER_STATUS_RANK[b.status]) * mul);
+        return sortHoldersByStatus(holders, holderSort.dir);
     }, [holders, holderSort]);
 
     const toggleHolderSort = (key: HolderSortKey) => {
         setHolderPage(0);
-        setHolderSort((prev) => {
-            if (!prev || prev.key !== key) return { key, dir: 'asc' };
-            if (prev.dir === 'asc') return { key, dir: 'desc' };
-            return null;
-        });
+        setHolderSort((prev) => nextSort(prev, key));
     };
 
     const holderPageCount = Math.max(1, Math.ceil(holdersTotal / PAGE_SIZE));
@@ -384,22 +382,16 @@ function useInvitationsPageState() {
         sent: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300',
         pending: 'bg-muted text-muted-foreground',
     };
-    const isEligibleSent = (userId: string) => !!campaign?.cursor && userId <= campaign.cursor;
+    const isEligibleSent = (userId: string) => isEligibleUserSent(userId, campaign?.cursor);
 
     const displayedEligible = useMemo(() => {
         if (!eligibleSort || eligibleSort.key !== 'status') return eligibleUsers;
-        const mul = eligibleSort.dir === 'asc' ? 1 : -1;
-        return [...eligibleUsers].sort((a, b) => (Number(isEligibleSent(a.id)) - Number(isEligibleSent(b.id))) * mul);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        return sortEligibleByStatus(eligibleUsers, campaign?.cursor, eligibleSort.dir);
     }, [eligibleUsers, eligibleSort, campaign?.cursor]);
 
     const toggleEligibleSort = (key: EligibleSortKey) => {
         setEligiblePage(0);
-        setEligibleSort((prev) => {
-            if (!prev || prev.key !== key) return { key, dir: 'asc' };
-            if (prev.dir === 'asc') return { key, dir: 'desc' };
-            return null;
-        });
+        setEligibleSort((prev) => nextSort(prev, key));
     };
 
     const eligiblePageCount = Math.max(1, Math.ceil(eligibleFilteredTotal / PAGE_SIZE));

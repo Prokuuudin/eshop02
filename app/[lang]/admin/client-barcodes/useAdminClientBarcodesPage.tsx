@@ -2,6 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
+import {
+    createNoCardDraft,
+    getCardHolderEdit,
+    isValidCardNumber,
+    isValidCompanyDraft,
+    normalizeCardDigits,
+    normalizeRegistrationNumber,
+    type CardHolder,
+    type NoCardDraft,
+    type NoCardRequest,
+} from './client-barcodes-model';
+
+export type { CardHolder } from './client-barcodes-model';
 
 async function fetchNextCardNumber(): Promise<string> {
     try {
@@ -13,50 +26,6 @@ async function fetchNextCardNumber(): Promise<string> {
         return '';
     }
 }
-
-// Заявка мастера из Neon (GET /api/admin/access-requests); certificateData
-// (картинка) на сервер не передаётся — есть только certificateName
-type NoCardRequest = {
-    id: string;
-    email: string;
-    name: string | null;
-    phone: string | null;
-    requestType: string;
-    certificateName: string | null;
-    message: string | null;
-    language: string | null;
-    requestedAt: string;
-};
-
-// Держатель карты — реальный клиент из Neon (User.cardNumber), не B2B-компания:
-// компаний в проде пока нет (Company пустая), все ~10700 карт висят на User
-export type CardHolder = {
-    id: string;
-    email: string;
-    name: string | null;
-    phone: string | null;
-    cardNumber: string | null;
-    bonusPoints: number;
-    companyName: string | null;
-    customerType: 'individual' | 'company' | null;
-    registrationNumber: string | null;
-    vatNumber: string | null;
-    legalAddress: string | null;
-    address: string | null;
-    bankName: string | null;
-    iban: string | null;
-    personalCodeMasked: string | null;
-    registered: boolean;
-    registeredAt: string | null;
-    updatedAt: string;
-};
-
-type NoCardDraft = {
-    customerType: 'individual' | 'company';
-    companyName: string;
-    registrationNumber: string;
-    cardNumber: string;
-};
 
 function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const { t, language } = useTranslation();
@@ -145,7 +114,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [emailBusy, setEmailBusy] = useState<Record<string, boolean>>({});
 
     const getNoCardDraft = (requestId: string, defaultName: string) => {
-        return noCardDrafts[requestId] ?? { customerType: 'individual', companyName: defaultName, registrationNumber: '', cardNumber: '' };
+        return noCardDrafts[requestId] ?? createNoCardDraft(defaultName);
     };
 
     useEffect(() => {
@@ -174,13 +143,13 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const handleApproveNoCardRequest = async (requestId: string, email: string) => {
         const draft = noCardDrafts[requestId];
         if (!draft) return;
-        const digits = draft.cardNumber.replace(/\D/g, '');
-        if (digits.length < 4 || digits.length > 6) {
+        const digits = normalizeCardDigits(draft.cardNumber);
+        if (!isValidCardNumber(digits)) {
             setFormError(l('Номер карты должен содержать от 4 до 6 цифр.', 'The card number must contain 4 to 6 digits.', 'Kartes numurā jābūt no 4 līdz 6 cipariem.'));
             return;
         }
-        const registrationNumber = draft.registrationNumber.replace(/\D/g, '');
-        if (draft.customerType === 'company' && (!draft.companyName.trim() || registrationNumber.length !== 11)) {
+        const registrationNumber = normalizeRegistrationNumber(draft.registrationNumber);
+        if (!isValidCompanyDraft(draft)) {
             setFormError(l('Для юрлица укажите название и регистрационный номер из 11 цифр.', 'For a company, specify its name and an 11-digit registration number.', 'Uzņēmumam norādiet nosaukumu un 11 ciparu reģistrācijas numuru.'));
             return;
         }
@@ -221,17 +190,11 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-    const getClientEdit = (holder: CardHolder) => clientEdits[holder.id] ?? {
-        name: holder.name ?? '',
-        email: holder.email.endsWith('@client.local') ? '' : holder.email,
-        phone: holder.phone ?? '',
-        customerType: holder.customerType === 'company' ? 'company' : 'individual',
-        registrationNumber: holder.registrationNumber ?? '',
-    };
+    const getClientEdit = (holder: CardHolder) => clientEdits[holder.id] ?? getCardHolderEdit(holder);
 
     const handleSaveClientDetails = async (holder: CardHolder) => {
         const edit = getClientEdit(holder);
-        const registrationNumber = edit.registrationNumber.replace(/\D/g, '');
+        const registrationNumber = normalizeRegistrationNumber(edit.registrationNumber);
         if (edit.customerType === 'company' && registrationNumber.length !== 11) {
             setFormError(l('Регистрационный номер юрлица должен содержать 11 цифр.', 'The company registration number must contain 11 digits.', 'Uzņēmuma reģistrācijas numurā jābūt 11 cipariem.'));
             return;

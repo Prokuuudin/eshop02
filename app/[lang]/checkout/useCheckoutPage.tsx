@@ -34,6 +34,7 @@ import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
 import { createCheckoutOrder } from './checkout-order-api';
 import { calculateCheckoutTotals } from './checkout-totals';
+import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -110,7 +111,7 @@ function useCheckoutPageState() {
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<string | undefined>(undefined);
     const [appliedPromoDiscountPct, setAppliedPromoDiscountPct] = useState<number | null>(null);
-    const [campaignOffer, setCampaignOffer] = useState<{ discount: number; freeShipping: boolean; campaignName?: string }>({ discount: 0, freeShipping: false });
+    const [campaignOffer, setCampaignOffer] = useState<CampaignOffer>({ discount: 0, freeShipping: false });
     const [bonusApplied, setBonusApplied] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -154,19 +155,11 @@ function useCheckoutPageState() {
     React.useEffect(() => {
         let cancelled = false;
         const controller = new AbortController();
-        void fetch('/api/promo/campaigns/evaluate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })) }),
-            signal: controller.signal,
-        }).then(async (response) => {
-            if (!response.ok || cancelled) return;
-            const result = await response.json() as { discount?: number; freeShipping?: boolean; campaignName?: string };
-            if (!cancelled) setCampaignOffer({
-                discount: Math.max(0, Number(result.discount) || 0),
-                freeShipping: result.freeShipping === true,
-                campaignName: result.campaignName,
-            });
+        void evaluateCampaignOffer(
+            checkoutItems.map(({ id, quantity }) => ({ id, quantity })),
+            controller.signal
+        ).then((result) => {
+            if (!cancelled && result) setCampaignOffer(result);
         }).catch(() => undefined);
         return () => { cancelled = true; controller.abort(); };
     }, [checkoutItems]);
@@ -206,12 +199,11 @@ function useCheckoutPageState() {
         }
 
         try {
-            const res = await fetch('/api/promo/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: promoCode, email: formData.email, items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })) }),
+            const data = await validatePromoCode({
+                code: promoCode,
+                email: formData.email,
+                items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })),
             });
-            const data = (await res.json()) as { valid: boolean; discount?: number; code?: string };
             if (!data.valid) {
                 const message = t('checkout.promo.invalid');
                 setPromoError(message);

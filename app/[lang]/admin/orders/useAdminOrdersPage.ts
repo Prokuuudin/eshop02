@@ -4,13 +4,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { type Order } from '@/lib/orders-store';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
-import { formatEuro } from '@/lib/utils';
 import { useTranslation } from '@/lib/use-translation';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
 import { buildOrdersQuery, toOrder, type OrdersPageResponse } from './orders-query';
 import { useOrdersCsvExport } from './useOrdersCsvExport';
 import { addProductToEditItems, findEditProducts, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
+import { buildOrdersPrintHtml } from './order-print';
 
 type HydrationStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -293,50 +293,18 @@ function useAdminOrdersPageState() {
     };
 
     const printSelected = () => {
-        const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
         const selected = pageItems.filter((o) => selectedIds.has(o.id));
-        const rows = selected
-            .map((order) => {
-                const status = getOrderStatus(order.id);
-                const payStatus = order.paymentStatus ?? 'unpaid';
-                const items = order.items
-                    .map(
-                        (item) =>
-                            `<div style="display:flex;justify-content:space-between;font-size:12px;margin:3px 0">
-          <span>${escapeHtml(item.title)}${item.variantLabel ? ` <span style="color:#6b7280">(${escapeHtml(item.variantLabel)})</span>` : ''} × ${item.quantity}</span>
-          <span>${formatEuro(item.price * item.quantity, locale)}</span>
-        </div>`
-                    )
-                    .join('');
-                return `<div style="margin-bottom:20px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;page-break-inside:avoid">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-family:monospace;font-size:11px;color:#6b7280">${escapeHtml(order.id)}</span>
-          <div style="display:flex;gap:8px">
-            <span style="font-size:12px;font-weight:600">${STATUS_LABELS[status]}</span>
-            <span style="font-size:12px;color:#6b7280">${PAYMENT_LABELS[payStatus]}</span>
-          </div>
-        </div>
-        <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(order.firstName)} ${escapeHtml(order.lastName)}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.email)} · ${escapeHtml(order.phone)}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.address)}, ${escapeHtml(order.city)}${
-                    order.postalCode ? ', ' + escapeHtml(order.postalCode) : ''
-                }</p>
-        <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(order.createdAt).toLocaleDateString(locale)}</p>
-        <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
-        ${items}
-        <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
-        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px">
-          <span>${l('Итого', 'Total', 'Kopā')}</span><span>${formatEuro(order.total, locale)}</span>
-        </div>
-      </div>`;
-            })
-            .join('');
-
         const win = window.open('', '_blank', 'width=820,height=700');
         if (!win) return;
-        win.document.write(`<!DOCTYPE html><html><head><title>${l('Заказы', 'Orders', 'Pasūtījumi')}</title>
-      <style>body{font-family:sans-serif;padding:20px;max-width:760px;margin:0 auto}@media print{body{padding:0}}</style>
-      </head><body>${rows}</body></html>`);
+        win.document.write(buildOrdersPrintHtml({
+            orders: selected,
+            locale,
+            getOrderStatus,
+            statusLabels: STATUS_LABELS,
+            paymentLabels: PAYMENT_LABELS,
+            title: l('Заказы', 'Orders', 'Pasūtījumi'),
+            totalLabel: l('Итого', 'Total', 'Kopā'),
+        }));
         win.document.close();
         win.focus();
         win.print();

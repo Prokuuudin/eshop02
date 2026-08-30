@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { guideFor, renderPreview, type EmailTemplate, type TemplateGuide } from './email-template-model';
+import { loadEmailTemplates, saveEmailTemplate, sendEmailTemplateTest } from './email-template-api';
 
 export default function EmailTemplatesPage(): React.ReactElement {
     const { language, l } = useAdminLocale();
@@ -41,13 +42,8 @@ export default function EmailTemplatesPage(): React.ReactElement {
     const load = () => {
         setLoading(true);
         setLoadError(false);
-        fetch('/api/admin/email-templates')
-            .then((r) => {
-                if (!r.ok) throw new Error('load_failed');
-                return r.json();
-            })
-            .then((data: EmailTemplate[]) => {
-                const loaded = Array.isArray(data) ? data : [];
+        loadEmailTemplates()
+            .then((loaded) => {
                 setTemplates(loaded);
                 if (!selectedRef.current && loaded[0]) {
                     setSelected(loaded[0]);
@@ -95,13 +91,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
         setSaved(false);
         setSaveError(false);
         try {
-            const response = await fetch(`/api/admin/email-templates/${selected.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject, body }),
-            });
-            if (!response.ok) throw new Error('save_failed');
-            const savedTemplate = await response.json() as EmailTemplate;
+            const savedTemplate = await saveEmailTemplate(selected.id, subject, body);
             setTemplates((prev) => prev.map((t) => (t.id === selected.id ? savedTemplate : t)));
             setSelected(savedTemplate);
             setSaved(true);
@@ -125,12 +115,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
         setTestSending(true);
         setTestResult(null);
         try {
-            const res = await fetch(`/api/admin/email-templates/${selected.id}/send-test`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to: testEmail }),
-            });
-            setTestResult(res.ok ? 'ok' : 'error');
+            setTestResult(await sendEmailTemplateTest(selected.id, testEmail) ? 'ok' : 'error');
         } catch {
             setTestResult('error');
         } finally {

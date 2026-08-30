@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import type { RowAction } from '@/app/api/admin/import/preview/route';
 import type { useAdminImportPage } from './useAdminImportPage';
 import { ACTION_CHIPS, REQUIRED_COLS, type ImportMode, type Localize } from './import-config';
+import { ImportPreviewSummary } from './ImportPreviewSummary';
 
 type ImportState = ReturnType<typeof useAdminImportPage>;
 
@@ -190,33 +191,7 @@ export function ImportWorkflowSection({ state, l, modeLabels, actionLabels }: Pr
 
                             {previewResult && (
                                 <div className="space-y-3">
-                                    {/* Summary chips */}
-                                    <div className="flex flex-wrap gap-2 text-sm">
-                                        {previewResult.summary.create > 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 font-medium">
-                                                {l('Создать', 'Create', 'Izveidot')}:{' '}
-                                                {previewResult.summary.create}
-                                            </span>
-                                        )}
-                                        {previewResult.summary.update > 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">
-                                                {l('Обновить', 'Update', 'Atjaunināt')}:{' '}
-                                                {previewResult.summary.update}
-                                            </span>
-                                        )}
-                                        {previewResult.summary.skip > 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-muted text-muted-foreground font-medium">
-                                                {l('Пропустить', 'Skip', 'Izlaist')}:{' '}
-                                                {previewResult.summary.skip}
-                                            </span>
-                                        )}
-                                        {previewResult.summary.error > 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-medium">
-                                                {l('Ошибок', 'Errors', 'Kļūdas')}:{' '}
-                                                {previewResult.summary.error}
-                                            </span>
-                                        )}
-                                    </div>
+                                    <ImportPreviewSummary summary={previewResult.summary} l={l} />
 
                                     {/* Enriched table */}
                                     <div className="overflow-auto max-h-[480px] rounded-md border border-border">

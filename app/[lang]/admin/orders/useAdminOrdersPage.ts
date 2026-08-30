@@ -10,6 +10,7 @@ import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
 import { buildOrdersQuery, toOrder, type OrdersPageResponse } from './orders-query';
 import { useOrdersCsvExport } from './useOrdersCsvExport';
+import { addProductToEditItems, findEditProducts, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
 
 type HydrationStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -344,26 +345,12 @@ function useAdminOrdersPageState() {
     // ── Edit helpers ─────────────────────────────────────────────────────────
 
     const editProductResults = useMemo(() => {
-        const q = editProductSearch.trim().toLowerCase();
-        if (!q || q.length < 2) return [];
-        return catalog.filter((p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q)).slice(0, 8);
+        return findEditProducts(catalog, editProductSearch);
     }, [catalog, editProductSearch]);
 
     const startEdit = (order: Order) => {
         setEditingOrderId(order.id);
-        setEditItems(
-            order.items.map((i, index) => ({
-                id: i.id,
-                // Legacy imported orders predate lineKey. Give every row a stable,
-                // unique identity so duplicate products can be edited independently.
-                lineKey: i.lineKey || `legacy:${order.id}:${index}`,
-                title: i.title,
-                price: i.price,
-                quantity: i.quantity,
-                image: i.image,
-                variantLabel: i.variantLabel,
-            }))
-        );
+        setEditItems(orderToEditItems(order));
         setEditAddress(order.address);
         setEditCity(order.city);
         setEditPostalCode(order.postalCode ?? '');
@@ -416,29 +403,11 @@ function useAdminOrdersPageState() {
     };
 
     const editUpdateQty = (lineKey: string, qty: number) => {
-        if (qty <= 0) {
-            setEditItems((prev) => prev.filter((i) => i.lineKey !== lineKey));
-        } else {
-            setEditItems((prev) => prev.map((i) => (i.lineKey === lineKey ? { ...i, quantity: qty } : i)));
-        }
+        setEditItems((prev) => updateEditItemQuantity(prev, lineKey, qty));
     };
 
     const editAddProduct = (p: CatalogProduct) => {
-        setEditItems((prev) => {
-            const existing = prev.find((i) => i.lineKey === p.id);
-            if (existing) return prev.map((i) => (i.lineKey === p.id ? { ...i, quantity: i.quantity + 1 } : i));
-            return [
-                ...prev,
-                {
-                    id: p.id,
-                    lineKey: p.id,
-                    title: p.title,
-                    price: p.price,
-                    quantity: 1,
-                    image: p.image,
-                },
-            ];
-        });
+        setEditItems((prev) => addProductToEditItems(prev, p));
         setEditProductSearch('');
     };
 

@@ -30,6 +30,11 @@ import {
 import { useTranslation } from '@/lib/use-translation';
 import { useAuthStore } from '@/lib/auth-store';
 import { hasAdminPermission, permissionForAdminPath } from '@/lib/admin-permissions';
+import {
+    filterAdminNavSections,
+    findActiveAdminNavSection,
+    isAdminNavItemActive,
+} from './admin-header-nav-model';
 
 type HeaderNavItem = {
     title: string;
@@ -293,29 +298,18 @@ const NAV_LABELS = {
     },
 } as const;
 
-const isActive = (pathname: string, href: string): boolean => {
-    const [baseHref] = href.split('#');
-    if (!baseHref || baseHref === '/') return pathname === '/';
-    return pathname === baseHref || pathname.startsWith(`${baseHref}/`);
-};
-
 export default function AdminHeaderNav(): React.ReactElement {
     const pathname = useUnprefixedPathname();
     const { language } = useTranslation();
     const labels = NAV_LABELS[language];
     const tr = (key: string) => labels[key as keyof typeof labels] ?? key;
     const user = useAuthStore((state) => state.user);
-    const visibleSections = NAV_SECTIONS.map((section) => ({
-        ...section,
-        items: section.items.filter((item) =>
-            item.href.startsWith('/admin')
-                ? hasAdminPermission(user, permissionForAdminPath(item.href))
-                : hasAdminPermission(user, 'settings.manage')
-        ),
-    })).filter((section) => section.items.length > 0);
-    const activeMobileSection = visibleSections.find((section) =>
-        section.items.some((item) => isActive(pathname, item.href))
-    )?.title;
+    const visibleSections = filterAdminNavSections(NAV_SECTIONS, (href) =>
+        href.startsWith('/admin')
+            ? hasAdminPermission(user, permissionForAdminPath(href))
+            : hasAdminPermission(user, 'settings.manage')
+    );
+    const activeMobileSection = findActiveAdminNavSection(pathname, visibleSections);
 
     return (
         <div className="mx-auto w-fit max-w-full rounded-2xl bg-white/95 p-2 shadow-sm dark:bg-gray-900/95">
@@ -346,7 +340,7 @@ export default function AdminHeaderNav(): React.ReactElement {
                             {visibleSections.map((section) => {
                                 const Icon = section.icon;
                                 const sectionActive = section.items.some((item) =>
-                                    isActive(pathname, item.href)
+                                    isAdminNavItemActive(pathname, item.href)
                                 );
 
                                 return (
@@ -369,7 +363,7 @@ export default function AdminHeaderNav(): React.ReactElement {
                                         </AccordionTrigger>
                                         <AccordionContent className="space-y-1 px-1 pb-1 pt-1">
                                             {section.items.map((item) => {
-                                                const active = isActive(pathname, item.href);
+                                                const active = isAdminNavItemActive(pathname, item.href);
                                                 return (
                                                     <DropdownMenuItem
                                                         key={`mobile-${section.title}-${item.title}`}
@@ -400,7 +394,7 @@ export default function AdminHeaderNav(): React.ReactElement {
                 {visibleSections.map((section) => {
                     const Icon = section.icon;
                     const sectionActive = section.items.some((item) =>
-                        isActive(pathname, item.href)
+                        isAdminNavItemActive(pathname, item.href)
                     );
 
                     return (
@@ -421,7 +415,7 @@ export default function AdminHeaderNav(): React.ReactElement {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="min-w-[260px]">
                                 {section.items.map((item) => {
-                                    const active = isActive(pathname, item.href);
+                                    const active = isAdminNavItemActive(pathname, item.href);
 
                                     return (
                                         <DropdownMenuItem

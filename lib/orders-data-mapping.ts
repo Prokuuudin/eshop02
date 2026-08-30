@@ -1,0 +1,73 @@
+import { Prisma } from '@/generated/prisma/client'
+import type { Order as PrismaOrder } from '@/generated/prisma/client'
+import { toNum } from './decimal'
+import type { ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from './orders-data-types'
+
+export function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
+  return {
+    id: row.id,
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    items: row.items as ServerOrderItem[],
+    legalDetails: (row as Record<string, unknown>).legalDetails as ServerOrderLegalDetails ?? undefined,
+    subtotal: toNum(row.subtotal),
+    tax: toNum(row.tax),
+    delivery: toNum(row.delivery),
+    deliveryMethod: row.deliveryMethod,
+    paymentMethod: row.paymentMethod,
+    promoCode: row.promoCode ?? undefined,
+    discount: toNum(row.discount),
+    total: toNum(row.total),
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+    address: row.address,
+    city: row.city,
+    postalCode: row.postalCode ?? undefined,
+    bonusSpent: row.bonusSpent ?? undefined,
+    bonusEarned: row.bonusEarned ?? undefined,
+    paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
+    paymentProvider: row.paymentProvider === 'manual' ? 'manual' : undefined,
+    paymentSessionId: row.paymentSessionId ?? undefined,
+    stockReservationStatus: row.stockReservationStatus as ServerOrder['stockReservationStatus'],
+    stockReservedUntil: row.stockReservedUntil?.toISOString(),
+    stockReleasedAt: row.stockReleasedAt?.toISOString(),
+    language: (row as Record<string, unknown>).language as string ?? 'ru',
+    userId: row.userId ?? undefined,
+    companyId: row.companyId ?? undefined,
+  }
+}
+
+export function buildOrderData(order: Omit<ServerOrder, 'id'>): Omit<Prisma.OrderUncheckedCreateInput, 'id'> {
+  return {
+    createdAt: new Date(order.createdAt),
+    items: order.items,
+    legalDetails: order.legalDetails ?? Prisma.DbNull,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    delivery: order.delivery,
+    deliveryMethod: order.deliveryMethod,
+    paymentMethod: order.paymentMethod,
+    promoCode: order.promoCode ?? null,
+    discount: order.discount,
+    total: order.total,
+    firstName: order.firstName,
+    lastName: order.lastName,
+    email: order.email,
+    phone: order.phone,
+    address: order.address,
+    city: order.city,
+    postalCode: order.postalCode ?? null,
+    bonusSpent: order.bonusSpent ?? null,
+    bonusEarned: order.bonusEarned ?? null,
+    paymentStatus: order.paymentStatus ?? 'unpaid',
+    paymentProvider: order.paymentProvider ?? null,
+    paymentSessionId: order.paymentSessionId ?? null,
+    stockReservationStatus: order.stockReservationStatus ?? 'committed',
+    stockReservedUntil: order.stockReservedUntil ? new Date(order.stockReservedUntil) : null,
+    stockReleasedAt: order.stockReleasedAt ? new Date(order.stockReleasedAt) : null,
+    language: order.language ?? 'ru',
+    userId: order.userId ?? null,
+    companyId: order.companyId ?? null,
+  }
+}

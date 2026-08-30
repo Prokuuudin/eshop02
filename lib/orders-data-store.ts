@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma'
 import type { NextRequest } from 'next/server'
-import { Prisma } from '@/generated/prisma/client'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
 import { toNum } from '@/lib/decimal'
@@ -8,8 +7,9 @@ import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
 import { appendServerAudit } from '@/lib/server-audit'
 import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDays } from '@/lib/bonus-ledger'
-import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
+import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
+import { buildOrderData, mapDbToServerOrder } from '@/lib/orders-data-mapping'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
 export { AdminOrderUpdateError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -24,75 +24,6 @@ export function canAccessOrder(
   if (caller.platformRole === 'admin') return true
   if (order.userId) return order.userId === caller.id
   return !!caller.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
-}
-
-function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
-  return {
-    id: row.id,
-    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
-    items: row.items as ServerOrderItem[],
-    legalDetails: (row as Record<string, unknown>).legalDetails as ServerOrderLegalDetails ?? undefined,
-    subtotal: toNum(row.subtotal),
-    tax: toNum(row.tax),
-    delivery: toNum(row.delivery),
-    deliveryMethod: row.deliveryMethod,
-    paymentMethod: row.paymentMethod,
-    promoCode: row.promoCode ?? undefined,
-    discount: toNum(row.discount),
-    total: toNum(row.total),
-    firstName: row.firstName,
-    lastName: row.lastName,
-    email: row.email,
-    phone: row.phone,
-    address: row.address,
-    city: row.city,
-    postalCode: row.postalCode ?? undefined,
-    bonusSpent: row.bonusSpent ?? undefined,
-    bonusEarned: row.bonusEarned ?? undefined,
-    paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
-    paymentProvider: row.paymentProvider === 'manual' ? 'manual' : undefined,
-    paymentSessionId: row.paymentSessionId ?? undefined,
-    stockReservationStatus: row.stockReservationStatus as ServerOrder['stockReservationStatus'],
-    stockReservedUntil: row.stockReservedUntil?.toISOString(),
-    stockReleasedAt: row.stockReleasedAt?.toISOString(),
-    language: (row as Record<string, unknown>).language as string ?? 'ru',
-    userId: row.userId ?? undefined,
-    companyId: row.companyId ?? undefined,
-  }
-}
-
-function buildOrderData(order: Omit<ServerOrder, 'id'>) {
-  return {
-    createdAt: new Date(order.createdAt),
-    items: order.items,
-    legalDetails: order.legalDetails ?? Prisma.DbNull,
-    subtotal: order.subtotal,
-    tax: order.tax,
-    delivery: order.delivery,
-    deliveryMethod: order.deliveryMethod,
-    paymentMethod: order.paymentMethod,
-    promoCode: order.promoCode ?? null,
-    discount: order.discount,
-    total: order.total,
-    firstName: order.firstName,
-    lastName: order.lastName,
-    email: order.email,
-    phone: order.phone,
-    address: order.address,
-    city: order.city,
-    postalCode: order.postalCode ?? null,
-    bonusSpent: order.bonusSpent ?? null,
-    bonusEarned: order.bonusEarned ?? null,
-    paymentStatus: order.paymentStatus ?? 'unpaid',
-    paymentProvider: order.paymentProvider ?? null,
-    paymentSessionId: order.paymentSessionId ?? null,
-    stockReservationStatus: order.stockReservationStatus ?? 'committed',
-    stockReservedUntil: order.stockReservedUntil ? new Date(order.stockReservedUntil) : null,
-    stockReleasedAt: order.stockReleasedAt ? new Date(order.stockReleasedAt) : null,
-    language: order.language ?? 'ru',
-    userId: order.userId ?? null,
-    companyId: order.companyId ?? null,
-  }
 }
 
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */

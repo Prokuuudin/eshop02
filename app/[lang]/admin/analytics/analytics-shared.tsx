@@ -19,6 +19,11 @@ export type SeoProduct = {
     hasMetaTitle: boolean;
     hasMetaDesc: boolean;
     hasImage: boolean;
+    hasImageAlt: boolean;
+    hasTranslations: boolean;
+    validMetaTitleLength: boolean;
+    validMetaDescLength: boolean;
+    duplicateMeta: boolean;
     issueCount: number;
 };
 
@@ -69,6 +74,35 @@ export function Empty({ text }: { text: string }): ReactElement {
         <div className="py-16 text-center text-sm text-muted-foreground rounded-xl border border-border">
             {text}
         </div>
+    );
+}
+
+export function LoadError({ text, retryLabel, onRetry }: { text: string; retryLabel: string; onRetry: () => void }): ReactElement {
+    return (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-10 text-center text-sm text-red-800 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
+            <p>{text}</p>
+            <button type="button" onClick={onRetry} className="mt-4 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground">
+                {retryLabel}
+            </button>
+        </div>
+    );
+}
+
+export function AnalyticsPagination({ page, pageSize, total, loading, labels, onPageChange }: {
+    page: number; pageSize: number; total: number; loading: boolean;
+    labels: { previous: string; next: string; page: string; of: string };
+    onPageChange: (page: number) => void;
+}): ReactElement | null {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (total <= pageSize) return null;
+    return (
+        <nav aria-label={labels.page} className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">{labels.page} {page} {labels.of} {totalPages}</span>
+            <div className="flex gap-2">
+                <button type="button" disabled={loading || page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">← {labels.previous}</button>
+                <button type="button" disabled={loading || page >= totalPages} onClick={() => onPageChange(page + 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">{labels.next} →</button>
+            </div>
+        </nav>
     );
 }
 import type { ReactElement } from 'react';

@@ -1,26 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
-import { monthLabel, retentionColor, Empty } from './analytics-shared'
+import { monthLabel, retentionColor, Empty, LoadError } from './analytics-shared'
 import type { ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type CohortsResponse = {
   cohortSizes: { cohort: string; size: number }[]
   cells: { cohort: string; offset: number; count: number }[]
+  summary?: { m1: number | null; m3: number | null; m6: number | null; cohortGrowth: number | null }
 }
 
 export default function CohortSection(): ReactElement {
   const { l, locale } = useAdminLocale()
   const [showPct, setShowPct] = useState(true)
   const [loaded, setLoaded] = useState<CohortsResponse | null>(null)
+  const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+  const [months, setMonths] = useState(12)
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/admin/analytics/cohorts', { signal: controller.signal, cache: 'no-store' })
+    fetch(`/api/admin/analytics/cohorts?months=${months}`, { signal: controller.signal, cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
-      .then((json: CohortsResponse) => setLoaded(json))
-      .catch((e) => { if ((e as Error).name !== 'AbortError') setLoaded({ cohortSizes: [], cells: [] }) })
+      .then((json: CohortsResponse) => { setLoaded(json); setError(false) })
+      .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ cohortSizes: [], cells: [] }); setError(true) } })
     return () => controller.abort()
-  }, [])
+  }, [months, reloadKey])
 
   const { cohortMonths, matrix, cohortSizes, maxOffset } = useMemo(() => {
     if (!loaded || loaded.cohortSizes.length === 0) {
@@ -48,6 +52,9 @@ export default function CohortSection(): ReactElement {
   if (loaded === null) {
     return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
   }
+  if (error) {
+    return <LoadError text={l('Не удалось загрузить когортный анализ.', 'Failed to load cohort analysis.', 'Neizdevās ielādēt kohortu analīzi.')} retryLabel={l('Повторить', 'Retry', 'Mēģināt vēlreiz')} onRetry={() => { setLoaded(null); setError(false); setReloadKey((key) => key + 1) }} />
+  }
   if (cohortMonths.length === 0) {
     return <Empty text={l('Недостаточно данных для когортного анализа.', 'Not enough data for cohort analysis.', 'Kohortu analīzei nepietiek datu.')} />
   }
@@ -56,6 +63,14 @@ export default function CohortSection(): ReactElement {
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[{ label: 'M+1', value: loaded.summary?.m1 }, { label: 'M+3', value: loaded.summary?.m3 }, { label: 'M+6', value: loaded.summary?.m6 }, { label: l('Рост когорты', 'Cohort growth', 'Kohortas pieaugums'), value: loaded.summary?.cohortGrowth }].map((metric) => (
+          <div key={metric.label} className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{metric.label}</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{metric.value == null ? '—' : `${metric.value > 0 && metric.label !== 'M+1' && metric.label !== 'M+3' && metric.label !== 'M+6' ? '+' : ''}${metric.value}%`}</p>
+          </div>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
@@ -65,6 +80,11 @@ export default function CohortSection(): ReactElement {
             {l('М+0 = месяц первой покупки, М+1 = следующий месяц и т.д.', 'M+0 = first-purchase month, M+1 = the following month, etc.', 'M+0 = pirmā pirkuma mēnesis, M+1 = nākamais mēnesis utt.')}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-xs text-muted-foreground" htmlFor="cohort-months">{l('Период', 'Period', 'Periods')}</label>
+          <select id="cohort-months" value={months} onChange={(event) => { setMonths(Number(event.target.value)); setLoaded(null) }} className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm">
+            {[6, 12, 24, 36].map((value) => <option key={value} value={value}>{value} {l('мес.', 'months', 'mēn.')}</option>)}
+          </select>
         <div className="flex rounded-lg border border-border p-0.5">
           {(['pct', 'count'] as const).map((m) => (
             <button
@@ -81,6 +101,7 @@ export default function CohortSection(): ReactElement {
               {m === 'pct' ? '%' : '#'}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

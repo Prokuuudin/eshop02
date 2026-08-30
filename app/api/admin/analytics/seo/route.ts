@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { getProductOverrides, type ProductOverride } from '@/lib/product-overrides-store'
+import { Prisma } from '@/generated/prisma/client'
 
 type SeoRow = {
   id: string
@@ -12,55 +13,120 @@ type SeoRow = {
   hasMetaTitle: boolean
   hasMetaDesc: boolean
   hasImage: boolean
+  hasImageAlt: boolean
+  hasTranslations: boolean
+  validMetaTitleLength: boolean
+  validMetaDescLength: boolean
+  duplicateMeta: boolean
+}
+
+type SeoQueryResult = {
+  products: SeoRow[]
+  total: number
+  catalogTotal: number
+  counts: { all: number; metaTitle: number; metaDesc: number; image: number; imageAlt: number; translations: number; duplicate: number }
 }
 
 // Same reasoning as /api/admin/analytics/abc and /cohorts: this only needs a
 // handful of fields per product to compute completeness flags, so it selects
 // those columns directly instead of routing through the full admin product
 // list (which carries description/pricing/images payloads irrelevant here).
-export async function GET(_req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const user = await requireAdminPermission('catalog.read')
     if (user instanceof NextResponse) return user
 
-    const [rows, overrides] = await Promise.all([
-      prisma.product.findMany({
-        where: { isDeleted: false },
-        select: {
-          id: true,
-          title: true,
-          brand: true,
-          category: true,
-          metaTitle: true,
-          metaDescription: true,
-          image: true,
-          images: true,
-        },
-      }),
-      getProductOverrides().catch((): Record<string, ProductOverride> => ({})),
-    ])
+    const overrides = await getProductOverrides().catch((): Record<string, ProductOverride> => ({}))
+    const issue = req.nextUrl.searchParams.get('issue')
+    const search = req.nextUrl.searchParams.get('search')?.trim() ?? ''
+    const page = Math.max(1, Number.parseInt(req.nextUrl.searchParams.get('page') ?? '1', 10) || 1)
+    const pageSize = Math.min(100, Math.max(10, Number.parseInt(req.nextUrl.searchParams.get('pageSize') ?? '25', 10) || 25))
+    const offset = (page - 1) * pageSize
+    const exportCsv = req.nextUrl.searchParams.get('export') === 'csv'
+    const issueFilter = issue === 'metaTitle'
+      ? Prisma.sql`NOT "hasMetaTitle" OR NOT "validMetaTitleLength"`
+      : issue === 'metaDesc'
+        ? Prisma.sql`NOT "hasMetaDesc" OR NOT "validMetaDescLength"`
+        : issue === 'image'
+          ? Prisma.sql`NOT "hasImage"`
+          : issue === 'imageAlt'
+            ? Prisma.sql`NOT "hasImageAlt"`
+            : issue === 'translations'
+              ? Prisma.sql`NOT "hasTranslations"`
+              : issue === 'duplicate'
+                ? Prisma.sql`"duplicateMeta"`
+                : Prisma.sql`NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations" OR NOT "validMetaTitleLength" OR NOT "validMetaDescLength" OR "duplicateMeta"`
+    const searchFilter = search ? Prisma.sql`AND (id ILIKE ${`%${search}%`} OR title ILIKE ${`%${search}%`} OR brand ILIKE ${`%${search}%`} OR category ILIKE ${`%${search}%`})` : Prisma.empty
 
-    const products: SeoRow[] = rows.map((p) => {
-      const o = overrides[p.id]
-      const title = o?.title ?? p.title
-      const brand = o?.brand ?? p.brand
-      const category = o?.category ?? p.category
-      const metaTitle = o?.metaTitle ?? p.metaTitle
-      const metaDescription = o?.metaDescription ?? p.metaDescription
-      const image = o?.image ?? p.image
-      const images = o?.images ?? p.images
-      return {
-        id: p.id,
-        title,
-        brand,
-        category,
-        hasMetaTitle: Boolean(metaTitle?.trim()),
-        hasMetaDesc: Boolean(metaDescription?.trim()),
-        hasImage: Boolean(image?.trim() || (images?.length ?? 0) > 0),
-      }
-    })
-
-    return NextResponse.json({ products })
+    const resultRows = await prisma.$queryRaw<SeoQueryResult[]>(Prisma.sql`
+      WITH override_data AS (
+        SELECT CAST(${JSON.stringify(overrides)} AS jsonb) AS data
+      ), merged AS (
+        SELECT
+          p.id,
+          COALESCE(override_data.data -> p.id ->> 'title', p.title) AS title,
+          COALESCE(override_data.data -> p.id ->> 'brand', p.brand) AS brand,
+          COALESCE(override_data.data -> p.id ->> 'category', p.category) AS category,
+          COALESCE(override_data.data -> p.id ->> 'titleEn', p."titleEn") AS title_en,
+          COALESCE(override_data.data -> p.id ->> 'titleLv', p."titleLv") AS title_lv,
+          COALESCE(override_data.data -> p.id ->> 'metaTitle', p."metaTitle") AS meta_title,
+          COALESCE(override_data.data -> p.id ->> 'metaDescription', p."metaDescription") AS meta_description,
+          COALESCE(override_data.data -> p.id ->> 'image', p.image) AS primary_image,
+          COALESCE(override_data.data -> p.id ->> 'ogAlt', p."ogAlt") AS image_alt,
+          CASE
+            WHEN jsonb_typeof(override_data.data -> p.id -> 'images') = 'array'
+              THEN jsonb_array_length(override_data.data -> p.id -> 'images')
+            ELSE cardinality(p.images)
+          END AS image_count
+        FROM "Product" p CROSS JOIN override_data
+        WHERE NOT p."isDeleted"
+      ), quality AS (
+        SELECT id, title, brand, category,
+          COALESCE(length(trim(meta_title)) > 0, false) AS "hasMetaTitle",
+          COALESCE(length(trim(meta_description)) > 0, false) AS "hasMetaDesc",
+          COALESCE(length(trim(primary_image)) > 0, false) OR image_count > 0 AS "hasImage",
+          NOT (COALESCE(length(trim(primary_image)) > 0, false) OR image_count > 0)
+            OR COALESCE(length(trim(image_alt)) > 0, false) AS "hasImageAlt",
+          COALESCE(length(trim(title_en)) > 0 AND length(trim(title_lv)) > 0, false) AS "hasTranslations",
+          COALESCE(length(trim(meta_title)) BETWEEN 10 AND 60, false) AS "validMetaTitleLength",
+          COALESCE(length(trim(meta_description)) BETWEEN 50 AND 160, false) AS "validMetaDescLength",
+          meta_title, meta_description
+        FROM merged
+      ), analyzed AS (
+        SELECT id, title, brand, category, "hasMetaTitle", "hasMetaDesc", "hasImage", "hasImageAlt", "hasTranslations", "validMetaTitleLength", "validMetaDescLength",
+          ("hasMetaTitle" AND COUNT(*) OVER (PARTITION BY NULLIF(lower(trim(meta_title)), '')) > 1)
+          OR ("hasMetaDesc" AND COUNT(*) OVER (PARTITION BY NULLIF(lower(trim(meta_description)), '')) > 1) AS "duplicateMeta"
+        FROM quality
+      ), filtered AS (
+        SELECT * FROM analyzed WHERE (${issueFilter}) ${searchFilter}
+      ), page_rows AS (
+        SELECT * FROM filtered
+        ORDER BY ((NOT "hasMetaTitle")::int + (NOT "hasMetaDesc")::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + (NOT "validMetaTitleLength")::int + (NOT "validMetaDescLength")::int + "duplicateMeta"::int) DESC, id
+        LIMIT ${exportCsv ? 100_000 : pageSize} OFFSET ${exportCsv ? 0 : offset}
+      )
+      SELECT
+        COALESCE((SELECT jsonb_agg(to_jsonb(page_rows) ORDER BY ((NOT "hasMetaTitle")::int + (NOT "hasMetaDesc")::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + (NOT "validMetaTitleLength")::int + (NOT "validMetaDescLength")::int + "duplicateMeta"::int) DESC, id) FROM page_rows), '[]'::jsonb) AS products,
+        (SELECT COUNT(*)::int FROM filtered) AS total,
+        (SELECT COUNT(*)::int FROM analyzed) AS "catalogTotal",
+        jsonb_build_object(
+          'all', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations" OR NOT "validMetaTitleLength" OR NOT "validMetaDescLength" OR "duplicateMeta"),
+          'metaTitle', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaTitle" OR NOT "validMetaTitleLength"),
+          'metaDesc', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaDesc" OR NOT "validMetaDescLength"),
+          'image', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasImage"),
+          'imageAlt', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasImageAlt"),
+          'translations', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasTranslations"),
+          'duplicate', (SELECT COUNT(*)::int FROM analyzed WHERE "duplicateMeta")
+        ) AS counts
+    `)
+    const result = resultRows[0] ?? { products: [], total: 0, catalogTotal: 0, counts: { all: 0, metaTitle: 0, metaDesc: 0, image: 0, imageAlt: 0, translations: 0, duplicate: 0 } }
+    if (exportCsv) {
+      const csv = [
+        ['Product ID', 'Title', 'Brand', 'Category', 'Meta title', 'Meta description', 'Image', 'Image alt', 'Translations', 'Duplicate metadata'],
+        ...result.products.map((product) => [product.id, product.title, product.brand, product.category, product.hasMetaTitle && product.validMetaTitleLength, product.hasMetaDesc && product.validMetaDescLength, product.hasImage, product.hasImageAlt, product.hasTranslations, product.duplicateMeta]),
+      ].map((values) => values.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n')
+      return new NextResponse(`\uFEFF${csv}`, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="seo-report.csv"' } })
+    }
+    return NextResponse.json({ ...result, page, pageSize })
   } catch (e) {
     logApiError('[admin/analytics/seo GET]', e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

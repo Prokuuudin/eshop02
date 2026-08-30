@@ -38,12 +38,12 @@ export default function ActiveCategoriesSection({
         language,
         tl,
         categories,
-        setCategories,
         loading,
         saving,
         newSubByCategory,
-        setNewSubByCategory,
         updateCategoryLabels,
+        updateCategoryImage,
+        updateNewSubcategoryDraft,
         updateSubcategoryLabels,
         handleAddSubcategory,
         handleRemoveSubcategory,
@@ -192,15 +192,9 @@ export default function ActiveCategoriesSection({
                                                 <Input
                                                     value={category.image}
                                                     onChange={(event) =>
-                                                        setCategories((prev) =>
-                                                            prev.map((item) =>
-                                                                item.id === category.id
-                                                                    ? {
-                                                                          ...item,
-                                                                          image: event.target.value,
-                                                                      }
-                                                                    : item
-                                                            )
+                                                        updateCategoryImage(
+                                                            category.id,
+                                                            event.target.value
                                                         )
                                                     }
                                                 />
@@ -341,17 +335,9 @@ export default function ActiveCategoriesSection({
                                                         newSubByCategory[category.id]?.slug ?? ''
                                                     }
                                                     onChange={(event) =>
-                                                        setNewSubByCategory((prev) => ({
-                                                            ...prev,
-                                                            [category.id]: {
-                                                                slug: event.target.value,
-                                                                search:
-                                                                    prev[category.id]?.search ?? '',
-                                                                ru: prev[category.id]?.ru ?? '',
-                                                                en: prev[category.id]?.en ?? '',
-                                                                lv: prev[category.id]?.lv ?? '',
-                                                            },
-                                                        }))
+                                                        updateNewSubcategoryDraft(category.id, {
+                                                            slug: event.target.value,
+                                                        })
                                                     }
                                                 />
                                             </AccessibleLabel>
@@ -362,17 +348,9 @@ export default function ActiveCategoriesSection({
                                                 <Input
                                                     value={newSubByCategory[category.id]?.ru ?? ''}
                                                     onChange={(event) =>
-                                                        setNewSubByCategory((prev) => ({
-                                                            ...prev,
-                                                            [category.id]: {
-                                                                slug: prev[category.id]?.slug ?? '',
-                                                                search:
-                                                                    prev[category.id]?.search ?? '',
-                                                                ru: event.target.value,
-                                                                en: prev[category.id]?.en ?? '',
-                                                                lv: prev[category.id]?.lv ?? '',
-                                                            },
-                                                        }))
+                                                        updateNewSubcategoryDraft(category.id, {
+                                                            ru: event.target.value,
+                                                        })
                                                     }
                                                 />
                                             </AccessibleLabel>
@@ -383,17 +361,9 @@ export default function ActiveCategoriesSection({
                                                 <Input
                                                     value={newSubByCategory[category.id]?.en ?? ''}
                                                     onChange={(event) =>
-                                                        setNewSubByCategory((prev) => ({
-                                                            ...prev,
-                                                            [category.id]: {
-                                                                slug: prev[category.id]?.slug ?? '',
-                                                                search:
-                                                                    prev[category.id]?.search ?? '',
-                                                                ru: prev[category.id]?.ru ?? '',
-                                                                en: event.target.value,
-                                                                lv: prev[category.id]?.lv ?? '',
-                                                            },
-                                                        }))
+                                                        updateNewSubcategoryDraft(category.id, {
+                                                            en: event.target.value,
+                                                        })
                                                     }
                                                 />
                                             </AccessibleLabel>
@@ -404,17 +374,9 @@ export default function ActiveCategoriesSection({
                                                 <Input
                                                     value={newSubByCategory[category.id]?.lv ?? ''}
                                                     onChange={(event) =>
-                                                        setNewSubByCategory((prev) => ({
-                                                            ...prev,
-                                                            [category.id]: {
-                                                                slug: prev[category.id]?.slug ?? '',
-                                                                search:
-                                                                    prev[category.id]?.search ?? '',
-                                                                ru: prev[category.id]?.ru ?? '',
-                                                                en: prev[category.id]?.en ?? '',
-                                                                lv: event.target.value,
-                                                            },
-                                                        }))
+                                                        updateNewSubcategoryDraft(category.id, {
+                                                            lv: event.target.value,
+                                                        })
                                                     }
                                                 />
                                             </AccessibleLabel>

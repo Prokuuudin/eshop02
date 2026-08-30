@@ -21,6 +21,14 @@ export type NewSubDraft = {
     lv: string;
 };
 
+const EMPTY_NEW_SUBCATEGORY: NewSubDraft = {
+    slug: '',
+    search: '',
+    ru: '',
+    en: '',
+    lv: '',
+};
+
 export const EMPTY_NEW_CATEGORY: NewCategoryDraft = {
     id: '',
     image: '/categories/new.jpg',
@@ -54,6 +62,27 @@ export function updateCategoryLabels(
     return categories.map((category) => category.id === categoryId
         ? { ...category, labels: { ...category.labels, ...nextLabels } }
         : category);
+}
+
+export function updateCategoryImage(
+    categories: CategoryConfigItem[],
+    categoryId: string,
+    image: string
+): CategoryConfigItem[] {
+    return categories.map((category) => category.id === categoryId
+        ? { ...category, image }
+        : category);
+}
+
+export function updateNewSubcategoryDraft(
+    drafts: Record<string, NewSubDraft>,
+    categoryId: string,
+    patch: Partial<NewSubDraft>
+): Record<string, NewSubDraft> {
+    return {
+        ...drafts,
+        [categoryId]: { ...EMPTY_NEW_SUBCATEGORY, ...drafts[categoryId], ...patch },
+    };
 }
 
 export function updateSubcategoryLabels(

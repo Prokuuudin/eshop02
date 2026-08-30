@@ -13,6 +13,8 @@ import {
     normalizeCategoryLabels as normalizeLabels,
     sanitizeCategorySlug as sanitizeSlug,
     updateCategoryLabels as applyCategoryLabels,
+    updateCategoryImage as applyCategoryImage,
+    updateNewSubcategoryDraft as applyNewSubcategoryDraft,
     updateSubcategoryLabels as applySubcategoryLabels,
     type NewCategoryDraft,
     type NewSubDraft,
@@ -116,6 +118,14 @@ function useAdminCategoriesPageState() {
 
     const updateCategoryLabels = (categoryId: string, nextLabels: Partial<LocalizedLabel>) => {
         setCategories((prev) => applyCategoryLabels(prev, categoryId, nextLabels));
+    };
+
+    const updateCategoryImage = (categoryId: string, image: string) => {
+        setCategories((prev) => applyCategoryImage(prev, categoryId, image));
+    };
+
+    const updateNewSubcategoryDraft = (categoryId: string, patch: Partial<NewSubDraft>) => {
+        setNewSubByCategory((prev) => applyNewSubcategoryDraft(prev, categoryId, patch));
     };
 
     const updateSubcategoryLabels = (
@@ -445,7 +455,6 @@ function useAdminCategoriesPageState() {
         l,
         tl,
         categories,
-        setCategories,
         savedCategories,
         deletedCategories,
         loading,
@@ -455,9 +464,10 @@ function useAdminCategoriesPageState() {
         newCategory,
         setNewCategory,
         newSubByCategory,
-        setNewSubByCategory,
         newCategoryPreviewLabel,
         updateCategoryLabels,
+        updateCategoryImage,
+        updateNewSubcategoryDraft,
         updateSubcategoryLabels,
         handleCreateCategory,
         handleAddSubcategory,

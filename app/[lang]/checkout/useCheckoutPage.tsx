@@ -33,11 +33,7 @@ import {
     mergeEmptyCheckoutFields,
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
-
-const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-};
+import { validateCheckoutForm } from './checkout-validation';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -245,36 +241,17 @@ function useCheckoutPageState() {
             return;
         }
 
-        const newErrors: Record<string, string> = {};
-
-        if (formData.customerType === 'individual') {
-            if (!formData.personalCode.trim()) newErrors.personalCode = t('checkout.errors.personalCode');
-            if (!formData.phone.trim()) newErrors.phone = t('checkout.errors.phone');
-        } else {
-            if (!formData.companyName.trim()) newErrors.companyName = t('checkout.errors.companyName');
-            if (!formData.regNumber.trim()) newErrors.regNumber = t('checkout.errors.regNumber');
-            if (!formData.legalAddress.trim()) newErrors.legalAddress = t('checkout.errors.legalAddress');
-        }
-        if (!formData.firstName.trim()) newErrors.firstName = t('checkout.errors.firstName');
-        if (!formData.lastName.trim()) newErrors.lastName = t('checkout.errors.lastName');
-        if (!formData.email.trim()) {
-            newErrors.email = t('checkout.errors.email');
-        } else if (!validateEmail(formData.email)) {
-            newErrors.email = t('checkout.errors.emailInvalid');
-        }
-        if (!formData.address.trim()) newErrors.address = t('checkout.errors.address');
-        if (!formData.city.trim()) newErrors.city = t('checkout.errors.city');
-        if (deliveryMethod === 'pickup' && !pickupStoreId) {
-            newErrors.pickupStore = t('checkout.errors.pickupStore');
-        }
+        const newErrors = validateCheckoutForm(
+            { formData, deliveryMethod, pickupStoreId, termsAccepted },
+            t
+        );
         // Страховка от рассинхрона UI: наличные только при самовывозе из офиса.
         if (formData.paymentMethod === 'cash' && cashUnavailable) {
             showToast(t('checkout.payment.cashNote'), 'error');
             setIsSubmitting(false);
             return;
         }
-        if (!termsAccepted) {
-            newErrors.terms = t('checkout.errors.terms');
+        if (newErrors.terms) {
             showToast(t('checkout.errors.terms'), 'error');
         }
 

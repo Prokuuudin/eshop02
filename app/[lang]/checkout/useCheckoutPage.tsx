@@ -10,14 +10,12 @@ import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-store';
 import { useOrders, DeliveryMethod } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
-import { extractVat } from '@/lib/tax';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
 import { canPlaceOrders, getCurrentUser, syncBonusBalanceFromServer } from '@/lib/auth';
 import { calculatePrice, getWholesaleOrderGuard } from '@/lib/customer-segmentation';
-import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program';
-import { calcDeliveryFee } from '@/lib/delivery';
+import { calcOrderBonus } from '@/lib/bonus-program';
 import { useInvoicesStore } from '@/lib/invoices-store';
 import { logAuditAction } from '@/lib/audit-log-store';
 import { useCompanyStore } from '@/lib/company-store';
@@ -35,6 +33,7 @@ import {
 import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
 import { createCheckoutOrder } from './checkout-order-api';
+import { calculateCheckoutTotals } from './checkout-totals';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -272,25 +271,6 @@ function useCheckoutPageState() {
             return;
         }
 
-        // Calculate totals
-        const promoDiscount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
-        const discount = Math.max(promoDiscount, campaignOffer.discount);
-        const subtotalAfterDiscount = subtotal - discount;
-        const deliveryFee = campaignOffer.freeShipping ? 0 : calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-
-        // Catalog prices already include VAT — taxAmount is informational, not added to the total.
-        const taxAmount = extractVat(subtotalAfterDiscount);
-        const grandTotal = subtotalAfterDiscount + deliveryFee;
-        // Списание в баллах (1 балл = 1 цент); скидка — его евро-эквивалент.
-        const bonusSpentPoints = bonusApplied
-            ? Math.min(
-                  currentUser?.bonusPoints ?? 0,
-                  eurosToPoints((grandTotal * bonusProgram.maxSpendPercent) / 100)
-              )
-            : 0;
-        const bonusDiscount = pointsToEuros(bonusSpentPoints);
-        const finalGrandTotal = grandTotal - bonusDiscount;
-
         const legalDetails = formData.customerType === 'company'
             ? {
                   customerType: 'company' as const,
@@ -415,13 +395,6 @@ function useCheckoutPageState() {
         return <CheckoutRoleBlockedView t={t} />;
     }
 
-    const promoDiscount = appliedPromo && appliedPromoDiscountPct !== null ? appliedPromoDiscountPct : 0;
-    const discount = Math.max(promoDiscount, campaignOffer.discount);
-    const subtotalAfterDiscount = subtotal - discount;
-    const deliveryFee = campaignOffer.freeShipping ? 0 : calcDeliveryFee(deliveryMethod, subtotalAfterDiscount);
-    // Catalog prices already include VAT — taxAmount is informational, not added to the total.
-    const taxAmount = extractVat(subtotalAfterDiscount);
-    const grandTotal = subtotalAfterDiscount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
     const bonusToEarn = calcOrderBonus(
@@ -432,20 +405,31 @@ function useCheckoutPageState() {
         }))
     );
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
-    // Потолок списания в баллах (1 балл = 1 цент); в € — для строк итога.
-    const maxBonusSpendPoints = bonusApplicable
-        ? Math.min(
-              userBonusBalance,
-              eurosToPoints((grandTotal * bonusProgram.maxSpendPercent) / 100)
-          )
-        : 0;
-    const maxBonusDiscount = pointsToEuros(maxBonusSpendPoints);
-    const bonusDiscount = bonusApplied ? maxBonusDiscount : 0;
-    const finalGrandTotal = grandTotal - bonusDiscount;
-    const adjustedBonusToEarn =
-        grandTotal > 0 && bonusApplied
-            ? Math.round((bonusToEarn * finalGrandTotal) / grandTotal)
-            : bonusToEarn;
+    const {
+        discount,
+        subtotalAfterDiscount,
+        deliveryFee,
+        taxAmount,
+        grandTotal,
+        maxBonusSpendPoints,
+        maxBonusDiscount,
+        bonusSpentPoints,
+        bonusDiscount,
+        finalGrandTotal,
+        adjustedBonusToEarn,
+    } = calculateCheckoutTotals({
+        subtotal,
+        appliedPromo,
+        appliedPromoDiscountPct,
+        campaignDiscount: campaignOffer.discount,
+        freeShipping: campaignOffer.freeShipping,
+        deliveryMethod,
+        bonusApplicable,
+        bonusApplied,
+        bonusBalance: userBonusBalance,
+        maxBonusSpendPercent: bonusProgram.maxSpendPercent,
+        bonusToEarn,
+    });
 
     return {
         t,

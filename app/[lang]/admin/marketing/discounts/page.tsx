@@ -11,47 +11,13 @@ import { PromoMultiSelect, usePromoCatalogOptions } from '@/components/admin/pro
 import { PromoProductPicker } from '@/components/admin/promo/PromoProductPicker'
 import { PromoProductsPreview } from '@/components/admin/promo/PromoProductsPreview'
 import { useAdminLocale } from '@/lib/use-admin-locale'
-
-type PromoCodeItem = {
-  id: string
-  code: string
-  discount: number
-  discountType: 'percentage' | 'fixed'
-  discountValue: number | null
-  maxDiscount: number | null
-  minOrder: number
-  minEligibleAmount: number
-  maxUses: number | null
-  usedCount: number
-  expiresAt: string | null
-  startsAt: string | null
-  perUserLimit: number | null
-  appliesTo: 'all' | 'products' | 'brands' | 'categories' | 'rules'
-  productIds: string[]
-  brands: string[]
-  categories: string[]
-  subcategories: string[]
-  excludedProductIds: string[]
-  excludeSaleItems: boolean
-  firstOrderOnly: boolean
-  active: boolean
-  description: string
-}
-
-const emptyForm = (): Omit<PromoCodeItem, 'id'> => ({
-  code: '',
-  discount: 10,
-  discountType: 'percentage', discountValue: 10, maxDiscount: null,
-  minOrder: 0,
-  minEligibleAmount: 0,
-  maxUses: null,
-  usedCount: 0,
-  expiresAt: null,
-  startsAt: null, perUserLimit: null, appliesTo: 'all', productIds: [], brands: [], categories: [], subcategories: [],
-  excludedProductIds: [], excludeSaleItems: false, firstOrderOnly: false,
-  active: true,
-  description: ''
-})
+import {
+  emptyPromoForm,
+  isPromoScopeEmpty,
+  normalizePromoCodeItem,
+  promoFormFromItem,
+  type PromoCodeItem,
+} from './promo-code-model'
 
 export default function AdminDiscountsPage(): React.ReactElement {
   const { locale, l } = useAdminLocale()
@@ -62,7 +28,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
   const [formClosing, setFormClosing] = useState(false)
   const [formCollapsed, setFormCollapsed] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<Omit<PromoCodeItem, 'id'>>(emptyForm())
+  const [form, setForm] = useState<Omit<PromoCodeItem, 'id'>>(emptyPromoForm())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const catalogOptions = usePromoCatalogOptions()
@@ -77,20 +43,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     try {
       const res = await fetch('/api/admin/promo-codes')
       const data = await res.json()
-      setItems(Array.isArray(data) ? data.map((item: Partial<PromoCodeItem>) => ({
-        ...item,
-        discountType: item.discountType ?? 'percentage',
-        discountValue: item.discountValue ?? item.discount ?? 0,
-        minEligibleAmount: item.minEligibleAmount ?? 0,
-        appliesTo: item.appliesTo ?? 'all',
-        productIds: item.productIds ?? [],
-        brands: item.brands ?? [],
-        categories: item.categories ?? [],
-        subcategories: item.subcategories ?? [],
-        excludedProductIds: item.excludedProductIds ?? [],
-        excludeSaleItems: item.excludeSaleItems ?? false,
-        firstOrderOnly: item.firstOrderOnly ?? false,
-      } as PromoCodeItem)) : [])
+      setItems(Array.isArray(data) ? data.map(normalizePromoCodeItem) : [])
     } catch {
       setError(l('Ошибка загрузки данных', 'Failed to load data', 'Neizdevās ielādēt datus'))
     } finally {
@@ -112,7 +65,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
     setFormClosing(false)
     setEditId(null)
-    setForm(emptyForm())
+    setForm(emptyPromoForm())
     setFormCollapsed(false)
     setShowForm(true)
   }
@@ -121,23 +74,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
     if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
     setFormClosing(false)
     setEditId(item.id)
-    setForm({
-      code: item.code,
-      discount: item.discount,
-      discountType: item.discountType ?? 'percentage', discountValue: item.discountValue ?? item.discount,
-      maxDiscount: item.maxDiscount ?? null,
-      minOrder: item.minOrder,
-      minEligibleAmount: item.minEligibleAmount ?? 0,
-      maxUses: item.maxUses,
-      usedCount: item.usedCount,
-      expiresAt: item.expiresAt,
-      startsAt: item.startsAt ?? null, perUserLimit: item.perUserLimit ?? null, appliesTo: item.appliesTo ?? 'all',
-      productIds: item.productIds ?? [], brands: item.brands ?? [], categories: item.categories ?? [], subcategories: item.subcategories ?? [],
-      excludedProductIds: item.excludedProductIds ?? [], excludeSaleItems: item.excludeSaleItems ?? false,
-      firstOrderOnly: item.firstOrderOnly ?? false,
-      active: item.active,
-      description: item.description
-    })
+    setForm(promoFormFromItem(item))
     setFormCollapsed(false)
     setShowForm(true)
   }
@@ -149,7 +86,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
       setFormClosing(false)
       setFormCollapsed(false)
       setEditId(null)
-      setForm(emptyForm())
+      setForm(emptyPromoForm())
       closeTimerRef.current = null
     }, 260)
   }
@@ -182,11 +119,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
 
   async function handleSave() {
     if (!form.code.trim()) return
-    const scopeIsEmpty = (form.appliesTo === 'products' && form.productIds.length === 0)
-      || (form.appliesTo === 'brands' && form.brands.length === 0)
-      || (form.appliesTo === 'categories' && form.categories.length === 0)
-      || (form.appliesTo === 'rules' && form.brands.length + form.categories.length + form.subcategories.length === 0)
-    if (scopeIsEmpty) {
+    if (isPromoScopeEmpty(form)) {
       setError(l('Выберите хотя бы один товар, бренд или категорию для выбранной области действия', 'Select at least one product, brand or category for the chosen scope', 'Izvēlētajam tvērumam atlasiet vismaz vienu produktu, zīmolu vai kategoriju'))
       return
     }

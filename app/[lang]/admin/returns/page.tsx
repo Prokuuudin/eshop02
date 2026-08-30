@@ -13,10 +13,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { logAdminAction } from '@/lib/admin-log-store';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { reportAdminError } from '@/lib/admin-ui-errors';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
 
@@ -44,7 +42,6 @@ export default function AdminReturnsPage(): React.ReactElement {
     const pageState = useAdminReturnsPage();
     const {
             returns,
-            setReturnStatus,
             locale,
             language,
             l,
@@ -66,6 +63,7 @@ export default function AdminReturnsPage(): React.ReactElement {
             totalRefund,
             filtered,
             sendNotification,
+            handleReturnStatusChange,
           } = pageState;
     const statusLabels: Record<ReturnStatus, string> = {
         pending: l('Новый', 'New', 'Jauns'), approved: l('Одобрен', 'Approved', 'Apstiprināts'),
@@ -441,29 +439,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                                                             ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                                                             : ''
                                                     }
-                                                    onClick={async () => {
-                                                        const result = await setReturnStatus(
-                                                            ret.id,
-                                                            s,
-                                                            resolutionDraft[ret.id]
-                                                        );
-                                                        if (!result.ok) {
-                                                            reportAdminError(new Error(result.error ?? 'return_update_failed'), l('Возвраты', 'Returns', 'Atgriešana'));
-                                                            return;
-                                                        }
-                                                        logAdminAction(
-                                                            'return.status_changed',
-                                                            {
-                                                                type: 'return',
-                                                                id: ret.id,
-                                                                title: `${ret.firstName} ${ret.lastName}`,
-                                                            },
-                                                            {
-                                                                before: { status: ret.status },
-                                                                after: { status: s },
-                                                            }
-                                                        );
-                                                    }}
+                                                    onClick={() => void handleReturnStatusChange(ret, s)}
                                                 >
                                                     {statusLabels[s]}
                                                 </Button>

@@ -11,6 +11,7 @@ import {
 import type { ServerOrder } from '@/lib/orders-data-store';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { adminFetchJson, reportAdminError } from '@/lib/admin-ui-errors';
+import { logAdminAction } from '@/lib/admin-log-store';
 
 const STATUS_LIST: ReturnStatus[] = ['pending', 'approved', 'rejected', 'refunded', 'completed'];
 
@@ -132,6 +133,32 @@ function useAdminReturnsPageState() {
         }
     };
 
+    const handleReturnStatusChange = async (
+        ret: (typeof returns)[number],
+        status: ReturnStatus
+    ): Promise<void> => {
+        const result = await setReturnStatus(ret.id, status, resolutionDraft[ret.id]);
+        if (!result.ok) {
+            reportAdminError(
+                new Error(result.error ?? 'return_update_failed'),
+                l('Возвраты', 'Returns', 'Atgriešana')
+            );
+            return;
+        }
+        logAdminAction(
+            'return.status_changed',
+            {
+                type: 'return',
+                id: ret.id,
+                title: `${ret.firstName} ${ret.lastName}`,
+            },
+            {
+                before: { status: ret.status },
+                after: { status },
+            }
+        );
+    };
+
     const lookupOrder = async () => {
         const id = formOrderId.trim();
         if (!id) return;
@@ -220,7 +247,6 @@ function useAdminReturnsPageState() {
     return {
         returns,
         addReturn,
-        setReturnStatus,
         setReturns,
         language,
         locale,
@@ -267,6 +293,7 @@ function useAdminReturnsPageState() {
         totalRefund,
         filtered,
         sendNotification,
+        handleReturnStatusChange,
         lookupOrder,
         updateItemQty,
         submitReturn,

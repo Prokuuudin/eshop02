@@ -2,7 +2,6 @@
 
 import React from 'react';
 import type {
-    CategoriesConfigPayload,
     CategoryConfigItem,
     CategoryConfigSubcategory,
     LocalizedLabel,
@@ -18,6 +17,7 @@ import {
     type NewCategoryDraft,
     type NewSubDraft,
 } from './category-model';
+import { loadCategoriesConfig, saveCategoriesConfig } from './categories-api';
 
 function useAdminCategoriesPageState() {
     const confirmAction = useAdminConfirm();
@@ -63,12 +63,10 @@ function useAdminCategoriesPageState() {
         const loadCategories = async () => {
             setLoading(true);
             try {
-                const response = await fetch('/api/admin/categories', { cache: 'no-store' });
-                if (!response.ok) throw new Error('failed_to_load_categories');
-                const payload = (await response.json()) as Partial<CategoriesConfigPayload>;
-                setCategories(payload.categories ?? []);
-                setSavedCategories(payload.categories ?? []);
-                setDeletedCategories(payload.deletedCategories ?? []);
+                const payload = await loadCategoriesConfig();
+                setCategories(payload.categories);
+                setSavedCategories(payload.categories);
+                setDeletedCategories(payload.deletedCategories);
                 setError('');
             } catch {
                 setError(
@@ -97,21 +95,10 @@ function useAdminCategoriesPageState() {
         setMessage('');
 
         try {
-            const response = await fetch('/api/admin/categories', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    categories: nextCategories,
-                    deletedCategories: nextDeletedCategories,
-                }),
-            });
-            if (!response.ok) throw new Error('failed_to_save_categories');
-
-            const payload = (await response.json()) as Partial<CategoriesConfigPayload>;
-            const resolvedCategories = payload.categories ?? nextCategories;
-            setCategories(resolvedCategories);
-            setSavedCategories(resolvedCategories);
-            setDeletedCategories(payload.deletedCategories ?? nextDeletedCategories);
+            const payload = await saveCategoriesConfig(nextCategories, nextDeletedCategories);
+            setCategories(payload.categories);
+            setSavedCategories(payload.categories);
+            setDeletedCategories(payload.deletedCategories);
             setMessage(successMessage);
         } catch {
             setError(

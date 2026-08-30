@@ -9,55 +9,15 @@ import type {
 } from '@/lib/categories-config';
 import { useTranslation } from '@/lib/use-translation';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
-
-type NewCategoryDraft = {
-    id: string;
-    image: string;
-    ru: string;
-    en: string;
-    lv: string;
-    firstSubSlug: string;
-    firstSubSearch: string;
-    firstSubRu: string;
-    firstSubEn: string;
-    firstSubLv: string;
-};
-
-type NewSubDraft = {
-    slug: string;
-    search: string;
-    ru: string;
-    en: string;
-    lv: string;
-};
-
-const EMPTY_NEW_CATEGORY: NewCategoryDraft = {
-    id: '',
-    image: '/categories/new.jpg',
-    ru: '',
-    en: '',
-    lv: '',
-    firstSubSlug: '',
-    firstSubSearch: '',
-    firstSubRu: '',
-    firstSubEn: '',
-    firstSubLv: '',
-};
-
-const sanitizeSlug = (value: string): string =>
-    value
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, '-')
-        .replace(/-{2,}/g, '-')
-        .replace(/^-|-$/g, '');
-
-const normalizeLabels = (ru: string, en: string, lv: string, fallback: string): LocalizedLabel => {
-    const normalizedRu = ru.trim() || fallback;
-    const normalizedEn = en.trim() || normalizedRu;
-    const normalizedLv = lv.trim() || normalizedRu;
-    return { ru: normalizedRu, en: normalizedEn, lv: normalizedLv };
-};
+import {
+    EMPTY_NEW_CATEGORY,
+    normalizeCategoryLabels as normalizeLabels,
+    sanitizeCategorySlug as sanitizeSlug,
+    updateCategoryLabels as applyCategoryLabels,
+    updateSubcategoryLabels as applySubcategoryLabels,
+    type NewCategoryDraft,
+    type NewSubDraft,
+} from './category-model';
 
 function useAdminCategoriesPageState() {
     const confirmAction = useAdminConfirm();
@@ -168,19 +128,7 @@ function useAdminCategoriesPageState() {
     };
 
     const updateCategoryLabels = (categoryId: string, nextLabels: Partial<LocalizedLabel>) => {
-        setCategories((prev) =>
-            prev.map((category) =>
-                category.id === categoryId
-                    ? {
-                          ...category,
-                          labels: {
-                              ...category.labels,
-                              ...nextLabels,
-                          },
-                      }
-                    : category
-            )
-        );
+        setCategories((prev) => applyCategoryLabels(prev, categoryId, nextLabels));
     };
 
     const updateSubcategoryLabels = (
@@ -188,26 +136,7 @@ function useAdminCategoriesPageState() {
         slug: string,
         nextLabels: Partial<LocalizedLabel>
     ) => {
-        setCategories((prev) =>
-            prev.map((category) => {
-                if (category.id !== categoryId) return category;
-
-                return {
-                    ...category,
-                    subcategories: category.subcategories.map((subcategory) =>
-                        subcategory.slug === slug
-                            ? {
-                                  ...subcategory,
-                                  labels: {
-                                      ...subcategory.labels,
-                                      ...nextLabels,
-                                  },
-                              }
-                            : subcategory
-                    ),
-                };
-            })
-        );
+        setCategories((prev) => applySubcategoryLabels(prev, categoryId, slug, nextLabels));
     };
 
     const handleCreateCategory = async () => {

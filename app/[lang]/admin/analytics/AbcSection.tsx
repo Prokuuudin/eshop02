@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 
 type AbcPeriod = '30d' | '90d' | '365d' | 'all'
 type AbcResponse = { rows: AbcRow[]; total: number; page: number; pageSize: number; summary: Record<AbcGrade, { count: number; revenue: number }>; period?: AbcPeriod }
-const PAGE_SIZE = 25
+const DEFAULT_PAGE_SIZE = 25
 const EMPTY_SUMMARY: AbcResponse['summary'] = { A: { count: 0, revenue: 0 }, B: { count: 0, revenue: 0 }, C: { count: 0, revenue: 0 } }
 
 export default function AbcSection(): ReactElement {
@@ -20,20 +20,46 @@ export default function AbcSection(): ReactElement {
   const [reloadKey, setReloadKey] = useState(0)
   const [page, setPage] = useState(1)
   const [period, setPeriod] = useState<AbcPeriod>('all')
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [urlReady, setUrlReady] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlPage = Number(params.get('abcPage'))
+    const urlSize = Number(params.get('abcPageSize'))
+    const urlGrade = params.get('abcGrade')
+    const urlPeriod = params.get('abcPeriod')
+    queueMicrotask(() => {
+      if (urlPage > 0) setPage(urlPage)
+      if ([25, 50, 100].includes(urlSize)) setPageSize(urlSize)
+      if (urlGrade === 'A' || urlGrade === 'B' || urlGrade === 'C') setFilter(urlGrade)
+      if (urlPeriod === '30d' || urlPeriod === '90d' || urlPeriod === '365d' || urlPeriod === 'all') setPeriod(urlPeriod)
+      setQuery(params.get('abcSearch') ?? '')
+      setUrlReady(true)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!urlReady) return
+    const url = new URL(window.location.href)
+    ;[['abcPage', String(page)], ['abcPageSize', String(pageSize)], ['abcGrade', filter], ['abcPeriod', period], ['abcSearch', query.trim()]].forEach(([key, value]) => value && value !== 'all' ? url.searchParams.set(key, value) : url.searchParams.delete(key))
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [filter, page, pageSize, period, query, urlReady])
 
   useEffect(() => {
     const controller = new AbortController()
     const timeout = setTimeout(() => {
-    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE), period })
+    if (!urlReady) return () => controller.abort()
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), period })
     if (filter !== 'all') params.set('grade', filter)
     if (query.trim()) params.set('search', query.trim())
     fetch(`/api/admin/analytics/abc?${params}`, { signal: controller.signal, cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
-      .then((json: AbcResponse) => { setLoaded(json); setError(false) })
-      .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ rows: [], total: 0, page, pageSize: PAGE_SIZE, summary: EMPTY_SUMMARY }); setError(true) } })
+      .then((json: AbcResponse) => { const lastPage = Math.max(1, Math.ceil(json.total / pageSize)); if (page > lastPage) { setPage(lastPage); return; } setLoaded(json); setError(false) })
+      .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ rows: [], total: 0, page, pageSize, summary: EMPTY_SUMMARY }); setError(true) } })
     }, query.trim() ? 250 : 0)
     return () => { clearTimeout(timeout); controller.abort() }
-  }, [filter, page, period, query, reloadKey])
+  }, [filter, page, pageSize, period, query, reloadKey, urlReady])
 
   const rows = loaded?.rows ?? []
   const summary = loaded?.summary ?? EMPTY_SUMMARY
@@ -102,12 +128,12 @@ export default function AbcSection(): ReactElement {
       </div>
 
       {/* Table */}
-      <div className="overflow-auto rounded-xl border border-border">
+      <div id="abc-results" className="scroll-mt-4 overflow-auto rounded-xl border border-border">
         <table className="min-w-full text-sm">
           <thead className="bg-muted sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">#</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Товар', 'Product', 'Produkts')}</th>
+              <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap sm:table-cell">#</th>
+              <th className="sticky left-0 z-20 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground">{l('Товар', 'Product', 'Produkts')}</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Бренд', 'Brand', 'Zīmols')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Кол-во', 'Qty', 'Daudzums')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Выручка', 'Revenue', 'Ieņēmumi')}</th>
@@ -118,9 +144,9 @@ export default function AbcSection(): ReactElement {
           </thead>
           <tbody className="divide-y divide-border bg-card">
             {rows.map((r, index) => (
-              <tr key={r.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${GRADE_STYLES[r.grade].row}`}>
-                <td className="px-4 py-2.5 text-muted-foreground tabular-nums">{(page - 1) * PAGE_SIZE + index + 1}</td>
-                <td className="px-4 py-2.5">
+              <tr key={r.id} className={`group hover:bg-gray-50 dark:hover:bg-gray-800/50 ${GRADE_STYLES[r.grade].row}`}>
+                <td className="hidden px-4 py-2.5 text-muted-foreground tabular-nums sm:table-cell">{(page - 1) * pageSize + index + 1}</td>
+                <td className="sticky left-0 bg-card px-4 py-2.5 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50">
                   <Link
                     href={`/admin/products/${r.id}`}
                     className="text-foreground hover:text-primary dark:hover:text-primary/80 hover:underline"
@@ -158,7 +184,7 @@ export default function AbcSection(): ReactElement {
           </div>
         )}
       </div>
-      <AnalyticsPagination page={page} pageSize={PAGE_SIZE} total={loaded?.total ?? 0} loading={loaded === null} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no') }} onPageChange={(nextPage) => { setPage(nextPage); setLoaded(null) }} />
+      <AnalyticsPagination page={page} pageSize={pageSize} total={loaded?.total ?? 0} loading={loaded === null} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no'), rows: l('Строк:', 'Rows:', 'Rindas:') }} onPageChange={(nextPage) => { setPage(nextPage); setLoaded(null) }} onPageSizeChange={(size) => { setPageSize(size); setPage(1); setLoaded(null) }} scrollTargetId="abc-results" />
     </div>
   )
 }

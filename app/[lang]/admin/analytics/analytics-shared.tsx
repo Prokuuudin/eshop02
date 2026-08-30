@@ -1,3 +1,5 @@
+import { useEffect, useState, type ReactElement } from 'react';
+
 export type AbcGrade = 'A' | 'B' | 'C';
 
 export type AbcRow = {
@@ -88,21 +90,32 @@ export function LoadError({ text, retryLabel, onRetry }: { text: string; retryLa
     );
 }
 
-export function AnalyticsPagination({ page, pageSize, total, loading, labels, onPageChange }: {
+export function AnalyticsPagination({ page, pageSize, total, loading, labels, onPageChange, onPageSizeChange, scrollTargetId }: {
     page: number; pageSize: number; total: number; loading: boolean;
-    labels: { previous: string; next: string; page: string; of: string };
+    labels: { previous: string; next: string; page: string; of: string; rows: string };
     onPageChange: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    scrollTargetId?: string;
 }): ReactElement | null {
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const [pageInput, setPageInput] = useState(String(page));
+    useEffect(() => { queueMicrotask(() => setPageInput(String(page))); }, [page]);
     if (total <= pageSize) return null;
+    const goToPage = (nextPage: number): void => {
+        onPageChange(Math.min(totalPages, Math.max(1, nextPage)));
+        if (scrollTargetId) document.getElementById(scrollTargetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const first = (page - 1) * pageSize + 1;
+    const last = Math.min(page * pageSize, total);
     return (
         <nav aria-label={labels.page} className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">{labels.page} {page} {labels.of} {totalPages}</span>
-            <div className="flex gap-2">
-                <button type="button" disabled={loading || page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">← {labels.previous}</button>
-                <button type="button" disabled={loading || page >= totalPages} onClick={() => onPageChange(page + 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">{labels.next} →</button>
+            <span className="text-muted-foreground">{first}–{last} {labels.of} {total}</span>
+            <div className="flex flex-wrap items-center gap-2">
+                {onPageSizeChange && <label className="flex items-center gap-1 text-muted-foreground">{labels.rows}<select value={pageSize} disabled={loading} onChange={(event) => onPageSizeChange(Number(event.target.value))} className="rounded-md border border-border bg-background px-2 py-1.5 text-foreground"><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></label>}
+                <button type="button" disabled={loading || page <= 1} onClick={() => goToPage(page - 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">← {labels.previous}</button>
+                <label className="flex items-center gap-1 text-muted-foreground">{labels.page}<input value={pageInput} inputMode="numeric" aria-label={labels.page} onChange={(event) => setPageInput(event.target.value.replace(/\D/g, ''))} onBlur={() => goToPage(Number(pageInput) || page)} onKeyDown={(event) => { if (event.key === 'Enter') goToPage(Number(pageInput) || page); }} className="w-14 rounded-md border border-border bg-background px-2 py-1.5 text-center text-foreground" /> {labels.of} {totalPages}</label>
+                <button type="button" disabled={loading || page >= totalPages} onClick={() => goToPage(page + 1)} className="rounded-lg border border-border px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50">{labels.next} →</button>
             </div>
         </nav>
     );
 }
-import type { ReactElement } from 'react';

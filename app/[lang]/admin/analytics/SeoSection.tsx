@@ -20,16 +20,42 @@ export default function SeoSection(): ReactElement {
     const [counts, setCounts] = useState<SeoCounts>({ all: 0, metaTitle: 0, metaDesc: 0, image: 0, imageAlt: 0, translations: 0, duplicate: 0 });
     const [issueFilter, setIssueFilter] = useState<SeoIssue>('all');
     const [query, setQuery] = useState('');
+    const [pageSize, setPageSize] = useState(25);
+    const [urlReady, setUrlReady] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlPage = Number(params.get('seoPage'));
+        const urlSize = Number(params.get('seoPageSize'));
+        const urlIssue = params.get('seoIssue');
+        queueMicrotask(() => {
+            if (urlPage > 0) setPage(urlPage);
+            if ([25, 50, 100].includes(urlSize)) setPageSize(urlSize);
+            if (['all', 'metaTitle', 'metaDesc', 'image', 'imageAlt', 'translations', 'duplicate'].includes(urlIssue ?? '')) setIssueFilter(urlIssue as SeoIssue);
+            setQuery(params.get('seoSearch') ?? '');
+            setUrlReady(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!urlReady) return;
+        const url = new URL(window.location.href);
+        [['seoPage', String(page)], ['seoPageSize', String(pageSize)], ['seoIssue', issueFilter], ['seoSearch', query.trim()]].forEach(([key, value]) => value && value !== 'all' ? url.searchParams.set(key, value) : url.searchParams.delete(key));
+        window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    }, [issueFilter, page, pageSize, query, urlReady]);
 
     useEffect(() => {
         const controller = new AbortController();
         let active = true;
+        if (!urlReady) return () => controller.abort();
         const timeout = setTimeout(() => {
-        const params = new URLSearchParams({ page: String(page), pageSize: '25', issue: issueFilter });
+        const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), issue: issueFilter });
         if (query.trim()) params.set('search', query.trim());
         fetch(`/api/admin/analytics/seo?${params}`, { signal: controller.signal, cache: 'no-store' })
             .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`status_${r.status}`))))
             .then((data: { products: Omit<SeoProduct, 'issueCount'>[]; total: number; catalogTotal: number; counts: typeof counts }) => {
+                const lastPage = Math.max(1, Math.ceil(data.total / pageSize));
+                if (page > lastPage) { setPage(lastPage); return; }
                 const mapped: SeoProduct[] = data.products.map((p) => ({
                     ...p,
                     title: p.title || '—',
@@ -49,7 +75,7 @@ export default function SeoSection(): ReactElement {
             .finally(() => { if (active) setLoading(false); });
         }, query.trim() ? 250 : 0);
         return () => { active = false; clearTimeout(timeout); controller.abort(); };
-    }, [issueFilter, page, query, reloadKey]);
+    }, [issueFilter, page, pageSize, query, reloadKey, urlReady]);
 
     if (loading)
         return <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка каталога...', 'Loading catalog...', 'Kataloga ielāde...')}</div>;
@@ -123,11 +149,11 @@ export default function SeoSection(): ReactElement {
             )}
 
             {products.length > 0 && (
-                <div className="overflow-auto rounded-xl border border-border">
+                <div id="seo-results" className="scroll-mt-4 overflow-auto rounded-xl border border-border">
                     <table className="min-w-full text-sm bg-card">
                         <thead className="bg-muted sticky top-0">
                             <tr>
-                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                                <th className="sticky left-0 z-20 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground">
                                     {l('Товар', 'Product', 'Produkts')}
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
@@ -157,7 +183,7 @@ export default function SeoSection(): ReactElement {
                                     key={p.id}
                                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                                 >
-                                    <td className="px-4 py-2.5 font-medium text-foreground max-w-xs">
+                                    <td className="sticky left-0 max-w-xs bg-card px-4 py-2.5 font-medium text-foreground">
                                         <span className="truncate block">{p.title}</span>
                                     </td>
                                     <td className="px-4 py-2.5 text-muted-foreground">
@@ -224,7 +250,7 @@ export default function SeoSection(): ReactElement {
 
             {total === 0 && !allOk && <Empty text={l('По выбранному фильтру проблем нет.', 'No issues match the selected filter.', 'Atlasītajam filtram problēmu nav.')} />}
 
-            <AnalyticsPagination page={page} pageSize={25} total={total} loading={loading} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no') }} onPageChange={(nextPage) => { setPage(nextPage); setLoading(true); }} />
+            <AnalyticsPagination page={page} pageSize={pageSize} total={total} loading={loading} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no'), rows: l('Строк:', 'Rows:', 'Rindas:') }} onPageChange={(nextPage) => { setPage(nextPage); setLoading(true); }} onPageSizeChange={(size) => { setPageSize(size); setPage(1); setLoading(true); }} scrollTargetId="seo-results" />
 
             {catalogTotal > 0 && (
                 <p className="text-xs text-muted-foreground">

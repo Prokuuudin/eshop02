@@ -4,7 +4,7 @@ import AbcSection from './AbcSection';
 import CohortSection from './CohortSection';
 import SeoSection from './SeoSection';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -23,7 +23,27 @@ export default function AdminAnalyticsPage(): React.ReactElement {
         { value: 'seo', label: l('SEO-отчёт', 'SEO report', 'SEO pārskats'), desc: l('Товары с пробелами в метаданных', 'Products with missing metadata', 'Produkti ar trūkstošiem metadatiem') },
     ];
     const [tab, setTab] = useState<Tab>('abc');
+    const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(() => new Set(['abc']));
+    const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const active = tabs.find((item) => item.value === tab)!;
+
+    useEffect(() => {
+        const value = new URLSearchParams(window.location.search).get('tab');
+        if (value === 'abc' || value === 'cohort' || value === 'seo') {
+            queueMicrotask(() => {
+                setTab(value);
+                setVisitedTabs((current) => new Set(current).add(value));
+            });
+        }
+    }, []);
+
+    const selectTab = (value: Tab): void => {
+        setTab(value);
+        setVisitedTabs((current) => new Set(current).add(value));
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', value);
+        window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    };
 
     return (
         <AdminGate access="full">
@@ -43,12 +63,25 @@ export default function AdminAnalyticsPage(): React.ReactElement {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex flex-wrap gap-2 border-b border-border pb-0">
-                    {tabs.map((t) => (
+                <div role="tablist" aria-label={l('Разделы аналитики', 'Analytics sections', 'Analītikas sadaļas')} className="flex flex-wrap gap-2 border-b border-border pb-0">
+                    {tabs.map((t, index) => (
                         <button
+                            ref={(element) => { tabRefs.current[index] = element; }}
                             key={t.value}
                             type="button"
-                            onClick={() => setTab(t.value)}
+                            role="tab"
+                            id={`analytics-tab-${t.value}`}
+                            aria-selected={tab === t.value}
+                            aria-controls={`analytics-panel-${t.value}`}
+                            tabIndex={tab === t.value ? 0 : -1}
+                            onClick={() => selectTab(t.value)}
+                            onKeyDown={(event) => {
+                                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                                event.preventDefault();
+                                const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+                                selectTab(tabs[nextIndex].value);
+                                tabRefs.current[nextIndex]?.focus();
+                            }}
                             className={[
                                 'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                                 tab === t.value
@@ -62,9 +95,9 @@ export default function AdminAnalyticsPage(): React.ReactElement {
                 </div>
 
                 {/* Content */}
-                {tab === 'abc' && <AbcSection />}
-                {tab === 'cohort' && <CohortSection />}
-                {tab === 'seo' && <SeoSection />}
+                {visitedTabs.has('abc') && <section role="tabpanel" id="analytics-panel-abc" aria-labelledby="analytics-tab-abc" hidden={tab !== 'abc'}><AbcSection /></section>}
+                {visitedTabs.has('cohort') && <section role="tabpanel" id="analytics-panel-cohort" aria-labelledby="analytics-tab-cohort" hidden={tab !== 'cohort'}><CohortSection /></section>}
+                {visitedTabs.has('seo') && <section role="tabpanel" id="analytics-panel-seo" aria-labelledby="analytics-tab-seo" hidden={tab !== 'seo'}><SeoSection /></section>}
             </div>
         </AdminGate>
     );

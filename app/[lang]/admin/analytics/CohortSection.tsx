@@ -16,15 +16,35 @@ export default function CohortSection(): ReactElement {
   const [error, setError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [months, setMonths] = useState(12)
+  const [urlReady, setUrlReady] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlMonths = Number(params.get('cohortMonths'))
+    queueMicrotask(() => {
+      if ([6, 12, 24, 36].includes(urlMonths)) setMonths(urlMonths)
+      setShowPct(params.get('cohortMode') !== 'count')
+      setUrlReady(true)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!urlReady) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('cohortMonths', String(months))
+    if (showPct) url.searchParams.delete('cohortMode'); else url.searchParams.set('cohortMode', 'count')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [months, showPct, urlReady])
 
   useEffect(() => {
     const controller = new AbortController()
+    if (!urlReady) return () => controller.abort()
     fetch(`/api/admin/analytics/cohorts?months=${months}`, { signal: controller.signal, cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
       .then((json: CohortsResponse) => { setLoaded(json); setError(false) })
       .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ cohortSizes: [], cells: [] }); setError(true) } })
     return () => controller.abort()
-  }, [months, reloadKey])
+  }, [months, reloadKey, urlReady])
 
   const { cohortMonths, matrix, cohortSizes, maxOffset } = useMemo(() => {
     if (!loaded || loaded.cohortSizes.length === 0) {

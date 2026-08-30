@@ -24,6 +24,7 @@ export {
     canPlaceOrders,
 } from './auth-access';
 export { adjustUserBonusPoints, syncBonusBalanceFromServer } from './auth-bonus';
+export { seedTestAccounts } from './auth-demo-accounts';
 
 // Not the real shared welcome password: that constant is server-only (see
 // lib/auth-constants.ts) precisely so it never ends up in this client bundle.
@@ -142,9 +143,6 @@ export const updateUserTeamRole = (
     notifyAuthChanged();
     return { success: true, user: updatedUser };
 };
-
-const TEST_ADMIN_ID = 'seed_admin_001';
-const TEST_USER_ID = 'seed_user_001';
 
 export type RegisterCardErrorCode =
     | 'card_not_found'
@@ -427,7 +425,6 @@ export const loginUserAuto = async (
     applyLoggedInUser(payload.user);
     return { success: true };
 };
-
 /** Second step of an MFA-gated login — completes what loginUserAuto started. */
 export const verifyMfaAndLogin = async (
     challengeToken: string,
@@ -458,48 +455,4 @@ export const verifyMfaAndLogin = async (
 
     applyLoggedInUser(payload.user);
     return { success: true };
-};
-
-export const seedTestAccounts = (): void => {
-    if (typeof window === 'undefined') return;
-    // Never inject demo admin/user accounts (admin@test.com / admin123) into production browsers.
-    if (process.env.NODE_ENV === 'production') return;
-
-    const users = readUsers();
-
-    const hasAdmin = users.some((u) => u.id === TEST_ADMIN_ID || u.platformRole === 'admin');
-    const hasTestUser = users.some((u) => u.id === TEST_USER_ID);
-
-    if (hasAdmin && hasTestUser) return;
-
-    const next = [...users];
-
-    if (!hasAdmin) {
-        next.push(
-            normalizeUser({
-                id: TEST_ADMIN_ID,
-                email: 'admin@test.com',
-                password: 'admin123',
-                name: 'Test Admin',
-                platformRole: 'admin',
-                auditLoggingEnabled: true,
-                bonusPoints: 0,
-            })
-        );
-    }
-
-    if (!hasTestUser) {
-        next.push(
-            normalizeUser({
-                id: TEST_USER_ID,
-                email: 'user@test.com',
-                password: 'user123',
-                name: 'Test User',
-                platformRole: 'customer',
-                bonusPoints: 350,
-            })
-        );
-    }
-
-    writeUsers(next);
 };

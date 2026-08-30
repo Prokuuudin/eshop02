@@ -16,6 +16,13 @@ import {
     sortEligibleByStatus,
     sortHoldersByStatus,
 } from './invitation-models';
+import {
+    assignInvitationCard,
+    fetchCardCampaign,
+    fetchInvitationHolders,
+    sendInvitationBatch,
+    updateCardCampaign,
+} from './invitations-api';
 
 function useInvitationsPageState() {
     const { l, locale } = useAdminLocale();
@@ -75,15 +82,14 @@ function useInvitationsPageState() {
         holdersAbortRef.current = controller;
         setLoading(true);
         try {
-            const params = new URLSearchParams({ take: String(PAGE_SIZE), skip: String(holderPage * PAGE_SIZE) });
-            if (debouncedHolderSearch) params.set('search', debouncedHolderSearch);
-            if (holderServerSortField) {
-                params.set('sort', holderServerSortField);
-                params.set('dir', holderServerSortDir ?? 'asc');
-            }
-            const res = await fetch(`/api/admin/invitations?${params}`, { signal: controller.signal });
-            const json = await res.json();
-            if (res.ok) {
+            const { ok, data: json } = await fetchInvitationHolders({
+                take: PAGE_SIZE,
+                skip: holderPage * PAGE_SIZE,
+                search: debouncedHolderSearch,
+                sort: holderServerSortField ?? undefined,
+                dir: holderServerSortDir ?? undefined,
+            }, controller.signal);
+            if (ok) {
                 setHolders(json.holders ?? []);
                 setHoldersTotal(json.total ?? 0);
                 if (!debouncedHolderSearch) setAllHoldersCount(json.total ?? 0);
@@ -107,15 +113,14 @@ function useInvitationsPageState() {
         eligibleAbortRef.current = controller;
         setEligibleLoading(true);
         try {
-            const params = new URLSearchParams({ take: String(PAGE_SIZE), skip: String(eligiblePage * PAGE_SIZE) });
-            if (debouncedEligibleSearch) params.set('search', debouncedEligibleSearch);
-            if (eligibleServerSortField) {
-                params.set('sort', eligibleServerSortField);
-                params.set('dir', eligibleServerSortDir ?? 'asc');
-            }
-            const res = await fetch(`/api/admin/card-rules-campaign?${params}`, { signal: controller.signal });
-            if (res.ok) {
-                const json = await res.json();
+            const { ok, data: json } = await fetchCardCampaign({
+                take: PAGE_SIZE,
+                skip: eligiblePage * PAGE_SIZE,
+                search: debouncedEligibleSearch,
+                sort: eligibleServerSortField ?? undefined,
+                dir: eligibleServerSortDir ?? undefined,
+            }, controller.signal);
+            if (ok) {
                 setCampaign(json.state);
                 setTotalEligible(json.totalEligible ?? 0);
                 setEligibleFilteredTotal(json.total ?? 0);
@@ -142,13 +147,8 @@ function useInvitationsPageState() {
         setFormError('');
         setMessage('');
         // Письмо трёхъязычное (LV+RU+EN) — язык не передаём
-        const res = await fetch('/api/admin/invitations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userIds }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
+        const { ok, data: json } = await sendInvitationBatch(userIds);
+        if (!ok) {
             setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
             return;
         }
@@ -178,14 +178,9 @@ function useInvitationsPageState() {
         setBusyIds((prev) => new Set(prev).add(h.userId));
         setFormError('');
         try {
-            const res = await fetch('/api/admin/invitations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userIds: [h.userId] }),
-            });
-            const json = await res.json();
+            const { ok, data: json } = await sendInvitationBatch([h.userId]);
             const inviteUrl = (json.results ?? [])[0]?.inviteUrl as string | undefined;
-            if (!res.ok || !inviteUrl) {
+            if (!ok || !inviteUrl) {
                 setFormError(l('Не удалось создать ссылку-приглашение', 'Failed to create invite link', 'Neizdevās izveidot ielūguma saiti'));
                 return;
             }
@@ -241,16 +236,11 @@ function useInvitationsPageState() {
             for (let i = 0; i < ids.length; i += INVITE_BATCH) {
                 if (bulkStopRequested.current) break;
                 const chunk = ids.slice(i, i + INVITE_BATCH);
-                const res = await fetch('/api/admin/invitations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userIds: chunk }),
-                });
-                if (!res.ok) {
+                const { ok, data: json } = await sendInvitationBatch(chunk);
+                if (!ok) {
                     setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
                     break;
                 }
-                const json = await res.json();
                 const batchSent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
                 sent += batchSent;
                 failed += (json.results ?? []).length - batchSent;
@@ -283,13 +273,8 @@ function useInvitationsPageState() {
         setMessage('');
         setCardBusy(true);
         try {
-            const res = await fetch('/api/admin/invitations/card', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: cardEmail, cardNumber }),
-            });
-            const json = await res.json();
-            if (!res.ok) {
+            const { ok, data: json } = await assignInvitationCard(cardEmail, cardNumber);
+            if (!ok) {
                 const msg =
                     json.error === 'user_not_found'
                         ? l('Клиент с таким email не найден', 'No client with this email', 'Klients ar šādu e-pastu nav atrasts')
@@ -318,14 +303,9 @@ function useInvitationsPageState() {
             // Цикл батчей до finished или остановки админом
             for (;;) {
                 if (stopRequested.current) break;
-                const res = await fetch('/api/admin/card-rules-campaign', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}),
-                });
-                const json = await res.json();
+                const { ok, data: json } = await updateCardCampaign();
                 if (json.state) setCampaign(json.state);
-                if (!res.ok || json.state?.finished) break;
+                if (!ok || json.state?.finished) break;
             }
         } finally {
             setCampaignRunning(false);
@@ -333,12 +313,7 @@ function useInvitationsPageState() {
     };
 
     const resetCampaign = async () => {
-        const res = await fetch('/api/admin/card-rules-campaign', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reset: true }),
-        });
-        const json = await res.json();
+        const { data: json } = await updateCardCampaign(true);
         if (json.state) setCampaign(json.state);
     };
 

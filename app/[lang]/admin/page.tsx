@@ -13,46 +13,7 @@ import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { ArrowRight } from 'lucide-react';
 import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboard-cards';
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
-
-function RevenueBarChart({ data, locale }: { data: { label: string; value: number }[]; locale: string }) {
-    const max = Math.max(...data.map((d) => d.value), 1);
-    const h = 140;
-    const barW = Math.max(8, Math.min(36, Math.floor(560 / Math.max(data.length, 1)) - 4));
-    const gap = Math.max(2, Math.floor(560 / Math.max(data.length, 1)) - barW);
-    const chartW = Math.max(560, data.length * (barW + gap) + 40);
-
-    return (
-        <div className="overflow-x-auto">
-            <svg width={chartW} height={h + 48} className="block">
-                {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-                    const y = 8 + (h - 8) * (1 - frac);
-                    return (
-                        <g key={frac}>
-                            <line x1={32} x2={chartW - 8} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
-                            <text x={28} y={y + 4} textAnchor="end" fontSize={9} fill="#9ca3af">
-                                {frac === 0 ? '0' : `€${Math.round(max * frac).toLocaleString(locale)}`}
-                            </text>
-                        </g>
-                    );
-                })}
-                {data.map((d, i) => {
-                    const barH = Math.max(2, (d.value / max) * (h - 16));
-                    const x = 32 + i * (barW + gap);
-                    const y = h - barH + 8;
-                    return (
-                        <g key={i}>
-                            <title>€{d.value.toLocaleString(locale, { minimumFractionDigits: 2 })}</title>
-                            <rect x={x} y={y} width={barW} height={barH} rx={3} fill="#6366f1" opacity={0.85} />
-                            <text x={x + barW / 2} y={h + 24} textAnchor="middle" fontSize={9} fill="#6b7280" transform={data.length > 10 ? `rotate(-35,${x + barW / 2},${h + 24})` : undefined}>
-                                {d.label}
-                            </text>
-                        </g>
-                    );
-                })}
-            </svg>
-        </div>
-    );
-}
+import RevenueBarChart from './RevenueBarChart';
 
 export default function AdminPage(): React.ReactElement {
     const { t, language } = useTranslation();

@@ -70,9 +70,7 @@ export default function AdminImportPage(): React.ReactElement {
                 <ImportExportSection l={l} />
                 <ImportWorkflowSection state={pageState} l={l} modeLabels={modeLabels} actionLabels={actionLabels} />
                 <ImportHints l={l} />
-
             </main>
         </AdminGate>
     );
 }
-

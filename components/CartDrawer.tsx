@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart-store';
-import { useCartSelection, isLineSelected } from '@/lib/cart-selection-store';
-import { extractVat } from '@/lib/tax';
+import { useCartSelection } from '@/lib/cart-selection-store';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Tooltip,
@@ -26,10 +25,10 @@ import { BookmarkPlus, Expand } from 'lucide-react';
 import {
     calculatePrice,
     getMinimumOrderQuantity,
-    getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
-import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
+import { pointsToEuros } from '@/lib/bonus-program';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
+import { getCartDrawerSummary } from '@/lib/cart-drawer-summary';
 
 type CartDrawerProps = {
     isOpen: boolean;
@@ -54,31 +53,11 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
-    const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
-    const selectedItemIds = selectedItems.map((item) => item.lineKey);
-    const bonusToEarn = calcOrderBonus(
-        selectedItems.map((item) => ({
-            price: calculatePrice(item, item.quantity),
-            quantity: item.quantity,
-            bonusRate: item.bonusRate,
-        }))
-    );
+    const {
+        selectedItemIds, bonusToEarn, tax, netSubtotal,
+        finalTotal, wholesaleGuard, checkoutHref,
+    } = getCartDrawerSummary(items, deselectedLineKeys);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
-    const subtotal = selectedItems.reduce(
-        (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
-        0
-    );
-    // Catalog prices already include VAT — tax is informational, not added to the total.
-    const tax = extractVat(subtotal);
-    const netSubtotal = subtotal - tax;
-    // Доставка выбирается и считается на этапе оформления заказа, в дровере не суммируется.
-    const finalTotal = subtotal;
-    const wholesaleGuard = getWholesaleOrderGuard(subtotal);
-    const selectedIdsParam = selectedItemIds.join(',');
-    const checkoutHref =
-        selectedItemIds.length > 0
-            ? `/checkout?items=${encodeURIComponent(selectedIdsParam)}`
-            : '/checkout';
 
     React.useEffect(() => {
         if (!isOpen) return;

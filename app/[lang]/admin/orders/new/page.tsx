@@ -13,7 +13,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { type DeliveryMethod } from '@/lib/orders-store';
 import { formatEuro } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,6 +55,7 @@ function Field({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 import { useNewOrderPage } from './useNewOrderPage';
+import OrderSummary, { type DeliveryOption } from './OrderSummary';
 
 export default function NewOrderPage(): React.ReactElement {
     const pageState = useNewOrderPage();
@@ -101,7 +101,6 @@ export default function NewOrderPage(): React.ReactElement {
             setPaymentStatus,
             notes,
             setNotes,
-            submitting,
             errors,
             emailSuggestions,
             fillCustomer,
@@ -112,16 +111,10 @@ export default function NewOrderPage(): React.ReactElement {
             updateUnitPrice,
             applyPromo,
             removePromo,
-            subtotal,
-            discountFromPromo,
             discountFromManual,
-            discount,
-            deliveryCost,
-            total,
-            handleSubmit,
             selectCls,
           } = pageState;
-    const deliveryOptions: { value: DeliveryMethod; label: string; cost: number }[] = [
+    const deliveryOptions: DeliveryOption[] = [
         { value: 'pickup', label: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'), cost: 0 },
         { value: 'courier', label: l('Курьер', 'Courier', 'Kurjers'), cost: 5 },
         { value: 'post', label: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), cost: 4 },
@@ -586,119 +579,7 @@ export default function NewOrderPage(): React.ReactElement {
                         )}
                     </div>
 
-                    {/* ── Right: order summary (sticky) ── */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
-                            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                {l('Сводка заказа', 'Order summary', 'Pasūtījuma kopsavilkums')}
-                            </h2>
-
-                            {/* Customer */}
-                            {(firstName || email) && (
-                                <div className="rounded-lg bg-muted px-3 py-2.5 text-sm">
-                                    <p className="font-medium text-foreground">
-                                        {[firstName, lastName].filter(Boolean).join(' ') || '—'}
-                                    </p>
-                                    <p className="text-muted-foreground text-xs mt-0.5">{email}</p>
-                                </div>
-                            )}
-
-                            {/* Items */}
-                            {items.length > 0 && (
-                                <div className="space-y-1">
-                                    {items.map((item) => (
-                                        <div
-                                            key={item.product.id}
-                                            className="flex justify-between text-sm gap-2"
-                                        >
-                                            <span className="truncate text-foreground flex-1">
-                                                {item.product.title} ×{item.quantity}
-                                            </span>
-                                            <span className="shrink-0 text-foreground tabular-nums">
-                                                {formatEuro(item.unitPrice * item.quantity, locale)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {items.length > 0 && (
-                                <div className="border-t border-border pt-3 space-y-1.5 text-sm">
-                                    <div className="flex justify-between text-muted-foreground">
-                                        <span>{l('Товары', 'Products', 'Preces')}</span>
-                                        <span className="tabular-nums">
-                                            {formatEuro(subtotal, locale)}
-                                        </span>
-                                    </div>
-                                    {discount > 0 && (
-                                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                                            <span>
-                                                {l('Скидка', 'Discount', 'Atlaide')}
-                                                {promoResult &&
-                                                discountFromPromo >= discountFromManual
-                                                    ? ` (${promoResult.code})`
-                                                    : manualDiscountPct
-                                                    ? ` (${manualDiscountPct}%)`
-                                                    : ''}
-                                            </span>
-                                            <span className="tabular-nums">
-                                                −{formatEuro(discount, locale)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-muted-foreground">
-                                        <span>
-                                            {l('Доставка', 'Delivery', 'Piegāde')} (
-                                            {
-                                                deliveryOptions.find(
-                                                    (d) => d.value === deliveryMethod
-                                                )?.label
-                                            }
-                                            )
-                                        </span>
-                                        <span className="tabular-nums">
-                                            {deliveryCost === 0
-                                                ? l('бесплатно', 'free', 'bez maksas')
-                                                : formatEuro(deliveryCost, locale)}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between font-bold text-lg text-foreground pt-1 border-t border-border">
-                                        <span>{l('Итого', 'Total', 'Kopā')}</span>
-                                        <span className="tabular-nums">
-                                            {formatEuro(total, locale)}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Payment summary */}
-                            <div className="text-xs text-muted-foreground space-y-0.5">
-                                <p>{l('Оплата:', 'Payment:', 'Apmaksa:')} {paymentMethod}</p>
-                                <p>
-                                    {l('Статус:', 'Status:', 'Statuss:')}{' '}
-                                    {paymentStatus === 'paid' ? `✓ ${l('Оплачен', 'Paid', 'Apmaksāts')}` : `⚠ ${l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}`}
-                                </p>
-                            </div>
-
-                            <Button
-                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                disabled={submitting || items.length === 0}
-                                onClick={handleSubmit}
-                            >
-                                {submitting
-                                    ? l('Создание...', 'Creating...', 'Izveido...')
-                                    : `${l('Создать заказ', 'Create order', 'Izveidot pasūtījumu')}${
-                                          total > 0 ? ` · ${formatEuro(total, locale)}` : ''
-                                      }`}
-                            </Button>
-
-                            {items.length === 0 && (
-                                <p className="text-xs text-muted-foreground text-center">
-                                    {l('Добавьте товары чтобы создать заказ', 'Add products to create the order', 'Pievienojiet preces, lai izveidotu pasūtījumu')}
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                    <OrderSummary state={pageState} deliveryOptions={deliveryOptions} />
                 </div>
             </main>
         </AdminGate>

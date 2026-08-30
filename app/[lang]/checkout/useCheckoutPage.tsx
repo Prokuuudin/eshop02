@@ -34,6 +34,7 @@ import {
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
+import { createCheckoutOrder } from './checkout-order-api';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -328,54 +329,19 @@ function useCheckoutPageState() {
         // Persist server-side first: the server generates the unique order id. If this
         // fails, the order exists nowhere (no DB row, no confirmation email, no admin
         // notification) — checkout must stop here rather than fake a success screen.
-        let orderId: string;
-        try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    order: {
-                        ...orderData,
-                        createdAt: orderData.createdAt.toISOString(),
-                    },
-                    turnstileToken,
-                }),
-            });
-            if (!response.ok) {
-                const errorPayload = (await response.json().catch(() => null)) as {
-                    error?: string;
-                    items?: string[];
-                } | null;
-                const message =
-                    errorPayload?.error === 'insufficient_stock'
-                        ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
-                        : 'Не удалось оформить заказ. Попробуйте ещё раз.';
-                showToast(message, 'error');
-                resetTurnstile();
-                setIsSubmitting(false);
-                return;
-            }
-            const payload = (await response.json()) as { orderId?: string };
-            if (!payload.orderId) {
-                showToast(
-                    'Не удалось оформить заказ. Попробуйте ещё раз.',
-                    'error'
-                );
-                setIsSubmitting(false);
-                return;
-            }
-            orderId = String(payload.orderId);
-        } catch {
-            resetTurnstile();
-            showToast(
-                'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.',
-                'error'
-            );
+        const createResult = await createCheckoutOrder(orderData, turnstileToken);
+        if (!createResult.ok) {
+            const message = createResult.reason === 'insufficient_stock'
+                ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
+                : createResult.reason === 'network'
+                    ? 'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.'
+                    : 'Не удалось оформить заказ. Попробуйте ещё раз.';
+            showToast(message, 'error');
+            if (createResult.reason !== 'invalid_response') resetTurnstile();
             setIsSubmitting(false);
             return;
         }
+        const { orderId } = createResult;
 
         const order = { id: orderId, ...orderData };
         addOrder(order);

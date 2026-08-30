@@ -3,21 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
-
-type ReviewStatus = 'approved' | 'hidden' | 'pending';
-
-type ReviewRecord = {
-    id: string;
-    productId: string;
-    author: string;
-    rating: number;
-    title: string;
-    text: string;
-    createdAt: string;
-    helpful: number;
-    status: ReviewStatus;
-    adminReply?: { text: string; repliedAt: string };
-};
+import {
+    areAllReviewsSelected,
+    filterReviews,
+    reconcileReviewSelection,
+    toggleReviewInSelection,
+    toggleVisibleReviews,
+    type ReviewRecord,
+    type ReviewStatus,
+} from './reviews-model';
 
 function useAdminReviewsPageState() {
     const confirmAction = useAdminConfirm();
@@ -82,9 +76,7 @@ function useAdminReviewsPageState() {
             const payload = (await response.json()) as { data?: { reviews?: ReviewRecord[] } };
             const nextReviews = payload.data?.reviews ?? [];
             setReviews(nextReviews);
-            setSelectedReviewIds((prev) =>
-                prev.filter((id) => nextReviews.some((review) => review.id === id))
-            );
+            setSelectedReviewIds((prev) => reconcileReviewSelection(prev, nextReviews));
             setError('');
         } catch {
             setReviews([]);
@@ -106,36 +98,17 @@ function useAdminReviewsPageState() {
         queueMicrotask(() => void loadReviews());
     }, [loadReviews]);
 
-    const filteredClientSide = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        if (!q) return reviews;
-        return reviews.filter((review) =>
-            `${review.productId} ${review.author} ${review.title} ${review.text}`
-                .toLowerCase()
-                .includes(q)
-        );
-    }, [reviews, search]);
+    const filteredClientSide = useMemo(() => filterReviews(reviews, search), [reviews, search]);
 
     const selectedCount = selectedReviewIds.length;
-    const allVisibleSelected =
-        filteredClientSide.length > 0 &&
-        filteredClientSide.every((review) => selectedReviewIds.includes(review.id));
+    const allVisibleSelected = areAllReviewsSelected(filteredClientSide, selectedReviewIds);
 
     const toggleReviewSelection = (reviewId: string, checked: boolean) => {
-        setSelectedReviewIds((prev) => {
-            if (checked) return Array.from(new Set([...prev, reviewId]));
-            return prev.filter((id) => id !== reviewId);
-        });
+        setSelectedReviewIds((prev) => toggleReviewInSelection(prev, reviewId, checked));
     };
 
     const toggleSelectAllVisible = (checked: boolean) => {
-        setSelectedReviewIds((prev) => {
-            const visibleIds = filteredClientSide.map((review) => review.id);
-            if (checked) {
-                return Array.from(new Set([...prev, ...visibleIds]));
-            }
-            return prev.filter((id) => !visibleIds.includes(id));
-        });
+        setSelectedReviewIds((prev) => toggleVisibleReviews(prev, filteredClientSide, checked));
     };
 
     const applyBulkStatus = async (nextStatus: ReviewStatus) => {

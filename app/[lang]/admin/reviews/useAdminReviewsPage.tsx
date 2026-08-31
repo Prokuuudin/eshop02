@@ -12,6 +12,7 @@ import {
     type ReviewRecord,
     type ReviewStatus,
 } from './reviews-model';
+import { deleteAdminReviews, loadAdminReviews, updateAdminReviews } from './reviews-api';
 
 function useAdminReviewsPageState() {
     const confirmAction = useAdminConfirm();
@@ -64,17 +65,7 @@ function useAdminReviewsPageState() {
     const loadReviews = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (status !== 'all') params.set('status', status);
-            if (search.trim()) params.set('search', search.trim());
-
-            const response = await fetch(`/api/admin/reviews?${params.toString()}`, {
-                cache: 'no-store',
-            });
-            if (!response.ok) throw new Error('reviews-load-failed');
-
-            const payload = (await response.json()) as { data?: { reviews?: ReviewRecord[] } };
-            const nextReviews = payload.data?.reviews ?? [];
+            const nextReviews = await loadAdminReviews({ status, search });
             setReviews(nextReviews);
             setSelectedReviewIds((prev) => reconcileReviewSelection(prev, nextReviews));
             setError('');
@@ -116,15 +107,7 @@ function useAdminReviewsPageState() {
 
         setBulkSaving(true);
         try {
-            const response = await fetch('/api/admin/reviews', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ids: selectedReviewIds, status: nextStatus }),
-            });
-
-            if (!response.ok) throw new Error('bulk-status-update-failed');
+            await updateAdminReviews({ ids: selectedReviewIds, status: nextStatus });
 
             setMessage(
                 tl(
@@ -178,15 +161,7 @@ function useAdminReviewsPageState() {
 
         setBulkSaving(true);
         try {
-            const response = await fetch('/api/admin/reviews', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ids: selectedReviewIds }),
-            });
-
-            if (!response.ok) throw new Error('bulk-review-delete-failed');
+            await deleteAdminReviews({ ids: selectedReviewIds });
 
             setMessage(
                 tl(
@@ -218,15 +193,7 @@ function useAdminReviewsPageState() {
     const updateStatus = async (id: string, nextStatus: ReviewStatus) => {
         setSavingId(id);
         try {
-            const response = await fetch('/api/admin/reviews', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id, status: nextStatus }),
-            });
-
-            if (!response.ok) throw new Error('status-update-failed');
+            await updateAdminReviews({ id, status: nextStatus });
 
             setMessage(
                 tl(
@@ -278,15 +245,7 @@ function useAdminReviewsPageState() {
 
         setSavingId(id);
         try {
-            const response = await fetch('/api/admin/reviews', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id }),
-            });
-
-            if (!response.ok) throw new Error('review-delete-failed');
+            await deleteAdminReviews({ id });
 
             setMessage(
                 tl(
@@ -335,12 +294,7 @@ function useAdminReviewsPageState() {
         if (!text) return;
         setReplySavingId(id);
         try {
-            const res = await fetch('/api/admin/reviews', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, reply: text }),
-            });
-            if (!res.ok) throw new Error();
+            await updateAdminReviews({ id, reply: text });
             setReplyExpanded((prev) => {
                 const n = new Set(prev);
                 n.delete(id);
@@ -365,12 +319,7 @@ function useAdminReviewsPageState() {
     const removeReply = async (id: string) => {
         setReplySavingId(id);
         try {
-            const res = await fetch('/api/admin/reviews', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, reply: null }),
-            });
-            if (!res.ok) throw new Error();
+            await updateAdminReviews({ id, reply: null });
             setReplyDrafts((d) => {
                 const n = { ...d };
                 delete n[id];

@@ -8,11 +8,11 @@ import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
 import { appendServerAudit } from '@/lib/server-audit'
 import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDays } from '@/lib/bonus-ledger'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
-import { AdminOrderUpdateError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
+import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
 import { buildOrderData, mapDbToServerOrder } from '@/lib/orders-data-mapping'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
-export { AdminOrderUpdateError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
+export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
 
 // Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
 // Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
@@ -167,6 +167,10 @@ export const createServerOrder = async (order: Omit<ServerOrder, 'id'>, prepare?
       return mapDbToServerOrder(row)
     } catch (e) {
       if (!isUniqueConflict(e)) throw e
+      if (order.checkoutKey) {
+        const existing = await prisma.order.findUnique({ where: { checkoutKey: order.checkoutKey } })
+        if (existing) throw new ExistingCheckoutOrderError(mapDbToServerOrder(existing))
+      }
       lastError = e
     }
   }

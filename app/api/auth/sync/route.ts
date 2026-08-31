@@ -3,14 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
+import { getClientIp } from '@/lib/request-ip'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -81,7 +74,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 
 
 

@@ -6,12 +6,19 @@ vi.mock('@/lib/api-helpers', () => ({
   errorResponse: (error: string, status = 400) => NextResponse.json({ error }, { status }),
   successResponse: (data: unknown, status = 200) => NextResponse.json({ success: true, data }, { status }),
 }))
-vi.mock('@/lib/invoices-data-store', () => ({ getInvoiceById: vi.fn(), recordPaymentInDb: vi.fn() }))
+vi.mock('@/lib/invoices-data-store', () => {
+  class InvoicePaymentConflictError extends Error {
+    constructor(public readonly code: 'invoice_not_payable' | 'payment_exceeds_remaining') {
+      super(code)
+    }
+  }
+  return { getInvoiceById: vi.fn(), recordPaymentInDb: vi.fn(), InvoicePaymentConflictError }
+})
 vi.mock('@/lib/company-activity-log', () => ({ recordCompanyActivity: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/webhook-sender', () => ({ triggerCompanyWebhook: vi.fn() }))
 
 import { authenticateRequest } from '@/lib/api-helpers'
-import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
+import { getInvoiceById, InvoicePaymentConflictError, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { POST } from './route'
 
 const context = { params: Promise.resolve({ id: 'invoice-b' }) }
@@ -47,5 +54,15 @@ describe('POST /api/v1/invoices/:id/payments', () => {
     const response = await post({ amount: 30 })
     expect(response.status).toBe(400)
     expect(recordPaymentInDb).not.toHaveBeenCalled()
+  })
+
+  it('returns a conflict when a concurrent payment consumed the checked balance', async () => {
+    vi.mocked(getInvoiceById).mockResolvedValue({
+      id: 'invoice-b', companyId: 'company-a', status: 'issued', remainingAmount: 25,
+    } as never)
+    vi.mocked(recordPaymentInDb).mockRejectedValue(new InvoicePaymentConflictError('payment_exceeds_remaining'))
+    const response = await post({ amount: 20 })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'Payment exceeds current remaining amount' })
   })
 })

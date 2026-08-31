@@ -3,16 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { hashToken, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { decryptSecret, verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
+import { getClientIp } from '@/lib/request-ip'
 
 export const runtime = 'nodejs'
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
 
 // POST /api/auth/mfa/verify — second step of admin login, after /api/auth/login returned
 // { mfaRequired: true, challengeToken }. Deliberately does not call guardOrigin: like

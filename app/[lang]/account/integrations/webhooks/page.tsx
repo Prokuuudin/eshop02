@@ -63,6 +63,7 @@ export default function WebhooksPage(): React.ReactElement {
   const [apiKeyMeta, setApiKeyMeta] = useState<ApiKeyMeta | null>(null)
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
   const [keyLoading, setKeyLoading] = useState(false)
+  const [keyPassword, setKeyPassword] = useState('')
 
   const loadData = React.useCallback(async (): Promise<void> => {
     if (!companyId) return
@@ -112,11 +113,15 @@ export default function WebhooksPage(): React.ReactElement {
   const generateApiKey = async () => {
     setKeyLoading(true)
     try {
-      const response = await fetch('/api/account/api-keys', { method: 'POST' })
+      const response = await fetch('/api/account/api-keys', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: keyPassword }),
+      })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || 'Не удалось создать ключ')
       setApiKeyMeta(body.key)
       setRevealedKey(body.plaintext)
+      setKeyPassword('')
       showToast('Новый API-ключ создан', 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Ошибка создания ключа', 'error')
@@ -128,11 +133,15 @@ export default function WebhooksPage(): React.ReactElement {
   const revokeApiKey = async () => {
     setKeyLoading(true)
     try {
-      const response = await fetch('/api/account/api-keys', { method: 'DELETE' })
+      const response = await fetch('/api/account/api-keys', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: keyPassword }),
+      })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || 'Не удалось отозвать ключ')
       setApiKeyMeta(null)
       setRevealedKey(null)
+      setKeyPassword('')
       showToast('API-ключ отозван', 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Ошибка отзыва ключа', 'error')
@@ -229,6 +238,14 @@ export default function WebhooksPage(): React.ReactElement {
         <p className="text-sm text-muted-foreground">
           Используйте этот ключ, чтобы ваша собственная система вызывала наш API снаружи (заголовок <code>x-api-key</code>). Управлять endpoint&apos;ами на этой странице можно и без ключа — здесь вы уже авторизованы.
         </p>
+        <input
+          type="password"
+          value={keyPassword}
+          onChange={(event) => setKeyPassword(event.target.value)}
+          placeholder="Текущий пароль для выпуска или отзыва ключа"
+          autoComplete="current-password"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        />
         {revealedKey && (
           <div className="rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30 p-3 space-y-2">
             <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
@@ -259,12 +276,12 @@ export default function WebhooksPage(): React.ReactElement {
               )}
             </p>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={generateApiKey} disabled={keyLoading}>Перевыпустить</Button>
-              <Button type="button" variant="outline" size="sm" onClick={revokeApiKey} disabled={keyLoading}>Отозвать</Button>
+              <Button type="button" variant="outline" size="sm" onClick={generateApiKey} disabled={keyLoading || !keyPassword}>Перевыпустить</Button>
+              <Button type="button" variant="outline" size="sm" onClick={revokeApiKey} disabled={keyLoading || !keyPassword}>Отозвать</Button>
             </div>
           </div>
         ) : (
-          <Button type="button" onClick={generateApiKey} disabled={keyLoading}>Сгенерировать ключ</Button>
+          <Button type="button" onClick={generateApiKey} disabled={keyLoading || !keyPassword}>Сгенерировать ключ</Button>
         )}
       </section>
 

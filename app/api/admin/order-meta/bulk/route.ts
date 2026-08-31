@@ -88,10 +88,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: true, updated: orderIds.length })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'bulk_status_failed'
-    const status = message === 'order_not_found' ? 404 : message.startsWith('invalid_') ? 409 : 500
+    const status = message === 'order_not_found'
+      ? 404
+      : message.startsWith('invalid_') || message.startsWith('paid_order_requires_refund:')
+        ? 409
+        : 500
     if (status === 500) logApiError("[admin/order-meta/bulk]", error)
     return NextResponse.json({ error: message }, { status })
   }
 }
-
 

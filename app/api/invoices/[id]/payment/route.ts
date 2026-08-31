@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
-import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
+import { getInvoiceById, InvoicePaymentConflictError, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { getServerUser } from '@/lib/server-auth'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
@@ -29,11 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const updated = await recordPaymentInDb(id, { ...payment, amount, method: payment.method.trim() })
     return NextResponse.json({ invoice: updated })
   } catch (e) {
+    if (e instanceof InvoicePaymentConflictError) {
+      return NextResponse.json({ error: e.code }, { status: 409 })
+    }
     logApiError("[invoices/:id/payment POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 
 
 

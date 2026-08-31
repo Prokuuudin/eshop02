@@ -47,6 +47,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       if (pending.requestedByUserId === caller.id) throw new Error('four_eyes_required')
       const target = await tx.user.findUnique({ where: { id: pending.targetUserId } })
       if (!target) throw new Error('target_not_found')
+      if (!target.mfaEnabled) throw new Error('target_mfa_required')
       if (target.updatedAt.getTime() !== pending.expectedUpdatedAt.getTime()) throw new Error('optimistic_conflict')
 
       const changed = await tx.user.updateMany({
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ approved: true, userId: result })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'server_error'
-    if (['approval_not_pending', 'four_eyes_required', 'target_not_found', 'optimistic_conflict'].includes(message)) {
+    if (['approval_not_pending', 'four_eyes_required', 'target_not_found', 'target_mfa_required', 'optimistic_conflict'].includes(message)) {
       return NextResponse.json({ error: message }, { status: 409 })
     }
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034') {
@@ -79,5 +80,4 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

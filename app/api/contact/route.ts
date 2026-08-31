@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
+import { getClientIp } from '@/lib/request-ip'
+import { escapeHtml } from '@/lib/escape-html'
 import { sendEmail } from '@/lib/mailer'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -23,23 +25,6 @@ const CONTACT_LIMIT = { windowMs: RATE_LIMIT_WINDOW_MS, maxAttempts: RATE_LIMIT_
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const runtime = 'nodejs'
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function getClientIp(request: NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
-  }
-
-  return request.headers.get('x-real-ip') ?? 'unknown'
-}
 
 function rateLimitedResponse(resetAt: number): NextResponse {
   const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))
@@ -186,8 +171,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
-
 
 
 

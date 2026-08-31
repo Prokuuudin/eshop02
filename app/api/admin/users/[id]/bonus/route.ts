@@ -26,6 +26,9 @@ export async function POST(
   const { id } = await params
   try {
     const updated = await prisma.$transaction(async (tx) => {
+      // Serialize adjustments for one balance. Without a row lock, concurrent
+      // admins can both read the same value and one absolute update gets lost.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${id} FOR UPDATE`
       await expireBonusPoints(tx, id)
       const before = await tx.user.findUnique({ where: { id }, select: { email: true, bonusPoints: true } })
       if (!before) return null

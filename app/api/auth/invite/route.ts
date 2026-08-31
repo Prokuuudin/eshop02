@@ -5,17 +5,11 @@ import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { hashInviteToken } from '@/lib/invitations'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getClientIp } from '@/lib/request-ip'
 
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
 const MAX_PASSWORD_LENGTH = 128
-
-function clientIp(req: NextRequest): string {
-  return req.headers.get('cf-connecting-ip')?.trim()
-    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || req.headers.get('x-real-ip')?.trim()
-    || 'unknown'
-}
 
 class InviteConsumedError extends Error {}
 
@@ -56,7 +50,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = (await req.json()) as { token?: string; password?: string }
     const tokenHash = hashInviteToken(body.token ?? '')
     const limits = await Promise.all([
-      checkRateLimit(`invite:ip:${clientIp(req)}`, INVITE_ATTEMPT_LIMIT),
+      checkRateLimit(`invite:ip:${getClientIp(req)}`, INVITE_ATTEMPT_LIMIT),
       checkRateLimit(`invite:token:${tokenHash}`, INVITE_ATTEMPT_LIMIT),
     ])
     const limited = limits.find((item) => item.limited)
@@ -136,5 +130,4 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
 }
-
 

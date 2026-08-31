@@ -16,6 +16,7 @@ export default function AdminSetupPage(): React.ReactElement {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [setupToken, setSetupToken] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
@@ -47,7 +48,7 @@ export default function AdminSetupPage(): React.ReactElement {
         }
 
         setBusy(true);
-        const result = await registerAdminUser(email, password, name);
+        const result = await registerAdminUser(email, password, name, setupToken);
 
         if (!result.success) {
             if (result.adminAlreadyExists) {
@@ -78,6 +79,16 @@ export default function AdminSetupPage(): React.ReactElement {
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+                    <label className="block text-sm">
+                        <span className="mb-1 block text-foreground">Deployment setup token</span>
+                        <Input
+                            type="password"
+                            value={setupToken}
+                            onChange={(event) => setSetupToken(event.target.value)}
+                            autoComplete="off"
+                        />
+                    </label>
 
                     <label className="block text-sm">
                         <span className="mb-1 block text-foreground">

@@ -35,6 +35,7 @@ export function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     language: (row as Record<string, unknown>).language as string ?? 'ru',
     userId: row.userId ?? undefined,
     companyId: row.companyId ?? undefined,
+    checkoutKey: row.checkoutKey ?? undefined,
   }
 }
 
@@ -69,5 +70,6 @@ export function buildOrderData(order: Omit<ServerOrder, 'id'>): Omit<Prisma.Orde
     language: order.language ?? 'ru',
     userId: order.userId ?? null,
     companyId: order.companyId ?? null,
+    checkoutKey: order.checkoutKey ?? null,
   }
 }

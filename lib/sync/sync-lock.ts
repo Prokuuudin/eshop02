@@ -34,3 +34,19 @@ export async function releaseSyncLock(db: ExtendedPrismaClient, runId: string): 
     runId,
   )
 }
+
+export async function refreshSyncLock(
+  db: ExtendedPrismaClient,
+  runId: string,
+  staleMs: number,
+): Promise<boolean> {
+  const value = JSON.stringify({ runId, lockedUntil: new Date(Date.now() + staleMs).toISOString() })
+  const updated = await db.$executeRawUnsafe(
+    `UPDATE "KeyValueSetting" SET value = $1::jsonb, "updatedAt" = now()
+     WHERE key = $2 AND (value->>'runId') = $3`,
+    value,
+    SYNC_LOCK_KEY,
+    runId,
+  )
+  return updated === 1
+}

@@ -209,6 +209,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         return NextResponse.json({ error: 'optimistic_conflict' }, { status: 409 })
       }
       if (target.platformRole !== 'admin') {
+        if (!target.mfaEnabled) {
+          return NextResponse.json({ error: 'target_mfa_required' }, { status: 409 })
+        }
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
         const approval = await prisma.$transaction(async (tx) => {
           await tx.adminRoleChangeRequest.updateMany({

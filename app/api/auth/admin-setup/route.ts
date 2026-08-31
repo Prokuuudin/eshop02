@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
@@ -7,6 +7,19 @@ import { logApiError } from '@/lib/observability'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const configuredToken = process.env.ADMIN_SETUP_TOKEN?.trim() ?? ''
+    if (process.env.NODE_ENV === 'production' && !configuredToken) {
+      return NextResponse.json({ error: 'admin_setup_not_configured' }, { status: 503 })
+    }
+    if (configuredToken) {
+      const suppliedToken = req.headers.get('x-admin-setup-token') ?? ''
+      const configuredBytes = Buffer.from(configuredToken)
+      const suppliedBytes = Buffer.from(suppliedToken)
+      if (configuredBytes.length !== suppliedBytes.length || !timingSafeEqual(configuredBytes, suppliedBytes)) {
+        return NextResponse.json({ error: 'invalid_setup_token' }, { status: 403 })
+      }
+    }
+
     const body = await req.json()
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password : ''
@@ -14,6 +27,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!email || !email.includes('@') || email.length > 254 || password.length < 8 || password.length > 128) {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400 })
+    }
+
+    // Avoid an attacker forcing repeated bcrypt work after bootstrap is already
+    // complete. The Serializable transaction repeats this check to close races.
+    if (await prisma.user.count({ where: { platformRole: 'admin' } })) {
+      return NextResponse.json({ error: 'admin_already_exists' }, { status: 409 })
     }
 
     const passwordHash = await hashPassword(password)

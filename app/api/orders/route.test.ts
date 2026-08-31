@@ -9,6 +9,9 @@ vi.mock('@/lib/orders-data-store', () => ({
   InsufficientStockError: class InsufficientStockError extends Error {},
   InsufficientBonusPointsError: class InsufficientBonusPointsError extends Error {},
   PromoCodeUsageLimitError: class PromoCodeUsageLimitError extends Error {},
+  ExistingCheckoutOrderError: class ExistingCheckoutOrderError extends Error {
+    constructor(public readonly order: { id: string }) { super('existing checkout') }
+  },
 }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 vi.mock('@/lib/turnstile-server', () => ({
@@ -26,7 +29,7 @@ vi.mock('@/lib/locale-config-server-store', () => ({
 
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
-import { createServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder, ExistingCheckoutOrderError } from '@/lib/orders-data-store'
 import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
@@ -60,11 +63,11 @@ const VALID_ORDER = {
   language: 'ru',
 }
 
-function makeRequest(order: Record<string, unknown> = VALID_ORDER): NextRequest {
+function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKey?: string): NextRequest {
   return new NextRequest('http://localhost/api/orders', {
     method: 'POST',
     body: JSON.stringify({ order }),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) },
   })
 }
 
@@ -129,6 +132,22 @@ describe('POST /api/orders — admin notification', () => {
     // The persisted payload must not carry the client id — the server generates it
     const persisted = vi.mocked(createServerOrder).mock.calls[0][0] as Record<string, unknown>
     expect(persisted.id).toBeUndefined()
+  })
+
+  it('scopes and hashes an idempotency key before persistence', async () => {
+    const res = await POST(makeRequest(VALID_ORDER, 'checkout-ORD-001'))
+    expect(res.status).toBe(200)
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0]
+    expect(persisted.checkoutKey).toMatch(/^[a-f0-9]{64}$/)
+    expect(persisted.checkoutKey).not.toContain('ORD-001')
+  })
+
+  it('returns the existing order for a concurrent duplicate without sending emails', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({ id: '1001' } as never))
+    const res = await POST(makeRequest(VALID_ORDER, 'checkout-ORD-001'))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('does not send admin email when CONTACT_TO is not set', async () => {

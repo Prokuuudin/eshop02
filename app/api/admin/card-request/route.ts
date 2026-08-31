@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { escapeHtml } from '@/lib/escape-html'
 
 export const runtime = 'nodejs'
 
@@ -10,14 +11,6 @@ type Lang = 'ru' | 'en' | 'lv'
 
 const OFFICE_PHONE = '+371 27067730'
 const OFFICE_EMAIL = 'office@miksplus.eu'
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
@@ -104,5 +97,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({ ok: true })
 }
-
 

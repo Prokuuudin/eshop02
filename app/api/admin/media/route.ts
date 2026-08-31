@@ -13,7 +13,8 @@ export async function GET(): Promise<Response> {
 
   const rows = await prisma.mediaAsset.findMany({
     select: { name: true, size: true, createdAt: true, updatedAt: true },
-    orderBy: { updatedAt: 'desc' }
+    orderBy: { updatedAt: 'desc' },
+    take: 500,
   })
 
   const files = rows.map((row) => {

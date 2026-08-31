@@ -5,7 +5,7 @@ import { deactivateMissing } from './deactivate-missing'
 import { replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { withRetry } from './retry'
 import { SyncLogger } from './logger'
-import { acquireSyncLock, releaseSyncLock } from './sync-lock'
+import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
 
 const BATCH_SIZE = 200
 const STALE_THRESHOLD_MS = 30 * 60 * 1000
@@ -26,14 +26,6 @@ export async function runSync(
 ): Promise<SyncRunResult> {
   const logger = new SyncLogger()
 
-  await db.syncRun.updateMany({
-    where: {
-      status: 'running',
-      startedAt: { lt: new Date(Date.now() - STALE_THRESHOLD_MS) },
-    },
-    data: { status: 'failed', finishedAt: new Date() },
-  })
-
   const syncRun = await db.syncRun.create({ data: { status: 'running', triggeredBy } })
   const runId = syncRun.id
 
@@ -42,6 +34,18 @@ export async function runSync(
     await db.syncRun.update({ where: { id: runId }, data: { status: 'failed', finishedAt: new Date() } })
     throw new Error('Sync already running')
   }
+
+  // Only the process that acquired the lock may retire stale run records. A
+  // long but healthy run keeps its lock refreshed and must not be marked failed
+  // by a competing invocation.
+  await db.syncRun.updateMany({
+    where: {
+      id: { not: runId },
+      status: 'running',
+      startedAt: { lt: new Date(Date.now() - STALE_THRESHOLD_MS) },
+    },
+    data: { status: 'failed', finishedAt: new Date() },
+  })
 
   let productsSynced = 0
   let deactivated = 0
@@ -73,6 +77,10 @@ export async function runSync(
           throw new Error(`Aborting: ${MAX_CONSECUTIVE_FETCH_ERRORS} consecutive fetch errors`)
         }
         continue
+      }
+
+      if (!await refreshSyncLock(db, runId, STALE_THRESHOLD_MS)) {
+        throw new Error('Sync lock ownership lost')
       }
 
       const { products, hasMore: more, nextCursor } = fetchResult

@@ -60,6 +60,8 @@ export type ServerOrder = {
   language?: string
   userId?: string
   companyId?: string
+  /** Server-scoped digest used to make checkout creation idempotent. */
+  checkoutKey?: string
 }
 
 /** Thrown when one or more order items exceed the product's current stock. */
@@ -87,6 +89,13 @@ export class PromoCodeUsageLimitError extends Error {
   }
 }
 
+export class ExistingCheckoutOrderError extends Error {
+  constructor(readonly order: ServerOrder) {
+    super('Checkout request was already completed')
+    this.name = 'ExistingCheckoutOrderError'
+  }
+}
+
 export class AdminOrderUpdateError extends Error {
   constructor(
     message: string,
@@ -109,4 +118,3 @@ export type PrepareOrder = (
   tx: ExtendedTransactionClient,
   currentBonusBalance: number | null
 ) => Promise<Omit<ServerOrder, 'id'>>
-

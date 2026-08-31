@@ -5,6 +5,10 @@ import { toNum, toNumOrNull } from '@/lib/decimal';
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>;
 
+export function getProductSubcategory(productId: string): string | undefined {
+    return SUBCATEGORY_BY_PRODUCT_ID[productId];
+}
+
 export function mapDbToProduct(p: PrismaProduct): Product {
     return {
         id: p.id,
@@ -27,7 +31,7 @@ export function mapDbToProduct(p: PrismaProduct): Product {
         ogAlt: p.ogAlt ?? undefined,
         badges: p.badges as BadgeType[],
         category: p.category as CategoryType,
-        subcategory: SUBCATEGORY_BY_PRODUCT_ID[p.id],
+        subcategory: getProductSubcategory(p.id),
         stock: p.stock,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,

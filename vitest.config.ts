@@ -11,6 +11,18 @@ export default defineConfig({
     include: ['lib/**/*.test.ts', 'data/**/*.test.ts', 'app/**/*.test.ts', 'scripts/**/*.test.ts'],
     exclude: ['**/*.integration.test.ts'],
     environment: 'node',
-    globals: true
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        // Measured whole-project baseline. Raise these values as uncovered UI/routes gain tests.
+        lines: 22,
+        functions: 59,
+        statements: 22,
+        branches: 68,
+      },
+    },
   }
 })

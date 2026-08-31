@@ -4,17 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { toNum } from '@/lib/decimal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getServerUser } from '@/lib/server-auth'
+import { getClientIp } from '@/lib/request-ip'
 
 const SEARCH_LIMIT = { windowMs: 60 * 1000, maxAttempts: 30 }
 const MAX_QUERY_LENGTH = 160
 const MAX_CATEGORY_LENGTH = 100
-
-function getClientIp(req: NextRequest): string {
-  return req.headers.get('cf-connecting-ip')?.trim()
-    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || req.headers.get('x-real-ip')?.trim()
-    || 'unknown'
-}
 
 export async function GET(req: NextRequest): Promise<Response> {
   try {
@@ -95,5 +89,4 @@ export async function GET(req: NextRequest): Promise<Response> {
     return NextResponse.json({ products: [] })
   }
 }
-
 

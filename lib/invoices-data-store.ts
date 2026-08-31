@@ -89,28 +89,45 @@ export async function updateInvoiceInDb(id: string, updates: Partial<Invoice>): 
   return mapDbToInvoice(row)
 }
 
+export class InvoicePaymentConflictError extends Error {
+  constructor(public readonly code: 'invoice_not_payable' | 'payment_exceeds_remaining') {
+    super(code)
+    this.name = 'InvoicePaymentConflictError'
+  }
+}
+
 export async function recordPaymentInDb(invoiceId: string, payment: Omit<PaymentRecord, 'id' | 'date'>): Promise<Invoice | null> {
-  const existing = await prisma.invoice.findUnique({ where: { id: invoiceId } })
-  if (!existing) return null
+  return prisma.$transaction(async (tx) => {
+    // Serialize reconciliation for one invoice. Route-level balance checks are
+    // useful feedback, but cannot prevent two concurrent requests seeing the
+    // same balance.
+    await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${invoiceId} FOR UPDATE`
+    const existing = await tx.invoice.findUnique({ where: { id: invoiceId } })
+    if (!existing) return null
+    if (existing.status !== 'issued') throw new InvoicePaymentConflictError('invoice_not_payable')
 
-  const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-  const newRecord: PaymentRecord = { ...payment, id: paymentId, date: new Date() }
+    const remainingBeforePayment = toNum(existing.remainingAmount)
+    if (payment.amount > remainingBeforePayment) {
+      throw new InvoicePaymentConflictError('payment_exceeds_remaining')
+    }
 
-  const existingRecords = (existing.paymentRecords as unknown as PaymentRecord[]) ?? []
-  const allRecords = [...existingRecords, newRecord]
-  const paidAmount = toNum(existing.paidAmount) + payment.amount
-  const remainingAmount = Math.max(0, toNum(existing.total) - paidAmount)
-  const status = remainingAmount <= 0 ? 'paid' : existing.status
+    const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const newRecord: PaymentRecord = { ...payment, id: paymentId, date: new Date() }
+    const existingRecords = (existing.paymentRecords as unknown as PaymentRecord[]) ?? []
+    const paidAmount = toNum(existing.paidAmount) + payment.amount
+    const remainingAmount = Math.max(0, remainingBeforePayment - payment.amount)
+    const status = remainingAmount <= 0 ? 'paid' : existing.status
 
-  const row = await prisma.invoice.update({
-    where: { id: invoiceId },
-    data: {
-      paymentRecords: allRecords as object[],
-      paidAmount,
-      remainingAmount,
-      status,
-      paidDate: status === 'paid' ? new Date() : existing.paidDate,
-    },
+    const row = await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        paymentRecords: [...existingRecords, newRecord] as object[],
+        paidAmount,
+        remainingAmount,
+        status,
+        paidDate: status === 'paid' ? new Date() : existing.paidDate,
+      },
+    })
+    return mapDbToInvoice(row)
   })
-  return mapDbToInvoice(row)
 }

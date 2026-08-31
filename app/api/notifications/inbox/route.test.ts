@@ -61,6 +61,7 @@ describe('GET /api/notifications/inbox', () => {
       where: { userId: 'u1', id: { in: ['n1', 'n2'] } },
       data: { appDelivered: true },
     })
+    expect(notificationFindManyMock).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }))
   })
 
   it('does not call updateMany when no rows returned', async () => {

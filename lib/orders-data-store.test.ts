@@ -1,19 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { queryRawMock, transactionMock } = vi.hoisted(() => ({
+const { queryRawMock, transactionMock, orderFindUniqueMock } = vi.hoisted(() => ({
   queryRawMock: vi.fn(),
   transactionMock: vi.fn(),
+  orderFindUniqueMock: vi.fn(),
 }))
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: queryRawMock,
     $transaction: transactionMock,
-    order: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    order: { findUnique: orderFindUniqueMock, create: vi.fn(), update: vi.fn() },
   },
 }))
 
-import { canAccessOrder, createServerOrder, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createServerOrder, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
@@ -100,6 +101,23 @@ describe('createServerOrder — server-side id generation', () => {
 
     expect(created.id).toBe('1044')
     expect(transactionMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('surfaces the existing order after a concurrent checkout-key conflict', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1000n }])
+    transactionMock.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }))
+    orderFindUniqueMock.mockResolvedValue({
+      id: '1001', ...ORDER, checkoutKey: 'digest', createdAt: new Date(ORDER.createdAt),
+      legalDetails: null, promoCode: null, postalCode: null, bonusSpent: null, bonusEarned: null,
+      paymentStatus: 'unpaid', paymentProvider: null, paymentSessionId: null,
+      stockReservationStatus: 'committed', stockReservedUntil: null, stockReleasedAt: null,
+      userId: null, companyId: null,
+    })
+
+    await expect(createServerOrder({ ...ORDER, checkoutKey: 'digest' }))
+      .rejects.toBeInstanceOf(ExistingCheckoutOrderError)
+    expect(transactionMock).toHaveBeenCalledOnce()
+    expect(orderFindUniqueMock).toHaveBeenCalledWith({ where: { checkoutKey: 'digest' } })
   })
 
   it('rethrows non-conflict errors without retrying', async () => {

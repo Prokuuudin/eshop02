@@ -2,19 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { subscribeToNewsletter } from '@/lib/newsletter-store'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { getClientIp } from '@/lib/request-ip'
 
 export const runtime = 'nodejs'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const EMAIL_MAX_LENGTH = 160
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
@@ -46,5 +39,4 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
 }
-
 

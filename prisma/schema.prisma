@@ -440,6 +440,7 @@ model Order {
   language         String?  @default("ru")
   userId           String?
   companyId        String?
+  checkoutKey      String?  @unique
 
   @@index([email])
   @@index([createdAt])

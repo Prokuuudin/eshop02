@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server'
+import { createHash } from 'node:crypto'
 import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
-import { createOrUpdateServerOrder, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 
 export const runtime = 'nodejs'
 
@@ -86,6 +87,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!auth.user.apiAccess) {
       return errorResponse('API access required', 403)
     }
+    if (!auth.user.companyId) {
+      return errorResponse('Company scope required', 400)
+    }
+
+    const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
+    if (idempotencyKey && (idempotencyKey.length < 8 || idempotencyKey.length > 200)) {
+      return errorResponse('Invalid idempotency key', 400)
+    }
 
     const body = await req.json()
     const { items, address, payment, notes } = body as {
@@ -111,16 +120,6 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     const customerEmail = (typeof body.email === 'string' && body.email) || auth.user.email || 'api-user@example.com'
-    // Authoritative pricing from the catalog.
-    const pricing = await recomputeOrderPricing({
-      items: normalizedItems,
-      promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
-      deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
-      userBonusBalance: null,
-      userId: auth.user.id,
-      email: customerEmail,
-    })
-
     // Build full order line items from the catalog (title/brand/etc.) for display.
     const products = await prisma.product.findMany({
       where: { id: { in: normalizedItems.map((i) => i.id) } },
@@ -128,7 +127,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     })
     const productById = new Map(products.map((p) => [p.id, p]))
 
-    const orderItems = pricing.items.map((line) => {
+    const orderItems = normalizedItems.map((line) => {
       const p = productById.get(line.id)
       return {
         id: line.id,
@@ -136,26 +135,23 @@ export async function POST(req: NextRequest): Promise<Response> {
         brand: p?.brand ?? '',
         image: p?.image ?? '',
         category: p?.category ?? '',
-        price: line.price,
+        price: 0,
         rating: p?.rating ?? 0,
         stock: p?.stock ?? 0,
         quantity: line.quantity,
       }
     })
 
-    const orderId = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    const order: ServerOrder = {
-      id: orderId,
+    const order: Omit<ServerOrder, 'id'> = {
       createdAt: new Date().toISOString(),
       items: orderItems,
-      subtotal: pricing.subtotal,
-      tax: pricing.tax,
-      delivery: pricing.delivery,
+      subtotal: 0,
+      tax: 0,
+      delivery: 0,
       deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
       paymentMethod: payment || 'transfer',
-      discount: pricing.discount,
-      promoCode: pricing.promoApplied && typeof body.promoCode === 'string' ? body.promoCode.trim().toUpperCase() : undefined,
-      total: pricing.total,
+      discount: 0,
+      total: 0,
       firstName: address.firstName || 'API',
       lastName: address.lastName || 'User',
       email: customerEmail,
@@ -167,22 +163,56 @@ export async function POST(req: NextRequest): Promise<Response> {
       companyId: auth.user.companyId,
       userId: auth.user.id,
       language: 'ru',
+      checkoutKey: idempotencyKey
+        ? createHash('sha256').update(`${auth.user.companyId}:${idempotencyKey}`).digest('hex')
+        : undefined,
     }
 
-    await createOrUpdateServerOrder(order)
+    const created = await createServerOrder(order, async (tx) => {
+      const pricing = await recomputeOrderPricing({
+        items: normalizedItems,
+        promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
+        deliveryMethod: order.deliveryMethod,
+        userBonusBalance: null,
+        userId: auth.user.id,
+        email: customerEmail,
+      }, tx)
+      return {
+        ...order,
+        items: order.items.map((item, index) => ({
+          ...item,
+          price: pricing.items[index]?.price ?? 0,
+          quantity: pricing.items[index]?.quantity ?? item.quantity,
+        })),
+        subtotal: pricing.subtotal,
+        tax: pricing.tax,
+        delivery: pricing.delivery,
+        discount: pricing.discount,
+        promoCode: pricing.promoApplied && typeof body.promoCode === 'string'
+          ? body.promoCode.trim().toUpperCase() : undefined,
+        total: pricing.total,
+      }
+    })
 
     return successResponse(
       {
-        orderId,
-        status: order.paymentStatus,
-        total: order.total,
-        createdAt: order.createdAt,
+        orderId: created.id,
+        status: created.paymentStatus,
+        total: created.total,
+        createdAt: created.createdAt,
         notes,
         message: 'Order created successfully',
       },
       201
     )
   } catch (error) {
+    if (error instanceof ExistingCheckoutOrderError) {
+      return successResponse({
+        orderId: error.order.id, status: error.order.paymentStatus,
+        total: error.order.total, createdAt: error.order.createdAt,
+        message: 'Order already created', idempotent: true,
+      }, 200)
+    }
     if (error instanceof InsufficientStockError) {
       return errorResponse(`Insufficient stock for: ${error.items.join(', ')}`, 409)
     }
@@ -190,4 +220,3 @@ export async function POST(req: NextRequest): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 }
-

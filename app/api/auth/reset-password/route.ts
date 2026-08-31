@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getClientIp } from '@/lib/request-ip'
 import crypto from 'crypto'
 
 export const runtime = 'nodejs'
@@ -9,10 +10,6 @@ export const runtime = 'nodejs'
 const MIN_PASSWORD_LENGTH = 8
 const MAX_PASSWORD_LENGTH = 128
 const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
-
-function getClientIp(req: NextRequest): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown'
-}
 
 // GET ?token=xxx — проверить токен (не удаляет)
 export async function GET(request: NextRequest): Promise<NextResponse> {

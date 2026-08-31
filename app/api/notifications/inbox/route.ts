@@ -17,6 +17,7 @@ export async function GET(_req: NextRequest): Promise<Response> {
         channel: { in: ['app', 'both'] },
       },
       orderBy: { createdAt: 'asc' },
+      take: 100,
       select: { id: true, type: true, title: true, message: true, link: true },
     })
 
@@ -40,5 +41,4 @@ export async function GET(_req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

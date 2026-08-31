@@ -40,12 +40,16 @@ export const hasAdminUsers = (): boolean => {
 export const registerAdminUser = async (
     email: string,
     password: string,
-    name?: string
+    name?: string,
+    setupToken?: string
 ): Promise<{ success: boolean; error?: string; adminAlreadyExists?: boolean }> => {
     try {
         const res = await fetch('/api/auth/admin-setup', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(setupToken?.trim() ? { 'x-admin-setup-token': setupToken.trim() } : {}),
+            },
             body: JSON.stringify({ email: normalizeEmail(email), password, name }),
         });
         if (!res.ok) {

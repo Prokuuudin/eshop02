@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
+import { getClientIp } from '@/lib/request-ip'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
@@ -32,14 +33,6 @@ async function notifyCardActivated(email: string | null | undefined, name: strin
 
 export const runtime = 'nodejs'
 const PRIVACY_NOTICE_VERSION = '2026-07-03'
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
 
 /**
  * Registers/activates a cardholder against a real card number נthe only
@@ -216,5 +209,4 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

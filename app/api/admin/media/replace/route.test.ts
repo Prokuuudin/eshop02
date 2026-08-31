@@ -32,7 +32,8 @@ function makeRequest(name: string | null, file: File | null): NextRequest {
   } as NonNullable<ConstructorParameters<typeof NextRequest>[1]> & { duplex: 'half' })
 }
 
-const PNG = () => new File([new Uint8Array([9, 8, 7])], 'new.png', { type: 'image/png' })
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 9, 8, 7])
+const PNG = () => new File([PNG_BYTES], 'new.png', { type: 'image/png' })
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -91,7 +92,15 @@ describe('POST /api/admin/media/replace', () => {
     }
     expect(arg.where).toEqual({ name: '123-pic.png' })
     expect(arg.data.mimeType).toBe('image/png')
-    expect(arg.data.size).toBe(3)
-    expect(Array.from(arg.data.data)).toEqual([9, 8, 7])
+    expect(arg.data.size).toBe(PNG_BYTES.length)
+    expect(Array.from(arg.data.data)).toEqual(Array.from(PNG_BYTES))
+  })
+
+  it('rejects non-image bytes declared as PNG', async () => {
+    const spoofed = new File(['<svg onload=alert(1)>'], 'new.png', { type: 'image/png' })
+    const res = await POST(makeRequest('123-pic.png', spoofed))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('unsupported_type')
+    expect(mediaUpdateMock).not.toHaveBeenCalled()
   })
 })

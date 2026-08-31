@@ -102,11 +102,15 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       const existsInCatalog = existingIds.has(id)
       const existsInBatch = seenIds.has(id)
-      const exists = existsInCatalog || existsInBatch
+      if (existsInBatch) {
+        previewRows.push({ rowNum, id, title, brand, price, stock, sku, action: 'error', error: `Duplicate id "${id}" in import batch` })
+        summary.error++
+        continue
+      }
       seenIds.add(id)
 
       let action: RowAction
-      if (mode === 'create' && exists) {
+      if (mode === 'create' && existsInCatalog) {
         action = 'skip'
         summary.skip++
       } else if (mode === 'update' && !existsInCatalog) {

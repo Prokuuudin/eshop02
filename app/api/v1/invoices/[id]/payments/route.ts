@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-helpers'
-import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
+import { getInvoiceById, InvoicePaymentConflictError, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { triggerCompanyWebhook } from '@/lib/webhook-sender'
 
@@ -64,8 +64,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       201,
     )
   } catch (error) {
+    if (error instanceof InvoicePaymentConflictError) {
+      return errorResponse(
+        error.code === 'payment_exceeds_remaining'
+          ? 'Payment exceeds current remaining amount'
+          : 'Invoice can no longer accept payments',
+        409,
+      )
+    }
     logApiError("API Error:", error)
     return errorResponse('Internal server error', 500)
   }
 }
-

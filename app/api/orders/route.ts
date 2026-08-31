@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -11,6 +12,8 @@ import { formatDateWithPattern } from '@/lib/date-format'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
+import { createHash } from 'node:crypto'
+import { ExistingCheckoutOrderError } from '@/lib/orders-data-store'
 
 export const runtime = 'nodejs'
 
@@ -47,10 +50,6 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
     html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">${bodies[lang]}</div>`
   }
   await sendEmail(order.email, subjects[lang], html)
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 const DELIVERY_LABELS_RU: Record<string, string> = {
@@ -164,6 +163,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const items = Array.isArray(order.items) ? order.items : []
     const email = typeof order.email === 'string' ? order.email.trim().toLowerCase() : ''
+    const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
+    if (idempotencyKey && (idempotencyKey.length < 8 || idempotencyKey.length > 200)) {
+      return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
+    }
 
     // Untrusted client JSON — validate as a loose bag of strings rather than the
     // discriminated ServerOrderLegalDetails shape the rest of the codebase trusts.
@@ -296,6 +299,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.
       userId: caller?.id,
       companyId: caller?.companyId,
+      checkoutKey: idempotencyKey
+        ? createHash('sha256').update(`${caller?.id ?? email}:${idempotencyKey}`).digest('hex')
+        : undefined,
       email,
       createdAt: new Date().toISOString(),
       stockReservationStatus: (!caller || order.paymentMethod === 'card') ? 'reserved' : 'committed',
@@ -356,6 +362,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ success: true, orderId: created.id })
   } catch (error) {
+    if (error instanceof ExistingCheckoutOrderError) {
+      return NextResponse.json({ success: true, orderId: error.order.id, idempotent: true })
+    }
     logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {
       return NextResponse.json(

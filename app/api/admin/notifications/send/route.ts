@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
@@ -17,15 +18,6 @@ const TYPE_COLOR: Record<AllowedType, string> = {
   success: '#059669',
   warning: '#d97706',
   promo:   '#7c3aed',
-}
-
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
 }
 
 function buildHtml(title: string, message: string, type: AllowedType, link: string | null, siteUrl: string): string {
@@ -135,5 +127,4 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

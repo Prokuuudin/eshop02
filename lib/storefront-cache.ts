@@ -9,6 +9,7 @@ import { brandSlug } from '@/lib/brand-slug'
 import { readBannersData, type Banner } from '@/lib/banners-server-store'
 import { sanitizeStoredLink } from '@/lib/safe-link'
 import { mapDbToProduct } from '@/lib/product-overrides-store'
+import { getProductSubcategory } from '@/lib/product-overrides-mapping'
 import { isProductOnSale, type Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
@@ -28,7 +29,11 @@ export const getCachedCategories = unstable_cache(async () => {
     getCategoriesConfigFromStore(),
     prisma.product.findMany({
       where: { isDeleted: false, isActive: true },
-    }).then((rows) => rows.map(mapDbToProduct)),
+      select: { id: true, category: true },
+    }).then((rows) => rows.map((row) => ({
+      category: row.category,
+      subcategory: getProductSubcategory(row.id),
+    }))),
   ])
   return filterEmptySubcategories(config.categories, products)
 }, ['storefront-categories-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.categories] })
@@ -76,18 +81,27 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
 }, ['storefront-bestsellers-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
+  const ranked = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id
+    FROM "Product"
+    WHERE "isActive" = true
+      AND "isDeleted" = false
+      AND image IS NOT NULL
+      AND "oldPrice" IS NOT NULL
+      AND "oldPrice" > 0
+      AND "oldPrice" > price
+    ORDER BY (("oldPrice" - price) / "oldPrice") DESC, id ASC
+    LIMIT 24
+  `
+  if (!ranked.length) return []
   const products = await prisma.product.findMany({
-    where: { isActive: true, image: { not: null }, oldPrice: { not: null } },
+    where: { id: { in: ranked.map((row) => row.id) } },
   })
-  return products
-    .map(mapDbToProduct)
-    .filter(isProductOnSale)
-    .sort((a, b) => {
-      const discountA = a.oldPrice ? (a.oldPrice - a.price) / a.oldPrice : 0
-      const discountB = b.oldPrice ? (b.oldPrice - b.price) / b.oldPrice : 0
-      return discountB - discountA
-    })
-    .slice(0, 24)
+  const byId = new Map(products.map((product) => [product.id, mapDbToProduct(product)]))
+  return ranked.flatMap(({ id }) => {
+    const product = byId.get(id)
+    return product && isProductOnSale(product) ? [product] : []
+  })
 }, ['storefront-sale-products-v1'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
 
 export const getCachedLocaleConfig = unstable_cache(getLocaleConfig, ['storefront-locale-v1'], {

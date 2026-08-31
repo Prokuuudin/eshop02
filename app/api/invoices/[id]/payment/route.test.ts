@@ -2,13 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
-vi.mock('@/lib/invoices-data-store', () => ({
-  getInvoiceById: vi.fn(),
-  recordPaymentInDb: vi.fn(),
-}))
+vi.mock('@/lib/invoices-data-store', () => {
+  class InvoicePaymentConflictError extends Error {
+    constructor(public readonly code: 'invoice_not_payable' | 'payment_exceeds_remaining') {
+      super(code)
+    }
+  }
+  return { getInvoiceById: vi.fn(), recordPaymentInDb: vi.fn(), InvoicePaymentConflictError }
+})
 
 import { getServerUser } from '@/lib/server-auth'
-import { getInvoiceById, recordPaymentInDb } from '@/lib/invoices-data-store'
+import { getInvoiceById, InvoicePaymentConflictError, recordPaymentInDb } from '@/lib/invoices-data-store'
 import { POST } from './route'
 
 const context = { params: Promise.resolve({ id: 'inv-1' }) }
@@ -42,5 +46,12 @@ describe('POST /api/invoices/:id/payment', () => {
     const response = await POST(request(10), context)
     expect(response.status).toBe(403)
     expect(getInvoiceById).not.toHaveBeenCalled()
+  })
+
+  it('returns a conflict for a duplicate request after the invoice became paid', async () => {
+    vi.mocked(recordPaymentInDb).mockRejectedValue(new InvoicePaymentConflictError('invoice_not_payable'))
+    const response = await POST(request(10), context)
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'invoice_not_payable' })
   })
 })

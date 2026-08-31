@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { transactionMock, tokenFindUniqueMock, hashPasswordMock } = vi.hoisted(() => ({
+const { transactionMock, tokenFindUniqueMock, hashPasswordMock, queryRawMock } = vi.hoisted(() => ({
   transactionMock: vi.fn(),
   tokenFindUniqueMock: vi.fn(),
   hashPasswordMock: vi.fn(),
+  queryRawMock: vi.fn(),
 }))
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: transactionMock,
+    $queryRaw: queryRawMock,
     passwordResetToken: { findUnique: tokenFindUniqueMock },
   },
 }))
@@ -44,6 +46,7 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
 beforeEach(() => {
   vi.clearAllMocks()
   hashPasswordMock.mockResolvedValue('NEW_HASH')
+  queryRawMock.mockResolvedValue([{ count: 1, resetAt: FUTURE }])
   tokenFindUniqueMock.mockResolvedValue({
     tokenHash: 'hashed',
     expiresAt: FUTURE,
@@ -52,6 +55,16 @@ beforeEach(() => {
 })
 
 describe('POST /api/auth/reset-password', () => {
+  it('rejects a rate-limited request before reading or consuming the token', async () => {
+    queryRawMock.mockResolvedValue([{ count: 11, resetAt: FUTURE }])
+
+    const res = await POST(makeRequest({ token: 'tok', password: 'new-password-1' }))
+
+    expect(res.status).toBe(429)
+    expect(tokenFindUniqueMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
   it('writes the new password hash to the DB for the token owner', async () => {
     const tx = makeTx()
     transactionMock.mockImplementation(async (fn) => fn(tx))

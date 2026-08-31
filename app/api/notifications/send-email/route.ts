@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { logApiError } from '@/lib/observability'
 import { getServerUser } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
@@ -87,14 +88,4 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
-
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-}
-
 

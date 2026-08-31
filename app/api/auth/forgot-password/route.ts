@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { logApiError } from '@/lib/observability'
 import crypto from 'crypto'
 import { sendEmail } from '@/lib/mailer'
@@ -6,24 +7,12 @@ import { prisma } from '@/lib/prisma'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { getClientIp } from '@/lib/request-ip'
 
 export const runtime = 'nodejs'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const tokenHash = (token: string): string => crypto.createHash('sha256').update(token).digest('hex')
-
-function getClientIp(req: NextRequest): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown'
-}
-
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-}
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
@@ -140,8 +129,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Always 200 — don't reveal whether email exists
   return NextResponse.json({ ok: true })
 }
-
-
 
 
 

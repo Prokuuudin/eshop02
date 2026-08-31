@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
+import { getClientIp } from '@/lib/request-ip'
 import { prisma } from '@/lib/prisma'
 import {
   verifyPassword,
@@ -16,14 +17,6 @@ import { recordCompanyActivity } from '@/lib/company-activity-log'
 // A structurally valid bcrypt hash that matches no real password - used to pay the
 // same bcrypt.compare cost on the "account not found" path as on a real login attempt.
 const DUMMY_PASSWORD_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEeO0z2Q2K3z8QeYfNqL4z8s7z8jN9z8jNu'
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -130,7 +123,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 
 
 

@@ -1,6 +1,7 @@
 import type { Order } from '@/lib/orders-store';
 import type { OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
+import { escapeHtml } from '@/lib/escape-html';
 
 type OrderPrintOptions = {
     orders: Order[];
@@ -11,16 +12,6 @@ type OrderPrintOptions = {
     title: string;
     totalLabel: string;
 };
-
-function escapeHtml(value: string): string {
-    return value.replace(/[&<>"']/g, (character) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-    })[character]!);
-}
 
 function buildOrderCard(
     order: Order,

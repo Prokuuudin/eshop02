@@ -44,6 +44,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     where: { companyId: auth.companyId },
     include: { author: { select: { name: true } } },
     orderBy: { createdAt: 'asc' },
+    take: 200,
   })
   return NextResponse.json({ messages: messages.map(serialize) })
 }

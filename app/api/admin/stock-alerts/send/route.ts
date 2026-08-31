@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
@@ -19,15 +20,6 @@ type AlertProduct = {
 const CATEGORY_LABEL: Record<string, string> = {
   hair: 'Волосы', face: 'Лицо', body: 'Тело',
   nails: 'Ногти', equipment: 'Аксессуары и инструменты',
-}
-
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
 }
 
 function buildHtml(products: AlertProduct[], threshold: number): string {
@@ -128,6 +120,5 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }
-
 
 

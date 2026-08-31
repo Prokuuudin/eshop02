@@ -65,14 +65,26 @@ describe('runSync', () => {
       .fn()
       .mockResolvedValue([])
     await expect(runSync(makeAdapter(), db)).rejects.toThrow('already running')
+    expect(db.syncRun.updateMany).not.toHaveBeenCalled()
   })
 
-  it('marks stale running syncs (> 30 min) as failed before starting', async () => {
+  it('marks stale running syncs only after acquiring the lock', async () => {
     const db = makeMockDb()
     await runSync(makeAdapter(), db)
     expect(db.syncRun.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ status: 'running' }) }),
+      expect.objectContaining({ where: expect.objectContaining({ id: { not: 'run-1' }, status: 'running' }) }),
     )
+  })
+
+  it('aborts without deactivation when lock ownership is lost during the run', async () => {
+    const db = makeMockDb()
+    ;(db.$executeRawUnsafe as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(0) // heartbeat no longer owns the lock
+      .mockResolvedValue(0) // scoped release is harmless
+    const result = await runSync(makeAdapter([{ externalId: 'e1', title: 'P1', price: 10, stock: 1 }]), db)
+    expect(result.status).toBe('failed')
+    expect(upsertProducts).not.toHaveBeenCalled()
+    expect(deactivateMissing).not.toHaveBeenCalled()
   })
 
   it('calls upsertProducts with product batch and current runId', async () => {

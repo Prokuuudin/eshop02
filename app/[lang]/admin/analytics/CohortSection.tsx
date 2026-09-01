@@ -178,11 +178,11 @@ export default function CohortSection(): ReactElement {
         </div>
       </div>
 
-      <div className="overflow-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="text-xs border-collapse">
-          <thead>
+          <thead className="[&_th]:sticky [&_th]:top-0 [&_th]:z-30 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:shadow-sm">
             <tr className="bg-muted">
-              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap sticky left-0 bg-muted z-10 border-r border-border">
+              <th className="!z-40 left-0 whitespace-nowrap border-r border-border bg-muted px-3 py-2.5 text-left font-medium text-muted-foreground">
                 {l('Когорта', 'Cohort', 'Kohorta')}
               </th>
               <th className="px-3 py-2.5 text-center font-medium text-muted-foreground whitespace-nowrap">

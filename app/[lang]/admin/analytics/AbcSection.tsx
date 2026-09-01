@@ -218,12 +218,12 @@ export default function AbcSection(): ReactElement {
       </div>
 
       {/* Table */}
-      <div id="abc-results" className="scroll-mt-4 overflow-auto rounded-xl border border-border">
+      <div id="abc-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border">
         <table className="min-w-full text-sm">
-          <thead className="bg-muted sticky top-0 z-10">
+          <thead className="[&_th]:sticky [&_th]:top-0 [&_th]:z-30 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:shadow-sm">
             <tr>
               <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap sm:table-cell">#</th>
-              <th className="sticky left-0 z-20 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground">{l('Товар', 'Product', 'Produkts')}</th>
+              <th className="!z-40 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground left-0">{l('Товар', 'Product', 'Produkts')}</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Бренд', 'Brand', 'Zīmols')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Кол-во', 'Qty', 'Daudzums')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Выручка', 'Revenue', 'Ieņēmumi')}</th>

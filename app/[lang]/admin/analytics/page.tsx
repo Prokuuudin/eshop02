@@ -18,7 +18,7 @@ type Tab = 'abc' | 'cohort' | 'seo';
 export default function AdminAnalyticsPage(): React.ReactElement {
     const { l } = useAdminLocale();
     const tabs: { value: Tab; label: string; desc: string }[] = [
-        { value: 'abc', label: l('ABC-анализ', 'ABC analysis', 'ABC analīze'), desc: l('Топ товаров по доле в выручке', 'Top products by share of revenue', 'Populārākie produkti pēc ieņēmumu daļas') },
+        { value: 'abc', label: l('ABC/XYZ-анализ', 'ABC/XYZ analysis', 'ABC/XYZ analīze'), desc: l('Ценность товаров и стабильность спроса', 'Product value and demand stability', 'Produktu vērtība un pieprasījuma stabilitāte') },
         { value: 'cohort', label: l('Когортный анализ', 'Cohort analysis', 'Kohortu analīze'), desc: l('Удержание клиентов по месяцам', 'Monthly customer retention', 'Klientu noturēšana pa mēnešiem') },
         { value: 'seo', label: l('SEO-отчёт', 'SEO report', 'SEO pārskats'), desc: l('Товары с пробелами в метаданных', 'Products with missing metadata', 'Produkti ar trūkstošiem metadatiem') },
     ];

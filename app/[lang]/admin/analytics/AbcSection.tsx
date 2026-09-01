@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { formatEuro } from '@/lib/utils'
-import { AnalyticsPagination, GRADE_STYLES, type AbcGrade, type AbcRow, Empty, LoadError } from './analytics-shared'
+import { AnalyticsPagination, GRADE_STYLES, XYZ_STYLES, type AbcGrade, type AbcRow, type XyzGrade, Empty, LoadError } from './analytics-shared'
 import type { ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 import { Input } from '@/components/ui/input'
 
 type AbcPeriod = '30d' | '90d' | '365d' | 'all'
-type AbcResponse = { rows: AbcRow[]; total: number; page: number; pageSize: number; summary: Record<AbcGrade, { count: number; revenue: number }>; period?: AbcPeriod }
+type MatrixCell = { count: number; revenue: number }
+type AbcResponse = { rows: AbcRow[]; total: number; page: number; pageSize: number; summary: Record<AbcGrade, MatrixCell>; matrix: Partial<Record<`${AbcGrade}${XyzGrade}`, MatrixCell>>; period?: AbcPeriod; xyzWindow?: string }
 const DEFAULT_PAGE_SIZE = 25
 const EMPTY_SUMMARY: AbcResponse['summary'] = { A: { count: 0, revenue: 0 }, B: { count: 0, revenue: 0 }, C: { count: 0, revenue: 0 } }
+const EMPTY_MATRIX: AbcResponse['matrix'] = {}
 
 export default function AbcSection(): ReactElement {
   const { l, locale } = useAdminLocale()
   const [filter, setFilter] = useState<AbcGrade | 'all'>('all')
+  const [xyzFilter, setXyzFilter] = useState<XyzGrade | 'all'>('all')
   const [query, setQuery] = useState('')
   const [loaded, setLoaded] = useState<AbcResponse | null>(null)
   const [error, setError] = useState(false)
@@ -28,11 +31,13 @@ export default function AbcSection(): ReactElement {
     const urlPage = Number(params.get('abcPage'))
     const urlSize = Number(params.get('abcPageSize'))
     const urlGrade = params.get('abcGrade')
+    const urlXyz = params.get('xyzGrade')
     const urlPeriod = params.get('abcPeriod')
     queueMicrotask(() => {
       if (urlPage > 0) setPage(urlPage)
       if ([25, 50, 100].includes(urlSize)) setPageSize(urlSize)
       if (urlGrade === 'A' || urlGrade === 'B' || urlGrade === 'C') setFilter(urlGrade)
+      if (urlXyz === 'X' || urlXyz === 'Y' || urlXyz === 'Z') setXyzFilter(urlXyz)
       if (urlPeriod === '30d' || urlPeriod === '90d' || urlPeriod === '365d' || urlPeriod === 'all') setPeriod(urlPeriod)
       setQuery(params.get('abcSearch') ?? '')
       setUrlReady(true)
@@ -42,9 +47,9 @@ export default function AbcSection(): ReactElement {
   useEffect(() => {
     if (!urlReady) return
     const url = new URL(window.location.href)
-    ;[['abcPage', String(page)], ['abcPageSize', String(pageSize)], ['abcGrade', filter], ['abcPeriod', period], ['abcSearch', query.trim()]].forEach(([key, value]) => value && value !== 'all' ? url.searchParams.set(key, value) : url.searchParams.delete(key))
+    ;[['abcPage', String(page)], ['abcPageSize', String(pageSize)], ['abcGrade', filter], ['xyzGrade', xyzFilter], ['abcPeriod', period], ['abcSearch', query.trim()]].forEach(([key, value]) => value && value !== 'all' ? url.searchParams.set(key, value) : url.searchParams.delete(key))
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
-  }, [filter, page, pageSize, period, query, urlReady])
+  }, [filter, page, pageSize, period, query, urlReady, xyzFilter])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -52,18 +57,20 @@ export default function AbcSection(): ReactElement {
     if (!urlReady) return () => controller.abort()
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), period })
     if (filter !== 'all') params.set('grade', filter)
+    if (xyzFilter !== 'all') params.set('xyz', xyzFilter)
     if (query.trim()) params.set('search', query.trim())
     fetch(`/api/admin/analytics/abc?${params}`, { signal: controller.signal, cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
       .then((json: AbcResponse) => { const lastPage = Math.max(1, Math.ceil(json.total / pageSize)); if (page > lastPage) { setPage(lastPage); return; } setLoaded(json); setError(false) })
-      .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ rows: [], total: 0, page, pageSize, summary: EMPTY_SUMMARY }); setError(true) } })
+      .catch((e) => { if ((e as Error).name !== 'AbortError') { setLoaded({ rows: [], total: 0, page, pageSize, summary: EMPTY_SUMMARY, matrix: EMPTY_MATRIX }); setError(true) } })
     }, query.trim() ? 250 : 0)
     return () => { clearTimeout(timeout); controller.abort() }
-  }, [filter, page, pageSize, period, query, reloadKey, urlReady])
+  }, [filter, page, pageSize, period, query, reloadKey, urlReady, xyzFilter])
 
   const rows = loaded?.rows ?? []
   const summary = loaded?.summary ?? EMPTY_SUMMARY
   const totalRevenue = Object.values(summary).reduce((sum, item) => sum + item.revenue, 0)
+  const matrix = loaded?.matrix ?? EMPTY_MATRIX
 
   if (loaded === null) {
     return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
@@ -71,7 +78,7 @@ export default function AbcSection(): ReactElement {
   if (error) {
     return <LoadError text={l('Не удалось загрузить ABC-анализ.', 'Failed to load ABC analysis.', 'Neizdevās ielādēt ABC analīzi.')} retryLabel={l('Повторить', 'Retry', 'Mēģināt vēlreiz')} onRetry={() => { setLoaded(null); setError(false); setReloadKey((key) => key + 1) }} />
   }
-  if (rows.length === 0 && filter === 'all' && !query.trim()) {
+  if (rows.length === 0 && filter === 'all' && xyzFilter === 'all' && !query.trim()) {
     return <Empty text={l('Нет данных о заказах. ABC-анализ строится на истории продаж.', 'No order data. ABC analysis is based on sales history.', 'Nav pasūtījumu datu. ABC analīze tiek veidota no pārdošanas vēstures.')} />
   }
 
@@ -112,6 +119,22 @@ export default function AbcSection(): ReactElement {
         {l('A — 80% выручки · B — следующие 15% · C — оставшиеся 5%', 'A — 80% of revenue · B — next 15% · C — remaining 5%', 'A — 80% ieņēmumu · B — nākamie 15% · C — atlikušie 5%')}
       </div>
 
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div><h2 className="font-semibold text-foreground">{l('Матрица ABC/XYZ', 'ABC/XYZ matrix', 'ABC/XYZ matrica')}</h2><p className="text-xs text-muted-foreground">{l('X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% или нет регулярного спроса', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% or no regular demand', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% vai nav regulāra pieprasījuma')}</p></div>
+          {(filter !== 'all' || xyzFilter !== 'all') && <button type="button" onClick={() => { setFilter('all'); setXyzFilter('all'); setPage(1); setLoaded(null) }} className="text-xs text-primary hover:underline">{l('Сбросить матрицу', 'Clear matrix filter', 'Notīrīt matricas filtru')}</button>}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {(['A', 'B', 'C'] as AbcGrade[]).flatMap((abc) => (['X', 'Y', 'Z'] as XyzGrade[]).map((xyz) => {
+            const key = `${abc}${xyz}` as `${AbcGrade}${XyzGrade}`
+            const cell = matrix[key] ?? { count: 0, revenue: 0 }
+            const active = filter === abc && xyzFilter === xyz
+            return <button key={key} type="button" aria-pressed={active} onClick={() => { setFilter(active ? 'all' : abc); setXyzFilter(active ? 'all' : xyz); setPage(1); setLoaded(null) }} className={`rounded-lg border p-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-border bg-card hover:bg-muted/50'}`}><div className="flex items-center justify-between"><span className="font-bold">{key}</span><span className="text-sm tabular-nums">{cell.count}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatEuro(cell.revenue, locale)}</p></button>
+          }))}
+        </div>
+        {period === 'all' && <p className="text-xs text-muted-foreground">{l('XYZ рассчитан по последним 12 месяцам; ABC — за всё время.', 'XYZ uses the latest 12 months; ABC uses all time.', 'XYZ izmanto pēdējos 12 mēnešus; ABC — visu periodu.')}</p>}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
       <Input
         value={query}
@@ -123,7 +146,7 @@ export default function AbcSection(): ReactElement {
         <select aria-label={l('Период ABC-анализа', 'ABC analysis period', 'ABC analīzes periods')} value={period} onChange={(event) => { setPeriod(event.target.value as AbcPeriod); setPage(1); setLoaded(null) }} className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
           <option value="30d">{l('30 дней', '30 days', '30 dienas')}</option><option value="90d">{l('90 дней', '90 days', '90 dienas')}</option><option value="365d">{l('365 дней', '365 days', '365 dienas')}</option><option value="all">{l('Всё время', 'All time', 'Viss periods')}</option>
         </select>
-        <a href={`/api/admin/analytics/abc?period=${period}&grade=${filter === 'all' ? '' : filter}&search=${encodeURIComponent(query.trim())}&export=csv`} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</a>
+        <a href={`/api/admin/analytics/abc?period=${period}&grade=${filter === 'all' ? '' : filter}&xyz=${xyzFilter === 'all' ? '' : xyzFilter}&search=${encodeURIComponent(query.trim())}&export=csv`} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</a>
       </div>
       </div>
 
@@ -140,6 +163,7 @@ export default function AbcSection(): ReactElement {
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('% от итога', '% of total', '% no kopējā')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Накопл. %', 'Cumulative %', 'Kumulatīvie %')}</th>
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Группа', 'Group', 'Grupa')}</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">CV</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-card">
@@ -168,10 +192,9 @@ export default function AbcSection(): ReactElement {
                   </span>
                 </td>
                 <td className="px-4 py-2.5 text-center">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${GRADE_STYLES[r.grade].badge}`}>
-                    {r.grade}
-                  </span>
+                  <span className={`rounded-l-full px-2 py-0.5 text-xs font-bold ${GRADE_STYLES[r.grade].badge}`}>{r.grade}</span><span className={`rounded-r-full px-2 py-0.5 text-xs font-bold ${XYZ_STYLES[r.xyzGrade]}`}>{r.xyzGrade}</span>
                 </td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{r.variationCoeff == null ? '—' : r.variationCoeff.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -180,7 +203,7 @@ export default function AbcSection(): ReactElement {
           <div className="py-10 text-center text-sm text-muted-foreground">
             {query.trim()
               ? l('Ничего не найдено', 'Nothing found', 'Nekas netika atrasts')
-              : `${l('Нет товаров в группе', 'No products in group', 'Grupā nav produktu')} ${filter}`}
+              : `${l('Нет товаров в группе', 'No products in group', 'Grupā nav produktu')} ${filter === 'all' ? '' : filter}${xyzFilter === 'all' ? '' : xyzFilter}`}
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
 
 export type AbcGrade = 'A' | 'B' | 'C';
+export type XyzGrade = 'X' | 'Y' | 'Z';
 
 export type AbcRow = {
     id: string;
@@ -11,6 +12,8 @@ export type AbcRow = {
     revenuePct: number;
     cumPct: number;
     grade: AbcGrade;
+    xyzGrade: XyzGrade;
+    variationCoeff: number | null;
 };
 
 export type SeoProduct = {
@@ -69,6 +72,12 @@ export const GRADE_STYLES: Record<AbcGrade, { badge: string; row: string }> = {
         badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
         row: 'opacity-60',
     },
+};
+
+export const XYZ_STYLES: Record<XyzGrade, string> = {
+    X: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
+    Y: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
+    Z: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
 };
 
 export function Empty({ text }: { text: string }): ReactElement {

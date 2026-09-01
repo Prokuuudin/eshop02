@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAdminLogStore, mapServerLogEntry, getAdminActionLabels, type AdminLogAction } from '@/lib/admin-log-store'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import StickyTableHead from '@/components/admin/StickyTableHead'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -269,9 +270,9 @@ export default function AdminLogPage(): React.ReactElement {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="overflow-x-auto rounded-xl border border-border lg:overflow-visible">
               <table className="min-w-full text-sm bg-card">
-                <thead className="bg-muted sticky top-0 z-10">
+                <StickyTableHead>
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap">{l('Время', 'Time', 'Laiks')}</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Кто', 'Who', 'Kas')}</th>
@@ -280,7 +281,7 @@ export default function AdminLogPage(): React.ReactElement {
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('До → После', 'Before → After', 'Pirms → Pēc')}</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
-                </thead>
+                </StickyTableHead>
                 <tbody className="divide-y divide-border">
                   {pageItems.map((entry) => (
                     <Fragment key={entry.id}>

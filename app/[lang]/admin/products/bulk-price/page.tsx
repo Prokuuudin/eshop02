@@ -10,6 +10,7 @@ import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
 import { describeChange, formatMoney } from './bulk-price-model';
 import { useBulkPricePage } from './useBulkPricePage';
 import BulkPriceResultPanel from './BulkPriceResultPanel';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 
 export default function BulkPricePage(): React.ReactElement {
     const {
@@ -227,14 +228,14 @@ export default function BulkPricePage(): React.ReactElement {
                     </span>
                 </div>
 
-                <div className="order-2 overflow-x-auto rounded-xl border border-border bg-card">
+                <div className="order-2 overflow-x-auto rounded-xl border border-border bg-card lg:overflow-visible">
                     {loading ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка...', 'Loading...', 'Ielāde...')}</div>
                     ) : products.length === 0 ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead className="border-b border-border bg-muted">
+                            <StickyTableHead>
                                 <tr>
                                     <th className="w-10 px-4 py-3" />
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
@@ -253,7 +254,7 @@ export default function BulkPricePage(): React.ReactElement {
                                         {l('Новая цена', 'New price', 'Jaunā cena')}
                                     </th>
                                 </tr>
-                            </thead>
+                            </StickyTableHead>
                             <tbody className="divide-y divide-border">
                                 {products.map((p) => {
                                     const newPrice = preview(p);

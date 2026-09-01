@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AnalyticsPagination, Empty, LoadError, useStickyTableTop, type SeoProduct } from './analytics-shared';
-import type { CSSProperties, ReactElement } from 'react';
+import { AnalyticsPagination, Empty, LoadError, type SeoProduct } from './analytics-shared';
+import type { ReactElement } from 'react';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { Input } from '@/components/ui/input';
 import { ChevronDown } from 'lucide-react';
@@ -24,7 +25,6 @@ export default function SeoSection(): ReactElement {
     const [query, setQuery] = useState('');
     const [pageSize, setPageSize] = useState(25);
     const [urlReady, setUrlReady] = useState(false);
-    const stickyTableTop = useStickyTableTop();
     const [explanationOpen, setExplanationOpen] = useState(true);
 
     useEffect(() => {
@@ -211,10 +211,7 @@ export default function SeoSection(): ReactElement {
             {products.length > 0 && (
                 <div id="seo-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border lg:overflow-visible">
                     <table className="min-w-full text-sm bg-card">
-                        <thead
-                            className="[&_th]:sticky [&_th]:top-0 [&_th]:z-30 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:shadow-sm lg:[&_th]:top-[var(--analytics-table-top)]"
-                            style={{ '--analytics-table-top': `${stickyTableTop}px` } as CSSProperties}
-                        >
+                        <StickyTableHead>
                             <tr>
                                 <th className="!z-40 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground left-0">
                                     {l('Товар', 'Product', 'Produkts')}
@@ -239,7 +236,7 @@ export default function SeoSection(): ReactElement {
                                 </th>
                                 <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
                             </tr>
-                        </thead>
+                        </StickyTableHead>
                         <tbody className="divide-y divide-border">
                             {products.map((p) => (
                                 <tr

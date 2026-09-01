@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 import {
     fetchStockAlerts,
     type StockAlertRow,
@@ -295,7 +296,7 @@ export default function StockAlertsPage(): React.ReactElement {
                     />
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto rounded-xl border border-border bg-card lg:overflow-visible">
                     {loading ? (
                         <div className="py-16 text-center text-sm text-muted-foreground">{l('Загрузка...', 'Loading...', 'Ielāde...')}</div>
                     ) : products.length === 0 ? (
@@ -310,7 +311,7 @@ export default function StockAlertsPage(): React.ReactElement {
                         </div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead className="border-b border-border bg-muted">
+                            <StickyTableHead>
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                                         {l('Товар', 'Product', 'Produkts')}
@@ -334,7 +335,7 @@ export default function StockAlertsPage(): React.ReactElement {
                                         {l('Действие', 'Action', 'Darbība')}
                                     </th>
                                 </tr>
-                            </thead>
+                            </StickyTableHead>
                             <tbody className="divide-y divide-border">
                                 {products.map((p) => (
                                     <tr

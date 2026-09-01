@@ -81,28 +81,6 @@ export const XYZ_STYLES: Record<XyzGrade, string> = {
     Z: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
 };
 
-export function useStickyTableTop(gap = 0): number {
-    const [top, setTop] = useState(0);
-    useEffect(() => {
-        const header = document.querySelector('header.header');
-        if (!(header instanceof HTMLElement)) return;
-        let active = true;
-        const update = (): void => {
-            if (active) setTop(Math.ceil(header.getBoundingClientRect().bottom) + gap);
-        };
-        queueMicrotask(update);
-        const observer = new ResizeObserver(update);
-        observer.observe(header);
-        window.addEventListener('resize', update);
-        return () => {
-            active = false;
-            observer.disconnect();
-            window.removeEventListener('resize', update);
-        };
-    }, [gap]);
-    return top;
-}
-
 export function Empty({ text }: { text: string }): ReactElement {
     return (
         <div className="py-16 text-center text-sm text-muted-foreground rounded-xl border border-border">

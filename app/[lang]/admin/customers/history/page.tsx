@@ -11,6 +11,7 @@ import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { useAuthStore } from '@/lib/auth-store'
 import { hasAdminPermission } from '@/lib/admin-permissions'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import StickyTableHead from '@/components/admin/StickyTableHead'
 
 type ActivityEntry = {
   id: string
@@ -199,9 +200,9 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-lg border lg:overflow-visible">
               <table className="min-w-full text-sm">
-                <thead className="bg-muted/50">
+                <StickyTableHead>
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">{l('Дата', 'Date', 'Datums')}</th>
                     <th className="text-left px-4 py-3 font-medium">{l('Пользователь', 'User', 'Lietotājs')}</th>
@@ -209,7 +210,7 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                     <th className="text-left px-4 py-3 font-medium">{l('Компания', 'Company', 'Uzņēmums')}</th>
                     <th className="text-left px-4 py-3 font-medium">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
-                </thead>
+                </StickyTableHead>
                 <tbody className="divide-y">
                   {pageItems.map((entry) => (
                     <React.Fragment key={entry.id}>

@@ -5,6 +5,7 @@ import type { Product } from '@/data/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 
 interface ProductTableProps {
     products: Product[];
@@ -56,9 +57,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
     const cellCls = 'h-8 px-2 py-1 w-24 border-primary/50 dark:border-primary text-sm'
 
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto lg:overflow-visible">
             <table className="admin-products__table min-w-full border border-border rounded-lg">
-                <thead>
+                <StickyTableHead>
                     <tr className="bg-muted">
                         <th className="p-3 text-left font-semibold text-sm text-foreground">{l('Картинка', 'Image', 'Attēls')}</th>
                         <th className="p-3 text-left font-semibold text-sm text-foreground">{l('Название', 'Name', 'Nosaukums')}</th>
@@ -73,7 +74,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                         </th>
                         <th className="p-3 text-left font-semibold text-sm text-foreground">{l('Действия', 'Actions', 'Darbības')}</th>
                     </tr>
-                </thead>
+                </StickyTableHead>
                 <tbody>
                     {products.map((product, idx) => {
                         const isSaving = savingId === product.id

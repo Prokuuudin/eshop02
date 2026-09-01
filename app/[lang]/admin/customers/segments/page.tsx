@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { SEGMENT_CARD_COLORS, SEGMENT_COLORS, segmentReason, type Segment } from './segment-model';
 import { useCustomerSegmentsPage } from './useCustomerSegmentsPage';
 import { SegmentBroadcastPanel } from './SegmentBroadcastPanel';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 
 export default function AdminCustomerSegmentsPage(): React.ReactElement {
     const segmentsState = useCustomerSegmentsPage();
@@ -204,9 +205,9 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                                 )}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto rounded-lg border border-border">
+                            <div className="overflow-x-auto rounded-lg border border-border lg:overflow-visible">
                                 <table className="min-w-full text-sm">
-                                    <thead className="bg-muted">
+                                    <StickyTableHead>
                                         <tr>
                                             <th className="text-left px-4 py-3 font-medium text-muted-foreground">
                                                 <button
@@ -262,7 +263,7 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                                             </th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
-                                    </thead>
+                                    </StickyTableHead>
                                     <tbody className="divide-y divide-border">
                                         {customers.map((c) => (
                                             <tr

@@ -16,6 +16,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Grid2X2, LayoutList } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import StickyTableHead from '@/components/admin/StickyTableHead';
 import MediaFileDetails, { fmtBytes, fmtDate } from './MediaFileDetails';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -325,9 +326,9 @@ export default function AdminMediaPage(): React.ReactElement {
                                 </div>
                             ) : (
                                 /* List view */
-                                <div className="rounded-xl border border-border overflow-x-auto">
+                                <div className="rounded-xl border border-border overflow-x-auto lg:overflow-visible">
                                     <table className="min-w-full text-sm bg-card">
-                                        <thead className="bg-muted">
+                                        <StickyTableHead>
                                             <tr>
                                                 <th className="w-8 px-3 py-2.5"></th>
                                                 <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
@@ -344,7 +345,7 @@ export default function AdminMediaPage(): React.ReactElement {
                                                 </th>
                                                 <th className="px-3 py-2.5"></th>
                                             </tr>
-                                        </thead>
+                                        </StickyTableHead>
                                         <tbody className="divide-y divide-border">
                                             {displayed.map((file) => {
                                                 const isChecked = checkedNames.has(file.name);

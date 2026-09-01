@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import StickyTableHead from '@/components/admin/StickyTableHead'
 
 type ActivityEntry = {
   id: string
@@ -214,9 +215,9 @@ export default function AdminSystemLogsPage(): React.ReactElement {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto rounded-lg border lg:overflow-visible">
               <table className="min-w-full text-sm">
-                <thead className="bg-muted/50">
+                <StickyTableHead>
                   <tr>
                     <th className="text-left px-4 py-3 font-medium whitespace-nowrap">{l('Дата и время', 'Timestamp', 'Datums un laiks')}</th>
                     <th className="text-left px-4 py-3 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
@@ -224,7 +225,7 @@ export default function AdminSystemLogsPage(): React.ReactElement {
                     <th className="text-left px-4 py-3 font-medium">companyId</th>
                     <th className="text-left px-4 py-3 font-medium">{l('Детали', 'Details', 'Informācija')}</th>
                   </tr>
-                </thead>
+                </StickyTableHead>
                 <tbody className="divide-y">
                   {pageItems.map((entry) => (
                     <>

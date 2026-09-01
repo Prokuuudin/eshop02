@@ -18,6 +18,7 @@ export type AbcRow = {
 
 export type SeoProduct = {
     id: string;
+    sku: string | null;
     title: string;
     brand: string;
     category: string;

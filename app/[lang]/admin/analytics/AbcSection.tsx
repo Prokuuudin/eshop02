@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { formatEuro } from '@/lib/utils'
-import { AnalyticsPagination, GRADE_STYLES, XYZ_STYLES, type AbcGrade, type AbcRow, type XyzGrade, Empty, LoadError } from './analytics-shared'
-import type { ReactElement } from 'react'
+import { AnalyticsPagination, GRADE_STYLES, XYZ_STYLES, type AbcGrade, type AbcRow, type XyzGrade, Empty, LoadError, useStickyTableTop } from './analytics-shared'
+import type { CSSProperties, ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 import { Input } from '@/components/ui/input'
 import { ChevronDown } from 'lucide-react'
@@ -39,6 +39,7 @@ export default function AbcSection(): ReactElement {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [urlReady, setUrlReady] = useState(false)
   const [explanationOpen, setExplanationOpen] = useState(true)
+  const stickyTableTop = useStickyTableTop()
 
   useEffect(() => {
     let cancelled = false
@@ -218,9 +219,12 @@ export default function AbcSection(): ReactElement {
       </div>
 
       {/* Table */}
-      <div id="abc-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border">
+      <div id="abc-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border lg:overflow-visible">
         <table className="min-w-full text-sm">
-          <thead className="[&_th]:sticky [&_th]:top-0 [&_th]:z-30 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:shadow-sm">
+          <thead
+            className="[&_th]:sticky [&_th]:top-0 [&_th]:z-30 [&_th]:border-b [&_th]:border-border [&_th]:bg-muted [&_th]:shadow-sm lg:[&_th]:top-[var(--analytics-table-top)]"
+            style={{ '--analytics-table-top': `${stickyTableTop}px` } as CSSProperties}
+          >
             <tr>
               <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap sm:table-cell">#</th>
               <th className="!z-40 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground left-0">{l('Товар', 'Product', 'Produkts')}</th>

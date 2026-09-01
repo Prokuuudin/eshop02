@@ -81,7 +81,7 @@ export default function SeoSection(): ReactElement {
                     title: p.title || '—',
                     brand: p.brand || '—',
                     category: p.category || '—',
-                    issueCount: (p.hasMetaTitle && p.validMetaTitleLength ? 0 : 1) + (p.hasMetaDesc && p.validMetaDescLength ? 0 : 1) + (p.hasImage ? 0 : 1) + (p.hasImageAlt ? 0 : 1) + (p.hasTranslations ? 0 : 1) + (p.duplicateMeta ? 1 : 0),
+                    issueCount: (p.hasMetaTitle ? 0 : 1) + (p.hasMetaDesc ? 0 : 1) + (p.hasImage ? 0 : 1) + (p.hasImageAlt ? 0 : 1) + (p.hasTranslations ? 0 : 1),
                 }));
                 if (active) {
                     setProducts(mapped);
@@ -121,19 +121,19 @@ export default function SeoSection(): ReactElement {
                 {[
                     {
                         key: 'all' as const,
-                        label: l('С проблемами', 'With issues', 'Ar problēmām'),
+                        label: l('Критичные пробелы', 'Critical gaps', 'Kritiski trūkumi'),
                         color: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10',
                         text: 'text-red-700 dark:text-red-300',
                     },
                     {
                         key: 'metaTitle' as const,
-                        label: l('Нет metaTitle', 'Missing metaTitle', 'Nav metaTitle'),
+                        label: l('Нет заголовка страницы', 'Missing page title', 'Nav lapas virsraksta'),
                         color: 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/10',
                         text: 'text-orange-700 dark:text-orange-300',
                     },
                     {
                         key: 'metaDesc' as const,
-                        label: l('Нет metaDescription', 'Missing metaDescription', 'Nav metaDescription'),
+                        label: l('Нет описания страницы', 'Missing page description', 'Nav lapas apraksta'),
                         color: 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/10',
                         text: 'text-yellow-700 dark:text-yellow-300',
                     },
@@ -145,7 +145,7 @@ export default function SeoSection(): ReactElement {
                     },
                     { key: 'imageAlt' as const, label: l('Нет описания превью (Alt)', 'Missing preview description (Alt)', 'Nav priekšskatījuma apraksta (Alt)'), color: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10', text: 'text-blue-700 dark:text-blue-300' },
                     { key: 'translations' as const, label: l('Нет названий EN/LV', 'Missing EN/LV titles', 'Nav EN/LV nosaukumu'), color: 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/10', text: 'text-violet-700 dark:text-violet-300' },
-                    { key: 'duplicate' as const, label: l('Дубликаты meta', 'Duplicate metadata', 'Meta dublikāti'), color: 'border-pink-200 bg-pink-50 dark:border-pink-800 dark:bg-pink-900/10', text: 'text-pink-700 dark:text-pink-300' },
+                    { key: 'duplicate' as const, label: l('Рекомендация: дубли meta', 'Advisory: duplicate metadata', 'Ieteikums: meta dublikāti'), color: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10', text: 'text-amber-700 dark:text-amber-300' },
                 ].map((s) => (
                     <button
                         key={s.key}
@@ -185,9 +185,9 @@ export default function SeoSection(): ReactElement {
                         'Zaļš ķeksītis nozīmē, ka pārbaude ir izturēta; sarkans krustiņš — lauka nav vai tas aizpildīts nepareizi. Skaitlis kolonnā “Problēmas” rāda kopējo atrasto problēmu skaitu precei.'
                     )}</p>
                     <p>{l(
-                        'metaTitle считается корректным при длине 10–60 символов, metaDescription — 50–160 символов. «Фото» проверяет наличие изображения, «Описание превью (Alt)» — текст для изображения в превью ссылки (OG; без фото показывается «—»), EN/LV — наличие английского и латышского названий, «Дубли» — повторяющиеся метаданные у разных товаров.',
-                        'A valid metaTitle is 10–60 characters and a valid metaDescription is 50–160 characters. “Image” checks for a product image, “Preview description (Alt)” checks the text for the link preview image (OG; “—” is shown when there is no image), EN/LV checks English and Latvian titles, and “Duplicates” identifies metadata repeated across products.',
-                        'Derīgs metaTitle ir 10–60 rakstzīmes, bet metaDescription — 50–160 rakstzīmes. “Attēls” pārbauda preces attēla esamību, “Priekšskatījuma apraksts (Alt)” — saites priekšskatījuma attēla tekstu (OG; ja attēla nav, rāda “—”), EN/LV — angļu un latviešu nosaukumus, bet “Dublikāti” atrod vairākām precēm atkārtotus metadatus.'
+                        'Отчёт учитывает фактические fallback витрины: название товара для metaTitle и Alt, описание товара или связку «бренд — название» для metaDescription. Длина 10–60 и 50–160 символов показана жёлтым как рекомендация, но не считается ошибкой. «Фото» проверяет изображение, EN/LV — переводы названия, «Дубли» — одинаковые итоговые метаданные.',
+                        'The report includes storefront fallbacks: the product title for metaTitle and Alt, and the product description or “brand — title” for metaDescription. Lengths of 10–60 and 50–160 characters are shown in amber as recommendations, not errors. Image checks the product image, EN/LV checks translated titles, and Duplicates checks effective metadata.',
+                        'Pārskatā ņemtas vērā vitrīnas rezerves vērtības: preces nosaukums metaTitle un Alt laukam, bet preces apraksts vai “zīmols — nosaukums” metaDescription laukam. Garums 10–60 un 50–160 rakstzīmes ir dzeltens ieteikums, nevis kļūda. Attēls pārbauda preces attēlu, EN/LV — tulkotos nosaukumus, Dublikāti — gala metadatus.'
                     )}</p>
                     <p>{l(
                         'Начинайте с товаров с наибольшим числом проблем и высокой коммерческой важностью. Нажмите «Редактировать», исправьте поля товара и затем вернитесь к отчёту для повторной проверки. CSV-экспорт сохраняет текущий фильтр и поиск.',
@@ -198,13 +198,13 @@ export default function SeoSection(): ReactElement {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={l('Поиск по товару, бренду или категории…', 'Search by product, brand or category…', 'Meklēt pēc produkta, zīmola vai kategorijas…')} className="max-w-sm" />
+                <Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={l('Поиск по товару, ID, SKU, бренду или категории…', 'Search by product, ID, SKU, brand or category…', 'Meklēt pēc produkta, ID, SKU, zīmola vai kategorijas…')} className="max-w-sm" />
                 <a href={`/api/admin/analytics/seo?issue=${issueFilter}&search=${encodeURIComponent(query.trim())}&export=csv`} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</a>
             </div>
 
             {allOk && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                    {l(`Все ${catalogTotal} товаров заполнены корректно. SEO-пробелов нет.`, `All ${catalogTotal} products are complete. No SEO gaps found.`, `Visi ${catalogTotal} produkti ir aizpildīti pareizi. SEO trūkumu nav.`)}
+                    {l(`У всех ${catalogTotal} товаров нет критичных SEO-пробелов. Рекомендации по длине и дублям могут оставаться.`, `All ${catalogTotal} products have no critical SEO gaps. Length and duplicate recommendations may remain.`, `Visām ${catalogTotal} precēm nav kritisku SEO trūkumu. Ieteikumi par garumu un dublikātiem var palikt.`)}
                 </div>
             )}
 
@@ -248,21 +248,24 @@ export default function SeoSection(): ReactElement {
                                 >
                                     <td className="sticky left-0 max-w-xs bg-card px-4 py-2.5 font-medium text-foreground">
                                         <span className="truncate block">{p.title}</span>
+                                        <span className="mt-0.5 block font-mono text-[11px] font-normal text-muted-foreground">
+                                            ID: {p.id}{p.sku ? ` · SKU: ${p.sku}` : ''}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-2.5 text-muted-foreground">
                                         <p>{p.brand}</p>
                                         <p className="text-xs capitalize">{p.category}</p>
                                     </td>
                                     <td className="px-4 py-2.5 text-center">
-                                        {p.hasMetaTitle && p.validMetaTitleLength ? (
-                                            <span className="text-emerald-500">✓</span>
+                                        {p.hasMetaTitle ? (
+                                            <span className={p.validMetaTitleLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaTitleLength ? undefined : l('Длина вне рекомендуемого диапазона 10–60 символов', 'Length is outside the recommended 10–60 characters', 'Garums ir ārpus ieteicamā 10–60 rakstzīmju diapazona')}>{p.validMetaTitleLength ? '✓' : '!'}</span>
                                         ) : (
                                             <span className="text-red-500 font-semibold">✗</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-2.5 text-center">
-                                        {p.hasMetaDesc && p.validMetaDescLength ? (
-                                            <span className="text-emerald-500">✓</span>
+                                        {p.hasMetaDesc ? (
+                                            <span className={p.validMetaDescLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaDescLength ? undefined : l('Длина вне рекомендуемого диапазона 50–160 символов', 'Length is outside the recommended 50–160 characters', 'Garums ir ārpus ieteicamā 50–160 rakstzīmju diapazona')}>{p.validMetaDescLength ? '✓' : '!'}</span>
                                         ) : (
                                             <span className="text-red-500 font-semibold">✗</span>
                                         )}
@@ -281,10 +284,10 @@ export default function SeoSection(): ReactElement {
                                         <span className={p.hasTranslations ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasTranslations ? '✓' : '✗'}</span>
                                     </td>
                                     <td className="px-4 py-2.5 text-center" title={l('Дубликаты метаданных', 'Duplicate metadata', 'Meta dublikāti')}>
-                                        <span className={p.duplicateMeta ? 'font-semibold text-red-500' : 'text-emerald-500'}>{p.duplicateMeta ? '✗' : '✓'}</span>
+                                        <span className={p.duplicateMeta ? 'font-semibold text-amber-500' : 'text-emerald-500'}>{p.duplicateMeta ? '!' : '✓'}</span>
                                     </td>
                                     <td className="px-4 py-2.5 text-center">
-                                        <span
+                                        {p.issueCount === 0 ? <span className="whitespace-nowrap text-xs font-medium text-amber-600 dark:text-amber-400">{l('совет', 'advisory', 'ieteikums')}</span> : <span
                                             className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                                                 p.issueCount >= 4
                                                     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
@@ -294,7 +297,7 @@ export default function SeoSection(): ReactElement {
                                             }`}
                                         >
                                             {p.issueCount}
-                                        </span>
+                                        </span>}
                                     </td>
                                     <td className="px-4 py-2.5">
                                         <Link

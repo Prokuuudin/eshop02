@@ -17,7 +17,9 @@ function useAdminHeaderBottom(gap: number): number {
 
         let active = true;
         const update = (): void => {
-            if (active) setTop(Math.ceil(header.getBoundingClientRect().bottom) + gap);
+            // Slightly overlap the global header so fractional layout pixels and
+            // browser rounding can never leave a transparent seam between them.
+            if (active) setTop(Math.max(0, Math.floor(header.getBoundingClientRect().bottom) + gap - 1));
         };
 
         queueMicrotask(update);

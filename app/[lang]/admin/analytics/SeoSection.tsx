@@ -4,9 +4,11 @@ import { AnalyticsPagination, Empty, LoadError, type SeoProduct } from './analyt
 import type { ReactElement } from 'react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { Input } from '@/components/ui/input';
+import { ChevronDown } from 'lucide-react';
 
 type SeoIssue = 'all' | 'metaTitle' | 'metaDesc' | 'image' | 'imageAlt' | 'translations' | 'duplicate';
 type SeoCounts = Record<SeoIssue, number>;
+const SEO_EXPLANATION_STORAGE_KEY = 'admin-analytics-seo-explanation-open';
 
 export default function SeoSection(): ReactElement {
     const { l } = useAdminLocale();
@@ -22,6 +24,23 @@ export default function SeoSection(): ReactElement {
     const [query, setQuery] = useState('');
     const [pageSize, setPageSize] = useState(25);
     const [urlReady, setUrlReady] = useState(false);
+    const [explanationOpen, setExplanationOpen] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        queueMicrotask(() => {
+            if (!cancelled) setExplanationOpen(window.localStorage.getItem(SEO_EXPLANATION_STORAGE_KEY) !== 'false');
+        });
+        return () => { cancelled = true; };
+    }, []);
+
+    const toggleExplanation = (): void => {
+        setExplanationOpen((open) => {
+            const next = !open;
+            window.localStorage.setItem(SEO_EXPLANATION_STORAGE_KEY, String(next));
+            return next;
+        });
+    };
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -86,7 +105,13 @@ export default function SeoSection(): ReactElement {
     if (catalogTotal === 0)
         return <Empty text={l('В каталоге пока нет товаров.', 'There are no products in the catalog yet.', 'Katalogā vēl nav produktu.')} />;
 
-    const allOk = catalogTotal > 0 && counts.all === 0;
+    const allOk = !query.trim() && catalogTotal > 0 && counts.all === 0;
+    const seoReturnParams = new URLSearchParams({ tab: 'seo' });
+    if (page > 1) seoReturnParams.set('seoPage', String(page));
+    if (pageSize !== 25) seoReturnParams.set('seoPageSize', String(pageSize));
+    if (issueFilter !== 'all') seoReturnParams.set('seoIssue', issueFilter);
+    if (query.trim()) seoReturnParams.set('seoSearch', query.trim());
+    const seoReturnTo = `/admin/analytics?${seoReturnParams.toString()}`;
 
     return (
         <div className="space-y-5">
@@ -117,8 +142,8 @@ export default function SeoSection(): ReactElement {
                         color: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800',
                         text: 'text-gray-700 dark:text-gray-300',
                     },
-                    { key: 'imageAlt' as const, label: l('Нет alt', 'Missing alt', 'Nav alt'), color: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10', text: 'text-blue-700 dark:text-blue-300' },
-                    { key: 'translations' as const, label: l('Нет EN/LV', 'Missing EN/LV', 'Nav EN/LV'), color: 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/10', text: 'text-violet-700 dark:text-violet-300' },
+                    { key: 'imageAlt' as const, label: l('Нет описания превью (Alt)', 'Missing preview description (Alt)', 'Nav priekšskatījuma apraksta (Alt)'), color: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10', text: 'text-blue-700 dark:text-blue-300' },
+                    { key: 'translations' as const, label: l('Нет названий EN/LV', 'Missing EN/LV titles', 'Nav EN/LV nosaukumu'), color: 'border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-900/10', text: 'text-violet-700 dark:text-violet-300' },
                     { key: 'duplicate' as const, label: l('Дубликаты meta', 'Duplicate metadata', 'Meta dublikāti'), color: 'border-pink-200 bg-pink-50 dark:border-pink-800 dark:bg-pink-900/10', text: 'text-pink-700 dark:text-pink-300' },
                 ].map((s) => (
                     <button
@@ -135,6 +160,40 @@ export default function SeoSection(): ReactElement {
                         <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
                     </button>
                 ))}
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/40 text-sm text-foreground">
+                <button type="button" onClick={toggleExplanation} aria-expanded={explanationOpen} className="group flex w-full items-baseline gap-2 px-4 py-3 text-left">
+                    <span className="text-sm font-semibold leading-5">{l('Как читать SEO-отчёт', 'How to read the SEO report', 'Kā lasīt SEO pārskatu')}</span>
+                    <span className="text-xs font-medium leading-5 text-primary underline-offset-4 group-hover:underline">
+                        {explanationOpen
+                            ? l('Свернуть пояснения', 'Hide explanation', 'Paslēpt skaidrojumu')
+                            : l('Показать пояснения', 'Show explanation', 'Rādīt skaidrojumu')}
+                    </span>
+                    <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 self-center text-primary transition-transform ${explanationOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {explanationOpen && <div className="space-y-2 border-t border-border px-4 pb-4 pt-3 text-muted-foreground">
+                    <p>{l(
+                        'Цветные карточки показывают, сколько товаров имеют каждый тип SEO-проблемы с учётом текущего поиска. Один товар может попасть сразу в несколько карточек, поэтому их значения не нужно складывать. Нажмите на карточку, чтобы отфильтровать таблицу.',
+                        'The colored cards show how many products have each type of SEO issue within the current search. A product can appear in several cards, so their values should not be added together. Select a card to filter the table.',
+                        'Krāsainās kartītes rāda, cik precēm pašreizējā meklēšanā ir katrs SEO problēmas veids. Viena prece var būt vairākās kartītēs, tāpēc to vērtības nav jāsaskaita. Noklikšķiniet uz kartītes, lai filtrētu tabulu.'
+                    )}</p>
+                    <p>{l(
+                        'Зелёная галочка означает, что проверка пройдена; красный крестик — поле отсутствует или заполнено некорректно. Число в колонке «Проблем» показывает общее количество замечаний по товару.',
+                        'A green check means the test passed; a red cross means the field is missing or invalid. The number in the “Issues” column is the total number of findings for that product.',
+                        'Zaļš ķeksītis nozīmē, ka pārbaude ir izturēta; sarkans krustiņš — lauka nav vai tas aizpildīts nepareizi. Skaitlis kolonnā “Problēmas” rāda kopējo atrasto problēmu skaitu precei.'
+                    )}</p>
+                    <p>{l(
+                        'metaTitle считается корректным при длине 10–60 символов, metaDescription — 50–160 символов. «Фото» проверяет наличие изображения, «Описание превью (Alt)» — текст для изображения в превью ссылки (OG; без фото показывается «—»), EN/LV — наличие английского и латышского названий, «Дубли» — повторяющиеся метаданные у разных товаров.',
+                        'A valid metaTitle is 10–60 characters and a valid metaDescription is 50–160 characters. “Image” checks for a product image, “Preview description (Alt)” checks the text for the link preview image (OG; “—” is shown when there is no image), EN/LV checks English and Latvian titles, and “Duplicates” identifies metadata repeated across products.',
+                        'Derīgs metaTitle ir 10–60 rakstzīmes, bet metaDescription — 50–160 rakstzīmes. “Attēls” pārbauda preces attēla esamību, “Priekšskatījuma apraksts (Alt)” — saites priekšskatījuma attēla tekstu (OG; ja attēla nav, rāda “—”), EN/LV — angļu un latviešu nosaukumus, bet “Dublikāti” atrod vairākām precēm atkārtotus metadatus.'
+                    )}</p>
+                    <p>{l(
+                        'Начинайте с товаров с наибольшим числом проблем и высокой коммерческой важностью. Нажмите «Редактировать», исправьте поля товара и затем вернитесь к отчёту для повторной проверки. CSV-экспорт сохраняет текущий фильтр и поиск.',
+                        'Start with products that have the most issues and the highest commercial importance. Select “Edit”, correct the product fields, then return to the report to verify again. CSV export preserves the current filter and search.',
+                        'Sāciet ar precēm, kurām ir visvairāk problēmu un lielākā komerciālā nozīme. Noklikšķiniet uz “Rediģēt”, izlabojiet preces laukus un pēc tam atgriezieties pārskatā atkārtotai pārbaudei. CSV eksports saglabā pašreizējo filtru un meklēšanu.'
+                    )}</p>
+                </div>}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -168,7 +227,7 @@ export default function SeoSection(): ReactElement {
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">
                                     {l('Фото', 'Image', 'Attēls')}
                                 </th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Alt</th>
+                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Описание превью (Alt)', 'Preview description (Alt)', 'Priekšskatījuma apraksts (Alt)')}</th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">EN/LV</th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Дубли', 'Duplicates', 'Dublikāti')}</th>
                                 <th className="px-4 py-3 text-center font-medium text-muted-foreground">
@@ -211,8 +270,8 @@ export default function SeoSection(): ReactElement {
                                             <span className="text-red-500 font-semibold">✗</span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-2.5 text-center" title={l('Alt изображения', 'Image alt', 'Attēla alt')}>
-                                        <span className={p.hasImageAlt ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasImageAlt ? '✓' : '✗'}</span>
+                                    <td className="px-4 py-2.5 text-center" title={l('Описание изображения для превью ссылки (OG, Alt)', 'Link preview image description (OG, Alt)', 'Saites priekšskatījuma attēla apraksts (OG, Alt)')}>
+                                        {!p.hasImage ? <span className="text-muted-foreground">—</span> : <span className={p.hasImageAlt ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasImageAlt ? '✓' : '✗'}</span>}
                                     </td>
                                     <td className="px-4 py-2.5 text-center" title={l('Переводы EN/LV', 'EN/LV translations', 'EN/LV tulkojumi')}>
                                         <span className={p.hasTranslations ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasTranslations ? '✓' : '✗'}</span>
@@ -235,7 +294,7 @@ export default function SeoSection(): ReactElement {
                                     </td>
                                     <td className="px-4 py-2.5">
                                         <Link
-                                            href={`/admin/products/${p.id}`}
+                                            href={`/admin/products/${encodeURIComponent(p.id)}?from=seo&returnTo=${encodeURIComponent(seoReturnTo)}`}
                                             className="text-xs text-primary hover:underline dark:text-primary whitespace-nowrap"
                                         >
                                             {l('Редактировать', 'Edit', 'Rediģēt')} →
@@ -252,7 +311,7 @@ export default function SeoSection(): ReactElement {
 
             <AnalyticsPagination page={page} pageSize={pageSize} total={total} loading={loading} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no'), rows: l('Строк:', 'Rows:', 'Rindas:') }} onPageChange={(nextPage) => { setPage(nextPage); setLoading(true); }} onPageSizeChange={(size) => { setPageSize(size); setPage(1); setLoading(true); }} scrollTargetId="seo-results" />
 
-            {catalogTotal > 0 && (
+            {catalogTotal > 0 && !query.trim() && (
                 <p className="text-xs text-muted-foreground">
                     {l('Всего в каталоге:', 'Total in catalog:', 'Kopā katalogā:')} {catalogTotal} {l('товаров · Заполнены корректно:', 'products · Complete:', 'produkti · Pareizi aizpildīti:')}{' '}
                     {catalogTotal - counts.all}

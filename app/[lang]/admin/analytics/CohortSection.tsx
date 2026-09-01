@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { monthLabel, retentionColor, Empty, LoadError } from './analytics-shared'
 import type { ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { ChevronDown } from 'lucide-react'
 
 type CohortsResponse = {
   cohortSizes: { cohort: string; size: number }[]
   cells: { cohort: string; offset: number; count: number }[]
   summary?: { m1: number | null; m3: number | null; m6: number | null; cohortGrowth: number | null }
 }
+
+const COHORT_EXPLANATION_STORAGE_KEY = 'admin-analytics-cohort-explanation-open'
 
 export default function CohortSection(): ReactElement {
   const { l, locale } = useAdminLocale()
@@ -17,6 +20,23 @@ export default function CohortSection(): ReactElement {
   const [reloadKey, setReloadKey] = useState(0)
   const [months, setMonths] = useState(12)
   const [urlReady, setUrlReady] = useState(false)
+  const [explanationOpen, setExplanationOpen] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setExplanationOpen(window.localStorage.getItem(COHORT_EXPLANATION_STORAGE_KEY) !== 'false')
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  const toggleExplanation = () => {
+    setExplanationOpen((open) => {
+      const next = !open
+      window.localStorage.setItem(COHORT_EXPLANATION_STORAGE_KEY, String(next))
+      return next
+    })
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -65,9 +85,9 @@ export default function CohortSection(): ReactElement {
       cohortMonths: Array.from(sizes.keys()).sort(),
       matrix: mat,
       cohortSizes: sizes,
-      maxOffset: Math.min(max, 11),
+      maxOffset: Math.min(max, months - 1),
     }
-  }, [loaded])
+  }, [loaded, months])
 
   if (loaded === null) {
     return <Empty text={l('Загрузка…', 'Loading…', 'Ielāde…')} />
@@ -90,6 +110,39 @@ export default function CohortSection(): ReactElement {
             <p className="mt-1 text-2xl font-bold tabular-nums">{metric.value == null ? '—' : `${metric.value > 0 && metric.label !== 'M+1' && metric.label !== 'M+3' && metric.label !== 'M+6' ? '+' : ''}${metric.value}%`}</p>
           </div>
         ))}
+      </div>
+      <div className="rounded-lg border border-border bg-muted/40 text-sm text-foreground">
+        <button type="button" onClick={toggleExplanation} aria-expanded={explanationOpen} className="group flex w-full items-baseline gap-2 px-4 py-3 text-left">
+          <span className="text-sm font-semibold leading-5">{l('Как читать когортный анализ', 'How to read cohort analysis', 'Kā lasīt kohortu analīzi')}</span>
+          <span className="text-xs font-medium leading-5 text-primary underline-offset-4 group-hover:underline">
+            {explanationOpen
+              ? l('Свернуть пояснения', 'Hide explanation', 'Paslēpt skaidrojumu')
+              : l('Показать пояснения', 'Show explanation', 'Rādīt skaidrojumu')}
+          </span>
+          <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 self-center text-primary transition-transform ${explanationOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {explanationOpen && <div className="space-y-2 border-t border-border px-4 pb-4 pt-3 text-muted-foreground">
+          <p>{l(
+            'Когорта — это клиенты, которые впервые купили в одном месяце. Каждая строка показывает отдельную когорту, а число «Клиентов» — сколько новых покупателей в неё вошло.',
+            'A cohort is a group of customers who made their first purchase in the same month. Each row represents one cohort, and “Customers” is the number of new buyers in it.',
+            'Kohorta ir klienti, kuri pirmo pirkumu veica vienā mēnesī. Katra rinda rāda atsevišķu kohortu, bet “Klienti” — tajā iekļauto jauno pircēju skaitu.'
+          )}</p>
+          <p>{l(
+            'M+0 — месяц первой покупки, M+1 — следующий месяц, M+3 — третий месяц после первой покупки. Процент показывает, какая доля исходной когорты снова купила в этом месяце. Переключатель «#» показывает количество таких клиентов вместо процента.',
+            'M+0 is the first-purchase month, M+1 is the following month, and M+3 is the third month after the first purchase. The percentage shows how much of the original cohort purchased again that month. The “#” view shows the customer count instead of a percentage.',
+            'M+0 ir pirmā pirkuma mēnesis, M+1 — nākamais mēnesis, bet M+3 — trešais mēnesis pēc pirmā pirkuma. Procenti rāda, kāda sākotnējās kohortas daļa šajā mēnesī iepirkās atkārtoti. Skats “#” procentu vietā rāda klientu skaitu.'
+          )}</p>
+          <p>{l(
+            'Чем насыщеннее зелёный цвет, тем выше повторные покупки. Сравнивайте одинаковые столбцы у разных когорт: например, M+3 показывает, улучшается ли удержание клиентов через три месяца. Пустые будущие ячейки ещё не имеют данных и не означают потерю клиентов.',
+            'A stronger green color means more repeat purchases. Compare the same column across cohorts: for example, M+3 shows whether three-month retention is improving. Empty future cells do not have data yet and do not mean customers were lost.',
+            'Jo piesātinātāka zaļā krāsa, jo vairāk atkārtotu pirkumu. Salīdziniet vienu un to pašu kolonnu dažādām kohortām: piemēram, M+3 rāda, vai trīs mēnešu noturēšana uzlabojas. Tukšajās nākotnes šūnās datu vēl nav, un tās nenozīmē klientu zaudēšanu.'
+          )}</p>
+          <p>{l(
+            'Верхние показатели M+1, M+3 и M+6 кратко показывают удержание через 1, 3 и 6 месяцев. «Рост когорты» сравнивает число новых покупателей в двух последних завершённых месяцах. Выбранный период определяет количество когорт и доступных столбцов M+.',
+            'The M+1, M+3 and M+6 cards summarize retention after 1, 3 and 6 months. “Cohort growth” compares new customer counts in the latest two completed months. The selected period determines the number of cohorts and available M+ columns.',
+            'M+1, M+3 un M+6 kartītes apkopo noturēšanu pēc 1, 3 un 6 mēnešiem. “Kohortas pieaugums” salīdzina jauno klientu skaitu pēdējos divos pabeigtajos mēnešos. Izvēlētais periods nosaka kohortu skaitu un pieejamās M+ kolonnas.'
+          )}</p>
+        </div>}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

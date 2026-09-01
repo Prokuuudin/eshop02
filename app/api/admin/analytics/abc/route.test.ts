@@ -57,6 +57,8 @@ describe('GET /api/admin/analytics/abc', () => {
     expect(text).toContain('CROSS JOIN xyz_buckets')
     expect(text).toContain('STDDEV_POP(COALESCE(s.qty, 0))')
     expect(text).toContain('variation_coeff <= 0.10')
+    expect(text).toContain('date_trunc(\'month\', now())')
+    expect(text).toContain('o."createdAt" <')
     expect(sql.values).toContain('X')
   })
 

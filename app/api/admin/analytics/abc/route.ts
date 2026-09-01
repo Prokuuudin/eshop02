@@ -29,23 +29,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const period = periodDays ? requestedPeriod : 'all'
     const cutoff = periodDays ? new Date(Date.now() - periodDays * 86_400_000) : null
     const dateFilter = cutoff ? Prisma.sql`AND o."createdAt" >= ${cutoff}` : Prisma.empty
-    const xyzCutoff = cutoff ?? new Date(Date.now() - 365 * 86_400_000)
     const bucketExpression = period === '30d'
       ? Prisma.sql`date_trunc('day', o."createdAt")`
       : period === '90d'
         ? Prisma.sql`date_trunc('week', o."createdAt")`
         : Prisma.sql`date_trunc('month', o."createdAt")`
-    const bucketStart = period === '30d'
-      ? Prisma.sql`date_trunc('day', ${xyzCutoff}::timestamp)`
-      : period === '90d'
-        ? Prisma.sql`date_trunc('week', ${xyzCutoff}::timestamp)`
-        : Prisma.sql`date_trunc('month', ${xyzCutoff}::timestamp)`
-    const bucketEnd = period === '30d'
+    const bucketStep = period === '30d' ? Prisma.sql`interval '1 day'` : period === '90d' ? Prisma.sql`interval '1 week'` : Prisma.sql`interval '1 month'`
+    const bucketCount = period === '30d' ? 30 : period === '90d' ? 13 : 12
+    const currentBucketStart = period === '30d'
       ? Prisma.sql`date_trunc('day', now())`
       : period === '90d'
         ? Prisma.sql`date_trunc('week', now())`
         : Prisma.sql`date_trunc('month', now())`
-    const bucketStep = period === '30d' ? Prisma.sql`interval '1 day'` : period === '90d' ? Prisma.sql`interval '1 week'` : Prisma.sql`interval '1 month'`
+    const bucketEnd = Prisma.sql`${currentBucketStart} - ${bucketStep}`
+    const bucketStart = Prisma.sql`${bucketEnd} - (${bucketStep} * ${bucketCount - 1})`
     const exportCsv = req.nextUrl.searchParams.get('export') === 'csv'
     const offset = (page - 1) * pageSize
     const searchFilter = search ? Prisma.sql`AND (title ILIKE ${`%${search}%`} OR brand ILIKE ${`%${search}%`})` : Prisma.empty
@@ -77,7 +74,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         CROSS JOIN LATERAL jsonb_array_elements(o.items::jsonb) AS item
         WHERE item->>'id' IS NOT NULL
           AND COALESCE(osr.status, 'pending') <> 'cancelled'
-          AND o."createdAt" >= ${xyzCutoff}
+          AND o."createdAt" >= ${bucketStart}
+          AND o."createdAt" < ${currentBucketStart}
         GROUP BY item->>'id', bucket
       ), xyz_buckets AS (
         SELECT generate_series(${bucketStart}, ${bucketEnd}, ${bucketStep}) AS bucket

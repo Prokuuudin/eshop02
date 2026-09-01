@@ -5,6 +5,7 @@ import type { ExtendedTransactionClient } from '@/lib/prisma'
 import type { ProductChanges } from '@/lib/product-mutation-schema'
 import type { Product as PrismaProduct } from '@/generated/prisma/client'
 import type { Product } from '@/data/products'
+import { hasSkuChanged } from '@/lib/product-sku'
 
 export class ProductMutationError extends Error {
   constructor(message: string, readonly status: number) { super(message) }
@@ -42,11 +43,13 @@ export async function applyProductChanges(
   if (current.revision !== revision) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
   if (current.externalId && Object.hasOwn(changes, 'stock') && changes.stock !== current.stock) throw new ProductMutationError('Stock of a synchronized product cannot be changed manually', 400)
   await assertReferences(tx, id, changes.relatedProductIds, changes.oftenBoughtTogether)
-  await assertUniqueSku(tx, id, changes.sku)
   const setting = await tx.keyValueSetting.findUnique({ where: { key: 'product-overrides' } })
   const overrides = setting?.value && typeof setting.value === 'object' && !Array.isArray(setting.value)
     ? setting.value as Record<string, ProductOverride> : {}
   const before = applyProductOverride(mapDbToProduct(current), overrides[id])
+  if (Object.hasOwn(changes, 'sku') && hasSkuChanged(before.sku, changes.sku)) {
+    await assertUniqueSku(tx, id, changes.sku)
+  }
   const nextProduct = {
     ...before,
     ...changes,

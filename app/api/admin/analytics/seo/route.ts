@@ -97,31 +97,33 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           ("hasMetaTitle" AND COUNT(*) OVER (PARTITION BY NULLIF(lower(trim(meta_title)), '')) > 1)
           OR ("hasMetaDesc" AND COUNT(*) OVER (PARTITION BY NULLIF(lower(trim(meta_description)), '')) > 1) AS "duplicateMeta"
         FROM quality
+      ), searched AS (
+        SELECT * FROM analyzed WHERE true ${searchFilter}
       ), filtered AS (
-        SELECT * FROM analyzed WHERE (${issueFilter}) ${searchFilter}
+        SELECT * FROM searched WHERE (${issueFilter})
       ), page_rows AS (
         SELECT * FROM filtered
-        ORDER BY ((NOT "hasMetaTitle")::int + (NOT "hasMetaDesc")::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + (NOT "validMetaTitleLength")::int + (NOT "validMetaDescLength")::int + "duplicateMeta"::int) DESC, id
+        ORDER BY ((NOT ("hasMetaTitle" AND "validMetaTitleLength"))::int + (NOT ("hasMetaDesc" AND "validMetaDescLength"))::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + "duplicateMeta"::int) DESC, id
         LIMIT ${exportCsv ? 100_000 : pageSize} OFFSET ${exportCsv ? 0 : offset}
       )
       SELECT
-        COALESCE((SELECT jsonb_agg(to_jsonb(page_rows) ORDER BY ((NOT "hasMetaTitle")::int + (NOT "hasMetaDesc")::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + (NOT "validMetaTitleLength")::int + (NOT "validMetaDescLength")::int + "duplicateMeta"::int) DESC, id) FROM page_rows), '[]'::jsonb) AS products,
+        COALESCE((SELECT jsonb_agg(to_jsonb(page_rows) ORDER BY ((NOT ("hasMetaTitle" AND "validMetaTitleLength"))::int + (NOT ("hasMetaDesc" AND "validMetaDescLength"))::int + (NOT "hasImage")::int + (NOT "hasImageAlt")::int + (NOT "hasTranslations")::int + "duplicateMeta"::int) DESC, id) FROM page_rows), '[]'::jsonb) AS products,
         (SELECT COUNT(*)::int FROM filtered) AS total,
         (SELECT COUNT(*)::int FROM analyzed) AS "catalogTotal",
         jsonb_build_object(
-          'all', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations" OR NOT "validMetaTitleLength" OR NOT "validMetaDescLength" OR "duplicateMeta"),
-          'metaTitle', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaTitle" OR NOT "validMetaTitleLength"),
-          'metaDesc', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasMetaDesc" OR NOT "validMetaDescLength"),
-          'image', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasImage"),
-          'imageAlt', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasImageAlt"),
-          'translations', (SELECT COUNT(*)::int FROM analyzed WHERE NOT "hasTranslations"),
-          'duplicate', (SELECT COUNT(*)::int FROM analyzed WHERE "duplicateMeta")
+          'all', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations" OR NOT "validMetaTitleLength" OR NOT "validMetaDescLength" OR "duplicateMeta"),
+          'metaTitle', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasMetaTitle" OR NOT "validMetaTitleLength"),
+          'metaDesc', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasMetaDesc" OR NOT "validMetaDescLength"),
+          'image', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasImage"),
+          'imageAlt', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasImageAlt"),
+          'translations', (SELECT COUNT(*)::int FROM searched WHERE NOT "hasTranslations"),
+          'duplicate', (SELECT COUNT(*)::int FROM searched WHERE "duplicateMeta")
         ) AS counts
     `)
     const result = resultRows[0] ?? { products: [], total: 0, catalogTotal: 0, counts: { all: 0, metaTitle: 0, metaDesc: 0, image: 0, imageAlt: 0, translations: 0, duplicate: 0 } }
     if (exportCsv) {
       const csv = [
-        ['Product ID', 'Title', 'Brand', 'Category', 'Meta title', 'Meta description', 'Image', 'Image alt', 'Translations', 'Duplicate metadata'],
+        ['Product ID', 'Title', 'Brand', 'Category', 'Meta title', 'Meta description', 'Image', 'Link preview image description (Alt)', 'EN/LV titles', 'Duplicate metadata'],
         ...result.products.map((product) => [product.id, product.title, product.brand, product.category, product.hasMetaTitle && product.validMetaTitleLength, product.hasMetaDesc && product.validMetaDescLength, product.hasImage, product.hasImageAlt, product.hasTranslations, product.duplicateMeta]),
       ].map((values) => values.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n')
       return new NextResponse(`\uFEFF${csv}`, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="seo-report.csv"' } })

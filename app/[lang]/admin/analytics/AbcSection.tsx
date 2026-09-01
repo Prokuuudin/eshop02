@@ -5,6 +5,7 @@ import { AnalyticsPagination, GRADE_STYLES, XYZ_STYLES, type AbcGrade, type AbcR
 import type { ReactElement } from 'react'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 import { Input } from '@/components/ui/input'
+import { ChevronDown } from 'lucide-react'
 
 type AbcPeriod = '30d' | '90d' | '365d' | 'all'
 type MatrixCell = { count: number; revenue: number }
@@ -13,6 +14,17 @@ const DEFAULT_PAGE_SIZE = 25
 const EXPLANATION_STORAGE_KEY = 'admin-analytics-abc-explanation-open'
 const EMPTY_SUMMARY: AbcResponse['summary'] = { A: { count: 0, revenue: 0 }, B: { count: 0, revenue: 0 }, C: { count: 0, revenue: 0 } }
 const EMPTY_MATRIX: AbcResponse['matrix'] = {}
+const MATRIX_CELL_STYLES: Record<`${AbcGrade}${XyzGrade}`, string> = {
+  AX: 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40',
+  AY: 'border-teal-200 bg-teal-50 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/30 dark:hover:bg-teal-900/40',
+  AZ: 'border-amber-200 bg-amber-50 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:hover:bg-amber-900/40',
+  BX: 'border-sky-200 bg-sky-50 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:hover:bg-sky-900/40',
+  BY: 'border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-900/40',
+  BZ: 'border-orange-200 bg-orange-50 hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-950/30 dark:hover:bg-orange-900/40',
+  CX: 'border-violet-200 bg-violet-50 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/30 dark:hover:bg-violet-900/40',
+  CY: 'border-fuchsia-200 bg-fuchsia-50 hover:bg-fuchsia-100 dark:border-fuchsia-800 dark:bg-fuchsia-950/30 dark:hover:bg-fuchsia-900/40',
+  CZ: 'border-rose-200 bg-rose-50 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/30 dark:hover:bg-rose-900/40',
+}
 
 export default function AbcSection(): ReactElement {
   const { l, locale } = useAdminLocale()
@@ -139,7 +151,7 @@ export default function AbcSection(): ReactElement {
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-end justify-between gap-2">
-          <div><h2 className="font-semibold text-foreground">{l('Матрица ABC/XYZ', 'ABC/XYZ matrix', 'ABC/XYZ matrica')}</h2><p className="text-xs text-muted-foreground">{l('X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% или нет регулярного спроса', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% or no regular demand', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% vai nav regulāra pieprasījuma')}</p></div>
+          <div><h2 className="font-semibold text-foreground">{l('Матрица ABC/XYZ', 'ABC/XYZ matrix', 'ABC/XYZ matrica')}</h2><p className="text-xs text-muted-foreground">{l('X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% или нет продаж в анализируемом периоде', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% or no sales in the analyzed period', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% vai analizētajā periodā nav pārdošanas')}</p></div>
           {(filter !== 'all' || xyzFilter !== 'all') && <button type="button" onClick={() => { setFilter('all'); setXyzFilter('all'); setPage(1); setLoaded(null) }} className="text-xs text-primary hover:underline">{l('Показать все группы', 'Show all groups', 'Rādīt visas grupas')}</button>}
         </div>
         <div className="rounded-lg border border-border bg-muted/40 text-sm text-foreground">
@@ -150,6 +162,7 @@ export default function AbcSection(): ReactElement {
                 ? l('Свернуть пояснения', 'Hide explanation', 'Paslēpt skaidrojumu')
                 : l('Показать пояснения', 'Show explanation', 'Rādīt skaidrojumu')}
             </span>
+            <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 self-center text-primary transition-transform ${explanationOpen ? 'rotate-180' : ''}`} />
           </button>
           {explanationOpen && <div className="border-t border-border px-4 pb-4 pt-3">
           <p className="text-muted-foreground">
@@ -161,9 +174,9 @@ export default function AbcSection(): ReactElement {
           </p>
           <p className="mt-2 text-muted-foreground">
             {l(
-              'Вторая буква показывает предсказуемость спроса по месяцам: X — продажи стабильны; Y — заметно колеблются; Z — нерегулярны или сильно меняются. CV — коэффициент вариации: чем он меньше, тем легче прогнозировать продажи. «Нет регулярного спроса» означает, что в отдельные месяцы продаж не было или покупка происходила лишь изредка.',
-              'The second letter shows how predictable monthly demand is: X — stable sales; Y — noticeable fluctuations; Z — irregular or highly variable sales. CV is the coefficient of variation: the lower it is, the easier sales are to forecast. “No regular demand” means there were no sales in some months or purchases happened only occasionally.',
-              'Otrais burts rāda mēneša pieprasījuma prognozējamību: X — stabili pārdošanas apjomi; Y — pamanāmas svārstības; Z — neregulāri vai ļoti mainīgi pārdošanas apjomi. CV ir variācijas koeficients: jo tas ir mazāks, jo vieglāk prognozēt pārdošanu. “Nav regulāra pieprasījuma” nozīmē, ka dažos mēnešos pārdošanas nebija vai pirkumi notika tikai reizēm.'
+              'Вторая буква показывает предсказуемость спроса: X — продажи стабильны; Y — заметно колеблются; Z — нерегулярны или сильно меняются. CV — коэффициент вариации: чем он меньше, тем легче прогнозировать продажи. Учитываются только завершённые дни, недели или месяцы. Товары без единой продажи в ABC/XYZ не попадают.',
+              'The second letter shows demand predictability: X — stable sales; Y — noticeable fluctuations; Z — irregular or highly variable sales. CV is the coefficient of variation: the lower it is, the easier sales are to forecast. Only completed days, weeks or months are included. Products with no sales do not appear in ABC/XYZ.',
+              'Otrais burts rāda pieprasījuma prognozējamību: X — stabili pārdošanas apjomi; Y — pamanāmas svārstības; Z — neregulāri vai ļoti mainīgi pārdošanas apjomi. CV ir variācijas koeficients: jo tas ir mazāks, jo vieglāk prognozēt pārdošanu. Tiek ņemtas vērā tikai pabeigtas dienas, nedēļas vai mēneši. Preces bez pārdošanas ABC/XYZ matricā neparādās.'
             )}
           </p>
           <p className="mt-2 text-muted-foreground">
@@ -183,10 +196,10 @@ export default function AbcSection(): ReactElement {
             const key = `${abc}${xyz}` as `${AbcGrade}${XyzGrade}`
             const cell = matrix[key] ?? { count: 0, revenue: 0 }
             const active = filter === abc && xyzFilter === xyz
-            return <button key={key} type="button" aria-pressed={active} onClick={() => { setFilter(active ? 'all' : abc); setXyzFilter(active ? 'all' : xyz); setPage(1); setLoaded(null) }} className={`rounded-lg border p-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 ring-2 ring-primary/30' : 'border-border bg-card hover:bg-muted/50'}`}><div className="flex items-center justify-between"><span className="font-bold">{key}</span><span className="text-sm tabular-nums">{cell.count}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatEuro(cell.revenue, locale)}</p></button>
+            return <button key={key} type="button" aria-pressed={active} onClick={() => { setFilter(active ? 'all' : abc); setXyzFilter(active ? 'all' : xyz); setPage(1); setLoaded(null) }} className={`rounded-xl border p-3 text-left shadow-sm transition-all ${MATRIX_CELL_STYLES[key]} ${active ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:-translate-y-0.5 hover:shadow-md'}`}><div className="flex items-center justify-between"><span className="font-bold">{key}</span><span className="text-sm tabular-nums">{cell.count}</span></div><p className="mt-1 text-xs text-muted-foreground">{formatEuro(cell.revenue, locale)}</p></button>
           }))}
         </div>
-        {period === 'all' && <p className="text-xs text-muted-foreground">{l('XYZ рассчитан по последним 12 месяцам; ABC — за всё время.', 'XYZ uses the latest 12 months; ABC uses all time.', 'XYZ izmanto pēdējos 12 mēnešus; ABC — visu periodu.')}</p>}
+        {period === 'all' && <p className="text-xs text-muted-foreground">{l('XYZ рассчитан по последним 12 завершённым месяцам; ABC — за всё время.', 'XYZ uses the latest 12 completed months; ABC uses all time.', 'XYZ izmanto pēdējos 12 pabeigtos mēnešus; ABC — visu periodu.')}</p>}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

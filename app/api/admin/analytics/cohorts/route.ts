@@ -76,7 +76,9 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       const retained = eligible.reduce((sum, row) => sum + (cellCounts.get(`${row.cohort.toISOString().slice(0, 7)}:${offset}`) ?? 0), 0)
       return Math.round((retained / customers) * 1000) / 10
     }
-    const latestSizes = [...sizeRows].sort((a, b) => b.cohort.getTime() - a.cohort.getTime())
+    const latestSizes = sizeRows
+      .filter((row) => row.cohort.getTime() < currentMonth)
+      .sort((a, b) => b.cohort.getTime() - a.cohort.getTime())
     const cohortGrowth = latestSizes.length >= 2 && latestSizes[1].size > 0
       ? Math.round(((latestSizes[0].size - latestSizes[1].size) / latestSizes[1].size) * 1000) / 10
       : null

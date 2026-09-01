@@ -22,12 +22,12 @@ const ProductSeoFields: React.FC = () => {
                     <Textarea id="product-meta-description" placeholder={l('Описание для поисковых систем', 'Search engine description', 'Apraksts meklētājprogrammām')} {...register('metaDescription')} />
                 </div>
                 <div>
-                    <label htmlFor="product-og-image" className="block text-sm font-medium mb-1">OG Image (URL)</label>
+                    <label htmlFor="product-og-image" className="block text-sm font-medium mb-1">{l('Изображение для превью ссылки (OG)', 'Link preview image (OG)', 'Saites priekšskatījuma attēls (OG)')}</label>
                     <Input id="product-og-image" placeholder="https://example.com/og.jpg" {...register('ogImage')} />
                 </div>
                 <div>
-                    <label htmlFor="product-og-alt" className="block text-sm font-medium mb-1">OG Alt</label>
-                    <Input id="product-og-alt" placeholder={l('Описание OG-изображения', 'OG image description', 'OG attēla apraksts')} {...register('ogAlt')} />
+                    <label htmlFor="product-og-alt" className="block text-sm font-medium mb-1">{l('Описание изображения для превью (Alt)', 'Link preview image description (Alt)', 'Saites priekšskatījuma attēla apraksts (Alt)')}</label>
+                    <Input id="product-og-alt" placeholder={l('Что изображено на картинке превью', 'Describe the preview image', 'Aprakstiet priekšskatījuma attēlu')} {...register('ogAlt')} />
                 </div>
             </div>
         </div>

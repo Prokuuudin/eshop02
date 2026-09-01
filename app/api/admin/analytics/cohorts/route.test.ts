@@ -33,4 +33,23 @@ describe('GET /api/admin/analytics/cohorts', () => {
     expect(sql).toContain('lower(trim(o.email)) AS customer_email')
     expect(sql).toContain('COUNT(DISTINCT om.customer_email)')
   })
+
+  it('compares the latest two completed cohorts for cohort growth', async () => {
+    const now = new Date()
+    const current = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    const previous = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+    const twoMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 1))
+    queryRawMock
+      .mockResolvedValueOnce([
+        { cohort: twoMonthsAgo, size: 10 },
+        { cohort: previous, size: 20 },
+        { cohort: current, size: 5 },
+      ])
+      .mockResolvedValueOnce([])
+
+    const response = await GET(new NextRequest('http://localhost/api/admin/analytics/cohorts?months=12'))
+    const body = await response.json()
+
+    expect(body.summary.cohortGrowth).toBe(100)
+  })
 })

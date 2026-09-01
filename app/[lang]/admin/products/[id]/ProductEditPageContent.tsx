@@ -12,6 +12,13 @@ interface ProductEditPageContentProps {
     productTitle: string;
     initialValues: AddProductFormValues;
     revision: number;
+    seoContext?: {
+        returnTo: string;
+        duplicateMetaTitle: boolean;
+        duplicateMetaDescription: boolean;
+        initialMetaTitle: string;
+        initialMetaDescription: string;
+    };
 }
 
 export default function ProductEditPageContent({
@@ -19,6 +26,7 @@ export default function ProductEditPageContent({
     productTitle,
     initialValues,
     revision,
+    seoContext,
 }: ProductEditPageContentProps): React.ReactElement {
     const { l } = useAdminLocale();
     return (
@@ -27,10 +35,10 @@ export default function ProductEditPageContent({
                 <div className="rounded-xl bg-rose-50/80 p-4 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50">
                     <div className="flex items-center gap-3 mb-4">
                         <Link
-                            href="/admin/products"
+                            href={seoContext?.returnTo ?? '/admin/products'}
                             className="text-sm text-primary hover:underline"
                         >
-                            ← {l('Все товары', 'All products', 'Visi produkti')}
+                            ← {seoContext ? l('Вернуться в SEO-отчёт', 'Back to SEO report', 'Atpakaļ uz SEO pārskatu') : l('Все товары', 'All products', 'Visi produkti')}
                         </Link>
                         <span className="text-muted-foreground">/</span>
                         <span className="text-sm text-muted-foreground truncate">{productTitle}</span>
@@ -43,6 +51,7 @@ export default function ProductEditPageContent({
                         productId={productId}
                         initialValues={initialValues}
                         revision={revision}
+                        seoContext={seoContext}
                     />
                 </div>
             </main>

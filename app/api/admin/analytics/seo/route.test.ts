@@ -35,6 +35,8 @@ describe('GET /api/admin/analytics/seo', () => {
     expect(queryRawMock).toHaveBeenCalledTimes(1)
     const query = queryRawMock.mock.calls[0][0]
     expect(query.strings.join(' ')).toContain('SELECT * FROM analyzed WHERE')
+    expect(query.strings.join(' ')).toContain('SELECT * FROM searched WHERE')
+    expect(query.strings.join(' ')).toContain('NOT ("hasMetaTitle" AND "validMetaTitleLength")')
     expect(query.strings.join(' ')).toContain('validMetaTitleLength')
     expect(query.strings.join(' ')).toContain('duplicateMeta')
     expect(query.values).toContain(JSON.stringify({ p1: { metaTitle: 'Override title' } }))

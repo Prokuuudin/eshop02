@@ -25,9 +25,10 @@ import ProductBulkPricingFields from './ProductBulkPricingFields';
 import ProductPicker from './ProductPicker';
 import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
+import ProductSeoIssuePanel, { type SeoEditContext } from './ProductSeoIssuePanel';
 import { ProductFormModeContext } from './ProductFormModeContext';
 import { NotifyPromoSubscribersButton } from './NotifyPromoSubscribersButton';
-import { ChevronDown, RotateCcw } from 'lucide-react';
+import { AlertCircle, ChevronDown, RotateCcw } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 
@@ -112,17 +113,20 @@ interface AddProductFormProps {
     productId?: string;
     initialValues?: AddProductFormValues;
     revision?: number;
+    seoContext?: SeoEditContext;
 }
 
 const ProductFormAccordionSection: React.FC<{
+    id?: string;
     title: React.ReactNode;
     children: React.ReactNode;
     defaultOpen?: boolean;
-}> = ({ title, children, defaultOpen = false }) => {
+}> = ({ id, title, children, defaultOpen = false }) => {
     const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
     return (
         <details
+            id={id}
             className="add-product__accordion-section group"
             open={isOpen}
             onToggle={(event) => setIsOpen(event.currentTarget.open)}
@@ -141,6 +145,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     productId,
     initialValues,
     revision,
+    seoContext,
 }) => {
     const router = useRouter();
     const confirmAction = useAdminConfirm();
@@ -230,8 +235,10 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                     body: JSON.stringify({ id: productId, revision, changes: mapFormValuesToProductPatch(data) }),
                 });
                 if (!res.ok) {
-                    const json = await res.json().catch(() => ({}));
-                    throw new Error(json?.error ?? l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda'));
+                    const json = await res.json().catch(() => ({})) as { error?: string };
+                    throw new Error(json.error === 'SKU already belongs to another product'
+                        ? l('Этот SKU уже используется другим товаром', 'This SKU is already used by another product', 'Šo SKU jau izmanto cita prece')
+                        : json.error ?? l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda'));
                 }
             } else {
                 const res = await fetch('/api/admin/products', {
@@ -244,7 +251,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                     throw new Error(json?.error ?? l('Ошибка создания товара', 'Failed to create product', 'Preces izveides kļūda'));
                 }
             }
-            router.push('/admin/products');
+            router.push(seoContext?.returnTo ?? '/admin/products');
         } catch (err) {
             setSubmitError(err instanceof Error ? err.message : l('Неизвестная ошибка', 'Unknown error', 'Nezināma kļūda'));
         } finally {
@@ -262,6 +269,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                 >
                     <div className="add-product__form flex flex-col">
                         <div className="add-product__body">
+                            {seoContext && <ProductSeoIssuePanel context={seoContext} onSelectLanguage={setLanguage} />}
                             <Tabs
                                 value={language}
                                 onValueChange={(value) => setLanguage(value as Language)}
@@ -280,6 +288,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             </Tabs>
                             <Separator />
                             <ProductFormAccordionSection
+                                id="product-form-content-section"
                                 title={language === 'ru' ? 'Контент (RU)' : language === 'en' ? 'Content (EN)' : 'Saturs (LV)'}
                             >
                                 <ProductTranslationsFields language={language} />
@@ -293,7 +302,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             <ProductFormAccordionSection title={l('Склад и наличие', 'Inventory and availability', 'Noliktava un pieejamība')}>
                                 <ProductInventoryFields />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title={l('Изображения', 'Images', 'Attēli')}>
+                            <ProductFormAccordionSection id="product-form-images-section" title={l('Изображения', 'Images', 'Attēli')}>
                                 <ProductGalleryFields productId={isEdit ? productId : undefined} />
                             </ProductFormAccordionSection>
                             <div className="add-product__options-row">
@@ -334,7 +343,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             >
                                 <ProductManufacturerFields language={language} />
                             </ProductFormAccordionSection>
-                            <ProductFormAccordionSection title="SEO">
+                            <ProductFormAccordionSection id="product-form-seo-section" title="SEO">
                                 <ProductSeoFields />
                             </ProductFormAccordionSection>
                         </div>
@@ -350,7 +359,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => router.push('/admin/products')}
+                                    onClick={() => router.push(seoContext?.returnTo ?? '/admin/products')}
                                 >
                                     {t('admin.addProduct.cancel', l('Отмена', 'Cancel', 'Atcelt'))}
                                 </Button>
@@ -374,7 +383,13 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 )}
                             </div>
                             {submitError && (
-                                <p className="text-red-600 text-sm">{submitError}</p>
+                                <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900 shadow-sm dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+                                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+                                    <div>
+                                        <p className="text-sm font-semibold">{l('Не удалось сохранить товар', 'Could not save product', 'Neizdevās saglabāt preci')}</p>
+                                        <p className="mt-0.5 text-sm leading-relaxed">{submitError}</p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>

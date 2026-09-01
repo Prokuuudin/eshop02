@@ -45,6 +45,15 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
 
+// Dashboard-style surfaces used by order cards and status summaries across admin views.
+export const STATUS_SURFACES: Record<OrderStatus, string> = {
+  pending: 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20',
+  confirmed: 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20',
+  shipped: 'border-l-primary/70 bg-primary/5 dark:bg-primary/10',
+  delivered: 'border-l-green-500 bg-green-50 dark:bg-green-950/20',
+  cancelled: 'border-l-red-500 bg-red-50 dark:bg-red-950/20',
+}
+
 export const PAYMENT_COLORS: Record<string, string> = {
   unpaid: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200',

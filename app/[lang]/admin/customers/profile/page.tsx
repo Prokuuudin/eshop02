@@ -27,6 +27,13 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
   delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
   cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
+const ORDER_STATUS_SURFACES: Record<string, string> = {
+  pending: 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20',
+  confirmed: 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20',
+  shipped: 'border-l-primary/70 bg-primary/5 dark:bg-primary/10',
+  delivered: 'border-l-green-500 bg-green-50 dark:bg-green-950/20',
+  cancelled: 'border-l-red-500 bg-red-50 dark:bg-red-950/20',
+}
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -241,7 +248,7 @@ export default function CustomerProfilePage(): React.ReactElement {
               const status = orderStatuses[order.id] ?? 'pending'
               const note = orderNotes[order.id]
               return (
-                <div key={order.id} className="rounded-xl border border-border bg-card px-5 py-4">
+                <div key={order.id} className={`rounded-xl border border-l-4 border-border px-5 py-4 shadow-sm ${ORDER_STATUS_SURFACES[status] ?? 'border-l-slate-400 bg-card'}`}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">

@@ -7,7 +7,7 @@ import { pointsToEuros } from '@/lib/bonus-program';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { PAYMENT_COLORS, STATUS_COLORS, availableOrderStatuses } from './order-config';
+import { PAYMENT_COLORS, STATUS_COLORS, STATUS_SURFACES, availableOrderStatuses } from './order-config';
 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { OrderEditForm } from './OrderEditForm';
@@ -49,14 +49,14 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                         <div
                             key={order.id}
                             className={[
-                                'rounded-xl border overflow-hidden transition-colors',
+                                'overflow-hidden rounded-xl border border-l-4 transition-colors shadow-sm',
                                 selectedIds.has(order.id)
-                                    ? 'border-primary/50 dark:border-primary bg-primary/5/40 dark:bg-primary/20/10'
-                                    : 'border-border bg-muted',
+                                    ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20 dark:border-primary dark:bg-primary/15'
+                                    : `border-border ${STATUS_SURFACES[status]}`,
                             ].join(' ')}
                         >
-                            <div className="flex items-start px-5 py-4 hover:bg-black/[.02] dark:hover:bg-white/[.02] transition-colors">
-                                <div className="flex items-center pt-1.5 mr-3 shrink-0">
+                            <div className="flex items-center px-4 py-2.5 hover:bg-black/[.02] dark:hover:bg-white/[.02] transition-colors">
+                                <div className="mr-3 flex shrink-0 items-center">
                                     <Checkbox
                                         checked={selectedIds.has(order.id)}
                                         onCheckedChange={() => toggleSelect(order.id)}
@@ -68,9 +68,9 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                     type="button"
                                     onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                                     aria-expanded={isExpanded}
-                                    className="flex-1 text-left flex flex-wrap items-start gap-3"
+                                    className="flex flex-1 flex-wrap items-center gap-3 text-left"
                                 >
-                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                    <div className="min-w-0 flex-1 space-y-1">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-mono text-xs text-muted-foreground">
                                                 {order.id}
@@ -90,15 +90,13 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                     order.deliveryMethod}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-foreground">
-                                            {order.firstName} {order.lastName}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {order.email} · {order.phone}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {formatDate(order.createdAt, locale)}
-                                        </p>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                            <span className="text-sm font-medium text-foreground">
+                                                {order.firstName} {order.lastName}
+                                            </span>
+                                            <span>{order.email} · {order.phone}</span>
+                                            <span>{formatDate(order.createdAt, locale)}</span>
+                                        </div>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="font-bold text-foreground">

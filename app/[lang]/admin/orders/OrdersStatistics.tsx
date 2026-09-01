@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatEuro } from '@/lib/utils';
-import { STATUS_LIST } from './order-config';
+import { STATUS_LIST, STATUS_SURFACES } from './order-config';
 import type { OrderStatus } from '@/lib/admin-store';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
@@ -28,7 +28,7 @@ export default function OrdersStatistics({ state }: { state: OrdersState }): Rea
     return (
         <>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                <div className="col-span-2 md:col-span-2 rounded-xl border border-border bg-card p-4">
+                <div className="col-span-2 rounded-xl border border-border border-l-4 border-l-emerald-500 bg-emerald-50 p-4 shadow-sm dark:bg-emerald-950/20 md:col-span-2">
                     <p className="text-xs text-muted-foreground">{l('Выручка выполненных заказов', 'Completed order revenue', 'Izpildīto pasūtījumu ieņēmumi')}</p>
                     <p className="text-2xl font-bold mt-1 text-foreground">
                         {formatEuro(totalRevenue, locale)}
@@ -42,10 +42,10 @@ export default function OrdersStatistics({ state }: { state: OrdersState }): Rea
                         key={s}
                         type="button"
                         onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
-                        className={`rounded-xl border p-4 text-left transition-colors cursor-pointer ${
+                        className={`cursor-pointer rounded-xl border border-l-4 p-4 text-left shadow-sm transition-colors ${STATUS_SURFACES[s]} ${
                             statusFilter === s
-                                ? 'border-primary/70 bg-primary/5 dark:border-primary dark:bg-primary/10'
-                                : 'border-border bg-card hover:border-gray-300 dark:hover:border-gray-600'
+                                ? 'ring-2 ring-primary/50 ring-offset-1 dark:ring-offset-background'
+                                : 'border-border hover:brightness-[0.98] dark:hover:brightness-110'
                         }`}
                     >
                         <p className="text-xs text-muted-foreground">{statusLabels[s]}</p>

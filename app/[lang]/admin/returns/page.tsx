@@ -26,6 +26,14 @@ const STATUS_COLORS: Record<ReturnStatus, string> = {
     completed: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
 };
 
+const STATUS_SURFACES: Record<ReturnStatus, string> = {
+    pending: 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20',
+    approved: 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20',
+    rejected: 'border-l-red-500 bg-red-50 dark:bg-red-950/20',
+    refunded: 'border-l-green-500 bg-green-50 dark:bg-green-950/20',
+    completed: 'border-l-slate-400 bg-slate-50 dark:bg-slate-900/40',
+};
+
 const REASON_LIST: ReturnReason[] = [
     'defective',
     'wrong_item',
@@ -173,7 +181,7 @@ export default function AdminReturnsPage(): React.ReactElement {
                     return (
                         <div
                             key={ret.id}
-                            className="rounded-xl border border-border bg-muted overflow-hidden"
+                            className={`overflow-hidden rounded-xl border border-l-4 border-border shadow-sm ${STATUS_SURFACES[ret.status]}`}
                         >
                             <button
                                 type="button"

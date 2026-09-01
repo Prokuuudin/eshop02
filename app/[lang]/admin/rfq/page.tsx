@@ -22,10 +22,10 @@ const STATUS_COLORS: Record<RFQStatus, string> = {
 }
 
 const STATUS_CARD_BORDER: Record<RFQStatus, string> = {
-  pending:  'border-l-yellow-400',
-  quoted:   'border-l-blue-400',
-  accepted: 'border-l-green-400',
-  rejected: 'border-l-red-300',
+  pending:  'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20',
+  quoted:   'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20',
+  accepted: 'border-l-green-500 bg-green-50 dark:bg-green-950/20',
+  rejected: 'border-l-red-500 bg-red-50 dark:bg-red-950/20',
 }
 
 type TimelineEventType = RFQTimelineEvent['type']
@@ -228,7 +228,7 @@ export default function AdminRFQPage(): React.ReactElement {
             <article
               key={rfq.id}
               className={[
-                'rounded-xl border border-l-4 bg-card overflow-hidden transition-colors',
+                'overflow-hidden rounded-xl border border-l-4 border-border shadow-sm transition-colors',
                 STATUS_CARD_BORDER[rfq.status],
                 rfq.status === 'rejected' ? 'opacity-75' : '',
               ].join(' ')}

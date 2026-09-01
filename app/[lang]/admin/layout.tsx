@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <AdminConfirmProvider><AdminPermissionGate>
         <AdminOperationalDataSync />
         <AdminErrorCenter />
-        <div className="mx-auto w-full max-w-7xl px-4 py-4">
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-4">
           <section>{children}</section>
         </div>
       </AdminPermissionGate></AdminConfirmProvider>

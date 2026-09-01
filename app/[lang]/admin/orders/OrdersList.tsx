@@ -12,7 +12,7 @@ export default function OrdersList({ state }: { state: OrdersState }): React.Rea
     const { totalOrderCount, hydrationStatus, filteredCount, pageItems } = state;
     return (
         <>
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {pageItems.map((order) => (
                     <OrderListItem key={order.id} order={order} state={state} />
                 ))}

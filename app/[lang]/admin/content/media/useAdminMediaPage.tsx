@@ -194,7 +194,7 @@ function useAdminMediaPageState() {
     // ── Delete single ───────────────────────────────────────────────────────────
 
     const onDelete = async (file: MediaFile) => {
-        const decision = await confirmAction({ title: l(`Удалить «${file.name}»?`, `Delete “${file.name}”?`, `Dzēst “${file.name}”?`), description: l('Файл будет удалён безвозвратно. Если он используется в товарах, ссылки на него перестанут работать.', 'The file will be deleted permanently. Product references to it will stop working.', 'Fails tiks neatgriezeniski dzēsts. Atsauces uz to produktos vairs nedarbosies.'), affected: [file.name, ...(usageMap.get(file.path) ?? []).map((title) => `${l('Товар', 'Product', 'Produkts')}: ${title}`)], confirmText: file.name, requireReason: true, destructive: true });
+        const decision = await confirmAction({ title: l(`Удалить «${file.name}»?`, `Delete “${file.name}”?`, `Dzēst “${file.name}”?`), description: l('Файл будет удалён безвозвратно. Если он используется в товарах, ссылки на него перестанут работать.', 'The file will be deleted permanently. Product references to it will stop working.', 'Fails tiks neatgriezeniski dzēsts. Atsauces uz to produktos vairs nedarbosies.'), affected: [file.name, ...(usageMap.get(file.path) ?? []).map((title) => `${l('Товар', 'Product', 'Produkts')}: ${title}`)], confirmText: file.name, destructive: true });
         if (!decision.confirmed) return;
         const res = await fetch('/api/admin/media', {
             method: 'DELETE',
@@ -215,7 +215,7 @@ function useAdminMediaPageState() {
     const onBulkDelete = async () => {
         const names = Array.from(checkedNames);
         if (!names.length) return;
-        const decision = await confirmAction({ title: l(`Удалить ${names.length} файлов?`, `Delete ${names.length} files?`, `Dzēst ${names.length} failus?`), description: l('Файлы будут удалены безвозвратно. Связанные изображения в товарах перестанут работать.', 'Files will be deleted permanently. Related product images will stop working.', 'Faili tiks neatgriezeniski dzēsti. Saistītie produktu attēli vairs nedarbosies.'), affected: names, confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), requireReason: true, destructive: true });
+        const decision = await confirmAction({ title: l(`Удалить ${names.length} файлов?`, `Delete ${names.length} files?`, `Dzēst ${names.length} failus?`), description: l('Файлы будут удалены безвозвратно. Связанные изображения в товарах перестанут работать.', 'Files will be deleted permanently. Related product images will stop working.', 'Faili tiks neatgriezeniski dzēsti. Saistītie produktu attēli vairs nedarbosies.'), affected: names, confirmText: l('УДАЛИТЬ', 'DELETE', 'DZĒST'), destructive: true });
         if (!decision.confirmed) return;
         setBulkDeleting(true);
         try {

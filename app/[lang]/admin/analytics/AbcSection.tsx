@@ -10,6 +10,7 @@ type AbcPeriod = '30d' | '90d' | '365d' | 'all'
 type MatrixCell = { count: number; revenue: number }
 type AbcResponse = { rows: AbcRow[]; total: number; page: number; pageSize: number; summary: Record<AbcGrade, MatrixCell>; matrix: Partial<Record<`${AbcGrade}${XyzGrade}`, MatrixCell>>; period?: AbcPeriod; xyzWindow?: string }
 const DEFAULT_PAGE_SIZE = 25
+const EXPLANATION_STORAGE_KEY = 'admin-analytics-abc-explanation-open'
 const EMPTY_SUMMARY: AbcResponse['summary'] = { A: { count: 0, revenue: 0 }, B: { count: 0, revenue: 0 }, C: { count: 0, revenue: 0 } }
 const EMPTY_MATRIX: AbcResponse['matrix'] = {}
 
@@ -25,6 +26,23 @@ export default function AbcSection(): ReactElement {
   const [period, setPeriod] = useState<AbcPeriod>('all')
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [urlReady, setUrlReady] = useState(false)
+  const [explanationOpen, setExplanationOpen] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setExplanationOpen(window.localStorage.getItem(EXPLANATION_STORAGE_KEY) !== 'false')
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  const toggleExplanation = () => {
+    setExplanationOpen((open) => {
+      const next = !open
+      window.localStorage.setItem(EXPLANATION_STORAGE_KEY, String(next))
+      return next
+    })
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -122,7 +140,43 @@ export default function AbcSection(): ReactElement {
       <div className="space-y-2">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div><h2 className="font-semibold text-foreground">{l('Матрица ABC/XYZ', 'ABC/XYZ matrix', 'ABC/XYZ matrica')}</h2><p className="text-xs text-muted-foreground">{l('X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% или нет регулярного спроса', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% or no regular demand', 'X — CV ≤ 10% · Y — CV 10–25% · Z — CV > 25% vai nav regulāra pieprasījuma')}</p></div>
-          {(filter !== 'all' || xyzFilter !== 'all') && <button type="button" onClick={() => { setFilter('all'); setXyzFilter('all'); setPage(1); setLoaded(null) }} className="text-xs text-primary hover:underline">{l('Сбросить матрицу', 'Clear matrix filter', 'Notīrīt matricas filtru')}</button>}
+          {(filter !== 'all' || xyzFilter !== 'all') && <button type="button" onClick={() => { setFilter('all'); setXyzFilter('all'); setPage(1); setLoaded(null) }} className="text-xs text-primary hover:underline">{l('Показать все группы', 'Show all groups', 'Rādīt visas grupas')}</button>}
+        </div>
+        <div className="rounded-lg border border-border bg-muted/40 text-sm text-foreground">
+          <button type="button" onClick={toggleExplanation} aria-expanded={explanationOpen} className="group flex w-full items-baseline gap-2 px-4 py-3 text-left">
+            <span className="text-sm font-semibold leading-5">{l('Как читать матрицу', 'How to read the matrix', 'Kā lasīt matricu')}</span>
+            <span className="text-xs font-medium leading-5 text-primary underline-offset-4 group-hover:underline">
+              {explanationOpen
+                ? l('Свернуть пояснения', 'Hide explanation', 'Paslēpt skaidrojumu')
+                : l('Показать пояснения', 'Show explanation', 'Rādīt skaidrojumu')}
+            </span>
+          </button>
+          {explanationOpen && <div className="border-t border-border px-4 pb-4 pt-3">
+          <p className="text-muted-foreground">
+            {l(
+              'Первая буква показывает вклад товара в выручку: A — самые важные товары, которые вместе дают первые 80% выручки; B — следующие 15%; C — оставшиеся 5%.',
+              'The first letter shows the product’s revenue contribution: A — the most important products making up the first 80% of revenue; B — the next 15%; C — the remaining 5%.',
+              'Pirmais burts rāda preces ieguldījumu ieņēmumos: A — svarīgākās preces, kas veido pirmos 80% ieņēmumu; B — nākamie 15%; C — atlikušie 5%.'
+            )}
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            {l(
+              'Вторая буква показывает предсказуемость спроса по месяцам: X — продажи стабильны; Y — заметно колеблются; Z — нерегулярны или сильно меняются. CV — коэффициент вариации: чем он меньше, тем легче прогнозировать продажи. «Нет регулярного спроса» означает, что в отдельные месяцы продаж не было или покупка происходила лишь изредка.',
+              'The second letter shows how predictable monthly demand is: X — stable sales; Y — noticeable fluctuations; Z — irregular or highly variable sales. CV is the coefficient of variation: the lower it is, the easier sales are to forecast. “No regular demand” means there were no sales in some months or purchases happened only occasionally.',
+              'Otrais burts rāda mēneša pieprasījuma prognozējamību: X — stabili pārdošanas apjomi; Y — pamanāmas svārstības; Z — neregulāri vai ļoti mainīgi pārdošanas apjomi. CV ir variācijas koeficients: jo tas ir mazāks, jo vieglāk prognozēt pārdošanu. “Nav regulāra pieprasījuma” nozīmē, ka dažos mēnešos pārdošanas nebija vai pirkumi notika tikai reizēm.'
+            )}
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            {l(
+              'Практически: AX держите постоянно в наличии; AY планируйте с учётом колебаний; AZ контролируйте вручную. Для групп B применяйте умеренный запас, а товары C заказывайте осторожно — особенно CZ, чтобы не замораживать деньги в остатках.',
+              'In practice: keep AX continuously in stock; plan AY with fluctuations in mind; review AZ manually. Use moderate stock for B groups and order C products cautiously — especially CZ — to avoid tying up cash in inventory.',
+              'Praksē: AX pastāvīgi turiet krājumā; AY plānojiet, ņemot vērā svārstības; AZ pārskatiet manuāli. B grupām uzturiet mērenu krājumu, bet C preces pasūtiet piesardzīgi — īpaši CZ — lai neiesaldētu naudu krājumos.'
+            )}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {l('Нажмите на ячейку, например AX или CZ, чтобы показать соответствующие товары в таблице.', 'Select a cell, such as AX or CZ, to show the matching products in the table.', 'Noklikšķiniet uz šūnas, piemēram, AX vai CZ, lai tabulā parādītu atbilstošās preces.')}
+          </p>
+          </div>}
         </div>
         <div className="grid grid-cols-3 gap-2">
           {(['A', 'B', 'C'] as AbcGrade[]).flatMap((abc) => (['X', 'Y', 'Z'] as XyzGrade[]).map((xyz) => {
@@ -163,7 +217,7 @@ export default function AbcSection(): ReactElement {
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('% от итога', '% of total', '% no kopējā')}</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">{l('Накопл. %', 'Cumulative %', 'Kumulatīvie %')}</th>
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Группа', 'Group', 'Grupa')}</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">CV</th>
+              <th className="px-4 py-3 text-right font-medium text-muted-foreground">CV, %</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-card">
@@ -194,7 +248,7 @@ export default function AbcSection(): ReactElement {
                 <td className="px-4 py-2.5 text-center">
                   <span className={`rounded-l-full px-2 py-0.5 text-xs font-bold ${GRADE_STYLES[r.grade].badge}`}>{r.grade}</span><span className={`rounded-r-full px-2 py-0.5 text-xs font-bold ${XYZ_STYLES[r.xyzGrade]}`}>{r.xyzGrade}</span>
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{r.variationCoeff == null ? '—' : r.variationCoeff.toFixed(2)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{r.variationCoeff == null ? '—' : `${(r.variationCoeff * 100).toFixed(1)}%`}</td>
               </tr>
             ))}
           </tbody>

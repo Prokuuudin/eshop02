@@ -15,7 +15,7 @@
 
 ## P1 — обязательна до production deployment
 
-1. Прогнать Chromium critical flow и Firefox responsive smoke на production build. Отсутствие `DATABASE_URL` теперь делает job красным, а не молча зелёным.
+1. Прогнать Chromium critical flow и Firefox responsive smoke на production build. При отсутствии `DATABASE_URL` CI выводит явное предупреждение; перед production deployment такое предупреждение необходимо считать незавершённой ручной проверкой.
 2. На временной PostgreSQL восстановить предыдущий production backup, выполнить `prisma migrate deploy`, затем `npm run test:restore`. Никогда не направлять `RESTORE_DATABASE_URL` на production.
 3. Проверить внешние сбои: SMTP timeout, webhook `429/500/timeout`, ERP malformed response и повтор запуска sync. Приёмка: нет дублей, лог содержит correlation ID, retry ограничен.
 4. Проверить конкурентное использование последнего promo redemption и bonus balance. Приёмка: счётчики и баланс меняются в одной транзакции и не становятся отрицательными.

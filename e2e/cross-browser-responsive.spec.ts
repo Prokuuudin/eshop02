@@ -34,7 +34,9 @@ test('landscape checkout keeps focused fields visible when viewport height shrin
 
 test('sticky header and cart drawer remain usable after scroll', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  // The header markup is server-rendered. Wait for client scripts so the cart
+  // button has its React handler before exercising it.
+  await page.goto('/', { waitUntil: 'load' })
   await page.evaluate(() => window.scrollTo(0, Math.max(500, document.body.scrollHeight / 2)))
   const header = page.locator('header').first()
   await expect(header).toBeVisible()

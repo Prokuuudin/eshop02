@@ -3,6 +3,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { E2E_ADMIN, E2E_CUSTOMER, fetchRealProduct, loginAs, type E2eUserFixture } from './helpers'
 
 async function expectNoSeriousViolations(page: Page): Promise<void> {
+  // Axe must inspect the settled page. During the route entrance animation the
+  // whole content is translucent, which makes otherwise valid colors appear to
+  // have insufficient contrast against the page background.
+  await page.locator('.route-transition').waitFor({ state: 'visible' })
+  await page.locator('.route-transition').evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished))
+  })
+
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze()

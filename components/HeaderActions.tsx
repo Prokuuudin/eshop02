@@ -10,7 +10,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Heart, ShoppingCart } from 'lucide-react';
 
-const headerActionClass = 'relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-brand transition-colors hover:border-border hover:bg-black/5 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:text-white dark:hover:bg-white/10 dark:hover:text-white';
+const headerActionClass = 'relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-transparent text-brand transition-colors hover:border-border hover:bg-black/5 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:text-white dark:hover:bg-white/10 dark:hover:text-white';
 const headerBadgeClass = 'pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground';
 
 export default function HeaderActions({

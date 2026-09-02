@@ -102,7 +102,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
   }
 
   return (
-    <html lang={language}>
+    <html lang={language} data-scroll-behavior="smooth">
       <body className={instrumentSans.variable}>
         <ThemeInitScript />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }} />

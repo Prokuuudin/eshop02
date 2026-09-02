@@ -101,7 +101,7 @@ export default function CookieConsent(): React.ReactElement | null {
           shown ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:flex-row sm:items-center sm:gap-6">
           <p className="flex-1 text-sm text-slate-300">{t('cookie.banner.text')}</p>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button

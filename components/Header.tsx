@@ -64,7 +64,7 @@ export default function Header(): React.ReactElement {
               <HeaderActions onlyLangSwitcher />
               <ThemeToggle compact />
               {!isAdminPage && (
-                <button className="p-2" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+                <button className="inline-flex h-11 w-11 items-center justify-center rounded-md" aria-label={t('mobileMenu.openAria', 'Open menu')} onClick={() => setMenuOpen(true)}>
                   <Menu className="w-7 h-7" />
                 </button>
               )}

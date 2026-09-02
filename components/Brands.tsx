@@ -101,7 +101,13 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                   title={brand.name}
                 >
                   <div className="brands__logo relative flex h-10 w-20 items-center justify-center transition-transform duration-300 group-hover:translate-y-1 sm:h-12 sm:w-24 md:h-14 md:w-28">
-                    <Image src={resolveImageSrc(brand.logo)} alt={brand.name} fill className="object-contain" />
+                    <Image
+                      src={resolveImageSrc(brand.logo)}
+                      alt={brand.name}
+                      fill
+                      sizes="(min-width: 768px) 112px, (min-width: 640px) 96px, 80px"
+                      className="object-contain"
+                    />
                   </div>
                 </Link>
               ))}

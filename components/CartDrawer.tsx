@@ -100,7 +100,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="cart-drawer-title"
-                className="cart-drawer fixed right-0 top-0 h-screen w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col"
+                className="cart-drawer fixed right-0 top-0 h-screen h-[100dvh] w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col"
             >
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">

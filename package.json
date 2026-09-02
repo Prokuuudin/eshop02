@@ -15,6 +15,7 @@
     "check:encoding": "node scripts/check-public-text-encoding.mjs",
     "check:admin-i18n": "node scripts/check-admin-i18n.mjs",
     "check:admin-i18n:strict": "node scripts/check-admin-i18n.mjs --strict",
+    "check:prisma": "prisma validate",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",

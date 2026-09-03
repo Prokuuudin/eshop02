@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -153,6 +153,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const [submitError, setSubmitError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
+    const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+    const mobileActionsRef = useRef<HTMLDivElement>(null);
     const [previewTop, setPreviewTop] = useState(166);
     const { t } = useTranslation();
     const { l } = useAdminLocale();
@@ -175,6 +177,17 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     useEffect(() => {
         void trigger();
     }, [trigger]);
+
+    useEffect(() => {
+        if (!mobileActionsOpen) return;
+        const closeOnOutsideClick = (event: PointerEvent) => {
+            if (!mobileActionsRef.current?.contains(event.target as Node)) {
+                setMobileActionsOpen(false);
+            }
+        };
+        document.addEventListener('pointerdown', closeOnOutsideClick);
+        return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+    }, [mobileActionsOpen]);
 
     useEffect(() => {
         const header = document.querySelector('header.header');
@@ -348,7 +361,56 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                             </ProductFormAccordionSection>
                         </div>
                         <div className="add-product__actions flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-4">
+                            {isEdit && productId && (
+                                <div ref={mobileActionsRef} className="relative sm:hidden">
+                                    {mobileActionsOpen && (
+                                        <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-md border border-zinc-700 bg-zinc-950 p-1 text-white shadow-2xl ring-1 ring-black/20 dark:border-zinc-500 dark:bg-zinc-800 dark:shadow-black/60 dark:ring-white/15">
+                                            <button
+                                                type="button"
+                                                disabled={!formState.isValid || isSubmitting}
+                                                onClick={() => {
+                                                    setMobileActionsOpen(false);
+                                                    void handleSubmit(onSubmit)();
+                                                }}
+                                                className="flex w-full rounded-sm px-2 py-2.5 text-left text-sm hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-zinc-700"
+                                            >
+                                                {isSubmitting
+                                                    ? l('Сохраняю...', 'Saving...', 'Saglabā...')
+                                                    : t('admin.editProduct.save', l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas'))}
+                                            </button>
+                                            <button type="button" onClick={() => router.push(seoContext?.returnTo ?? '/admin/products')} className="flex w-full rounded-sm px-2 py-2.5 text-left text-sm hover:bg-zinc-800 dark:hover:bg-zinc-700">
+                                                {t('admin.addProduct.cancel', l('Отмена', 'Cancel', 'Atcelt'))}
+                                            </button>
+                                            <button type="button" onClick={() => window.open(`/product/${productId}`, '_blank')} className="flex w-full rounded-sm px-2 py-2.5 text-left text-sm hover:bg-zinc-800 dark:hover:bg-zinc-700">
+                                                {l('Открыть на сайте', 'Open on website', 'Atvērt vietnē')} ↗
+                                            </button>
+                                            <NotifyPromoSubscribersButton productId={productId} presentation="menu" />
+                                            <button
+                                                type="button"
+                                                disabled={isSubmitting || isRestoring}
+                                                onClick={() => {
+                                                    setMobileActionsOpen(false);
+                                                    void restorePreviousVersion();
+                                                }}
+                                                className="flex w-full items-center gap-2 rounded-sm px-2 py-2.5 text-left text-sm hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-zinc-700"
+                                            >
+                                                <RotateCcw className="h-4 w-4" />
+                                                {isRestoring ? l('Восстанавливаю…', 'Restoring…', 'Atjauno…') : l('Вернуть предыдущую версию', 'Restore previous version', 'Atjaunot iepriekšējo versiju')}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        aria-expanded={mobileActionsOpen}
+                                        onClick={() => setMobileActionsOpen((open) => !open)}
+                                        className="w-full justify-between bg-black text-white shadow-md hover:bg-zinc-800 hover:text-white dark:border-zinc-300 dark:bg-zinc-100 dark:text-zinc-950 dark:shadow-lg dark:shadow-black/40 dark:hover:bg-white dark:hover:text-black"
+                                    >
+                                        {l('Ваши действия', 'Your actions', 'Jūsu darbības')}
+                                        <ChevronDown className={`h-4 w-4 transition-transform ${mobileActionsOpen ? 'rotate-180' : ''}`} />
+                                    </Button>
+                                </div>
+                            )}
+                            <div className={isEdit ? 'hidden flex-wrap gap-4 sm:flex' : 'flex flex-wrap gap-4'}>
                                 <Button type="submit" disabled={!formState.isValid || isSubmitting}>
                                     {isSubmitting
                                         ? l('Сохраняю...', 'Saving...', 'Saglabā...')

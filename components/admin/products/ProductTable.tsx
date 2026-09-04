@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import StickyTableHead from '@/components/admin/StickyTableHead';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProductTableProps {
     products: Product[];
     onEditProduct?: (product: Product) => void;
     onDeleteProduct?: (product: Product) => void;
     onQuickSave?: (id: string, changes: { price?: number; stock?: number }) => Promise<void>;
+    selectedIds?: Set<string>;
+    onToggleSelected?: (id: string, selected: boolean) => void;
 }
 
 type EditingCell = { id: string; field: 'price' | 'stock' }
@@ -21,6 +24,8 @@ const ProductTable: React.FC<ProductTableProps> = ({
     onEditProduct,
     onDeleteProduct,
     onQuickSave,
+    selectedIds,
+    onToggleSelected,
 }) => {
     const { l } = useAdminLocale()
     const [editing, setEditing] = useState<EditingCell | null>(null)
@@ -61,6 +66,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
             <table className="admin-products__table min-w-full border border-border rounded-lg">
                 <StickyTableHead>
                     <tr className="bg-muted">
+                        {onToggleSelected && <th className="p-3"><span className="sr-only">{l('Выбор', 'Select', 'Atlasīt')}</span></th>}
                         <th className="p-3 text-left font-semibold text-sm text-foreground">{l('Картинка', 'Image', 'Attēls')}</th>
                         <th className="p-3 text-left font-semibold text-sm text-foreground">{l('Название', 'Name', 'Nosaukums')}</th>
                         <th className="p-3 text-left font-semibold text-sm text-foreground">ID / SKU</th>
@@ -87,6 +93,15 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                 id={`admin-product-row-${product.id}`}
                                 className={`${idx % 2 === 0 ? 'bg-card' : 'bg-muted'} ${isSaving ? 'opacity-60' : ''}`}
                             >
+                                {onToggleSelected && (
+                                    <td className="p-3 align-middle">
+                                        <Checkbox
+                                            checked={selectedIds?.has(product.id)}
+                                            onCheckedChange={(checked) => onToggleSelected(product.id, checked)}
+                                            aria-label={l(`Выбрать ${product.title}`, `Select ${product.title}`, `Atlasīt ${product.title}`)}
+                                        />
+                                    </td>
+                                )}
                                 <td className="p-3 align-middle">
                                     <div className="product-image-surface w-12 h-12 rounded overflow-hidden flex items-center justify-center shrink-0">
                                         {product.image

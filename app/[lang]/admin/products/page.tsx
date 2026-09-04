@@ -14,6 +14,8 @@ import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 import type { Product } from '@/data/products';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { writeProductsListReturnState } from '@/lib/admin/products/list-return-state';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function AdminProductsPage(): React.ReactElement {
     const confirmAction = useAdminConfirm();
@@ -23,11 +25,26 @@ export default function AdminProductsPage(): React.ReactElement {
     const { t } = useTranslation();
     const { l } = useAdminLocale();
     const [archiveOpen, setArchiveOpen] = React.useState(false);
+    const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+    const bulkMode = admin.visibility === 'hidden';
+    const allLoadedSelected = admin.products.length > 0 && admin.products.every((product) => selectedIds.has(product.id));
+    const toggleSelected = (id: string, selected: boolean) => {
+        setSelectedIds((current) => {
+            const next = new Set(current);
+            if (selected) next.add(id);
+            else next.delete(id);
+            return next;
+        });
+    };
+    React.useEffect(() => {
+        setSelectedIds(new Set());
+    }, [admin.visibility, admin.searchQuery]);
     const handleEditProduct = (product: Product) => {
         writeProductsListReturnState({
             productId: product.id,
             searchQuery: admin.searchQuery,
             viewMode: admin.viewMode,
+            visibility: admin.visibility,
             loadedCount: admin.products.length,
         });
         router.push(`/admin/products/${product.id}`);
@@ -54,6 +71,8 @@ export default function AdminProductsPage(): React.ReactElement {
                         <ProductsToolbar
                             searchQuery={admin.searchQuery}
                             onSearchChange={admin.setSearchQuery}
+                            visibility={admin.visibility}
+                            onVisibilityChange={admin.setVisibility}
                             viewMode={admin.viewMode}
                             setViewMode={(mode) => admin.setViewMode(mode as 'cards' | 'list')}
                             language={language}
@@ -67,6 +86,41 @@ export default function AdminProductsPage(): React.ReactElement {
                                 if (decision.confirmed) admin.handlePurgeArchivedProduct(id);
                             }}
                         />
+                        {bulkMode && !admin.loading && admin.products.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+                                <Checkbox
+                                    checked={allLoadedSelected}
+                                    onCheckedChange={(checked) => setSelectedIds(checked ? new Set(admin.products.map((product) => product.id)) : new Set())}
+                                    label={l('Выбрать все загруженные', 'Select all loaded', 'Atlasīt visus ielādētos')}
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                    {l(`Выбрано: ${selectedIds.size}`, `Selected: ${selectedIds.size}`, `Atlasīti: ${selectedIds.size}`)}
+                                </span>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    className="sm:ml-auto"
+                                    disabled={selectedIds.size === 0 || admin.savingId === 'bulk'}
+                                    onClick={async () => {
+                                        const ids = [...selectedIds];
+                                        const decision = await confirmAction({
+                                            title: l('Переместить выбранные товары в корзину?', 'Move selected products to trash?', 'Pārvietot atlasītos produktus uz atkritni?'),
+                                            description: l('Они исчезнут из списка скрытых товаров. При необходимости их можно будет восстановить из корзины.', 'They will disappear from the hidden products list and can be restored from trash later.', 'Tie pazudīs no paslēpto produktu saraksta, un vēlāk tos varēs atjaunot no atkritnes.'),
+                                            affected: admin.products.filter((product) => selectedIds.has(product.id)).map((product) => `${product.id} — ${product.title}`),
+                                            destructive: true,
+                                            confirmLabel: l(`В корзину (${ids.length})`, `Move to trash (${ids.length})`, `Uz atkritni (${ids.length})`),
+                                        });
+                                        if (!decision.confirmed) return;
+                                        if (await admin.handleBulkDeleteProducts(ids)) setSelectedIds(new Set());
+                                    }}
+                                >
+                                    {admin.savingId === 'bulk'
+                                        ? l('Удаление…', 'Deleting…', 'Dzēšana…')
+                                        : l(`Удалить выбранные (${selectedIds.size})`, `Delete selected (${selectedIds.size})`, `Dzēst atlasītos (${selectedIds.size})`)}
+                                </Button>
+                            </div>
+                        )}
                         <hr className="my-8 border-t border-border" />
                         <div>
                             <h2 className="text-xl font-semibold mb-4">
@@ -90,6 +144,8 @@ export default function AdminProductsPage(): React.ReactElement {
                                             type: 'product', id: product.id, title: product.title,
                                         }, { before: { price: product.price, stock: product.stock } })
                                     }}
+                                    selectedIds={bulkMode ? selectedIds : undefined}
+                                    onToggleSelected={bulkMode ? toggleSelected : undefined}
                                 />
                             ) : (
                                 <ProductTable
@@ -128,6 +184,8 @@ export default function AdminProductsPage(): React.ReactElement {
                                             }, { before: { stock: product?.stock }, after: { stock: changes.stock } })
                                         }
                                     }}
+                                    selectedIds={bulkMode ? selectedIds : undefined}
+                                    onToggleSelected={bulkMode ? toggleSelected : undefined}
                                 />
                             )}
                             {!admin.loading && admin.hasMore && (

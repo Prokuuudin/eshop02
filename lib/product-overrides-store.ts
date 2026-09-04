@@ -86,6 +86,7 @@ export const getAdminProducts = cache(async (): Promise<Product[]> => {
 export async function getAdminProductsPaginated(opts: {
     search?: string;
     category?: string;
+    visibility?: 'active' | 'hidden';
     skip: number;
     take: number;
 }): Promise<{ products: Product[]; total: number }> {
@@ -93,6 +94,7 @@ export async function getAdminProductsPaginated(opts: {
     const category = opts.category?.trim();
     const where: Prisma.ProductWhereInput = {
         isDeleted: false,
+        ...(opts.visibility ? { isActive: opts.visibility === 'active' } : {}),
         ...(category ? { category } : {}),
         ...(search
             ? {
@@ -317,6 +319,47 @@ export const deleteProductAny = async (
     });
 
     return { success: true, products: await getAdminProducts() };
+};
+
+export const deleteProductsAny = async (
+    productIds: string[]
+): Promise<{ success: true; deletedCount: number } | { success: false; error: string }> => {
+    const ids = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))];
+    if (ids.length === 0) return { success: false, error: 'Не выбраны товары для удаления' };
+
+    return prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`;
+
+        const rows = await tx.product.findMany({
+            where: { id: { in: ids }, isDeleted: false },
+        });
+        if (rows.length !== ids.length) {
+            return { success: false as const, error: 'Один или несколько товаров не найдены' };
+        }
+
+        const archive = await readDeletedProductsArchiveTx(tx);
+        const idSet = new Set(ids);
+        const archivedAt = new Date().toISOString();
+        const nextRecords: ArchivedProductRecord[] = rows.map((row) => ({
+            id: row.id,
+            product: mapDbToProduct(row),
+            source: row.isCustom ? 'custom' : 'base',
+            deletedAt: archivedAt,
+        }));
+        await writeDeletedProductsArchiveTx(tx, [
+            ...nextRecords,
+            ...archive.filter((record) => !idSet.has(record.id)),
+        ]);
+
+        const customIds = rows.filter((row) => row.isCustom).map((row) => row.id);
+        const baseIds = rows.filter((row) => !row.isCustom).map((row) => row.id);
+        if (customIds.length > 0) await tx.product.deleteMany({ where: { id: { in: customIds } } });
+        if (baseIds.length > 0) {
+            await tx.product.updateMany({ where: { id: { in: baseIds } }, data: { isDeleted: true } });
+        }
+
+        return { success: true as const, deletedCount: rows.length };
+    });
 };
 
 export const restoreDeletedProduct = async (

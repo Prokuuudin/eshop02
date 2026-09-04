@@ -14,10 +14,13 @@ type ProductsAdminResult = {
   setViewMode: Dispatch<SetStateAction<'cards' | 'list'>>;
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
+  visibility: 'all' | 'active' | 'hidden';
+  setVisibility: Dispatch<SetStateAction<'all' | 'active' | 'hidden'>>;
   newProduct: NewProductDraft;
   setNewProduct: Dispatch<SetStateAction<NewProductDraft>>;
   archiveItems: ArchivedProductRecord[];
   handleDeleteProduct: (product: Product) => Promise<void>;
+  handleBulkDeleteProducts: (ids: string[]) => Promise<boolean>;
   handleRestoreProduct: (id: string) => Promise<void>;
   handlePurgeArchivedProduct: (id: string) => Promise<void>;
   handleCreateProduct: () => void;
@@ -36,6 +39,7 @@ type ProductsAdminResult = {
 };
 
 const PRODUCTS_PAGE_SIZE = 24;
+const VIEW_MODE_STORAGE_KEY = 'admin:products:viewMode';
 
 export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
@@ -51,6 +55,7 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingArchiveId, setPurgingArchiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialReturn?.searchQuery ?? '');
+  const [visibility, setVisibility] = useState<'all' | 'active' | 'hidden'>(initialReturn?.visibility ?? 'all');
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(initialReturn?.viewMode ?? 'cards');
   const [newProduct, setNewProduct] = useState<NewProductDraft>({
     id: '',
@@ -67,6 +72,24 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [error, setError] = useState('');
   const requestSequence = useRef(0);
 
+  useEffect(() => {
+    if (initialReturn) return;
+    try {
+      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+      if (saved === 'cards' || saved === 'list') setViewMode(saved);
+    } catch {
+      // Browser storage may be unavailable; cards remain the safe default.
+    }
+  }, [initialReturn]);
+
+  const setPersistentViewMode: Dispatch<SetStateAction<'cards' | 'list'>> = useCallback((next) => {
+    setViewMode((current) => {
+      const resolved = typeof next === 'function' ? next(current) : next;
+      try { localStorage.setItem(VIEW_MODE_STORAGE_KEY, resolved); } catch {}
+      return resolved;
+    });
+  }, []);
+
   const loadProducts = useCallback(async (pageToLoad = 1, append = false) => {
     const requestId = ++requestSequence.current;
     if (append) setLoadingMore(true);
@@ -78,6 +101,7 @@ export function useProductsAdmin(): ProductsAdminResult {
         limit: String(PRODUCTS_PAGE_SIZE),
       });
       if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      if (visibility !== 'all') params.set('visibility', visibility);
       const res = await fetch(`/api/admin/products?${params}`, { cache: 'no-store' });
       const json = (await res.json()) as ApiEnvelope<{ products: Product[]; total: number }>;
       if (!res.ok || 'error' in json) throw new Error('failed_to_load_products');
@@ -93,7 +117,7 @@ export function useProductsAdmin(): ProductsAdminResult {
       if (append) setLoadingMore(false);
       else setLoading(false);
     }
-  }, [searchQuery, t]);
+  }, [searchQuery, visibility, t]);
 
   const loadArchive = useCallback(async () => {
     try {
@@ -157,6 +181,30 @@ export function useProductsAdmin(): ProductsAdminResult {
     }
   };
 
+  const handleBulkDeleteProducts = async (ids: string[]): Promise<boolean> => {
+    if (ids.length === 0) return false;
+    setSavingId('bulk');
+    setError('');
+    try {
+      const res = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, permanently: true }),
+      });
+      const json = (await res.json()) as ApiEnvelope<{ deletedCount: number }>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+      await loadProducts(1);
+      await loadArchive();
+      setMessage(t('admin.productsPage.msg.bulkMovedToTrash', '{count} products moved to trash', { count: ids.length }));
+      return true;
+    } catch {
+      setError(t('admin.productsPage.msg.bulkDeleteFailed', 'Failed to delete selected products'));
+      return false;
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const handleRestoreProduct = async (id: string) => {
     setRestoringId(id);
     setError('');
@@ -203,13 +251,16 @@ export function useProductsAdmin(): ProductsAdminResult {
   return {
     products: baseProducts,
     viewMode,
-    setViewMode,
+    setViewMode: setPersistentViewMode,
     searchQuery,
     setSearchQuery,
+    visibility,
+    setVisibility,
     newProduct,
     setNewProduct,
     archiveItems,
     handleDeleteProduct,
+    handleBulkDeleteProducts,
     handleRestoreProduct,
     handlePurgeArchivedProduct,
     handleCreateProduct,

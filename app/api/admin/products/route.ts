@@ -3,7 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
-import { deleteProductAny, getAdminProducts, getAdminProductsPaginated, resetProductOverride } from '@/lib/product-overrides-store'
+import { deleteProductAny, deleteProductsAny, getAdminProducts, getAdminProductsPaginated, resetProductOverride } from '@/lib/product-overrides-store'
 import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping'
 import { createProductRequestSchema, updateProductRequestSchema } from '@/lib/product-mutation-schema'
 import { prisma } from '@/lib/prisma'
@@ -34,6 +34,11 @@ export async function GET(req: NextRequest): Promise<Response> {
     const result = await getAdminProductsPaginated({
       search: req.nextUrl.searchParams.get('q') ?? undefined,
       category: req.nextUrl.searchParams.get('category') ?? undefined,
+      visibility: req.nextUrl.searchParams.get('visibility') === 'active'
+        ? 'active'
+        : req.nextUrl.searchParams.get('visibility') === 'hidden'
+          ? 'hidden'
+          : undefined,
       skip: (page - 1) * limit,
       take: limit,
     })
@@ -101,7 +106,15 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   const gate = await requireAdminPermission('catalog.update')
   if (gate instanceof NextResponse) return gate
   try {
-    const body = (await req.json()) as { id?: string; permanently?: boolean }
+    const body = (await req.json()) as { id?: string; ids?: string[]; permanently?: boolean }
+    if (Array.isArray(body.ids)) {
+      const ids = [...new Set(body.ids.map((id) => id.trim()).filter(Boolean))]
+      if (ids.length === 0) return errorResponse('At least one product id is required', 400)
+      if (ids.length > 100) return errorResponse('A maximum of 100 products can be deleted at once', 400)
+      const result = await deleteProductsAny(ids)
+      if (!result.success) return errorResponse(result.error, 400)
+      return successResponse({ deletedCount: result.deletedCount })
+    }
     const id = body.id?.trim()
     if (!id) return errorResponse('Product id is required', 400)
     const result = body.permanently === true ? await deleteProductAny(id) : await resetProductOverride(id)

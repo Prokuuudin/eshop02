@@ -6,14 +6,17 @@ import type { Product } from '@/data/products';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProductCardProps {
     product: Product;
     onEdit?: () => void;
     onDelete?: () => void;
+    selected?: boolean;
+    onToggleSelected?: (selected: boolean) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete, selected, onToggleSelected }) => {
     const { l } = useAdminLocale();
     const badgeLabels: Record<string, string> = {
         new: l('Новинка', 'New', 'Jaunums'), sale: l('Скидка', 'Sale', 'Atlaide'), bestseller: l('Хит', 'Bestseller', 'Bestsellers'),
@@ -25,6 +28,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
             {/* Packshot целиком на белой подложке, как в витринной карточке:
                 исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="admin-product-card__image product-image-surface relative h-40 flex items-center justify-center overflow-hidden">
+                {onToggleSelected && (
+                    <Checkbox
+                        className="absolute left-2 top-2 z-10 rounded bg-card/90 p-1 shadow-sm"
+                        checked={selected}
+                        onCheckedChange={onToggleSelected}
+                        aria-label={l(`Выбрать ${product.title}`, `Select ${product.title}`, `Atlasīt ${product.title}`)}
+                    />
+                )}
                 {imageUrl ? (
                     <Image
                         unoptimized
@@ -51,6 +62,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
                     <div className="absolute top-2 right-2">
                         <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 leading-none">
                             {l('Нет в наличии', 'Out of stock', 'Nav noliktavā')}
+                        </Badge>
+                    </div>
+                )}
+                {product.isActive === false && (
+                    <div className="absolute bottom-2 left-2">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 leading-none">
+                            {l('Скрыт', 'Hidden', 'Paslēpts')}
                         </Badge>
                     </div>
                 )}

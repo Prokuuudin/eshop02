@@ -9,9 +9,11 @@ interface ProductListProps {
     products: Product[];
     onEditProduct?: (product: Product) => void;
     onDeleteProduct?: (product: Product) => void;
+    selectedIds?: Set<string>;
+    onToggleSelected?: (id: string, selected: boolean) => void;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, onEditProduct, onDeleteProduct }) => {
+const ProductList: React.FC<ProductListProps> = ({ products, onEditProduct, onDeleteProduct, selectedIds, onToggleSelected }) => {
     const { l } = useAdminLocale();
     if (products.length === 0) {
         return (
@@ -29,6 +31,8 @@ const ProductList: React.FC<ProductListProps> = ({ products, onEditProduct, onDe
                     product={product}
                     onEdit={() => onEditProduct?.(product)}
                     onDelete={() => onDeleteProduct?.(product)}
+                    selected={selectedIds?.has(product.id)}
+                    onToggleSelected={onToggleSelected ? (selected) => onToggleSelected(product.id, selected) : undefined}
                 />
             ))}
         </div>

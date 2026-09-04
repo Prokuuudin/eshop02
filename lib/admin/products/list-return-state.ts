@@ -2,6 +2,7 @@ export type ProductsListReturnState = {
   productId: string;
   searchQuery: string;
   viewMode: 'cards' | 'list';
+  visibility?: 'all' | 'active' | 'hidden';
   loadedCount: number;
 };
 

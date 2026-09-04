@@ -24,6 +24,8 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 interface ProductsToolbarProps {
     searchQuery: string;
     onSearchChange: (value: string) => void;
+    visibility: 'all' | 'active' | 'hidden';
+    onVisibilityChange: (value: 'all' | 'active' | 'hidden') => void;
     viewMode: string;
     setViewMode: (mode: string) => void;
     language?: Language;
@@ -38,6 +40,8 @@ interface ProductsToolbarProps {
 const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
     searchQuery,
     onSearchChange,
+    visibility,
+    onVisibilityChange,
     viewMode,
     setViewMode,
     language = 'ru',
@@ -57,7 +61,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
         onSearchChange(searchDraft.trim());
     };
     return (
-        <div className="admin-products__toolbar mt-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
+        <div className="admin-products__toolbar mt-4 flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:gap-6">
             <form className="flex items-center gap-2 w-full md:w-[480px]" role="search" onSubmit={submitSearch}>
                 <Input
                     type="search"
@@ -72,6 +76,23 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                     {translations[language]['catalog.search'] || l('Поиск', 'Search', 'Meklēt')}
                 </Button>
             </form>
+            <div className="flex items-center gap-2" aria-label={l('Фильтр видимости', 'Visibility filter', 'Redzamības filtrs')}>
+                {(['all', 'active', 'hidden'] as const).map((value) => (
+                    <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={visibility === value ? 'default' : 'outline'}
+                        onClick={() => onVisibilityChange(value)}
+                    >
+                        {value === 'all'
+                            ? l('Все', 'All', 'Visi')
+                            : value === 'active'
+                              ? l('Активные', 'Active', 'Aktīvie')
+                              : l('Скрытые', 'Hidden', 'Paslēptie')}
+                    </Button>
+                ))}
+            </div>
             <div className="hidden md:block h-8 border-l border-border mx-2" />
             <div className="flex items-center gap-2">
                 <span className="text-sm text-foreground font-medium">

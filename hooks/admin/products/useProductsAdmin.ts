@@ -5,6 +5,7 @@ import type { NewProductDraft } from '@/types/product-admin';
 import { useTranslation } from '@/lib/use-translation';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
 import { consumeProductsListReturnState } from '@/lib/admin/products/list-return-state';
+import { usePersistentViewMode } from '@/hooks/usePersistentViewMode';
 
 type ApiEnvelope<T> = { success: true; data: T } | { error: string };
 
@@ -40,6 +41,7 @@ type ProductsAdminResult = {
 
 const PRODUCTS_PAGE_SIZE = 24;
 const VIEW_MODE_STORAGE_KEY = 'admin:products:viewMode';
+const PRODUCT_VIEW_MODES = ['cards', 'list'] as const;
 
 export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
@@ -56,7 +58,7 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [purgingArchiveId, setPurgingArchiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialReturn?.searchQuery ?? '');
   const [visibility, setVisibility] = useState<'all' | 'active' | 'hidden'>(initialReturn?.visibility ?? 'all');
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>(initialReturn?.viewMode ?? 'cards');
+  const [viewMode, setViewMode] = usePersistentViewMode(VIEW_MODE_STORAGE_KEY, initialReturn?.viewMode ?? 'cards', PRODUCT_VIEW_MODES);
   const [newProduct, setNewProduct] = useState<NewProductDraft>({
     id: '',
     title: '',
@@ -71,24 +73,6 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const requestSequence = useRef(0);
-
-  useEffect(() => {
-    if (initialReturn) return;
-    try {
-      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-      if (saved === 'cards' || saved === 'list') setViewMode(saved);
-    } catch {
-      // Browser storage may be unavailable; cards remain the safe default.
-    }
-  }, [initialReturn]);
-
-  const setPersistentViewMode: Dispatch<SetStateAction<'cards' | 'list'>> = useCallback((next) => {
-    setViewMode((current) => {
-      const resolved = typeof next === 'function' ? next(current) : next;
-      try { localStorage.setItem(VIEW_MODE_STORAGE_KEY, resolved); } catch {}
-      return resolved;
-    });
-  }, []);
 
   const loadProducts = useCallback(async (pageToLoad = 1, append = false) => {
     const requestId = ++requestSequence.current;
@@ -251,7 +235,7 @@ export function useProductsAdmin(): ProductsAdminResult {
   return {
     products: baseProducts,
     viewMode,
-    setViewMode: setPersistentViewMode,
+    setViewMode,
     searchQuery,
     setSearchQuery,
     visibility,

@@ -15,6 +15,9 @@ import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 import type { CatalogFacets } from '@/lib/initial-catalog-products'
 import { fetchAllProducts } from '@/lib/client-products'
 import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
+import { usePersistentViewMode } from '@/hooks/usePersistentViewMode'
+
+const CATALOG_VIEW_MODES = ['grid', 'list'] as const
 
 type ProductsFilters = {
   group: string
@@ -62,30 +65,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   const filterSignature = JSON.stringify(filters)
   const previousFilterSignatureRef = React.useRef(filterSignature)
 
-  // The server and the first browser render must use the same mode. Reading
-  // localStorage in the state initializer makes SSR render a grid while the
-  // browser may immediately render a list, which causes a hydration mismatch.
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid')
-
-  React.useEffect(() => {
-    try {
-      const savedMode = localStorage.getItem('catalog-view-mode')
-      if (savedMode === 'grid' || savedMode === 'list') {
-        queueMicrotask(() => setViewMode(savedMode))
-      }
-    } catch {
-      // Keep the deterministic grid default when browser storage is unavailable.
-    }
-  }, [])
-
-  const handleViewMode = (mode: 'grid' | 'list') => {
-    setViewMode(mode)
-    try {
-      localStorage.setItem('catalog-view-mode', mode)
-    } catch {
-      // The view still switches when browser storage is unavailable.
-    }
-  }
+  const [viewMode, setViewMode] = usePersistentViewMode('catalog-view-mode', 'grid', CATALOG_VIEW_MODES)
 
   // Sync filters with initialFilters only when they actually change from navigation
   React.useEffect(() => {
@@ -309,7 +289,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => handleViewMode('grid')}
+                onClick={() => setViewMode('grid')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -317,7 +297,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
               </button>
               <button
                 type="button"
-                onClick={() => handleViewMode('list')}
+                onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <List className="w-4 h-4" />

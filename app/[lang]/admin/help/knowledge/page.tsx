@@ -1,28 +1,20 @@
 ﻿'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { IconGrid, IconList } from '@/components/ui/icon-view';
 import AdminGate from '@/components/admin/AdminGate';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { getKnowledgeArticles } from './knowledge-articles';
+import { usePersistentViewMode } from '@/hooks/usePersistentViewMode';
 
 const STORAGE_KEY = 'admin-knowledge-view';
+const KNOWLEDGE_VIEW_MODES = ['grid', 'list'] as const;
 
 export default function AdminKnowledgePage(): React.ReactElement {
     const { language, l } = useAdminLocale();
     const localizedArticles = getKnowledgeArticles(language);
-    const [view, setView] = useState<'grid' | 'list'>(() => {
-        if (typeof window === 'undefined') return 'grid';
-        return (localStorage.getItem(STORAGE_KEY) as 'grid' | 'list') ?? 'grid';
-    });
-
-    const switchView = (v: 'grid' | 'list') => {
-        setView(v);
-        try {
-            localStorage.setItem(STORAGE_KEY, v);
-        } catch {}
-    };
+    const [view, setView] = usePersistentViewMode(STORAGE_KEY, 'grid', KNOWLEDGE_VIEW_MODES);
 
     return (
         <AdminGate>
@@ -47,7 +39,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
                         <Button
                             size="sm"
                             variant={view === 'grid' ? 'default' : 'outline'}
-                            onClick={() => switchView('grid')}
+                            onClick={() => setView('grid')}
                         >
                             <IconGrid className="mr-2" />
                             {l('Карточки', 'Cards', 'Kartītes')}
@@ -55,7 +47,7 @@ export default function AdminKnowledgePage(): React.ReactElement {
                         <Button
                             size="sm"
                             variant={view === 'list' ? 'default' : 'outline'}
-                            onClick={() => switchView('list')}
+                            onClick={() => setView('list')}
                         >
                             <IconList className="mr-2" />
                             {l('Список', 'List', 'Saraksts')}

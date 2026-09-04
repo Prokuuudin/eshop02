@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { usePersistentViewMode } from '@/hooks/usePersistentViewMode';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ type MediaFile = {
 type SortKey = 'date' | 'name' | 'size';
 type ViewMode = 'grid' | 'list';
 type FilterType = 'all' | 'image' | 'other';
+const MEDIA_VIEW_MODES = ['grid', 'list'] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -38,7 +40,7 @@ function useAdminMediaPageState() {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<FilterType>('all');
     const [sort, setSort] = useState<SortKey>('date');
-    const [view, setView] = useState<ViewMode>('grid');
+    const [view, setView] = usePersistentViewMode<ViewMode>('admin:media:viewMode', 'grid', MEDIA_VIEW_MODES);
 
     const [selected, setSelected] = useState<MediaFile | null>(null);
     const [checkedNames, setCheckedNames] = useState<Set<string>>(new Set());

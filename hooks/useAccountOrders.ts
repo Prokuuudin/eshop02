@@ -15,8 +15,10 @@ type AccountOrdersResult = {
         orderId: string,
         orders: Order[],
         replaceWithItems: (items: CartItem[]) => void,
-        router: { push: (href: string) => void }
-    ) => void;
+        router: { push: (href: string) => void },
+        notify: (message: string, type?: 'success' | 'error' | 'info') => void,
+        labels: { updated: string; unavailable: string; empty: string; failed: string }
+    ) => Promise<void>;
     getDeliveryLabel: (deliveryMethod: string, t?: (key: string) => string) => string;
 };
 
@@ -78,12 +80,32 @@ function useAccountOrdersImpl(
         orderId: string,
         orders: Order[],
         replaceWithItems: (items: CartItem[]) => void,
-        router: { push: (href: string) => void }
-    ): void => {
+        router: { push: (href: string) => void },
+        notify: (message: string, type?: 'success' | 'error' | 'info') => void,
+        labels: { updated: string; unavailable: string; empty: string; failed: string }
+    ): Promise<void> => {
         const order = orders.find((item) => item.id === orderId);
-        if (!order) return;
-        replaceWithItems(order.items);
-        router.push('/cart');
+        if (!order) return Promise.resolve();
+        return fetch(`/api/orders/${encodeURIComponent(orderId)}/repeat`, { method: 'POST' })
+            .then(async (response) => {
+                if (!response.ok) throw new Error(`repeat:${response.status}`);
+                return response.json() as Promise<{
+                    items: CartItem[];
+                    changes: unknown[];
+                    unavailableItems: unknown[];
+                }>;
+            })
+            .then(({ items, changes, unavailableItems }) => {
+                if (!items.length) {
+                    notify(labels.empty, 'error');
+                    return;
+                }
+                replaceWithItems(items);
+                if (changes.length) notify(labels.updated, 'info');
+                if (unavailableItems.length) notify(labels.unavailable, 'info');
+                router.push('/cart');
+            })
+            .catch(() => notify(labels.failed, 'error'));
     };
 
     const getDeliveryLabel = (deliveryMethod: string, t?: (key: string) => string): string => {

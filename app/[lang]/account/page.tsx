@@ -33,6 +33,7 @@ import { writeCurrentUser } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { getLocaleFromLanguage } from '@/lib/utils';
 import { useCart } from '@/lib/cart-store';
+import { useToast } from '@/lib/toast-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import React from 'react';
@@ -44,6 +45,7 @@ export default function AccountPage(): React.ReactElement {
     const companyStore = useCompanyStore();
     const ordersStore = useOrders();
     const { replaceWithItems } = useCart();
+    const { showToast } = useToast();
     const router = useRouter();
     const { getOrderStatus } = useAdminStore();
     const { getByEmail, replaceForEmail } = useSavedAddresses();
@@ -200,7 +202,12 @@ export default function AccountPage(): React.ReactElement {
                                 activeOrdersCount={orders.activeOrdersCount}
                                 completedOrdersCount={orders.completedOrdersCount}
                                 handleRepeatOrder={(orderId) =>
-                                    orders.handleRepeatOrder(orderId, userOrders, replaceWithItems, router)
+                                    void orders.handleRepeatOrder(orderId, userOrders, replaceWithItems, router, showToast, {
+                                        updated: t('account.repeatOrderPricesUpdated'),
+                                        unavailable: t('account.repeatOrderUnavailable'),
+                                        empty: t('account.repeatOrderEmpty'),
+                                        failed: t('account.repeatOrderFailed'),
+                                    })
                                 }
                                 getDeliveryLabel={(method) => orders.getDeliveryLabel(method, t)}
                             />

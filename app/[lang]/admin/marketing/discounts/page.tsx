@@ -319,7 +319,7 @@ export default function AdminDiscountsPage(): React.ReactElement {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.firstOrderOnly} onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))} />{l('Только первый заказ', 'First order only', 'Tikai pirmajam pasūtījumam')}</label>
             </div>
             <div className="pt-4">
-              <PromoProductsPreview categories={form.categories} subcategories={form.subcategories} brands={form.brands} productIds={form.productIds} excludedProductIds={form.excludedProductIds} excludeSaleItems={form.excludeSaleItems} />
+              <PromoProductsPreview appliesTo={form.appliesTo} categories={form.categories} subcategories={form.subcategories} brands={form.brands} productIds={form.productIds} excludedProductIds={form.excludedProductIds} excludeSaleItems={form.excludeSaleItems} />
             </div>
             </div>
             </div>

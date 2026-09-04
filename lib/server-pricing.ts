@@ -161,11 +161,12 @@ export async function evaluatePromoCode(
     if (count > 0) return { valid: false, discount: 0, eligibleAmount: 0, reason: 'first_order_only' }
   }
 
+  const scope = promo.appliesTo ?? 'all'
   const excludedProductIds = promo.excludedProductIds ?? []
-  const productIds = promo.productIds ?? []
-  const brands = promo.brands ?? []
-  const categories = promo.categories ?? []
-  const subcategories = promo.subcategories ?? []
+  const productIds = scope === 'products' ? promo.productIds ?? [] : []
+  const brands = scope === 'brands' || scope === 'rules' ? promo.brands ?? [] : []
+  const categories = scope === 'categories' || scope === 'rules' ? promo.categories ?? [] : []
+  const subcategories = scope === 'rules' ? promo.subcategories ?? [] : []
   const selected = items.filter((item) => {
     if (!item.fromCatalog || excludedProductIds.includes(item.id)) return false
     if (promo.excludeSaleItems && item.oldPrice != null && item.oldPrice > item.price) return false
@@ -173,7 +174,7 @@ export async function evaluatePromoCode(
     if (brands.length > 0 && !brands.some((b) => b.toLowerCase() === (item.brand ?? '').toLowerCase())) return false
     if (categories.length > 0 && !categories.includes(item.category ?? '')) return false
     if (subcategories.length > 0 && !subcategories.includes(item.subcategory ?? '')) return false
-    return (promo.appliesTo ?? 'all') === 'all' || productIds.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0
+    return scope === 'all' || productIds.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0
   })
   const eligibleAmount = Math.round(selected.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
   if (eligibleAmount <= 0) return { valid: false, discount: 0, eligibleAmount, reason: 'no_eligible_items' }

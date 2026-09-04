@@ -17,10 +17,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     const body = await request.json() as Record<string, unknown>
-    const categories = list(body.categories)
-    const subcategories = list(body.subcategories)
-    const brands = list(body.brands)
-    const productIds = list(body.productIds)
+    const appliesTo = ['all', 'products', 'brands', 'categories', 'rules'].includes(String(body.appliesTo))
+      ? String(body.appliesTo)
+      : 'all'
+    const categories = appliesTo === 'categories' || appliesTo === 'rules' ? list(body.categories) : []
+    const subcategories = appliesTo === 'rules' ? list(body.subcategories) : []
+    const brands = appliesTo === 'brands' || appliesTo === 'rules' ? list(body.brands) : []
+    const productIds = appliesTo === 'products' ? list(body.productIds) : []
     const excludedProductIds = list(body.excludedProductIds)
     const subcategoryProductIds = subcategories.length > 0
       ? Object.entries(SUBCATEGORY_BY_PRODUCT_ID).filter(([, value]) => subcategories.includes(value)).map(([id]) => id)
@@ -32,6 +35,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const where: Prisma.ProductWhereInput = {
       isDeleted: false,
+      isActive: true,
       ...(categories.length > 0 ? { category: { in: categories } } : {}),
       ...(brands.length > 0 ? { brand: { in: brands, mode: 'insensitive' } } : {}),
       ...(productIds.length > 0 ? { id: { in: productIds } } : {}),

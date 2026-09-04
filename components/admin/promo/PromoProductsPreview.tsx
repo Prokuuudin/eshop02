@@ -6,7 +6,8 @@ import { useAdminLocale } from '@/lib/use-admin-locale'
 
 type PreviewProduct = { id: string; title: string; brand: string; image: string | null; isActive: boolean }
 
-export function PromoProductsPreview({ categories = [], subcategories = [], brands = [], productIds = [], excludedProductIds = [], excludeSaleItems = false }: {
+export function PromoProductsPreview({ appliesTo = 'all', categories = [], subcategories = [], brands = [], productIds = [], excludedProductIds = [], excludeSaleItems = false }: {
+  appliesTo?: 'all' | 'products' | 'brands' | 'categories' | 'rules'
   categories?: string[]
   subcategories?: string[]
   brands?: string[]
@@ -15,7 +16,7 @@ export function PromoProductsPreview({ categories = [], subcategories = [], bran
   excludeSaleItems?: boolean
 }): React.ReactElement {
   const { l } = useAdminLocale()
-  const payload = useMemo(() => ({ categories, subcategories, brands, productIds, excludedProductIds, excludeSaleItems }), [categories, subcategories, brands, productIds, excludedProductIds, excludeSaleItems])
+  const payload = useMemo(() => ({ appliesTo, categories, subcategories, brands, productIds, excludedProductIds, excludeSaleItems }), [appliesTo, categories, subcategories, brands, productIds, excludedProductIds, excludeSaleItems])
   const [result, setResult] = useState<{ total: number; products: PreviewProduct[] } | null>(null)
   const [loading, setLoading] = useState(true)
 

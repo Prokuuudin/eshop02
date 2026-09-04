@@ -84,6 +84,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                         return (
                             <tr
                                 key={product.id}
+                                id={`admin-product-row-${product.id}`}
                                 className={`${idx % 2 === 0 ? 'bg-card' : 'bg-muted'} ${isSaving ? 'opacity-60' : ''}`}
                             >
                                 <td className="p-3 align-middle">

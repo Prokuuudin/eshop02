@@ -13,6 +13,7 @@ import { logAdminAction } from '@/lib/admin-log-store';
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider';
 import type { Product } from '@/data/products';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { writeProductsListReturnState } from '@/lib/admin/products/list-return-state';
 
 export default function AdminProductsPage(): React.ReactElement {
     const confirmAction = useAdminConfirm();
@@ -22,6 +23,15 @@ export default function AdminProductsPage(): React.ReactElement {
     const { t } = useTranslation();
     const { l } = useAdminLocale();
     const [archiveOpen, setArchiveOpen] = React.useState(false);
+    const handleEditProduct = (product: Product) => {
+        writeProductsListReturnState({
+            productId: product.id,
+            searchQuery: admin.searchQuery,
+            viewMode: admin.viewMode,
+            loadedCount: admin.products.length,
+        });
+        router.push(`/admin/products/${product.id}`);
+    };
     return (
         <AdminGate>
             <main className="admin-products w-full space-y-3 text-foreground">
@@ -71,7 +81,7 @@ export default function AdminProductsPage(): React.ReactElement {
                             ) : admin.viewMode === 'cards' ? (
                                 <ProductList
                                     products={admin.products}
-                                    onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
+                                    onEditProduct={handleEditProduct}
                                     onDeleteProduct={async (product: Product) => {
                                         const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: l('Товар исчезнет с витрины и будет перемещён в архив.', 'The product will disappear from the storefront and move to the archive.', 'Produkts pazudīs no veikala un tiks pārvietots uz arhīvu.'), affected: [`${product.id} — ${product.title}`], destructive: true });
                                         if (!decision.confirmed) return;
@@ -84,7 +94,7 @@ export default function AdminProductsPage(): React.ReactElement {
                             ) : (
                                 <ProductTable
                                     products={admin.products}
-                                    onEditProduct={(product) => router.push(`/admin/products/${product.id}`)}
+                                    onEditProduct={handleEditProduct}
                                     onDeleteProduct={async (product: Product) => {
                                         const decision = await confirmAction({ title: t('admin.productsPage.confirm.moveToTrash').replace('{id}', product.id), description: l('Товар исчезнет с витрины и будет перемещён в архив.', 'The product will disappear from the storefront and move to the archive.', 'Produkts pazudīs no veikala un tiks pārvietots uz arhīvu.'), affected: [`${product.id} — ${product.title}`], destructive: true });
                                         if (!decision.confirmed) return;

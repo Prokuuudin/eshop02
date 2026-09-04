@@ -4,6 +4,7 @@ import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
 import type { NewProductDraft } from '@/types/product-admin';
 import { useTranslation } from '@/lib/use-translation';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
+import { consumeProductsListReturnState } from '@/lib/admin/products/list-return-state';
 
 type ApiEnvelope<T> = { success: true; data: T } | { error: string };
 
@@ -38,6 +39,8 @@ const PRODUCTS_PAGE_SIZE = 24;
 
 export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
+  const [initialReturn] = useState(() => consumeProductsListReturnState());
+  const didInitialLoadRef = useRef(false);
   const [baseProducts, setBaseProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -47,8 +50,8 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingArchiveId, setPurgingArchiveId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  const [searchQuery, setSearchQuery] = useState(initialReturn?.searchQuery ?? '');
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>(initialReturn?.viewMode ?? 'cards');
   const [newProduct, setNewProduct] = useState<NewProductDraft>({
     id: '',
     title: '',
@@ -104,10 +107,30 @@ export function useProductsAdmin(): ProductsAdminResult {
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void loadProducts();
-    });
-  }, [loadProducts]);
+    if (didInitialLoadRef.current) {
+      queueMicrotask(() => void loadProducts());
+      return;
+    }
+    didInitialLoadRef.current = true;
+    if (!initialReturn) {
+      queueMicrotask(() => void loadProducts());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const pagesNeeded = Math.max(1, Math.ceil(initialReturn.loadedCount / PRODUCTS_PAGE_SIZE));
+      for (let p = 1; p <= pagesNeeded && !cancelled; p += 1) {
+        await loadProducts(p, p > 1);
+      }
+      if (cancelled) return;
+      requestAnimationFrame(() => {
+        document.getElementById(`admin-product-row-${initialReturn.productId}`)?.scrollIntoView({ block: 'center' });
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadProducts, initialReturn]);
 
   useEffect(() => {
     queueMicrotask(() => void loadArchive());

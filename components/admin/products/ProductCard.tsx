@@ -21,7 +21,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onEdit, onDelete }) 
     const imageUrl = product.image || product.images?.[0];
 
     return (
-        <article className="admin-product-card flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <article id={`admin-product-row-${product.id}`} className="admin-product-card flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {/* Packshot целиком на белой подложке, как в витринной карточке:
                 исходники — фото на белом фоне разных пропорций, cover их обрезал/увеличивал. */}
             <div className="admin-product-card__image product-image-surface relative h-40 flex items-center justify-center overflow-hidden">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { derivePkLast3, normalizeSubmittedCode } from './personal-code'
+import { derivePkLast3 } from './personal-code'
 
 describe('derivePkLast3', () => {
   it('takes the last 3 digits of a personal code', () => {
@@ -30,17 +30,5 @@ describe('derivePkLast3', () => {
 
   it('uppercases the result', () => {
     expect(derivePkLast3('lv40003578abc')).toBe('ABC')
-  })
-})
-
-describe('normalizeSubmittedCode', () => {
-  it('trims, strips non-alphanumeric characters, and uppercases', () => {
-    expect(normalizeSubmittedCode(' 221 ')).toBe('221')
-    expect(normalizeSubmittedCode('2-2-1')).toBe('221')
-    expect(normalizeSubmittedCode('a2b')).toBe('A2B')
-  })
-
-  it('returns an empty string for blank input', () => {
-    expect(normalizeSubmittedCode('   ')).toBe('')
   })
 })

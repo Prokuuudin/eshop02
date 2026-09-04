@@ -7,7 +7,3 @@ export function derivePkLast3(rawPk: string | null | undefined): string | null {
   if (cleaned.length < 3) return null
   return cleaned.slice(-3).toUpperCase()
 }
-
-export function normalizeSubmittedCode(v: string): string {
-  return v.trim().replace(/[^0-9A-Za-z]/g, '').toUpperCase()
-}

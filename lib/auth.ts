@@ -152,8 +152,9 @@ export type RegisterCardErrorCode =
     | 'card_not_found'
     | 'card_already_registered'
     | 'wrong_password'
-    | 'wrong_code'
-    | 'no_personal_code_on_file'
+    | 'wrong_contact'
+    | 'no_contact_on_file'
+    | 'contact_required'
     | 'too_many_attempts'
     | 'network_error'
     | 'server_error';
@@ -167,7 +168,9 @@ export type RegisterCardErrorCode =
  */
 export const registerCardUser = async (data: {
     cardNumber: string;
-    password: string;
+    password?: string;
+    phoneLast4?: string;
+    email?: string;
     name?: string;
     privacyAcknowledged?: boolean;
     marketingConsent?: boolean;
@@ -182,6 +185,8 @@ export const registerCardUser = async (data: {
             body: JSON.stringify({
                 cardNumber: normalizedCard,
                 password: data.password,
+                phoneLast4: data.phoneLast4,
+                email: data.email,
                 name: data.name,
                 privacyAcknowledged: data.privacyAcknowledged === true,
                 marketingConsent: data.marketingConsent === true,
@@ -193,12 +198,22 @@ export const registerCardUser = async (data: {
 
     if (res.status === 404) return { success: false, errorCode: 'card_not_found' };
     if (res.status === 409) return { success: false, errorCode: 'card_already_registered' };
-    if (res.status === 422) return { success: false, errorCode: 'no_personal_code_on_file' };
+    if (res.status === 422) return { success: false, errorCode: 'no_contact_on_file' };
+    if (res.status === 400) {
+        let errorCode: RegisterCardErrorCode = 'server_error';
+        try {
+            const body = (await res.json()) as { error?: string };
+            if (body.error === 'contact_required') errorCode = 'contact_required';
+        } catch {
+            // No readable JSON body — fall through to the generic server error.
+        }
+        return { success: false, errorCode };
+    }
     if (res.status === 401) {
         let errorCode: RegisterCardErrorCode = 'wrong_password';
         try {
             const body = (await res.json()) as { error?: string };
-            if (body.error === 'wrong_code') errorCode = 'wrong_code';
+            if (body.error === 'wrong_contact') errorCode = 'wrong_contact';
         } catch {
             // No readable JSON body (e.g. a legacy mocked response) — the shared
             // company-branch wrong-password case is the safe default here.

@@ -9,12 +9,23 @@ import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { getTemplates } from '@/lib/email-templates-server-store'
-import { normalizeSubmittedCode } from '@/lib/personal-code'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 
+// Synthetic placeholder assigned when no real email is on file (see
+// accountEmail() in scripts/import-client-cards.ts) — it's derived from the
+// card number itself, so treating it as a valid match would let anyone who
+// knows the card number "verify" the email factor for free.
+const isSyntheticClientEmail = (email: string): boolean => email.toLowerCase().endsWith('@client.local')
+
+/** Digits-only last 4, or '' if fewer than 4 digits are present (never matches). */
+function phoneLast4(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  return digits.length >= 4 ? digits.slice(-4) : ''
+}
+
 // Best-effort "was this you?" notice נan attacker could have guessed the
-// 3-character personal code, so this activation might not be the real owner.
-// Never let a mail failure break the response the browser is waiting on.
+// phone-last-4/email combination, so this activation might not be the real
+// owner. Never let a mail failure break the response the browser is waiting on.
 async function notifyCardActivated(email: string | null | undefined, name: string, cardNumber: string): Promise<void> {
   if (!email) return
   try {
@@ -42,13 +53,13 @@ const PRIVACY_NOTICE_VERSION = '2026-07-03'
  *  1. An individual already has a User row with this cardNumber נeither a
  *     dormant ERP import (Klienti.xlsx, see scripts/import-client-cards.ts)
  *     or a company member created by this route before. Verified against
- *     `pkLast3` נthe last 3 characters of that person's personal code, or
- *     for a card issued to a legal entity, their company registration
- *     number נsourced from the client database, unique per cardholder
- *     (never a value shared across cards). `mustChangePassword` tells us
- *     whether they've already picked their own password (then this card is
- *     "taken"); `pkLast3 === null` means this card has no code on file at
- *     all (routed to the manual no-card request flow client-side).
+ *     the last 4 digits of `phone` and/or `email` on file for that
+ *     cardholder נsourced from the client database, matched independently:
+ *     either one matching (or both) is sufficient. `mustChangePassword`
+ *     tells us whether they've already picked their own password (then this
+ *     card is "taken"); no usable contact on file at all (no phone, and
+ *     email is missing or only the synthetic `card.<n>@client.local`
+ *     placeholder) routes to the manual no-card request flow client-side.
  *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
  *     team member claiming a shared company card) נcreate one, gated by
  *     the shared FIRST_LOGIN_PASSWORD mailed to the company contact.
@@ -69,6 +80,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const body = await req.json()
     const cardNumber = normalizeCardNumber(String(body.cardNumber ?? ''))
     const password = typeof body.password === 'string' ? body.password : ''
+    const submittedPhoneLast4 = phoneLast4(typeof body.phoneLast4 === 'string' ? body.phoneLast4 : '')
+    const submittedEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : undefined
     if (body.privacyAcknowledged !== true) {
       return NextResponse.json({ error: 'privacy_acknowledgement_required' }, { status: 400 })
@@ -88,8 +101,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Per-IP limiting alone doesn't stop a targeted attempt to guess one
-    // specific card's 3-character personal code from a fresh IP נcap
-    // attempts per card too.
+    // specific card's phone-last-4/email from a fresh IP נcap attempts per
+    // card too.
     const cardRl = await checkRateLimit(`register-card:card:${cardNumber}`, { windowMs: 60 * 60 * 1000, maxAttempts: 5 })
     if (cardRl.limited) {
       return NextResponse.json(
@@ -106,11 +119,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (!cardUser.mustChangePassword) {
         return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
       }
-      if (!cardUser.pkLast3) {
-        return NextResponse.json({ error: 'no_personal_code_on_file' }, { status: 422 })
+      if (!submittedPhoneLast4 && !submittedEmail) {
+        return NextResponse.json({ error: 'contact_required' }, { status: 400 })
       }
-      if (normalizeSubmittedCode(password) !== cardUser.pkLast3) {
-        return NextResponse.json({ error: 'wrong_code' }, { status: 401 })
+
+      const storedPhoneLast4 = phoneLast4(cardUser.phone ?? '')
+      const storedEmail = cardUser.email.toLowerCase()
+      const hasUsableEmail = storedEmail !== '' && !isSyntheticClientEmail(storedEmail)
+      if (!storedPhoneLast4 && !hasUsableEmail) {
+        return NextResponse.json({ error: 'no_contact_on_file' }, { status: 422 })
+      }
+
+      const phoneMatches = submittedPhoneLast4 !== '' && submittedPhoneLast4 === storedPhoneLast4
+      const emailMatches = submittedEmail !== '' && hasUsableEmail && submittedEmail === storedEmail
+      if (!phoneMatches && !emailMatches) {
+        return NextResponse.json({ error: 'wrong_contact' }, { status: 401 })
       }
 
       await prisma.user.update({ where: { id: cardUser.id }, data: privacyData })

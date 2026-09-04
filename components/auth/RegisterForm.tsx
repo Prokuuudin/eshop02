@@ -10,14 +10,16 @@ import { useTranslation } from '@/lib/use-translation';
 
 type Props = {
     onClose?: () => void;
-    onNoPersonalCode?: () => void;
+    onNoContactOnFile?: () => void;
 };
 
-export default function RegisterForm({ onClose, onNoPersonalCode }: Props): React.ReactElement {
+export default function RegisterForm({ onClose, onNoContactOnFile }: Props): React.ReactElement {
     const { t } = useTranslation();
     const router = useRouter();
     const [name, setName] = useState('');
     const [cardNumber, setCardNumber] = useState('');
+    const [phoneLast4, setPhoneLast4] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -26,8 +28,9 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
         card_not_found: t('auth.cardNotFound'),
         card_already_registered: t('auth.cardAlreadyRegistered'),
         wrong_password: t('auth.wrongPassword'),
-        wrong_code: t('auth.wrongCode'),
-        no_personal_code_on_file: t('auth.noPersonalCodeOnFile'),
+        wrong_contact: t('auth.wrongContact'),
+        no_contact_on_file: t('auth.noContactOnFile'),
+        contact_required: t('auth.enterContactOrPassword'),
         too_many_attempts: t('auth.tooManyAttempts'),
         network_error: t('auth.registrationError'),
         server_error: t('auth.registrationError'),
@@ -43,17 +46,22 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
             return;
         }
 
-        if (!password) {
-            setError(t('auth.enterPersonalCode'));
+        const trimmedPhoneLast4 = phoneLast4.trim();
+        const trimmedEmail = email.trim();
+        if (!trimmedPhoneLast4 && !trimmedEmail && !password) {
+            setError(t('auth.enterContactOrPassword'));
             return;
         }
 
-        // The 3-character personal code is checked server-side (never shipped
-        // to the client bundle) — a wrong guess comes back as errorCode 'wrong_code'.
+        // Card + phone-last-4/email are verified server-side (never shipped to
+        // the client bundle) — a mismatch comes back as errorCode 'wrong_contact'.
+        // `password` only applies to a shared company card (untouched flow).
         setLoading(true);
         const result = await registerCardUser({
             cardNumber: trimmedCard,
-            password,
+            phoneLast4: trimmedPhoneLast4 || undefined,
+            email: trimmedEmail || undefined,
+            password: password || undefined,
             name: name.trim() || undefined,
             privacyAcknowledged: true,
         });
@@ -61,8 +69,8 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
 
         if (!result.success) {
             setError(result.errorCode ? ERROR_MESSAGES[result.errorCode] : t('auth.registrationError'));
-            if (result.errorCode === 'no_personal_code_on_file') {
-                onNoPersonalCode?.();
+            if (result.errorCode === 'no_contact_on_file') {
+                onNoContactOnFile?.();
             }
             return;
         }
@@ -115,24 +123,54 @@ export default function RegisterForm({ onClose, onNoPersonalCode }: Props): Reac
                 />
             </div>
 
-            {/* Последние 3 цифры кода */}
+            {/* Телефон / email — сверяются с данными карты, достаточно одного */}
+            <div className="register-form__field">
+                <label htmlFor="register-phone-last4" className="register-form__label block mb-1 text-sm text-foreground">
+                    {t('auth.phoneLast4Label')}
+                </label>
+                <Input
+                    id="register-phone-last4"
+                    className="register-form__input bg-card text-foreground border-border"
+                    type="text"
+                    inputMode="numeric"
+                    value={phoneLast4}
+                    onChange={(e) => setPhoneLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder={t('auth.phoneLast4Placeholder')}
+                    maxLength={4}
+                    autoComplete="off"
+                />
+            </div>
+
+            <div className="register-form__field">
+                <label htmlFor="register-email" className="register-form__label block mb-1 text-sm text-foreground">
+                    {t('auth.email')}
+                </label>
+                <Input
+                    id="register-email"
+                    className="register-form__input bg-card text-foreground border-border"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('auth.emailPlaceholder')}
+                    autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground mt-1">{t('auth.contactHint')}</p>
+            </div>
+
+            {/* Общая карта компании (редкий кейс) — пароль от администратора */}
             <div className="register-form__field">
                 <label htmlFor="register-password" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.personalCodeLabel')}
+                    {t('auth.companyPasswordLabel')}
                 </label>
                 <Input
                     id="register-password"
                     className="register-form__input bg-card text-foreground border-border"
-                    type="text"
-                    inputMode="numeric"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t('auth.personalCodePlaceholder')}
-                    maxLength={3}
-                    required
+                    placeholder={t('auth.companyPasswordPlaceholder')}
                     autoComplete="off"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{t('auth.personalCodeHint')}</p>
             </div>
 
             <div className="register-form__card-hint space-y-1">

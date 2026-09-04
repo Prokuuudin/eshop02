@@ -43,12 +43,12 @@ export default function RegisterSwitcher({ onClose }: Props): React.ReactElement
             </div>
             <div className="register-switcher__form">
                 {hasCard ? (
-                    <RegisterForm onClose={onClose} onNoPersonalCode={() => { setHasCard(false); setNoCodeNotice(true); }} />
+                    <RegisterForm onClose={onClose} onNoContactOnFile={() => { setHasCard(false); setNoCodeNotice(true); }} />
                 ) : (
                     <>
                         {noCodeNotice && (
                             <p className="register-switcher__notice text-sm text-muted-foreground mb-3">
-                                {t('auth.noPersonalCodeOnFile')}
+                                {t('auth.noContactOnFile')}
                             </p>
                         )}
                         <RegisterNoCardForm onClose={onClose} />

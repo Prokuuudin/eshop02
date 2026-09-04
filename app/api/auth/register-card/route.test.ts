@@ -62,17 +62,17 @@ const COMPANY = {
 const DORMANT_USER = {
   id: 'user_dormant_1',
   email: 'master@example.com',
+  phone: '+371 27 654 321',
   cardNumber: '5678',
   mustChangePassword: true,
-  pkLast3: '221',
 }
 
-const DORMANT_USER_NO_PK = {
+const DORMANT_USER_NO_CONTACT = {
   id: 'user_dormant_2',
-  email: 'nopk@example.com',
+  email: `card.5679@client.local`,
+  phone: null,
   cardNumber: '5679',
   mustChangePassword: true,
-  pkLast3: null,
 }
 
 const ACTIVATED_USER = {
@@ -127,10 +127,10 @@ describe('POST /api/auth/register-card', () => {
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
   })
 
-  it('activates a dormant individual cardholder (ERP import) on the correct last-3 code, without creating a new user', async () => {
+  it('activates a dormant individual cardholder (ERP import) on the correct phone last-4, without creating a new user', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5678', password: '221' }))
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321' }))
 
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ user: expect.objectContaining({ id: 'user_dormant_1' }) })
@@ -145,32 +145,69 @@ describe('POST /api/auth/register-card', () => {
     )
   })
 
-  it('accepts the code regardless of dashes/case/whitespace', async () => {
+  it('activates on a matching email alone, without a phone number', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5678', password: ' 2-2-1 ' }))
+    const res = await POST(makeRequest({ cardNumber: '5678', email: 'MASTER@example.com' }))
+
+    expect(res.status).toBe(200)
+    expect(createSessionMock).toHaveBeenCalledWith('user_dormant_1')
+  })
+
+  it('activates when both phone and email are submitted and only one matches', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
+
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '0000', email: 'master@example.com' }))
 
     expect(res.status).toBe(200)
   })
 
-  it('does not notify anyone when the last-3 code is wrong', async () => {
+  it('ignores non-digit characters when comparing the phone last 4', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5678', password: '999' }))
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '43-21' }))
+
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects and never matches the synthetic client.local placeholder email', async () => {
+    userFindFirstMock.mockResolvedValue({ ...DORMANT_USER, email: 'card.5678@client.local' })
+
+    const res = await POST(makeRequest({ cardNumber: '5678', email: 'card.5678@client.local' }))
 
     expect(res.status).toBe(401)
-    expect(await res.json()).toMatchObject({ error: 'wrong_code' })
+    expect(await res.json()).toMatchObject({ error: 'wrong_contact' })
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('does not notify anyone when neither phone nor email match', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
+
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '9999', email: 'wrong@example.com' }))
+
+    expect(res.status).toBe(401)
+    expect(await res.json()).toMatchObject({ error: 'wrong_contact' })
     expect(createSessionMock).not.toHaveBeenCalled()
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
-  it('rejects with a distinct error when the card has no personal code on file', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER_NO_PK)
+  it('rejects when neither phone nor email is submitted', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '5679', password: '123' }))
+    const res = await POST(makeRequest({ cardNumber: '5678' }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: 'contact_required' })
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects with a distinct error when the card has no usable phone or email on file', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT_USER_NO_CONTACT)
+
+    const res = await POST(makeRequest({ cardNumber: '5679', phoneLast4: '1234' }))
 
     expect(res.status).toBe(422)
-    expect(await res.json()).toMatchObject({ error: 'no_personal_code_on_file' })
+    expect(await res.json()).toMatchObject({ error: 'no_contact_on_file' })
     expect(createSessionMock).not.toHaveBeenCalled()
   })
 

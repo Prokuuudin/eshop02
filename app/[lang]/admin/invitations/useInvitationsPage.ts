@@ -306,9 +306,19 @@ function useInvitationsPageState() {
         e.preventDefault();
         setFormError('');
         setMessage('');
+        const email = cardEmail.trim();
+        const number = cardNumber.trim();
+        if (!email || !number) {
+            setFormError(l('Заполните email и номер карты', 'Fill in email and card number', 'Aizpildiet e-pastu un kartes numuru'));
+            return;
+        }
+        if (!/^\d{1,6}$/.test(number.replace(/^0+(?=\d)/, ''))) {
+            setFormError(l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari'));
+            return;
+        }
         setCardBusy(true);
         try {
-            const { data: json } = await assignInvitationCard(cardEmail, cardNumber, cardName, cardPhone);
+            const { data: json } = await assignInvitationCard(email, number, cardName.trim(), cardPhone.trim());
             if ('error' in json) {
                 const err = json.error;
                 const msg =
@@ -326,15 +336,21 @@ function useInvitationsPageState() {
             }
             setMessage(
                 json.created
-                    ? l(`Клиент создан, карта ${cardNumber} назначена ${cardEmail}`, `Client created, card ${cardNumber} assigned to ${cardEmail}`, `Klients izveidots, karte ${cardNumber} piešķirta ${cardEmail}`)
-                    : l(`Карта ${cardNumber} назначена ${cardEmail}`, `Card ${cardNumber} assigned to ${cardEmail}`, `Karte ${cardNumber} piešķirta ${cardEmail}`)
+                    ? l(`Клиент создан, карта ${number} назначена ${email}`, `Client created, card ${number} assigned to ${email}`, `Klients izveidots, karte ${number} piešķirta ${email}`)
+                    : l(`Карта ${number} назначена ${email}`, `Card ${number} assigned to ${email}`, `Karte ${number} piešķirta ${email}`)
             );
             setCardEmail('');
             setCardNumber('');
             setCardName('');
             setCardPhone('');
-            // Новый/переведённый клиент появляется в сегменте A — обновляем оба списка
-            await Promise.all([loadHolders(), loadCampaign()]);
+            // Сбрасываем фильтры/страницу и фильтруем список по email клиента —
+            // иначе новый/переведённый клиент может оказаться на другой странице
+            // или быть скрыт активным фильтром контактов и остаться незамеченным.
+            setHolderContactFilter('all');
+            setHolderInvitationFilter('all');
+            setHolderPage(0);
+            setHolderSearch(email);
+            await loadCampaign();
         } finally {
             setCardBusy(false);
         }

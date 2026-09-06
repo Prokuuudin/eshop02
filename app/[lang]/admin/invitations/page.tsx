@@ -441,7 +441,16 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
-                                <Input required value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="1001" className="font-mono" />
+                                <Input
+                                    required
+                                    inputMode="numeric"
+                                    pattern="\d{1,6}"
+                                    title={l('1–6 цифр', '1–6 digits', '1–6 cipari')}
+                                    value={cardNumber}
+                                    onChange={(e) => setCardNumber(e.target.value)}
+                                    placeholder="1001"
+                                    className="font-mono"
+                                />
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>

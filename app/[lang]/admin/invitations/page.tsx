@@ -208,7 +208,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                 {formAlert}
 
                 {/* Тоггл: клиенты с картой / без карты + добавление клиента */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="inline-flex rounded-lg border border-border bg-muted p-1">
                         <button
                             type="button"

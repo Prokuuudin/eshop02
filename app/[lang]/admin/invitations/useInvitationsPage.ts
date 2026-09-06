@@ -56,9 +56,11 @@ function useInvitationsPageState() {
         return () => window.clearTimeout(timer);
     }, [holderSearch]);
 
-    // Форма назначения карты
+    // Форма назначения карты / добавления нового клиента
     const [cardEmail, setCardEmail] = useState('');
     const [cardNumber, setCardNumber] = useState('');
+    const [cardName, setCardName] = useState('');
+    const [cardPhone, setCardPhone] = useState('');
     const [cardBusy, setCardBusy] = useState(false);
 
     // Кампания сегмента B
@@ -306,23 +308,32 @@ function useInvitationsPageState() {
         setMessage('');
         setCardBusy(true);
         try {
-            const { ok, data: json } = await assignInvitationCard(cardEmail, cardNumber);
-            if (!ok) {
+            const { data: json } = await assignInvitationCard(cardEmail, cardNumber, cardName, cardPhone);
+            if ('error' in json) {
+                const err = json.error;
                 const msg =
-                    json.error === 'user_not_found'
-                        ? l('Клиент с таким email не найден', 'No client with this email', 'Klients ar šādu e-pastu nav atrasts')
-                        : json.error === 'card_taken'
+                    err === 'phone_required'
+                        ? l('Для нового клиента укажите телефон — это данные активации карты', 'Enter a phone number for a new client — it is the card-activation contact', 'Jaunam klientam norādiet tālruni — tie ir kartes aktivizācijas dati')
+                        : err === 'card_taken'
                         ? l('Этот номер карты уже занят', 'This card number is already taken', 'Šis kartes numurs jau ir aizņemts')
-                        : json.error === 'invalid_card'
-                        ? l('Номер карты: 4–10 цифр', 'Card number: 4–10 digits', 'Kartes numurs: 4–10 cipari')
+                        : err === 'invalid_card'
+                        ? l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari')
+                        : err === 'invalid_email'
+                        ? l('Некорректный email', 'Invalid email', 'Nederīgs e-pasts')
                         : l('Ошибка', 'Error', 'Kļūda');
                 setFormError(msg);
                 return;
             }
-            setMessage(l(`Карта ${cardNumber} назначена ${cardEmail}`, `Card ${cardNumber} assigned to ${cardEmail}`, `Karte ${cardNumber} piešķirta ${cardEmail}`));
+            setMessage(
+                json.created
+                    ? l(`Клиент создан, карта ${cardNumber} назначена ${cardEmail}`, `Client created, card ${cardNumber} assigned to ${cardEmail}`, `Klients izveidots, karte ${cardNumber} piešķirta ${cardEmail}`)
+                    : l(`Карта ${cardNumber} назначена ${cardEmail}`, `Card ${cardNumber} assigned to ${cardEmail}`, `Karte ${cardNumber} piešķirta ${cardEmail}`)
+            );
             setCardEmail('');
             setCardNumber('');
-            // Клиент переходит из сегмента B в сегмент A — обновляем оба списка
+            setCardName('');
+            setCardPhone('');
+            // Новый/переведённый клиент появляется в сегменте A — обновляем оба списка
             await Promise.all([loadHolders(), loadCampaign()]);
         } finally {
             setCardBusy(false);
@@ -462,6 +473,10 @@ function useInvitationsPageState() {
         setCardEmail,
         cardNumber,
         setCardNumber,
+        cardName,
+        setCardName,
+        cardPhone,
+        setCardPhone,
         cardBusy,
         setCardBusy,
         campaign,

@@ -41,6 +41,16 @@ export default function AdminInvitationsPage(): React.ReactElement {
         setHolderInvitationFilter,
         segment,
         setSegment,
+        cardEmail,
+        setCardEmail,
+        cardNumber,
+        setCardNumber,
+        cardName,
+        setCardName,
+        cardPhone,
+        setCardPhone,
+        cardBusy,
+        handleAssignCard,
         campaign,
         totalEligible,
         eligibleFilteredTotal,
@@ -412,6 +422,39 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         )}
 
                         {holdersTotal > PAGE_SIZE && <InvitationPager page={effectiveHolderPage} pageCount={holderPageCount} total={holdersTotal} setPage={setHolderPage} l={l} locale={locale} />}
+
+                        {/* Новый клиент с картой (выдана офлайн) + ручное назначение карты уже зарегистрированному */}
+                        <form onSubmit={handleAssignCard} className="rounded-md border border-border p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                            <div className="sm:col-span-2 space-y-1 -mb-1">
+                                <h3 className="text-sm font-semibold text-foreground">{l('Новый клиент с картой', 'New client with a card', 'Jauns klients ar karti')}</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    {l(
+                                        'Карта уже выдана клиенту на месте, у него взяты email и телефон для активации. Внесите данные в течение рабочего дня (без учёта выходных) — если email уже зарегистрирован в системе, форма только проставит ему номер карты (имя/телефон не нужны — уже есть в профиле); если email новый — будет создан аккаунт клиента, и телефон обязателен. После сохранения клиент появится в таблице выше — отправьте ему приглашение кнопкой «Email» или «Сообщение», как и любому другому держателю карты.',
+                                        'The card has already been handed to the client, and their email and phone were collected for activation. Enter the data within one business day (weekends excluded) — if the email is already registered, the form only assigns the card number (no need for name/phone — already on file); if the email is new, a client account is created and phone is required. Once saved, the client appears in the table above — send the invitation with the "Email" or "Message" button, same as any other card holder.',
+                                        'Karte klientam jau izsniegta klātienē, no viņa paņemts e-pasts un tālrunis aktivizācijai. Ievadiet datus viena darba dienas laikā (neskaitot brīvdienas) — ja e-pasts jau reģistrēts sistēmā, forma tikai piešķir kartes numuru (vārds/tālrunis nav vajadzīgi — jau ir profilā); ja e-pasts ir jauns, tiks izveidots klienta konts, un tālrunis ir obligāts. Pēc saglabāšanas klients parādīsies augšējā tabulā — nosūtiet ielūgumu ar pogu “E-pasts” vai “Ziņa” tāpat kā jebkuram citam kartes turētājam.'
+                                    )}
+                                </p>
+                            </div>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Email клиента', 'Client email', 'Klienta e-pasts')}</span>
+                                <Input type="email" required value={cardEmail} onChange={(e) => setCardEmail(e.target.value)} placeholder="client@inbox.lv" />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
+                                <Input required value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="1001" className="font-mono" />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>
+                                <Input type="tel" value={cardPhone} onChange={(e) => setCardPhone(e.target.value)} placeholder="+371 20000000" />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Имя (опционально)', 'Name (optional)', 'Vārds (nav obligāts)')}</span>
+                                <Input value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Anna" />
+                            </label>
+                            <Button type="submit" disabled={cardBusy} className="sm:col-span-2 sm:w-auto sm:justify-self-start">
+                                {cardBusy ? l('Сохраняем…', 'Saving…', 'Saglabā…') : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
+                            </Button>
+                        </form>
 
                     </section>
                 )}

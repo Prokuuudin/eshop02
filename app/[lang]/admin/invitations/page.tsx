@@ -87,6 +87,16 @@ export default function AdminInvitationsPage(): React.ReactElement {
         stopCampaign,
     } = useInvitationsPage();
 
+    // Один и тот же алерт рендерим у формы добавления карты и у остальных действий
+    // страницы (инвайты/рассылка) — иначе результат последнего действия оказывается
+    // вне поля зрения админа, если он не пролистал страницу до нижнего блока.
+    const formAlert = (formError || message) && (
+        <div className="rounded-lg border px-4 py-3 text-sm">
+            {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
+            {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
+        </div>
+    );
+
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -160,6 +170,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             {cardBusy ? l('Сохраняем…', 'Saving…', 'Saglabā…') : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
                         </Button>
                     </form>
+                    {formAlert && <div className="mt-3">{formAlert}</div>}
                 </details>
 
                 <aside className="rounded-lg border border-blue-200 bg-blue-50/70 p-5 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
@@ -240,12 +251,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                     </details>
                 </aside>
 
-                {(formError || message) && (
-                    <div className="rounded-lg border px-4 py-3 text-sm">
-                        {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
-                        {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
-                    </div>
-                )}
+                {formAlert}
 
                 {/* Тоггл: клиенты с картой / без карты */}
                 <div className="inline-flex rounded-lg border border-border bg-muted p-1">

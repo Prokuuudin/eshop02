@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AdminGate from '@/components/admin/AdminGate';
 import { INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmail } from './invitation-models';
 import { InvitationPager, SortArrow } from './invitation-list-ui';
@@ -23,7 +24,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
         allHoldersCount,
         loading,
         message,
+        setMessage,
         formError,
+        setFormError,
         busyIds,
         selectedIds,
         setSelectedIds,
@@ -41,6 +44,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
         setHolderInvitationFilter,
         segment,
         setSegment,
+        cardDialogOpen,
+        setCardDialogOpen,
         cardEmail,
         setCardEmail,
         cardNumber,
@@ -199,77 +204,82 @@ export default function AdminInvitationsPage(): React.ReactElement {
                     </details>
                 </aside>
 
-                <details className="group rounded-lg border border-emerald-200 bg-emerald-50/70 p-5 text-sm dark:border-emerald-900 dark:bg-emerald-950/30">
-                    <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
-                        <h2 className="text-base font-semibold leading-6 text-foreground">
-                            {l('Добавить клиента с картой', 'Add client with a card', 'Pievienot klientu ar karti')}
-                        </h2>
-                        <span className="relative top-px shrink-0 text-xs font-medium leading-6 text-emerald-700 group-open:hidden dark:text-emerald-300">
-                            {l('Развернуть', 'Expand', 'Izvērst')} ↓
-                        </span>
-                        <span className="relative top-px hidden shrink-0 text-xs font-medium leading-6 text-emerald-700 group-open:inline dark:text-emerald-300">
-                            {l('Свернуть', 'Collapse', 'Sakļaut')} ↑
-                        </span>
-                    </summary>
-                    <form onSubmit={handleAssignCard} className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                        <p className="sm:col-span-2 text-xs text-muted-foreground -mb-1">
-                            {l(
-                                'Карта уже выдана клиенту на месте, у него взяты email и телефон для активации. Внесите данные в течение рабочего дня (без учёта выходных) — если email уже зарегистрирован в системе, форма только проставит ему номер карты (имя/телефон не нужны — уже есть в профиле); если email новый — будет создан аккаунт клиента, и телефон обязателен. После сохранения клиент появится в таблице «Клиенты с картой» — новому клиенту приглашение отправится автоматически, уже зарегистрированному отправьте его вручную кнопкой «Email» или «Сообщение».',
-                                'The card has already been handed to the client, and their email and phone were collected for activation. Enter the data within one business day (weekends excluded) — if the email is already registered, the form only assigns the card number (no need for name/phone — already on file); if the email is new, a client account is created and phone is required. Once saved, the client appears in the "Clients with a card" table — a new client is invited automatically, an already-registered one should be invited manually with the "Email" or "Message" button.',
-                                'Karte klientam jau izsniegta klātienē, no viņa paņemts e-pasts un tālrunis aktivizācijai. Ievadiet datus viena darba dienas laikā (neskaitot brīvdienas) — ja e-pasts jau reģistrēts sistēmā, forma tikai piešķir kartes numuru (vārds/tālrunis nav vajadzīgi — jau ir profilā); ja e-pasts ir jauns, tiks izveidots klienta konts, un tālrunis ir obligāts. Pēc saglabāšanas klients parādīsies tabulā “Klienti ar karti” — jaunam klientam ielūgums tiks nosūtīts automātiski, jau reģistrētam nosūtiet to pats ar pogu “E-pasts” vai “Ziņa”.'
-                            )}
-                        </p>
-                        <label className="text-sm">
-                            <span className="block mb-1 text-muted-foreground">{l('Email клиента', 'Client email', 'Klienta e-pasts')}</span>
-                            <Input type="email" required value={cardEmail} onChange={(e) => setCardEmail(e.target.value)} placeholder="client@inbox.lv" />
-                        </label>
-                        <label className="text-sm">
-                            <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
-                            <Input
-                                required
-                                inputMode="numeric"
-                                pattern="\d{1,6}"
-                                title={l('1–6 цифр', '1–6 digits', '1–6 cipari')}
-                                value={cardNumber}
-                                onChange={(e) => setCardNumber(e.target.value)}
-                                placeholder="1001"
-                                className="font-mono"
-                            />
-                        </label>
-                        <label className="text-sm">
-                            <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>
-                            <Input type="tel" value={cardPhone} onChange={(e) => setCardPhone(e.target.value)} placeholder="+371 20000000" />
-                        </label>
-                        <label className="text-sm">
-                            <span className="block mb-1 text-muted-foreground">{l('Имя (опционально)', 'Name (optional)', 'Vārds (nav obligāts)')}</span>
-                            <Input value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Anna" />
-                        </label>
-                        <Button type="submit" disabled={cardBusy} className="sm:col-span-2 sm:w-auto sm:justify-self-start">
-                            {cardBusy ? l('Сохраняем…', 'Saving…', 'Saglabā…') : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
-                        </Button>
-                    </form>
-                    {formAlert && <div className="mt-3">{formAlert}</div>}
-                </details>
-
                 {formAlert}
 
-                {/* Тоггл: клиенты с картой / без карты */}
-                <div className="inline-flex rounded-lg border border-border bg-muted p-1">
-                    <button
-                        type="button"
-                        onClick={() => setSegment('withCard')}
-                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                {/* Тоггл: клиенты с картой / без карты + добавление клиента */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+                        <button
+                            type="button"
+                            onClick={() => setSegment('withCard')}
+                            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            {l('С картой', 'With a card', 'Ar karti')} <span className="text-muted-foreground font-normal">{allHoldersCount.toLocaleString(locale)}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSegment('withoutCard')}
+                            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withoutCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            {l('Без карты', 'Without a card', 'Bez kartes')} <span className="text-muted-foreground font-normal">{totalEligible.toLocaleString(locale)}</span>
+                        </button>
+                    </div>
+                    <Button
+                        onClick={() => {
+                            setFormError('');
+                            setMessage('');
+                            setCardDialogOpen(true);
+                        }}
                     >
-                        {l('С картой', 'With a card', 'Ar karti')} <span className="text-muted-foreground font-normal">{allHoldersCount.toLocaleString(locale)}</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSegment('withoutCard')}
-                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withoutCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        {l('Без карты', 'Without a card', 'Bez kartes')} <span className="text-muted-foreground font-normal">{totalEligible.toLocaleString(locale)}</span>
-                    </button>
+                        {l('Добавить клиента', 'Add client', 'Pievienot klientu')}
+                    </Button>
                 </div>
+
+                <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>{l('Добавить клиента с картой', 'Add client with a card', 'Pievienot klientu ar karti')}</DialogTitle>
+                            <DialogDescription>
+                                {l(
+                                    'Карта уже выдана клиенту на месте, у него взяты email и телефон для активации. Внесите данные в течение рабочего дня (без учёта выходных) — если email уже зарегистрирован в системе, форма только проставит ему номер карты (имя/телефон не нужны — уже есть в профиле); если email новый — будет создан аккаунт клиента, и телефон обязателен. После сохранения клиент появится в таблице «Клиенты с картой» — новому клиенту приглашение отправится автоматически, уже зарегистрированному отправьте его вручную кнопкой «Email» или «Сообщение».',
+                                    'The card has already been handed to the client, and their email and phone were collected for activation. Enter the data within one business day (weekends excluded) — if the email is already registered, the form only assigns the card number (no need for name/phone — already on file); if the email is new, a client account is created and phone is required. Once saved, the client appears in the "Clients with a card" table — a new client is invited automatically, an already-registered one should be invited manually with the "Email" or "Message" button.',
+                                    'Karte klientam jau izsniegta klātienē, no viņa paņemts e-pasts un tālrunis aktivizācijai. Ievadiet datus viena darba dienas laikā (neskaitot brīvdienas) — ja e-pasts jau reģistrēts sistēmā, forma tikai piešķir kartes numuru (vārds/tālrunis nav vajadzīgi — jau ir profilā); ja e-pasts ir jauns, tiks izveidots klienta konts, un tālrunis ir obligāts. Pēc saglabāšanas klients parādīsies tabulā “Klienti ar karti” — jaunam klientam ielūgums tiks nosūtīts automātiski, jau reģistrētam nosūtiet to pats ar pogu “E-pasts” vai “Ziņa”.'
+                                )}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleAssignCard} className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Email клиента', 'Client email', 'Klienta e-pasts')}</span>
+                                <Input type="email" required value={cardEmail} onChange={(e) => setCardEmail(e.target.value)} placeholder="client@inbox.lv" />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
+                                <Input
+                                    required
+                                    inputMode="numeric"
+                                    pattern="\d{1,6}"
+                                    title={l('1–6 цифр', '1–6 digits', '1–6 cipari')}
+                                    value={cardNumber}
+                                    onChange={(e) => setCardNumber(e.target.value)}
+                                    placeholder="1001"
+                                    className="font-mono"
+                                />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>
+                                <Input type="tel" value={cardPhone} onChange={(e) => setCardPhone(e.target.value)} placeholder="+371 20000000" />
+                            </label>
+                            <label className="text-sm">
+                                <span className="block mb-1 text-muted-foreground">{l('Имя (опционально)', 'Name (optional)', 'Vārds (nav obligāts)')}</span>
+                                <Input value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Anna" />
+                            </label>
+                            {formAlert && <div className="sm:col-span-2">{formAlert}</div>}
+                            <Button type="submit" disabled={cardBusy} className="sm:col-span-2 sm:w-auto sm:justify-self-start">
+                                {cardBusy ? l('Сохраняем…', 'Saving…', 'Saglabā…') : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
+                            </Button>
+                        </form>
+                    </DialogContent>
+                </Dialog>
 
                 {/* ── Сегмент A: держатели карт ── */}
                 {segment === 'withCard' && (
@@ -358,9 +368,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 {debouncedHolderSearch
                                     ? l('Ничего не найдено по запросу.', 'No matches for this search.', 'Pēc šī pieprasījuma nekas nav atrasts.')
                                     : l(
-                                          'Пока нет клиентов с картой. Добавьте клиента через форму вверху страницы или дождитесь импорта из ERP.',
-                                          'No clients with a card yet. Add one via the form at the top of the page or wait for the ERP import.',
-                                          'Pagaidām nav klientu ar karti. Pievienojiet klientu ar formu lapas augšā vai gaidiet ERP importu.'
+                                          'Пока нет клиентов с картой. Добавьте клиента кнопкой «Добавить клиента» выше или дождитесь импорта из ERP.',
+                                          'No clients with a card yet. Add one with the "Add client" button above, or wait for the ERP import.',
+                                          'Pagaidām nav klientu ar karti. Pievienojiet klientu ar pogu “Pievienot klientu” augstāk vai gaidiet ERP importu.'
                                       )}
                             </div>
                         ) : (

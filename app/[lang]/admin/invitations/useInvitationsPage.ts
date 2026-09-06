@@ -56,7 +56,8 @@ function useInvitationsPageState() {
         return () => window.clearTimeout(timer);
     }, [holderSearch]);
 
-    // Форма назначения карты / добавления нового клиента
+    // Форма назначения карты / добавления нового клиента (модалка)
+    const [cardDialogOpen, setCardDialogOpen] = useState(false);
     const [cardEmail, setCardEmail] = useState('');
     const [cardNumber, setCardNumber] = useState('');
     const [cardName, setCardName] = useState('');
@@ -352,6 +353,7 @@ function useInvitationsPageState() {
                 );
             }
             setMessage(parts.join(', '));
+            setCardDialogOpen(false);
             setCardEmail('');
             setCardNumber('');
             setCardName('');
@@ -498,6 +500,8 @@ function useInvitationsPageState() {
         setHolderInvitationFilter,
         segment,
         setSegment,
+        cardDialogOpen,
+        setCardDialogOpen,
         cardEmail,
         setCardEmail,
         cardNumber,

@@ -118,6 +118,15 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <Button
+                            onClick={() => {
+                                setFormError('');
+                                setMessage('');
+                                setCardDialogOpen(true);
+                            }}
+                        >
+                            {l('Добавить клиента', 'Add client', 'Pievienot klientu')}
+                        </Button>
                         <Link href="/admin/client-barcodes">
                             <Button variant="outline">{l('Зарегистрированные', 'Registered customers', 'Reģistrētie klienti')}</Button>
                         </Link>
@@ -207,33 +216,22 @@ export default function AdminInvitationsPage(): React.ReactElement {
 
                 {formAlert}
 
-                {/* Тоггл: клиенты с картой / без карты + добавление клиента */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="inline-flex rounded-lg border border-border bg-muted p-1">
-                        <button
-                            type="button"
-                            onClick={() => setSegment('withCard')}
-                            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            {l('С картой', 'With a card', 'Ar karti')} <span className="text-muted-foreground font-normal">{allHoldersCount.toLocaleString(locale)}</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSegment('withoutCard')}
-                            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withoutCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            {l('Без карты', 'Without a card', 'Bez kartes')} <span className="text-muted-foreground font-normal">{totalEligible.toLocaleString(locale)}</span>
-                        </button>
-                    </div>
-                    <Button
-                        onClick={() => {
-                            setFormError('');
-                            setMessage('');
-                            setCardDialogOpen(true);
-                        }}
+                {/* Тоггл: клиенты с картой / без карты */}
+                <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+                    <button
+                        type="button"
+                        onClick={() => setSegment('withCard')}
+                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                     >
-                        {l('Добавить клиента', 'Add client', 'Pievienot klientu')}
-                    </Button>
+                        {l('С картой', 'With a card', 'Ar karti')} <span className="text-muted-foreground font-normal">{allHoldersCount.toLocaleString(locale)}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSegment('withoutCard')}
+                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${segment === 'withoutCard' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {l('Без карты', 'Without a card', 'Bez kartes')} <span className="text-muted-foreground font-normal">{totalEligible.toLocaleString(locale)}</span>
+                    </button>
                 </div>
 
                 <Dialog open={cardDialogOpen} onOpenChange={setCardDialogOpen}>

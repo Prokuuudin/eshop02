@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import {
     INVITATIONS_PAGE_SIZE as PAGE_SIZE,
@@ -317,9 +318,14 @@ function useInvitationsPageState() {
             setFormError(l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari'));
             return;
         }
+        const phone = cardPhone.trim();
+        if (phone && !isValidPhoneNumber(phone, 'LV')) {
+            setFormError(l('Проверьте номер телефона', 'Check the phone number', 'Pārbaudiet tālruņa numuru'));
+            return;
+        }
         setCardBusy(true);
         try {
-            const { data: json } = await assignInvitationCard(email, number, cardName.trim(), cardPhone.trim());
+            const { data: json } = await assignInvitationCard(email, number, cardName.trim(), phone);
             if ('error' in json) {
                 const err = json.error;
                 const msg =

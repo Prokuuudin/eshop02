@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import PhoneInput from '@/components/ui/phone-input';
 import AdminGate from '@/components/admin/AdminGate';
 import { INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmail } from './invitation-models';
 import { InvitationPager, SortArrow } from './invitation-list-ui';
@@ -267,7 +268,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>
-                                <Input type="tel" value={cardPhone} onChange={(e) => setCardPhone(e.target.value)} placeholder="+371 20000000" />
+                                <PhoneInput value={cardPhone} onChange={setCardPhone} placeholder="+371 20000000" />
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Имя (опционально)', 'Name (optional)', 'Vārds (nav obligāts)')}</span>

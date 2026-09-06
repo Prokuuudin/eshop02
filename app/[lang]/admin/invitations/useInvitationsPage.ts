@@ -9,8 +9,11 @@ import {
     type EligibleSortKey,
     type EligibleUser,
     type Holder,
+    type HolderContactFilter,
+    type HolderInvitationFilter,
     type HolderSortKey,
     type SortDir,
+    isTechEmail,
     isEligibleUserSent,
     nextSort,
     sortEligibleByStatus,
@@ -21,11 +24,12 @@ import {
     fetchCardCampaign,
     fetchInvitationHolders,
     sendInvitationBatch,
+    sendSmsInvitationBatch,
     updateCardCampaign,
 } from './invitations-api';
 
 function useInvitationsPageState() {
-    const { l, locale } = useAdminLocale();
+    const { l, locale, language } = useAdminLocale();
 
     const [holders, setHolders] = useState<Holder[]>([]);
     const [holdersTotal, setHoldersTotal] = useState(0);
@@ -36,12 +40,15 @@ function useInvitationsPageState() {
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkBusy, setBulkBusy] = useState(false);
+    const [smsBulkBusy, setSmsBulkBusy] = useState(false);
     const [bulkProgress, setBulkProgress] = useState<{ processed: number; total: number } | null>(null);
     const bulkStopRequested = useRef(false);
     const [holderSearch, setHolderSearch] = useState('');
     const [debouncedHolderSearch, setDebouncedHolderSearch] = useState('');
     const [holderSort, setHolderSort] = useState<{ key: HolderSortKey; dir: SortDir } | null>(null);
     const [holderPage, setHolderPage] = useState(0);
+    const [holderContactFilter, setHolderContactFilter] = useState<HolderContactFilter>('all');
+    const [holderInvitationFilter, setHolderInvitationFilter] = useState<HolderInvitationFilter>('all');
     const [segment, setSegment] = useState<'withCard' | 'withoutCard'>('withCard');
 
     useEffect(() => {
@@ -88,11 +95,15 @@ function useInvitationsPageState() {
                 search: debouncedHolderSearch,
                 sort: holderServerSortField ?? undefined,
                 dir: holderServerSortDir ?? undefined,
+                contact: holderContactFilter,
+                invitation: holderInvitationFilter,
             }, controller.signal);
             if (ok) {
                 setHolders(json.holders ?? []);
                 setHoldersTotal(json.total ?? 0);
-                if (!debouncedHolderSearch) setAllHoldersCount(json.total ?? 0);
+                if (!debouncedHolderSearch && holderContactFilter === 'all' && holderInvitationFilter === 'all') {
+                    setAllHoldersCount(json.total ?? 0);
+                }
             }
         } catch (err) {
             if ((err as Error)?.name !== 'AbortError') throw err;
@@ -101,7 +112,7 @@ function useInvitationsPageState() {
             // Отменённый (устаревший) запрос не должен гасить индикатор загрузки за более новый
             if (holdersAbortRef.current === controller) setLoading(false);
         }
-    }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir]);
+    }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir, holderContactFilter, holderInvitationFilter]);
 
     const eligibleServerSortField: 'name' | 'email' | null = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.key : null;
     const eligibleServerSortDir = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.dir : null;
@@ -171,34 +182,56 @@ function useInvitationsPageState() {
         }
     };
 
-    // Ссылка-приглашение та же, что для email (общий токен в БД), уходит
-    // через WhatsApp вручную админом — для держателей карты без реальной почты
-    const handleWhatsApp = async (h: Holder) => {
+    // Телефонное приглашение не использует email и персональные токены:
+    // администратор копирует готовый текст и отправляет его по SMS или в мессенджере.
+    const sendPhoneInvites = async (userIds: string[]) => {
+        const { ok, data } = await sendSmsInvitationBatch(userIds, language);
+        if (!ok) {
+            setFormError(data.error === 'sms_provider_not_configured'
+                ? l('SMS-провайдер ещё не подключён', 'SMS provider is not connected yet', 'SMS pakalpojuma sniedzējs vēl nav pieslēgts')
+                : l('Не удалось отправить SMS', 'Failed to send SMS', 'Neizdevās nosūtīt SMS'));
+            return 0;
+        }
+        return data.results?.length ?? 0;
+    };
+
+    const handlePhoneMessage = async (h: Holder) => {
         if (!h.phone) return;
         setBusyIds((prev) => new Set(prev).add(h.userId));
         setFormError('');
+        setMessage('');
         try {
-            const { ok, data: json } = await sendInvitationBatch([h.userId]);
-            const inviteUrl = (json.results ?? [])[0]?.inviteUrl as string | undefined;
-            if (!ok || !inviteUrl) {
-                setFormError(l('Не удалось создать ссылку-приглашение', 'Failed to create invite link', 'Neizdevās izveidot ielūguma saiti'));
-                return;
+            const sent = await sendPhoneInvites([h.userId]);
+            if (sent) {
+                setMessage(l('Тестовая SMS-отправка выполнена', 'Simulated SMS sending completed', 'SMS testa sūtīšana pabeigta'));
+                await loadHolders();
             }
-            const digits = h.phone.replace(/\D/g, '');
-            const waPhone = digits.length === 8 ? `371${digits}` : digits;
-            const text = l(
-                `Здравствуйте${h.name ? `, ${h.name}` : ''}! Приглашаем вас в hairshoppro.lv. Ваша карта клиента: ${h.cardNumber}. Активировать аккаунт: ${inviteUrl}`,
-                `Hello${h.name ? `, ${h.name}` : ''}! You're invited to hairshoppro.lv. Your client card: ${h.cardNumber}. Activate your account: ${inviteUrl}`,
-                `Sveiki${h.name ? `, ${h.name}` : ''}! Jūs esat aicināts uz hairshoppro.lv. Jūsu klienta karte: ${h.cardNumber}. Aktivizējiet kontu: ${inviteUrl}`
-            );
-            window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-            await loadHolders();
         } finally {
             setBusyIds((prev) => {
                 const next = new Set(prev);
                 next.delete(h.userId);
                 return next;
             });
+        }
+    };
+
+    const handleSmsSelected = async () => {
+        const ids = [...selectedIds];
+        if (!ids.length) return;
+        setSmsBulkBusy(true);
+        setFormError('');
+        setMessage('');
+        let sent = 0;
+        try {
+            for (let index = 0; index < ids.length; index += INVITE_BATCH) {
+                sent += await sendPhoneInvites(ids.slice(index, index + INVITE_BATCH));
+                if (sent === 0 && formError) break;
+            }
+            if (sent) setMessage(l(`Тестовых SMS обработано: ${sent}`, `Simulated SMS messages processed: ${sent}`, `Apstrādātas testa SMS: ${sent}`));
+            setSelectedIds(new Set());
+            await loadHolders();
+        } finally {
+            setSmsBulkBusy(false);
         }
     };
 
@@ -344,7 +377,9 @@ function useInvitationsPageState() {
 
     const holderPageCount = Math.max(1, Math.ceil(holdersTotal / PAGE_SIZE));
     const effectiveHolderPage = Math.min(holderPage, holderPageCount - 1);
-    const pageSelectableHolderIds = displayedHolders.filter((h) => h.status !== 'accepted').map((h) => h.userId);
+    const pageSelectableHolderIds = displayedHolders
+        .filter((h) => h.status !== 'accepted' && (!isTechEmail(h.email) || Boolean(h.phone)))
+        .map((h) => h.userId);
     const allPageHoldersSelected = pageSelectableHolderIds.length > 0 && pageSelectableHolderIds.every((id) => selectedIds.has(id));
 
     // Кампания шлёт письма батчами по курсору (id asc), без лога на юзера —
@@ -383,6 +418,7 @@ function useInvitationsPageState() {
 
     return {
         l,
+        language,
         locale,
         STATUS_LABEL,
         STATUS_CLASS,
@@ -403,6 +439,7 @@ function useInvitationsPageState() {
         selectedIds,
         setSelectedIds,
         bulkBusy,
+        smsBulkBusy,
         setBulkBusy,
         bulkProgress,
         setBulkProgress,
@@ -415,6 +452,10 @@ function useInvitationsPageState() {
         setHolderSort,
         holderPage,
         setHolderPage,
+        holderContactFilter,
+        setHolderContactFilter,
+        holderInvitationFilter,
+        setHolderInvitationFilter,
         segment,
         setSegment,
         cardEmail,
@@ -452,7 +493,8 @@ function useInvitationsPageState() {
         loadCampaign,
         sendInvites,
         handleInviteOne,
-        handleWhatsApp,
+        handlePhoneMessage,
+        handleSmsSelected,
         toggleSelect,
         toggleSelectMany,
         handleInviteSelected,

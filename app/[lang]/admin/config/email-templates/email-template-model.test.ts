@@ -5,6 +5,7 @@ describe('email template model', () => {
     it('classifies localized order templates', () => {
         expect(guideFor('order-confirmation-en')).toMatchObject({ category: 'orders', language: 'EN' });
         expect(guideFor('password-reset-lv')).toMatchObject({ category: 'security', language: 'LV' });
+        expect(guideFor('sms-invite-en')).toMatchObject({ category: 'access', language: 'EN' });
     });
 
     it('substitutes declared preview variables and leaves undeclared ones untouched', () => {

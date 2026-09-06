@@ -40,17 +40,40 @@ export async function GET(req: NextRequest): Promise<Response> {
       ? (sortParam as HolderSortField)
       : 'email'
     const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc'
+    const contact = searchParams.get('contact')
+    const invitation = searchParams.get('invitation')
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
 
-    const where: Record<string, unknown> = { cardNumber: { not: null } }
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-        { cardNumber: { contains: search, mode: 'insensitive' } },
-      ]
+    const where: Record<string, unknown> = {
+      cardNumber: { not: null },
+      // Этот же признак используется разделом «Зарегистрированные клиенты».
+      privacyAcknowledgedAt: null,
     }
+    const and: Array<Record<string, unknown>> = []
+    const hasRealEmail = { email: { not: { endsWith: '@client.local' } } }
+    const hasPhone = { phone: { not: null }, NOT: { phone: '' } }
+    const hasNoPhone = { OR: [{ phone: null }, { phone: '' }] }
+    if (contact === 'emailOnly') and.push(hasRealEmail, hasNoPhone)
+    if (contact === 'phoneOnly') and.push({ email: { endsWith: '@client.local' } }, hasPhone)
+    if (contact === 'complete') and.push(hasRealEmail, hasPhone)
+    if (contact === 'none') and.push({ email: { endsWith: '@client.local' } }, hasNoPhone)
+    if (invitation === 'invited') and.push({
+      invitationTokens: { some: {} },
+    })
+    if (invitation === 'notInvited') and.push({
+      invitationTokens: { none: {} },
+    })
+    if (search) {
+      and.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { cardNumber: { contains: search, mode: 'insensitive' } },
+        ],
+      })
+    }
+    if (and.length > 0) where.AND = and
 
     const orderBy =
       sortField === 'name' ? { name: sortDir } as const
@@ -121,7 +144,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     const language = resolveInviteLang(body.language)
 
     const users = await prisma.user.findMany({
-      where: { id: { in: userIds }, cardNumber: { not: null } },
+      where: {
+        id: { in: userIds },
+        cardNumber: { not: null },
+        email: { not: { endsWith: '@client.local' } },
+      },
       select: { id: true, name: true, email: true, cardNumber: true },
     })
 

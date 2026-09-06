@@ -13,19 +13,20 @@ export default function EmailTemplatesPage(): React.ReactElement {
         setTestResult, search, setSearch, load, select, save, reset, sendTest, isDirty,
         filteredTemplates, selectedGuide, categoryLabel,
     } = useEmailTemplatesPage();
+    const isSmsTemplate = selected?.id.startsWith('sms-invite-') ?? false;
 
     return (
         <AdminGate access="full">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
-                        {l('Редактор email-шаблонов', 'Email template editor', 'E-pasta veidņu redaktors')}
+                        {l('Редактор шаблонов писем и сообщений', 'Email and message template editor', 'E-pasta un ziņu veidņu redaktors')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                         {l(
-                            'Настройка текстов для транзакционных писем. Используйте',
-                            'Configure transactional email content. Use',
-                            'Pielāgojiet transakciju e-pastu saturu. Izmantojiet'
+                                    'Настройка текстов для писем и телефонных сообщений. Используйте',
+                                    'Configure email and phone-message content. Use',
+                                    'Pielāgojiet e-pastu un tālruņa ziņu saturu. Izmantojiet'
                         )}{' '}
                         <code className="rounded bg-muted px-1 py-0.5 text-xs">
                             {'{{variable}}'}
@@ -161,7 +162,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
 
                                 {tab === 'edit' ? (
                                     <div className="space-y-3">
-                                        <div>
+                                        {!isSmsTemplate && <div>
                                             <label htmlFor="email-template-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
                                                 {l('Тема письма', 'Email subject', 'E-pasta temats')}
                                             </label>
@@ -171,17 +172,17 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 onChange={(e) => setSubject(e.target.value)}
                                                 className="text-sm"
                                             />
-                                        </div>
+                                        </div>}
                                         <div>
                                             <label htmlFor="email-template-body" className="mb-1 block text-xs font-medium text-muted-foreground">
-                                                {l('HTML-тело письма', 'Email HTML body', 'E-pasta HTML saturs')}
+                                                {isSmsTemplate ? l('Текст сообщения', 'Message text', 'Ziņas teksts') : l('HTML-тело письма', 'Email HTML body', 'E-pasta HTML saturs')}
                                             </label>
                                             <Textarea
                                                 id="email-template-body"
                                                 value={body}
                                                 onChange={(e) => setBody(e.target.value)}
                                                 rows={14}
-                                                className="font-mono text-xs leading-relaxed"
+                                                className={isSmsTemplate ? 'text-sm leading-relaxed' : 'font-mono text-xs leading-relaxed'}
                                             />
                                         </div>
                                         {selected.variables.length > 0 && (
@@ -240,7 +241,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                             )}
                                         </div>
 
-                                        <div className="rounded-lg border border-border px-4 py-3 space-y-2">
+                                        {!isSmsTemplate && <div className="rounded-lg border border-border px-4 py-3 space-y-2">
                                             <p className="text-xs font-medium text-muted-foreground">
                                                 {l(
                                                     'Отправить тестовое письмо',
@@ -292,29 +293,33 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                     'Mainīgo vietā tiek izmantoti testa dati.'
                                                 )}
                                             </p>
-                                        </div>
+                                        </div>}
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
-                                        <div className="rounded-md border border-border bg-muted px-3 py-2">
+                                        {!isSmsTemplate && <div className="rounded-md border border-border bg-muted px-3 py-2">
                                             <span className="text-xs text-muted-foreground">
                                                 {l('Тема:', 'Subject:', 'Temats:')}{' '}
                                             </span>
                                             <span className="text-sm font-medium text-foreground">
                                                 {renderPreview(subject, selected.variables, language)}
                                             </span>
-                                        </div>
-                                        <div className="overflow-hidden rounded-xl border border-border bg-white">
+                                        </div>}
+                                        {isSmsTemplate ? (
+                                            <div className="whitespace-pre-wrap rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-foreground">
+                                                {renderPreview(body, selected.variables, language)}
+                                            </div>
+                                        ) : <div className="overflow-hidden rounded-xl border border-border bg-white">
                                             <iframe
                                                 title={l('Предпросмотр письма', 'Email preview', 'E-pasta priekšskatījums')}
                                                 sandbox=""
                                                 srcDoc={renderPreview(body, selected.variables, language)}
                                                 className="h-[32rem] w-full border-0 bg-white"
                                             />
-                                        </div>
+                                        </div>}
                                         <p className="text-xs text-muted-foreground">
                                             {l(
-                                                'Превью использует тестовые данные для подстановки переменных',
+                                                'Предпросмотр использует тестовые данные для подстановки переменных',
                                                 'The preview uses sample data for variable substitution',
                                                 'Priekšskatījumā mainīgo aizstāšanai tiek izmantoti testa dati'
                                             )}

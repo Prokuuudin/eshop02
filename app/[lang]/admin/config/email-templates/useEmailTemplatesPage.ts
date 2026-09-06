@@ -43,9 +43,11 @@ function useEmailTemplatesPageState() {
             .then((loaded) => {
                 setTemplates(loaded);
                 if (!selectedRef.current && loaded[0]) {
-                    setSelected(loaded[0]);
-                    setSubject(loaded[0].subject);
-                    setBody(loaded[0].body);
+                    const requestedId = new URLSearchParams(window.location.search).get('template');
+                    const initial = loaded.find((template) => template.id === requestedId) ?? loaded[0];
+                    setSelected(initial);
+                    setSubject(initial.subject);
+                    setBody(initial.body);
                 }
             })
             .catch(() => {

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     assignInvitationCard,
     fetchInvitationHolders,
+    fetchPhoneMessageTemplate,
     sendInvitationBatch,
     updateCardCampaign,
 } from './invitations-api';
@@ -23,10 +24,12 @@ describe('invitations api', () => {
             search: 'anna',
             sort: 'email',
             dir: 'desc',
+            contact: 'complete',
+            invitation: 'notInvited',
         }, controller.signal);
 
         expect(fetchMock).toHaveBeenCalledWith(
-            '/api/admin/invitations?take=25&skip=50&search=anna&sort=email&dir=desc',
+            '/api/admin/invitations?take=25&skip=50&search=anna&sort=email&dir=desc&contact=complete&invitation=notInvited',
             { signal: controller.signal }
         );
     });
@@ -37,6 +40,21 @@ describe('invitations api', () => {
 
         await sendInvitationBatch(['u1', 'u2']);
         expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ userIds: ['u1', 'u2'] });
+    });
+
+    it('loads the phone-message template for the selected language', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => [
+                { id: 'sms-invite-ru', body: 'RU', variables: [] },
+                { id: 'sms-invite-lv', body: 'LV', variables: [] },
+            ],
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        const controller = new AbortController();
+
+        await expect(fetchPhoneMessageTemplate('lv', controller.signal)).resolves.toMatchObject({ body: 'LV' });
+        expect(fetchMock).toHaveBeenCalledWith('/api/admin/email-templates', { signal: controller.signal });
     });
 
     it('keeps card assignment and campaign reset payloads stable', async () => {

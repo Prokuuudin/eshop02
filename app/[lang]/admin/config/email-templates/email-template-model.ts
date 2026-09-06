@@ -22,6 +22,7 @@ export function guideFor(id: string): TemplateGuide {
     if (id.startsWith('password-reset')) return { category: 'security', language, trigger: ['После запроса сброса пароля; ссылка действует 1 час', 'After a password reset request; link valid for 1 hour', 'Pēc paroles atiestatīšanas pieprasījuma; saite derīga 1 stundu'], audience: ['Пользователь аккаунта', 'Account user', 'Konta lietotājs'] };
     if (id.startsWith('access-request-rejected')) return { category: 'access', language, trigger: ['После отклонения заявки на карту', 'After a client-card request is rejected', 'Pēc klienta kartes pieteikuma noraidīšanas'], audience: ['Заявитель', 'Applicant', 'Pieteikuma iesniedzējs'] };
     if (id === 'card-rules-ru') return { category: 'access', language, trigger: ['Ручная рассылка правил получения карты', 'Manual client-card rules campaign', 'Manuāla klienta kartes noteikumu kampaņa'], audience: ['Потенциальный профессиональный клиент', 'Prospective professional customer', 'Potenciālais profesionālais klients'] };
+    if (id.startsWith('sms-invite-')) return { category: 'access', language, trigger: ['При нажатии «Сообщение» в приглашениях клиентов', 'When “Message” is clicked in client invitations', 'Nospiežot “Ziņa” klientu ielūgumos'], audience: ['Держатель карты с указанным телефоном', 'Cardholder with a phone number', 'Kartes īpašnieks ar norādītu tālruni'] };
     if (id === 'card-activated') return { category: 'security', language: 'RU · EN · LV', trigger: ['Сразу после самостоятельной активации существующей карты', 'Immediately after an existing card is self-activated', 'Uzreiz pēc esošas kartes pašaktivizācijas'], audience: ['Владелец карты — уведомление безопасности', 'Cardholder — security notice', 'Kartes turētājs — drošības paziņojums'] };
     return { category: 'access', language, trigger: ['После одобрения заявки или ручной отправки приглашения; ссылка действует 7 дней', 'After approval or a manual invitation; link valid for 7 days', 'Pēc apstiprināšanas vai manuāla ielūguma; saite derīga 7 dienas'], audience: ['Одобренный держатель карты', 'Approved cardholder', 'Apstiprināts kartes turētājs'] };
 }
@@ -49,6 +50,7 @@ export function renderPreview(body: string, vars: string[], language: 'ru' | 'en
         card_number: '123456',
         invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
         registration_link: 'https://hairshoppro.lv/auth/register',
+        registration_url: 'https://hairshoppro.lv/auth/register',
         site_url: 'https://hairshoppro.lv',
         note_block: '',
     };
@@ -58,4 +60,3 @@ export function renderPreview(body: string, vars: string[], language: 'ru' | 'en
     });
     return result;
 }
-

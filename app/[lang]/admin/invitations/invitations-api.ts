@@ -1,4 +1,4 @@
-import type { CampaignState, EligibleUser, Holder, SortDir } from './invitation-models';
+import type { CampaignState, EligibleUser, Holder, HolderContactFilter, HolderInvitationFilter, SortDir } from './invitation-models';
 
 type PageQuery = {
     take: number;
@@ -6,6 +6,8 @@ type PageQuery = {
     search?: string;
     sort?: 'name' | 'email' | 'cardNumber';
     dir?: SortDir;
+    contact?: HolderContactFilter;
+    invitation?: HolderInvitationFilter;
 };
 
 export type InvitationResult = {
@@ -31,6 +33,12 @@ export type CampaignPageResponse = {
     users?: EligibleUser[];
 };
 
+export type PhoneMessageTemplate = {
+    id: string;
+    body: string;
+    variables: string[];
+};
+
 function buildPageQuery(query: PageQuery): URLSearchParams {
     const params = new URLSearchParams({ take: String(query.take), skip: String(query.skip) });
     if (query.search) params.set('search', query.search);
@@ -38,6 +46,8 @@ function buildPageQuery(query: PageQuery): URLSearchParams {
         params.set('sort', query.sort);
         params.set('dir', query.dir ?? 'asc');
     }
+    if (query.contact && query.contact !== 'all') params.set('contact', query.contact);
+    if (query.invitation && query.invitation !== 'all') params.set('invitation', query.invitation);
     return params;
 }
 
@@ -50,6 +60,16 @@ export async function fetchInvitationHolders(
     signal: AbortSignal
 ): Promise<{ ok: boolean; data: InvitationsResponse }> {
     return parseResponse(await fetch(`/api/admin/invitations?${buildPageQuery(query)}`, { signal }));
+}
+
+export async function fetchPhoneMessageTemplate(
+    language: 'ru' | 'en' | 'lv',
+    signal: AbortSignal
+): Promise<PhoneMessageTemplate | null> {
+    const response = await fetch('/api/admin/email-templates', { signal });
+    if (!response.ok) return null;
+    const templates = await response.json() as PhoneMessageTemplate[];
+    return templates.find((template) => template.id === `sms-invite-${language}`) ?? null;
 }
 
 export async function fetchCardCampaign(
@@ -66,6 +86,17 @@ export async function sendInvitationBatch(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userIds }),
+    }));
+}
+
+export async function sendSmsInvitationBatch(
+    userIds: string[],
+    language: 'ru' | 'en' | 'lv'
+): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; error?: string } }> {
+    return parseResponse(await fetch('/api/admin/invitations/sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds, language }),
     }));
 }
 

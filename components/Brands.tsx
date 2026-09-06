@@ -11,12 +11,6 @@ import type { BrandConfigItem } from '@/lib/brands-config';
 
 const COLLAPSED_MAX_HEIGHT = 240;
 
-const LETTER_PALETTE = [
-  'bg-rose-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 'bg-lime-50',
-  'bg-green-50', 'bg-teal-50', 'bg-cyan-50', 'bg-sky-50', 'bg-blue-50',
-  'bg-primary/5', 'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50',
-];
-
 function toBrandTitleCase(name: string): string {
   return name
     .toLowerCase()
@@ -126,22 +120,24 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                 <div
                   ref={listRef}
                   onTransitionEnd={handleListTransitionEnd}
-                  className="brands__list flex flex-wrap gap-x-6 gap-y-3 overflow-hidden transition-[max-height] duration-500 ease-in-out"
+                  className="brands__list grid grid-cols-1 gap-x-8 overflow-hidden transition-[max-height] duration-500 ease-in-out sm:grid-cols-2 lg:grid-cols-5"
                   style={{ maxHeight: maxHeight === 'none' ? 'none' : `${maxHeight}px` }}
                 >
-                  {GROUP_ENTRIES.map(([letter, letterBrands], index) => (
-                    <div key={letter} className="brands__letter-group flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-                      <span className={`brands__letter inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-lg font-bold text-gray-800 ${LETTER_PALETTE[index % LETTER_PALETTE.length]}`}>{letter}</span>
-                      {letterBrands.map((brand) => (
-                        <Link
-                          key={brand.id}
-                          href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                          className="brands__brand-link inline-flex max-w-full items-center [overflow-wrap:anywhere] rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:border-gray-400 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
-                          title={brand.name}
-                        >
-                          {toBrandTitleCase(brand.name)}
-                        </Link>
-                      ))}
+                  {GROUP_ENTRIES.map(([letter, letterBrands]) => (
+                    <div key={letter} className="brands__letter-group min-w-0 border-b border-gray-100 py-3 first:pt-0 last:border-b-0 last:pb-0">
+                      <h3 className="brands__letter mb-1 text-lg font-bold text-gray-900">{letter}</h3>
+                      <div className="flex flex-col">
+                        {letterBrands.map((brand) => (
+                          <Link
+                            key={brand.id}
+                            href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
+                            className="brands__brand-link block min-w-0 [overflow-wrap:anywhere] rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
+                            title={brand.name}
+                          >
+                            {toBrandTitleCase(brand.name)}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

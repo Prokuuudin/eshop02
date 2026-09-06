@@ -42,7 +42,8 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   mfaChallenges       MfaChallenge[]
-  invitationTokens    InvitationToken[]
+    invitationTokens    InvitationToken[]
+    invitationDeliveries InvitationDelivery[]
   accountManagerMessages AccountManagerMessage[]
   userNotifications   UserNotification[]
   bonusTransactions   BonusTransaction[]
@@ -54,7 +55,7 @@ model User {
   @@index([registrationNumber])
 }
 
-model InvitationToken {
+  model InvitationToken {
   id         String   @id @default(cuid())
   tokenHash  String   @unique
   userId     String
@@ -71,7 +72,19 @@ model InvitationToken {
   @@index([email])
   @@index([expiresAt])
   @@index([status])
-}
+  }
+
+  model InvitationDelivery {
+    id        String   @id @default(cuid())
+    userId    String
+    channel   String
+    status    String
+    sentAt    DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId, channel, sentAt])
+    @@index([status, sentAt])
+  }
 
 model PasswordResetToken {
   id        String   @id @default(cuid())

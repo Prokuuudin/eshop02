@@ -115,7 +115,7 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
     expect(tpl!.body).toContain('бонусных баллов')
     expect(tpl!.body).toContain('следующих покупках')
     expect(tpl!.body).toContain('Есть карта клиента')
-    expect(tpl!.body).toContain('последние 3 цифры персонального кода')
+    expect(tpl!.body).toContain('последние 4 цифры телефона')
     expect(tpl!.body).not.toMatch(/войдите.*e-?mail/i)
   })
 

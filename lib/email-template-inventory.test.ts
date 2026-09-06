@@ -19,7 +19,7 @@ const REQUIRED_TEMPLATE_IDS = [
   'order-delivered-ru', 'order-delivered-en', 'order-delivered-lv',
   'password-reset-ru', 'password-reset-en', 'password-reset-lv',
   'access-request-rejected-ru', 'access-request-rejected-en', 'access-request-rejected-lv',
-  'card-rules-ru', 'pro-invite', 'card-activated',
+  'card-rules-ru', 'pro-invite', 'sms-invite-ru', 'sms-invite-en', 'sms-invite-lv', 'card-activated',
 ]
 
 describe('email template inventory', () => {

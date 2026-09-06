@@ -29,24 +29,24 @@ const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
     intro: '<strong>LV</strong> — MIKS PLUS ir atvēris jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:',
     steps: [
       'Atveriet reģistrācijas lapu un izvēlieties “Man ir klienta karte”.',
-      'Ievadiet MIKS PLUS kartes numuru un personas koda pēdējos 3 ciparus; uzņēmuma kartei — reģistrācijas numura pēdējos 3 ciparus.',
-      'Apstipriniet reģistrāciju un pēc pierakstīšanās izveidojiet savu paroli.',
+      'Ievadiet MIKS PLUS kartes numuru un e-pastu un/vai tālruņa numura pēdējos 4 ciparus, kas norādīti klientu datubāzē.',
+      'Sistēma pārbaudīs datu atbilstību un uzreiz atvērs jūsu kontu.',
     ],
   },
   {
     intro: '<strong>RU</strong> — MIKS PLUS открыл новый интернет-магазин для профессионалов индустрии красоты — <strong>hairshoppro.lv</strong>. Напоминаем: у вас есть карта клиента MIKS PLUS № <strong>{{card_number}}</strong>. После регистрации вам будут доступны профессиональные цены, онлайн-заказы, накопление бонусных баллов и их использование при следующих покупках. Как зарегистрироваться:',
     steps: [
       'Откройте страницу регистрации и выберите «Есть карта клиента».',
-      'Введите номер карты MIKS PLUS и последние 3 цифры персонального кода; для карты компании — последние 3 цифры регистрационного номера.',
-      'Подтвердите регистрацию и после входа установите собственный пароль.',
+      'Введите номер карты MIKS PLUS и email и/или последние 4 цифры телефона, указанные в клиентской базе.',
+      'Система проверит соответствие данных и сразу откроет ваш аккаунт.',
     ],
   },
   {
     intro: '<strong>EN</strong> — MIKS PLUS has opened a new online store for beauty professionals — <strong>hairshoppro.lv</strong>. A reminder: you have MIKS PLUS client card No. <strong>{{card_number}}</strong>. Once registered, you can access professional prices, order online, earn bonus points and redeem them on future purchases. How to register:',
     steps: [
       'Open the registration page and select “I have a client card”.',
-      'Enter your MIKS PLUS card number and the last 3 digits of your personal code; for a company card, use the last 3 digits of the registration number.',
-      'Confirm registration and set your own password after signing in.',
+      'Enter your MIKS PLUS card number and the email and/or last 4 digits of the phone number stored in the client database.',
+      'The system will verify the details and open your account immediately.',
     ],
   },
 ]

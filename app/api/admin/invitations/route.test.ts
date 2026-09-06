@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { userFindManyMock, userCountMock, requireAdminMock, readInvitationsMock, deriveStatusMock } = vi.hoisted(() => ({
+const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, requireAdminMock, readInvitationsMock, deriveStatusMock } = vi.hoisted(() => ({
   userFindManyMock: vi.fn(),
   userCountMock: vi.fn(),
+  invitationDeliveryFindManyMock: vi.fn(),
   requireAdminMock: vi.fn(),
   readInvitationsMock: vi.fn(),
   deriveStatusMock: vi.fn(),
@@ -11,7 +12,10 @@ const { userFindManyMock, userCountMock, requireAdminMock, readInvitationsMock, 
 
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findMany: userFindManyMock, count: userCountMock } },
+  prisma: {
+    user: { findMany: userFindManyMock, count: userCountMock },
+    invitationDelivery: { findMany: invitationDeliveryFindManyMock },
+  },
 }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: requireAdminMock }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
@@ -37,6 +41,7 @@ beforeEach(() => {
   userFindManyMock.mockResolvedValue([])
   userCountMock.mockResolvedValue(0)
   readInvitationsMock.mockResolvedValue([])
+  invitationDeliveryFindManyMock.mockResolvedValue([])
 })
 
 describe('GET /api/admin/invitations', () => {
@@ -50,13 +55,13 @@ describe('GET /api/admin/invitations', () => {
     await GET(makeGetRequest())
     expect(userFindManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { cardNumber: { not: null } },
+        where: { cardNumber: { not: null }, privacyAcknowledgedAt: null },
         orderBy: { email: 'asc' },
         skip: 0,
         take: 50,
       })
     )
-    expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null } } })
+    expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null }, privacyAcknowledgedAt: null } })
   })
 
   it('applies search across name/email/phone/cardNumber and pagination params', async () => {
@@ -65,11 +70,14 @@ describe('GET /api/admin/invitations', () => {
       expect.objectContaining({
         where: {
           cardNumber: { not: null },
-          OR: [
-            { name: { contains: 'maija', mode: 'insensitive' } },
-            { email: { contains: 'maija', mode: 'insensitive' } },
-            { phone: { contains: 'maija', mode: 'insensitive' } },
-            { cardNumber: { contains: 'maija', mode: 'insensitive' } },
+          privacyAcknowledgedAt: null,
+          AND: [
+            { OR: [
+              { name: { contains: 'maija', mode: 'insensitive' } },
+              { email: { contains: 'maija', mode: 'insensitive' } },
+              { phone: { contains: 'maija', mode: 'insensitive' } },
+              { cardNumber: { contains: 'maija', mode: 'insensitive' } },
+            ] },
           ],
         },
         orderBy: { name: 'desc' },
@@ -77,6 +85,21 @@ describe('GET /api/admin/invitations', () => {
         take: 50,
       })
     )
+  })
+
+  it('combines contact and invitation filters and excludes registered clients', async () => {
+    await GET(makeGetRequest('?contact=phoneOnly&invitation=notInvited'))
+    expect(userFindManyMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        cardNumber: { not: null },
+        privacyAcknowledgedAt: null,
+        AND: [
+          { email: { endsWith: '@client.local' } },
+          { phone: { not: null }, NOT: { phone: '' } },
+          { invitationTokens: { none: {} } },
+        ],
+      },
+    }))
   })
 
   it('bounds the invitation-token join to the fetched page emails and returns total', async () => {

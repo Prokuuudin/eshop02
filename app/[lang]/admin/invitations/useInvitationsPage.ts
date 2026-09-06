@@ -334,11 +334,24 @@ function useInvitationsPageState() {
                 setFormError(msg);
                 return;
             }
-            setMessage(
+            const parts = [
                 json.created
                     ? l(`Клиент создан, карта ${number} назначена ${email}`, `Client created, card ${number} assigned to ${email}`, `Klients izveidots, karte ${number} piešķirta ${email}`)
-                    : l(`Карта ${number} назначена ${email}`, `Card ${number} assigned to ${email}`, `Karte ${number} piešķirta ${email}`)
-            );
+                    : l(`Карта ${number} назначена ${email}`, `Card ${number} assigned to ${email}`, `Karte ${number} piešķirta ${email}`),
+            ];
+            // Новый клиент — сразу отправляем приглашение, в этом и смысл активации карты.
+            // Уже существующему клиенту инвайт не трогаем: он мог уже быть зарегистрирован
+            // или получить письмо ранее — пересылку админ делает вручную из таблицы.
+            if (json.created && !isTechEmail(email)) {
+                const { ok: inviteOk, data: inviteJson } = await sendInvitationBatch([json.userId]);
+                const sent = inviteOk && (inviteJson.results ?? []).some((r) => r.status === 'sent');
+                parts.push(
+                    sent
+                        ? l('приглашение отправлено', 'invitation sent', 'ielūgums nosūtīts')
+                        : l('приглашение не отправлено — отправьте вручную из таблицы', 'invitation not sent — send it manually from the table', 'ielūgums nav nosūtīts — nosūtiet to no tabulas')
+                );
+            }
+            setMessage(parts.join(', '));
             setCardEmail('');
             setCardNumber('');
             setCardName('');

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -134,11 +135,12 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             {l('Памятка администратору', 'Administrator guide', 'Administratora atgādne')}
                         </h2>
                         <span className="relative top-px shrink-0 text-xs font-medium leading-6 text-blue-700 group-open:hidden dark:text-blue-300">
-                            {l('Развернуть', 'Expand', 'Izvērst')} ↓
+                            {l('Развернуть', 'Expand', 'Izvērst')}
                         </span>
                         <span className="relative top-px hidden shrink-0 text-xs font-medium leading-6 text-blue-700 group-open:inline dark:text-blue-300">
-                            {l('Свернуть', 'Collapse', 'Sakļaut')} ↑
+                            {l('Свернуть', 'Collapse', 'Sakļaut')}
                         </span>
+                        <ChevronDown className="h-4 w-4 shrink-0 text-blue-700 transition-transform duration-200 group-open:rotate-180 dark:text-blue-300" />
                     </summary>
                     <div className="pt-3">
                     <p className="text-blue-900/80 dark:text-blue-100/80">

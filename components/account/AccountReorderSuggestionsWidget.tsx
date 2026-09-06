@@ -68,7 +68,7 @@ export const AccountReorderSuggestionsWidget: React.FC<AccountReorderSuggestions
             </div>
 
             <p className="text-sm font-semibold text-foreground">
-                {t('account.reorderSuggestions', 'Возможно, заканчивается')}
+                {t('account.reorderSuggestions', 'Возможно, у вас заканчивается')}
             </p>
 
             <div className="mt-3 space-y-2">

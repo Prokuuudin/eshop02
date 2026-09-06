@@ -314,6 +314,12 @@ function useInvitationsPageState() {
             setFormError(l('Заполните email и номер карты', 'Fill in email and card number', 'Aizpildiet e-pastu un kartes numuru'));
             return;
         }
+        // Та же проверка, что и на сервере (route.ts) — единое поведение, без сюрпризов
+        // от нативной HTML5-валидации браузера, которая тут не показывается в общем алерте.
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setFormError(l('Некорректный email', 'Invalid email', 'Nederīgs e-pasts'));
+            return;
+        }
         if (!/^\d{1,6}$/.test(number.replace(/^0+(?=\d)/, ''))) {
             setFormError(l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari'));
             return;

@@ -124,7 +124,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                 <details className="group rounded-lg border border-emerald-200 bg-emerald-50/70 p-5 text-sm dark:border-emerald-900 dark:bg-emerald-950/30">
                     <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
                         <h2 className="text-base font-semibold leading-6 text-foreground">
-                            {l('Новый клиент с картой', 'New client with a card', 'Jauns klients ar karti')}
+                            {l('Добавить клиента с картой', 'Add client with a card', 'Pievienot klientu ar karti')}
                         </h2>
                         <span className="relative top-px shrink-0 text-xs font-medium leading-6 text-emerald-700 group-open:hidden dark:text-emerald-300">
                             {l('Развернуть', 'Expand', 'Izvērst')} ↓

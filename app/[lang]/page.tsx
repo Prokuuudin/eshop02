@@ -76,7 +76,7 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
             <Reveal><Categories initialCategories={categories} /></Reveal>
             <Reveal><Brands initialBrands={brands} /></Reveal>
             <SaleSection products={visibleSaleProducts} banner={saleBanners[0] ?? null} />
-            <Reveal><ProductRequestSection /></Reveal>
+            {user && <Reveal><ProductRequestSection /></Reveal>}
             <main className="w-full">
                 <Reveal><HomeRetailBanner /></Reveal>
                 <Reveal><AboutSection language={language} /></Reveal>

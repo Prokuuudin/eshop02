@@ -36,4 +36,12 @@ describe('useAuthStore refresh — password-change gate', () => {
     useAuthStore.getState().refresh()
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
+
+  it('refreshes same-user fields used by the welcome modal', () => {
+    getCurrentUserMock.mockReturnValue({ id: 'u4', isNewUser: true })
+    useAuthStore.getState().refresh()
+    getCurrentUserMock.mockReturnValue({ id: 'u4', isNewUser: false })
+    useAuthStore.getState().refresh()
+    expect(useAuthStore.getState().user?.isNewUser).toBe(false)
+  })
 })

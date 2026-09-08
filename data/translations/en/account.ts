@@ -108,7 +108,7 @@ const enAccount: Record<string, string> = {
   'auth.emailPlaceholder': 'example@company.com',
   'auth.phonePlaceholder': '+371 XX XXX XXX',
   'auth.passwordPlaceholder': 'At least 6 characters',
-  'auth.cardNumberPlaceholder': '1234 5678 9012 3456',
+  'auth.cardNumberPlaceholder': 'Up to 6 digits',
   'auth.messagePlaceholder': 'Additional information about you or your request...',
   'auth.hasCard': 'I have a client card',
   'auth.noCard': 'No client card',

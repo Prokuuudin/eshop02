@@ -108,7 +108,7 @@ const lvAccount: Record<string, string> = {
   'auth.emailPlaceholder': 'example@company.com',
   'auth.phonePlaceholder': '+371 XX XXX XXX',
   'auth.passwordPlaceholder': 'Vismaz 6 rakstzīmes',
-  'auth.cardNumberPlaceholder': '1234 5678 9012 3456',
+  'auth.cardNumberPlaceholder': 'Līdz 6 cipariem',
   'auth.messagePlaceholder': 'Papildu informācija par jums vai jūsu pieprasījumu...',
   'auth.hasCard': 'Man ir klienta karte',
   'auth.noCard': 'Nav klienta kartes',

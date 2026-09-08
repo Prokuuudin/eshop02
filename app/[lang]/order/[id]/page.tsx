@@ -24,7 +24,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, language, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleDownloadInvoice } = orderPageState
+  const { t, language, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleDownloadInvoice } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
 return (
@@ -166,6 +166,16 @@ return (
                                         {getPaymentStatusLabel(order.paymentStatus)}
                                     </span>
                                 </div>
+                                {order.paymentMethod === 'paysera' && order.paymentStatus !== 'paid' && (
+                                    <Button
+                                        className="mt-3 w-full sm:w-auto"
+                                        onClick={handlePayNow}
+                                        disabled={payingNow}
+                                    >
+                                        {payingNow && <LoaderCircle className="w-4 h-4 mr-2 animate-spin" />}
+                                        {payingNow ? t('order.payingNow') : t('order.payNow')}
+                                    </Button>
+                                )}
                             </div>
                             </div>
                         </div>

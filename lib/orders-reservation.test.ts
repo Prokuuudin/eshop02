@@ -5,6 +5,7 @@ const tx = {
   product: { updateMany: vi.fn() },
 }
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     order: { findMany: vi.fn() },

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
 import { hashInviteToken } from '@/lib/invitations'
+import { grantWelcomeBonus } from '@/lib/bonus-ledger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
 
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             companyId, companyName, teamRole: 'admin',
           },
         })
+        await grantWelcomeBonus(tx, user.id)
         await tx.session.deleteMany({ where: { userId: user.id } })
       }, { isolationLevel: 'Serializable' })
     } catch (error) {

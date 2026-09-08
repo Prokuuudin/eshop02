@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
-import { createServerOrder, releaseExpiredStockReservations, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
+import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
+import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -240,8 +241,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!['courier', 'pickup', 'post', 'venipak'].includes(order.deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
-    // Card payment is office-only (in-person terminal) — never offered as an online checkout method.
-    if (!['bank', 'cash'].includes(order.paymentMethod)) {
+    // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
+    // 'paysera' is the online gateway (Paysera Checkout Modern, sandbox as of 2026-09-07).
+    if (!['bank', 'cash', 'paysera'].includes(order.paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
 
@@ -304,10 +306,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         : undefined,
       email,
       createdAt: new Date().toISOString(),
-      stockReservationStatus: (!caller || order.paymentMethod === 'card') ? 'reserved' : 'committed',
-      stockReservedUntil: (!caller || order.paymentMethod === 'card')
+      // Online payment pending confirmation ('card' is legacy/unused, 'paysera' is live) holds
+      // stock for 35 min instead of committing it immediately, same as an unauthenticated guest.
+      stockReservationStatus: (!caller || ['card', 'paysera'].includes(order.paymentMethod)) ? 'reserved' : 'committed',
+      stockReservedUntil: (!caller || ['card', 'paysera'].includes(order.paymentMethod))
         ? new Date(Date.now() + 35 * 60 * 1000).toISOString()
         : undefined,
+      paymentProvider: order.paymentMethod === 'paysera' ? 'paysera' : orderFields.paymentProvider,
     }
 
     const created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
@@ -348,6 +353,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       total: created.total,
     })
 
+    // Online payment: create the Paysera order + payment link before telling the customer
+    // "success" — if the gateway call fails, fail the local order (releases the stock hold)
+    // rather than showing a confirmation screen with no way to actually pay.
+    let paymentUrl: string | undefined
+    if (order.paymentMethod === 'paysera') {
+      try {
+        const payment = await createPayseraPaymentForOrder(created)
+        await updateServerOrderPayment(created.id, { paymentSessionId: payment.payseraOrderId })
+        paymentUrl = payment.paymentUrl
+      } catch (error) {
+        logOperationalEvent({
+          event: 'paysera_create_payment_failed', level: 'error', alert: true, correlationId, orderId: created.id,
+        }, error)
+        await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => {})
+        return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
+      }
+    }
+
     sendOrderConfirmationEmail(created).catch((error) => logOperationalEvent({
       event: 'order_customer_email_failed', level: 'error', alert: true, correlationId, orderId: created.id,
     }, error))
@@ -360,10 +383,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (Math.random() < 0.01) void gcRateLimitStore()
 
-    return NextResponse.json({ success: true, orderId: created.id })
+    return NextResponse.json({ success: true, orderId: created.id, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
     if (error instanceof ExistingCheckoutOrderError) {
-      return NextResponse.json({ success: true, orderId: error.order.id, idempotent: true })
+      const existing = error.order
+      // A resubmit (double-click / network retry before the client got the first response)
+      // hits the same checkoutKey. The original payment link is gone with that response —
+      // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
+      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid') {
+        try {
+          const payment = await createPayseraPaymentForOrder(existing)
+          await updateServerOrderPayment(existing.id, { paymentSessionId: payment.payseraOrderId })
+          return NextResponse.json({ success: true, orderId: existing.id, idempotent: true, paymentUrl: payment.paymentUrl })
+        } catch (payseraError) {
+          logOperationalEvent({
+            event: 'paysera_create_payment_failed', level: 'error', alert: true, correlationId, orderId: existing.id,
+          }, payseraError)
+          // Fall through: the order still exists and is safe to report as-is; the customer
+          // can retry payment from the order page instead of getting a hard failure here.
+        }
+      }
+      return NextResponse.json({ success: true, orderId: existing.id, idempotent: true })
     }
     logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {

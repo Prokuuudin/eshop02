@@ -50,13 +50,24 @@ export async function GET(req: NextRequest): Promise<Response> {
       privacyAcknowledgedAt: null,
     }
     const and: Array<Record<string, unknown>> = []
-    const hasRealEmail = { email: { not: { endsWith: '@client.local' } } }
+    const hasRealEmail = {
+      AND: [
+        { email: { not: { endsWith: '@client.local' } } },
+        { email: { not: { endsWith: '@deleted.invalid' } } },
+      ],
+    }
+    const hasNoRealEmail = {
+      OR: [
+        { email: { endsWith: '@client.local' } },
+        { email: { endsWith: '@deleted.invalid' } },
+      ],
+    }
     const hasPhone = { phone: { not: null }, NOT: { phone: '' } }
     const hasNoPhone = { OR: [{ phone: null }, { phone: '' }] }
     if (contact === 'emailOnly') and.push(hasRealEmail, hasNoPhone)
-    if (contact === 'phoneOnly') and.push({ email: { endsWith: '@client.local' } }, hasPhone)
+    if (contact === 'phoneOnly') and.push(hasNoRealEmail, hasPhone)
     if (contact === 'complete') and.push(hasRealEmail, hasPhone)
-    if (contact === 'none') and.push({ email: { endsWith: '@client.local' } }, hasNoPhone)
+    if (contact === 'none') and.push(hasNoRealEmail, hasNoPhone)
     if (invitation === 'invited') and.push({
       invitationTokens: { some: {} },
     })
@@ -147,7 +158,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       where: {
         id: { in: userIds },
         cardNumber: { not: null },
-        email: { not: { endsWith: '@client.local' } },
+        AND: [
+          { email: { not: { endsWith: '@client.local' } } },
+          { email: { not: { endsWith: '@deleted.invalid' } } },
+        ],
       },
       select: { id: true, name: true, email: true, cardNumber: true },
     })

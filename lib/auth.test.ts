@@ -8,7 +8,7 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin, forceChangePassword } from './auth'
+import { clearNewUserFlag, getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin, forceChangePassword } from './auth'
 import { CURRENT_KEY } from './auth-storage'
 
 function makeLocalStorageMock() {
@@ -25,6 +25,14 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', makeLocalStorageMock())
   vi.stubGlobal('fetch', vi.fn())
   setCurrentCompany.mockClear()
+})
+
+describe('clearNewUserFlag', () => {
+  it('dismisses the welcome state even when the cached users list is missing', () => {
+    localStorage.setItem(CURRENT_KEY, JSON.stringify({ id: 'legacy-user', email: 'legacy@example.com', isNewUser: true }))
+    clearNewUserFlag()
+    expect(getCurrentUser()?.isNewUser).toBe(false)
+  })
 })
 
 describe('submitNoCardRequest - confirmed server persistence', () => {

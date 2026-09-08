@@ -22,6 +22,7 @@ function normalize(input?: Partial<BonusProgramConfig> | null): BonusProgramConf
     pointsExpiryDays: clamp(source.pointsExpiryDays, DEFAULT_BONUS_PROGRAM_CONFIG.pointsExpiryDays, 0, 3650),
     minPointsToSpend: clamp(source.minPointsToSpend, DEFAULT_BONUS_PROGRAM_CONFIG.minPointsToSpend, 0, 1_000_000),
     maxEarnPerOrder: clamp(source.maxEarnPerOrder, DEFAULT_BONUS_PROGRAM_CONFIG.maxEarnPerOrder, 0, 1_000_000),
+    welcomeBonusPoints: clamp(source.welcomeBonusPoints, DEFAULT_BONUS_PROGRAM_CONFIG.welcomeBonusPoints, 0, 1_000_000),
   }
 }
 

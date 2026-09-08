@@ -1,10 +1,18 @@
 'use client';
 import React from 'react';
-import { Star, CreditCard, TrendingUp } from 'lucide-react';
+import { Gift, Star, CreditCard, TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
 import { useAdminStore } from '@/lib/admin-store';
 
 const STEPS = [
+    {
+        icon: Gift,
+        titleKey: 'bonus.section.step.welcome.title',
+        descKey: 'bonus.section.step.welcome.desc',
+        badgeKey: 'bonus.section.welcomeBonus',
+        badgeParam: 'points' as const,
+        badgeSource: 'welcomeBonusPoints' as const,
+    },
     {
         icon: Star,
         titleKey: 'bonus.section.step.earn.title',
@@ -52,7 +60,7 @@ export default function BonusSection(): React.ReactElement | null {
                 </div>
 
                 {/* Steps */}
-                <div className="bonus-section__steps grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div className="bonus-section__steps grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     {STEPS.map((step, idx) => {
                         const Icon = step.icon;
                         const badge =

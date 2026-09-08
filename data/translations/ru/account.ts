@@ -107,7 +107,7 @@ const ruAccount: Record<string, string> = {
   'auth.emailPlaceholder': 'example@company.com',
   'auth.phonePlaceholder': '+371 XX XXX XXX',
   'auth.passwordPlaceholder': 'Минимум 6 символов',
-  'auth.cardNumberPlaceholder': '1234 5678 9012 3456',
+  'auth.cardNumberPlaceholder': 'До 6 цифр',
   'auth.messagePlaceholder': 'Дополнительная информация о вас или вашем запросе...',
   'auth.hasCard': 'Есть карта клиента',
   'auth.noCard': 'Нет карты клиента',

@@ -52,7 +52,7 @@ export type ServerOrder = {
   bonusSpent?: number
   bonusEarned?: number
   paymentStatus?: ServerPaymentStatus
-  paymentProvider?: 'manual'
+  paymentProvider?: 'manual' | 'paysera'
   paymentSessionId?: string
   stockReservationStatus?: 'reserved' | 'committed' | 'released'
   stockReservedUntil?: string

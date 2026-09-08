@@ -122,7 +122,7 @@ export default function LoginForm({
                     className="bg-card text-foreground border-border"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder={adminLogin ? 'name@example.com' : t('auth.cardNumberPlaceholder', '0000')}
+                    placeholder={adminLogin ? 'name@example.com' : t('auth.cardNumberPlaceholder', 'До 6 цифр')}
                     maxLength={adminLogin ? 254 : 64}
                     required
                 />

@@ -313,7 +313,7 @@ function useCheckoutPageState() {
             setIsSubmitting(false);
             return;
         }
-        const { orderId } = createResult;
+        const { orderId, paymentUrl } = createResult;
 
         const order = { id: orderId, ...orderData };
         addOrder(order);
@@ -372,10 +372,11 @@ function useCheckoutPageState() {
         replaceWithItems(remainingItems);
         setSubmitted(true);
 
-        // Redirect to confirmation page
+        // Redirect to Paysera's hosted payment page when paying online; otherwise to the
+        // order confirmation page (bank transfer / cash-at-pickup stay unpaid until staff confirm).
         setTimeout(() => {
             setIsSubmitting(false);
-            window.location.href = `/order/${orderId}`;
+            window.location.href = paymentUrl ?? `/order/${orderId}`;
         }, 500);
     };
 

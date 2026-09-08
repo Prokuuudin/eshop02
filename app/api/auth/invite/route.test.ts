@@ -9,6 +9,7 @@ const { invitationFindMock, userFindMock, rateLimitMock, transactionMock, hashPa
   hashPasswordMock: vi.fn(),
   createSessionMock: vi.fn(),
 }))
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     invitationToken: { findUnique: invitationFindMock },
@@ -70,7 +71,9 @@ describe('/api/auth/invite validation and abuse protection', () => {
     userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
     const tx = {
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-      user: { update: vi.fn() }, session: { deleteMany: vi.fn() },
+      user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
+      bonusTransaction: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+      keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
     }
     transactionMock.mockImplementation(async (fn) => fn(tx))
     const response = await post({ token: 'token', password: 'valid-password' })
@@ -78,6 +81,26 @@ describe('/api/auth/invite validation and abuse protection', () => {
     expect(tx.invitationToken.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: 'sent' }) }))
     expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ passwordHash: 'new-hash' }) }))
     expect(response.cookies.get('eshop_session')?.value).toBe('session-token')
+  })
+
+  it('grants the one-time welcome bonus on invitation acceptance', async () => {
+    const invitation = { status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' }
+    invitationFindMock.mockResolvedValue(invitation)
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    const tx = {
+      invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
+      bonusTransaction: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+      keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
+    }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ token: 'token', password: 'valid-password' })
+
+    expect(response.status).toBe(200)
+    expect(tx.bonusTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 'u1', type: 'welcome', points: 500 }) })
+    )
   })
 
   it('maps a concurrent consume loss to already_used and creates no session', async () => {

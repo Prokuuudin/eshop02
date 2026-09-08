@@ -35,6 +35,16 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
         courier: l('Курьер', 'Courier', 'Kurjers'), pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
         post: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), venipak: 'Venipak',
     };
+    const PAYMENT_METHOD_LABELS: Record<string, string> = {
+        bank: l('Банковский перевод', 'Bank transfer', 'Bankas pārskaitījums'),
+        cash: l('Оплата при получении', 'Cash on delivery', 'Skaidra nauda saņemot'),
+        card: l('Банковская карта', 'Bank card', 'Bankas karte'),
+        paysera: l('Онлайн-оплата (Paysera)', 'Online payment (Paysera)', 'Tiešsaistes apmaksa (Paysera)'),
+    };
+    const PROVIDER_LABELS: Record<string, string> = {
+        manual: l('Вручную', 'Manual', 'Manuāli'),
+        paysera: 'Paysera',
+    };
     const {
       getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       locale, expandedOrder, setExpandedOrder, selectedIds, toggleSelect,
@@ -167,13 +177,13 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 </span>
                                             </div>
                                             <p className="text-sm text-foreground">
-                                                {order.paymentMethod}
+                                                {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
                                             </p>
                                             {order.paymentProvider && (
                                                 <p className="text-sm text-muted-foreground">
                                                     {l('Провайдер:', 'Provider:', 'Pakalpojuma sniedzējs:')}{' '}
                                                     <span className="text-foreground font-medium">
-                                                        {order.paymentProvider}
+                                                        {PROVIDER_LABELS[order.paymentProvider] ?? order.paymentProvider}
                                                     </span>
                                                 </p>
                                             )}

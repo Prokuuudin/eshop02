@@ -21,13 +21,17 @@ model User {
   phone               String?
   cardNumber          String?   @unique
   pkLast3             String?   @db.VarChar(3)
+  // One-way proofs retained after GDPR anonymisation so an issued client card
+  // can be claimed again without retaining the former account's contact data.
+  cardRecoveryEmailHash String?
+  cardRecoveryPhoneHash String?
   avatarUrl           String?
   checkoutProfile     Json?
   customerType        String?   @default("individual")
   registrationNumber  String?
   vatNumber           String?
   legalAddress        String?
-  bonusPoints         Int       @default(350)
+  bonusPoints         Int       @default(0)
   mustChangePassword  Boolean   @default(false)
   privacyNoticeVersion String?
   privacyAcknowledgedAt DateTime?

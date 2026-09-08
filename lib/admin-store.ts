@@ -116,6 +116,7 @@ export const useAdminStore = create<AdminStore>()(
           pointsExpiryDays: clamp(nextConfig.pointsExpiryDays ?? current.pointsExpiryDays, 0, 3650),
           minPointsToSpend: clamp(nextConfig.minPointsToSpend ?? current.minPointsToSpend, 0, 1_000_000),
           maxEarnPerOrder: clamp(nextConfig.maxEarnPerOrder ?? current.maxEarnPerOrder, 0, 1_000_000),
+          welcomeBonusPoints: clamp(nextConfig.welcomeBonusPoints ?? current.welcomeBonusPoints, 0, 1_000_000),
         }
         return fetch('/api/admin/bonus-config', {
           method: 'PUT',

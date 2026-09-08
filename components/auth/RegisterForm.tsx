@@ -114,7 +114,7 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
                     type="text"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="0000"
+                    placeholder={t('auth.cardNumberPlaceholder', 'До 6 цифр')}
                     maxLength={6}
                     inputMode="numeric"
                     pattern="[0-9 ]{1,6}"

@@ -118,6 +118,17 @@ export async function anonymizeUser(params: {
   // A valid bcrypt hash of a random secret nobody knows — login can never succeed again,
   // and password reset is impossible because the email is gone.
   const lockedHash = await hashPassword(randomBytes(24).toString('hex'))
+  // Preserve only slow one-way proofs of the card contacts. The plaintext email
+  // and phone are still erased, but the already-issued card remains reclaimable
+  // by a person who can submit either original factor again.
+  const sourceUser = await prisma.user.findUnique({ where: { id }, select: { phone: true, cardNumber: true } })
+  const hasIssuedCard = Boolean(sourceUser?.cardNumber)
+  const recoveryEmailHash = hasIssuedCard && emailLower && !emailLower.endsWith('@client.local')
+    ? await hashPassword(`email:${emailLower}`)
+    : null
+  const phoneDigits = sourceUser?.phone?.replace(/\D/g, '') ?? ''
+  const phoneLast4 = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : ''
+  const recoveryPhoneHash = phoneLast4 ? await hashPassword(`phone-last4:${phoneLast4}`) : null
 
   await prisma.$transaction(async (tx) => {
     // Financial records: keep the row, blank the personal fields.
@@ -155,14 +166,23 @@ export async function anonymizeUser(params: {
         email: scrubbedEmail,
         name: null,
         phone: null,
-        cardNumber: null,
+        // The card is an issued entitlement, not account profile data. Keep its
+        // association with this anonymised shell so self-registration can safely
+        // reactivate it; all contact/profile data remains scrubbed.
+        cardNumber: sourceUser?.cardNumber ?? null,
+        cardRecoveryEmailHash: recoveryEmailHash,
+        cardRecoveryPhoneHash: recoveryPhoneHash,
         avatarUrl: null,
         companyId: null,
         companyName: null,
         teamRole: null,
         bonusPoints: 0,
         passwordHash: lockedHash,
-        mustChangePassword: false,
+        mustChangePassword: hasIssuedCard,
+        privacyNoticeVersion: null,
+        privacyAcknowledgedAt: null,
+        marketingConsent: false,
+        marketingConsentAt: null,
       },
     })
   })

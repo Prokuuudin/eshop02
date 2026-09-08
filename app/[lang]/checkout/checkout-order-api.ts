@@ -5,7 +5,7 @@ type CheckoutOrderPayload = {
 
 export type CheckoutOrderFailure = 'insufficient_stock' | 'server' | 'invalid_response' | 'network';
 export type CheckoutOrderResult =
-    | { ok: true; orderId: string }
+    | { ok: true; orderId: string; paymentUrl?: string }
     | { ok: false; reason: CheckoutOrderFailure };
 
 const pendingCheckoutKeys = new Map<string, string>();
@@ -41,10 +41,10 @@ export async function createCheckoutOrder(
             };
         }
 
-        const payload = (await response.json()) as { orderId?: string };
+        const payload = (await response.json()) as { orderId?: string; paymentUrl?: string };
         if (payload.orderId) {
             pendingCheckoutKeys.delete(fingerprint);
-            return { ok: true, orderId: String(payload.orderId) };
+            return { ok: true, orderId: String(payload.orderId), paymentUrl: payload.paymentUrl };
         }
         return { ok: false, reason: 'invalid_response' };
     } catch {

@@ -1,4 +1,5 @@
 import type { ExtendedTransactionClient } from '@/lib/prisma'
+import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 
 /** Remove expired, still-unspent earned points and return the resulting balance. */
 export async function expireBonusPoints(tx: ExtendedTransactionClient, userId: string): Promise<number> {
@@ -40,6 +41,39 @@ export async function consumeBonusLots(tx: ExtendedTransactionClient, userId: st
     await tx.bonusTransaction.update({ where: { id: lot.id }, data: { remainingPoints: { decrement: used } } })
     left -= used
   }
+}
+
+/**
+ * Credit the one-time welcome bonus on a client's first registration. Safe to
+ * call from every activation path (card self-registration, company-card
+ * claim, invitation acceptance) — a prior 'welcome' ledger row for the user
+ * makes this a no-op, so it never double-credits across those paths.
+ */
+export async function grantWelcomeBonus(tx: ExtendedTransactionClient, userId: string): Promise<void> {
+  const config = await getBonusProgramConfig(tx)
+  const points = Math.max(0, Math.round(config.welcomeBonusPoints))
+  if (!config.enabled || points <= 0) return
+
+  const already = await tx.bonusTransaction.findFirst({ where: { userId, type: 'welcome' }, select: { id: true } })
+  if (already) return
+
+  const expiryDays = await getBonusExpiryDays(tx)
+  const user = await tx.user.update({
+    where: { id: userId },
+    data: { bonusPoints: { increment: points } },
+    select: { bonusPoints: true },
+  })
+  await tx.bonusTransaction.create({
+    data: {
+      userId,
+      type: 'welcome',
+      points,
+      balanceAfter: user.bonusPoints,
+      remainingPoints: points,
+      expiresAt: bonusExpiryDate(expiryDays),
+      reason: 'Welcome bonus',
+    },
+  })
 }
 
 export function bonusExpiryDate(days: number): Date | null {

@@ -134,7 +134,7 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                             className="brands__brand-link block min-w-0 [overflow-wrap:anywhere] rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
                             title={brand.name}
                           >
-                            {toBrandTitleCase(brand.name)}
+                            {brand.id === 'chi' ? brand.name.toUpperCase() : toBrandTitleCase(brand.name)}
                           </Link>
                         ))}
                       </div>

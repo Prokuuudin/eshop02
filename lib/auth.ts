@@ -242,12 +242,14 @@ export const registerCardUser = async (data: {
 export const clearNewUserFlag = (): void => {
     const user = getCurrentUser();
     if (!user) return;
+    const updatedUser = { ...user, isNewUser: false };
     const users = readUsers();
     const idx = users.findIndex((u) => u.id === user.id);
-    if (idx === -1) return;
-    users[idx] = { ...users[idx], isNewUser: false };
-    writeUsers(users);
-    writeCurrentUser(users[idx]);
+    if (idx !== -1) {
+        users[idx] = { ...users[idx], isNewUser: false };
+        writeUsers(users);
+    }
+    writeCurrentUser(updatedUser);
     notifyAuthChanged();
 };
 

@@ -30,14 +30,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refresh: () => {
     const user = getCurrentUser()
     const prev = get().user
-    // Avoid needless re-renders: only replace the user object when identity actually changed.
-    if (prev?.id === user?.id && get().isHydrated) {
-      // Same user — still ensure derived flags are correct (e.g. role change after edit).
-      if (
-        prev?.platformRole === user?.platformRole
-        && prev?.mustChangePassword === user?.mustChangePassword
-      ) return
-    }
+    // Avoid needless re-renders while still reacting to changes on the same user.
+    // Auth-change events also carry updates to the same user (profile edits,
+    // dismissing the welcome modal, etc.). Keep every user field reactive.
+    if (get().isHydrated && JSON.stringify(prev) === JSON.stringify(user)) return
     set({
       user,
       // Hard-blocked only when mustChangePassword is true AND the server

@@ -94,7 +94,10 @@ describe('GET /api/admin/invitations', () => {
         cardNumber: { not: null },
         privacyAcknowledgedAt: null,
         AND: [
-          { email: { endsWith: '@client.local' } },
+          { OR: [
+            { email: { endsWith: '@client.local' } },
+            { email: { endsWith: '@deleted.invalid' } },
+          ] },
           { phone: { not: null }, NOT: { phone: '' } },
           { invitationTokens: { none: {} } },
         ],

@@ -3,13 +3,14 @@ import { logApiError } from '@/lib/observability'
 import { getClientIp } from '@/lib/request-ip'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
-import { hashPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { hashPassword, verifyPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { grantWelcomeBonus } from '@/lib/bonus-ledger'
 
 // Synthetic placeholder assigned when no real email is on file (see
 // accountEmail() in scripts/import-client-cards.ts) — it's derived from the
@@ -125,21 +126,54 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       const storedPhoneLast4 = phoneLast4(cardUser.phone ?? '')
       const storedEmail = cardUser.email.toLowerCase()
-      const hasUsableEmail = storedEmail !== '' && !isSyntheticClientEmail(storedEmail)
-      if (!storedPhoneLast4 && !hasUsableEmail) {
+      const hasUsableEmail = storedEmail !== ''
+        && !isSyntheticClientEmail(storedEmail)
+        && !storedEmail.endsWith('@deleted.invalid')
+      const recoveryEmailHash = cardUser.cardRecoveryEmailHash
+      const recoveryPhoneHash = cardUser.cardRecoveryPhoneHash
+      if (!storedPhoneLast4 && !hasUsableEmail && !recoveryEmailHash && !recoveryPhoneHash) {
         return NextResponse.json({ error: 'no_contact_on_file' }, { status: 422 })
       }
 
-      const phoneMatches = submittedPhoneLast4 !== '' && submittedPhoneLast4 === storedPhoneLast4
-      const emailMatches = submittedEmail !== '' && hasUsableEmail && submittedEmail === storedEmail
+      const phoneMatches = submittedPhoneLast4 !== '' && (
+        submittedPhoneLast4 === storedPhoneLast4
+        || Boolean(recoveryPhoneHash && await verifyPassword(`phone-last4:${submittedPhoneLast4}`, recoveryPhoneHash))
+      )
+      const emailMatches = submittedEmail !== '' && (
+        (hasUsableEmail && submittedEmail === storedEmail)
+        || Boolean(recoveryEmailHash && await verifyPassword(`email:${submittedEmail}`, recoveryEmailHash))
+      )
       if (!phoneMatches && !emailMatches) {
         return NextResponse.json({ error: 'wrong_contact' }, { status: 401 })
       }
 
-      await prisma.user.update({ where: { id: cardUser.id }, data: privacyData })
-      await notifyCardActivated(cardUser.email, cardUser.name ?? '', cardNumber)
+      const recoveredEmail = emailMatches && recoveryEmailHash ? submittedEmail : undefined
+      // Keep the contact value that proved ownership as the regular password.
+      // Previously phone/email were only checked for the first activation,
+      // leaving the imported placeholder hash in place and making the next
+      // card login fail. Prefer the phone suffix when both valid values were
+      // submitted; otherwise persist the matched, normalized email.
+      const activationPassword = phoneMatches ? submittedPhoneLast4 : submittedEmail
+      const activationPasswordHash = await hashPassword(activationPassword)
+      const activatedUser = await prisma.$transaction(async (tx) => {
+        const updated = await tx.user.update({
+          where: { id: cardUser.id },
+          data: {
+            ...privacyData,
+            ...(name ? { name } : {}),
+            ...(recoveredEmail ? { email: recoveredEmail } : {}),
+            passwordHash: activationPasswordHash,
+            mustChangePassword: false,
+            cardRecoveryEmailHash: null,
+            cardRecoveryPhoneHash: null,
+          },
+        })
+        await grantWelcomeBonus(tx, cardUser.id)
+        return updated
+      })
+      await notifyCardActivated(recoveredEmail ?? cardUser.email, activatedUser.name ?? '', cardNumber)
       const token = await createSession(cardUser.id)
-      const res = NextResponse.json({ user: mapDbToServerUser(cardUser) }, { status: 200 })
+      const res = NextResponse.json({ user: mapDbToServerUser(activatedUser) }, { status: 200 })
       res.cookies.set(SESSION_COOKIE, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -207,6 +241,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
       })
 
+      await grantWelcomeBonus(tx, created.id)
+
       return created
     })
 
@@ -232,4 +268,3 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-

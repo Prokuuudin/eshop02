@@ -11,6 +11,8 @@ export interface BonusProgramConfig {
   pointsExpiryDays: number
   minPointsToSpend: number
   maxEarnPerOrder: number
+  /** One-time points credited on a client's first registration. 500 = €5. */
+  welcomeBonusPoints: number
 }
 
 export const DEFAULT_BONUS_PROGRAM_CONFIG: BonusProgramConfig = {
@@ -21,6 +23,7 @@ export const DEFAULT_BONUS_PROGRAM_CONFIG: BonusProgramConfig = {
   pointsExpiryDays: 0,
   minPointsToSpend: 0,
   maxEarnPerOrder: 0,
+  welcomeBonusPoints: 500,
 }
 
 /** Курс балла: 1 балл = 1 цент. 100 баллов = 1 € скидки. */

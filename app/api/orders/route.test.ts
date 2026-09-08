@@ -5,6 +5,7 @@ vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
   createServerOrder: vi.fn(),
+  updateServerOrderPayment: vi.fn(),
   releaseExpiredStockReservations: vi.fn(),
   InsufficientStockError: class InsufficientStockError extends Error {},
   InsufficientBonusPointsError: class InsufficientBonusPointsError extends Error {},
@@ -13,6 +14,7 @@ vi.mock('@/lib/orders-data-store', () => ({
     constructor(public readonly order: { id: string }) { super('existing checkout') }
   },
 }))
+vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 vi.mock('@/lib/turnstile-server', () => ({
   verifyTurnstile: vi.fn(),
@@ -29,8 +31,9 @@ vi.mock('@/lib/locale-config-server-store', () => ({
 
 import { sendEmail } from '@/lib/mailer'
 import { getServerUser } from '@/lib/server-auth'
-import { createServerOrder, ExistingCheckoutOrderError } from '@/lib/orders-data-store'
+import { createServerOrder, ExistingCheckoutOrderError, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
+import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -148,6 +151,45 @@ describe('POST /api/orders — admin notification', () => {
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
     expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('mints a fresh Paysera payment link on a duplicate resubmit of an unpaid paysera order', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paysera', paymentStatus: 'unpaid', total: 64, language: 'ru',
+    } as never))
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({ payseraOrderId: 'pay-2', paymentUrl: 'https://bank.paysera.com/pay/2' })
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      success: true, orderId: '1001', idempotent: true, paymentUrl: 'https://bank.paysera.com/pay/2',
+    })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-2' })
+  })
+
+  it('does not mint a new payment link for a duplicate resubmit of an already-paid paysera order', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paysera', paymentStatus: 'paid', total: 64, language: 'ru',
+    } as never))
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
+  it('falls back to a plain idempotent response when re-minting the payment link fails', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paysera', paymentStatus: 'unpaid', total: 64, language: 'ru',
+    } as never))
+    vi.mocked(createPayseraPaymentForOrder).mockRejectedValue(new Error('gateway down'))
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
   })
 
   it('does not send admin email when CONTACT_TO is not set', async () => {

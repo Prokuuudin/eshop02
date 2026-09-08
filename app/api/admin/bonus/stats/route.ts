@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
 import { logApiError } from '@/lib/observability'
 
-const TYPES = ['all', 'order_earn', 'order_spend', 'admin_adjustment', 'expiry'] as const
+const TYPES = ['all', 'order_earn', 'order_spend', 'admin_adjustment', 'expiry', 'welcome'] as const
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {

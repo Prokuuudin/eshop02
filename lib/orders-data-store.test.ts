@@ -6,6 +6,7 @@ const { queryRawMock, transactionMock, orderFindUniqueMock } = vi.hoisted(() => 
   orderFindUniqueMock: vi.fn(),
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: queryRawMock,

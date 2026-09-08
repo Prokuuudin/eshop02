@@ -27,7 +27,7 @@ export function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
     bonusSpent: row.bonusSpent ?? undefined,
     bonusEarned: row.bonusEarned ?? undefined,
     paymentStatus: (row.paymentStatus as ServerPaymentStatus) ?? 'unpaid',
-    paymentProvider: row.paymentProvider === 'manual' ? 'manual' : undefined,
+    paymentProvider: row.paymentProvider === 'manual' || row.paymentProvider === 'paysera' ? row.paymentProvider : undefined,
     paymentSessionId: row.paymentSessionId ?? undefined,
     stockReservationStatus: row.stockReservationStatus as ServerOrder['stockReservationStatus'],
     stockReservedUntil: row.stockReservedUntil?.toISOString(),

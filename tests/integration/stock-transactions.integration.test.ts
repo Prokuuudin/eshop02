@@ -13,6 +13,7 @@ const prismaMock = vi.hoisted(() => ({
   order: { findUnique: vi.fn(), update: vi.fn() },
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }))
 
 import {

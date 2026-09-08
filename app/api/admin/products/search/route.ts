@@ -3,6 +3,8 @@ import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { toNum } from '@/lib/decimal'
+import { Prisma } from '@/generated/prisma/client'
 
 export const runtime = 'nodejs'
 
@@ -12,6 +14,9 @@ export type AdminProductSearchItem = {
   brand: string
   image: string | null
   isActive: boolean
+  sku: string | null
+  price: number
+  stock: number
 }
 
 const toItem = (p: {
@@ -20,15 +25,30 @@ const toItem = (p: {
   brand: string
   image: string | null
   isActive: boolean
+  sku: string | null
+  price: Prisma.Decimal | number
+  stock: number
 }): AdminProductSearchItem => ({
   id: p.id,
   title: p.title,
   brand: p.brand,
   image: p.image,
   isActive: p.isActive,
+  sku: p.sku,
+  price: toNum(p.price),
+  stock: p.stock,
 })
 
-const selectFields = { id: true, title: true, brand: true, image: true, isActive: true } as const
+const selectFields = {
+  id: true,
+  title: true,
+  brand: true,
+  image: true,
+  isActive: true,
+  sku: true,
+  price: true,
+  stock: true,
+} as const
 
 // Лёгкий поиск товаров для пикеров админки:
 //   ?q=<текст>   — поиск по названию/бренду/ID (до 20 результатов)
@@ -75,8 +95,6 @@ export async function GET(req: NextRequest): Promise<Response> {
     return errorResponse('Internal server error', 500)
   }
 }
-
-
 
 
 

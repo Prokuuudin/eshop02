@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { type Order } from '@/lib/orders-store';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
@@ -9,7 +9,7 @@ import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
 import { buildOrdersQuery, toOrder, type OrdersPageResponse } from './orders-query';
 import { useOrdersCsvExport } from './useOrdersCsvExport';
-import { addProductToEditItems, findEditProducts, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
+import { addProductToEditItems, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
 import { buildOrdersPrintHtml } from './order-print';
 
 type HydrationStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -312,9 +312,30 @@ function useAdminOrdersPageState() {
 
     // ── Edit helpers ─────────────────────────────────────────────────────────
 
-    const editProductResults = useMemo(() => {
-        return findEditProducts(catalog, editProductSearch);
-    }, [catalog, editProductSearch]);
+    useEffect(() => {
+        const query = editProductSearch.trim();
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            if (query.length < 2) {
+                setCatalog([]);
+                return;
+            }
+            fetch(`/api/admin/products/search?q=${encodeURIComponent(query)}`, {
+                cache: 'no-store',
+                signal: controller.signal,
+            })
+                .then((response) => response.ok ? response.json() : null)
+                .then((payload: { data?: { products?: CatalogProduct[] } } | null) =>
+                    setCatalog(payload?.data?.products?.slice(0, 8) ?? []))
+                .catch(() => { if (!controller.signal.aborted) setCatalog([]); });
+        }, query.length >= 2 ? 200 : 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [editProductSearch]);
+
+    const editProductResults = editProductSearch.trim().length >= 2 ? catalog : [];
 
     const startEdit = (order: Order) => {
         setEditingOrderId(order.id);
@@ -324,12 +345,6 @@ function useAdminOrdersPageState() {
         setEditPostalCode(order.postalCode ?? '');
         setEditDelivery(order.deliveryMethod);
         setEditProductSearch('');
-        if (catalog.length === 0) {
-            fetch('/api/admin/products')
-                .then((r) => r.json())
-                .then((d: { data?: { products?: CatalogProduct[] } }) => setCatalog(d.data?.products ?? []))
-                .catch((error) => reportAdminError(error, l('Каталог для редактирования заказа', 'Catalog for order editing', 'Katalogs pasūtījuma rediģēšanai')));
-        }
     };
 
     const cancelEdit = () => {

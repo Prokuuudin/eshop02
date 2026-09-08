@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type DeliveryMethod } from '@/lib/orders-store';
 import { formatEuro } from '@/lib/utils';
@@ -97,13 +97,6 @@ function useNewOrderPageState() {
     // ── Load catalog + promo codes ────────────────────────────────────────────
 
     useEffect(() => {
-        fetch('/api/admin/products')
-            .then((r) => r.json())
-            .then((d: { data?: { products?: CatalogProduct[] } }) =>
-                setCatalog(d.data?.products ?? [])
-            )
-            .catch((error) => reportAdminError(error, l('Каталог для нового заказа', 'New order catalog', 'Jauna pasūtījuma katalogs')));
-
         fetch('/api/admin/promo-codes')
             .then((r) => r.json())
             .then((d: unknown) => {
@@ -154,18 +147,30 @@ function useNewOrderPageState() {
 
     // ── Product search ────────────────────────────────────────────────────────
 
-    const productResults = useMemo(() => {
-        const q = productSearch.toLowerCase().trim();
-        if (!q || q.length < 1) return [];
-        return catalog
-            .filter(
-                (p) =>
-                    p.title.toLowerCase().includes(q) ||
-                    p.brand.toLowerCase().includes(q) ||
-                    (p.sku ?? '').toLowerCase().includes(q)
-            )
-            .slice(0, 12);
-    }, [catalog, productSearch]);
+    useEffect(() => {
+        const query = productSearch.trim();
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            if (!query) {
+                setCatalog([]);
+                return;
+            }
+            fetch(`/api/admin/products/search?q=${encodeURIComponent(query)}`, {
+                cache: 'no-store',
+                signal: controller.signal,
+            })
+                .then((response) => response.ok ? response.json() : null)
+                .then((payload: { data?: { products?: CatalogProduct[] } } | null) =>
+                    setCatalog(payload?.data?.products?.slice(0, 12) ?? []))
+                .catch(() => { if (!controller.signal.aborted) setCatalog([]); });
+        }, query ? 200 : 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [productSearch]);
+
+    const productResults = catalog;
 
     const addProduct = (p: CatalogProduct) => {
         setItems((prev) => {

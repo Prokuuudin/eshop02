@@ -173,7 +173,7 @@ describe('POST /api/auth/register-card', () => {
       where: { id: 'user_dormant_1' },
       data: expect.objectContaining({
         passwordHash: 'hashed',
-        mustChangePassword: false,
+        mustChangePassword: true,
       }),
     }))
     const setCookie = res.headers.get('set-cookie')
@@ -220,7 +220,7 @@ describe('POST /api/auth/register-card', () => {
     expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         passwordHash: 'hashed',
-        mustChangePassword: false,
+        mustChangePassword: true,
       }),
     }))
   })
@@ -237,7 +237,7 @@ describe('POST /api/auth/register-card', () => {
     expect(res.status).toBe(200)
     expect(hashPasswordMock).toHaveBeenCalledWith('master@example.com')
     expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ passwordHash: 'hashed', mustChangePassword: false }),
+      data: expect.objectContaining({ passwordHash: 'hashed', mustChangePassword: true }),
     }))
   })
 

@@ -61,6 +61,10 @@ const PRIVACY_NOTICE_VERSION = '2026-07-03'
  *     card is "taken"); no usable contact on file at all (no phone, and
  *     email is missing or only the synthetic `card.<n>@client.local`
  *     placeholder) routes to the manual no-card request flow client-side.
+ *     Note: activation itself sets `mustChangePassword: true` (the phone/email
+ *     used to get in is a one-time credential, not fit to stand as the account's
+ *     permanent password) — so this gate only closes once the cardholder picks
+ *     their own password via /api/user/password, not at the moment of activation.
  *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
  *     team member claiming a shared company card) נcreate one, gated by
  *     the shared FIRST_LOGIN_PASSWORD mailed to the company contact.
@@ -148,11 +152,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
 
       const recoveredEmail = emailMatches && recoveryEmailHash ? submittedEmail : undefined
-      // Keep the contact value that proved ownership as the regular password.
-      // Previously phone/email were only checked for the first activation,
-      // leaving the imported placeholder hash in place and making the next
-      // card login fail. Prefer the phone suffix when both valid values were
-      // submitted; otherwise persist the matched, normalized email.
+      // Keep the contact value that proved ownership as a one-time activation password —
+      // it's low-entropy (a 4-digit phone suffix) or not secret at all (the client's own
+      // email), so it must never become the account's standing credential. Force a real
+      // password to be chosen on the very next action, same as every other first-login path.
       const activationPassword = phoneMatches ? submittedPhoneLast4 : submittedEmail
       const activationPasswordHash = await hashPassword(activationPassword)
       const activatedUser = await prisma.$transaction(async (tx) => {
@@ -163,7 +166,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             ...(name ? { name } : {}),
             ...(recoveredEmail ? { email: recoveredEmail } : {}),
             passwordHash: activationPasswordHash,
-            mustChangePassword: false,
+            mustChangePassword: true,
             cardRecoveryEmailHash: null,
             cardRecoveryPhoneHash: null,
           },

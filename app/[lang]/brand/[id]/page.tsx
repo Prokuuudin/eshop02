@@ -71,8 +71,8 @@ export default async function BrandPage({ params }: PageProps): Promise<React.Re
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}${localizePath('/', language)}` },
-      { '@type': 'ListItem', position: 2, name: 'Brands', item: `${siteUrl}${localizePath('/', language)}#brands` },
+      { '@type': 'ListItem', position: 1, name: t['nav.home'] ?? 'Home', item: `${siteUrl}${localizePath('/', language)}` },
+      { '@type': 'ListItem', position: 2, name: t['nav.brands'] ?? 'Brands', item: `${siteUrl}${localizePath('/', language)}#brands` },
       { '@type': 'ListItem', position: 3, name: brand.name, item: brandUrl }
     ]
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUnprefixedPathname } from '@/lib/i18n-context';
 
 import {
@@ -14,6 +15,8 @@ import {
 import type { BlogPost } from '@/data/blog';
 import type { Product } from '@/data/products';
 import { useBrandsConfig } from '@/lib/use-brands-config';
+import { useCategoriesConfig } from '@/lib/use-categories-config';
+import { localizePath } from '@/lib/i18n-routing';
 import { useTranslation } from '@/lib/use-translation';
 
 interface Crumb {
@@ -152,8 +155,10 @@ function getBlogPostTitle(
 
 export default function AppBreadcrumbs(): React.ReactElement {
     const pathname = useUnprefixedPathname();
+    const searchParams = useSearchParams();
     const { t, language } = useTranslation();
     const { brands } = useBrandsConfig();
+    const { categories } = useCategoriesConfig();
     const [productCache, setProductCache] = useState<Record<string, Product>>({});
     const [blogPostCache, setBlogPostCache] = useState<Record<string, BlogCrumbPost>>({});
 
@@ -201,13 +206,24 @@ export default function AppBreadcrumbs(): React.ReactElement {
         if (!pathname || pathname === '/') return [];
 
         const segments = pathname.split('/').filter(Boolean);
-        return segments.map((segment, index) => {
+        const pathCrumbs = segments.map((segment, index) => {
             const href = `/${segments.slice(0, index + 1).join('/')}`;
             const key = segmentLabelKeys[segment];
+            const isCategoryIdSegment = segments[index - 1] === 'category';
             const isProductIdSegment = segments[index - 1] === 'product';
             const isBrandIdSegment = segments[index - 1] === 'brand';
             const isBlogSlugSegment = segments[index - 1] === 'blog';
-            const resolvedEntityLabel = isProductIdSegment
+            const category = isCategoryIdSegment
+                ? categories.find((item) => item.id === decodeURIComponent(segment))
+                : undefined;
+            const configuredCategoryLabel = category?.labels[language]?.trim();
+            const resolvedEntityLabel = category
+                ? configuredCategoryLabel && configuredCategoryLabel !== category.id
+                    ? configuredCategoryLabel
+                    : category.titleKey
+                        ? t(category.titleKey, normalizeSegment(category.id))
+                        : normalizeSegment(category.id)
+                : isProductIdSegment
                 ? getProductTitle(productCache[decodeURIComponent(segment)], t, language)
                 : isBrandIdSegment
                 ? getBrandName(segment, brands)
@@ -220,7 +236,43 @@ export default function AppBreadcrumbs(): React.ReactElement {
 
             return { href, label };
         });
-    }, [brands, language, pathname, t, productCache, blogPostCache]);
+
+        if (segments[0] === 'category') {
+            pathCrumbs[0] = { href: '/catalog', label: t('nav.catalog', 'Catalog') };
+        }
+
+        if (pathname !== '/catalog') return pathCrumbs;
+
+        const categoryId = searchParams.get('cat')?.trim();
+        const subcategorySlug = searchParams.get('subcat')?.trim();
+        const category = categories.find((item) => item.id === categoryId);
+        if (!category) return pathCrumbs;
+
+        const configuredCategoryLabel = category.labels[language]?.trim();
+        pathCrumbs.push({
+            href: `/catalog?cat=${encodeURIComponent(category.id)}`,
+            label: configuredCategoryLabel && configuredCategoryLabel !== category.id
+                ? configuredCategoryLabel
+                : category.titleKey
+                    ? t(category.titleKey, normalizeSegment(category.id))
+                    : normalizeSegment(category.id),
+        });
+
+        const subcategory = category.subcategories.find((item) => item.slug === subcategorySlug);
+        if (subcategory) {
+            const configuredSubcategoryLabel = subcategory.labels[language]?.trim();
+            pathCrumbs.push({
+                href: `/catalog?cat=${encodeURIComponent(category.id)}&subcat=${encodeURIComponent(subcategory.slug)}`,
+                label: configuredSubcategoryLabel && configuredSubcategoryLabel !== subcategory.slug
+                    ? configuredSubcategoryLabel
+                    : subcategory.key
+                        ? t(subcategory.key, normalizeSegment(subcategory.slug))
+                        : normalizeSegment(subcategory.slug),
+            });
+        }
+
+        return pathCrumbs;
+    }, [brands, categories, language, pathname, searchParams, t, productCache, blogPostCache]);
 
     const isHome = pathname === '/';
 
@@ -231,7 +283,7 @@ export default function AppBreadcrumbs(): React.ReactElement {
         >
             <BreadcrumbList>
                 <BreadcrumbItem>
-                    <BreadcrumbLink href="/">{t('nav.home')}</BreadcrumbLink>
+                    <BreadcrumbLink href={localizePath('/', language)}>{t('nav.home')}</BreadcrumbLink>
                 </BreadcrumbItem>
 
                 {crumbs.map((crumb, index) => {
@@ -244,7 +296,7 @@ export default function AppBreadcrumbs(): React.ReactElement {
                                 {isLast ? (
                                     <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                                 ) : (
-                                    <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                                    <BreadcrumbLink href={localizePath(crumb.href, language)}>{crumb.label}</BreadcrumbLink>
                                 )}
                             </BreadcrumbItem>
                         </Fragment>

@@ -14,6 +14,7 @@ import { getServerUser } from '@/lib/server-auth';
 import { redactProductPrices } from '@/lib/product-price-visibility';
 import { getProductPublicReviews } from '@/lib/reviews-data-store';
 import { buildPublicPageMetadata } from '@/lib/page-metadata';
+import { translations } from '@/data/translations';
 
 const COPURCHASE = copurchaseData as Record<string, string[]>;
 
@@ -69,6 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductPage({ params }: PageProps): Promise<React.ReactElement> {
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
+    const t = translations[language];
     const mergedProducts = await getMergedProducts();
     const product = mergedProducts.find((p) => p.id === id);
     if (!product) notFound();
@@ -154,8 +156,8 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}${localizePath('/', language)}` },
-            { '@type': 'ListItem', position: 2, name: 'Catalog', item: `${siteUrl}${localizePath('/catalog', language)}` },
+            { '@type': 'ListItem', position: 1, name: t['nav.home'] ?? 'Home', item: `${siteUrl}${localizePath('/', language)}` },
+            { '@type': 'ListItem', position: 2, name: t['nav.catalog'] ?? 'Catalog', item: `${siteUrl}${localizePath('/catalog', language)}` },
             { '@type': 'ListItem', position: 3, name: localized.title, item: productUrl },
         ],
     };

@@ -121,7 +121,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}${localizePath('/', language)}` },
+      { '@type': 'ListItem', position: 1, name: t['nav.home'] ?? 'Home', item: `${siteUrl}${localizePath('/', language)}` },
       { '@type': 'ListItem', position: 2, name: currentCrumbName, item: `${siteUrl}${localizePath(catalogPath, language)}` }
     ]
   };

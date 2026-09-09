@@ -112,7 +112,7 @@ export default async function BlogPostPage({ params }: PageProps): Promise<React
                 name: language === 'ru' ? 'Блог' : language === 'lv' ? 'Blogs' : 'Blog',
                 item: `${siteUrl}${localizePath('/blog', language)}`,
             },
-            { '@type': 'ListItem', position: 3, name: post.title, item: postUrl },
+            { '@type': 'ListItem', position: 3, name: localizedPost.title, item: postUrl },
         ],
     };
 

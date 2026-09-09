@@ -1,5 +1,5 @@
 import '@/styles/globals.css'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import type { Metadata } from 'next'
 import { Instrument_Sans } from 'next/font/google'
 import ThemeInitScript from '@/components/ThemeInitScript'
@@ -122,7 +122,9 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
             <Header />
             <main id="main-content" className="w-full pb-6">
               <div className="mx-auto mt-2 w-full max-w-[1440px] px-4">
-                <AppBreadcrumbs />
+                <Suspense fallback={null}>
+                  <AppBreadcrumbs />
+                </Suspense>
               </div>
               <RouteTransition>{children}</RouteTransition>
             </main>

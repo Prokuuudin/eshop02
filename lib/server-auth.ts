@@ -11,7 +11,6 @@ import {
   hasAdminPermission,
   type AdminPermission,
 } from '@/lib/admin-permissions'
-import { isPasswordChangeSoft } from '@/lib/auth-types'
 import type { CheckoutProfile } from '@/lib/auth-types'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
@@ -36,7 +35,6 @@ export type ServerUser = {
   checkoutProfile?: CheckoutProfile
   bonusPoints: number
   mustChangePassword: boolean
-  passwordChangeSoft: boolean
   mfaEnabled?: boolean
   createdAt: string
 }
@@ -58,7 +56,6 @@ export function mapDbToServerUser(u: PrismaUser): ServerUser {
     checkoutProfile: (u.checkoutProfile as CheckoutProfile | null) ?? undefined,
     bonusPoints: u.bonusPoints,
     mustChangePassword: u.mustChangePassword,
-    passwordChangeSoft: isPasswordChangeSoft(u),
     mfaEnabled: u.mfaEnabled,
     createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
   }
@@ -127,7 +124,7 @@ export async function getServerUser(options: { allowPasswordChangeRequired?: boo
     // A shared/temporary onboarding credential must never create a full account
     // session. Only the password-change and session-introspection endpoints opt
     // in to seeing this restricted user.
-    if (user.mustChangePassword && !user.passwordChangeSoft && !options.allowPasswordChangeRequired) return null
+    if (user.mustChangePassword && !options.allowPasswordChangeRequired) return null
     return user
   } catch {
     return null

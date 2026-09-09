@@ -36,9 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (get().isHydrated && JSON.stringify(prev) === JSON.stringify(user)) return
     set({
       user,
-      // Hard-blocked only when mustChangePassword is true AND the server
-      // didn't mark this session passwordChangeSoft (see lib/auth-types.ts).
-      isAuthenticated: !!user && !(user.mustChangePassword && !user.passwordChangeSoft),
+      isAuthenticated: !!user && !user.mustChangePassword,
       isAdmin: isAdminUser(user),
       isHydrated: true,
     })

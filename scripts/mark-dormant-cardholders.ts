@@ -1,21 +1,24 @@
 /**
- * Флаг mustChangePassword для «спящих» держателей карт (импорт Klienti 2026.xlsx,
- * см. scripts/import-client-cards.ts), чтобы они могли войти через общий флоу
- * /api/auth/register-card общим приветственным паролем (FIRST_LOGIN_PASSWORD)
- * и попасть на принудительную смену пароля — как уже работает для держателей
- * компаний.
+ * ОДНОРАЗОВЫЙ, УЖЕ ОТРАБОТАННЫЙ скрипт — оставлен для истории/аудита, не для
+ * повторного запуска. Флаг mustChangePassword для «спящих» держателей карт
+ * (импорт Klienti 2026.xlsx, см. scripts/import-client-cards.ts), чтобы они
+ * могли войти через /api/auth/register-card и попасть на принудительную
+ * смену пароля.
  *
  * Раньше import-client-cards.ts ставил этим строкам mustChangePassword=false
  * и случайный неизвестный хэш пароля — вход был невозможен никак, кроме
- * инвайт-токена. Теперь регистрация по карте проверяет пароль по паролю из
- * FIRST_LOGIN_PASSWORD, только если mustChangePassword=true — эта миграция
- * переводит уже импортированных «спящих» клиентов в такое состояние.
+ * инвайт-токена. Эта миграция переводит уже импортированных «спящих»
+ * клиентов в mustChangePassword=true, чтобы register-card мог их активировать.
+ *
+ * NB: на момент написания register-card сверял пароль индивидуальных
+ * держателей с общей константой FIRST_LOGIN_PASSWORD. Это поведение с тех пор
+ * заменено на верификацию по последним 4 цифрам телефона/email (см.
+ * app/api/auth/register-card/route.ts) — FIRST_LOGIN_PASSWORD сейчас участвует
+ * только в B2B-ветке (новый участник компании по общей карте).
  *
  * Целевые строки: cardNumber задан, companyId не задан (никогда не проходили
  * ни инвайт-акцепт, ни register-card — оба пишут companyId), mustChangePassword
- * сейчас false, platformRole не admin. passwordHash не трогаем — его больше
- * никто не читает для этих строк (register-card сверяет пароль с константой
- * напрямую, не через хэш).
+ * сейчас false, platformRole не admin. passwordHash не трогаем.
  *
  * Usage:
  *   npx tsx scripts/mark-dormant-cardholders.ts           # dry run, только отчёт

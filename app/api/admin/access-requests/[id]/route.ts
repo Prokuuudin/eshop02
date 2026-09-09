@@ -125,8 +125,10 @@ export async function PATCH(
             data: {
               id: randomUUID(),
               email: existing.email.toLowerCase(),
-              // Хэш из заявки: пароль клиенту уже отправлен письмом (Welcome1!),
-              // вход возможен сразу; активация по инвайту заменит пароль
+              // Хэш из заявки: это пароль, который клиент сам ввёл при подаче
+              // заявки (не общий дефолт) — но mustChangePassword:true всё равно
+              // блокирует им доступ до активации по инвайту, где выбирается
+              // финальный пароль.
               passwordHash: existing.passwordHash,
               name: existing.name,
               phone: existing.phone,

@@ -190,7 +190,6 @@ function makeUser(overrides: Partial<ServerUser> = {}): ServerUser {
     auditLoggingEnabled: false,
     bonusPoints: 0,
     mustChangePassword: false,
-    passwordChangeSoft: false,
     createdAt: '2026-07-04T10:00:00.000Z',
     ...overrides,
   }

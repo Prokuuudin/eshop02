@@ -116,10 +116,8 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
         <Providers initialLanguage={language} bonusConfig={bonusConfig} localeConfig={localeConfig}>
           <RouteUiEffects />
           <AuthHydrator />
-          {/* Global gate: a hard-blocked user (B2B shared-card / access-request
-              Welcome1! default) can't use any page but /account until they set
-              their own password. Soft-eligible card+PK users instead get a
-              dismissible banner (see PasswordChangeBanner) and aren't blocked. */}
+          {/* Global gate: any user with mustChangePassword can't use any page
+              until they set their own password (blocking modal). */}
           <AccountGuard>
             <Header />
             <main id="main-content" className="w-full pb-6">

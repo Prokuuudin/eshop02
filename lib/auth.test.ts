@@ -335,12 +335,11 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
   })
 
-  it('carries passwordChangeSoft through the local mirror, and never stores the raw pkLast3 code', async () => {
+  it('never stores a raw pkLast3 code in the local mirror even if the server sent one', async () => {
     const serverUser = {
       id: 'u_soft_1',
       email: 'card.5678@client.local',
       mustChangePassword: true,
-      passwordChangeSoft: true,
       // Defence-in-depth: even if a future server regression leaked this
       // raw field, the client must never persist it.
       pkLast3: 'X9Z',
@@ -354,7 +353,7 @@ describe('registerCardUser — server-authoritative card registration', () => {
     await registerCardUser({ cardNumber: '5678', phoneLast4: '4321' })
 
     const stored = getCurrentUser()
-    expect(stored?.passwordChangeSoft).toBe(true)
+    expect(stored?.mustChangePassword).toBe(true)
     expect((stored as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
   })
 

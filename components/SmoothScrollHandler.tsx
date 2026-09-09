@@ -122,12 +122,6 @@ export default function SmoothScrollHandler(): null {
     return () => document.removeEventListener('click', handleClick, true);
   }, [normalizeHash, router, scheduleScrollToHash, language]);
 
-  // Scroll to top on every pathname change that has no hash
-  useEffect(() => {
-    if (window.location.hash) return
-    window.scrollTo({ top: 0, behavior: 'instant' })
-  }, [pathname])
-
   useEffect(() => {
     if (pathname !== '/') return;
 

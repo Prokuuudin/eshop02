@@ -7,6 +7,7 @@ import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
 import { appendServerAudit } from '@/lib/server-audit'
 import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDays } from '@/lib/bonus-ledger'
+import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
 import { buildOrderData, mapDbToServerOrder } from '@/lib/orders-data-mapping'
@@ -356,6 +357,7 @@ export async function updateServerOrderByAdmin(
         rating: product.rating,
         stock: product.stock,
         quantity: item.quantity,
+        ...(product.sku ? { sku: product.sku } : {}),
         ...(item.lineKey ? { lineKey: item.lineKey } : {}),
         ...(item.variantLabel ? { variantLabel: item.variantLabel } : {}),
       } as ServerOrderItem
@@ -378,7 +380,9 @@ export async function updateServerOrderByAdmin(
     const taxIncluded = isOrderTaxIncluded(currentTotals)
     const tax = taxIncluded ? extractVat(subtotal - discount) : toNum(current.tax)
     const bonusSpent = current.bonusSpent ?? 0
-    const total = Math.max(0, Math.round((subtotal - discount + delivery - bonusSpent + (taxIncluded ? 0 : tax)) * 100) / 100)
+    // bonusSpent is persisted in points (100 points = EUR 1), not in euros.
+    // Subtracting the raw point count made edited orders commonly collapse to EUR 0.00.
+    const total = Math.max(0, Math.round((subtotal - discount + delivery - pointsToEuros(bonusSpent) + (taxIncluded ? 0 : tax)) * 100) / 100)
 
     const updated = await tx.order.update({
       where: { id: orderId },

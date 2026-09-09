@@ -12,6 +12,10 @@ export type ServerOrderItem = {
   rating: number
   stock: number
   quantity: number
+  /** Product article captured at the time the order is created/edited. */
+  sku?: string
+  lineKey?: string
+  variantLabel?: string
 }
 
 export type ServerOrderLegalDetails =

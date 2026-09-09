@@ -48,6 +48,7 @@ describe('buildInvoiceHtml', () => {
     expect(html).toContain('Kopā bez PVN:</td><td>41.32 €')
     expect(html).toContain('class="brand-logo" src="/invoice-logo-2026.png"')
     expect(html).toContain('class="order-number"')
+    expect(html).not.toContain('https://hairshop.lv')
     expect(html).toContain('class="seller-name">SIA MIKS PLUS')
     expect(html).toContain('Konts: LV 66 HABA 0551 0366 0410 7<br/>SWIFT: HABALV22')
     expect(html).toContain('class="method-line">Maksāšanas veids: Apmaksa ar karti')

@@ -52,13 +52,6 @@ export function AccountDataSection(): React.ReactElement {
         {tl('account.data.title', 'Данные и конфиденциальность', 'Data & privacy', 'Dati un privātums')}
       </h3>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <a
-          href="/api/user/export"
-          download
-          className="inline-flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 sm:w-auto dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          {tl('account.data.exportPdf', 'Отчёт о данных аккаунта (PDF)', 'Account data report (PDF)', 'Konta datu pārskats (PDF)')}
-        </a>
         <Button
           ref={deleteTriggerRef}
           variant="outline"

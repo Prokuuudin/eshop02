@@ -23,7 +23,6 @@ import ProductVariantGroupsFields from './ProductVariantGroupsFields';
 import ProductCertificatesFields from './ProductCertificatesFields';
 import ProductBulkPricingFields from './ProductBulkPricingFields';
 import ProductPicker from './ProductPicker';
-import ProductManufacturerFields from './ProductManufacturerFields';
 import ProductPreviewCard from './ProductPreviewCard';
 import ProductSeoIssuePanel, { type SeoEditContext } from './ProductSeoIssuePanel';
 import { ProductFormModeContext } from './ProductFormModeContext';
@@ -345,16 +344,6 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                     title={l('Часто покупают вместе', 'Frequently bought together', 'Bieži pērk kopā')}
                                     hint={l('Показываются в блоке «Часто покупают вместе». Если список пуст — блок заполняется автоматически по статистике реальных заказов.', 'Shown in the Frequently bought together section. If empty, the list is generated from actual order statistics.', 'Tiek rādītas sadaļā Bieži pērk kopā. Ja saraksts ir tukšs, tas tiek izveidots no reālo pasūtījumu statistikas.')}
                                 />
-                            </ProductFormAccordionSection>
-                            <ProductFormAccordionSection
-                                title={
-                                    <>
-                                        {l('Производитель и дистрибьютор', 'Manufacturer and distributor', 'Ražotājs un izplatītājs')}{' '}
-                                        <span className="text-destructive">{l('(обязательно)', '(required)', '(obligāti)')}</span>
-                                    </>
-                                }
-                            >
-                                <ProductManufacturerFields language={language} />
                             </ProductFormAccordionSection>
                             <ProductFormAccordionSection id="product-form-seo-section" title="SEO">
                                 <ProductSeoFields />

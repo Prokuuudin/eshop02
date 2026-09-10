@@ -37,26 +37,6 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
     manufacturer,
     distributor,
 }) => {
-    // Поля товара приоритетнее данных бренда из brands-config: если админ заполнил
-    // производителя/дистрибьютора в карточке товара, показываем их.
-    const lang = (['ru', 'en', 'lv'].includes(language) ? language : 'ru') as 'ru' | 'en' | 'lv';
-    const productManufacturer: BrandManufacturerInfo | undefined =
-        product.manufacturerName || product.manufacturerAddress || product.manufacturerEmail
-            ? {
-                  name: product.manufacturerName ?? '',
-                  address: product.manufacturerAddress ?? '',
-                  email: product.manufacturerEmail,
-              }
-            : undefined;
-    const productDistributor: BrandManufacturerInfo | undefined =
-        product.distributorName?.[lang] || product.distributorAddress?.[lang] || product.distributorEmail
-            ? {
-                  name: product.distributorName?.[lang] ?? '',
-                  address: product.distributorAddress?.[lang] ?? '',
-                  email: product.distributorEmail,
-              }
-            : undefined;
-
     return (
         <div className="contents md:flex md:flex-col md:gap-4">
             <div className="order-1 md:order-none">
@@ -86,8 +66,8 @@ export const ProductGalleryBlock: React.FC<ProductGalleryBlockProps> = ({
             </div>
             <div className="order-5 md:order-none">
                 <ManufacturerDistributorInfo
-                    manufacturer={productManufacturer ?? manufacturer}
-                    distributor={productDistributor ?? distributor}
+                    manufacturer={manufacturer}
+                    distributor={distributor}
                     language={language}
                 />
             </div>

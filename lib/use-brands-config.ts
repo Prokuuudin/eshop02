@@ -33,7 +33,7 @@ type BrandsConfigResult = {
   reload: () => Promise<void>
 }
 
-export function useBrandsConfig(initialBrands?: BrandConfigItem[]): BrandsConfigResult {
+export function useBrandsConfig(initialBrands?: BrandConfigItem[], endpoint = '/api/brands'): BrandsConfigResult {
   const hasInitialBrands = Boolean(initialBrands)
   const [brands, setBrands] = React.useState<BrandConfigItem[]>(initialBrands ?? fallbackBrands)
   const [loading, setLoading] = React.useState(!hasInitialBrands)
@@ -42,7 +42,7 @@ export function useBrandsConfig(initialBrands?: BrandConfigItem[]): BrandsConfig
   const load = React.useCallback(async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/brands', { cache: 'no-store' })
+      const response = await fetch(endpoint, { cache: 'no-store' })
       if (!response.ok) throw new Error('failed_to_load_brands')
 
       const payload = (await response.json()) as Partial<BrandsConfigPayload>
@@ -58,7 +58,7 @@ export function useBrandsConfig(initialBrands?: BrandConfigItem[]): BrandsConfig
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [endpoint])
 
   React.useEffect(() => {
     if (hasInitialBrands) return

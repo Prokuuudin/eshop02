@@ -13,10 +13,10 @@ import {
 } from '@/components/ui/select';
 import { AddProductFormValues } from './productFormSchema';
 import { CATEGORY_CARDS } from '@/data/categories';
-import { BRANDS } from '@/data/brands';
 import { useTranslation } from '@/lib/i18n-context';
 import { useProductFormMode } from './ProductFormModeContext';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { useBrandsConfig } from '@/lib/use-brands-config';
 
 const ProductBasicFields: React.FC = () => {
     const {
@@ -27,6 +27,7 @@ const ProductBasicFields: React.FC = () => {
     const { t } = useTranslation();
     const { l } = useAdminLocale();
     const { isEdit } = useProductFormMode();
+    const { brands } = useBrandsConfig(undefined, '/api/admin/brands');
 
     return (
         <div className="add-product__section add-product__section--basic">
@@ -56,10 +57,10 @@ const ProductBasicFields: React.FC = () => {
                                     <SelectValue placeholder={l('Выберите бренд', 'Select a brand', 'Izvēlieties zīmolu')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {field.value && !BRANDS.some((b) => b.name === field.value) && (
+                                    {field.value && !brands.some((b) => b.name === field.value) && (
                                         <SelectItem value={field.value}>{field.value}</SelectItem>
                                     )}
-                                    {BRANDS.map((b) => (
+                                    {brands.map((b) => (
                                         <SelectItem key={b.id} value={b.name}>
                                             {b.name}
                                         </SelectItem>

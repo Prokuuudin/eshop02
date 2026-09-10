@@ -119,7 +119,7 @@ describe('PATCH /api/user/profile', () => {
       where: { userId: 'u1' }, data: { email: 'new@example.com' },
     })
     expect(savedAddressUpdateManyMock).toHaveBeenCalledWith({
-      where: { email: 'user@test.com' }, data: { email: 'new@example.com' },
+      where: { userId: 'u1' }, data: { email: 'new@example.com' },
     })
   })
 
@@ -133,7 +133,7 @@ describe('PATCH /api/user/profile', () => {
     expect(userUpdateMock).not.toHaveBeenCalled()
   })
 
-  it('rejects an email matching an existing SavedAddress (IDOR: SavedAddress has no userId)', async () => {
+  it('rejects an email matching an existing legacy SavedAddress', async () => {
     savedAddressFindFirstMock.mockResolvedValue({ id: 'addr1' })
 
     const res = await PATCH(makeRequest({ email: 'victim@example.com' }))

@@ -16,7 +16,7 @@ export async function DELETE(
     const { id } = await params
     const addr = await prisma.savedAddress.findUnique({ where: { id } })
     if (!addr) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    if (addr.email !== user.email && user.platformRole !== 'admin') {
+    if (addr.userId !== user.id && user.platformRole !== 'admin') {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -27,5 +27,4 @@ export async function DELETE(
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
 

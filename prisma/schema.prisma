@@ -52,6 +52,7 @@ model User {
   userNotifications   UserNotification[]
   bonusTransactions   BonusTransaction[]
   productNewsSubscriptions ProductNewsSubscription[]
+  savedAddresses       SavedAddress[]
 
   @@index([email])
   @@index([companyId])
@@ -529,6 +530,8 @@ model AccessRequest {
 
 model SavedAddress {
   id         String  @id
+  userId     String?
+  user       User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   email      String
   firstName  String
   lastName   String
@@ -538,6 +541,7 @@ model SavedAddress {
   postalCode String?
 
   @@index([email])
+  @@index([userId])
 }
 
 model ProductNewsSubscription {

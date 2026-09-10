@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
     const addresses = await prisma.savedAddress.findMany({
-      where: { email: user.email },
+      where: { userId: user.id },
     })
     return NextResponse.json({ addresses })
   } catch (e) {
@@ -54,18 +54,18 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (clientId) {
       // Verify ownership before allowing update נprevent IDOR
       const existing = await prisma.savedAddress.findUnique({ where: { id: clientId } })
-      if (existing && existing.email !== user.email) {
+      if (existing && existing.userId !== user.id) {
         return NextResponse.json({ error: 'forbidden' }, { status: 403 })
       }
       saved = await prisma.savedAddress.upsert({
         where: { id: clientId },
-        create: { id: clientId, email: user.email, ...data },
-        update: data,
+        create: { id: clientId, userId: user.id, email: user.email, ...data },
+        update: { userId: user.id, email: user.email, ...data },
       })
     } else {
       // New address נalways generate id server-side
       saved = await prisma.savedAddress.create({
-        data: { id: randomUUID(), email: user.email, ...data },
+        data: { id: randomUUID(), userId: user.id, email: user.email, ...data },
       })
     }
 
@@ -75,8 +75,6 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
 
 
 

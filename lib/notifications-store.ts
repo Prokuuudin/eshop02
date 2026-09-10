@@ -16,6 +16,7 @@ export interface Notification {
 
 interface NotificationsStore {
   notifications: Notification[]
+  notificationOwnerId?: string | null
   isSubscribed: boolean
   channel: NotificationChannel
   setChannel: (channel: NotificationChannel) => void
@@ -28,6 +29,7 @@ interface NotificationsStore {
   deleteAll: () => void
   addNotification: (n: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => void
   fetchInbox: () => Promise<void>
+  syncNotificationScope: (userId: string | null) => void
   unreadCount: () => number
 }
 
@@ -35,6 +37,7 @@ export const useNotificationsStore = create<NotificationsStore>()(
   persist(
     (set, get) => ({
       notifications: [],
+      notificationOwnerId: undefined,
       isSubscribed: false,
       channel: 'app',
 
@@ -65,6 +68,14 @@ export const useNotificationsStore = create<NotificationsStore>()(
         })),
 
       deleteAll: () => set({ notifications: [] }),
+
+      syncNotificationScope: (userId) => set((state) => {
+        // Adopt legacy notifications once. From then on, never expose one
+        // account's locally persisted inbox to another account in this browser.
+        if (state.notificationOwnerId === undefined) return { notificationOwnerId: userId }
+        if (state.notificationOwnerId === userId) return state
+        return { notificationOwnerId: userId, notifications: [] }
+      }),
 
       addNotification: (n) => {
         const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`

@@ -20,8 +20,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const hasMore = rows.length > take
     const page = hasMore ? rows.slice(0, take) : rows
+    const statusRows = page.length
+      ? await prisma.orderStatusRecord.findMany({ where: { orderId: { in: page.map((row) => row.id) } } })
+      : []
+    const statusByOrderId = new Map(statusRows.map((row) => [row.orderId, row.status]))
     const orders = page.map((row) => ({
       ...row,
+      status: statusByOrderId.get(row.id) ?? 'pending',
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     }))
 

@@ -11,9 +11,13 @@ vi.mock('@/lib/server-auth', () => ({
   getServerUser: vi.fn(),
   requireAdmin: vi.fn(),
 }))
+vi.mock('@/lib/prisma', () => ({ prisma: {
+  orderStatusRecord: { findUnique: vi.fn() },
+} }))
 
 import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser, requireAdmin } from '@/lib/server-auth'
+import { prisma } from '@/lib/prisma'
 import { GET, PATCH } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -35,6 +39,7 @@ const context = { params: Promise.resolve({ id: '1001' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.orderStatusRecord.findUnique).mockResolvedValue(null)
 })
 
 describe('GET /api/orders/[id]', () => {
@@ -58,6 +63,18 @@ describe('GET /api/orders/[id]', () => {
 
     expect(res.status).toBe(200)
     expect(body.order.id).toBe('1001')
+    expect(body.order.status).toBe('pending')
+  })
+
+  it('returns the current server fulfilment status to the customer', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'user-1' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    vi.mocked(prisma.orderStatusRecord.findUnique).mockResolvedValue({ orderId: '1001', status: 'delivered' } as never)
+
+    const body = await (await GET(makeGetRequest(), context)).json()
+
+    expect(body.order.status).toBe('delivered')
   })
 })
 

@@ -201,6 +201,21 @@ describe('production analytics service', () => {
     expect(result.spentChangePercent).toBeNull()
     expect(result.ordersChangePercent).toBeNull()
   })
+
+  it('excludes orders cancelled by an administrator from totals and period comparisons', () => {
+    const cancelled = { ...asOrder(orderB), status: 'cancelled' as const }
+    const analytics = computeRealPurchaseAnalytics([asOrder(orderA), cancelled])
+    const comparison = getPeriodComparison(
+      [asOrder(orderA), cancelled],
+      'year',
+      new Date(2024, 6, 1)
+    )
+
+    expect(analytics.totalOrders).toBe(1)
+    expect(analytics.totalSpent).toBe(3000)
+    expect(comparison.currentOrders).toBe(1)
+    expect(comparison.currentSpent).toBe(3000)
+  })
 })
 
 describe('computePurchaseAnalytics — topProducts', () => {

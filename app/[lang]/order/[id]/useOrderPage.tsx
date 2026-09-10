@@ -79,6 +79,7 @@ function useOrderPageState({ params }: PageProps) {
                         paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed';
                         paymentProvider?: 'manual';
                         paymentSessionId?: string;
+                        status?: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
                         legalDetails?: OrderLegalDetails;
                     };
                 };
@@ -203,7 +204,7 @@ function useOrderPageState({ params }: PageProps) {
         );
     }
 
-    const status = getOrderStatus(order.id);
+    const status = order.status ?? getOrderStatus(order.id);
     const timelineSteps = [
         { id: 'pending', label: t('order.status.pending') },
         { id: 'confirmed', label: t('order.status.confirmed') },

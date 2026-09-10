@@ -18,6 +18,7 @@ export function getPeriodComparison(
   period: AnalyticsPeriod,
   now = new Date()
 ): PeriodComparison {
+  const includedOrders = orders.filter((order) => order.status !== 'cancelled')
   const year = now.getFullYear()
   const month = now.getMonth()
   const currentStart = period === 'month'
@@ -31,11 +32,11 @@ export function getPeriodComparison(
       ? new Date(currentStart.getFullYear(), currentStart.getMonth() - 3, 1)
       : new Date(year - 1, 0, 1)
 
-  const current = orders.filter((order) => {
+  const current = includedOrders.filter((order) => {
     const date = new Date(order.createdAt)
     return date >= currentStart && date <= now
   })
-  const previous = orders.filter((order) => {
+  const previous = includedOrders.filter((order) => {
     const date = new Date(order.createdAt)
     return date >= previousStart && date < currentStart
   })
@@ -93,20 +94,21 @@ export function computePurchaseAnalytics(
   orders: ReturnType<typeof useOrders.getState>['orders'],
   locale = 'ru-RU'
 ): PurchaseAnalytics {
-  if (orders.length === 0) return emptyPurchaseAnalytics()
+  const includedOrders = orders.filter((order) => order.status !== 'cancelled')
+  if (includedOrders.length === 0) return emptyPurchaseAnalytics()
 
-  const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0)
-  const totalItems = orders.reduce(
+  const totalSpent = includedOrders.reduce((sum, order) => sum + (order.total || 0), 0)
+  const totalItems = includedOrders.reduce(
     (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
     0
   )
-  const averageOrderValue = totalSpent / orders.length
+  const averageOrderValue = totalSpent / includedOrders.length
 
   const productMap = new Map<string, { title: string; quantity: number; revenue: number }>()
   const categoryMap = new Map<string, { quantity: number; revenue: number }>()
   const monthMap = new Map<string, { label: string; shortLabel: string; count: number; revenue: number }>()
 
-  orders.forEach((order) => {
+  includedOrders.forEach((order) => {
     order.items.forEach((item) => {
       const product = productMap.get(item.id) || { title: item.title, quantity: 0, revenue: 0 }
       productMap.set(item.id, {
@@ -142,7 +144,7 @@ export function computePurchaseAnalytics(
   })
 
   return {
-    totalOrders: orders.length,
+    totalOrders: includedOrders.length,
     totalSpent,
     averageOrderValue,
     totalItems,

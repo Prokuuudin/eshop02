@@ -3,6 +3,7 @@ import { CartItem } from './cart-store'
 
 export type DeliveryMethod = 'courier' | 'pickup' | 'post' | 'venipak'
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed'
+export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
 export type OrderLegalDetails =
   | { customerType: 'individual'; personalCode: string }
@@ -18,6 +19,8 @@ export type OrderLegalDetails =
 
 export interface Order {
   id: string
+  /** Server-authoritative fulfilment status. Missing legacy rows are pending. */
+  status?: OrderStatus
   createdAt: Date
   items: CartItem[]
   subtotal: number

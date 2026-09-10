@@ -21,8 +21,9 @@ export default function AuthHydrator(): ReactElement | null {
           notifyAuthChanged()
           return
         }
-        if (cached.id !== user.id) {
-          localStorage.setItem(CURRENT_KEY, JSON.stringify({ ...user, password: '' }))
+        const refreshed = { ...user, password: '' }
+        if (JSON.stringify(cached) !== JSON.stringify(refreshed)) {
+          localStorage.setItem(CURRENT_KEY, JSON.stringify(refreshed))
           notifyAuthChanged()
         }
       })

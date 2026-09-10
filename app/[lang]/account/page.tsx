@@ -35,14 +35,15 @@ import { getLocaleFromLanguage } from '@/lib/utils';
 import { useCart } from '@/lib/cart-store';
 import { useToast } from '@/lib/toast-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import React from 'react';
 
 export default function AccountPage(): React.ReactElement {
     const { t, language, tl } = useLocaleHelpers();
     const user = useAuthStore((state) => state.user);
     const isHydrated = useAuthStore((state) => state.isHydrated);
-    const companyStore = useCompanyStore();
+    const companies = useCompanyStore((state) => state.companies);
+    const syncCompaniesFromDb = useCompanyStore((state) => state.syncFromDb);
     const ordersStore = useOrders();
     const { replaceWithItems } = useCart();
     const { showToast } = useToast();
@@ -80,10 +81,21 @@ export default function AccountPage(): React.ReactElement {
     // match нужен и здесь: контактный email в чекауте не обязан совпадать с email
     // аккаунта (типичный случай — карта+ПК с синтетическим card.NNNN@client.local).
     // Фильтр по userId ИЛИ email, а не по email в одиночку.
-    const userOrders = allOrders.filter(
+    const userOrders = useMemo(() => allOrders.filter(
         (o) => (user?.id && o.userId === user.id) || o.email.toLowerCase() === (user?.email ?? '').toLowerCase()
+    ), [allOrders, user]);
+    const customerOrderStatuses = useMemo(
+        () => new Map(userOrders.map((order) => [order.id, order.status] as const)),
+        [userOrders]
     );
-    const totalSpent = userOrders.reduce((sum, order) => sum + order.total, 0);
+    const getCustomerOrderStatus = useCallback(
+        (orderId: string): string => customerOrderStatuses.get(orderId) ?? getOrderStatus(orderId),
+        [customerOrderStatuses, getOrderStatus]
+    );
+    const totalSpent = userOrders.reduce(
+        (sum, order) => sum + (order.status === 'cancelled' ? 0 : order.total),
+        0
+    );
     const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);
     const totalBonusSpent = userOrders.reduce((sum, o) => sum + (o.bonusSpent ?? 0), 0);
     const isAdmin = user?.platformRole === 'admin';
@@ -94,9 +106,12 @@ export default function AccountPage(): React.ReactElement {
     useEffect(() => {
         if (user?.id) void hydrateWishlistFromServer();
     }, [user?.id]);
+    useEffect(() => {
+        if (user?.companyId) void syncCompaniesFromDb();
+    }, [syncCompaniesFromDb, user?.companyId]);
     useAddressMigration(user, userOrders, getByEmail, replaceForEmail);
     const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'completed'>('all');
-    const orders = useAccountOrders(userOrders, getOrderStatus, orderFilter);
+    const orders = useAccountOrders(userOrders, getCustomerOrderStatus, orderFilter);
     const accountTools = getAccountTools(user, tl);
     const summaryCards = getAccountSummaryCards(
         t,
@@ -122,7 +137,7 @@ export default function AccountPage(): React.ReactElement {
         );
     }
 
-    const company = user?.companyId ? companyStore.getCompany(user.companyId) : null;
+    const company = user?.companyId ? companies.get(user.companyId) : null;
 
     if (isAdmin) {
         return (
@@ -195,7 +210,7 @@ export default function AccountPage(): React.ReactElement {
                                 }
                                 getStatusLabel={(status) => orders.getStatusLabel(status, t)}
                                 getStatusClasses={orders.getStatusClasses}
-                                getOrderStatus={getOrderStatus}
+                                getOrderStatus={getCustomerOrderStatus}
                                 locale={locale}
                                 t={t}
                                 tl={tl}

@@ -1,19 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { getServerUserMock, findManyMock } = vi.hoisted(() => ({
+const { getServerUserMock, findManyMock, statusFindManyMock } = vi.hoisted(() => ({
   getServerUserMock: vi.fn(),
   findManyMock: vi.fn(),
+  statusFindManyMock: vi.fn(),
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: getServerUserMock }))
-vi.mock('@/lib/prisma', () => ({ prisma: { order: { findMany: findManyMock } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: {
+  order: { findMany: findManyMock },
+  orderStatusRecord: { findMany: statusFindManyMock },
+} }))
 
 import { GET } from './route'
 
 const request = (query = '') => new NextRequest(`https://shop.test/api/orders/my${query}`)
 
 describe('GET /api/orders/my', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    statusFindManyMock.mockResolvedValue([])
+  })
 
   it('does not query orders for an anonymous caller', async () => {
     getServerUserMock.mockResolvedValue(null)
@@ -30,6 +37,22 @@ describe('GET /api/orders/my', () => {
       where: { OR: [{ userId: 'u1' }, { email: 'buyer@test.com' }] },
       take: 26,
     }))
+  })
+
+  it('returns the server fulfilment status and defaults sparse records to pending', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com' })
+    findManyMock.mockResolvedValue([
+      { id: 'o1', createdAt: new Date('2026-01-01') },
+      { id: 'o2', createdAt: new Date('2026-01-02') },
+    ])
+    statusFindManyMock.mockResolvedValue([{ orderId: 'o1', status: 'delivered' }])
+
+    const json = await (await GET(request())).json()
+
+    expect(json.orders.map((order: { id: string; status: string }) => [order.id, order.status])).toEqual([
+      ['o1', 'delivered'],
+      ['o2', 'pending'],
+    ])
   })
 
   it('caps page size and returns a cursor only when another row exists', async () => {

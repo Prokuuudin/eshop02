@@ -15,6 +15,7 @@ import CookieConsent from '@/components/CookieConsent'
 import TelemetryReporter from '@/components/TelemetryReporter'
 import type { BonusProgramConfig } from '@/lib/bonus-program'
 import type { LocaleConfig } from '@/lib/locale-config'
+import { useNotificationsStore } from '@/lib/notifications-store'
 
 const CHUNK_ERROR_PATTERN = /(ChunkLoadError|Loading chunk .* failed|Failed to fetch dynamically imported module)/i
 
@@ -63,6 +64,18 @@ function WishlistScopeSync(): null {
   useEffect(() => {
     if (!isHydrated) return
     useWishlist.getState().syncWishlistScope()
+  }, [userId, isHydrated])
+
+  return null
+}
+
+function NotificationScopeSync(): null {
+  const userId = useAuthStore((s) => s.user?.id ?? null)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
+
+  useEffect(() => {
+    if (!isHydrated) return
+    useNotificationsStore.getState().syncNotificationScope(userId)
   }, [userId, isHydrated])
 
   return null
@@ -149,6 +162,7 @@ export function Providers({
         <BonusConfigSync config={bonusConfig} />
         <LocaleConfigSync config={localeConfig} />
         <WishlistScopeSync />
+        <NotificationScopeSync />
         <CartUserSync />
         <ChunkErrorRecovery />
         <TelemetryReporter />

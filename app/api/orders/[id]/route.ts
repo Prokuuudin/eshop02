@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser, requireAdmin } from '@/lib/server-auth'
+import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 
@@ -25,7 +26,8 @@ export async function GET(_req: NextRequest, context: Context): Promise<NextResp
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ order })
+    const statusRow = await prisma.orderStatusRecord.findUnique({ where: { orderId: order.id } })
+    return NextResponse.json({ order: { ...order, status: statusRow?.status ?? 'pending' } })
   } catch (error) {
     logApiError("Orders API GET by id error:", error)
     return NextResponse.json({ error: 'Failed to read order' }, { status: 500 })
@@ -66,6 +68,5 @@ export async function PATCH(req: NextRequest, context: Context): Promise<NextRes
     return NextResponse.json({ error: 'Failed to update order payment' }, { status: 500 })
   }
 }
-
 
 

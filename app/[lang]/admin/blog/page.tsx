@@ -2,6 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -95,33 +96,43 @@ export default function AdminBlogPage(): React.ReactElement {
                 </div>
 
                 <div className="bg-card rounded-lg border border-border p-6 mt-8">
-                    {showForm ? (
-                        <div className="mb-6">
-                            <div className="flex items-center gap-2 mb-2">
-                                <h2 className="text-lg font-semibold">
-                                    {editingBlogId
-                                        ? tl('admin.blog.editPostTitle', 'Редактирование статьи', 'Edit post', 'Raksta rediģēšana')
-                                        : tl('admin.blog.newPostTitle', 'Новая статья', 'New post', 'Jauns raksts')}
-                                </h2>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        if (editingBlogId) handleCancelBlogEdit();
-                                        setShowForm(false);
-                                    }}
-                                >
-                                    {l('Свернуть', 'Collapse', 'Sakļaut')}
-                                </Button>
-                            </div>
-                            <BlogPostForm state={pageState} />
-                        </div>
-                    ) : (
+                    {!showForm && (
                         <Button type="button" className="mb-6" onClick={() => setShowForm(true)}>
                             + {tl('admin.blog.addPost', 'Добавить статью', 'Add post', 'Pievienot rakstu')}
                         </Button>
                     )}
+                    <Accordion
+                        type="single"
+                        collapsible
+                        value={showForm ? 'post-form' : ''}
+                        onValueChange={(v) => setShowForm(v === 'post-form')}
+                    >
+                        <AccordionItem value="post-form" className="border-0">
+                            <AccordionContent className="pt-0">
+                                <div className="mb-6">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <h2 className="text-lg font-semibold">
+                                            {editingBlogId
+                                                ? tl('admin.blog.editPostTitle', 'Редактирование статьи', 'Edit post', 'Raksta rediģēšana')
+                                                : tl('admin.blog.newPostTitle', 'Новая статья', 'New post', 'Jauns raksts')}
+                                        </h2>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                if (editingBlogId) handleCancelBlogEdit();
+                                                setShowForm(false);
+                                            }}
+                                        >
+                                            {l('Свернуть', 'Collapse', 'Sakļaut')}
+                                        </Button>
+                                    </div>
+                                    <BlogPostForm state={pageState} />
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
 
                     <div>
                         <h3 className="text-lg font-semibold mb-3">

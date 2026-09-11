@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import BlogImageField from './BlogImageField';
 import type { BlogContentBlock } from '@/data/blog';
 
@@ -66,7 +67,39 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
         onChange([...blocks, makeDefaultBlock(addType)]);
     };
 
+    const hints = {
+        moveUp: l('Переместить блок выше', 'Move block up', 'Pārvietot bloku augstāk'),
+        moveDown: l('Переместить блок ниже', 'Move block down', 'Pārvietot bloku zemāk'),
+        removeBlock: l('Удалить блок', 'Remove block', 'Dzēst bloku'),
+        headingLevel: l(
+            'Уровень заголовка: H2 — раздел, H3 — подраздел. H1 обычно уже занят названием статьи.',
+            'Heading level: H2 for a section, H3 for a subsection. H1 is usually the article title.',
+            'Virsraksta līmenis: H2 sadaļai, H3 apakšsadaļai. H1 parasti ir raksta nosaukums.'
+        ),
+        orderedList: l(
+            'Включите для нумерованного списка; выключите для маркированного.',
+            'Turn on for a numbered list; leave off for bullets.',
+            'Ieslēdziet numurētam sarakstam; izslēdziet sarakstam ar aizzīmēm.'
+        ),
+        removeItem: l('Удалить пункт списка', 'Remove list item', 'Dzēst saraksta vienumu'),
+        addItem: l('Добавить новый пункт в конец списка', 'Add a new item to the end of the list', 'Pievienot jaunu vienumu saraksta beigās'),
+        removeImage: l('Удалить изображение из галереи', 'Remove image from gallery', 'Dzēst attēlu no galerijas'),
+        addImage: l('Добавить изображение в галерею', 'Add image to gallery', 'Pievienot attēlu galerijai'),
+        blockType: l('Выберите тип нового блока', 'Choose the type of the new block', 'Izvēlieties jaunā bloka veidu'),
+        addBlock: l('Добавить выбранный блок в конец статьи', 'Add the selected block to the end of the article', 'Pievienot izvēlēto bloku raksta beigās'),
+    };
+
+    const hint = (label: string, control: React.ReactElement): React.ReactElement => (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="inline-flex" aria-label={label}>{control}</span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-center">{label}</TooltipContent>
+        </Tooltip>
+    );
+
     return (
+        <TooltipProvider delayDuration={200}>
         <div className="md:col-span-2 space-y-3">
             <span className="block text-sm text-muted-foreground">
                 {l('Содержимое статьи', 'Article content', 'Raksta saturs')}
@@ -86,25 +119,28 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                 {l(...BLOCK_LABELS[block.type])}
                             </span>
                             <div className="flex items-center gap-1">
-                                <Button type="button" variant="ghost" size="sm" className="px-2" disabled={index === 0} onClick={() => moveBlock(index, -1)} aria-label="up">
+                                {hint(hints.moveUp, <Button type="button" variant="ghost" size="sm" className="px-2" disabled={index === 0} onClick={() => moveBlock(index, -1)} aria-label={hints.moveUp}>
                                     ↑
-                                </Button>
-                                <Button type="button" variant="ghost" size="sm" className="px-2" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label="down">
+                                </Button>)}
+                                {hint(hints.moveDown, <Button type="button" variant="ghost" size="sm" className="px-2" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label={hints.moveDown}>
                                     ↓
-                                </Button>
-                                <Button type="button" variant="ghost" size="sm" className="px-2 text-destructive" onClick={() => removeBlock(index)} aria-label="remove">
+                                </Button>)}
+                                {hint(hints.removeBlock, <Button type="button" variant="ghost" size="sm" className="px-2 text-destructive" onClick={() => removeBlock(index)} aria-label={hints.removeBlock}>
                                     ✕
-                                </Button>
+                                </Button>)}
                             </div>
                         </div>
 
                         {block.type === 'heading' && (
                             <div className="flex gap-2">
-                                <Select
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                    <div>
+                                    <Select
                                     value={String(block.level)}
                                     onValueChange={(v) => updateBlock(index, { ...block, level: Number(v) as 1 | 2 | 3 })}
-                                >
-                                    <SelectTrigger className="w-20 shrink-0">
+                                    >
+                                    <SelectTrigger className="w-20 shrink-0" aria-label={hints.headingLevel}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -112,7 +148,11 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                         <SelectItem value="2">H2</SelectItem>
                                         <SelectItem value="3">H3</SelectItem>
                                     </SelectContent>
-                                </Select>
+                                    </Select>
+                                    </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs text-center">{hints.headingLevel}</TooltipContent>
+                                </Tooltip>
                                 <Input
                                     value={block.text}
                                     onChange={(e) => updateBlock(index, { ...block, text: e.target.value })}
@@ -133,13 +173,19 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
 
                         {block.type === 'list' && (
                             <div className="space-y-2">
-                                <label className="inline-flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                        checked={Boolean(block.ordered)}
-                                        onCheckedChange={(checked) => updateBlock(index, { ...block, ordered: checked === true })}
-                                    />
-                                    {l('Нумерованный', 'Ordered', 'Numurēts')}
-                                </label>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <label className="inline-flex items-center gap-2 text-sm">
+                                            <Checkbox
+                                                aria-label={hints.orderedList}
+                                                checked={Boolean(block.ordered)}
+                                                onCheckedChange={(checked) => updateBlock(index, { ...block, ordered: checked === true })}
+                                            />
+                                            {l('Нумерованный', 'Ordered', 'Numurēts')}
+                                        </label>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs text-center">{hints.orderedList}</TooltipContent>
+                                </Tooltip>
                                 {block.items.map((item, itemIndex) => (
                                     <div key={itemIndex} className="flex gap-2">
                                         <Input
@@ -152,20 +198,21 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                             }
                                             placeholder={l('Пункт списка', 'List item', 'Saraksta vienums')}
                                         />
-                                        <Button
+                                        {hint(hints.removeItem, <Button
                                             type="button"
                                             variant="outline"
                                             size="sm"
                                             onClick={() => updateBlock(index, { ...block, items: block.items.filter((_, i) => i !== itemIndex) })}
                                             disabled={block.items.length <= 1}
+                                            aria-label={hints.removeItem}
                                         >
                                             ✕
-                                        </Button>
+                                        </Button>)}
                                     </div>
                                 ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => updateBlock(index, { ...block, items: [...block.items, ''] })}>
+                                {hint(hints.addItem, <Button type="button" variant="outline" size="sm" onClick={() => updateBlock(index, { ...block, items: [...block.items, ''] })}>
                                     + {l('Пункт', 'Item', 'Vienums')}
-                                </Button>
+                                </Button>)}
                             </div>
                         )}
 
@@ -216,7 +263,7 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                             <span className="text-xs text-muted-foreground">
                                                 {l('Изображение', 'Image', 'Attēls')} {imageIndex + 1}
                                             </span>
-                                            <Button
+                                            {hint(hints.removeImage, <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
@@ -225,9 +272,10 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                                     updateBlock(index, { ...block, images: block.images.filter((_, i) => i !== imageIndex) })
                                                 }
                                                 disabled={block.images.length <= 1}
+                                                aria-label={hints.removeImage}
                                             >
                                                 ✕
-                                            </Button>
+                                            </Button>)}
                                         </div>
                                         <BlogImageField
                                             id={`gallery-${index}-${imageIndex}`}
@@ -264,14 +312,14 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                                         />
                                     </div>
                                 ))}
-                                <Button
+                                {hint(hints.addImage, <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
                                     onClick={() => updateBlock(index, { ...block, images: [...block.images, { src: '', alt: '', caption: '' }] })}
                                 >
                                     + {l('Изображение', 'Image', 'Attēls')}
-                                </Button>
+                                </Button>)}
                             </div>
                         )}
                     </div>
@@ -279,8 +327,11 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
             </div>
 
             <div className="flex items-center gap-2">
-                <Select value={addType} onValueChange={(v) => setAddType(v as BlogContentBlock['type'])}>
-                    <SelectTrigger className="w-auto min-w-[9rem]">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <div>
+                    <Select value={addType} onValueChange={(v) => setAddType(v as BlogContentBlock['type'])}>
+                    <SelectTrigger className="w-auto min-w-[9rem]" aria-label={hints.blockType}>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -290,11 +341,16 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
                             </SelectItem>
                         ))}
                     </SelectContent>
-                </Select>
-                <Button type="button" variant="outline" size="sm" onClick={addBlock}>
+                    </Select>
+                    </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{hints.blockType}</TooltipContent>
+                </Tooltip>
+                {hint(hints.addBlock, <Button type="button" variant="outline" size="sm" onClick={addBlock}>
                     + {l('Добавить блок', 'Add block', 'Pievienot bloku')}
-                </Button>
+                </Button>)}
             </div>
         </div>
+        </TooltipProvider>
     );
 }

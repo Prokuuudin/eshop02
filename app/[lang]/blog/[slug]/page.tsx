@@ -8,6 +8,9 @@ import { getBlogPostBySlug, getBlogPosts } from '@/lib/blog-store';
 import { DEFAULT_LANGUAGE, localizePath, resolveLanguage } from '@/lib/i18n-routing';
 import { serializeJsonLd } from '@/lib/json-ld';
 import { buildPublicPageMetadata } from '@/lib/page-metadata';
+import { getMergedProducts } from '@/lib/product-overrides-store';
+import { getServerUser } from '@/lib/server-auth';
+import { redactProductPrices } from '@/lib/product-price-visibility';
 
 type Params = {
     lang: string;
@@ -73,6 +76,19 @@ export default async function BlogPostPage({ params }: PageProps): Promise<React
         .filter((p) => p.category === post.category && p.id !== post.id)
         .slice(0, 3);
 
+    let relatedProducts: Awaited<ReturnType<typeof getMergedProducts>> = [];
+    if (post.relatedProductIds && post.relatedProductIds.length > 0) {
+        const [mergedProducts, serverUser] = await Promise.all([getMergedProducts(), getServerUser()]);
+        const byId = new Map(mergedProducts.map((p) => [p.id, p]));
+        const picked = post.relatedProductIds
+            .map((id) => byId.get(id))
+            .filter((p): p is NonNullable<typeof p> => {
+                if (!p) return false;
+                return p.isActive !== false;
+            });
+        relatedProducts = serverUser ? picked : redactProductPrices(picked);
+    }
+
     const siteUrl = getSiteUrl();
     const postUrl = `${siteUrl}${localizePath(`/blog/${post.slug}`, language)}`;
     const localizedPost = localizeBlogPost(post, language);
@@ -126,7 +142,7 @@ export default async function BlogPostPage({ params }: PageProps): Promise<React
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
             />
-            <BlogPostContent post={post} relatedPosts={relatedPosts} postUrl={postUrl} />
+            <BlogPostContent post={post} relatedPosts={relatedPosts} relatedProducts={relatedProducts} postUrl={postUrl} />
         </>
     );
 }

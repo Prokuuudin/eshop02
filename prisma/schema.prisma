@@ -618,6 +618,7 @@ model BlogPost {
   authorRole    String?
   authorBio     String?
   translations  Json?
+  relatedProductIds String[] @default([])
 
   @@index([status, publishedAt])
 }

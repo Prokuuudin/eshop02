@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/use-translation';
+import type { BlogContentBlock } from '@/data/blog';
 
 type AdminBlogPost = {
     id: string;
@@ -13,12 +14,13 @@ type AdminBlogPost = {
     category: string;
     readTime: number;
     content: string;
-    contentBlocks?: unknown[];
+    contentBlocks?: BlogContentBlock[];
     createdAt: string;
     featured?: boolean;
     status?: 'draft' | 'published';
     authorRole?: string;
     authorBio?: string;
+    relatedProductIds?: string[];
     translations?: Partial<
         Record<
             'en' | 'lv',
@@ -28,7 +30,7 @@ type AdminBlogPost = {
                 author?: string;
                 category?: string;
                 content?: string;
-                contentBlocks?: unknown[];
+                contentBlocks?: BlogContentBlock[];
             }
         >
     >;
@@ -40,7 +42,7 @@ type TranslationForm = {
     author: string;
     category: string;
     content: string;
-    contentBlocksJson: string;
+    contentBlocks: BlogContentBlock[];
 };
 
 const EMPTY_TRANSLATION: TranslationForm = {
@@ -49,7 +51,7 @@ const EMPTY_TRANSLATION: TranslationForm = {
     author: '',
     category: '',
     content: '',
-    contentBlocksJson: '',
+    contentBlocks: [],
 };
 
 type AdminBlogForm = {
@@ -67,7 +69,8 @@ type AdminBlogForm = {
     authorRole: string;
     authorBio: string;
     createdAt?: string;
-    contentBlocksJson: string;
+    contentBlocks: BlogContentBlock[];
+    relatedProductIds: string[];
     translations: { en: TranslationForm; lv: TranslationForm };
 };
 
@@ -86,7 +89,8 @@ const INITIAL_BLOG_FORM: AdminBlogForm = {
     authorRole: '',
     authorBio: '',
     createdAt: undefined,
-    contentBlocksJson: '[]',
+    contentBlocks: [],
+    relatedProductIds: [],
     translations: { en: { ...EMPTY_TRANSLATION }, lv: { ...EMPTY_TRANSLATION } },
 };
 
@@ -154,78 +158,20 @@ function useAdminBlogPageState() {
         setBlogMessage('');
 
         try {
-            let contentBlocks: unknown[];
-            try {
-                contentBlocks = JSON.parse(blogForm.contentBlocksJson) as unknown[];
-            } catch (parseError) {
-                if (parseError instanceof Error) {
-                    setBlogError(
-                        tl(
-                            'admin.blog.msg.invalidJsonWithReason',
-                            'Невалидный JSON: {reason}',
-                            'Invalid JSON: {reason}',
-                            'Nederigs JSON: {reason}',
-                            { reason: parseError.message }
-                        )
-                    );
-                    return;
-                }
-                setBlogError(
-                    tl(
-                        'admin.blog.msg.invalidJson',
-                        'Невалидный JSON в contentBlocks',
-                        'Invalid JSON in contentBlocks',
-                        'Nederigs JSON lauka contentBlocks'
-                    )
-                );
-                return;
-            }
-
-            if (!Array.isArray(contentBlocks)) {
-                setBlogError(
-                    tl(
-                        'admin.blog.msg.contentBlocksArray',
-                        'contentBlocks JSON должен быть массивом блоков',
-                        'contentBlocks JSON must be an array of blocks',
-                        'contentBlocks JSON jabut bloku masivam'
-                    )
-                );
-                return;
-            }
-
             const translationsPayload: Partial<Record<'en' | 'lv', Record<string, unknown>>> = {};
             for (const lang of ['en', 'lv'] as const) {
                 const tr = blogForm.translations[lang];
                 const hasAnyText = tr.title || tr.excerpt || tr.author || tr.category || tr.content;
-                let trContentBlocks: unknown[] | undefined;
+                const hasContentBlocks = tr.contentBlocks.length > 0;
 
-                if (tr.contentBlocksJson.trim()) {
-                    let parsedTr: unknown;
-                    try {
-                        parsedTr = JSON.parse(tr.contentBlocksJson);
-                    } catch (parseError) {
-                        setBlogError(
-                            `Невалидный JSON (${lang} contentBlocks): ${
-                                parseError instanceof Error ? parseError.message : ''
-                            }`
-                        );
-                        return;
-                    }
-                    if (!Array.isArray(parsedTr)) {
-                        setBlogError(`${lang} contentBlocks JSON должен быть массивом блоков`);
-                        return;
-                    }
-                    if (parsedTr.length > 0) trContentBlocks = parsedTr;
-                }
-
-                if (hasAnyText || trContentBlocks) {
+                if (hasAnyText || hasContentBlocks) {
                     translationsPayload[lang] = {
                         ...(tr.title ? { title: tr.title } : {}),
                         ...(tr.excerpt ? { excerpt: tr.excerpt } : {}),
                         ...(tr.author ? { author: tr.author } : {}),
                         ...(tr.category ? { category: tr.category } : {}),
                         ...(tr.content ? { content: tr.content } : {}),
-                        ...(trContentBlocks ? { contentBlocks: trContentBlocks } : {}),
+                        ...(hasContentBlocks ? { contentBlocks: tr.contentBlocks } : {}),
                     };
                 }
             }
@@ -245,7 +191,8 @@ function useAdminBlogPageState() {
                 authorRole: blogForm.authorRole,
                 authorBio: blogForm.authorBio,
                 createdAt: blogForm.createdAt,
-                contentBlocks,
+                contentBlocks: blogForm.contentBlocks,
+                relatedProductIds: blogForm.relatedProductIds,
                 translations:
                     Object.keys(translationsPayload).length > 0 ? translationsPayload : undefined,
             };
@@ -347,10 +294,7 @@ function useAdminBlogPageState() {
                 author: tr.author ?? '',
                 category: tr.category ?? '',
                 content: tr.content ?? '',
-                contentBlocksJson:
-                    Array.isArray(tr.contentBlocks) && tr.contentBlocks.length > 0
-                        ? JSON.stringify(tr.contentBlocks, null, 2)
-                        : '',
+                contentBlocks: Array.isArray(tr.contentBlocks) ? tr.contentBlocks : [],
             };
         };
 
@@ -369,7 +313,8 @@ function useAdminBlogPageState() {
             authorRole: post.authorRole ?? '',
             authorBio: post.authorBio ?? '',
             createdAt: post.createdAt,
-            contentBlocksJson: JSON.stringify(post.contentBlocks ?? [], null, 2),
+            contentBlocks: Array.isArray(post.contentBlocks) ? post.contentBlocks : [],
+            relatedProductIds: post.relatedProductIds ?? [],
             translations: { en: getTranslationForm('en'), lv: getTranslationForm('lv') },
         });
     };

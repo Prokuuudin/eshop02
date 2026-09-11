@@ -65,6 +65,7 @@ export interface BlogPost {
   publishedAt?: Date
   authorRole?: string
   authorBio?: string
+  relatedProductIds?: string[]
   translations?: Partial<Record<Language, Partial<Pick<BlogPost, 'title' | 'excerpt' | 'content' | 'contentBlocks' | 'author' | 'category'>>>>
 }
 

@@ -31,6 +31,7 @@ type CreateBlogPostPayload = {
   status?: 'draft' | 'published'
   authorRole?: string
   authorBio?: string
+  relatedProductIds?: string[]
   translations?: Partial<Record<'en' | 'lv', TranslationPayload>>
 }
 
@@ -220,6 +221,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     publishedAt: payload.status === 'draft' ? undefined : existingPost?.publishedAt ?? new Date(),
     authorRole: payload.authorRole?.trim() || undefined,
     authorBio: payload.authorBio?.trim() || undefined,
+    relatedProductIds: Array.isArray(payload.relatedProductIds)
+      ? payload.relatedProductIds.filter(isNonEmptyString)
+      : undefined,
     translations: translations as BlogPost['translations']
   }
 

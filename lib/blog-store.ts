@@ -26,6 +26,7 @@ function mapDbToBlogPost(row: PrismaBlogPost): BlogPost {
     publishedAt: row.publishedAt ?? undefined,
     authorRole: row.authorRole ?? undefined,
     authorBio: row.authorBio ?? undefined,
+    relatedProductIds: row.relatedProductIds ?? undefined,
     translations: row.translations ? (row.translations as BlogTranslations) : undefined,
   }
 }
@@ -48,6 +49,7 @@ function mapBlogPostToDb(post: BlogPost) {
     publishedAt: post.publishedAt ?? (post.status === 'draft' ? null : post.createdAt),
     authorRole: post.authorRole ?? null,
     authorBio: post.authorBio ?? null,
+    relatedProductIds: post.relatedProductIds ?? [],
     translations: post.translations ?? Prisma.DbNull,
   }
 }

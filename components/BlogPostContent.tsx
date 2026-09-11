@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { Bookmark, BookmarkCheck, CalendarDays, Clock3 } from 'lucide-react';
 import BlogCard from '@/components/BlogCard';
 import BlogContentBlockRenderer from '@/components/BlogContentBlockRenderer';
+import ProductCard from '@/components/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { localizeBlogPost, type BlogPost } from '@/data/blog';
+import type { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
 import { useSiteContent } from '@/lib/use-site-content';
 import { formatDate, getLocaleFromLanguage } from '@/lib/utils';
@@ -20,11 +22,12 @@ import {
 type BlogPostContentProps = {
     post: BlogPost;
     relatedPosts: BlogPost[];
+    relatedProducts?: Product[];
     postUrl: string;
 };
 
 const ARTICLE_FAVORITES_KEY = 'blog-favorites';
-export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPostContentProps): React.ReactElement {
+export default function BlogPostContent({ post, relatedPosts, relatedProducts = [], postUrl }: BlogPostContentProps): React.ReactElement {
     const { t, language } = useTranslation();
     const { resolveImageSrc } = useSiteContent();
     const locale = getLocaleFromLanguage(language);
@@ -182,7 +185,7 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                                 {t('blog.topicLabel')}:{' '}
                                 {categoryKey ? t(categoryKey) : localizedPost.category}
                             </Badge>
-                            {relatedCatalogCategory && (
+                            {relatedProducts.length === 0 && relatedCatalogCategory && (
                                 <Button
                                     variant="default"
                                     size="sm"
@@ -238,6 +241,19 @@ export default function BlogPostContent({ post, relatedPosts, postUrl }: BlogPos
                                     : markdownToHtml(localizedPost.content)}
                             </div>
                         </div>
+
+                        {relatedProducts.length > 0 && (
+                            <section className="mb-10 md:mb-12">
+                                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-foreground">
+                                    {t('blog.relatedProducts')}
+                                </h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {relatedProducts.map((product) => (
+                                        <ProductCard key={product.id} product={product} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
                         <div className="border-t border-b border-border py-5 md:py-6 my-6 md:my-8">
                             <div className="flex items-center gap-4">

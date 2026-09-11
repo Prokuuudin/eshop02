@@ -5,6 +5,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import BlogImageField from '@/components/admin/blog/BlogImageField';
+import BlogContentBlocksEditor from '@/components/admin/blog/BlogContentBlocksEditor';
+import BlogRelatedProductsPicker from '@/components/admin/blog/BlogRelatedProductsPicker';
 import type { useAdminBlogPage } from './useAdminBlogPage';
 import BlogTranslationTabs from './BlogTranslationTabs';
 
@@ -168,29 +171,17 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                             />
                         </label>
         
-                        <label htmlFor="blog-image" className="text-sm md:col-span-2">
-                            <span className="block text-muted-foreground mb-1">
-                                {l(
-                                    'Обложка (путь)',
-                                    'Cover (path)',
-                                    'Vāka attēls (ceļš)'
-                                )}
-                            </span>
-                            <Input
-                                id="blog-image"
-                                value={blogForm.image}
-                                onChange={(e) =>
-                                    setBlogForm((prev) => ({
-                                        ...prev,
-                                        image: e.target.value,
-                                    }))
-                                }
-                                className="w-full rounded border border-border bg-card text-foreground px-3 py-2"
-                                placeholder="/blog/default.jpg"
-                                required
-                            />
-                        </label>
-        
+                        <BlogImageField
+                            id="blog-image"
+                            label={l('Обложка', 'Cover image', 'Vāka attēls')}
+                            value={blogForm.image}
+                            onChange={(path) =>
+                                setBlogForm((prev) => ({ ...prev, image: path }))
+                            }
+                            l={l}
+                            placeholder="/blog/default.jpg"
+                        />
+
                         <label htmlFor="blog-content" className="text-sm md:col-span-2">
                             <span className="block text-muted-foreground mb-1">
                                 {l(
@@ -216,34 +207,17 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                                 )}
                             />
                         </label>
-        
-                        <label
-                            htmlFor="blog-content-blocks"
-                            className="text-sm md:col-span-2"
-                        >
-                            <span className="block text-muted-foreground mb-1">
-                                contentBlocks JSON
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                    heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
-                                </span>
-                            </span>
-                            <Textarea
-                                id="blog-content-blocks"
-                                value={blogForm.contentBlocksJson}
-                                onChange={(e) =>
-                                    setBlogForm((prev) => ({
-                                        ...prev,
-                                        contentBlocksJson: e.target.value,
-                                    }))
-                                }
-                                className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
-                                placeholder='[{"type":"paragraph","text":"..."}]'
-                                required
-                            />
-                        </label>
+
+                        <BlogContentBlocksEditor
+                            blocks={blogForm.contentBlocks}
+                            onChange={(contentBlocks) =>
+                                setBlogForm((prev) => ({ ...prev, contentBlocks }))
+                            }
+                            l={l}
+                        />
                     </div>
                 </TabsContent>
-        
+
                 <BlogTranslationTabs state={state} />
             </Tabs>
         
@@ -322,7 +296,27 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                     />
                 </label>
             </div>
-        
+
+            <div>
+                <h2 className="text-sm font-medium mb-2">
+                    {l('Связанные товары', 'Related products', 'Saistītās preces')}
+                </h2>
+                <p className="text-xs text-muted-foreground mb-2">
+                    {l(
+                        'Показываются на странице статьи. Если список пуст — вместо них показывается ссылка на категорию каталога.',
+                        'Shown on the article page. If empty, a link to the matching catalog category is shown instead.',
+                        'Tiek rādītas raksta lapā. Ja saraksts ir tukšs, tiek rādīta saite uz atbilstošo kataloga kategoriju.'
+                    )}
+                </p>
+                <BlogRelatedProductsPicker
+                    selectedIds={blogForm.relatedProductIds}
+                    onChange={(relatedProductIds) =>
+                        setBlogForm((prev) => ({ ...prev, relatedProductIds }))
+                    }
+                    l={l}
+                />
+            </div>
+
             <div className="flex items-center gap-3">
                 <Button type="submit" disabled={blogSaving}>
                     {blogSaving

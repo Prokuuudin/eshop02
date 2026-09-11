@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/input';
 import { TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import BlogContentBlocksEditor from '@/components/admin/blog/BlogContentBlocksEditor';
 import type { useAdminBlogPage } from './useAdminBlogPage';
 
 type State = ReturnType<typeof useAdminBlogPage>;
@@ -162,37 +163,22 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
                             />
                         </label>
                     
-                        <label className="text-sm md:col-span-2">
-                            <span className="block text-muted-foreground mb-1">
-                                {l(
-                                    `contentBlocks JSON (${lang}, опционально)`,
-                                    `contentBlocks JSON (${lang}, optional)`,
-                                    `contentBlocks JSON (${lang}, neobligāts)`
-                                )}
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                    heading·paragraph·list(ordered?)·quote(author?)·image(src,alt,caption?)·gallery
-                                </span>
-                            </span>
-                            <Textarea
-                                value={
-                                    blogForm.translations[lang].contentBlocksJson
-                                }
-                                onChange={(e) =>
-                                    setBlogForm((prev) => ({
-                                        ...prev,
-                                        translations: {
-                                            ...prev.translations,
-                                            [lang]: {
-                                                ...prev.translations[lang],
-                                                contentBlocksJson: e.target.value,
-                                            },
+                        <BlogContentBlocksEditor
+                            blocks={blogForm.translations[lang].contentBlocks}
+                            onChange={(contentBlocks) =>
+                                setBlogForm((prev) => ({
+                                    ...prev,
+                                    translations: {
+                                        ...prev.translations,
+                                        [lang]: {
+                                            ...prev.translations[lang],
+                                            contentBlocks,
                                         },
-                                    }))
-                                }
-                                className="w-full rounded border border-border bg-card text-foreground px-3 py-2 min-h-[220px] font-mono text-xs"
-                                placeholder='[{"type":"paragraph","text":"..."}]'
-                            />
-                        </label>
+                                    },
+                                }))
+                            }
+                            l={l}
+                        />
                     </div>
                 </TabsContent>
             ))}

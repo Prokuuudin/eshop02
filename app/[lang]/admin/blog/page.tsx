@@ -22,9 +22,13 @@ export default function AdminBlogPage(): React.ReactElement {
         locale,
         blogPosts,
         blogLoading,
+        editingBlogId,
         handleBlogDelete,
         handleStartEditBlog,
+        handleCancelBlogEdit,
     } = pageState;
+
+    const [showForm, setShowForm] = React.useState(false);
 
     const [search, setSearch] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'draft' | 'published'>('all');
@@ -91,7 +95,33 @@ export default function AdminBlogPage(): React.ReactElement {
                 </div>
 
                 <div className="bg-card rounded-lg border border-border p-6 mt-8">
-                    <BlogPostForm state={pageState} />
+                    {showForm ? (
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-lg font-semibold">
+                                    {editingBlogId
+                                        ? tl('admin.blog.editPostTitle', 'Редактирование статьи', 'Edit post', 'Raksta rediģēšana')
+                                        : tl('admin.blog.newPostTitle', 'Новая статья', 'New post', 'Jauns raksts')}
+                                </h2>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (editingBlogId) handleCancelBlogEdit();
+                                        setShowForm(false);
+                                    }}
+                                >
+                                    {l('Свернуть', 'Collapse', 'Sakļaut')}
+                                </Button>
+                            </div>
+                            <BlogPostForm state={pageState} />
+                        </div>
+                    ) : (
+                        <Button type="button" className="mb-6" onClick={() => setShowForm(true)}>
+                            + {tl('admin.blog.addPost', 'Добавить статью', 'Add post', 'Pievienot rakstu')}
+                        </Button>
+                    )}
 
                     <div>
                         <h3 className="text-lg font-semibold mb-3">
@@ -195,7 +225,10 @@ export default function AdminBlogPage(): React.ReactElement {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => handleStartEditBlog(post)}
+                                                onClick={() => {
+                                                    handleStartEditBlog(post);
+                                                    setShowForm(true);
+                                                }}
                                             >
                                                 {tl(
                                                     'admin.blog.edit',

@@ -14,7 +14,11 @@ type Props = {
 
 // Тот же паттерн, что и components/admin/products/ProductPicker.tsx (чипы + поиск),
 // но на локальном state вместо react-hook-form — форма блога не использует RHF.
-export default function BlogRelatedProductsPicker({ selectedIds, onChange, l }: Props): React.ReactElement {
+export default function BlogRelatedProductsPicker({
+    selectedIds,
+    onChange,
+    l,
+}: Props): React.ReactElement {
     const [infoById, setInfoById] = useState<Record<string, AdminProductSearchItem>>({});
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<AdminProductSearchItem[]>([]);
@@ -108,7 +112,11 @@ export default function BlogRelatedProductsPicker({ selectedIds, onChange, l }: 
                             >
                                 {info?.image ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={info.image} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
+                                    <img
+                                        src={info.image}
+                                        alt=""
+                                        className="h-8 w-8 rounded object-cover shrink-0"
+                                    />
                                 ) : (
                                     <span className="h-8 w-8 rounded bg-muted shrink-0" />
                                 )}
@@ -140,6 +148,11 @@ export default function BlogRelatedProductsPicker({ selectedIds, onChange, l }: 
             <div className="relative">
                 <Input
                     value={query}
+                    aria-label={l(
+                        'Найти и добавить связанный товар',
+                        'Find and add a related product',
+                        'Atrast un pievienot saistīto preci'
+                    )}
                     placeholder={l(
                         'Поиск по названию, бренду, ID или SKU…',
                         'Search by name, brand, ID, or SKU…',
@@ -161,7 +174,9 @@ export default function BlogRelatedProductsPicker({ selectedIds, onChange, l }: 
                 {isOpen && query.trim().length >= 2 && (
                     <ul className="absolute left-0 right-0 top-full mt-1 z-dropdown max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-md">
                         {isLoading && (
-                            <li className="px-3 py-2 text-sm text-muted-foreground">{l('Поиск…', 'Searching…', 'Meklē…')}</li>
+                            <li className="px-3 py-2 text-sm text-muted-foreground">
+                                {l('Поиск…', 'Searching…', 'Meklē…')}
+                            </li>
                         )}
                         {!isLoading && suggestions.length === 0 && (
                             <li className="px-3 py-2 text-sm text-muted-foreground">
@@ -181,15 +196,27 @@ export default function BlogRelatedProductsPicker({ selectedIds, onChange, l }: 
                                         >
                                             {item.image ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={item.image} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
+                                                <img
+                                                    src={item.image}
+                                                    alt=""
+                                                    className="h-8 w-8 rounded object-cover shrink-0"
+                                                />
                                             ) : (
                                                 <span className="h-8 w-8 rounded bg-muted shrink-0" />
                                             )}
                                             <span className="flex-1 min-w-0">
-                                                <span className="block truncate text-sm">{item.title}</span>
+                                                <span className="block truncate text-sm">
+                                                    {item.title}
+                                                </span>
                                                 <span className="block text-xs text-muted-foreground">
                                                     {item.brand} · ID {item.id}
-                                                    {alreadySelected ? ` · ${l('уже добавлен', 'already added', 'jau pievienota')}` : ''}
+                                                    {alreadySelected
+                                                        ? ` · ${l(
+                                                              'уже добавлен',
+                                                              'already added',
+                                                              'jau pievienota'
+                                                          )}`
+                                                        : ''}
                                                 </span>
                                             </span>
                                         </button>

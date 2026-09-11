@@ -80,7 +80,7 @@ const lvAdmin: Record<string, string> = {
   'admin.blog.field.readTime': 'Lasisanas laiks (min)',
   'admin.blog.field.imagePath': 'Vaka attels (cels)',
   'admin.blog.field.legacyContent': 'Legacy saturs (neobligati)',
-  'admin.blog.featuredToggle': 'Atzimet ka izceltu',
+  'admin.blog.featuredToggle': 'Pievienot izceltajiem rakstiem',
   'admin.blog.saving': 'Saglabasana...',
   'admin.blog.updatePost': 'Atjaunot rakstu',
   'admin.blog.savePost': 'Saglabat rakstu',

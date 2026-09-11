@@ -80,7 +80,7 @@ const enAdmin: Record<string, string> = {
   'admin.blog.field.readTime': 'Read time (min)',
   'admin.blog.field.imagePath': 'Cover image (path)',
   'admin.blog.field.legacyContent': 'Legacy content (optional)',
-  'admin.blog.featuredToggle': 'Mark as featured',
+  'admin.blog.featuredToggle': 'Add to featured articles',
   'admin.blog.saving': 'Saving...',
   'admin.blog.updatePost': 'Update post',
   'admin.blog.savePost': 'Save post',

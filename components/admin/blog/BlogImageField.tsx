@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
@@ -13,9 +14,18 @@ type Props = {
     onChange: (path: string) => void;
     l: (ru: string, en: string, lv: string) => string;
     placeholder?: string;
+    className?: string;
 };
 
-export default function BlogImageField({ id, label, value, onChange, l, placeholder }: Props): React.ReactElement {
+export default function BlogImageField({
+    id,
+    label,
+    value,
+    onChange,
+    l,
+    placeholder,
+    className,
+}: Props): React.ReactElement {
     const [uploading, setUploading] = React.useState(false);
     const [error, setError] = React.useState('');
 
@@ -28,27 +38,49 @@ export default function BlogImageField({ id, label, value, onChange, l, placehol
         try {
             const formData = new FormData();
             formData.set('file', file);
-            const response = await fetch('/api/admin/content/upload', { method: 'POST', body: formData });
-            const result = (await response.json().catch(() => ({}))) as { path?: string; error?: string };
+            const response = await fetch('/api/admin/content/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = (await response.json().catch(() => ({}))) as {
+                path?: string;
+                error?: string;
+            };
             if (!response.ok || !result.path) {
                 throw new Error(
                     result.error === 'file_too_large'
-                        ? l('Файл превышает 10 МБ', 'The file exceeds 10 MB', 'Fails pārsniedz 10 MB')
+                        ? l(
+                              'Файл превышает 10 МБ',
+                              'The file exceeds 10 MB',
+                              'Fails pārsniedz 10 MB'
+                          )
                         : result.error === 'unsupported_file_type'
-                        ? l('Неподдерживаемый формат изображения', 'Unsupported image format', 'Neatbalstīts attēla formāts')
-                        : l('Не удалось загрузить изображение', 'Failed to upload image', 'Neizdevās augšupielādēt attēlu')
+                        ? l(
+                              'Неподдерживаемый формат изображения',
+                              'Unsupported image format',
+                              'Neatbalstīts attēla formāts'
+                          )
+                        : l(
+                              'Не удалось загрузить изображение',
+                              'Failed to upload image',
+                              'Neizdevās augšupielādēt attēlu'
+                          )
                 );
             }
             onChange(result.path);
         } catch (uploadError) {
-            setError(uploadError instanceof Error ? uploadError.message : l('Ошибка загрузки', 'Upload failed', 'Augšupielādes kļūda'));
+            setError(
+                uploadError instanceof Error
+                    ? uploadError.message
+                    : l('Ошибка загрузки', 'Upload failed', 'Augšupielādes kļūda')
+            );
         } finally {
             setUploading(false);
         }
     };
 
     return (
-        <label htmlFor={id} className="text-sm">
+        <label htmlFor={id} className={cn('text-sm', className)}>
             <span className="block text-muted-foreground mb-1">{label}</span>
             <Input
                 id={id}
@@ -70,12 +102,23 @@ export default function BlogImageField({ id, label, value, onChange, l, placehol
                     <span className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground">
                         {uploading
                             ? l('Загрузка…', 'Uploading…', 'Augšupielāde…')
-                            : l('Выбрать с компьютера', 'Choose from computer', 'Izvēlēties no datora')}
+                            : l(
+                                  'Выбрать с компьютера',
+                                  'Choose from computer',
+                                  'Izvēlēties no datora'
+                              )}
                     </span>
                 </label>
                 {value && (
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-border bg-muted">
-                        <Image unoptimized src={value} alt="" width={48} height={48} className="h-full w-full object-cover" />
+                        <Image
+                            unoptimized
+                            src={value}
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="h-full w-full object-cover"
+                        />
                     </div>
                 )}
             </div>

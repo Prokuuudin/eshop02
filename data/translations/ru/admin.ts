@@ -80,7 +80,7 @@ const ruAdmin: Record<string, string> = {
   'admin.blog.field.readTime': 'Время чтения (мин)',
   'admin.blog.field.imagePath': 'Обложка (путь)',
   'admin.blog.field.legacyContent': 'Legacy content (опционально)',
-  'admin.blog.featuredToggle': 'Показать как featured',
+  'admin.blog.featuredToggle': 'Добавить в избранные статьи',
   'admin.blog.saving': 'Сохранение...',
   'admin.blog.updatePost': 'Обновить статью',
   'admin.blog.savePost': 'Сохранить статью',

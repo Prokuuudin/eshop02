@@ -81,7 +81,7 @@ export default function BlogImageField({
 
     return (
         <label htmlFor={id} className={cn('text-sm', className)}>
-            <span className="block text-muted-foreground mb-1">{label}</span>
+            <span className="mb-1 block font-medium text-foreground">{label}</span>
             <Input
                 id={id}
                 value={value}

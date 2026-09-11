@@ -52,7 +52,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                             htmlFor="blog-title"
                             className="text-sm sm:col-span-2 lg:col-span-12"
                         >
-                            <span className="mb-1 block text-muted-foreground">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Заголовок', 'Title', 'Virsraksts')}
                             </span>
                             <Input
@@ -70,7 +70,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                         </label>
 
                         <label htmlFor="blog-slug" className="text-sm lg:col-span-4">
-                            <span className="block text-muted-foreground mb-1">Slug</span>
+                            <span className="mb-1 block font-medium text-foreground">Slug</span>
                             <Input
                                 id="blog-slug"
                                 value={blogForm.slug}
@@ -87,7 +87,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                         </label>
 
                         <label htmlFor="blog-category" className="text-sm lg:col-span-4">
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Категория', 'Category', 'Kategorija')}
                             </span>
                             <Input
@@ -106,7 +106,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                         </label>
 
                         <label htmlFor="blog-author" className="text-sm lg:col-span-3">
-                            <span className="mb-1 block text-muted-foreground">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Автор', 'Author', 'Autors')}
                             </span>
                             <Input
@@ -124,7 +124,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                         </label>
 
                         <label htmlFor="blog-read-time" className="text-sm lg:col-span-1">
-                            <span className="mb-1 block whitespace-nowrap text-muted-foreground">
+                            <span className="mb-1 block whitespace-nowrap font-medium text-foreground">
                                 {l('Минут', 'Minutes', 'Minūtes')}
                             </span>
                             <Input
@@ -152,7 +152,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                             htmlFor="blog-excerpt"
                             className="text-sm sm:col-span-2 lg:col-span-12"
                         >
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Краткое описание', 'Short description', 'Īss apraksts')}
                             </span>
                             <Textarea
@@ -186,7 +186,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                                 htmlFor="blog-content"
                                 className="text-sm sm:col-span-2 lg:col-span-7"
                             >
-                                <span className="mb-1 block text-muted-foreground">
+                                <span className="mb-1 block font-medium text-foreground">
                                     {l(
                                         'Текст старой версии статьи',
                                         'Legacy article text',
@@ -233,44 +233,9 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                 <BlogTranslationTabs state={state} />
             </Tabs>
 
-            <div className="grid gap-3 rounded-md border border-border/70 bg-background/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:col-span-2">
-                    <label className="inline-flex items-center gap-2 text-sm">
-                        <Checkbox
-                            checked={blogForm.featured}
-                            onCheckedChange={(checked) =>
-                                setBlogForm((prev) => ({ ...prev, featured: checked === true }))
-                            }
-                        />
-                        {tl(
-                            'admin.blog.featuredToggle',
-                            'Добавить в избранные статьи',
-                            'Add to featured articles',
-                            'Pievienot izceltajiem rakstiem'
-                        )}
-                    </label>
-
-                    <label className="inline-flex items-center gap-2 text-sm">
-                        <Checkbox
-                            checked={blogForm.status === 'published'}
-                            onCheckedChange={(checked) =>
-                                setBlogForm((prev) => ({
-                                    ...prev,
-                                    status: checked === true ? 'published' : 'draft',
-                                }))
-                            }
-                        />
-                        {tl(
-                            'admin.blog.publishedToggle',
-                            'Опубликовать статью',
-                            'Publish post',
-                            'Publicēt rakstu'
-                        )}
-                    </label>
-                </div>
-
+            <div className="grid items-end gap-3 rounded-md border border-border/70 bg-background/50 p-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-sm">
-                    <span className="mb-1 block">
+                    <span className="mb-1 block font-medium text-foreground">
                         {tl(
                             'admin.blog.authorRole',
                             'Должность автора',
@@ -290,7 +255,7 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                     />
                 </label>
                 <label className="text-sm">
-                    <span className="mb-1 block">
+                    <span className="mb-1 block font-medium text-foreground">
                         {tl(
                             'admin.blog.authorBio',
                             'Экспертность автора',
@@ -309,6 +274,40 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                         }
                     />
                 </label>
+                <div className="flex min-h-10 flex-wrap items-center gap-x-5 gap-y-2 self-end sm:col-span-2 lg:flex-nowrap">
+                    <label className="inline-flex items-center gap-2 text-sm lg:whitespace-nowrap">
+                        <Checkbox
+                            checked={blogForm.featured}
+                            onCheckedChange={(checked) =>
+                                setBlogForm((prev) => ({ ...prev, featured: checked === true }))
+                            }
+                        />
+                        {tl(
+                            'admin.blog.featuredToggle',
+                            'Добавить в избранные статьи',
+                            'Add to featured articles',
+                            'Pievienot izceltajiem rakstiem'
+                        )}
+                    </label>
+
+                    <label className="inline-flex items-center gap-2 text-sm lg:whitespace-nowrap">
+                        <Checkbox
+                            checked={blogForm.status === 'published'}
+                            onCheckedChange={(checked) =>
+                                setBlogForm((prev) => ({
+                                    ...prev,
+                                    status: checked === true ? 'published' : 'draft',
+                                }))
+                            }
+                        />
+                        {tl(
+                            'admin.blog.publishedToggle',
+                            'Опубликовать статью',
+                            'Publish post',
+                            'Publicēt rakstu'
+                        )}
+                    </label>
+                </div>
             </div>
 
             <div>

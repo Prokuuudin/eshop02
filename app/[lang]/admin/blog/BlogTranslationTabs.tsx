@@ -24,7 +24,7 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
                     </p>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-12">
                         <label className="text-sm md:col-span-2 lg:col-span-12">
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Заголовок', 'Title', 'Virsraksts')} ({lang})
                             </span>
                             <Input
@@ -54,7 +54,7 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
                         </label>
 
                         <label className="text-sm md:col-span-2 lg:col-span-12">
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Краткое описание', 'Short description', 'Īss apraksts')} ({lang}
                                 )
                             </span>
@@ -85,7 +85,7 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
                         </label>
 
                         <label className="text-sm lg:col-span-6">
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Автор', 'Author', 'Autors')} ({lang})
                             </span>
                             <Input
@@ -108,7 +108,7 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
                         </label>
 
                         <label className="text-sm lg:col-span-6">
-                            <span className="block text-muted-foreground mb-1">
+                            <span className="mb-1 block font-medium text-foreground">
                                 {l('Категория', 'Category', 'Kategorija')} ({lang})
                             </span>
                             <Input
@@ -132,7 +132,7 @@ export default function BlogTranslationTabs({ state }: { state: State }): React.
 
                         {editingBlogId && blogForm.translations[lang].content.trim() && (
                             <label className="text-sm md:col-span-2 lg:col-span-12">
-                                <span className="block text-muted-foreground mb-1">
+                                <span className="mb-1 block font-medium text-foreground">
                                     {l(
                                         `Текст старой версии статьи (${lang})`,
                                         `Legacy article text (${lang})`,

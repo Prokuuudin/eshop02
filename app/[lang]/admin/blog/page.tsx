@@ -97,7 +97,7 @@ export default function AdminBlogPage(): React.ReactElement {
                 <div className="bg-card rounded-lg border border-border p-6 mt-8">
                     {showForm ? (
                         <div className="mb-6">
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 mb-2">
                                 <h2 className="text-lg font-semibold">
                                     {editingBlogId
                                         ? tl('admin.blog.editPostTitle', 'Редактирование статьи', 'Edit post', 'Raksta rediģēšana')

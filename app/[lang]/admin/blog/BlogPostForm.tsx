@@ -221,38 +221,40 @@ export default function BlogPostForm({ state }: { state: State }): React.ReactEl
                 <BlogTranslationTabs state={state} />
             </Tabs>
         
-            <label className="inline-flex items-center gap-2 text-sm">
-                <Checkbox
-                    checked={blogForm.featured}
-                    onCheckedChange={(checked) =>
-                        setBlogForm((prev) => ({ ...prev, featured: checked === true }))
-                    }
-                />
-                {tl(
-                    'admin.blog.featuredToggle',
-                    'Показать как featured',
-                    'Mark as featured',
-                    'Atzīmēt kā izceltu'
-                )}
-            </label>
-        
-            <label className="inline-flex items-center gap-2 text-sm">
-                <Checkbox
-                    checked={blogForm.status === 'published'}
-                    onCheckedChange={(checked) =>
-                        setBlogForm((prev) => ({
-                            ...prev,
-                            status: checked === true ? 'published' : 'draft',
-                        }))
-                    }
-                />
-                {tl(
-                    'admin.blog.publishedToggle',
-                    'Опубликовать статью',
-                    'Publish post',
-                    'Publicēt rakstu'
-                )}
-            </label>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <label className="inline-flex items-center gap-2 text-sm">
+                    <Checkbox
+                        checked={blogForm.featured}
+                        onCheckedChange={(checked) =>
+                            setBlogForm((prev) => ({ ...prev, featured: checked === true }))
+                        }
+                    />
+                    {tl(
+                        'admin.blog.featuredToggle',
+                        'Показать как featured',
+                        'Mark as featured',
+                        'Atzīmēt kā izceltu'
+                    )}
+                </label>
+
+                <label className="inline-flex items-center gap-2 text-sm">
+                    <Checkbox
+                        checked={blogForm.status === 'published'}
+                        onCheckedChange={(checked) =>
+                            setBlogForm((prev) => ({
+                                ...prev,
+                                status: checked === true ? 'published' : 'draft',
+                            }))
+                        }
+                    />
+                    {tl(
+                        'admin.blog.publishedToggle',
+                        'Опубликовать статью',
+                        'Publish post',
+                        'Publicēt rakstu'
+                    )}
+                </label>
+            </div>
         
             <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm">

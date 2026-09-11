@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import BlogImageField from './BlogImageField';
 import type { BlogContentBlock } from '@/data/blog';
 
@@ -99,15 +100,19 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
 
                         {block.type === 'heading' && (
                             <div className="flex gap-2">
-                                <select
-                                    value={block.level}
-                                    onChange={(e) => updateBlock(index, { ...block, level: Number(e.target.value) as 1 | 2 | 3 })}
-                                    className="rounded border border-border bg-card text-foreground px-2 py-2 text-sm"
+                                <Select
+                                    value={String(block.level)}
+                                    onValueChange={(v) => updateBlock(index, { ...block, level: Number(v) as 1 | 2 | 3 })}
                                 >
-                                    <option value={1}>H1</option>
-                                    <option value={2}>H2</option>
-                                    <option value={3}>H3</option>
-                                </select>
+                                    <SelectTrigger className="w-20 shrink-0">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">H1</SelectItem>
+                                        <SelectItem value="2">H2</SelectItem>
+                                        <SelectItem value="3">H3</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <Input
                                     value={block.text}
                                     onChange={(e) => updateBlock(index, { ...block, text: e.target.value })}
@@ -274,17 +279,18 @@ export default function BlogContentBlocksEditor({ blocks, onChange, l }: Props):
             </div>
 
             <div className="flex items-center gap-2">
-                <select
-                    value={addType}
-                    onChange={(e) => setAddType(e.target.value as BlogContentBlock['type'])}
-                    className="rounded border border-border bg-card text-foreground px-2 py-2 text-sm"
-                >
-                    {BLOCK_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                            {l(...BLOCK_LABELS[type])}
-                        </option>
-                    ))}
-                </select>
+                <Select value={addType} onValueChange={(v) => setAddType(v as BlogContentBlock['type'])}>
+                    <SelectTrigger className="w-auto min-w-[9rem]">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {BLOCK_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                                {l(...BLOCK_LABELS[type])}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                 <Button type="button" variant="outline" size="sm" onClick={addBlock}>
                     + {l('Добавить блок', 'Add block', 'Pievienot bloku')}
                 </Button>

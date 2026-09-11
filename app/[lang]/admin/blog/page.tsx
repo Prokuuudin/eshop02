@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
 import AdminGate from '@/components/admin/AdminGate';
 import { logout } from '@/lib/auth';
@@ -110,28 +111,33 @@ export default function AdminBlogPage(): React.ReactElement {
                                 placeholder={l('Поиск по заголовку или slug…', 'Search by title or slug…', 'Meklēt pēc virsraksta vai slug…')}
                                 className="max-w-xs"
                             />
-                            <select
+                            <Select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                                className="rounded border border-border bg-card text-foreground px-2 text-sm"
+                                onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
                             >
-                                <option value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</option>
-                                <option value="published">{l('Опубликовано', 'Published', 'Publicēts')}</option>
-                                <option value="draft">{l('Черновик', 'Draft', 'Melnraksts')}</option>
-                            </select>
+                                <SelectTrigger className="w-auto min-w-[10rem]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{l('Все статусы', 'All statuses', 'Visi statusi')}</SelectItem>
+                                    <SelectItem value="published">{l('Опубликовано', 'Published', 'Publicēts')}</SelectItem>
+                                    <SelectItem value="draft">{l('Черновик', 'Draft', 'Melnraksts')}</SelectItem>
+                                </SelectContent>
+                            </Select>
                             {categories.length > 0 && (
-                                <select
-                                    value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="rounded border border-border bg-card text-foreground px-2 text-sm"
-                                >
-                                    <option value="all">{l('Все категории', 'All categories', 'Visas kategorijas')}</option>
-                                    {categories.map((category) => (
-                                        <option key={category} value={category}>
-                                            {category}
-                                        </option>
-                                    ))}
-                                </select>
+                                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                    <SelectTrigger className="w-auto min-w-[10rem]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">{l('Все категории', 'All categories', 'Visas kategorijas')}</SelectItem>
+                                        {categories.map((category) => (
+                                            <SelectItem key={category} value={category}>
+                                                {category}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             )}
                         </div>
 

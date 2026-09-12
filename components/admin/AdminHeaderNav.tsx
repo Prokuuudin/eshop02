@@ -110,7 +110,6 @@ const NAV_SECTIONS: HeaderNavSection[] = [
         items: [
             { title: 'config.shipping', href: '/admin/config/shipping' },
             { title: 'config.bonus', href: '/admin/bonus' },
-            { title: 'config.integrations', href: '/account/integrations/webhooks' },
             { title: 'config.locale', href: '/admin/config/locale' },
             { title: 'config.emailTemplates', href: '/admin/config/email-templates' },
         ],
@@ -131,7 +130,6 @@ const NAV_SECTIONS: HeaderNavSection[] = [
             { title: 'help.knowledge', href: '/admin/help/knowledge' },
             { title: 'help.onboarding', href: '/admin/help/onboarding' },
             { title: 'help.faq', href: '/admin/help/faq' },
-            { title: 'help.support', href: '/admin/contact-messages' },
         ],
     },
 ];
@@ -176,7 +174,6 @@ const NAV_LABELS = {
         config: 'Конфигурация',
         'config.shipping': 'Доставка и оплата',
         'config.bonus': 'Бонусная программа',
-        'config.integrations': 'Интеграции и webhooks',
         'config.locale': 'Локализация',
         'config.emailTemplates': 'Email-шаблоны',
         system: 'Система',
@@ -188,7 +185,6 @@ const NAV_LABELS = {
         'help.knowledge': 'База знаний',
         'help.onboarding': 'Онбординг сотрудников',
         'help.faq': 'Частые вопросы',
-        'help.support': 'Контакты и обращения',
     },
     en: {
         menu: 'Menu',
@@ -229,7 +225,6 @@ const NAV_LABELS = {
         config: 'Configuration',
         'config.shipping': 'Delivery and payment',
         'config.bonus': 'Bonus program',
-        'config.integrations': 'Integrations and webhooks',
         'config.locale': 'Localization',
         'config.emailTemplates': 'Email templates',
         system: 'System',
@@ -241,7 +236,6 @@ const NAV_LABELS = {
         'help.knowledge': 'Knowledge base',
         'help.onboarding': 'Staff onboarding',
         'help.faq': 'FAQ',
-        'help.support': 'Contacts and requests',
     },
     lv: {
         menu: 'Izvēlne',
@@ -282,7 +276,6 @@ const NAV_LABELS = {
         config: 'Konfigurācija',
         'config.shipping': 'Piegāde un apmaksa',
         'config.bonus': 'Bonusu programma',
-        'config.integrations': 'Integrācijas un webhooks',
         'config.locale': 'Lokalizācija',
         'config.emailTemplates': 'E-pasta veidnes',
         system: 'Sistēma',
@@ -294,7 +287,6 @@ const NAV_LABELS = {
         'help.knowledge': 'Zināšanu bāze',
         'help.onboarding': 'Darbinieku ievads',
         'help.faq': 'Biežāk uzdotie jautājumi',
-        'help.support': 'Kontakti un pieprasījumi',
     },
 } as const;
 

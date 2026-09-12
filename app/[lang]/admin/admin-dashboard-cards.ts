@@ -58,16 +58,6 @@ export function getAdminDashboardCards({ t, l, tl }: DashboardCardTranslations):
             linkText: l('Открыть', 'Open', 'Atvērt'),
         },
         {
-            id: 'webhooks',
-            href: '/account/integrations/webhooks',
-            adminOnly: true,
-            bg: 'bg-violet-50 dark:bg-violet-950/20',
-            border: 'border-l-violet-500',
-            title: 'B2B Webhooks',
-            description: tl('admin.dashboard.cards.webhooks.description', 'Проверка endpoint и истории доставок', 'Check endpoints and delivery history', 'Galamērķu un piegāžu vēstures pārbaude'),
-            linkText: tl('admin.dashboard.cards.webhooks.open', 'Открыть Webhooks', 'Open Webhooks', 'Atvērt Webhooks'),
-        },
-        {
             id: 'products',
             href: '/admin/products',
             adminOnly: true,
@@ -208,4 +198,3 @@ export function getAdminDashboardCards({ t, l, tl }: DashboardCardTranslations):
         },
     ];
 }
-

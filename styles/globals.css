@@ -339,6 +339,12 @@ body {
     overflow-y: visible !important;
 }
 
+/* Keep native number steppers visible without requiring hover. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
 /* Product photography keeps its original light presentation in every theme. */
 .product-image-surface {
     background-color: #ffffff !important;

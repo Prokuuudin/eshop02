@@ -26,7 +26,7 @@ export const normalizeUser = (user: Partial<User>): User => ({
   cardNumber: user.cardNumber,
   avatarUrl: user.avatarUrl ?? '',
   checkoutProfile: user.checkoutProfile,
-  bonusPoints: user.bonusPoints ?? 350,
+  bonusPoints: user.bonusPoints ?? 500,
   mustChangePassword: user.mustChangePassword ?? false,
   isNewUser: user.isNewUser ?? false,
   createdAt: user.createdAt ?? new Date().toISOString(),

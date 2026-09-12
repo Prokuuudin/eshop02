@@ -31,7 +31,7 @@ export const seedTestAccounts = (): void => {
       password: 'user123',
       name: 'Test User',
       platformRole: 'customer',
-      bonusPoints: 350,
+      bonusPoints: 500,
     }))
   }
 

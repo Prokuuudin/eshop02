@@ -51,6 +51,6 @@ describe('seedTestAccounts', () => {
 
     const users = readUsers()
     expect(users.map((user) => user.id)).toEqual(['real-admin', 'seed_user_001'])
-    expect(users.find((user) => user.id === 'seed_user_001')?.bonusPoints).toBe(350)
+    expect(users.find((user) => user.id === 'seed_user_001')?.bonusPoints).toBe(500)
   })
 })

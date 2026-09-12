@@ -218,7 +218,7 @@ export async function upsertUserInDb(params: {
       phone: params.phone ?? null,
       cardNumber: params.cardNumber?.trim() ?? null,
       avatarUrl: params.avatarUrl ?? null,
-      bonusPoints: params.bonusPoints ?? 350,
+      bonusPoints: params.bonusPoints ?? 500,
       mustChangePassword: params.mustChangePassword ?? false,
       approvalRequired: params.approvalRequired ?? false,
       auditLoggingEnabled: params.auditLoggingEnabled ?? false,

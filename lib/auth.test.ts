@@ -317,7 +317,7 @@ describe('registerCardUser — server-authoritative card registration', () => {
       companyId: 'company_1',
       companyName: 'SIA MIKS PLUS',
       teamRole: 'buyer',
-      bonusPoints: 350,
+      bonusPoints: 500,
     }
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

@@ -176,9 +176,10 @@ export const CONTENT_REGISTRY: ContentSection[] = [
       { type: 'text', key: 'footer.allRightsReserved', label: 'Копирайт (текст после года)' },
       { type: 'text', key: 'footer.cookies', label: 'Ссылка на политику cookie' },
       { type: 'text', key: 'footer.cookieSettings', label: 'Кнопка настроек cookie' },
-      { type: 'text', key: 'footer.instagramUrl', label: 'Ссылка Instagram', defaults: { ru: 'https://instagram.com/', en: 'https://instagram.com/', lv: 'https://instagram.com/' } },
-      { type: 'text', key: 'footer.facebookUrl', label: 'Ссылка Facebook', defaults: { ru: 'https://facebook.com/', en: 'https://facebook.com/', lv: 'https://facebook.com/' } },
-      { type: 'text', key: 'footer.youtubeUrl', label: 'Ссылка YouTube', defaults: { ru: 'https://youtube.com/', en: 'https://youtube.com/', lv: 'https://youtube.com/' } },
+      { type: 'text', key: 'footer.instagramUrl', label: 'Ссылка Instagram', defaults: { ru: 'https://www.instagram.com/miksplusveikals', en: 'https://www.instagram.com/miksplusveikals', lv: 'https://www.instagram.com/miksplusveikals' } },
+      { type: 'text', key: 'footer.facebookUrl', label: 'Ссылка Facebook', defaults: { ru: 'https://www.facebook.com/share/1E9VE5FpA7/', en: 'https://www.facebook.com/share/1E9VE5FpA7/', lv: 'https://www.facebook.com/share/1E9VE5FpA7/' } },
+      { type: 'text', key: 'footer.tiktokUrl', label: 'Ссылка TikTok', defaults: { ru: 'https://www.tiktok.com/@miks_plus', en: 'https://www.tiktok.com/@miks_plus', lv: 'https://www.tiktok.com/@miks_plus' } },
+      { type: 'text', key: 'footer.youtubeUrl', label: 'Ссылка YouTube', defaults: { ru: 'https://youtube.com/@miksplus', en: 'https://youtube.com/@miksplus', lv: 'https://youtube.com/@miksplus' } },
     ],
   },
   {

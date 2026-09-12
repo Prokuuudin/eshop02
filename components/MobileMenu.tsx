@@ -10,6 +10,7 @@ import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
 import ForgotPasswordForm from './auth/ForgotPasswordForm'
 import { X } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
 type Props = {
   isOpen: boolean
@@ -237,17 +238,42 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
         </Dialog>
 
         {/* Social media links */}
-        <div className="header__menu-social mt-6 flex justify-center gap-2">
-          <Link href="https://instagram.com/" target="_blank" rel="noopener" aria-label={t('footer.instagram')} className="p-3 hover:text-pink-600">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor"/></svg>
-          </Link>
-          <Link href="https://facebook.com/" target="_blank" rel="noopener" aria-label={t('footer.facebook')} className="p-3 hover:text-blue-600">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><path d="M15 8h-2a1 1 0 0 0-1 1v2h3l-.5 2H12v6h-2v-6H8v-2h2V9a3 3 0 0 1 3-3h2v2z" fill="currentColor"/></svg>
-          </Link>
-          <Link href="https://youtube.com/" target="_blank" rel="noopener" aria-label={t('footer.youtube')} className="p-3 hover:text-red-600">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>
-          </Link>
-        </div>
+        <TooltipProvider delayDuration={150}>
+          <div className="header__menu-social mt-6 flex justify-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="https://www.instagram.com/miksplusveikals" target="_blank" rel="noopener" aria-label={t('footer.instagram')} className="p-3 hover:text-pink-600">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/><circle cx="17" cy="7" r="1" fill="currentColor"/></svg>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>{t('footer.instagram')}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="https://www.facebook.com/share/1E9VE5FpA7/" target="_blank" rel="noopener" aria-label={t('footer.facebook')} className="p-3 hover:text-blue-600">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><path d="M15 8h-2a1 1 0 0 0-1 1v2h3l-.5 2H12v6h-2v-6H8v-2h2V9a3 3 0 0 1 3-3h2v2z" fill="currentColor"/></svg>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>{t('footer.facebook')}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="https://www.tiktok.com/@miks_plus" target="_blank" rel="noopener" aria-label={t('footer.tiktok')} className="p-3 hover:text-black dark:hover:text-white">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><path fillRule="evenodd" clipRule="evenodd" d="M9 0H10V1C10 3.20914 11.7909 5 14 5V6C12.3644 6 10.9122 5.21466 10 4.00049V11C10 13.2091 8.20914 15 6 15C3.79086 15 2 13.2091 2 11C2 8.79086 3.79086 7 6 7V8C4.34315 8 3 9.34315 3 11C3 12.6569 4.34315 14 6 14C7.65685 14 9 12.6569 9 11V0Z" transform="translate(6.15 6.15) scale(0.78)" fill="currentColor" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round"/></svg>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>{t('footer.tiktok')}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="https://youtube.com/@miksplus" target="_blank" rel="noopener" aria-label={t('footer.youtube')} className="p-3 hover:text-red-600">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="5" stroke="currentColor" strokeWidth="1.5"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>{t('footer.youtube')}</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </nav>
     </div>
   )

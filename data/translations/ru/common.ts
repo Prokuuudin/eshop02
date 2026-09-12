@@ -523,6 +523,7 @@ const ruCommon: Record<string, string> = {
   'footer.instagram': 'Instagram',
   'footer.facebook': 'Facebook',
   'footer.youtube': 'YouTube',
+  'footer.tiktok': 'TikTok',
   'hero.title': 'Профессиональные средства и аксессуары для ухода за волосами, кожей и ногтями',
   'hero.subtitle': 'Оригинальные бренды, консультации экспертов и быстрая доставка.',
   'hero.cta': 'Перейти в каталог',

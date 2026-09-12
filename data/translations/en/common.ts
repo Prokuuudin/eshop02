@@ -500,6 +500,7 @@ const enCommon: Record<string, string> = {
   'footer.instagram': 'Instagram',
   'footer.facebook': 'Facebook',
   'footer.youtube': 'YouTube',
+  'footer.tiktok': 'TikTok',
   'hero.title': 'Professional products and tools for hair, skin and nail care',
   'hero.subtitle': 'Original brands, expert advice, and fast delivery nationwide.',
   'hero.cta': 'Go to catalog',

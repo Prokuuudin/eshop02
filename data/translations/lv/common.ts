@@ -501,6 +501,7 @@ const lvCommon: Record<string, string> = {
   'footer.instagram': 'Instagram',
   'footer.facebook': 'Facebook',
   'footer.youtube': 'YouTube',
+  'footer.tiktok': 'TikTok',
   'hero.title': 'Profesionāli līdzekļi un instrumenti matu, ādas un nagu kopšanai',
   'hero.subtitle': 'Oriģinālas zīmoles, eksperta padomi un ātra piegāde visā valstī.',
   'hero.cta': 'Uz katalogu',

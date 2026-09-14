@@ -1,67 +1,54 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { readFileMock, requireAdminMock } = vi.hoisted(() => ({
-  readFileMock: vi.fn(),
-  requireAdminMock: vi.fn(),
+const { requireAdminMock, createMock, validateMock, restoreMock } = vi.hoisted(() => ({
+  requireAdminMock: vi.fn(), createMock: vi.fn(), validateMock: vi.fn(), restoreMock: vi.fn(),
 }))
-
 vi.mock('server-only', () => ({}))
-vi.mock('fs', () => ({ promises: { readFile: readFileMock } }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: requireAdminMock }))
-
+vi.mock('@/lib/configuration-backup', () => ({
+  createConfigurationBackup: createMock, validateConfigurationBackup: validateMock, restoreConfigurationBackup: restoreMock,
+}))
 import { GET, POST } from './route'
-
-const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  requireAdminMock.mockResolvedValue(ADMIN_USER)
-  readFileMock.mockImplementation(async (filePath: string) => {
-    const filename = filePath.replaceAll('\\', '/').split('/').at(-1)
-    return JSON.stringify({ source: filename })
-  })
+  requireAdminMock.mockResolvedValue({ id: 'admin-1' })
+  createMock.mockResolvedValue({ kind: 'configuration-backup', version: 1, createdAt: '2026-09-14T00:00:00.000Z', files: {}, manifest: {} })
+  restoreMock.mockResolvedValue(['site-content.json'])
 })
 
-describe('GET /api/admin/backup', () => {
-  it('rejects non-admins without reading files', async () => {
-    requireAdminMock.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
-
-    const response = await GET()
-
-    expect(response.status).toBe(403)
-    expect(readFileMock).not.toHaveBeenCalled()
+describe('configuration backup API', () => {
+  it('rejects unauthenticated access', async () => {
+    requireAdminMock.mockResolvedValue(NextResponse.json({ error: 'unauthorized' }, { status: 401 }))
+    expect((await GET()).status).toBe(401)
+    expect(createMock).not.toHaveBeenCalled()
   })
 
-  it('exports only the supported file-backed configuration', async () => {
+  it('downloads a non-cacheable versioned backup', async () => {
     const response = await GET()
-    const body = await response.json()
-
     expect(response.status).toBe(200)
-    expect(body.kind).toBe('configuration-export')
-    expect(Object.keys(body.files)).toEqual([
-      'blog-posts.json',
-      'site-content.json',
-      'custom-products.json',
-      'product-overrides.json',
-      'banners.json',
-      'promo-codes.json',
-      'shipping-settings.json',
-    ])
-    expect(body.files).not.toHaveProperty('orders.json')
-    expect(body.files).not.toHaveProperty('reviews.json')
+    expect(response.headers.get('Cache-Control')).toContain('no-store')
+    expect(response.headers.get('Content-Disposition')).toContain('configuration-backup-2026-09-14.json')
   })
-})
 
-describe('POST /api/admin/backup', () => {
-  it('keeps automatic restoration disabled', async () => {
-    const request = new NextRequest('http://localhost/api/admin/backup', { method: 'POST' })
+  it('requires the exact restore confirmation', async () => {
+    const request = new NextRequest('http://localhost/api/admin/backup', { method: 'POST', body: JSON.stringify({ backup: {}, confirmation: 'restore' }) })
+    expect((await POST(request)).status).toBe(400)
+    expect(restoreMock).not.toHaveBeenCalled()
+  })
+
+  it('validates and restores an accepted backup', async () => {
+    const backup = { kind: 'configuration-backup' }
+    const request = new NextRequest('http://localhost/api/admin/backup', { method: 'POST', body: JSON.stringify({ backup, confirmation: 'RESTORE CONFIGURATION' }) })
     const response = await POST(request)
+    expect(response.status).toBe(200)
+    expect(validateMock).toHaveBeenCalledWith(backup)
+    expect(restoreMock).toHaveBeenCalledWith(backup)
+  })
 
-    expect(response.status).toBe(405)
-    expect(response.headers.get('Allow')).toBe('GET')
-    expect(await response.json()).toEqual({
-      error: 'configuration_restore_disabled_use_controlled_maintenance',
-    })
+  it('rejects oversized requests', async () => {
+    const request = new NextRequest('http://localhost/api/admin/backup', { method: 'POST', headers: { 'content-length': String(21 * 1024 * 1024) }, body: '{}' })
+    expect((await POST(request)).status).toBe(413)
   })
 })

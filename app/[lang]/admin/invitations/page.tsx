@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -131,6 +131,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                 <aside className="rounded-lg border border-blue-200 bg-blue-50/70 p-5 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
                     <details className="group">
                     <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+                        <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-blue-700 dark:text-blue-300" />
                         <h2 className="text-base font-semibold leading-6">
                             {l('Памятка администратору', 'Administrator guide', 'Administratora atgādne')}
                         </h2>

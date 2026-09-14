@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import StickyTableHead from '@/components/admin/StickyTableHead';
+import { Info } from 'lucide-react';
 import {
     fetchStockAlerts,
     type StockAlertRow,
@@ -245,7 +246,8 @@ export default function StockAlertsPage(): React.ReactElement {
 
                 {!loading && showCaveat && unconfirmedCount > 0 && (
                     <div className="flex items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-300">
-                        <p>
+                        <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+                        <p className="flex-1">
                             {l(`${unconfirmedCount} из ${productCount} товаров ещё не синхронизированы с ERP — их остаток может быть техническим значением-заглушкой, унаследованным из старого импорта (чаще всего «10000»), а не актуальным складским остатком. Такие строки помечены бейджем «Не подтверждено ERP»; включите переключатель ниже, чтобы скрыть их из таблицы.`, `${unconfirmedCount} of ${productCount} products have not yet been synchronized with ERP. Their stock may be a legacy placeholder value (often “10000”) rather than current inventory. These rows are marked “Not confirmed by ERP”; enable the switch below to hide them.`, `${unconfirmedCount} no ${productCount} produktiem vēl nav sinhronizēti ar ERP. To atlikums var būt mantota tehniska viettura vērtība (bieži “10000”), nevis pašreizējais noliktavas atlikums. Šīs rindas ir atzīmētas ar “ERP nav apstiprinājis”; ieslēdziet zemāk esošo slēdzi, lai tās paslēptu.`)}
                         </p>
                         <button

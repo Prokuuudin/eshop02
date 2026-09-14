@@ -10,7 +10,7 @@ import { getAdminAccessLevel } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { hasAdminPermission } from '@/lib/admin-permissions';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Info } from 'lucide-react';
 import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboard-cards';
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
 import RevenueBarChart from './RevenueBarChart';
@@ -270,13 +270,14 @@ export default function AdminPage(): React.ReactElement {
             </div>
 
             {!hasFullAccess && (
-                <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
-                    {tl(
+                <div className="mb-8 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+                    <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+                    <p>{tl(
                         'admin.dashboard.managerNotice',
                         'Для роли менеджера доступны только заказы, статистика и RFQ. Разделы управления контентом и аккаунтами доступны администратору.',
                         'Managers can access only orders, statistics, and RFQ. Content and account management sections are available to administrators.',
                         'Vadītājiem ir pieejami tikai pasūtījumi, statistika un RFQ. Satura un kontu pārvaldības sadaļas ir pieejamas administratoriem.'
-                    )}
+                    )}</p>
                 </div>
             )}
 

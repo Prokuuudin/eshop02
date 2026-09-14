@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { guideFor, renderPreview } from './email-template-model';
 import { useEmailTemplatesPage } from './useEmailTemplatesPage';
+import { Info } from 'lucide-react';
 
 export default function EmailTemplatesPage(): React.ReactElement {
     const {
@@ -46,7 +47,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                 </div>
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
-                    <p className="font-semibold">{l('Как работать с шаблонами', 'How templates work', 'Kā darbojas veidnes')}</p>
+                    <p className="flex items-center gap-2 font-semibold"><Info aria-hidden="true" className="h-5 w-5 shrink-0" />{l('Как работать с шаблонами', 'How templates work', 'Kā darbojas veidnes')}</p>
                     <p className="mt-1 text-xs leading-5">{l('Выберите письмо, проверьте событие отправки и получателя, затем откройте редактор. Не удаляйте переменные в фигурных скобках: система заменяет их реальными данными.', 'Choose an email, verify its trigger and recipient, then open the editor. Do not remove variables in braces: the system replaces them with real data.', 'Izvēlieties e-pastu, pārbaudiet nosūtīšanas notikumu un saņēmēju, pēc tam atveriet redaktoru. Neizdzēsiet mainīgos figūriekavās: sistēma tos aizstāj ar reāliem datiem.')}</p>
                 </div>
 

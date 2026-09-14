@@ -34,6 +34,8 @@
     "test:load:smoke": "node scripts/load-smoke.mjs",
     "test:erp:performance": "tsx scripts/benchmark-erp-parser.ts",
     "test:restore": "tsx scripts/verify-restore.ts",
+    "backup:database": "tsx scripts/backup-database.ts",
+    "restore:database": "tsx scripts/restore-database.ts",
     "import:client-types": "tsx scripts/import-client-types.ts",
     "test:search-plan": "tsx scripts/check-search-plan.ts"
   },

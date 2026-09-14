@@ -49,7 +49,10 @@ export default function AccountProfilePage(): React.ReactElement {
     return (
         <main className="w-full min-w-0 px-4 py-8 sm:py-12">
             <div className="mx-auto max-w-6xl">
-                <div className="mb-6">
+                <div className="mb-1 flex items-center justify-between gap-4">
+                    <h1 className="text-2xl font-bold text-foreground">
+                        {t('account.myProfile')}
+                    </h1>
                     <Link
                         href="/account"
                         className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 active:bg-primary/80 transition-colors"
@@ -60,9 +63,6 @@ export default function AccountProfilePage(): React.ReactElement {
                         {t('account.goToAccount')}
                     </Link>
                 </div>
-                <h1 className="mb-1 text-2xl font-bold text-foreground">
-                    {t('account.myProfile')}
-                </h1>
                 <p className="mb-6 text-sm text-muted-foreground">
                     {t('account.profileHint')}
                 </p>

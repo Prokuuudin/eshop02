@@ -214,7 +214,7 @@ const ruAccount: Record<string, string> = {
   'account.deliveryPickup': 'Самовывоз',
   'account.deliveryPost': 'Почта',
   'account.promoCode': 'Код',
-  'account.details': 'Детали',
+  'account.details': 'Детали заказа',
   'account.startShopping': 'Начать покупки',
   'account.repeatOrder': 'Повторить заказ',
   'account.repeatOrderPricesUpdated': 'Корзина пересчитана по актуальным ценам и остаткам.',

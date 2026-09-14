@@ -215,7 +215,7 @@ const lvAccount: Record<string, string> = {
   'account.deliveryPickup': 'Saņemšana veikalā',
   'account.deliveryPost': 'Pasts',
   'account.promoCode': 'Kods',
-  'account.details': 'Detaļas',
+  'account.details': 'Pasūtījuma detaļas',
   'account.startShopping': 'Sākt iepirkties',
   'account.repeatOrder': 'Atkārtot pasūtījumu',
   'account.repeatOrderPricesUpdated': 'Grozs pārrēķināts pēc aktuālajām cenām un atlikumiem.',

@@ -1,91 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { createConfigurationBackup, restoreConfigurationBackup, validateConfigurationBackup } from '@/lib/configuration-backup'
 
 export const runtime = 'nodejs'
-
-const DATA_DIR = path.join(process.cwd(), 'data')
-
-const ALLOWED_FILES = [
-  'blog-posts.json',
-  'site-content.json',
-  'custom-products.json',
-  'product-overrides.json',
-  'banners.json',
-  'promo-codes.json',
-  'shipping-settings.json',
-]
+const MAX_BACKUP_BYTES = 20 * 1024 * 1024
 
 export async function GET(): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
-
-  const files: Record<string, unknown> = {}
-
-  for (const filename of ALLOWED_FILES) {
-    const filePath = path.join(DATA_DIR, filename)
-    try {
-      const raw = await fs.readFile(filePath, 'utf-8')
-      files[filename] = JSON.parse(raw)
-    } catch {
-      // File doesn't exist — skip silently
-    }
+  const gate = await requireAdmin()
+  if (gate instanceof NextResponse) return gate
+  try {
+    const backup = await createConfigurationBackup()
+    return NextResponse.json(backup, { headers: {
+      'Cache-Control': 'private, no-store',
+      'Content-Disposition': `attachment; filename="configuration-backup-${backup.createdAt.slice(0, 10)}.json"`,
+    } })
+  } catch {
+    return NextResponse.json({ error: 'backup_creation_failed' }, { status: 500 })
   }
-
-  return NextResponse.json({
-    kind: 'configuration-export',
-    warning: 'This export does not contain the PostgreSQL database and is not a disaster-recovery backup.',
-    timestamp: new Date().toISOString(),
-    files,
-  })
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
-
-  void request
-  return NextResponse.json(
-    { error: 'configuration_restore_disabled_use_controlled_maintenance' },
-    { status: 405, headers: { Allow: 'GET' } },
-  )
-
-  /* let body: { files?: Record<string, unknown>; confirmConfigurationRestore?: boolean }
-
+  const gate = await requireAdmin()
+  if (gate instanceof NextResponse) return gate
+  const contentLength = Number(request.headers.get('content-length') ?? 0)
+  if (contentLength > MAX_BACKUP_BYTES) return NextResponse.json({ error: 'backup_too_large' }, { status: 413 })
   try {
-    body = await request.json()
+    const raw = await request.text()
+    if (Buffer.byteLength(raw) > MAX_BACKUP_BYTES) return NextResponse.json({ error: 'backup_too_large' }, { status: 413 })
+    const body = JSON.parse(raw) as { backup?: unknown; confirmation?: string }
+    if (body.confirmation !== 'RESTORE CONFIGURATION') return NextResponse.json({ error: 'restore_confirmation_required' }, { status: 400 })
+    validateConfigurationBackup(body.backup)
+    const restored = await restoreConfigurationBackup(body.backup)
+    return NextResponse.json({ ok: true, restored })
   } catch {
-    return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+    return NextResponse.json({ error: 'invalid_or_failed_restore' }, { status: 400 })
   }
-
-  if (!body?.files || typeof body.files !== 'object') {
-    return NextResponse.json({ error: 'missing_files' }, { status: 400 })
-  }
-  if (body.confirmConfigurationRestore !== true) {
-    return NextResponse.json({ error: 'configuration_restore_confirmation_required' }, { status: 400 })
-  }
-
-  const restored: string[] = []
-  const skipped: string[] = []
-
-  for (const [filename, content] of Object.entries(body.files)) {
-    // Whitelist check — no path traversal allowed
-    if (!ALLOWED_FILES.includes(filename)) {
-      skipped.push(filename)
-      continue
-    }
-
-    // Extra safety: ensure no path separator in filename
-    if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
-      skipped.push(filename)
-      continue
-    }
-
-    const filePath = path.join(DATA_DIR, filename)
-    await fs.writeFile(filePath, JSON.stringify(content, null, 2), 'utf-8')
-    restored.push(filename)
-  }
-
-  return NextResponse.json({ ok: true, restored, skipped }) */
 }

@@ -215,7 +215,7 @@ const enAccount: Record<string, string> = {
   'account.deliveryPickup': 'Pickup',
   'account.deliveryPost': 'Post',
   'account.promoCode': 'Code',
-  'account.details': 'Details',
+  'account.details': 'Order details',
   'account.startShopping': 'Start shopping',
   'account.repeatOrder': 'Repeat order',
   'account.repeatOrderPricesUpdated': 'The cart was recalculated using current prices and stock.',

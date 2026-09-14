@@ -26,6 +26,7 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
     const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
         card_not_found: t('auth.cardNotFound'),
         card_already_registered: t('auth.cardAlreadyRegistered'),
+        wrong_password: t('auth.wrongPassword'),
         wrong_contact: t('auth.wrongContact'),
         no_contact_on_file: t('auth.noContactOnFile'),
         contact_required: t('auth.enterContactOrPassword'),

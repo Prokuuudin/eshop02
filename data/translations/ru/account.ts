@@ -91,7 +91,7 @@ const ruAccount: Record<string, string> = {
   'auth.activationSubtitle': 'Введите номер карты клиента. После проверки администратор одобрит ваш доступ вручную.',
   'auth.requestSubmittedMessage': 'Заявка отправлена. После одобрения администратором вы сможете войти в аккаунт.',
   'auth.requestSubmittedMessageWithCompany': 'Заявка отправлена. После одобрения вы сможете войти в аккаунт компании {company}.',
-  'auth.activateCta': 'Запросить доступ по баркоду',
+  'auth.activateCta': 'Активировать карту клиента',
   'auth.noAccount': 'Нет аккаунта?',
   'auth.haveAccount': 'Уже есть аккаунт?',
   'auth.createNew': 'Создать новый',

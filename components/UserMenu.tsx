@@ -9,7 +9,7 @@ import {
 } from './ui/dialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { canAccessAdminPanel, getCurrentUser, hasAdminUsers, logout } from '@/lib/auth';
+import { canAccessAdminPanel, hasAdminUsers, logout } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { Button } from './ui/button';
 import { useTranslation } from '@/lib/use-translation';
@@ -37,13 +37,10 @@ export default function UserMenu(): React.ReactElement {
     }, [user]);
 
     const handleLoginSuccess = () => {
-        const currentUser = getCurrentUser();
         setLoginOpen(false);
         setForgotOpen(false);
         setIsOpen(false);
-        if (currentUser && canAccessAdminPanel(currentUser)) {
-            router.push('/account');
-        }
+        router.push('/account');
     };
 
     const handleOpenForgotPassword = (): void => {

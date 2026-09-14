@@ -168,6 +168,7 @@ export type RegisterCardErrorCode =
  */
 export const registerCardUser = async (data: {
     cardNumber: string;
+    /** @deprecated Corporate-card passwords are no longer supported or sent. */
     password?: string;
     phoneLast4?: string;
     email?: string;
@@ -184,7 +185,6 @@ export const registerCardUser = async (data: {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 cardNumber: normalizedCard,
-                password: data.password,
                 phoneLast4: data.phoneLast4,
                 email: data.email,
                 name: data.name,

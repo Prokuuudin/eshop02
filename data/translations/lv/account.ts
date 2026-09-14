@@ -91,7 +91,7 @@ const lvAccount: Record<string, string> = {
   'auth.activationSubtitle': 'Ievadiet vai noskenējiet uzņēmuma barkodu. Administrators manuāli pārbaudīs un apstiprinās piekļuvi.',
   'auth.requestSubmittedMessage': 'Pieprasījums nosūtīts. Pēc administratora apstiprinājuma jūs varēsiet pieslēgties kontam.',
   'auth.requestSubmittedMessageWithCompany': 'Pieprasījums nosūtīts. Pēc apstiprinājuma jūs varēsiet pieslēgties uzņēmuma {company} kontam.',
-  'auth.activateCta': 'Pieprasīt piekļuvi ar barkodu',
+  'auth.activateCta': 'Aktivizēt klienta karti',
   'auth.noAccount': 'Nav konta?',
   'auth.haveAccount': 'Jau ir konts?',
   'auth.createNew': 'Izveidot jaunu',

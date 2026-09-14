@@ -329,64 +329,6 @@ describe('POST /api/auth/register-card', () => {
     expect(createSessionMock).not.toHaveBeenCalled()
   })
 
-  it('rejects a brand-new company card claim with the wrong password', async () => {
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue(COMPANY)
-
-    const res = await POST(makeRequest({ cardNumber: '1234', password: 'wrong-guess' }))
-
-    expect(res.status).toBe(401)
-    expect(await res.json()).toMatchObject({ error: 'wrong_password' })
-    expect(prisma.$transaction).not.toHaveBeenCalled()
-  })
-
-  it('creates a real user bound to the company and a session on success', async () => {
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue(COMPANY)
-    const tx = makeTx()
-    transactionMock.mockImplementation(async (fn) => fn(tx))
-
-    const res = await POST(makeRequest({ cardNumber: '1234', name: 'Ivan', password: FIRST_LOGIN_PASSWORD }))
-
-    expect(res.status).toBe(201)
-    expect(tx.user.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          email: 'office@example.com',
-          companyId: 'company_1',
-          companyName: 'SIA MIKS PLUS',
-          teamRole: 'buyer',
-          cardNumber: '1234',
-          mustChangePassword: true,
-        }),
-      })
-    )
-    expect(tx.companyMember.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ companyId: 'company_1', role: 'buyer' }),
-      })
-    )
-    expect(tx.bonusTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ type: 'welcome', points: 500 }) })
-    )
-    expect(createSessionMock).toHaveBeenCalled()
-    const setCookie = res.headers.get('set-cookie')
-    expect(setCookie).toContain('eshop_session=token')
-    expect(sendEmail).toHaveBeenCalledWith('office@example.com', expect.any(String), expect.any(String))
-  })
-
-  it('skips the activation notice when the company has no contact email on file', async () => {
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue({ ...COMPANY, contactEmail: null })
-    const tx = makeTx()
-    transactionMock.mockImplementation(async (fn) => fn(tx))
-
-    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
-
-    expect(res.status).toBe(201)
-    expect(sendEmail).not.toHaveBeenCalled()
-  })
-
   it('rejects when the card number is blank', async () => {
     const res = await POST(makeRequest({ cardNumber: '   ', password: FIRST_LOGIN_PASSWORD }))
 
@@ -404,9 +346,7 @@ describe('POST /api/auth/register-card', () => {
     expect(userFindFirstMock).toHaveBeenCalledWith({
       where: { cardNumber: { equals: '1', mode: 'insensitive' } },
     })
-    expect(companyFindFirstMock).toHaveBeenCalledWith({
-      where: { cardNumber: { equals: '1', mode: 'insensitive' } },
-    })
+    expect(companyFindFirstMock).not.toHaveBeenCalled()
   })
 
   it('rejects a new card identifier longer than six digits', async () => {

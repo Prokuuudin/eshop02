@@ -20,14 +20,12 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
     const [cardNumber, setCardNumber] = useState('');
     const [phoneLast4, setPhoneLast4] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
         card_not_found: t('auth.cardNotFound'),
         card_already_registered: t('auth.cardAlreadyRegistered'),
-        wrong_password: t('auth.wrongPassword'),
         wrong_contact: t('auth.wrongContact'),
         no_contact_on_file: t('auth.noContactOnFile'),
         contact_required: t('auth.enterContactOrPassword'),
@@ -48,20 +46,18 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
 
         const trimmedPhoneLast4 = phoneLast4.trim();
         const trimmedEmail = email.trim();
-        if (!trimmedPhoneLast4 && !trimmedEmail && !password) {
+        if (!trimmedPhoneLast4 && !trimmedEmail) {
             setError(t('auth.enterContactOrPassword'));
             return;
         }
 
         // Card + phone-last-4/email are verified server-side (never shipped to
         // the client bundle) — a mismatch comes back as errorCode 'wrong_contact'.
-        // `password` only applies to a shared company card (untouched flow).
         setLoading(true);
         const result = await registerCardUser({
             cardNumber: trimmedCard,
             phoneLast4: trimmedPhoneLast4 || undefined,
             email: trimmedEmail || undefined,
-            password: password || undefined,
             name: name.trim() || undefined,
             privacyAcknowledged: true,
         });
@@ -155,22 +151,6 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
                     autoComplete="off"
                 />
                 <p className="text-xs text-muted-foreground mt-1">{t('auth.contactHint')}</p>
-            </div>
-
-            {/* Общая карта компании (редкий кейс) — пароль от администратора */}
-            <div className="register-form__field">
-                <label htmlFor="register-password" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.companyPasswordLabel')}
-                </label>
-                <Input
-                    id="register-password"
-                    className="register-form__input bg-card text-foreground border-border"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t('auth.companyPasswordPlaceholder')}
-                    autoComplete="off"
-                />
             </div>
 
             <div className="register-form__card-hint space-y-1">

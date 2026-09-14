@@ -91,7 +91,7 @@ const enAccount: Record<string, string> = {
   'auth.activationSubtitle': 'Enter or scan your company barcode. An administrator will review and approve access manually.',
   'auth.requestSubmittedMessage': 'Request submitted. You will be able to sign in after an administrator approves access.',
   'auth.requestSubmittedMessageWithCompany': 'Request submitted. After approval, you will be able to sign in to the {company} company account.',
-  'auth.activateCta': 'Request access by barcode',
+  'auth.activateCta': 'Activate client card',
   'auth.noAccount': "Don't have an account?",
   'auth.haveAccount': 'Already have an account?',
   'auth.createNew': 'Create new',

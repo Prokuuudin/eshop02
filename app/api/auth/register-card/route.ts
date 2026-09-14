@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { getClientIp } from '@/lib/request-ip'
-import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, verifyPassword, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
-import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { sendEmail } from '@/lib/mailer'
 import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -84,7 +82,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const body = await req.json()
     const cardNumber = normalizeCardNumber(String(body.cardNumber ?? ''))
-    const password = typeof body.password === 'string' ? body.password : ''
     const submittedPhoneLast4 = phoneLast4(typeof body.phoneLast4 === 'string' ? body.phoneLast4 : '')
     const submittedEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : undefined
@@ -187,82 +184,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return res
     }
 
-    const company = await prisma.company.findFirst({
-      where: { cardNumber: { equals: cardNumber, mode: 'insensitive' } },
-    })
-    if (!company) {
-      return NextResponse.json({ error: 'card_not_found' }, { status: 404 })
-    }
-    if (!FIRST_LOGIN_PASSWORD) {
-      logApiError('auth_register_card_not_configured')
-      return NextResponse.json({ error: 'registration_not_configured' }, { status: 503 })
-    }
-    if (password !== FIRST_LOGIN_PASSWORD) {
-      return NextResponse.json({ error: 'wrong_password' }, { status: 401 })
-    }
+    return NextResponse.json({ error: 'card_not_found' }, { status: 404 })
 
-    const contactEmail = company.contactEmail?.trim().toLowerCase()
-    const contactEmailOwner = contactEmail
-      ? await prisma.user.findFirst({
-          where: { email: { equals: contactEmail, mode: 'insensitive' } },
-          select: { id: true },
-        })
-      : null
-    const email = contactEmail && !contactEmailOwner
-      ? contactEmail
-      : `card.${cardNumber.toLowerCase()}@client.local`
-    const passwordHash = await hashPassword(FIRST_LOGIN_PASSWORD)
-    const userId = randomUUID()
-
-    const user = await prisma.$transaction(async (tx) => {
-      const created = await tx.user.create({
-        data: {
-          id: userId,
-          email,
-          passwordHash,
-          name: name ?? null,
-          cardNumber,
-          platformRole: 'customer',
-          companyId: company.id,
-          companyName: company.companyName,
-          teamRole: 'buyer',
-          approvalRequired: company.approvalWorkflowEnabled,
-          auditLoggingEnabled: true,
-          mustChangePassword: true,
-          ...privacyData,
-        },
-      })
-
-      await tx.companyMember.create({
-        data: {
-          id: randomUUID(),
-          companyId: company.id,
-          userId: created.id,
-          email: created.email,
-          role: 'buyer',
-          name: name || cardNumber,
-        },
-      })
-
-      await grantWelcomeBonus(tx, created.id)
-
-      return created
-    })
-
-    // The user's own email is the synthetic card.<number>@client.local
-    // placeholder, not a real inbox נnotify the company's contact address.
-    await notifyCardActivated(company.contactEmail, user.name ?? '', cardNumber)
-    const token = await createSession(user.id)
-
-    const res = NextResponse.json({ user: mapDbToServerUser(user) }, { status: 201 })
-    res.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    })
-    return res
   } catch (e) {
     if ((e as { code?: string })?.code === 'P2002') {
       return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })

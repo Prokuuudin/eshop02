@@ -278,7 +278,7 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(getCurrentUser()).toBeNull()
   })
 
-  it('sends the typed password to the server so a mistype is not silently accepted', async () => {
+  it('does not send the obsolete corporate-card password to the server', async () => {
     const fetchMock = vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
 
     await registerCardUser({ cardNumber: '1234', password: 'Welcome1!Change' })
@@ -286,7 +286,7 @@ describe('registerCardUser — server-authoritative card registration', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/auth/register-card',
       expect.objectContaining({
-        body: expect.stringContaining('"password":"Welcome1!Change"'),
+        body: expect.not.stringContaining('"password"'),
       })
     )
   })

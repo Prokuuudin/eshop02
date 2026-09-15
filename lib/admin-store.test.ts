@@ -76,3 +76,30 @@ describe('loadOrderMeta', () => {
     expect(useAdminStore.getState().orderStatuses['order-0']).toBe('delivered')
   })
 })
+
+describe('setOrderStatus', () => {
+  it('persists a cancelled status and updates the visible store state', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    await useAdminStore.getState().setOrderStatus('order-1', 'cancelled')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/order-meta', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ orderId: 'order-1', status: 'cancelled' }),
+    }))
+    expect(useAdminStore.getState().getOrderStatus('order-1')).toBe('cancelled')
+  })
+
+  it('does not change the visible status when the server rejects cancellation', async () => {
+    useAdminStore.setState({ orderStatuses: { 'order-1': 'confirmed' } })
+    global.fetch = vi.fn(async () => new Response(
+      JSON.stringify({ error: 'paid_order_requires_refund' }),
+      { status: 409 }
+    )) as unknown as typeof fetch
+
+    await expect(useAdminStore.getState().setOrderStatus('order-1', 'cancelled'))
+      .rejects.toThrow('paid_order_requires_refund')
+    expect(useAdminStore.getState().getOrderStatus('order-1')).toBe('confirmed')
+  })
+})

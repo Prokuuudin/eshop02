@@ -44,6 +44,7 @@ function useAdminOrdersPageState() {
     const [editSaving, setEditSaving] = useState(false);
     const [mutationError, setMutationError] = useState('');
     const [paymentSavingIds, setPaymentSavingIds] = useState<Set<string>>(new Set());
+    const [statusSavingIds, setStatusSavingIds] = useState<Set<string>>(new Set());
 
     // Patches one row in the currently-loaded page in place - the equivalent
     // of the old global-store upsert, but scoped to what's actually on screen
@@ -76,14 +77,41 @@ function useAdminOrdersPageState() {
             });
         }
     };
-    const setOrderStatus = async (orderId: string, status: OrderStatus): Promise<void> => {
+    const statusErrorMessage = (error: unknown): string => {
+        const code = error instanceof Error ? error.message : '';
+        if (code === 'paid_order_requires_refund') {
+            return l(
+                'Оплаченный заказ нельзя отменить без возврата платежа.',
+                'A paid order cannot be cancelled until its payment is refunded.',
+                'Apmaksātu pasūtījumu nevar atcelt, kamēr maksājums nav atmaksāts.'
+            );
+        }
+        if (code === 'invalid_status_transition') {
+            return l(
+                'Из текущего статуса этот переход недоступен. Обновите список заказов.',
+                'This transition is not available from the current status. Refresh the order list.',
+                'Šī pāreja no pašreizējā statusa nav pieejama. Atsvaidziniet pasūtījumu sarakstu.'
+            );
+        }
+        return l('Не удалось изменить статус. Попробуйте ещё раз.', 'Failed to change status. Please try again.', 'Neizdevās mainīt statusu. Mēģiniet vēlreiz.');
+    };
+    const setOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
         setMutationError('');
+        setStatusSavingIds((prev) => new Set(prev).add(orderId));
         try {
             await persistOrderStatus(orderId, status);
             setStatsRefreshTick((t) => t + 1);
             setPageRefreshTick((t) => t + 1);
+            return true;
         } catch (error) {
-            setMutationError(error instanceof Error ? error.message : l('Не удалось изменить статус', 'Failed to change status', 'Neizdevās mainīt statusu'));
+            setMutationError(statusErrorMessage(error));
+            return false;
+        } finally {
+            setStatusSavingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(orderId);
+                return next;
+            });
         }
     };
     const setOrderNote = async (orderId: string, note: string): Promise<boolean> => {
@@ -450,6 +478,7 @@ function useAdminOrdersPageState() {
         setEditProductSearch,
         editSaving,
         mutationError,
+        statusSavingIds,
         paymentSavingIds,
         markOrderPaid,
         language,

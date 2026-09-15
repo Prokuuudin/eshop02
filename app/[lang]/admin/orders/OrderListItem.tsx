@@ -15,12 +15,14 @@ import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
+import { useToast } from '@/lib/toast-context';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
 
 export function OrderListItem({ order, state }: { order: Order; state: OrdersState }): React.ReactElement {
     const { l } = useAdminLocale();
+    const { showToast } = useToast();
     const STATUS_LABELS: Record<OrderStatus, string> = {
         pending: l('Новый', 'New', 'Jauns'), confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
         shipped: l('Отправлен', 'Shipped', 'Nosūtīts'), delivered: l('Доставлен', 'Delivered', 'Piegādāts'),
@@ -48,12 +50,13 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
     const {
       getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       locale, expandedOrders, toggleExpanded, selectedIds, toggleSelect,
-      paymentSavingIds, markOrderPaid,
+      paymentSavingIds, markOrderPaid, statusSavingIds,
     } = state;
 
                     const status = getOrderStatus(order.id);
                     const isExpanded = expandedOrders.has(order.id);
                     const payStatus = order.paymentStatus ?? 'unpaid';
+                    const isStatusSaving = statusSavingIds.has(order.id);
                     const rowRef = React.useRef<HTMLDivElement>(null);
 
                     React.useEffect(() => {
@@ -289,13 +292,44 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                                     ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
                                                                     : ''
                                                             }
-                                                            onClick={() => void setOrderStatus(order.id, s)}
-                                                            disabled={status === s}
+                                                            onClick={async () => {
+                                                                if (s === 'cancelled') {
+                                                                    const confirmed = window.confirm(l(
+                                                                        `Отменить заказ ${order.id}? Товары будут возвращены на склад.`,
+                                                                        `Cancel order ${order.id}? Reserved items will be returned to stock.`,
+                                                                        `Atcelt pasūtījumu ${order.id}? Rezervētās preces tiks atgrieztas noliktavā.`
+                                                                    ));
+                                                                    if (!confirmed) return;
+                                                                }
+                                                                const saved = await setOrderStatus(order.id, s);
+                                                                if (saved) showToast(
+                                                                    s === 'cancelled'
+                                                                        ? l('Заказ отменён', 'Order cancelled', 'Pasūtījums atcelts')
+                                                                        : l(`Статус изменён: ${STATUS_LABELS[s]}`, `Status changed: ${STATUS_LABELS[s]}`, `Statuss mainīts: ${STATUS_LABELS[s]}`),
+                                                                    'success'
+                                                                );
+                                                                else showToast(l('Не удалось изменить статус', 'Failed to change status', 'Neizdevās mainīt statusu'), 'error');
+                                                            }}
+                                                            disabled={status === s || isStatusSaving || (s === 'cancelled' && payStatus === 'paid')}
+                                                            aria-busy={isStatusSaving}
+                                                            title={s === 'cancelled' && payStatus === 'paid'
+                                                                ? l('Сначала оформите возврат платежа', 'Refund the payment before cancelling', 'Pirms atcelšanas atmaksājiet maksājumu')
+                                                                : undefined}
                                                         >
                                                             {STATUS_LABELS[s]}
                                                         </Button>
                                                     ))}
                                                 </div>
+                                                {isStatusSaving && (
+                                                    <p className="mt-2 text-xs text-muted-foreground" role="status">
+                                                        {l('Сохраняем новый статус…', 'Saving the new status…', 'Saglabā jauno statusu…')}
+                                                    </p>
+                                                )}
+                                                {payStatus === 'paid' && availableOrderStatuses(status).includes('cancelled') && (
+                                                    <p className="mt-2 text-xs text-muted-foreground">
+                                                        {l('Для отмены оплаченного заказа сначала оформите возврат платежа.', 'Refund the payment before cancelling a paid order.', 'Pirms apmaksāta pasūtījuma atcelšanas atmaksājiet maksājumu.')}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Manager note */}

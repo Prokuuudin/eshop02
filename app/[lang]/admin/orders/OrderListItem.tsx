@@ -54,10 +54,22 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                     const status = getOrderStatus(order.id);
                     const isExpanded = expandedOrder === order.id;
                     const payStatus = order.paymentStatus ?? 'unpaid';
+                    const rowRef = React.useRef<HTMLDivElement>(null);
+
+                    React.useEffect(() => {
+                        if (!isExpanded || !rowRef.current) return;
+                        // Sticky header's real height varies (AdminHeaderNav wraps on narrow
+                        // viewports), so a fixed scroll-margin would misjudge it — measure it.
+                        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+                        const rect = rowRef.current.getBoundingClientRect();
+                        const targetTop = window.scrollY + rect.top - headerHeight - 12;
+                        window.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+                    }, [isExpanded]);
 
                     return (
                         <div
                             key={order.id}
+                            ref={rowRef}
                             className={[
                                 'overflow-hidden rounded-xl border border-l-4 transition-colors shadow-sm',
                                 selectedIds.has(order.id)

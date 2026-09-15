@@ -56,7 +56,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
               ? Prisma.sql`NOT "hasTranslations"`
               : issue === 'duplicate'
                 ? Prisma.sql`"duplicateMeta"`
-                : Prisma.sql`NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations"`
+                : issue === 'recommended'
+                  ? Prisma.sql`("hasMetaTitle" AND NOT "validMetaTitleLength") OR ("hasMetaDesc" AND NOT "validMetaDescLength") OR "duplicateMeta"`
+                  : Prisma.sql`NOT "hasMetaTitle" OR NOT "hasMetaDesc" OR NOT "hasImage" OR NOT "hasImageAlt" OR NOT "hasTranslations"`
     const searchFilter = search ? Prisma.sql`AND (id ILIKE ${`%${search}%`} OR sku ILIKE ${`%${search}%`} OR title ILIKE ${`%${search}%`} OR brand ILIKE ${`%${search}%`} OR category ILIKE ${`%${search}%`})` : Prisma.empty
 
     const resultRows = await prisma.$queryRaw<SeoQueryResult[]>(Prisma.sql`

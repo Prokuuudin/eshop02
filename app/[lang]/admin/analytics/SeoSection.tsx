@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnalyticsPagination, Empty, LoadError, type SeoProduct } from './analytics-shared';
 import type { ReactElement } from 'react';
@@ -7,8 +7,9 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 import { Input } from '@/components/ui/input';
 import { ChevronDown } from 'lucide-react';
 
-type SeoIssue = 'all' | 'metaTitle' | 'metaDesc' | 'image' | 'imageAlt' | 'translations' | 'duplicate';
-type SeoCounts = Record<SeoIssue, number>;
+type SeoCountKey = 'all' | 'metaTitle' | 'metaDesc' | 'image' | 'imageAlt' | 'translations' | 'duplicate';
+type SeoIssue = SeoCountKey | 'recommended';
+type SeoCounts = Record<SeoCountKey, number>;
 const SEO_EXPLANATION_STORAGE_KEY = 'admin-analytics-seo-explanation-open';
 
 export default function SeoSection(): ReactElement {
@@ -25,6 +26,7 @@ export default function SeoSection(): ReactElement {
     const [query, setQuery] = useState('');
     const [pageSize, setPageSize] = useState(25);
     const [urlReady, setUrlReady] = useState(false);
+    const defaultFilterApplied = useRef(false);
     const [explanationOpen, setExplanationOpen] = useState(true);
 
     useEffect(() => {
@@ -51,7 +53,10 @@ export default function SeoSection(): ReactElement {
         queueMicrotask(() => {
             if (urlPage > 0) setPage(urlPage);
             if ([25, 50, 100].includes(urlSize)) setPageSize(urlSize);
-            if (['all', 'metaTitle', 'metaDesc', 'image', 'imageAlt', 'translations', 'duplicate'].includes(urlIssue ?? '')) setIssueFilter(urlIssue as SeoIssue);
+            if (['all', 'metaTitle', 'metaDesc', 'image', 'imageAlt', 'translations', 'duplicate', 'recommended'].includes(urlIssue ?? '')) {
+                setIssueFilter(urlIssue as SeoIssue);
+                defaultFilterApplied.current = true;
+            }
             setQuery(params.get('seoSearch') ?? '');
             setUrlReady(true);
         });
@@ -74,6 +79,15 @@ export default function SeoSection(): ReactElement {
         fetch(`/api/admin/analytics/seo?${params}`, { signal: controller.signal, cache: 'no-store' })
             .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`status_${r.status}`))))
             .then((data: { products: Omit<SeoProduct, 'issueCount'>[]; total: number; catalogTotal: number; counts: typeof counts }) => {
+                if (!defaultFilterApplied.current && issueFilter === 'all' && !query.trim()) {
+                    defaultFilterApplied.current = true;
+                    if (data.catalogTotal > 0 && data.counts.all === 0) {
+                        setIssueFilter('recommended');
+                        setPage(1);
+                        setLoading(true);
+                        return;
+                    }
+                }
                 const lastPage = Math.max(1, Math.ceil(data.total / pageSize));
                 if (page > lastPage) { setPage(lastPage); return; }
                 const mapped: SeoProduct[] = data.products.map((p) => ({
@@ -208,110 +222,120 @@ export default function SeoSection(): ReactElement {
                 </div>
             )}
 
-            {products.length > 0 && (
-                <div id="seo-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border lg:overflow-visible">
-                    <table className="min-w-full text-sm bg-card">
-                        <StickyTableHead>
-                            <tr>
-                                <th className="!z-40 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground left-0">
-                                    {l('Товар', 'Product', 'Produkts')}
-                                </th>
-                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                    {l('Бренд / Категория', 'Brand / Category', 'Zīmols / Kategorija')}
-                                </th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">
-                                    metaTitle
-                                </th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">
-                                    metaDescription
-                                </th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">
-                                    {l('Фото', 'Image', 'Attēls')}
-                                </th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Описание превью (Alt)', 'Preview description (Alt)', 'Priekšskatījuma apraksts (Alt)')}</th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">EN/LV</th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Дубли', 'Duplicates', 'Dublikāti')}</th>
-                                <th className="px-4 py-3 text-center font-medium text-muted-foreground">
-                                    {l('Проблем', 'Issues', 'Problēmas')}
-                                </th>
-                                <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
-                            </tr>
-                        </StickyTableHead>
-                        <tbody className="divide-y divide-border">
-                            {products.map((p) => (
-                                <tr
-                                    key={p.id}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                                >
-                                    <td className="sticky left-0 max-w-xs bg-card px-4 py-2.5 font-medium text-foreground">
-                                        <span className="truncate block">{p.title}</span>
-                                        <span className="mt-0.5 block font-mono text-[11px] font-normal text-muted-foreground">
-                                            ID: {p.id}{p.sku ? ` · SKU: ${p.sku}` : ''}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2.5 text-muted-foreground">
-                                        <p>{p.brand}</p>
-                                        <p className="text-xs capitalize">{p.category}</p>
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                        {p.hasMetaTitle ? (
-                                            <span className={p.validMetaTitleLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaTitleLength ? undefined : l('Длина вне рекомендуемого диапазона 10–60 символов', 'Length is outside the recommended 10–60 characters', 'Garums ir ārpus ieteicamā 10–60 rakstzīmju diapazona')}>{p.validMetaTitleLength ? '✓' : '!'}</span>
-                                        ) : (
-                                            <span className="text-red-500 font-semibold">✗</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                        {p.hasMetaDesc ? (
-                                            <span className={p.validMetaDescLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaDescLength ? undefined : l('Длина вне рекомендуемого диапазона 50–160 символов', 'Length is outside the recommended 50–160 characters', 'Garums ir ārpus ieteicamā 50–160 rakstzīmju diapazona')}>{p.validMetaDescLength ? '✓' : '!'}</span>
-                                        ) : (
-                                            <span className="text-red-500 font-semibold">✗</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                        {p.hasImage ? (
-                                            <span className="text-emerald-500">✓</span>
-                                        ) : (
-                                            <span className="text-red-500 font-semibold">✗</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center" title={l('Описание изображения для превью ссылки (OG, Alt)', 'Link preview image description (OG, Alt)', 'Saites priekšskatījuma attēla apraksts (OG, Alt)')}>
-                                        {!p.hasImage ? <span className="text-muted-foreground">—</span> : <span className={p.hasImageAlt ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasImageAlt ? '✓' : '✗'}</span>}
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center" title={l('Переводы EN/LV', 'EN/LV translations', 'EN/LV tulkojumi')}>
-                                        <span className={p.hasTranslations ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasTranslations ? '✓' : '✗'}</span>
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center" title={l('Дубликаты метаданных', 'Duplicate metadata', 'Meta dublikāti')}>
-                                        <span className={p.duplicateMeta ? 'font-semibold text-amber-500' : 'text-emerald-500'}>{p.duplicateMeta ? '!' : '✓'}</span>
-                                    </td>
-                                    <td className="px-4 py-2.5 text-center">
-                                        {p.issueCount === 0 ? <span className="whitespace-nowrap text-xs font-medium text-amber-600 dark:text-amber-400">{l('совет', 'advisory', 'ieteikums')}</span> : <span
-                                            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                                p.issueCount >= 4
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                                    : p.issueCount >= 2
-                                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                            }`}
-                                        >
-                                            {p.issueCount}
-                                        </span>}
-                                    </td>
-                                    <td className="px-4 py-2.5">
-                                        <Link
-                                            href={`/admin/products/${encodeURIComponent(p.id)}?from=seo&returnTo=${encodeURIComponent(seoReturnTo)}`}
-                                            className="text-xs text-primary hover:underline dark:text-primary whitespace-nowrap"
-                                        >
-                                            {l('Редактировать', 'Edit', 'Rediģēt')} →
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {issueFilter === 'recommended' && (
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/10 dark:text-amber-300">
+                    <span className="font-medium">{l('Показаны рекомендации: длина meta вне диапазона или дубли.', 'Showing recommendations: meta length out of range or duplicates.', 'Rādīti ieteikumi: meta garums ārpus diapazona vai dublikāti.')}</span>
+                    <button type="button" onClick={() => { setIssueFilter('all'); setPage(1); setLoading(true); }} className="text-xs font-semibold text-amber-700 underline-offset-4 hover:underline dark:text-amber-300">
+                        {l('Сбросить фильтр', 'Clear filter', 'Notīrīt filtru')}
+                    </button>
                 </div>
             )}
 
-            {total === 0 && !allOk && <Empty text={l('По выбранному фильтру проблем нет.', 'No issues match the selected filter.', 'Atlasītajam filtram problēmu nav.')} />}
+            <div id="seo-results" className="scroll-mt-[var(--header-offset)] overflow-x-auto rounded-xl border border-border lg:overflow-visible">
+                <table className="min-w-full text-sm bg-card">
+                    <StickyTableHead>
+                        <tr>
+                            <th className="!z-40 min-w-52 bg-muted px-4 py-3 text-left font-medium text-muted-foreground left-0">
+                                {l('Товар', 'Product', 'Produkts')}
+                            </th>
+                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                                {l('Бренд / Категория', 'Brand / Category', 'Zīmols / Kategorija')}
+                            </th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">
+                                metaTitle
+                            </th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground whitespace-nowrap">
+                                metaDescription
+                            </th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground">
+                                {l('Фото', 'Image', 'Attēls')}
+                            </th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Описание превью (Alt)', 'Preview description (Alt)', 'Priekšskatījuma apraksts (Alt)')}</th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground">EN/LV</th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground">{l('Дубли', 'Duplicates', 'Dublikāti')}</th>
+                            <th className="px-4 py-3 text-center font-medium text-muted-foreground">
+                                {l('Проблем', 'Issues', 'Problēmas')}
+                            </th>
+                            <th className="px-4 py-3 text-left font-medium text-muted-foreground"></th>
+                        </tr>
+                    </StickyTableHead>
+                    <tbody className="divide-y divide-border">
+                        {products.map((p) => (
+                            <tr
+                                key={p.id}
+                                className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                            >
+                                <td className="sticky left-0 max-w-xs bg-card px-4 py-2.5 font-medium text-foreground">
+                                    <span className="truncate block">{p.title}</span>
+                                    <span className="mt-0.5 block font-mono text-[11px] font-normal text-muted-foreground">
+                                        ID: {p.id}{p.sku ? ` · SKU: ${p.sku}` : ''}
+                                    </span>
+                                </td>
+                                <td className="px-4 py-2.5 text-muted-foreground">
+                                    <p>{p.brand}</p>
+                                    <p className="text-xs capitalize">{p.category}</p>
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                    {p.hasMetaTitle ? (
+                                        <span className={p.validMetaTitleLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaTitleLength ? undefined : l('Длина вне рекомендуемого диапазона 10–60 символов', 'Length is outside the recommended 10–60 characters', 'Garums ir ārpus ieteicamā 10–60 rakstzīmju diapazona')}>{p.validMetaTitleLength ? '✓' : '!'}</span>
+                                    ) : (
+                                        <span className="text-red-500 font-semibold">✗</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                    {p.hasMetaDesc ? (
+                                        <span className={p.validMetaDescLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaDescLength ? undefined : l('Длина вне рекомендуемого диапазона 50–160 символов', 'Length is outside the recommended 50–160 characters', 'Garums ir ārpus ieteicamā 50–160 rakstzīmju diapazona')}>{p.validMetaDescLength ? '✓' : '!'}</span>
+                                    ) : (
+                                        <span className="text-red-500 font-semibold">✗</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                    {p.hasImage ? (
+                                        <span className="text-emerald-500">✓</span>
+                                    ) : (
+                                        <span className="text-red-500 font-semibold">✗</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-2.5 text-center" title={l('Описание изображения для превью ссылки (OG, Alt)', 'Link preview image description (OG, Alt)', 'Saites priekšskatījuma attēla apraksts (OG, Alt)')}>
+                                    {!p.hasImage ? <span className="text-muted-foreground">—</span> : <span className={p.hasImageAlt ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasImageAlt ? '✓' : '✗'}</span>}
+                                </td>
+                                <td className="px-4 py-2.5 text-center" title={l('Переводы EN/LV', 'EN/LV translations', 'EN/LV tulkojumi')}>
+                                    <span className={p.hasTranslations ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasTranslations ? '✓' : '✗'}</span>
+                                </td>
+                                <td className="px-4 py-2.5 text-center" title={l('Дубликаты метаданных', 'Duplicate metadata', 'Meta dublikāti')}>
+                                    <span className={p.duplicateMeta ? 'font-semibold text-amber-500' : 'text-emerald-500'}>{p.duplicateMeta ? '!' : '✓'}</span>
+                                </td>
+                                <td className="px-4 py-2.5 text-center">
+                                    {p.issueCount === 0 ? <span className="whitespace-nowrap text-xs font-medium text-amber-600 dark:text-amber-400">{l('совет', 'advisory', 'ieteikums')}</span> : <span
+                                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                            p.issueCount >= 4
+                                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                                : p.issueCount >= 2
+                                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                        }`}
+                                    >
+                                        {p.issueCount}
+                                    </span>}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                    <Link
+                                        href={`/admin/products/${encodeURIComponent(p.id)}?from=seo&returnTo=${encodeURIComponent(seoReturnTo)}`}
+                                        className="text-xs text-primary hover:underline dark:text-primary whitespace-nowrap"
+                                    >
+                                        {l('Редактировать', 'Edit', 'Rediģēt')} →
+                                    </Link>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {products.length === 0 && (
+                    <div className="py-10 text-center text-sm text-muted-foreground">
+                        {l('По выбранному фильтру проблем нет.', 'No issues match the selected filter.', 'Atlasītajam filtram problēmu nav.')}
+                    </div>
+                )}
+            </div>
 
             <AnalyticsPagination page={page} pageSize={pageSize} total={total} loading={loading} labels={{ previous: l('Назад', 'Previous', 'Atpakaļ'), next: l('Вперёд', 'Next', 'Tālāk'), page: l('Страница', 'Page', 'Lapa'), of: l('из', 'of', 'no'), rows: l('Строк:', 'Rows:', 'Rindas:') }} onPageChange={(nextPage) => { setPage(nextPage); setLoading(true); }} onPageSizeChange={(size) => { setPageSize(size); setPage(1); setLoading(true); }} scrollTargetId="seo-results" />
 

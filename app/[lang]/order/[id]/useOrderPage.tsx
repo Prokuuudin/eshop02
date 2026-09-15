@@ -6,8 +6,6 @@ import { useOrders, type OrderLegalDetails } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
-import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template';
-import { buildInvoicePdfBlob, invoicePdfFileName } from '@/lib/invoice-pdf';
 import { useToast } from '@/lib/toast-context';
 import { localizePath } from '@/lib/i18n-routing';
 
@@ -28,7 +26,6 @@ function useOrderPageState({ params }: PageProps) {
     const [serverOrderResolved, setServerOrderResolved] = React.useState(false);
     const order = serverOrder ?? localOrder;
     const locale = getLocaleFromLanguage(language);
-    const [downloadingInvoiceLang, setDownloadingInvoiceLang] = React.useState<InvoiceLang | null>(null);
     const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const [payingNow, setPayingNow] = React.useState(false);
     const { showToast } = useToast();
@@ -240,27 +237,7 @@ function useOrderPageState({ params }: PageProps) {
         }
     };
 
-    const handleDownloadInvoice = async (invoiceLang: InvoiceLang): Promise<void> => {
-        if (downloadingInvoiceLang !== null) return;
-        setDownloadingInvoiceLang(invoiceLang);
-        try {
-            const titles = await fetchInvoiceTitles(order.items, invoiceLang);
-            const html = buildInvoiceHtml(order, titles, invoiceLang);
-            const blob = await buildInvoicePdfBlob(html);
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = invoicePdfFileName(order.id, invoiceLang);
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } catch {
-            showToast(t('order.invoiceDownloadFailed'), 'error');
-        } finally {
-            setDownloadingInvoiceLang(null);
-        }
-    };
-
-      return { id, t, language, getOrder, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, showToast, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, handleDownloadInvoice }
+      return { id, t, language, getOrder, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, showToast, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex }
 }
 
 export function useOrderPage({ params }: PageProps): ReturnType<typeof useOrderPageState> {

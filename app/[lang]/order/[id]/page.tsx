@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { pointsToEuros } from '@/lib/bonus-program';
 import ReturnRequestDialog from '@/components/ReturnRequestDialog';
-import ShareOrderButton from '@/components/ShareOrderButton';
 import { Check, LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
@@ -24,7 +23,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const pageState = useOrderPage({ params })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, language, order, locale, downloadingInvoiceLang, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, handleDownloadInvoice } = orderPageState
+  const { t, language, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
 return (
@@ -324,20 +323,6 @@ return (
                             )}
 
                             <div className="space-y-2">
-                                <div className="flex items-stretch gap-2">
-                                    <Button className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('lv')} disabled={downloadingInvoiceLang !== null}>
-                                        {downloadingInvoiceLang === 'lv' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                        {downloadingInvoiceLang === 'lv' ? t('order.generatingInvoice') : t('order.downloadInvoice')}
-                                    </Button>
-                                    <ShareOrderButton order={order} invoiceLang="lv" />
-                                </div>
-                                <div className="flex items-stretch gap-2">
-                                    <Button className="flex-1 min-w-0 h-auto whitespace-normal py-2.5" onClick={() => handleDownloadInvoice('en')} disabled={downloadingInvoiceLang !== null}>
-                                        {downloadingInvoiceLang === 'en' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                        {downloadingInvoiceLang === 'en' ? t('order.generatingInvoice') : t('order.downloadInvoiceEn')}
-                                    </Button>
-                                    <ShareOrderButton order={order} invoiceLang="en" />
-                                </div>
                                 {order.paymentStatus === 'paid' && (
                                     <Button
                                         variant="outline"

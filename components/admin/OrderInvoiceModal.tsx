@@ -5,7 +5,7 @@ import { Order } from '@/lib/orders-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildInvoiceHtml, fetchInvoiceTitles, type InvoiceLang } from '@/lib/invoice-template'
-import { buildInvoicePdfBlob } from '@/lib/invoice-pdf'
+import { buildInvoicePdfBlob, invoicePdfFileName } from '@/lib/invoice-pdf'
 import { useToast } from '@/lib/toast-context'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -23,6 +23,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
   const [email, setEmail] = useState(order.email)
   const [sending, setSending] = useState(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [sent, setSent] = useState(false)
   const { showToast } = useToast()
   const { l } = useAdminLocale()
@@ -46,6 +47,25 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
       showToast(l('Не удалось сформировать PDF', 'Failed to generate PDF', 'Neizdevās izveidot PDF'), 'error')
     } finally {
       setGeneratingPdf(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      const titles = await fetchInvoiceTitles(order.items, lang)
+      const html = buildInvoiceHtml(order, titles, lang)
+      const blob = await buildInvoicePdfBlob(html)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = invoicePdfFileName(order.id, lang)
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch {
+      showToast(l('Не удалось сформировать PDF', 'Failed to generate PDF', 'Neizdevās izveidot PDF'), 'error')
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -80,12 +100,9 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
           {l('Настройки языка, предпросмотра и отправки счёта клиенту', 'Invoice language, preview and delivery settings', 'Rēķina valodas, priekšskatījuma un nosūtīšanas iestatījumi')}
         </DialogDescription>
         <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <DialogTitle className="text-lg font-semibold text-foreground">
-            {l('Счёт по заказу', 'Invoice for order', 'Rēķins pasūtījumam')} #{order.id}
-          </DialogTitle>
-          <button type="button" onClick={onClose} aria-label={l('Закрыть окно счёта', 'Close invoice window', 'Aizvērt rēķina logu')} className="text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">×</button>
-        </div>
+        <DialogTitle className="text-lg font-semibold text-foreground">
+          {l('Счёт по заказу', 'Invoice for order', 'Rēķins pasūtījumam')} #{order.id}
+        </DialogTitle>
 
         {/* Language selector: LV — стандарт, EN — по запросу покупателя */}
         <div>
@@ -133,13 +150,21 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
             {generatingPdf ? l('Формирование PDF...', 'Generating PDF...', 'PDF izveide...') : l('Предпросмотр PDF', 'Preview PDF', 'PDF priekšskatījums')}
           </Button>
           <Button
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={handleSend}
-            disabled={sending || sent || !email.trim()}
+            variant="outline"
+            className="flex-1"
+            onClick={handleDownload}
+            disabled={downloading}
           >
-            {sent ? l('✓ Отправлено', '✓ Sent', '✓ Nosūtīts') : sending ? l('Отправка...', 'Sending...', 'Nosūtīšana...') : l('Отправить', 'Send', 'Nosūtīt')}
+            {downloading ? l('Формирование PDF...', 'Generating PDF...', 'PDF izveide...') : l('Скачать', 'Download', 'Lejupielādēt')}
           </Button>
         </div>
+        <Button
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          onClick={handleSend}
+          disabled={sending || sent || !email.trim()}
+        >
+          {sent ? l('✓ Отправлено', '✓ Sent', '✓ Nosūtīts') : sending ? l('Отправка...', 'Sending...', 'Nosūtīšana...') : l('Отправить', 'Send', 'Nosūtīt')}
+        </Button>
         </div>
       </DialogContent>
     </Dialog>

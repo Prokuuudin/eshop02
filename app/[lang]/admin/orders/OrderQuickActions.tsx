@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import type { OrderStatus } from '@/lib/admin-store'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { useToast } from '@/lib/toast-context'
 import type { useAdminOrdersPage } from './useAdminOrdersPage'
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>
@@ -13,18 +15,40 @@ export function OrderQuickActions({ order, state, status }: {
   status: OrderStatus
 }): React.ReactElement {
   const { l } = useAdminLocale()
+  const { showToast } = useToast()
   const { editingOrderId, cancelEdit, startEdit, setInvoiceOrder } = state
   const canEdit = !['shipped', 'delivered', 'cancelled'].includes(status)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyId = () => {
+    if (!navigator.clipboard) {
+      showToast(l('Копирование недоступно в этом окружении', 'Copying unavailable in this environment', 'Kopēšana nav pieejama šajā vidē'), 'error')
+      return
+    }
+    navigator.clipboard.writeText(order.id)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => showToast(l('Не удалось скопировать ID', 'Failed to copy ID', 'Neizdevās nokopēt ID'), 'error'))
+  }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={() => void navigator.clipboard.writeText(order.id)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      >
-        {l('Скопировать ID', 'Copy ID', 'Kopēt ID')}
-      </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={handleCopyId}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          {l('Скопировать ID', 'Copy ID', 'Kopēt ID')}
+        </button>
+        {copied && (
+          <span className="text-xs font-medium text-green-600 dark:text-green-400">
+            {l('✓ Скопировано', '✓ Copied', '✓ Nokopēts')}
+          </span>
+        )}
+      </div>
       {canEdit && (
         <button
           type="button"

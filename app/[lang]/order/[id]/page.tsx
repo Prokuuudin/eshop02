@@ -10,6 +10,8 @@ import { Check, LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { localizePath } from '@/lib/i18n-routing';
+import { getCurrentUser } from '@/lib/auth';
+import RequestInvoiceCodeCard from '@/components/RequestInvoiceCodeCard';
 
 type PageProps = {
     params: Promise<{
@@ -26,6 +28,9 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const { t, language, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
+  // Company invoices carry a registration number, not a personal code — and a
+  // guest with no session can never pass the server's canAccessOrder check anyway.
+  const canRequestInvoiceCode = !!getCurrentUser() && (order.legalDetails?.customerType ?? 'individual') === 'individual'
 return (
         <main className="w-full px-4 py-5 sm:py-8">
             <div className="max-w-4xl mx-auto">
@@ -341,6 +346,12 @@ return (
                         </div>
                     </div>
                 </div>
+
+                {canRequestInvoiceCode && (
+                    <div className="mb-6">
+                        <RequestInvoiceCodeCard orderId={order.id} />
+                    </div>
+                )}
 
                 {/* Help section */}
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center dark:border-blue-800 dark:bg-blue-900/30 sm:p-5">

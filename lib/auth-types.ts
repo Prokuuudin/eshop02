@@ -6,7 +6,6 @@ export type AdminAccessLevel = 'none' | 'manager' | 'admin'
 
 export type CheckoutProfile = {
   customerType: 'individual' | 'company'
-  personalCode: string
   companyName: string
   regNumber: string
   vatNumber: string

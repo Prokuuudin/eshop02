@@ -20,8 +20,6 @@ const enCheckout: Record<string, string> = {
   'checkout.postalCode': 'Postal Code',
   'checkout.customerType.individual': 'Private person',
   'checkout.customerType.company': 'Company',
-  'checkout.personalCode': 'Personal code',
-  'checkout.errors.personalCode': 'Personal code is required',
   'checkout.companyName': 'Company name',
   'checkout.errors.companyName': 'Company name is required',
   'checkout.regNumber': 'Registration number',
@@ -192,6 +190,13 @@ const enCheckout: Record<string, string> = {
   'order.payNowFailed': "Couldn't open the payment page. Please try again in a moment.",
   'order.loading': 'Loading order...',
   'order.loadingDescription': 'Fetching order data from server.',
+  'order.invoiceCodeTitle': 'Need a personal code on your invoice?',
+  'order.invoiceCodeHint': "We don't store your personal code in our database. Enter it here — it goes straight to the manager preparing your invoice and is never saved.",
+  'order.invoiceCodePlaceholder': 'Personal code',
+  'order.invoiceCodeSubmit': 'Send to manager',
+  'order.invoiceCodeSending': 'Sending...',
+  'order.invoiceCodeSuccess': 'Code sent to the manager for your invoice',
+  'order.invoiceCodeError': "Couldn't send it. Please try again or contact us.",
 }
 
 export default enCheckout

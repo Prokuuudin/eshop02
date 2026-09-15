@@ -4,7 +4,6 @@ import { validateCheckoutForm } from './checkout-validation';
 
 const validForm: CheckoutFormData = {
     customerType: 'individual',
-    personalCode: '010190-12345',
     companyName: '',
     regNumber: '',
     vatNumber: '',

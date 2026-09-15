@@ -57,7 +57,6 @@ function useCheckoutPageState() {
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
     const [formData, setFormData] = useState<CheckoutFormData>(() => ({
         customerType: 'individual',
-        personalCode: '',
         companyName: '',
         regNumber: '',
         vatNumber: '',
@@ -273,7 +272,7 @@ function useCheckoutPageState() {
                   bankName: formData.bankName.trim(),
                   iban: formData.iban.trim(),
               }
-            : { customerType: 'individual' as const, personalCode: formData.personalCode.trim() };
+            : { customerType: 'individual' as const };
 
         // Create order — the server assigns the canonical id (client counters collide across browsers)
         const orderData = {

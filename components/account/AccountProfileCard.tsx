@@ -74,7 +74,6 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
         avatarUrl: user.avatarUrl ?? '',
         password: '',
         customerType: user.checkoutProfile?.customerType ?? 'individual',
-        personalCode: user.checkoutProfile?.personalCode ?? '',
         regNumber: user.checkoutProfile?.regNumber ?? '',
         vatNumber: user.checkoutProfile?.vatNumber ?? '',
         legalAddress: user.checkoutProfile?.legalAddress ?? '',
@@ -260,9 +259,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <ProfileInput field="firstName" label={t('checkout.firstName')} value={activeDraft.firstName} onChange={onChange} inputClassName={fieldClass()} />
                         <ProfileInput field="lastName" label={t('checkout.lastName')} value={activeDraft.lastName} onChange={onChange} inputClassName={fieldClass()} />
-                        {activeDraft.customerType === 'individual' ? (
-                            <ProfileInput field="personalCode" label={t('checkout.personalCode')} value={activeDraft.personalCode} onChange={onChange} inputClassName={fieldClass()} />
-                        ) : (
+                        {activeDraft.customerType === 'individual' ? null : (
                             <>
                                 <ProfileInput field="companyName" label={t('checkout.companyName')} value={activeDraft.companyName} onChange={onChange} inputClassName={fieldClass()} />
                                 <ProfileInput field="regNumber" label={t('checkout.regNumber')} value={activeDraft.regNumber} onChange={onChange} inputClassName={fieldClass()} />

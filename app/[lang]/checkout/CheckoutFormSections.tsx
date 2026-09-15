@@ -10,7 +10,6 @@ export type CustomerType = 'individual' | 'company'
 
 export type CheckoutFormData = {
   customerType: CustomerType
-  personalCode: string
   companyName: string
   regNumber: string
   vatNumber: string
@@ -124,15 +123,6 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
           <FieldError id="checkout-last-name-error" message={errors.lastName} />
         </div>
       </div>
-      {formData.customerType === 'individual' && (
-        <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="checkout__field">
-            <label htmlFor="checkout-personal-code" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.personalCode')} <span className="text-red-600">*</span></label>
-            <Input id="checkout-personal-code" name="personalCode" value={formData.personalCode} onChange={onChange} placeholder={t('checkout.personalCode')} className={fieldClass(!!errors.personalCode)} aria-required="true" aria-invalid={!!errors.personalCode} aria-describedby={errors.personalCode ? 'checkout-personal-code-error' : undefined} />
-            <FieldError id="checkout-personal-code-error" message={errors.personalCode} />
-          </div>
-        </div>
-      )}
       <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="checkout__field">
           <label htmlFor="checkout-email" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.email')} <span className="text-red-600">*</span></label>

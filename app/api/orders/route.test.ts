@@ -51,7 +51,7 @@ const VALID_ORDER = {
   address: 'Riga st 1',
   city: 'Riga',
   postalCode: '1001',
-  legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
+  legalDetails: { customerType: 'individual' },
   deliveryMethod: 'courier',
   paymentMethod: 'bank',
   items: [
@@ -262,20 +262,22 @@ describe('POST /api/orders — admin notification', () => {
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
-  it('rejects an individual order without a personal code', async () => {
-    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { customerType: 'individual', personalCode: '' } }))
-    expect(res.status).toBe(400)
-    expect((await res.json()).error).toBe('missing_legal_details')
-    expect(createServerOrder).not.toHaveBeenCalled()
-  })
-
-  it('defaults to individual and requires a personal code when legalDetails is omitted', async () => {
+  it('accepts an individual order with no personal code at all — it is never collected at checkout', async () => {
     const { legalDetails: omitted, ...orderWithoutLegalDetails } = VALID_ORDER
     void omitted
     const res = await POST(makeRequest(orderWithoutLegalDetails))
-    expect(res.status).toBe(400)
-    expect((await res.json()).error).toBe('missing_legal_details')
-    expect(createServerOrder).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
+  it('never persists a personal code even if a client sends one — it only ever belongs on an ad hoc invoice', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
+    }))
+    expect(res.status).toBe(200)
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0] as { legalDetails?: unknown }
+    expect(persisted.legalDetails).toEqual({ customerType: 'individual' })
   })
 
   const COMPANY_LEGAL_DETAILS = {

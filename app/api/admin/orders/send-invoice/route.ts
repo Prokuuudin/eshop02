@@ -26,7 +26,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  let body: { orderId: string; email: string; language?: string }
+  let body: { orderId: string; email: string; language?: string; personalCode?: string }
   try {
     body = await request.json()
   } catch {
@@ -38,6 +38,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!orderId || !email) {
     return NextResponse.json({ ok: false, code: 'missing_fields' }, { status: 422 })
   }
+
+  // Ad hoc only, per this one invoice — never read from or written back to the order.
+  // See lib/orders-store.ts OrderLegalDetails / lib/invoice-template.ts.
+  const personalCode = typeof body.personalCode === 'string' ? body.personalCode.trim().slice(0, 64) : undefined
 
   // Инвойс по умолчанию латышский; английский — по запросу покупателя
   if (body.language !== undefined && !['lv', 'en'].includes(body.language)) {
@@ -67,7 +71,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const subject = lang === 'en' ? `Invoice for order #${order.id}` : `Rēķins pasūtījumam #${order.id}`
-    const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang, getSiteUrl())
+    const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang, getSiteUrl(), personalCode || undefined)
 
     await sendEmail(email, subject, html)
 

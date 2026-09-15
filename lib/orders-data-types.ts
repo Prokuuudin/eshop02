@@ -19,7 +19,8 @@ export type ServerOrderItem = {
 }
 
 export type ServerOrderLegalDetails =
-  | { customerType: 'individual'; personalCode: string }
+  // Mirrors OrderLegalDetails in orders-store.ts — no personalCode, never persisted.
+  | { customerType: 'individual' }
   | {
       customerType: 'company'
       companyName: string

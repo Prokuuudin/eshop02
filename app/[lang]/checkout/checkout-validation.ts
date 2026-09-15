@@ -17,7 +17,6 @@ export function validateCheckoutForm(
     const errors: Record<string, string> = {};
 
     if (formData.customerType === 'individual') {
-        if (!formData.personalCode.trim()) errors.personalCode = t('checkout.errors.personalCode');
         if (!formData.phone.trim()) errors.phone = t('checkout.errors.phone');
     } else {
         if (!formData.companyName.trim()) errors.companyName = t('checkout.errors.companyName');

@@ -21,12 +21,16 @@ type Props = {
 export default function OrderInvoiceModal({ order, open, onClose }: Props): React.ReactElement | null {
   const [lang, setLang] = useState<InvoiceLang>('lv')
   const [email, setEmail] = useState(order.email)
+  // Ad hoc only — entered here by staff when the client asks for it, never read from
+  // or written back to the order. See lib/orders-store.ts OrderLegalDetails.
+  const [personalCode, setPersonalCode] = useState('')
   const [sending, setSending] = useState(false)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [sent, setSent] = useState(false)
   const { showToast } = useToast()
   const { l } = useAdminLocale()
+  const isIndividual = (order.legalDetails?.customerType ?? 'individual') === 'individual'
 
   const handlePreview = async () => {
     const previewWindow = window.open('', '_blank')
@@ -38,7 +42,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
     setGeneratingPdf(true)
     try {
       const titles = await fetchInvoiceTitles(order.items, lang)
-      const html = buildInvoiceHtml(order, titles, lang)
+      const html = buildInvoiceHtml(order, titles, lang, '', personalCode.trim() || undefined)
       const url = URL.createObjectURL(await buildInvoicePdfBlob(html))
       previewWindow.location.href = url
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
@@ -54,7 +58,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
     setDownloading(true)
     try {
       const titles = await fetchInvoiceTitles(order.items, lang)
-      const html = buildInvoiceHtml(order, titles, lang)
+      const html = buildInvoiceHtml(order, titles, lang, '', personalCode.trim() || undefined)
       const blob = await buildInvoicePdfBlob(html)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -76,7 +80,7 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
       const res = await fetch('/api/admin/orders/send-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: order.id, email: email.trim(), language: lang }),
+        body: JSON.stringify({ orderId: order.id, email: email.trim(), language: lang, personalCode: personalCode.trim() || undefined }),
       })
       if (res.ok) {
         setSent(true)
@@ -138,6 +142,20 @@ export default function OrderInvoiceModal({ order, open, onClose }: Props): Reac
             placeholder="client@example.com"
           />
         </div>
+
+        {/* Personal code: ad hoc only, entered here when the client requests it on their
+            invoice. Never read from or saved to the order/profile — see comment above. */}
+        {isIndividual && (
+          <div>
+            <label htmlFor="invoice-personal-code" className="block text-sm text-muted-foreground mb-2">{l('Персональный код (по запросу клиента)', "Personal code (only if the client asks)", 'Personas kods (tikai pēc klienta lūguma)')}</label>
+            <Input
+              id="invoice-personal-code"
+              value={personalCode}
+              onChange={(e) => setPersonalCode(e.target.value)}
+              placeholder={l('Не сохраняется — вводится заново для каждого счёта', 'Not saved — re-entered for every invoice', 'Netiek saglabāts — jāievada katram rēķinam no jauna')}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2">

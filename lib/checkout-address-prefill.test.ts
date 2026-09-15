@@ -23,7 +23,7 @@ describe('full checkout prefill', () => {
     const fallback = buildCheckoutProfileFallback({
       email: 'anna@example.com',
       checkoutProfile: {
-        customerType: 'company', personalCode: '', companyName: 'SIA Test', regNumber: '123',
+        customerType: 'company', companyName: 'SIA Test', regNumber: '123',
         vatNumber: 'LV123', legalAddress: 'Legal 1', bankName: 'Bank', iban: 'LV00',
         firstName: 'Anna', lastName: 'Test', phone: '+3712', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001',
       },

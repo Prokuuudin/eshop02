@@ -20,8 +20,6 @@ const ruCheckout: Record<string, string> = {
   'checkout.postalCode': 'Почтовый индекс',
   'checkout.customerType.individual': 'Физическое лицо',
   'checkout.customerType.company': 'Юридическое лицо',
-  'checkout.personalCode': 'Персональный код',
-  'checkout.errors.personalCode': 'Персональный код обязателен',
   'checkout.companyName': 'Название компании',
   'checkout.errors.companyName': 'Название компании обязательно',
   'checkout.regNumber': 'Регистрационный номер',
@@ -192,6 +190,13 @@ const ruCheckout: Record<string, string> = {
   'order.payNowFailed': 'Не удалось открыть оплату. Попробуйте ещё раз чуть позже.',
   'order.loading': 'Загружаем заказ...',
   'order.loadingDescription': 'Пробуем получить данные заказа с сервера.',
+  'order.invoiceCodeTitle': 'Нужен персональный код в счёте?',
+  'order.invoiceCodeHint': 'Мы не храним персональный код в базе. Укажите его здесь — он уйдёт напрямую менеджеру, который готовит именно ваш счёт, и нигде не сохраняется.',
+  'order.invoiceCodePlaceholder': 'Персональный код',
+  'order.invoiceCodeSubmit': 'Отправить менеджеру',
+  'order.invoiceCodeSending': 'Отправка...',
+  'order.invoiceCodeSuccess': 'Код отправлен менеджеру для вашего счёта',
+  'order.invoiceCodeError': 'Не удалось отправить. Попробуйте ещё раз или напишите нам.',
 }
 
 export default ruCheckout

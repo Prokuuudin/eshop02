@@ -15,7 +15,7 @@ export type ProfileDraft = {
 } & CheckoutProfile;
 
 const EMPTY_CHECKOUT_PROFILE: CheckoutProfile = {
-    customerType: 'individual', personalCode: '', companyName: '', regNumber: '', vatNumber: '',
+    customerType: 'individual', companyName: '', regNumber: '', vatNumber: '',
     legalAddress: '', bankName: '', iban: '', firstName: '', lastName: '', phone: '', address: '',
     city: '', postalCode: '',
 };
@@ -85,7 +85,6 @@ function useAccountProfileImpl(
                     avatarUrl: profileDraft.avatarUrl,
                     checkoutProfile: {
                         customerType: profileDraft.customerType,
-                        personalCode: profileDraft.personalCode,
                         companyName: profileDraft.companyName,
                         regNumber: profileDraft.regNumber,
                         vatNumber: profileDraft.vatNumber,
@@ -129,7 +128,7 @@ function useAccountProfileImpl(
             companyName: profileDraft.companyName,
             avatarUrl: profileDraft.avatarUrl || users[idx].avatarUrl || '',
             checkoutProfile: {
-                customerType: profileDraft.customerType, personalCode: profileDraft.personalCode,
+                customerType: profileDraft.customerType,
                 companyName: profileDraft.companyName, regNumber: profileDraft.regNumber,
                 vatNumber: profileDraft.vatNumber, legalAddress: profileDraft.legalAddress,
                 bankName: profileDraft.bankName, iban: profileDraft.iban, firstName: profileDraft.firstName,

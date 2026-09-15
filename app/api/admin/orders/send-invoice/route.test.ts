@@ -17,6 +17,7 @@ import { requireAdminPermission } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { appendServerAudit } from '@/lib/server-audit'
 import { getServerOrderById } from '@/lib/orders-data-store'
+import { buildInvoiceHtml } from '@/lib/invoice-template'
 import { POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -87,6 +88,18 @@ describe('POST /api/admin/orders/send-invoice', () => {
     expect(appendServerAudit).toHaveBeenCalledWith(
       expect.anything(), expect.anything(), ADMIN_USER,
       expect.objectContaining({ action: 'order.invoice_sent', entityId: '1042' }),
+    )
+  })
+
+  it('forwards an admin-entered personal code to the invoice for this send only', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
+
+    const res = await POST(makeRequest({ orderId: '1042', email: 'customer@example.com', personalCode: '010101-12345' }))
+
+    expect(res.status).toBe(200)
+    expect(buildInvoiceHtml).toHaveBeenCalledWith(
+      expect.anything(), expect.anything(), 'lv', 'https://hairshoppro.lv', '010101-12345'
     )
   })
 

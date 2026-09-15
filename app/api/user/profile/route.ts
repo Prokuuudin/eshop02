@@ -5,7 +5,10 @@ import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import type { CheckoutProfile } from '@/lib/auth-types'
 
-const checkoutProfileFields = ['personalCode', 'companyName', 'regNumber', 'vatNumber', 'legalAddress', 'bankName', 'iban', 'firstName', 'lastName', 'phone', 'address', 'city', 'postalCode'] as const
+// personalCode is deliberately not in this list: it must never be persisted to the
+// shop database (GDPR minimization). It's only ever collected ad hoc, at invoice
+// time, by admin request — see components/admin/OrderInvoiceModal.tsx.
+const checkoutProfileFields = ['companyName', 'regNumber', 'vatNumber', 'legalAddress', 'bankName', 'iban', 'firstName', 'lastName', 'phone', 'address', 'city', 'postalCode'] as const
 
 function parseCheckoutProfile(value: unknown): CheckoutProfile | undefined {
   if (value === undefined) return undefined

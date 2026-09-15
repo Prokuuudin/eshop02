@@ -182,12 +182,17 @@ function lvDeliveryAddress(order: Order): { address: string; city: string } | nu
  * titles: карта productId → название на языке инвойса (Product.titleLv/titleEn).
  * item.title — снимок в языке корзины на момент заказа, поэтому без карты
  * название может остаться не на языке инвойса; передавайте её везде, где есть доступ к товарам.
+ *
+ * personalCode: персональный код физлица для этого конкретного счёта. Никогда не
+ * читается из order.legalDetails и нигде не сохраняется — вводится вручную (по
+ * инициативе клиента) в момент формирования счёта, см. OrderInvoiceModal.tsx.
  */
 export function buildInvoiceHtml(
   order: Order,
   titles?: Record<string, string>,
   lang: InvoiceLang = 'lv',
-  assetBaseUrl = ''
+  assetBaseUrl = '',
+  personalCode?: string
 ): string {
   const L = LABELS[lang]
   const date = formatInvoiceDate(order.createdAt)
@@ -227,7 +232,7 @@ export function buildInvoiceHtml(
   const legalDetails = order.legalDetails
   const payerDetails = legalDetails?.customerType === 'company'
     ? `${L.company}: <strong>${esc(legalDetails.companyName)}</strong><br/>${L.regNumber}: ${esc(legalDetails.regNumber)}<br/>${legalDetails.vatNumber ? `${L.vatNumber}: ${esc(legalDetails.vatNumber)}<br/>` : ''}${L.address}: ${esc(legalDetails.legalAddress)}<br/>${L.bank}: ${esc(legalDetails.bankName)}<br/>IBAN: ${esc(formatIban(legalDetails.iban))}<br/>${L.contactPerson}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}`
-    : `${L.name}: ${customer}<br/>${legalDetails?.customerType === 'individual' ? `${L.personalCode}: ${esc(legalDetails.personalCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
+    : `${L.name}: ${customer}<br/>${legalDetails?.customerType === 'individual' && personalCode ? `${L.personalCode}: ${esc(personalCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">

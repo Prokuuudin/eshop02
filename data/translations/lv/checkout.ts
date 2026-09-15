@@ -20,8 +20,6 @@ const lvCheckout: Record<string, string> = {
   'checkout.postalCode': 'Pasta indekss',
   'checkout.customerType.individual': 'Fiziska persona',
   'checkout.customerType.company': 'Juridiska persona',
-  'checkout.personalCode': 'Personas kods',
-  'checkout.errors.personalCode': 'Personas kods ir obligāts',
   'checkout.companyName': 'Uzņēmuma nosaukums',
   'checkout.errors.companyName': 'Uzņēmuma nosaukums ir obligāts',
   'checkout.regNumber': 'Reģistrācijas numurs',
@@ -192,6 +190,13 @@ const lvCheckout: Record<string, string> = {
   'order.payNowFailed': 'Neizdevās atvērt apmaksu. Mēģiniet vēlreiz pēc brīža.',
   'order.loading': 'Ielādējam pasūtījumu...',
   'order.loadingDescription': 'Mēģinām iegūt pasūtījuma datus no servera.',
+  'order.invoiceCodeTitle': 'Nepieciešams personas kods rēķinā?',
+  'order.invoiceCodeHint': 'Personas kodu mēs datubāzē neglabājam. Norādiet to šeit — tas nonāks tieši pie menedžera, kurš sagatavo jūsu rēķinu, un netiek saglabāts.',
+  'order.invoiceCodePlaceholder': 'Personas kods',
+  'order.invoiceCodeSubmit': 'Nosūtīt menedžerim',
+  'order.invoiceCodeSending': 'Sūta...',
+  'order.invoiceCodeSuccess': 'Kods nosūtīts menedžerim jūsu rēķinam',
+  'order.invoiceCodeError': 'Neizdevās nosūtīt. Mēģiniet vēlreiz vai sazinieties ar mums.',
 }
 
 export default lvCheckout

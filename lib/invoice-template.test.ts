@@ -164,15 +164,28 @@ describe('buildInvoiceHtml', () => {
 })
 
 describe('buildInvoiceHtml payer block', () => {
-  it('shows the personal code for an individual order', () => {
-    const html = buildInvoiceHtml({
-      ...order,
-      legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
-    } as unknown as Order)
+  it('shows the personal code for an individual order when one is entered for this invoice', () => {
+    const html = buildInvoiceHtml(
+      { ...order, legalDetails: { customerType: 'individual' } } as unknown as Order,
+      undefined,
+      'lv',
+      '',
+      '010101-12345'
+    )
 
     expect(html).toContain('Personas kods: 010101-12345')
     expect(html).toContain('Jānis Bērziņš')
     expect(html).not.toContain('Uzņēmums')
+  })
+
+  it('omits the personal code line for an individual order when none was entered — it is never read from the order itself', () => {
+    const html = buildInvoiceHtml({
+      ...order,
+      legalDetails: { customerType: 'individual' },
+    } as unknown as Order)
+
+    expect(html).not.toContain('Personas kods')
+    expect(html).toContain('Jānis Bērziņš')
   })
 
   it('shows company details instead of the personal name for a company order', () => {

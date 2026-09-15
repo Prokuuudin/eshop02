@@ -47,12 +47,12 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
     };
     const {
       getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
-      locale, expandedOrder, setExpandedOrder, selectedIds, toggleSelect,
+      locale, expandedOrders, toggleExpanded, selectedIds, toggleSelect,
       paymentSavingIds, markOrderPaid,
     } = state;
 
                     const status = getOrderStatus(order.id);
-                    const isExpanded = expandedOrder === order.id;
+                    const isExpanded = expandedOrders.has(order.id);
                     const payStatus = order.paymentStatus ?? 'unpaid';
                     const rowRef = React.useRef<HTMLDivElement>(null);
 
@@ -88,7 +88,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                                    onClick={() => toggleExpanded(order.id)}
                                     aria-expanded={isExpanded}
                                     className="flex flex-1 flex-wrap items-center gap-3 text-left"
                                 >
@@ -133,15 +133,15 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                             </div>
 
                             {isExpanded && (
-                                <div className="border-t border-border px-5 py-5 space-y-5">
+                                <div className="border-t border-border px-4 py-4 space-y-3">
                                     <OrderQuickActions order={order} state={state} status={status} />
 
                                     <OrderEditForm order={order} state={state} />
 
                                     {/* Info blocks */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         {/* Customer */}
-                                        <div className="rounded-lg border border-border p-4 space-y-2">
+                                        <div className="rounded-lg border border-border bg-card p-3 space-y-1">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 {l('Клиент', 'Customer', 'Klients')}
                                             </p>
@@ -163,7 +163,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                         </div>
 
                                         {/* Delivery */}
-                                        <div className="rounded-lg border border-border p-4 space-y-2">
+                                        <div className="rounded-lg border border-border bg-card p-3 space-y-1">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 {l('Доставка', 'Delivery', 'Piegāde')}
                                             </p>
@@ -177,7 +177,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                         </div>
 
                                         {/* Payment */}
-                                        <div className="rounded-lg border border-border p-4 space-y-2">
+                                        <div className="rounded-lg border border-border bg-card p-3 space-y-1">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                 {l('Оплата', 'Payment', 'Apmaksa')}
                                             </p>
@@ -224,23 +224,23 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
 
                                     {/* Items */}
                                     <div>
-                                        <p className="text-sm font-semibold text-foreground mb-2">
+                                        <p className="text-sm font-semibold text-foreground mb-1.5">
                                             {l('Состав заказа', 'Order contents', 'Pasūtījuma saturs')}
                                         </p>
                                         <div className="rounded-lg border border-border divide-y divide-border">
                                             {order.items.map((item, index) => (
                                                 <div
                                                     key={item.lineKey || `legacy:${order.id}:${index}`}
-                                                    className="flex items-center gap-3 px-3 py-2.5"
+                                                    className="flex items-center gap-2 px-3 py-1.5"
                                                 >
                                                     {item.image && (
                                                         <Image
                                                             unoptimized
                                                             src={item.image}
                                                             alt={item.title}
-                                                            width={40}
-                                                            height={40}
-                                                            className="w-10 h-10 object-cover rounded-md shrink-0"
+                                                            width={32}
+                                                            height={32}
+                                                            className="w-8 h-8 object-cover rounded-md shrink-0"
                                                         />
                                                     )}
                                                     <div className="flex-1 min-w-0">
@@ -270,159 +270,164 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                         </div>
                                     </div>
 
-                                    {/* Amounts */}
-                                    <div className="flex justify-end">
-                                        <div className="text-sm space-y-1.5 min-w-[260px]">
-                                            <div className="flex justify-between gap-6">
-                                                <span className="text-muted-foreground">
-                                                    {l('Сумма за товары', 'Product subtotal', 'Preču starpsumma')}
-                                                </span>
-                                                <span className="text-foreground">
-                                                    {formatEuro(order.subtotal, locale)}
-                                                </span>
-                                            </div>
-                                            {order.discount > 0 && (
-                                                <div className="flex justify-between gap-6 text-green-700 dark:text-green-400">
-                                                    <span>
-                                                        {l('Скидка', 'Discount', 'Atlaide')}
-                                                        {order.promoCode
-                                                            ? ` (${order.promoCode})`
-                                                            : ''}
-                                                    </span>
-                                                    <span>
-                                                        −{formatEuro(order.discount, locale)}
-                                                    </span>
+                                    {/* Status, manager note & amounts */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2 border-t border-border">
+                                        <div className="space-y-3">
+                                            {/* Status management */}
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground mb-1.5">
+                                                    {l('Изменить статус', 'Change status', 'Mainīt statusu')}
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {availableOrderStatuses(status).map((s) => (
+                                                        <Button
+                                                            key={s}
+                                                            size="sm"
+                                                            variant={status === s ? 'default' : 'outline'}
+                                                            className={
+                                                                status === s
+                                                                    ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                                                                    : ''
+                                                            }
+                                                            onClick={() => void setOrderStatus(order.id, s)}
+                                                            disabled={status === s}
+                                                        >
+                                                            {STATUS_LABELS[s]}
+                                                        </Button>
+                                                    ))}
                                                 </div>
-                                            )}
-                                            <div className="flex justify-between gap-6">
-                                                <span className="text-muted-foreground">
-                                                    {l('Доставка', 'Delivery', 'Piegāde')}
-                                                </span>
-                                                <span className="text-foreground">
-                                                    {order.delivery === 0
-                                                        ? l('Бесплатно', 'Free', 'Bez maksas')
-                                                        : formatEuro(order.delivery, locale)}
-                                                </span>
                                             </div>
-                                            {order.tax > 0 && (
+
+                                            {/* Manager note */}
+                                            <div className="pt-2 border-t border-border">
+                                                <p className="text-sm font-semibold text-foreground mb-1.5">
+                                                    {l('Заметка менеджера', 'Manager note', 'Vadītāja piezīme')}
+                                                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                        {l('— клиент не видит', '— hidden from customer', '— klients neredz')}
+                                                    </span>
+                                                </p>
+                                                <Textarea
+                                                    rows={2}
+                                                    value={noteDrafts[order.id] ?? getOrderNote(order.id)}
+                                                    onChange={(e) =>
+                                                        setNoteDrafts((prev) => ({
+                                                            ...prev,
+                                                            [order.id]: e.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder={l('Внутренний комментарий: статус пересылки, договорённости с клиентом...', 'Internal comment: shipping status, customer arrangements...', 'Iekšējs komentārs: nosūtīšanas statuss, vienošanās ar klientu...')}
+                                                    className="w-full resize-none text-sm"
+                                                />
+                                                <div className="flex items-center gap-3 mt-1.5">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={async () => {
+                                                            const noteText =
+                                                                noteDrafts[order.id] ??
+                                                                getOrderNote(order.id);
+                                                            if (!(await setOrderNote(order.id, noteText))) return;
+                                                            setNoteDrafts((prev) => {
+                                                                const n = { ...prev };
+                                                                delete n[order.id];
+                                                                return n;
+                                                            });
+                                                        }}
+                                                        disabled={
+                                                            noteDrafts[order.id] === undefined ||
+                                                            noteDrafts[order.id] === getOrderNote(order.id)
+                                                        }
+                                                    >
+                                                        {l('Сохранить заметку', 'Save note', 'Saglabāt piezīmi')}
+                                                    </Button>
+                                                    {getOrderNote(order.id) &&
+                                                        noteDrafts[order.id] === undefined && (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {l('Заметка сохранена', 'Note saved', 'Piezīme saglabāta')}
+                                                            </span>
+                                                        )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Amounts */}
+                                        <div className="flex lg:justify-end">
+                                            <div className="text-sm space-y-1.5 min-w-[260px]">
                                                 <div className="flex justify-between gap-6">
                                                     <span className="text-muted-foreground">
-                                                        {l('Налог (НДС)', 'Tax (VAT)', 'Nodoklis (PVN)')}
+                                                        {l('Сумма за товары', 'Product subtotal', 'Preču starpsumma')}
                                                     </span>
                                                     <span className="text-foreground">
-                                                        {formatEuro(order.tax, locale)}
+                                                        {formatEuro(order.subtotal, locale)}
                                                     </span>
                                                 </div>
-                                            )}
-                                            {(order.bonusSpent ?? 0) > 0 && (
-                                                <div className="flex justify-between gap-6 text-amber-700 dark:text-amber-400">
-                                                    <span>{l('Бонусы использованы', 'Bonuses used', 'Izmantotie bonusi')}</span>
-                                                    <span>
-                                                        −{order.bonusSpent}
-                                                        {' '}({formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className="flex justify-between gap-6 font-bold text-base pt-2 border-t border-border">
-                                                <span className="text-foreground">{l('Итого', 'Total', 'Kopā')}</span>
-                                                <span className="text-foreground">
-                                                    {formatEuro(order.total, locale)}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between gap-6 text-emerald-700 dark:text-emerald-400 font-medium">
-                                                <span>{l('Прибыль', 'Profit', 'Peļņa')}</span>
-                                                <span>
-                                                    {formatEuro(
-                                                        order.total - order.tax - order.delivery,
-                                                        locale
-                                                    )}
-                                                </span>
-                                            </div>
-                                            {(order.bonusEarned ?? 0) > 0 && (
-                                                <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">
-                                                    <span>{l('Бонусов начислено', 'Bonuses earned', 'Piešķirtie bonusi')}</span>
-                                                    <span>
-                                                        +{order.bonusEarned}
-                                                        {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Status management */}
-                                    <div className="pt-2 border-t border-border">
-                                        <p className="text-sm font-semibold text-foreground mb-2">
-                                            {l('Изменить статус', 'Change status', 'Mainīt statusu')}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {availableOrderStatuses(status).map((s) => (
-                                                <Button
-                                                    key={s}
-                                                    size="sm"
-                                                    variant={status === s ? 'default' : 'outline'}
-                                                    className={
-                                                        status === s
-                                                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                                                            : ''
-                                                    }
-                                                    onClick={() => void setOrderStatus(order.id, s)}
-                                                    disabled={status === s}
-                                                >
-                                                    {STATUS_LABELS[s]}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Manager note */}
-                                    <div className="pt-2 border-t border-border">
-                                        <p className="text-sm font-semibold text-foreground mb-2">
-                                            {l('Заметка менеджера', 'Manager note', 'Vadītāja piezīme')}
-                                            <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                                {l('— клиент не видит', '— hidden from customer', '— klients neredz')}
-                                            </span>
-                                        </p>
-                                        <Textarea
-                                            rows={3}
-                                            value={noteDrafts[order.id] ?? getOrderNote(order.id)}
-                                            onChange={(e) =>
-                                                setNoteDrafts((prev) => ({
-                                                    ...prev,
-                                                    [order.id]: e.target.value,
-                                                }))
-                                            }
-                                            placeholder={l('Внутренний комментарий: статус пересылки, договорённости с клиентом...', 'Internal comment: shipping status, customer arrangements...', 'Iekšējs komentārs: nosūtīšanas statuss, vienošanās ar klientu...')}
-                                            className="w-full resize-none text-sm"
-                                        />
-                                        <div className="flex items-center gap-3 mt-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={async () => {
-                                                    const noteText =
-                                                        noteDrafts[order.id] ??
-                                                        getOrderNote(order.id);
-                                                    if (!(await setOrderNote(order.id, noteText))) return;
-                                                    setNoteDrafts((prev) => {
-                                                        const n = { ...prev };
-                                                        delete n[order.id];
-                                                        return n;
-                                                    });
-                                                }}
-                                                disabled={
-                                                    noteDrafts[order.id] === undefined ||
-                                                    noteDrafts[order.id] === getOrderNote(order.id)
-                                                }
-                                            >
-                                                {l('Сохранить заметку', 'Save note', 'Saglabāt piezīmi')}
-                                            </Button>
-                                            {getOrderNote(order.id) &&
-                                                noteDrafts[order.id] === undefined && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {l('Заметка сохранена', 'Note saved', 'Piezīme saglabāta')}
-                                                    </span>
+                                                {order.discount > 0 && (
+                                                    <div className="flex justify-between gap-6 text-green-700 dark:text-green-400">
+                                                        <span>
+                                                            {l('Скидка', 'Discount', 'Atlaide')}
+                                                            {order.promoCode
+                                                                ? ` (${order.promoCode})`
+                                                                : ''}
+                                                        </span>
+                                                        <span>
+                                                            −{formatEuro(order.discount, locale)}
+                                                        </span>
+                                                    </div>
                                                 )}
+                                                <div className="flex justify-between gap-6">
+                                                    <span className="text-muted-foreground">
+                                                        {l('Доставка', 'Delivery', 'Piegāde')}
+                                                    </span>
+                                                    <span className="text-foreground">
+                                                        {order.delivery === 0
+                                                            ? l('Бесплатно', 'Free', 'Bez maksas')
+                                                            : formatEuro(order.delivery, locale)}
+                                                    </span>
+                                                </div>
+                                                {order.tax > 0 && (
+                                                    <div className="flex justify-between gap-6">
+                                                        <span className="text-muted-foreground">
+                                                            {l('Налог (НДС)', 'Tax (VAT)', 'Nodoklis (PVN)')}
+                                                        </span>
+                                                        <span className="text-foreground">
+                                                            {formatEuro(order.tax, locale)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {(order.bonusSpent ?? 0) > 0 && (
+                                                    <div className="flex justify-between gap-6 text-amber-700 dark:text-amber-400">
+                                                        <span>{l('Бонусы использованы', 'Bonuses used', 'Izmantotie bonusi')}</span>
+                                                        <span>
+                                                            −{order.bonusSpent}
+                                                            {' '}({formatEuro(pointsToEuros(order.bonusSpent ?? 0), locale)})
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between gap-6 font-bold text-base pt-2 border-t border-border">
+                                                    <span className="text-foreground">{l('Итого', 'Total', 'Kopā')}</span>
+                                                    <span className="text-foreground">
+                                                        {formatEuro(order.total, locale)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between gap-6 text-emerald-700 dark:text-emerald-400 font-medium">
+                                                    <span>{l('Прибыль', 'Profit', 'Peļņa')}</span>
+                                                    <span>
+                                                        {formatEuro(
+                                                            order.total - order.tax - order.delivery,
+                                                            locale
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                {(order.bonusEarned ?? 0) > 0 && (
+                                                    <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">
+                                                        <span>{l('Бонусов начислено', 'Bonuses earned', 'Piešķirtie bonusi')}</span>
+                                                        <span>
+                                                            +{order.bonusEarned}
+                                                            {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

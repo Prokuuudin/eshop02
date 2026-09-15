@@ -141,7 +141,7 @@ function useAdminOrdersPageState() {
     const [deliveryFilter, setDeliveryFilter] = useState('all');
     const [sortField, setSortField] = useState<SortField>('date');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
-    const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+    const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
     const [bulkStatus, setBulkStatus] = useState<OrderStatus | ''>('');
@@ -239,6 +239,15 @@ function useAdminOrdersPageState() {
             return current === candidate || ALLOWED_STATUS_TRANSITIONS[current].includes(candidate);
         })
     );
+
+    const toggleExpanded = (id: string) => {
+        setExpandedOrders((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     const toggleSelect = (id: string) => {
         setSelectedIds((prev) => {
@@ -455,8 +464,8 @@ function useAdminOrdersPageState() {
         setDeliveryFilter,
         sortField,
         sortDir,
-        expandedOrder,
-        setExpandedOrder,
+        expandedOrders,
+        toggleExpanded,
         selectedIds,
         setSelectedIds,
         invoiceOrder,

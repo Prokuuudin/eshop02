@@ -301,6 +301,14 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                                     ));
                                                                     if (!confirmed) return;
                                                                 }
+                                                                if (status === 'cancelled' && s === 'pending') {
+                                                                    const confirmed = window.confirm(l(
+                                                                        `Восстановить заказ ${order.id}? Товары снова будут списаны со склада.`,
+                                                                        `Restore order ${order.id}? Its items will be reserved from stock again.`,
+                                                                        `Atjaunot pasūtījumu ${order.id}? Preces atkal tiks rezervētas noliktavā.`
+                                                                    ));
+                                                                    if (!confirmed) return;
+                                                                }
                                                                 const saved = await setOrderStatus(order.id, s);
                                                                 if (saved) showToast(
                                                                     s === 'cancelled'

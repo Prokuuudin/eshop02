@@ -30,7 +30,7 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   confirmed: ['shipped', 'cancelled'],
   shipped: ['delivered'],
   delivered: [],
-  cancelled: [],
+  cancelled: ['pending'],
 }
 
 export function availableOrderStatuses(current: OrderStatus): OrderStatus[] {

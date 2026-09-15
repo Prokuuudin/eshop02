@@ -11,12 +11,13 @@ import { z } from 'zod'
 
 const orderStatusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type OrderStatus = z.infer<typeof orderStatusSchema>
+class RestoreInsufficientStockError extends Error {}
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipped', 'cancelled'],
   shipped: ['delivered'],
   delivered: [],
-  cancelled: [],
+  cancelled: ['pending'],
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {
@@ -164,6 +165,20 @@ export async function POST(req: NextRequest): Promise<Response> {
             })
           }
         }
+        if (current === 'cancelled' && status === 'pending' && order.stockReservationStatus === 'released') {
+          for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
+            if (!item.id || !Number.isInteger(item.quantity) || Number(item.quantity) <= 0) continue
+            const reserved = await tx.product.updateMany({
+              where: { id: item.id, isDeleted: false, stock: { gte: Number(item.quantity) } },
+              data: { stock: { decrement: Number(item.quantity) } },
+            })
+            if (reserved.count !== 1) throw new RestoreInsufficientStockError()
+          }
+          await tx.order.update({
+            where: { id: orderId },
+            data: { stockReservationStatus: 'committed', stockReleasedAt: null, stockReservedUntil: null },
+          })
+        }
         await tx.orderStatusRecord.upsert({
           where: { orderId },
           create: { orderId, status },
@@ -209,11 +224,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true })
   } catch (e) {
+    if (e instanceof RestoreInsufficientStockError) {
+      return NextResponse.json({ error: 'insufficient_stock' }, { status: 409 })
+    }
     logApiError("[admin/order-meta POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
 
 

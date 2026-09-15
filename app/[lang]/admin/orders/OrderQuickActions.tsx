@@ -16,7 +16,7 @@ export function OrderQuickActions({ order, state, status }: {
 }): React.ReactElement {
   const { l } = useAdminLocale()
   const { showToast } = useToast()
-  const { editingOrderId, cancelEdit, startEdit, setInvoiceOrder } = state
+  const { editingOrderId, cancelEdit, startEdit, setInvoiceOrder, deleteOrder, deletingOrderIds } = state
   const canEdit = !['shipped', 'delivered', 'cancelled'].includes(status)
   const [copied, setCopied] = useState(false)
 
@@ -68,6 +68,24 @@ export function OrderQuickActions({ order, state, status }: {
       >
         {l('Написать клиенту', 'Email customer', 'Rakstīt klientam')}
       </a>
+      {status === 'cancelled' && (
+        <button
+          type="button"
+          disabled={deletingOrderIds.has(order.id)}
+          onClick={async () => {
+            const confirmed = window.confirm(l(
+              `Удалить заказ ${order.id} навсегда? Это действие нельзя отменить.`,
+              `Permanently delete order ${order.id}? This action cannot be undone.`,
+              `Neatgriezeniski dzēst pasūtījumu ${order.id}? Šo darbību nevar atsaukt.`
+            ))
+            if (!confirmed) return
+            if (await deleteOrder(order.id)) showToast(l('Заказ удалён', 'Order deleted', 'Pasūtījums dzēsts'), 'success')
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+        >
+          {deletingOrderIds.has(order.id) ? l('Удаление…', 'Deleting…', 'Dzēš…') : l('Удалить заказ', 'Delete order', 'Dzēst pasūtījumu')}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setInvoiceOrder(order)}

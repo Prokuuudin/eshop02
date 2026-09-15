@@ -10,6 +10,6 @@ describe('availableOrderStatuses', () => {
 
   it('does not offer transitions from terminal statuses', () => {
     expect(availableOrderStatuses('delivered')).toEqual(['delivered'])
-    expect(availableOrderStatuses('cancelled')).toEqual(['cancelled'])
+    expect(availableOrderStatuses('cancelled')).toEqual(['cancelled', 'pending'])
   })
 })

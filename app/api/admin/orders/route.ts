@@ -14,6 +14,7 @@ import { parseOffsetPagination } from '@/lib/pagination'
 import { adminOrderCreateSchema, adminOrderUpdateSchema } from '@/lib/api-schemas'
 import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
+import { z } from 'zod'
 
 // Mirrors the delivery cost table shown in the admin "new order" form
 // (app/[lang]/admin/orders/new) - computed here too so a tampered client
@@ -229,6 +230,47 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: error.code, message: error.message }, { status })
     }
     logApiError("[admin/orders PATCH]", error)
+    return NextResponse.json({ error: 'server_error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const user = await requireAdminPermission('orders.update')
+  if (user instanceof NextResponse) return user
+
+  const parsed = z.string().trim().min(1).max(100).safeParse(req.nextUrl.searchParams.get('orderId'))
+  if (!parsed.success) return NextResponse.json({ error: 'invalid_order_id' }, { status: 400 })
+  const orderId = parsed.data
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+      const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, firstName: true, lastName: true } })
+      if (!order) return 'not_found' as const
+      const status = await tx.orderStatusRecord.findUnique({ where: { orderId }, select: { status: true } })
+      if (status?.status !== 'cancelled') return 'not_cancelled' as const
+      const [invoices, returns] = await Promise.all([
+        tx.invoice.count({ where: { orderId } }),
+        tx.returnRequest.count({ where: { orderId } }),
+      ])
+      if (invoices > 0 || returns > 0) return 'related_records' as const
+      await appendServerAudit(tx, req, user, {
+        action: 'order.deleted', entityType: 'order', entityId: orderId,
+        entityTitle: `${order.firstName} ${order.lastName}`.trim(), before: { status: 'cancelled' },
+      })
+      await tx.promoCodeRedemption.deleteMany({ where: { orderId } })
+      await tx.bonusTransaction.updateMany({ where: { orderId }, data: { orderId: null } })
+      await tx.orderNote.deleteMany({ where: { orderId } })
+      await tx.orderStatusRecord.deleteMany({ where: { orderId } })
+      await tx.order.delete({ where: { id: orderId } })
+      return 'deleted' as const
+    })
+    if (result === 'not_found') return NextResponse.json({ error: 'order_not_found' }, { status: 404 })
+    if (result === 'not_cancelled') return NextResponse.json({ error: 'order_must_be_cancelled' }, { status: 409 })
+    if (result === 'related_records') return NextResponse.json({ error: 'order_has_related_records' }, { status: 409 })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    logApiError('[admin/orders DELETE]', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }

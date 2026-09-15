@@ -45,6 +45,7 @@ function useAdminOrdersPageState() {
     const [mutationError, setMutationError] = useState('');
     const [paymentSavingIds, setPaymentSavingIds] = useState<Set<string>>(new Set());
     const [statusSavingIds, setStatusSavingIds] = useState<Set<string>>(new Set());
+    const [deletingOrderIds, setDeletingOrderIds] = useState<Set<string>>(new Set());
 
     // Patches one row in the currently-loaded page in place - the equivalent
     // of the old global-store upsert, but scoped to what's actually on screen
@@ -93,7 +94,35 @@ function useAdminOrdersPageState() {
                 'Šī pāreja no pašreizējā statusa nav pieejama. Atsvaidziniet pasūtījumu sarakstu.'
             );
         }
+        if (code === 'insufficient_stock') {
+            return l(
+                'Заказ нельзя восстановить: на складе недостаточно товара.',
+                'The order cannot be restored because there is not enough stock.',
+                'Pasūtījumu nevar atjaunot, jo noliktavā nepietiek preču.'
+            );
+        }
         return l('Не удалось изменить статус. Попробуйте ещё раз.', 'Failed to change status. Please try again.', 'Neizdevās mainīt statusu. Mēģiniet vēlreiz.');
+    };
+    const deleteOrder = async (orderId: string): Promise<boolean> => {
+        setMutationError('');
+        setDeletingOrderIds((prev) => new Set(prev).add(orderId));
+        try {
+            const res = await fetch(`/api/admin/orders?orderId=${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(payload?.error ?? 'order_delete_failed');
+            setPageItems((prev) => prev.filter((order) => order.id !== orderId));
+            setSelectedIds((prev) => { const next = new Set(prev); next.delete(orderId); return next; });
+            setFilteredCount((count) => Math.max(0, count - 1));
+            setStatsRefreshTick((tick) => tick + 1);
+            return true;
+        } catch (error) {
+            setMutationError(error instanceof Error && error.message === 'order_has_related_records'
+                ? l('Нельзя удалить заказ со счётом или заявкой на возврат.', 'An order with an invoice or return request cannot be deleted.', 'Pasūtījumu ar rēķinu vai atgriešanas pieteikumu nevar dzēst.')
+                : l('Не удалось удалить заказ.', 'Failed to delete the order.', 'Neizdevās dzēst pasūtījumu.'));
+            return false;
+        } finally {
+            setDeletingOrderIds((prev) => { const next = new Set(prev); next.delete(orderId); return next; });
+        }
     };
     const setOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
         setMutationError('');
@@ -264,6 +293,8 @@ function useAdminOrdersPageState() {
     const availableBulkStatuses = STATUS_LIST.filter((candidate) =>
         Array.from(selectedIds).every((id) => {
             const current = getOrderStatus(id);
+            // Restoring stock is intentionally confirmed and processed one order at a time.
+            if (current === 'cancelled' && candidate === 'pending') return false;
             return current === candidate || ALLOWED_STATUS_TRANSITIONS[current].includes(candidate);
         })
     );
@@ -479,6 +510,8 @@ function useAdminOrdersPageState() {
         editSaving,
         mutationError,
         statusSavingIds,
+        deletingOrderIds,
+        deleteOrder,
         paymentSavingIds,
         markOrderPaid,
         language,

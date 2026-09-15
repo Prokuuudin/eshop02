@@ -71,4 +71,26 @@ describe('POST /api/admin/order-meta cancellation', () => {
     expect(await response.json()).toMatchObject({ error: 'paid_order_requires_refund' })
     expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
   })
+
+  it('restores a cancelled order and reserves its stock again', async () => {
+    const tx = cancellationTx()
+    tx.orderStatusRecord.findUnique.mockResolvedValue({ orderId: 'o1', status: 'cancelled' })
+    tx.order.findUnique.mockResolvedValue({
+      id: 'o1', firstName: 'A', lastName: 'B', items: [{ id: 'p1', quantity: 2 }],
+      paymentStatus: 'unpaid', stockReservationStatus: 'released',
+    })
+    tx.product.updateMany.mockResolvedValue({ count: 1 })
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'pending' })
+
+    expect(response.status).toBe(200)
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: { id: 'p1', isDeleted: false, stock: { gte: 2 } }, data: { stock: { decrement: 2 } },
+    })
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'o1' },
+      data: { stockReservationStatus: 'committed', stockReleasedAt: null, stockReservedUntil: null },
+    })
+  })
 })

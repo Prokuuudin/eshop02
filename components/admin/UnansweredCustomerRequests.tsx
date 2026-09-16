@@ -66,7 +66,7 @@ export default function UnansweredCustomerRequests(): React.ReactElement {
 
     const content = (
         <>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
                 <MessageSquareText className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1">
@@ -83,7 +83,7 @@ export default function UnansweredCustomerRequests(): React.ReactElement {
     );
 
     const className =
-        'group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:border-gray-300 hover:shadow-sm dark:hover:border-gray-600';
+        'group flex items-center gap-4 rounded-2xl border border-border border-l-4 border-l-rose-500 bg-rose-50 p-5 shadow-sm transition-all hover:shadow-md dark:bg-rose-950/20';
 
     return (
         <Link href="/admin/contact-messages" className={className}>

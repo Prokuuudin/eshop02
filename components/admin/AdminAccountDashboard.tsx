@@ -24,11 +24,48 @@ import { type User } from '@/lib/auth';
 import UnansweredCustomerRequests from '@/components/admin/UnansweredCustomerRequests';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
+const CARD_TONES = {
+    amber: {
+        icon: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
+        surface: 'bg-amber-50 border-l-amber-500 dark:bg-amber-950/20',
+    },
+    emerald: {
+        icon: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
+        surface: 'bg-emerald-50 border-l-emerald-500 dark:bg-emerald-950/20',
+    },
+    blue: {
+        icon: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400',
+        surface: 'bg-blue-50 border-l-blue-500 dark:bg-blue-950/20',
+    },
+    violet: {
+        icon: 'text-violet-600 bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400',
+        surface: 'bg-violet-50 border-l-violet-500 dark:bg-violet-950/20',
+    },
+    pink: {
+        icon: 'text-pink-600 bg-pink-100 dark:bg-pink-900/40 dark:text-pink-400',
+        surface: 'bg-pink-50 border-l-pink-500 dark:bg-pink-950/20',
+    },
+    slate: {
+        icon: 'text-slate-600 bg-slate-100 dark:bg-slate-900/40 dark:text-slate-400',
+        surface: 'bg-slate-50 border-l-slate-500 dark:bg-slate-950/20',
+    },
+    red: {
+        icon: 'text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-400',
+        surface: 'bg-red-50 border-l-red-500 dark:bg-red-950/20',
+    },
+    teal: {
+        icon: 'text-teal-600 bg-teal-100 dark:bg-teal-900/40 dark:text-teal-400',
+        surface: 'bg-teal-50 border-l-teal-500 dark:bg-teal-950/20',
+    },
+} as const;
+
+type CardTone = keyof typeof CARD_TONES;
+
 type NavItem = { label: string; href: string };
 type NavSection = {
     title: string;
     icon: React.ElementType;
-    color: string;
+    tone: CardTone;
     items: NavItem[];
 };
 
@@ -36,7 +73,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Каталог',
         icon: FolderTree,
-        color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400',
+        tone: 'amber',
         items: [
             { label: 'Товары', href: '/admin/products' },
             { label: 'Категории', href: '/admin/categories' },
@@ -49,7 +86,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Продажи',
         icon: ShoppingCart,
-        color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
+        tone: 'emerald',
         items: [
             { label: 'Заказы', href: '/admin/orders' },
             { label: 'RFQ заявки', href: '/admin/rfq' },
@@ -60,7 +97,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Клиенты',
         icon: Users,
-        color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
+        tone: 'blue',
         items: [
             { label: 'Зарегистрированные клиенты', href: '/admin/client-barcodes' },
             { label: 'База клиентов', href: '/admin/client-database' },
@@ -74,7 +111,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Маркетинг',
         icon: Megaphone,
-        color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400',
+        tone: 'violet',
         items: [
             { label: 'Кампании', href: '/admin/marketing/campaigns' },
             { label: 'Промокоды', href: '/admin/marketing/discounts' },
@@ -84,7 +121,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Контент',
         icon: FileText,
-        color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400',
+        tone: 'pink',
         items: [
             { label: 'Блог', href: '/admin/blog' },
             { label: 'Страницы', href: '/admin/content' },
@@ -95,7 +132,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Конфигурация',
         icon: Settings,
-        color: 'text-gray-600 bg-muted dark:text-gray-400',
+        tone: 'slate',
         items: [
             { label: 'Доставка и оплата', href: '/admin/config/shipping' },
             { label: 'Бонусная программа', href: '/admin/bonus' },
@@ -106,7 +143,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Система',
         icon: Cog,
-        color: 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400',
+        tone: 'red',
         items: [
             { label: 'Журнал аудита', href: '/admin/system/admin-log' },
             { label: 'Логи', href: '/admin/system/logs' },
@@ -116,7 +153,7 @@ const NAV_SECTIONS: NavSection[] = [
     {
         title: 'Помощь',
         icon: HandHelping,
-        color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400',
+        tone: 'teal',
         items: [
             { label: 'База знаний', href: '/admin/help/knowledge' },
             { label: 'Онбординг', href: '/admin/help/onboarding' },
@@ -135,21 +172,21 @@ function KpiCard({
     value,
     sub,
     href,
-    color,
+    tone,
 }: {
     icon: React.ElementType;
     label: string;
     value: string;
     sub?: string;
     href: string;
-    color: string;
+    tone: CardTone;
 }) {
     return (
         <Link
             href={href}
-            className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:border-gray-300 hover:shadow-sm dark:hover:border-gray-600"
+            className={`group flex items-center gap-4 rounded-2xl border border-border border-l-4 p-5 shadow-sm transition-all hover:shadow-md ${CARD_TONES[tone].surface}`}
         >
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${CARD_TONES[tone].icon}`}>
                 <Icon className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1">
@@ -247,7 +284,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
     return (
         <div className="space-y-8">
             {/* Profile hero */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-2xl border border-border border-l-4 border-l-emerald-500 bg-emerald-50 p-6 shadow-sm dark:bg-emerald-950/20 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white shadow-sm">
                         {user.avatarUrl ? (
@@ -327,14 +364,14 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         value={String(stats.ordersToday)}
                         sub={l(`Всего: ${stats.totalOrders}`, `Total: ${stats.totalOrders}`, `Kopā: ${stats.totalOrders}`)}
                         href="/admin/orders"
-                        color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
+                        tone="emerald"
                     />
                     <KpiCard
                         icon={TrendingUp}
                         label={l('Выручка за 7 дней', 'Revenue for 7 days', 'Ieņēmumi par 7 dienām')}
                         value={formatMoney(stats.revenue7d, locale)}
                         href="/admin/sales/analytics"
-                        color="text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
+                        tone="blue"
                     />
                     <KpiCard
                         icon={AlertTriangle}
@@ -342,21 +379,21 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         value={lowStockCount === null ? '...' : String(lowStockCount)}
                         sub={l('Требуют внимания', 'Needs attention', 'Jāpievērš uzmanība')}
                         href="/admin/stock-alerts"
-                        color="text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400"
+                        tone="amber"
                     />
                     <KpiCard
                         icon={Package}
                         label={l('Всего заказов', 'Total orders', 'Pasūtījumi kopā')}
                         value={String(stats.totalOrders)}
                         href="/admin/orders"
-                        color="text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400"
+                        tone="violet"
                     />
                     <KpiCard
                         icon={Users}
                         label={l('Новые клиенты за 7 дней / Всего', 'New customers in 7 days / Total', 'Jaunie klienti 7 dienās / Kopā')}
                         value={`${newCustomers7d} / ${totalCustomers}`}
                         href="/admin/client-barcodes"
-                        color="text-pink-600 bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
+                        tone="pink"
                     />
                     <UnansweredCustomerRequests />
                 </div>
@@ -373,11 +410,11 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                         return (
                             <div
                                 key={section.title}
-                                className="rounded-2xl border border-border bg-card p-4"
+                                className={`rounded-2xl border border-border border-l-4 p-4 shadow-sm ${CARD_TONES[section.tone].surface}`}
                             >
                                 <div className="mb-3 flex items-center gap-2">
                                     <div
-                                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${section.color}`}
+                                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${CARD_TONES[section.tone].icon}`}
                                     >
                                         <Icon className="h-4 w-4" />
                                     </div>
@@ -390,7 +427,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
-                                                className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                                className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5"
                                             >
                                                 {navLabels[item.label] ?? item.label}
                                             </Link>

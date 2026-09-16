@@ -262,7 +262,7 @@ describe('POST /api/orders — admin notification', () => {
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
-  it('accepts an individual order with no personal code at all — it is never collected at checkout', async () => {
+  it('accepts an individual order with no personal code at all — the invoice code is optional', async () => {
     const { legalDetails: omitted, ...orderWithoutLegalDetails } = VALID_ORDER
     void omitted
     const res = await POST(makeRequest(orderWithoutLegalDetails))
@@ -270,7 +270,7 @@ describe('POST /api/orders — admin notification', () => {
     expect(createServerOrder).toHaveBeenCalledOnce()
   })
 
-  it('never persists a personal code even if a client sends one — it only ever belongs on an ad hoc invoice', async () => {
+  it('never persists a personal code even if a client sends one — only invoicePersonalCode is accepted', async () => {
     const res = await POST(makeRequest({
       ...VALID_ORDER,
       legalDetails: { customerType: 'individual', personalCode: '010101-12345' },
@@ -278,6 +278,23 @@ describe('POST /api/orders — admin notification', () => {
     expect(res.status).toBe(200)
     const persisted = vi.mocked(createServerOrder).mock.calls[0][0] as { legalDetails?: unknown }
     expect(persisted.legalDetails).toEqual({ customerType: 'individual' })
+  })
+
+  it('stores a trimmed customer code only in the invoice details of the matching order', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      legalDetails: { customerType: 'individual', invoicePersonalCode: ' 010101-12345 ' },
+    }))
+    expect(res.status).toBe(200)
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0]
+    expect(persisted.legalDetails).toEqual({ customerType: 'individual', invoicePersonalCode: '010101-12345' })
+    expect(persisted).not.toHaveProperty('invoicePersonalCode')
+  })
+
+  it.each([42, 'x'.repeat(65)])('rejects an invalid invoice-specific code: %s', async (invoicePersonalCode) => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { customerType: 'individual', invoicePersonalCode } }))
+    expect(res.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
   })
 
   const COMPANY_LEGAL_DETAILS = {

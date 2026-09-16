@@ -3,6 +3,7 @@ import React from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
 import { ClipboardCheck, Info } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -41,6 +42,8 @@ export default function CheckoutPage(): React.ReactElement {
             formatCurrency,
             formData,
             setFormData,
+            invoicePersonalCode,
+            setInvoicePersonalCode,
             deliveryMethod,
             setDeliveryMethod,
             pickupStoreId,
@@ -77,7 +80,7 @@ export default function CheckoutPage(): React.ReactElement {
 
             <div className="checkout__layout grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Форма */}
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
                     {turnstileEnabled && (
                         <Script
                             src={TURNSTILE_SCRIPT_SRC}
@@ -93,6 +96,14 @@ export default function CheckoutPage(): React.ReactElement {
                         t={t}
                         showPrefillHint={!!currentUser}
                     />
+                    {formData.customerType === 'individual' && (
+                        <section className="checkout__section rounded-lg border border-border bg-card p-6">
+                            <h2 className="mb-2 text-lg font-bold">{t('order.invoiceCodeTitle')}</h2>
+                            <p id="checkout-invoice-code-hint" className="mb-3 text-sm text-muted-foreground">{t('order.invoiceCodeHint')}</p>
+                            <label htmlFor="checkout-invoice-code" className="mb-1 block text-sm font-medium">{t('order.invoiceCodePlaceholder')}</label>
+                            <Input id="checkout-invoice-code" value={invoicePersonalCode} onChange={(event) => setInvoicePersonalCode(event.target.value)} autoComplete="off" maxLength={64} aria-describedby="checkout-invoice-code-hint" />
+                        </section>
+                    )}
                     {/* Delivery options */}
                     <div className="checkout__section bg-card rounded-lg border border-border p-6">
                         <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
@@ -275,6 +286,9 @@ export default function CheckoutPage(): React.ReactElement {
                         </RadioGroup>
                     </div>
 
+                </form>
+
+                <CheckoutSummary state={checkoutState}>
                     {turnstileEnabled && <div ref={setTurnstileContainer} />}
                     <div className="space-y-2">
                     {/* Согласие размещено рядом с финальными действиями формы. */}
@@ -310,6 +324,7 @@ export default function CheckoutPage(): React.ReactElement {
                     <div className="flex gap-3">
                         <Button
                             type="submit"
+                            form="checkout-form"
                             className="flex-1"
                             disabled={
                                 !wholesaleGuard.isMinimumReached ||
@@ -326,9 +341,7 @@ export default function CheckoutPage(): React.ReactElement {
                         </Link>
                     </div>
                     </div>
-                </form>
-
-                <CheckoutSummary state={checkoutState} />
+                </CheckoutSummary>
             </div>
         </main>
     );

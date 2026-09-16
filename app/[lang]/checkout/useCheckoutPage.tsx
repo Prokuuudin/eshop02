@@ -55,6 +55,7 @@ function useCheckoutPageState() {
     const locale = getLocaleFromLanguage(language);
     const formatCurrency = (value: number): string => formatEuro(value, locale);
     const company = currentUser?.companyId ? getCompany(currentUser.companyId) : undefined;
+    const [invoicePersonalCode, setInvoicePersonalCode] = useState('');
     const [formData, setFormData] = useState<CheckoutFormData>(() => ({
         customerType: 'individual',
         companyName: '',
@@ -272,7 +273,7 @@ function useCheckoutPageState() {
                   bankName: formData.bankName.trim(),
                   iban: formData.iban.trim(),
               }
-            : { customerType: 'individual' as const };
+            : { customerType: 'individual' as const, invoicePersonalCode: invoicePersonalCode.trim() || undefined };
 
         // Create order — the server assigns the canonical id (client counters collide across browsers)
         const orderData = {
@@ -302,7 +303,9 @@ function useCheckoutPageState() {
         // notification) — checkout must stop here rather than fake a success screen.
         const createResult = await createCheckoutOrder(orderData, turnstileToken);
         if (!createResult.ok) {
-            const message = createResult.reason === 'insufficient_stock'
+            const message = createResult.reason === 'payment_gateway_error'
+                ? t('checkout.errors.paymentGateway')
+                : createResult.reason === 'insufficient_stock'
                 ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
                 : createResult.reason === 'network'
                     ? 'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.'
@@ -443,6 +446,8 @@ function useCheckoutPageState() {
         company,
         formData,
         setFormData,
+        invoicePersonalCode,
+        setInvoicePersonalCode,
         deliveryMethod,
         setDeliveryMethod,
         pickupStoreId,

@@ -164,6 +164,20 @@ describe('buildInvoiceHtml', () => {
 })
 
 describe('buildInvoiceHtml payer block', () => {
+  it('automatically uses the code supplied at checkout in both invoice languages', () => {
+    const invoiceOrder = { ...order, legalDetails: { customerType: 'individual', invoicePersonalCode: '010101-12345' } } as Order
+    for (const lang of ['lv', 'en'] as const) {
+      expect(buildInvoiceHtml(invoiceOrder, undefined, lang)).toContain('010101-12345')
+    }
+    expect(buildInvoiceHtml(order)).not.toContain('010101-12345')
+  })
+
+  it('escapes the customer-supplied invoice code', () => {
+    const html = buildInvoiceHtml({ ...order, legalDetails: { customerType: 'individual', invoicePersonalCode: '<script>alert(1)</script>' } } as Order)
+    expect(html).toContain('&lt;script&gt;')
+    expect(html).not.toContain('<script>alert(1)</script>')
+  })
+
   it('shows the personal code for an individual order when one is entered for this invoice', () => {
     const html = buildInvoiceHtml(
       { ...order, legalDetails: { customerType: 'individual' } } as unknown as Order,
@@ -178,7 +192,7 @@ describe('buildInvoiceHtml payer block', () => {
     expect(html).not.toContain('Uzņēmums')
   })
 
-  it('omits the personal code line for an individual order when none was entered — it is never read from the order itself', () => {
+  it('omits the personal code line for an individual order when none was entered — no code is requested', () => {
     const html = buildInvoiceHtml({
       ...order,
       legalDetails: { customerType: 'individual' },

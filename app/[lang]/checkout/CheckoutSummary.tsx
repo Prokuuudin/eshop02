@@ -15,7 +15,7 @@ import type React from 'react';
 
 type CheckoutState = Exclude<ReturnType<typeof useCheckoutPage>, React.ReactElement>;
 
-export function CheckoutSummary({ state }: { state: CheckoutState }): React.ReactElement {
+export function CheckoutSummary({ state, children }: { state: CheckoutState; children?: React.ReactNode }): React.ReactElement {
     const {
         t, language, currentUser, formatCurrency, promoCode, setPromoCode, appliedPromo,
         setAppliedPromo, appliedPromoDiscountPct, setAppliedPromoDiscountPct, campaignOffer,
@@ -374,6 +374,9 @@ export function CheckoutSummary({ state }: { state: CheckoutState }): React.Reac
                                 formatCurrency={formatCurrency}
                             />
                         )}
+                        <div className="checkout__summary-actions mt-6 border-t border-border pt-4">
+                            {children}
+                        </div>
                     </div>
                 </aside>
     );

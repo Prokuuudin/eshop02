@@ -35,6 +35,17 @@ describe('createCheckoutOrder', () => {
         });
     });
 
+    it('reports a payment gateway failure so checkout can suggest another payment method', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: false,
+            json: async () => ({ error: 'payment_gateway_error' }),
+        }));
+        await expect(createCheckoutOrder({ createdAt: new Date() }, null)).resolves.toEqual({
+            ok: false,
+            reason: 'payment_gateway_error',
+        });
+    });
+
     it('returns a network failure when fetch rejects', async () => {
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 

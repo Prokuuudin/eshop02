@@ -1,4 +1,5 @@
 const enCheckout: Record<string, string> = {
+  'checkout.errors.paymentGateway': 'Unable to connect to Paysera. Choose bank transfer or try again later.',
   'cart.title': 'Cart',
   'cart.openFullCart': 'Open full screen',
   'cart.closeAria': 'Close drawer',
@@ -191,11 +192,11 @@ const enCheckout: Record<string, string> = {
   'order.loading': 'Loading order...',
   'order.loadingDescription': 'Fetching order data from server.',
   'order.invoiceCodeTitle': 'Need a personal code on your invoice?',
-  'order.invoiceCodeHint': "We don't store your personal code in our database. Enter it here — it goes straight to the manager preparing your invoice and is never saved.",
+  'order.invoiceCodeHint': 'We do not collect personal codes for customer profiles or store them in your profile. If you need your code on the invoice, enter it yourself. It will be saved only in the invoice details for this order and automatically included in the invoice prepared, approved and sent by an administrator.',
   'order.invoiceCodePlaceholder': 'Personal code',
-  'order.invoiceCodeSubmit': 'Send to manager',
+  'order.invoiceCodeSubmit': 'Get invoice with code',
   'order.invoiceCodeSending': 'Sending...',
-  'order.invoiceCodeSuccess': 'Code sent to the manager for your invoice',
+  'order.invoiceCodeSuccess': 'Invoice with your personal code sent to your email',
   'order.invoiceCodeError': "Couldn't send it. Please try again or contact us.",
 }
 

@@ -1,4 +1,5 @@
 const lvCheckout: Record<string, string> = {
+  'checkout.errors.paymentGateway': 'Neizdevās izveidot savienojumu ar Paysera. Izvēlieties bankas pārskaitījumu vai mēģiniet vēlāk.',
   'cart.title': 'Grozs',
   'cart.openFullCart': 'Atvērt pilnā ekrānā',
   'cart.closeAria': 'Aizvērt grozu',
@@ -191,11 +192,11 @@ const lvCheckout: Record<string, string> = {
   'order.loading': 'Ielādējam pasūtījumu...',
   'order.loadingDescription': 'Mēģinām iegūt pasūtījuma datus no servera.',
   'order.invoiceCodeTitle': 'Nepieciešams personas kods rēķinā?',
-  'order.invoiceCodeHint': 'Personas kodu mēs datubāzē neglabājam. Norādiet to šeit — tas nonāks tieši pie menedžera, kurš sagatavo jūsu rēķinu, un netiek saglabāts.',
+  'order.invoiceCodeHint': 'Mēs neapkopojam personas kodus klientu profiliem un neglabājam tos profilā. Ja kods nepieciešams rēķinā, ievadiet to pats. Tas tiks saglabāts tikai šī pasūtījuma rēķina rekvizītos un automātiski iekļauts rēķinā, ko sagatavos, apstiprinās un nosūtīs administrators.',
   'order.invoiceCodePlaceholder': 'Personas kods',
-  'order.invoiceCodeSubmit': 'Nosūtīt menedžerim',
+  'order.invoiceCodeSubmit': 'Saņemt rēķinu ar kodu',
   'order.invoiceCodeSending': 'Sūta...',
-  'order.invoiceCodeSuccess': 'Kods nosūtīts menedžerim jūsu rēķinam',
+  'order.invoiceCodeSuccess': 'Rēķins ar personas kodu nosūtīts uz jūsu e-pastu',
   'order.invoiceCodeError': 'Neizdevās nosūtīt. Mēģiniet vēlreiz vai sazinieties ar mums.',
 }
 

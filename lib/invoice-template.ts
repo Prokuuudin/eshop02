@@ -183,9 +183,8 @@ function lvDeliveryAddress(order: Order): { address: string; city: string } | nu
  * item.title — снимок в языке корзины на момент заказа, поэтому без карты
  * название может остаться не на языке инвойса; передавайте её везде, где есть доступ к товарам.
  *
- * personalCode: персональный код физлица для этого конкретного счёта. Никогда не
- * читается из order.legalDetails и нигде не сохраняется — вводится вручную (по
- * инициативе клиента) в момент формирования счёта, см. OrderInvoiceModal.tsx.
+ * Customer-supplied invoicePersonalCode comes from the invoice details of this order.
+ * It is never copied to the customer profile. The optional argument is a legacy fallback.
  */
 export function buildInvoiceHtml(
   order: Order,
@@ -230,9 +229,10 @@ export function buildInvoiceHtml(
   // company) — see app/[lang]/checkout/CheckoutFormSections.tsx. The recipient
   // block below stays the delivery contact regardless of legal entity type.
   const legalDetails = order.legalDetails
+  const invoiceCode = legalDetails?.customerType === 'individual' ? legalDetails.invoicePersonalCode || personalCode : personalCode
   const payerDetails = legalDetails?.customerType === 'company'
     ? `${L.company}: <strong>${esc(legalDetails.companyName)}</strong><br/>${L.regNumber}: ${esc(legalDetails.regNumber)}<br/>${legalDetails.vatNumber ? `${L.vatNumber}: ${esc(legalDetails.vatNumber)}<br/>` : ''}${L.address}: ${esc(legalDetails.legalAddress)}<br/>${L.bank}: ${esc(legalDetails.bankName)}<br/>IBAN: ${esc(formatIban(legalDetails.iban))}<br/>${L.contactPerson}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}`
-    : `${L.name}: ${customer}<br/>${legalDetails?.customerType === 'individual' && personalCode ? `${L.personalCode}: ${esc(personalCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
+    : `${L.name}: ${customer}<br/>${invoiceCode ? `${L.personalCode}: ${esc(invoiceCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">

@@ -6,9 +6,8 @@ export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
 export type OrderLegalDetails =
-  // No personalCode here by design: it must never be persisted (GDPR minimization —
-  // it's only ever collected ad hoc, at invoice time, by admin request). See lib/invoice-template.ts.
-  | { customerType: 'individual' }
+  // Optional identity supplied by the customer for this order invoice only.
+  | { customerType: 'individual'; invoicePersonalCode?: string }
   | {
       customerType: 'company'
       companyName: string

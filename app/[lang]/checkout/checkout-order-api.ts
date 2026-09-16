@@ -3,7 +3,7 @@ type CheckoutOrderPayload = {
     [key: string]: unknown;
 };
 
-export type CheckoutOrderFailure = 'insufficient_stock' | 'server' | 'invalid_response' | 'network';
+export type CheckoutOrderFailure = 'insufficient_stock' | 'payment_gateway_error' | 'server' | 'invalid_response' | 'network';
 export type CheckoutOrderResult =
     | { ok: true; orderId: string; paymentUrl?: string }
     | { ok: false; reason: CheckoutOrderFailure };
@@ -37,7 +37,8 @@ export async function createCheckoutOrder(
             const payload = (await response.json().catch(() => null)) as { error?: string } | null;
             return {
                 ok: false,
-                reason: payload?.error === 'insufficient_stock' ? 'insufficient_stock' : 'server',
+                reason: payload?.error === 'insufficient_stock' || payload?.error === 'payment_gateway_error'
+                    ? payload.error : 'server',
             };
         }
 

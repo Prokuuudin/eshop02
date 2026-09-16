@@ -19,8 +19,8 @@ export type ServerOrderItem = {
 }
 
 export type ServerOrderLegalDetails =
-  // Mirrors OrderLegalDetails in orders-store.ts — no personalCode, never persisted.
-  | { customerType: 'individual' }
+  // Invoice-specific identity; never copied into the customer profile.
+  | { customerType: 'individual'; invoicePersonalCode?: string }
   | {
       customerType: 'company'
       companyName: string

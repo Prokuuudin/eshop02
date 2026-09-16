@@ -173,6 +173,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // discriminated ServerOrderLegalDetails shape the rest of the codebase trusts.
     const rawLegalDetails = order.legalDetails as Partial<{
       customerType: string
+      invoicePersonalCode: string
       companyName: string
       regNumber: string
       vatNumber: string
@@ -208,10 +209,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
       }
     } else if (!rawLegalDetails || rawLegalDetails.customerType === 'individual') {
-      // Personal code is never collected at checkout and never stored on the order —
-      // it's only ever entered ad hoc, at invoice time, on the client's own initiative
-      // (see components/admin/OrderInvoiceModal.tsx). Discard anything a client sends here.
-      order.legalDetails = { customerType: 'individual' }
+      const invoicePersonalCode = rawLegalDetails?.invoicePersonalCode
+      if (invoicePersonalCode !== undefined && (typeof invoicePersonalCode !== 'string' || invoicePersonalCode.trim().length > 64)) {
+        return NextResponse.json({ error: 'invalid_invoice_personal_code' }, { status: 400 })
+      }
+      order.legalDetails = {
+        customerType: 'individual',
+        ...(invoicePersonalCode?.trim() ? { invoicePersonalCode: invoicePersonalCode.trim() } : {}),
+      }
     } else {
       return NextResponse.json({ error: 'invalid_legal_details' }, { status: 400 })
     }

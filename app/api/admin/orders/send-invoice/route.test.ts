@@ -91,7 +91,7 @@ describe('POST /api/admin/orders/send-invoice', () => {
     )
   })
 
-  it('forwards an admin-entered personal code to the invoice for this send only', async () => {
+  it('ignores a personal code supplied by an admin', async () => {
     vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
     vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
 
@@ -99,8 +99,17 @@ describe('POST /api/admin/orders/send-invoice', () => {
 
     expect(res.status).toBe(200)
     expect(buildInvoiceHtml).toHaveBeenCalledWith(
-      expect.anything(), expect.anything(), 'lv', 'https://hairshoppro.lv', '010101-12345'
+      expect.anything(), expect.anything(), 'lv', 'https://hairshoppro.lv'
     )
+  })
+
+  it('uses the invoice details supplied at checkout without admin re-entry', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    const invoiceOrder = { ...ORDER, legalDetails: { customerType: 'individual', invoicePersonalCode: '010101-12345' } }
+    vi.mocked(getServerOrderById).mockResolvedValue(invoiceOrder as never)
+    const res = await POST(makeRequest({ orderId: '1042', email: 'customer@example.com' }))
+    expect(res.status).toBe(200)
+    expect(buildInvoiceHtml).toHaveBeenCalledWith(invoiceOrder, {}, 'lv', 'https://hairshoppro.lv')
   })
 
   it('returns a controlled 500 (not an unhandled exception) if a step after order-lookup throws', async () => {

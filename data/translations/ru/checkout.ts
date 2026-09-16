@@ -1,4 +1,5 @@
 const ruCheckout: Record<string, string> = {
+  'checkout.errors.paymentGateway': 'Не удалось подключить оплату Paysera. Выберите банковский перевод или попробуйте позже.',
   'cart.title': 'Корзина',
   'cart.openFullCart': 'Открыть на весь экран',
   'cart.closeAria': 'Закрыть корзину',
@@ -191,11 +192,11 @@ const ruCheckout: Record<string, string> = {
   'order.loading': 'Загружаем заказ...',
   'order.loadingDescription': 'Пробуем получить данные заказа с сервера.',
   'order.invoiceCodeTitle': 'Нужен персональный код в счёте?',
-  'order.invoiceCodeHint': 'Мы не храним персональный код в базе. Укажите его здесь — он уйдёт напрямую менеджеру, который готовит именно ваш счёт, и нигде не сохраняется.',
+  'order.invoiceCodeHint': 'Мы не собираем персональные коды для профилей клиентов и не храним их в профиле. Если код нужен в счёте, введите его самостоятельно. Он сохранится только в реквизитах счёта для этого заказа и автоматически подставится в инвойс, который подготовит, подтвердит и отправит администратор.',
   'order.invoiceCodePlaceholder': 'Персональный код',
-  'order.invoiceCodeSubmit': 'Отправить менеджеру',
+  'order.invoiceCodeSubmit': 'Получить счёт с кодом',
   'order.invoiceCodeSending': 'Отправка...',
-  'order.invoiceCodeSuccess': 'Код отправлен менеджеру для вашего счёта',
+  'order.invoiceCodeSuccess': 'Счёт с персональным кодом отправлен на ваш email',
   'order.invoiceCodeError': 'Не удалось отправить. Попробуйте ещё раз или напишите нам.',
 }
 

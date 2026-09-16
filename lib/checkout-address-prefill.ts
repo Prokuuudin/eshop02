@@ -84,8 +84,7 @@ export function buildLastOrderFallback(value: unknown): Record<string, string> {
   }
   if (!order.legalDetails || typeof order.legalDetails !== 'object') return base
   const legal = order.legalDetails as Record<string, unknown>
-  // personalCode is deliberately excluded: it must never be persisted, let alone
-  // carried forward into a new checkout draft, even from a legacy order that still has one.
+  // Invoice personal codes are never reused in another checkout draft.
   for (const field of ['customerType', 'companyName', 'regNumber', 'vatNumber', 'legalAddress', 'bankName', 'iban']) {
     if (typeof legal[field] === 'string') base[field] = legal[field]
   }

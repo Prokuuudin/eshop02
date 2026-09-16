@@ -105,10 +105,11 @@ describe('PATCH /api/user/profile', () => {
     })
   })
 
-  it('never persists a personal code into checkoutProfile — it must never enter the shop database', async () => {
-    await PATCH(makeRequest({ checkoutProfile: { customerType: 'individual', personalCode: '010101-12345' } }))
+  it('never saves invoice personal codes into the customer profile', async () => {
+    await PATCH(makeRequest({ checkoutProfile: { customerType: 'individual', personalCode: '010101-12345', invoicePersonalCode: '010101-12345' } }))
     const data = userUpdateMock.mock.calls[0][0].data as { checkoutProfile?: Record<string, unknown> }
     expect(data.checkoutProfile).not.toHaveProperty('personalCode')
+    expect(data.checkoutProfile).not.toHaveProperty('invoicePersonalCode')
   })
 
   it('updates email and related user records', async () => {

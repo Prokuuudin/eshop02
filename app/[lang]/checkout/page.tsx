@@ -97,11 +97,11 @@ export default function CheckoutPage(): React.ReactElement {
                         showPrefillHint={!!currentUser}
                     />
                     {formData.customerType === 'individual' && (
-                        <section className="checkout__section rounded-lg border border-border bg-card p-6">
+                        <section className="checkout__section rounded-lg border-2 border-primary/30 bg-primary/5 p-6 dark:border-primary/40 dark:bg-primary/10">
                             <h2 className="mb-2 text-lg font-bold">{t('order.invoiceCodeTitle')}</h2>
                             <p id="checkout-invoice-code-hint" className="mb-3 text-sm text-muted-foreground">{t('order.invoiceCodeHint')}</p>
                             <label htmlFor="checkout-invoice-code" className="mb-1 block text-sm font-medium">{t('order.invoiceCodePlaceholder')}</label>
-                            <Input id="checkout-invoice-code" value={invoicePersonalCode} onChange={(event) => setInvoicePersonalCode(event.target.value)} autoComplete="off" maxLength={64} aria-describedby="checkout-invoice-code-hint" />
+                            <Input id="checkout-invoice-code" className="border-primary/30 bg-card" value={invoicePersonalCode} onChange={(event) => setInvoicePersonalCode(event.target.value)} autoComplete="off" maxLength={64} aria-describedby="checkout-invoice-code-hint" />
                         </section>
                     )}
                     {/* Delivery options */}

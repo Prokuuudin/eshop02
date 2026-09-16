@@ -32,6 +32,8 @@ function makeRequest(file: File | null): NextRequest {
 }
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2])
+const MP4_BYTES = new Uint8Array([0, 0, 0, 16, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0])
+const WEBM_BYTES = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x87, 0x42, 0x82, 0x84, 0x77, 0x65, 0x62, 0x6d])
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -39,6 +41,28 @@ beforeEach(() => {
 })
 
 describe('POST /api/admin/content/upload', () => {
+  it.each([['video/mp4', 'banner.mp4', MP4_BYTES], ['video/webm', 'banner.webm', WEBM_BYTES]] as const)('stores %s video from a computer', async (mimeType, name, bytes) => {
+    const res = await POST(makeRequest(new File([bytes], name, { type: mimeType })))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ mimeType, originalName: name })
+    expect(mediaCreateMock).toHaveBeenCalledWith({ data: expect.objectContaining({ mimeType, size: bytes.length }) })
+  })
+  it('allows videos larger than the photo limit', async () => {
+    const bytes = new Uint8Array(10 * 1024 * 1024 + 1)
+    bytes.set(MP4_BYTES)
+    expect((await POST(makeRequest(new File([bytes], 'banner.mp4', { type: 'video/mp4' })))).status).toBe(200)
+  })
+  it('rejects videos over 50 MB', async () => {
+    const file = new File([new Uint8Array(50 * 1024 * 1024 + 1)], 'large.mp4', { type: 'video/mp4' })
+    const res = await POST(makeRequest(file))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('file_too_large')
+    expect(mediaCreateMock).not.toHaveBeenCalled()
+  })
+  it('rejects active content disguised as video', async () => {
+    expect((await POST(makeRequest(new File(['<script>bad</script>'], 'banner.mp4', { type: 'video/mp4' })))).status).toBe(400)
+    expect(mediaCreateMock).not.toHaveBeenCalled()
+  })
   it('rejects non-admins', async () => {
     requireAdminMock.mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })

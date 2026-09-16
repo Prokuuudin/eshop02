@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TabsContent } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Select,
     SelectContent,
@@ -22,11 +23,13 @@ import {
 } from './banner-model';
 import type { useBannerContentManager } from './useBannerContentManager';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { BANNER_MEDIA_ACCEPT, isVideoSource } from '@/lib/banner-media';
 
 type BannerContentState = ReturnType<typeof useBannerContentManager>;
 
 export default function BannersTab({ state }: { state: BannerContentState }): React.ReactElement {
     const { language, l } = useAdminLocale();
+    const mediaInputRef = React.useRef<HTMLInputElement>(null);
     const {
             banners,
             saving,
@@ -35,8 +38,8 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             editingBannerId,
             showBannerForm,
             setShowBannerForm,
-            uploadingBannerImage,
-            onBannerImageUpload,
+            uploadingBannerMedia,
+            onBannerMediaUpload,
             onSaveBanner,
             onDeleteBanner,
             onToggleBanner,
@@ -46,6 +49,9 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
           } = state;
     return (
         <TabsContent value="banners" className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">
+                {l("Баннеры отображаются на главной странице в разделе акций. Выберите формат, заполните поля и сохраните. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. Все опубликованные баннеры показываются в порядке списка.", "Banners appear in the homepage sale section. Choose a format, fill in the fields and save. Status Yes publishes the banner; No saves it hidden. All published banners appear in list order.", "Baneri tiek rādīti sākumlapas akciju sadaļā. Izvēlieties formātu un saglabājiet. Jā publicē baneri; Nē saglabā paslēptu. Baneri tiek rādīti saraksta secībā.")}
+            </p>
             <div className="flex justify-end">
                 <Button
                     onClick={() => {
@@ -71,7 +77,21 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                         {editingBannerId ? l('Редактировать баннер', 'Edit banner', 'Rediģēt baneri') : l('Новый баннер', 'New banner', 'Jauns baneris')}
                     </h2>
 
+                    <div className="space-y-2">
+                        <label htmlFor="admin-banner-format" className="text-sm font-medium">{l("Формат баннера", "Banner format", "Banera formāts")}</label>
+                        <Select value={bannerForm.type} disabled={saving || uploadingBannerMedia} onValueChange={(type) => setBannerForm((f) => ({ ...f, type: type as 'sale' | 'image' | 'video', image: (type === 'video') !== (f.type === 'video') ? '' : f.image }))}>
+                            <SelectTrigger id="admin-banner-format"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="image">{l("Готовое изображение — без текста поверх", "Ready-made image — no text overlay", "Gatavs attēls — bez teksta pārklājuma")}</SelectItem>
+                                <SelectItem value="sale">{l("Баннер с текстом и кнопкой", "Banner with text and button", "Baneris ar tekstu un pogu")}</SelectItem>
+                                <SelectItem value="video">{l('Видеобаннер', 'Video banner', 'Video baneris')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">{l("Рекомендуемый размер готового баннера: 1440 × 480 px (3:1). Другие размеры допустимы: изображение показывается целиком без обрезки. JPG, PNG, WebP, GIF или AVIF, до 10 МБ. Загрузите файл, дождитесь предпросмотра и сохраните баннер. В режиме с текстом картинка служит фоном и может обрезаться.", "For ready-made banners we recommend 1440 × 480 px (3:1). Other sizes are accepted and shown in full without cropping. JPG, PNG, WebP, GIF or AVIF, up to 10 MB. Upload, wait for the preview and click Save. In text mode the image is a background and may be cropped.", "Ieteicamais izmērs: 1440 × 480 px (3:1). Citi izmēri ir atļauti, attēls tiek rādīts pilnībā. JPG, PNG, WebP, GIF vai AVIF, līdz 10 MB. Augšupielādējiet, sagaidiet priekšskatījumu un saglabājiet. Teksta režīmā fona attēls var tikt apgriezts.")}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{l('Видео: MP4 или WebM до 50 МБ, рекомендуем горизонтальное. Загруженное видео автоматически включает формат «Видеобаннер». На сайте видео показывается целиком с управлением воспроизведением; ссылка открывается отдельной кнопкой.', 'Video: MP4 or WebM up to 50 MB; landscape recommended. Uploading video automatically selects Video banner. The site shows the complete video with playback controls; the link uses a separate button.', 'Video: MP4 vai WebM līdz 50 MB; iesakām horizontālu. Video augšupielāde automātiski izvēlas video baneri. Vietnē video tiek rādīts pilnībā ar atskaņošanas vadību; saite ir atsevišķā pogā.')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {bannerForm.type === 'sale' && <>
                         <LocaleTextField
                             label={l('Заголовок * (RU / EN / LV)', 'Title * (RU / EN / LV)', 'Virsraksts * (RU / EN / LV)')}
                             value={toLocaleForm(bannerForm.title)}
@@ -90,18 +110,24 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             placeholder={l('Короткий текст под заголовком', 'Short text below the title', 'Īss teksts zem virsraksta')}
                         />
 
+                        </>}
+                        {bannerForm.type !== 'sale' && <LocaleTextField
+                            label={l('Описание фото или видео (необязательно, для доступности; на баннере не показывается)', 'Photo or video description (optional, for accessibility; not shown on the banner)', 'Foto vai video apraksts (nav obligāts, pieejamībai; uz banera netiek rādīts)')}
+                            value={toLocaleForm(bannerForm.title)}
+                            onChange={(next) => setBannerForm((f) => ({ ...f, title: encodeLocaleText(next) }))}
+                        />}
                         <div className="space-y-1">
                             <label
                                 htmlFor="admin-banner-field-2"
                                 className="text-xs text-muted-foreground"
                             >
-                                {l('Изображение (src)', 'Image (src)', 'Attēls (src)')}
+                                {l('Адрес фото или видео (заполняется после загрузки)', 'Photo or video address (filled after upload)', 'Foto vai video adrese (aizpildās pēc augšupielādes)')}
                             </label>
                             <Input
                                 id="admin-banner-field-2"
                                 value={bannerForm.image}
                                 onChange={(e) =>
-                                    setBannerForm((f) => ({ ...f, image: e.target.value }))
+                                    setBannerForm((f) => ({ ...f, image: e.target.value, type: isVideoSource(e.target.value) ? 'video' : f.type }))
                                 }
                                 placeholder="/api/media/banner.jpg"
                             />
@@ -112,15 +138,27 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 htmlFor="admin-banner-field-3"
                                 className="text-xs text-muted-foreground"
                             >
-                                {l('Загрузить изображение', 'Upload image', 'Augšupielādēt attēlu')}
+                                {l('Фото или видео с компьютера', 'Photo or video from your computer', 'Foto vai video no datora')}
                             </label>
                             <Input
                                 id="admin-banner-field-3"
+                                ref={mediaInputRef}
+                                className="hidden"
                                 type="file"
-                                accept="image/*"
-                                disabled={uploadingBannerImage || saving}
-                                onChange={onBannerImageUpload}
+                                accept={BANNER_MEDIA_ACCEPT}
+                                disabled={uploadingBannerMedia || saving}
+                                onChange={onBannerMediaUpload}
                             />
+                            <div className="flex flex-wrap gap-2">
+                                <Button type="button" variant="outline" className="cursor-pointer" disabled={uploadingBannerMedia || saving}
+                                    onClick={() => mediaInputRef.current?.click()}>
+                                    {uploadingBannerMedia ? l('Загрузка…', 'Uploading…', 'Augšupielāde…') : l('Загрузить фото или видео с компьютера', 'Upload photo or video from computer', 'Augšupielādēt foto vai video no datora')}
+                                </Button>
+                                {bannerForm.image && <Button type="button" variant="outline" disabled={uploadingBannerMedia || saving}
+                                    onClick={() => setBannerForm((f) => ({ ...f, image: '' }))}>
+                                    {l('Убрать файл из баннера', 'Remove file from banner', 'Noņemt failu no banera')}
+                                </Button>}
+                            </div>
                         </div>
 
                         <div className="space-y-1">
@@ -140,6 +178,12 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             />
                         </div>
 
+                        {bannerForm.type === 'video' && <LocaleTextField
+                            label={l('Текст кнопки под видео (необязательно; кнопка появится, если указана ссылка)', 'Button text below video (optional; shown when a link is set)', 'Pogas teksts zem video (nav obligāts; tiek rādīts, ja ir saite)')}
+                            value={toLocaleForm(bannerForm.ctaLabel)}
+                            onChange={(next) => setBannerForm((f) => ({ ...f, ctaLabel: encodeLocaleText(next) }))}
+                        />}
+                        {bannerForm.type === 'sale' && <>
                         <LocaleTextField
                             label={l('Текст кнопки CTA (RU / EN / LV)', 'CTA button text (RU / EN / LV)', 'CTA pogas teksts (RU / EN / LV)')}
                             value={toLocaleForm(bannerForm.ctaLabel)}
@@ -232,6 +276,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </div>
                         </div>
 
+                        </>}
                         <div className="space-y-1">
                             <label
                                 htmlFor="admin-banner-field-8"
@@ -271,14 +316,15 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 {l('Обновляется автоматически', 'Updates automatically', 'Atjaunojas automātiski')}
                             </span>
                         </div>
-                        <div className="pointer-events-none rounded-2xl border border-dashed border-border bg-muted/30 p-2 sm:p-3">
+                        <div className={`${bannerForm.type === 'video' ? '' : 'pointer-events-none'} rounded-2xl border border-dashed border-border bg-muted/30 p-2 sm:p-3`}>
                             <SaleBanner
                                 banner={{
                                     id: editingBannerId ?? 'banner-preview',
-                                    title: bannerForm.title || l('Заголовок баннера', 'Banner title', 'Banera virsraksts'),
+                                    type: bannerForm.type,
+                                    title: bannerForm.title || (bannerForm.type === 'sale' ? l('Заголовок баннера', 'Banner title', 'Banera virsraksts') : ''),
                                     subtitle: bannerForm.subtitle,
                                     image: bannerForm.image,
-                                    link: bannerForm.link,
+                                    link: bannerForm.type === 'video' ? '' : bannerForm.link,
                                     ctaLabel: bannerForm.ctaLabel,
                                     ctaStyle: bannerForm.ctaStyle,
                                     bgColor: bannerForm.bgColor || '#ffffff',
@@ -292,10 +338,10 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     </section>
 
                     <div className="flex items-center gap-2 pt-1">
-                        <Button onClick={onSaveBanner} disabled={saving}>
+                        <Button onClick={onSaveBanner} disabled={saving || uploadingBannerMedia}>
                             {editingBannerId ? l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas') : l('Создать баннер', 'Create banner', 'Izveidot baneri')}
                         </Button>
-                        <Button variant="outline" onClick={resetBannerForm} disabled={saving}>
+                        <Button variant="outline" onClick={resetBannerForm} disabled={saving || uploadingBannerMedia}>
                             {l('Отмена', 'Cancel', 'Atcelt')}
                         </Button>
                     </div>
@@ -320,14 +366,19 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 }`}
                             >
                                 {/* Preview thumbnail */}
-                                {banner.image ? (
+                                {banner.type === 'video' && banner.image ? (
+                                    <video src={banner.image} muted playsInline preload="metadata" aria-label={previewTitle || undefined}
+                                        className="h-16 w-24 rounded object-contain bg-black flex-shrink-0">
+                                        <track kind="captions" />
+                                    </video>
+                                ) : banner.image ? (
                                     <Image
                                         src={banner.image}
-                                        alt={previewTitle}
+                                        alt={previewTitle || l("Готовый баннер", "Ready-made banner", "Gatavs baneris")}
                                         width={96}
                                         height={64}
                                         unoptimized
-                                        className="h-16 w-24 rounded object-cover bg-muted flex-shrink-0"
+                                        className="h-16 w-24 rounded object-contain bg-muted flex-shrink-0"
                                     />
                                 ) : (
                                     <div
@@ -342,10 +393,10 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-sm font-semibold text-foreground truncate">
-                                            {previewTitle}
+                                            {previewTitle || l("Готовый баннер", "Ready-made banner", "Gatavs baneris")}
                                         </span>
                                         <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
-                                            {l('Скидка/Акция', 'Discount/Promotion', 'Atlaide/Akcija')}
+                                            {banner.type === 'video' ? l('Видеобаннер', 'Video banner', 'Video baneris') : banner.type === 'image' ? l('Готовое изображение', 'Ready-made image', 'Gatavs attēls') : l('Баннер с текстом', 'Text banner', 'Teksta baneris')}
                                         </span>
                                         <span
                                             className={`text-xs rounded-full px-2 py-0.5 font-medium ${
@@ -371,33 +422,57 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
 
                                 {/* Controls */}
                                 <div className="flex items-center gap-1 flex-shrink-0">
+                                    <TooltipProvider delayDuration={200}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className={`inline-flex ${idx === 0 || saving ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         disabled={idx === 0 || saving}
+                                        className="cursor-pointer hover:border-primary hover:bg-primary/10 hover:text-primary"
                                         onClick={() => void onMoveBanner(banner.id, 'up')}
-                                        title={l('Выше', 'Move up', 'Pārvietot augšup')}
+                                        aria-label={l('Переместить выше', 'Move up', 'Pārvietot augšup')}
                                     >
                                         ▲
                                     </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{l('Переместить выше', 'Move up', 'Pārvietot augšup')}</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className={`inline-flex ${idx === banners.length - 1 || saving ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         disabled={idx === banners.length - 1 || saving}
+                                        className="cursor-pointer hover:border-primary hover:bg-primary/10 hover:text-primary"
                                         onClick={() => void onMoveBanner(banner.id, 'down')}
-                                        title={l('Ниже', 'Move down', 'Pārvietot lejup')}
+                                        aria-label={l('Переместить ниже', 'Move down', 'Pārvietot lejup')}
                                     >
                                         ▼
                                     </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{l('Переместить ниже', 'Move down', 'Pārvietot lejup')}</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="inline-flex">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         disabled={saving}
                                         onClick={() => void onToggleBanner(banner)}
-                                        title={banner.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Показать', 'Show', 'Parādīt')}
                                     >
                                         {banner.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Показать', 'Show', 'Parādīt')}
                                     </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{banner.active ? l('Скрыть', 'Hide', 'Paslēpt') : l('Показать', 'Show', 'Parādīt')}</TooltipContent>
+                                    </Tooltip>
+                                    </TooltipProvider>
                                     <Button
                                         variant="outline"
                                         size="sm"

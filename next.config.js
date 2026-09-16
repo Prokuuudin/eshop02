@@ -6,7 +6,10 @@ const nextConfig = {
     reactStrictMode: true,
     // ws нельзя бандлить: webpack ломает его optional-нативы (bufferutil) → TypeError bufferUtil.mask
     serverExternalPackages: ['ws', '@neondatabase/serverless'],
-    // experimental: {},
+    experimental: {
+        // Allow 50 MB video uploads plus the multipart form overhead through proxy.
+        proxyClientMaxBodySize: '51mb',
+    },
     images: {
         qualities: [75, 90],
         // Лого брендов — локальные SVG (/public/brands-distribution и др.); sandbox-CSP отключает скрипты внутри SVG

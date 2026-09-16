@@ -65,8 +65,9 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
     getCachedLocaleConfig(),
     getCachedSaleBanners(),
   ])
-  const promo = saleBanners[0]
-    ? { title: saleBanners[0].title, link: saleBanners[0].link || '/catalog' }
+  const footerBanner = saleBanners.find((banner) => banner.type === 'sale' && banner.title.trim())
+  const promo = footerBanner
+    ? { title: footerBanner.title, link: footerBanner.link || '/catalog' }
     : null
 
   const organizationSchema = {

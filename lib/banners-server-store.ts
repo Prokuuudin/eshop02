@@ -2,7 +2,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { Banner as PrismaBanner } from '@/generated/prisma/client'
 
-export type BannerType = 'sale'
+export type BannerType = 'sale' | 'image' | 'video'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'
 
@@ -47,7 +47,7 @@ function mapDbToBanner(row: PrismaBanner): Banner {
 }
 
 export async function readBannersData(): Promise<BannersData> {
-  const banners = await prisma.banner.findMany({ orderBy: { order: 'asc' } })
+  const banners = await prisma.banner.findMany({ orderBy: [{ order: 'asc' }, { id: 'asc' }] })
   return { banners: banners.map(mapDbToBanner) }
 }
 

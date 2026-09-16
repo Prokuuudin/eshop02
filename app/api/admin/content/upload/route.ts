@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import path from 'path'
-import { validateUploadedImage } from '@/lib/image-upload-validation'
+import { validateUploadedMedia } from '@/lib/media-upload-validation'
+import { BANNER_IMAGE_MAX_BYTES, BANNER_VIDEO_MAX_BYTES } from '@/lib/banner-media'
 
 export const runtime = 'nodejs'
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'file_is_required' }, { status: 400 })
     }
 
-    const maxBytes = 10 * 1024 * 1024
+    const maxBytes = file.type.startsWith('video/') ? BANNER_VIDEO_MAX_BYTES : BANNER_IMAGE_MAX_BYTES
     if (file.size > maxBytes) {
       return NextResponse.json({ error: 'file_too_large' }, { status: 400 })
     }
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const fileName = normalizeFileBaseName(file.name)
     const finalName = `${Date.now()}-${fileName}`
     const bytes = new Uint8Array(await file.arrayBuffer())
-    const verifiedMime = validateUploadedImage(bytes, file.type)
+    const verifiedMime = validateUploadedMedia(bytes, file.type)
     if (!verifiedMime) {
       return NextResponse.json({ error: 'unsupported_file_type' }, { status: 400 })
     }

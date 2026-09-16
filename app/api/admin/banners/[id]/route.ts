@@ -22,9 +22,9 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     const idx = data.banners.findIndex((b) => b.id === id)
     if (idx === -1) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     data.banners[idx] = { ...data.banners[idx], ...body.item, id, updatedAt: now }
-    await writeBannersData(data)
-    revalidatePath('/')
-    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
+    await writeBannersData({ banners: [data.banners[idx]] })
+    revalidatePath('/[lang]', 'layout')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, { expire: 0 })
     return NextResponse.json(data.banners[idx])
   } catch {
     return NextResponse.json({ error: 'failed_to_update' }, { status: 400 })
@@ -42,8 +42,8 @@ export async function DELETE(_request: NextRequest, { params }: Params): Promise
     // actually removes it from Postgres instead of having it reappear on the
     // next reload while staying live on the storefront.
     await prisma.banner.delete({ where: { id } })
-    revalidatePath('/')
-    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
+    revalidatePath('/[lang]', 'layout')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, { expire: 0 })
     return NextResponse.json({ ok: true })
   } catch (e) {
     if ((e as { code?: string })?.code === 'P2025') {

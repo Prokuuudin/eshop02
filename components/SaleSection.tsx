@@ -8,10 +8,11 @@ import SaleBanner, { type PromoBanner } from './SaleBanner';
 import Reveal from '@/components/ui/Reveal';
 import { useTranslation } from '@/lib/use-translation';
 
-export default function SaleSection({ products, banner }: { products: Product[]; banner: PromoBanner | null }): React.ReactElement {
+export default function SaleSection({ products, banners }: { products: Product[]; banners: PromoBanner[] }): React.ReactElement {
     const { t } = useTranslation();
+    const banner = banners[0]?.type === 'sale' ? banners[0] : null;
 
-    if (!products.length && !banner) {
+    if (!products.length && !banners.length) {
         return (
             <section id="sale" className="sale-section pt-6">
                 <div className="mx-auto w-full max-w-[1440px] px-4">
@@ -33,7 +34,7 @@ export default function SaleSection({ products, banner }: { products: Product[];
                     </div>
                 </div>
                 <div className="sale-section__feature-wrap relative pt-8 mb-6">
-                    {banner && (
+                    {banner && banner.type !== 'image' && (
                         <Image
                             src="/girl1.png"
                             alt=""
@@ -46,13 +47,16 @@ export default function SaleSection({ products, banner }: { products: Product[];
                     <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                         {banner && (
                             <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
-                                <SaleBanner banner={banner} contentClassName="md:pl-40" />
+                                <SaleBanner banner={banner} contentClassName={banner.type === 'image' ? '' : 'md:pl-40'} />
                             </div>
                         )}
                         <div className={`sale-section__newsletter h-full [&_.newsletter__inner]:h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
                             <Newsletter compact embedded />
                         </div>
                     </div>
+                </div>
+                <div className="space-y-4 mb-6">
+                    {banners.slice(banner ? 1 : 0).map((item) => <SaleBanner key={item.id} banner={item} />)}
                 </div>
             </div>
             {products.length > 0 && (

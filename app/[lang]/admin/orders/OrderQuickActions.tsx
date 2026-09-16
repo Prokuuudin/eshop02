@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { OrderStatus } from '@/lib/admin-store'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 import { useToast } from '@/lib/toast-context'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { useAdminOrdersPage } from './useAdminOrdersPage'
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>
@@ -86,13 +87,26 @@ export function OrderQuickActions({ order, state, status }: {
           {deletingOrderIds.has(order.id) ? l('Удаление…', 'Deleting…', 'Dzēš…') : l('Удалить заказ', 'Delete order', 'Dzēst pasūtījumu')}
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => setInvoiceOrder(order)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-      >
-        📄 {l('Счёт', 'Invoice', 'Rēķins')}
-      </button>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setInvoiceOrder(order)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 dark:border-primary/50 px-3 py-1.5 text-xs font-medium text-primary dark:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
+            >
+              📄 {l('Счёт', 'Invoice', 'Rēķins')}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-center">
+            {l(
+              'Счёт на LV/EN: просмотр PDF, скачивание и отправка на выбранный email.',
+              'Invoice in LV/EN: preview PDF, download and send to a chosen email.',
+              'Rēķins LV/EN: PDF priekšskatījums, lejupielāde un nosūtīšana uz izvēlēto e-pastu.'
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <a
         href={`tel:${order.phone}`}
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"

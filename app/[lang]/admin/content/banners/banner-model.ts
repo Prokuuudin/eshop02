@@ -1,6 +1,6 @@
 import { parseLocaleText, type LocaleText } from '@/lib/locale-text'
 
-export type BannerType = 'sale'
+export type BannerType = 'sale' | 'image' | 'video'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'
 

@@ -2,6 +2,7 @@ import React from 'react'
 import { resolveLocaleText } from '@/lib/locale-text'
 import { useAdminConfirm } from '@/components/admin/AdminConfirmProvider'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { BANNER_IMAGE_MAX_BYTES, BANNER_VIDEO_MAX_BYTES } from '@/lib/banner-media'
 import {
   EMPTY_BANNER,
   type Banner,
@@ -21,8 +22,8 @@ function useBannerContentManagerState() {
   const [editingBannerId, setEditingBannerId] = React.useState<string | null>(null)
   const [showBannerForm, setShowBannerForm] = React.useState(false)
 
-  // Image upload state
-  const [uploadingBannerImage, setUploadingBannerImage] = React.useState(false)
+  // Media upload state
+  const [uploadingBannerMedia, setUploadingBannerMedia] = React.useState(false)
 
   const showMsg = (text: string, error = false) => {
     setMessage({ text, error })
@@ -56,34 +57,45 @@ function useBannerContentManagerState() {
 
   // ── Image upload ─────────────────────────────────────────────────────────────
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const uploadMedia = async (file: File): Promise<{ path: string; mimeType: string } | null> => {
     const formData = new FormData()
     formData.append('file', file)
     const res = await fetch('/api/admin/content/upload', { method: 'POST', body: formData })
     if (!res.ok) return null
-    const data = (await res.json()) as { path?: string }
-    return data.path ?? null
+    const data = (await res.json()) as { path?: string; mimeType?: string }
+    return data.path && data.mimeType ? { path: data.path, mimeType: data.mimeType } : null
   }
 
-  const onBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onBannerMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploadingBannerImage(true)
-    const path = await uploadImage(file)
-    if (path) {
-      setBannerForm((f) => ({ ...f, image: path }))
-      showMsg(l('Изображение загружено.', 'Image uploaded.', 'Attēls augšupielādēts.'))
-    } else {
-      showMsg(l('Не удалось загрузить изображение.', 'Failed to upload image.', 'Neizdevās augšupielādēt attēlu.'), true)
+    const input = e.target
+    const isVideo = file.type.startsWith('video/')
+    if (file.size > (isVideo ? BANNER_VIDEO_MAX_BYTES : BANNER_IMAGE_MAX_BYTES)) {
+      showMsg(l('Файл слишком большой: фото — до 10 МБ, видео — до 50 МБ.', 'File too large: photos up to 10 MB, videos up to 50 MB.', 'Fails ir pārāk liels: foto līdz 10 MB, video līdz 50 MB.'), true)
+      input.value = ''
+      return
     }
-    setUploadingBannerImage(false)
-    e.target.value = ''
+    setUploadingBannerMedia(true)
+    try {
+      const media = await uploadMedia(file)
+      if (!media) throw new Error()
+      setBannerForm((f) => ({ ...f, image: media.path, type: media.mimeType.startsWith('video/') ? 'video' : f.type === 'video' ? 'image' : f.type }))
+      showMsg(l('Файл загружен. Сохраните баннер для публикации.', 'File uploaded. Save the banner to publish it.', 'Fails augšupielādēts. Saglabājiet baneri, lai to publicētu.'))
+    } catch {
+      showMsg(l('Не удалось загрузить файл. Фото: JPG, PNG, WebP, GIF, AVIF до 10 МБ. Видео: MP4 или WebM до 50 МБ.', 'Upload failed. Photos: JPG, PNG, WebP, GIF, AVIF up to 10 MB. Videos: MP4 or WebM up to 50 MB.', 'Augšupielāde neizdevās. Foto: JPG, PNG, WebP, GIF, AVIF līdz 10 MB. Video: MP4 vai WebM līdz 50 MB.'), true)
+    } finally {
+      setUploadingBannerMedia(false)
+      input.value = ''
+    }
   }
 
   // ── Banner CRUD ───────────────────────────────────────────────────────────────
 
   const onSaveBanner = async () => {
-    if (!resolveLocaleText(bannerForm.title, 'ru').trim()) { showMsg(l('Укажите заголовок баннера.', 'Enter a banner title.', 'Norādiet banera virsrakstu.'), true); return }
+    if (uploadingBannerMedia || saving) return
+    if (bannerForm.type !== 'sale' && !bannerForm.image.trim()) { showMsg(l('Загрузите фото или видео для баннера.', 'Upload a photo or video for the banner.', 'Augšupielādējiet banera foto vai video.'), true); return }
+    if (bannerForm.type === 'sale' && !resolveLocaleText(bannerForm.title, 'ru').trim()) { showMsg(l('Укажите заголовок баннера.', 'Enter a banner title.', 'Norādiet banera virsrakstu.'), true); return }
     setSaving(true)
     try {
       if (editingBannerId) {
@@ -150,28 +162,21 @@ function useBannerContentManagerState() {
   }
 
   const onMoveBanner = async (id: string, dir: 'up' | 'down') => {
+    if (saving) return
     const sorted = [...banners]
     const idx = sorted.findIndex((b) => b.id === id)
     const swapIdx = dir === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= sorted.length) return
-
-    const updatedA = { ...sorted[idx], order: sorted[swapIdx].order }
-    const updatedB = { ...sorted[swapIdx], order: sorted[idx].order }
+    if (idx === -1 || swapIdx < 0 || swapIdx >= sorted.length) return
 
     setSaving(true)
     try {
-      const responses = await Promise.all([
-        fetch(`/api/admin/banners/${updatedA.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'banner', item: { order: updatedA.order } })
-        }),
-        fetch(`/api/admin/banners/${updatedB.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'banner', item: { order: updatedB.order } })
-        })
-      ])
-      if (responses.some((response) => !response.ok)) throw new Error()
+      const response = await fetch('/api/admin/banners/reorder', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, direction: dir }),
+      })
+      if (!response.ok) throw new Error()
       await loadData()
+      showMsg(l('Порядок баннеров сохранён.', 'Banner order saved.', 'Baneru secība saglabāta.'))
     } catch {
       showMsg(l('Не удалось изменить порядок.', 'Failed to change order.', 'Neizdevās mainīt secību.'), true)
     } finally {
@@ -205,7 +210,7 @@ function useBannerContentManagerState() {
   return {
     banners, loading, saving, message,
     bannerForm, setBannerForm, editingBannerId, showBannerForm, setShowBannerForm,
-    uploadingBannerImage, onBannerImageUpload,
+    uploadingBannerMedia, onBannerMediaUpload,
     onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm,
   }
 }

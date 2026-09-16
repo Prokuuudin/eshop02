@@ -54,7 +54,7 @@ export const getCachedBrands = unstable_cache(async () => {
 export const getCachedSaleBanners = unstable_cache(async (): Promise<Banner[]> => {
   const data = await readBannersData()
   return data.banners
-    .filter((banner) => banner.active && banner.type === 'sale')
+    .filter((banner) => banner.active && (banner.type === 'sale' || banner.type === 'image' || banner.type === 'video'))
     .sort((a, b) => a.order - b.order)
     .map((banner) => ({ ...banner, link: sanitizeStoredLink(banner.link) }))
 }, ['storefront-sale-banners-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.banners] })

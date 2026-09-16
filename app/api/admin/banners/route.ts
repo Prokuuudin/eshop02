@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const maxOrder = data.banners.reduce((m, b) => Math.max(m, b.order), 0)
     const banner: Banner = {
       id: `banner-${Date.now()}`,
-      type: 'sale',
+      type: item.type === 'video' ? 'video' : item.type === 'image' ? 'image' : 'sale',
       title: item.title ?? '',
       subtitle: item.subtitle ?? '',
       image: item.image ?? '',
@@ -41,10 +41,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       createdAt: now,
       updatedAt: now
     }
-    data.banners.push(banner)
-    await writeBannersData(data)
-    revalidatePath('/')
-    revalidateTag(STOREFRONT_CACHE_TAGS.banners, 'max')
+    await writeBannersData({ banners: [banner] })
+    revalidatePath('/[lang]', 'layout')
+    revalidateTag(STOREFRONT_CACHE_TAGS.banners, { expire: 0 })
     return NextResponse.json(banner)
   } catch {
     return NextResponse.json({ error: 'failed_to_create' }, { status: 400 })

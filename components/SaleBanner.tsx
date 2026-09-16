@@ -8,6 +8,7 @@ import { resolveLocaleText } from '@/lib/locale-text';
 
 export type PromoBanner = {
     id: string;
+    type?: 'sale' | 'image' | 'video';
     title: string;
     subtitle: string;
     image: string;
@@ -30,6 +31,32 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
     const title = resolveLocaleText(banner.title, language);
     const subtitle = resolveLocaleText(banner.subtitle, language);
     const ctaLabel = resolveLocaleText(banner.ctaLabel, language);
+
+    if (banner.type === 'video' && banner.image) {
+        return (
+            <div className="sale-banner overflow-hidden rounded-2xl border border-border bg-black">
+                <video key={banner.image} src={banner.image} controls muted playsInline preload="metadata"
+                    aria-label={title || undefined} className="block h-auto w-full">
+                    <track kind="captions" />
+                </video>
+                {banner.link && <div className="bg-card p-3">
+                    <Button asChild variant={CTA_VARIANT[banner.ctaStyle] ?? 'default'}>
+                        <Link href={banner.link}>{ctaLabel || ({ ru: 'Перейти', en: 'Open link', lv: 'Atvērt saiti' }[language])}</Link>
+                    </Button>
+                </div>}
+            </div>
+        );
+    }
+
+    if (banner.type === 'image' && banner.image) {
+        const image = (
+            <div className="sale-banner overflow-hidden rounded-2xl border border-border">
+                <Image src={banner.image} alt={title} width={1440} height={480} unoptimized
+                    className="block h-auto w-full" style={{ width: '100%', height: 'auto' }} />
+            </div>
+        );
+        return banner.link ? <Link href={banner.link} aria-label={title || undefined} className="sale-banner-link block">{image}</Link> : image;
+    }
 
     const card = (
         <div
@@ -90,7 +117,7 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
         </div>
     );
 
-    if (banner.link && !banner.ctaLabel) {
+    if (banner.link && !ctaLabel) {
         return (
             <Link href={banner.link} className="sale-banner-link block" style={{ textDecoration: 'none' }}>
                 {card}

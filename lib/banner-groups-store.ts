@@ -10,12 +10,15 @@ export const BANNER_ZONES = [
 
 export type BannerZone = typeof BANNER_ZONES[number]
 export type BannerDisplayType = 'list' | 'carousel'
+export type BannerScrollMode = 'manual' | 'auto'
 
 export type BannerGroup = {
   id: string
   name: string
   zone: BannerZone
   displayType: BannerDisplayType
+  // Only meaningful when displayType is 'carousel'.
+  scrollMode: BannerScrollMode
   order: number
 }
 
@@ -26,6 +29,7 @@ const DEFAULT_GROUP: BannerGroup = {
   name: 'Акции',
   zone: 'sale',
   displayType: 'list',
+  scrollMode: 'auto',
   order: 0,
 }
 
@@ -42,6 +46,7 @@ function normalizeGroup(input: Partial<BannerGroup>, order: number): BannerGroup
     name: typeof input.name === 'string' && input.name.trim() ? input.name.trim() : input.id,
     zone: isBannerZone(input.zone) ? input.zone : 'sale',
     displayType: input.displayType === 'carousel' ? 'carousel' : 'list',
+    scrollMode: input.scrollMode === 'manual' ? 'manual' : 'auto',
     order: typeof input.order === 'number' ? input.order : order,
   }
 }

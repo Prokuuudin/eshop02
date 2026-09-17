@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidateTag: mocks.tag, revalidatePath: mocks.p
 
 import { GET, PUT } from './route'
 
-const group = { id: 'default', name: 'Акции', zone: 'sale', displayType: 'list', order: 0 }
+const group = { id: 'default', name: 'Акции', zone: 'sale', displayType: 'list', scrollMode: 'auto', order: 0 }
 function request(groups: unknown) {
   return new NextRequest('http://localhost/api/admin/banner-groups', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groups }),
@@ -37,9 +37,10 @@ describe('banner groups', () => {
     expect(mocks.tag).toHaveBeenCalledWith('storefront-banners', { expire: 0 })
     expect(mocks.path).toHaveBeenCalledWith('/[lang]', 'layout')
   })
-  it('rejects an unknown zone or display type', async () => {
+  it('rejects an unknown zone, display type or scroll mode', async () => {
     expect((await PUT(request([{ ...group, zone: 'nowhere' }]))).status).toBe(400)
     expect((await PUT(request([{ ...group, displayType: 'grid' }]))).status).toBe(400)
+    expect((await PUT(request([{ ...group, scrollMode: 'fast' }]))).status).toBe(400)
     expect(mocks.save).not.toHaveBeenCalled()
   })
   it('requires admin access', async () => {

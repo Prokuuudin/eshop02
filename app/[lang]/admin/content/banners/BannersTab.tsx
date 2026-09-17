@@ -25,6 +25,7 @@ import {
     type TextColor,
     type BannerZone,
     type BannerPlacement,
+    type BannerScrollMode,
 } from './banner-model';
 import type { useBannerContentManager } from './useBannerContentManager';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -62,7 +63,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
     return (
         <TabsContent value="banners" className="space-y-4 mt-4">
             <p className="text-sm text-muted-foreground">
-                {l("Сначала объедините баннеры в группы: у каждой группы своё место на главной и свой формат показа — список или карусель. Затем в каждом баннере просто выберите группу. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. В группе, размещённой в блоке акций, первый баннер типа «с текстом» всегда остаётся большой карточкой сверху.", "First combine banners into groups: each group has its own homepage location and its own display format — list or carousel. Then just pick a group for each banner. Status Yes publishes the banner; No saves it hidden. In a group placed in the sale block, the first text-style banner always stays as the large card on top.", "Vispirms apvienojiet banerus grupās: katrai grupai ir sava vieta sākumlapā un savs attēlošanas formāts — saraksts vai karuselis. Tad katram banerim vienkārši izvēlieties grupu. Jā publicē baneri; Nē saglabā paslēptu. Grupā, kas izvietota akciju blokā, pirmais teksta banera veids vienmēr paliek kā liela karte augšā.")}
+                {l("Сначала объедините баннеры в группы: у каждой группы своё место на главной и свой формат показа — список или карусель. Для карусели дополнительно выберите прокрутку — вручную (стрелками и точками) или автоматически. Затем в каждом баннере просто выберите группу. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. В группе, размещённой в блоке акций, первый баннер типа «с текстом» всегда остаётся большой карточкой сверху.", "First combine banners into groups: each group has its own homepage location and its own display format — list or carousel. For a carousel, also pick the scroll mode — manual (arrows and dots) or automatic. Then just pick a group for each banner. Status Yes publishes the banner; No saves it hidden. In a group placed in the sale block, the first text-style banner always stays as the large card on top.", "Vispirms apvienojiet banerus grupās: katrai grupai ir sava vieta sākumlapā un savs attēlošanas formāts — saraksts vai karuselis. Karuselim papildus izvēlieties ritināšanu — manuālu (bultiņas un punkti) vai automātisku. Tad katram banerim vienkārši izvēlieties grupu. Jā publicē baneri; Nē saglabā paslēptu. Grupā, kas izvietota akciju blokā, pirmais teksta banera veids vienmēr paliek kā liela karte augšā.")}
             </p>
 
             {/* Group management */}
@@ -102,6 +103,15 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     <SelectItem value="carousel">{l('Карусель', 'Carousel', 'Karuselis')}</SelectItem>
                                 </SelectContent>
                             </Select>
+                            {group.displayType === 'carousel' && (
+                                <Select value={group.scrollMode} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { scrollMode: v as BannerScrollMode })}>
+                                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="manual">{l('Прокрутка вручную', 'Manual scroll', 'Manuāla ritināšana')}</SelectItem>
+                                        <SelectItem value="auto">{l('Автопрокрутка', 'Auto scroll', 'Automātiska ritināšana')}</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <div className="flex items-center gap-1">
                                 <Button type="button" variant="outline" size="sm" disabled={idx === 0 || savingGroups} onClick={() => void onMoveGroup(group.id, 'up')} aria-label={l('Переместить выше', 'Move up', 'Pārvietot augšup')}>▲</Button>
                                 <Button type="button" variant="outline" size="sm" disabled={idx === sortedGroups.length - 1 || savingGroups} onClick={() => void onMoveGroup(group.id, 'down')} aria-label={l('Переместить ниже', 'Move down', 'Pārvietot lejup')}>▼</Button>

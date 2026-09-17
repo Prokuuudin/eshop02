@@ -1,14 +1,14 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { Banner as PrismaBanner } from '@/generated/prisma/client'
-import { getBannerGroups, DEFAULT_GROUP_ID, type BannerGroup, type BannerZone, type BannerDisplayType } from '@/lib/banner-groups-store'
+import { getBannerGroups, DEFAULT_GROUP_ID, type BannerGroup, type BannerZone, type BannerDisplayType, type BannerScrollMode } from '@/lib/banner-groups-store'
 import { getBannerGroupAssignments, saveBannerGroupAssignment } from '@/lib/banner-group-assignment-store'
 
 export type BannerType = 'sale' | 'image' | 'video'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'
 export type BannerPlacement = BannerDisplayType
-export type { BannerZone, BannerGroup }
+export type { BannerZone, BannerGroup, BannerScrollMode }
 export { BANNER_ZONES } from '@/lib/banner-groups-store'
 
 export type Banner = {
@@ -29,6 +29,7 @@ export type Banner = {
   // components don't need to know groups exist.
   placement: BannerPlacement
   zone: BannerZone
+  scrollMode: BannerScrollMode
   createdAt: string
   updatedAt: string
 }
@@ -56,6 +57,7 @@ function mapDbToBanner(row: PrismaBanner, assignments: Record<string, string>, g
     groupId,
     placement: group?.displayType ?? 'list',
     zone: group?.zone ?? 'sale',
+    scrollMode: group?.scrollMode ?? 'auto',
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt),
   }

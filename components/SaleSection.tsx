@@ -66,7 +66,7 @@ export default function SaleSection({ products, banners }: { products: Product[]
                 )}
                 {carouselBanners.length > 0 && (
                     <div className="mb-6">
-                        <BannerCarousel banners={carouselBanners} />
+                        <BannerCarousel banners={carouselBanners} scrollMode={carouselBanners[0]?.scrollMode} />
                     </div>
                 )}
             </div>

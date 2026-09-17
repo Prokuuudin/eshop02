@@ -7,8 +7,8 @@ vi.mock('next/image', () => ({ default: ({ unoptimized: _unoptimized, fill: _fil
 vi.mock('next/link', () => ({ default: (props: Record<string, unknown>) => React.createElement('a', props) }))
 vi.mock('@/components/BestsellersSlider', () => ({ default: () => null }))
 vi.mock('@/components/BannerCarousel', () => ({
-  default: ({ banners }: { banners: { id: string }[] }) =>
-    React.createElement('div', { 'data-testid': 'banner-carousel', 'data-count': banners.length }),
+  default: ({ banners, scrollMode }: { banners: { id: string }[]; scrollMode?: string }) =>
+    React.createElement('div', { 'data-testid': 'banner-carousel', 'data-count': banners.length, 'data-scroll-mode': scrollMode ?? 'auto' }),
 }))
 vi.mock('@/components/Newsletter', () => ({ default: () => null }))
 vi.mock('@/components/ui/Reveal', () => ({ default: ({ children }: { children: React.ReactNode }) => children }))
@@ -57,13 +57,14 @@ describe('storefront banner rendering', () => {
       banners: [
         { ...image, type: 'sale', title: 'Feature' },
         { ...image, id: 'listed', image: '/second.png', placement: 'list' },
-        { ...image, id: 'carousel-1', placement: 'carousel' },
-        { ...image, id: 'carousel-2', placement: 'carousel' },
+        { ...image, id: 'carousel-1', placement: 'carousel', scrollMode: 'manual' },
+        { ...image, id: 'carousel-2', placement: 'carousel', scrollMode: 'manual' },
       ],
     }))
     expect(html).toContain('/second.png')
     expect(html).toContain('data-testid="banner-carousel"')
     expect(html).toContain('data-count="2"')
+    expect(html).toContain('data-scroll-mode="manual"')
   })
   it('keeps everything in the stacked list when no banner requests the carousel', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {

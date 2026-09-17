@@ -4,6 +4,7 @@ export type BannerType = 'sale' | 'image' | 'video'
 export type TextColor = 'light' | 'dark'
 export type CtaStyle = 'primary' | 'secondary' | 'outline'
 export type BannerPlacement = 'list' | 'carousel'
+export type BannerScrollMode = 'manual' | 'auto'
 
 // Named after the homepage section each zone's block renders next to.
 export const BANNER_ZONES = [
@@ -33,6 +34,8 @@ export type BannerGroup = {
   name: string
   zone: BannerZone
   displayType: BannerPlacement
+  // Only meaningful when displayType is 'carousel'.
+  scrollMode: BannerScrollMode
   order: number
 }
 

@@ -29,6 +29,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
       const group = groups.find((g) => g.id === merged.groupId) ?? groups.find((g) => g.id === DEFAULT_GROUP_ID)!
       merged.placement = group.displayType
       merged.zone = group.zone
+      merged.scrollMode = group.scrollMode
     }
     data.banners[idx] = merged
     await writeBannersData({ banners: [merged] })

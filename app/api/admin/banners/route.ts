@@ -43,6 +43,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       groupId,
       placement: group.displayType,
       zone: group.zone,
+      scrollMode: group.scrollMode,
       order: maxOrder + 1,
       createdAt: now,
       updatedAt: now

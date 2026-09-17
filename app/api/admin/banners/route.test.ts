@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({
   read: vi.fn(), write: vi.fn(), tag: vi.fn(), path: vi.fn(), delete: vi.fn(), removeAssignment: vi.fn(),
-  defaultGroup: { id: 'default', name: 'Акции', zone: 'sale', displayType: 'list', order: 0 },
+  defaultGroup: { id: 'default', name: 'Акции', zone: 'sale', displayType: 'list', scrollMode: 'auto', order: 0 },
 }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: 'admin' }) }))
 vi.mock('@/lib/banners-server-store', () => ({ readBannersData: mocks.read, writeBannersData: mocks.write }))

@@ -15,7 +15,7 @@ export default function BannerZoneBlock({ banners }: { banners: PromoBanner[] })
                     {listBanners.map((item) => <SaleBanner key={item.id} banner={item} />)}
                 </div>
             )}
-            {carouselBanners.length > 0 && <BannerCarousel banners={carouselBanners} />}
+            {carouselBanners.length > 0 && <BannerCarousel banners={carouselBanners} scrollMode={carouselBanners[0]?.scrollMode} />}
         </div>
     );
 }

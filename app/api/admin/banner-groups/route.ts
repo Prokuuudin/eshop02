@@ -12,6 +12,7 @@ const groupSchema = z.object({
   name: z.string().min(1),
   zone: z.enum(BANNER_ZONES),
   displayType: z.enum(['list', 'carousel']),
+  scrollMode: z.enum(['manual', 'auto']),
   order: z.number(),
 })
 const groupsSchema = z.object({ groups: z.array(groupSchema) })

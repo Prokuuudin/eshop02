@@ -13,7 +13,7 @@ import {
 
 function useBannerContentManagerState() {
   const confirmAction = useAdminConfirm()
-  const { l } = useAdminLocale()
+  const { l, language } = useAdminLocale()
   const [banners, setBanners] = React.useState<Banner[]>([])
   const [groups, setGroups] = React.useState<BannerGroup[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -134,7 +134,22 @@ function useBannerContentManagerState() {
   }
 
   const onDeleteBanner = async (id: string) => {
-    const decision = await confirmAction({ title: l('Удалить баннер?', 'Delete banner?', 'Dzēst baneri?'), description: l('Баннер перестанет отображаться на сайте.', 'The banner will no longer appear on the site.', 'Baneris vietnē vairs netiks rādīts.'), affected: [id], requireReason: true, destructive: true })
+    const banner = banners.find((b) => b.id === id)
+    const fallbackLabel = banner?.type === 'video'
+      ? l('Видеобаннер', 'Video banner', 'Video baneris')
+      : banner?.type === 'image'
+        ? l('Готовое изображение', 'Ready-made image', 'Gatavs attēls')
+        : l('Баннер с текстом', 'Text banner', 'Teksta baneris')
+    const bannerLabel = (banner && resolveLocaleText(banner.title, language).trim()) || fallbackLabel
+    const decision = await confirmAction({
+      title: l('Удалить баннер?', 'Delete banner?', 'Dzēst baneri?'),
+      description: l(
+        `Баннер «${bannerLabel}» перестанет отображаться на сайте.`,
+        `The banner "${bannerLabel}" will no longer appear on the site.`,
+        `Baneris «${bannerLabel}» vietnē vairs netiks rādīts.`
+      ),
+      destructive: true,
+    })
     if (!decision.confirmed) return
     setSaving(true)
     try {
@@ -248,18 +263,29 @@ function useBannerContentManagerState() {
       name: l('Новая группа', 'New group', 'Jauna grupa'),
       zone: 'sale',
       displayType: 'list',
+      scrollMode: 'auto',
       order: maxOrder + 1,
     }
     await saveGroups([...groups, newGroup])
   }
 
-  const onUpdateGroup = async (id: string, patch: Partial<Pick<BannerGroup, 'name' | 'zone' | 'displayType'>>) => {
+  const onUpdateGroup = async (id: string, patch: Partial<Pick<BannerGroup, 'name' | 'zone' | 'displayType' | 'scrollMode'>>) => {
     await saveGroups(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)))
   }
 
   const onDeleteGroup = async (id: string) => {
     if (id === DEFAULT_GROUP_ID) return
-    const decision = await confirmAction({ title: l('Удалить группу?', 'Delete group?', 'Dzēst grupu?'), description: l('Баннеры из этой группы перейдут в группу по умолчанию.', 'Banners in this group will move to the default group.', 'Baneri no šīs grupas pāries uz noklusējuma grupu.'), affected: [id], requireReason: true, destructive: true })
+    const group = groups.find((g) => g.id === id)
+    const defaultGroupName = groups.find((g) => g.id === DEFAULT_GROUP_ID)?.name ?? DEFAULT_GROUP_ID
+    const decision = await confirmAction({
+      title: l('Удалить группу?', 'Delete group?', 'Dzēst grupu?'),
+      description: l(
+        `Группа «${group?.name ?? id}» будет удалена. Её баннеры перейдут в группу «${defaultGroupName}».`,
+        `The group "${group?.name ?? id}" will be deleted. Its banners will move to the "${defaultGroupName}" group.`,
+        `Grupa «${group?.name ?? id}» tiks dzēsta. Tās baneri pāries uz grupu «${defaultGroupName}».`
+      ),
+      destructive: true,
+    })
     if (!decision.confirmed) return
     await saveGroups(groups.filter((g) => g.id !== id))
   }

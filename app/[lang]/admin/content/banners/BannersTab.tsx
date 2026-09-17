@@ -72,7 +72,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     <h2 className="text-sm font-semibold text-foreground">
                         {l('Группы баннеров', 'Banner groups', 'Baneru grupas')}
                     </h2>
-                    <Button type="button" size="sm" variant="outline" disabled={savingGroups} onClick={() => void onAddGroup()}>
+                    <Button type="button" disabled={savingGroups} onClick={() => void onAddGroup()}>
                         + {l('Добавить группу', 'Add group', 'Pievienot grupu')}
                     </Button>
                 </div>
@@ -140,7 +140,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             {showBannerForm && (
                 <div
                     id="banner-edit-form"
-                    className={`scroll-mt-[var(--header-offset)] space-y-4 rounded-lg p-5 shadow-sm ${
+                    className={`scroll-mt-[var(--header-offset)] space-y-3 rounded-lg p-4 shadow-sm ${
                         editingBannerId
                             ? 'bg-rose-50/80 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50'
                             : 'border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
@@ -163,7 +163,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                         <p className="text-xs text-muted-foreground">{l("Рекомендуемый размер готового баннера: 1440 × 480 px (3:1). Другие размеры допустимы: изображение показывается целиком без обрезки. JPG, PNG, WebP, GIF или AVIF, до 10 МБ. Загрузите файл, дождитесь предпросмотра и сохраните баннер. В режиме с текстом картинка служит фоном и может обрезаться.", "For ready-made banners we recommend 1440 × 480 px (3:1). Other sizes are accepted and shown in full without cropping. JPG, PNG, WebP, GIF or AVIF, up to 10 MB. Upload, wait for the preview and click Save. In text mode the image is a background and may be cropped.", "Ieteicamais izmērs: 1440 × 480 px (3:1). Citi izmēri ir atļauti, attēls tiek rādīts pilnībā. JPG, PNG, WebP, GIF vai AVIF, līdz 10 MB. Augšupielādējiet, sagaidiet priekšskatījumu un saglabājiet. Teksta režīmā fona attēls var tikt apgriezts.")}</p>
                     </div>
                     <p className="text-xs text-muted-foreground">{l('Видео: MP4 или WebM до 50 МБ, рекомендуем горизонтальное. Загруженное видео автоматически включает формат «Видеобаннер». На сайте видео показывается целиком с управлением воспроизведением; ссылка открывается отдельной кнопкой.', 'Video: MP4 or WebM up to 50 MB; landscape recommended. Uploading video automatically selects Video banner. The site shows the complete video with playback controls; the link uses a separate button.', 'Video: MP4 vai WebM līdz 50 MB; iesakām horizontālu. Video augšupielāde automātiski izvēlas video baneri. Vietnē video tiek rādīts pilnībā ar atskaņošanas vadību; saite ir atsevišķā pogā.')}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {bannerForm.type === 'sale' && <>
                         <LocaleTextField
                             label={l('Заголовок * (RU / EN / LV)', 'Title * (RU / EN / LV)', 'Virsraksts * (RU / EN / LV)')}
@@ -198,6 +198,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </label>
                             <Input
                                 id="admin-banner-field-2"
+                                className="max-w-md"
                                 value={bannerForm.image}
                                 onChange={(e) =>
                                     setBannerForm((f) => ({ ...f, image: e.target.value, type: isVideoSource(e.target.value) ? 'video' : f.type }))
@@ -206,7 +207,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             />
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 sm:col-span-2">
                             <label
                                 htmlFor="admin-banner-field-3"
                                 className="text-xs text-muted-foreground"
@@ -243,6 +244,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </label>
                             <Input
                                 id="admin-banner-field-4"
+                                className="max-w-md"
                                 value={bannerForm.link}
                                 onChange={(e) =>
                                     setBannerForm((f) => ({ ...f, link: e.target.value }))
@@ -281,7 +283,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             >
                                 <SelectTrigger
                                     id="admin-banner-field-5"
-                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                                    className="w-full max-w-xs rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
@@ -310,7 +312,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             >
                                 <SelectTrigger
                                     id="admin-banner-field-6"
-                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                                    className="w-full max-w-xs rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
@@ -328,7 +330,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             >
                                 {l('Цвет фона', 'Background color', 'Fona krāsa')}
                             </label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex max-w-xs items-center gap-2">
                                 <input
                                     id="admin-banner-field-7"
                                     type="color"
@@ -336,7 +338,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                     onChange={(e) =>
                                         setBannerForm((f) => ({ ...f, bgColor: e.target.value }))
                                     }
-                                    className="h-9 w-14 rounded border border-border cursor-pointer"
+                                    className="h-9 w-14 shrink-0 rounded border border-border cursor-pointer"
                                 />
                                 <Input
                                     value={bannerForm.bgColor}
@@ -365,7 +367,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             >
                                 <SelectTrigger
                                     id="admin-banner-field-8"
-                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                                    className="w-full max-w-xs rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
@@ -376,7 +378,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </Select>
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 sm:col-span-full">
                             <label
                                 htmlFor="admin-banner-field-9"
                                 className="text-xs text-muted-foreground"
@@ -391,7 +393,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             >
                                 <SelectTrigger
                                     id="admin-banner-field-9"
-                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                                    className="w-full max-w-md rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
                                 >
                                     <SelectValue />
                                 </SelectTrigger>

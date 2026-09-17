@@ -15,7 +15,7 @@ type LocaleTextFieldProps = {
 
 export function LocaleTextField({ label, value, onChange, placeholder }: LocaleTextFieldProps): JSX.Element {
   return (
-    <div className="admin-banners__locale-field space-y-1 sm:col-span-2">
+    <div className="admin-banners__locale-field space-y-1 sm:col-span-full">
       <label className="admin-banners__locale-label text-xs text-muted-foreground">{label}</label>
       <div className="admin-banners__locale-inputs grid grid-cols-1 gap-2 sm:grid-cols-3">
         {(Object.keys(LOCALE_FIELD_LABELS) as Array<keyof typeof LOCALE_FIELD_LABELS>).map((lang) => (

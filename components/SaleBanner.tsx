@@ -17,6 +17,7 @@ export type PromoBanner = {
     ctaStyle: 'primary' | 'secondary' | 'outline';
     bgColor: string;
     textColor: 'light' | 'dark';
+    placement?: 'list' | 'carousel';
 };
 
 const CTA_VARIANT = {

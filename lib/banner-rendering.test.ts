@@ -6,11 +6,16 @@ vi.mock('@/lib/use-translation', () => ({ useTranslation: () => ({ language: 'ru
 vi.mock('next/image', () => ({ default: ({ unoptimized: _unoptimized, fill: _fill, ...props }: Record<string, unknown>) => React.createElement('img', props) }))
 vi.mock('next/link', () => ({ default: (props: Record<string, unknown>) => React.createElement('a', props) }))
 vi.mock('@/components/BestsellersSlider', () => ({ default: () => null }))
+vi.mock('@/components/BannerCarousel', () => ({
+  default: ({ banners }: { banners: { id: string }[] }) =>
+    React.createElement('div', { 'data-testid': 'banner-carousel', 'data-count': banners.length }),
+}))
 vi.mock('@/components/Newsletter', () => ({ default: () => null }))
 vi.mock('@/components/ui/Reveal', () => ({ default: ({ children }: { children: React.ReactNode }) => children }))
 
 import SaleBanner, { type PromoBanner } from '@/components/SaleBanner'
 import SaleSection from '@/components/SaleSection'
+import BannerZoneBlock from '@/components/BannerZoneBlock'
 
 const image: PromoBanner = {
   id: 'image', type: 'image', title: '', subtitle: 'Old subtitle', image: '/ready.png',
@@ -45,5 +50,46 @@ describe('storefront banner rendering', () => {
     expect(html.indexOf('/ready.png')).toBeLessThan(html.indexOf('/second.png'))
     expect(html.indexOf('/second.png')).toBeLessThan(html.indexOf('Text promotion'))
     expect(html).not.toContain('/girl1.png')
+  })
+  it('renders banners placed in the carousel through BannerCarousel, separately from the stacked list', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, {
+      products: [],
+      banners: [
+        { ...image, type: 'sale', title: 'Feature' },
+        { ...image, id: 'listed', image: '/second.png', placement: 'list' },
+        { ...image, id: 'carousel-1', placement: 'carousel' },
+        { ...image, id: 'carousel-2', placement: 'carousel' },
+      ],
+    }))
+    expect(html).toContain('/second.png')
+    expect(html).toContain('data-testid="banner-carousel"')
+    expect(html).toContain('data-count="2"')
+  })
+  it('keeps everything in the stacked list when no banner requests the carousel', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, {
+      products: [],
+      banners: [{ ...image, type: 'sale', title: 'Feature' }, { ...image, id: 'second', image: '/second.png' }],
+    }))
+    expect(html).not.toContain('data-testid="banner-carousel"')
+    expect(html).toContain('/second.png')
+  })
+})
+
+describe('other homepage zones', () => {
+  it('renders nothing for an empty zone', () => {
+    const html = renderToStaticMarkup(React.createElement(BannerZoneBlock, { banners: [] }))
+    expect(html).toBe('')
+  })
+  it('splits a zone into its own list and carousel groups', () => {
+    const html = renderToStaticMarkup(React.createElement(BannerZoneBlock, {
+      banners: [
+        { ...image, id: 'listed', placement: 'list' },
+        { ...image, id: 'carousel-1', image: '/second.png', placement: 'carousel' },
+        { ...image, id: 'carousel-2', placement: 'carousel' },
+      ],
+    }))
+    expect(html).toContain('/ready.png')
+    expect(html).toContain('data-testid="banner-carousel"')
+    expect(html).toContain('data-count="2"')
   })
 })

@@ -1,9 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const mocks = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), tag: vi.fn(), path: vi.fn(), delete: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  read: vi.fn(), write: vi.fn(), tag: vi.fn(), path: vi.fn(), delete: vi.fn(), removeAssignment: vi.fn(),
+  defaultGroup: { id: 'default', name: 'Акции', zone: 'sale', displayType: 'list', order: 0 },
+}))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: 'admin' }) }))
 vi.mock('@/lib/banners-server-store', () => ({ readBannersData: mocks.read, writeBannersData: mocks.write }))
+vi.mock('@/lib/banner-groups-store', () => ({
+  getBannerGroups: vi.fn().mockResolvedValue([mocks.defaultGroup]),
+  DEFAULT_GROUP_ID: 'default',
+}))
+vi.mock('@/lib/banner-group-assignment-store', () => ({ removeBannerGroupAssignment: mocks.removeAssignment }))
 vi.mock('@/lib/storefront-cache', () => ({ STOREFRONT_CACHE_TAGS: { banners: 'storefront-banners' } }))
 vi.mock('@/lib/prisma', () => ({ prisma: { banner: { delete: mocks.delete } } }))
 vi.mock('next/cache', () => ({ revalidateTag: mocks.tag, revalidatePath: mocks.path }))
@@ -11,7 +19,7 @@ vi.mock('next/cache', () => ({ revalidateTag: mocks.tag, revalidatePath: mocks.p
 import { POST } from './route'
 import { PUT, DELETE } from './[id]/route'
 
-const existing = { id: 'old', type: 'sale', title: 'Sale', order: 1, active: true }
+const existing = { id: 'old', type: 'sale', title: 'Sale', order: 1, active: true, groupId: 'default' }
 function request(item: unknown, method = 'POST') {
   return new NextRequest('http://localhost/api/admin/banners', {
     method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item }),
@@ -26,7 +34,7 @@ describe('banner publication', () => {
   it('preserves the video format when publishing without a title', async () => {
     const res = await POST(request({ type: 'video', image: '/api/media/banner.mp4' }))
     expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ type: 'video', image: '/api/media/banner.mp4', title: '', active: true })
+    expect(await res.json()).toMatchObject({ type: 'video', image: '/api/media/banner.mp4', title: '', active: true, groupId: 'default' })
   })
   it('saves a ready-made image without a title and immediately expires the storefront cache', async () => {
     const res = await POST(request({ type: 'image', image: '/api/media/banner.png' }))
@@ -48,6 +56,7 @@ describe('banner publication', () => {
     const res = await DELETE(new NextRequest('http://localhost/api/admin/banners/old', { method: 'DELETE' }), { params: Promise.resolve({ id: 'old' }) })
     expect(res.status).toBe(200)
     expect(mocks.delete).toHaveBeenCalledWith({ where: { id: 'old' } })
+    expect(mocks.removeAssignment).toHaveBeenCalledWith('old')
     expect(mocks.tag).toHaveBeenCalledWith('storefront-banners', { expire: 0 })
     expect(mocks.path).toHaveBeenCalledWith('/[lang]', 'layout')
   })

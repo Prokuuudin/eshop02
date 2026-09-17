@@ -5,12 +5,16 @@ import type { Product } from '../data/products';
 import BestsellersSlider from './BestsellersSlider';
 import Newsletter from './Newsletter';
 import SaleBanner, { type PromoBanner } from './SaleBanner';
+import BannerCarousel from './BannerCarousel';
 import Reveal from '@/components/ui/Reveal';
 import { useTranslation } from '@/lib/use-translation';
+import { splitBannersByPlacement } from '@/lib/banner-placement';
 
 export default function SaleSection({ products, banners }: { products: Product[]; banners: PromoBanner[] }): React.ReactElement {
     const { t } = useTranslation();
     const banner = banners[0]?.type === 'sale' ? banners[0] : null;
+    const restBanners = banners.slice(banner ? 1 : 0);
+    const { listBanners, carouselBanners } = splitBannersByPlacement(restBanners);
 
     if (!products.length && !banners.length) {
         return (
@@ -55,9 +59,16 @@ export default function SaleSection({ products, banners }: { products: Product[]
                         </div>
                     </div>
                 </div>
-                <div className="space-y-4 mb-6">
-                    {banners.slice(banner ? 1 : 0).map((item) => <SaleBanner key={item.id} banner={item} />)}
-                </div>
+                {listBanners.length > 0 && (
+                    <div className="space-y-4 mb-6">
+                        {listBanners.map((item) => <SaleBanner key={item.id} banner={item} />)}
+                    </div>
+                )}
+                {carouselBanners.length > 0 && (
+                    <div className="mb-6">
+                        <BannerCarousel banners={carouselBanners} />
+                    </div>
+                )}
             </div>
             {products.length > 0 && (
                 <div className="mx-auto w-full max-w-[1440px] px-4">

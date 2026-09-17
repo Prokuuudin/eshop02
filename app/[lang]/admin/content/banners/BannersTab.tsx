@@ -18,8 +18,13 @@ import SaleBanner from '@/components/SaleBanner';
 import { LocaleTextField } from './LocaleTextField';
 import {
     toLocaleForm,
+    BANNER_ZONES,
+    BANNER_ZONE_LABELS,
+    DEFAULT_GROUP_ID,
     type CtaStyle,
     type TextColor,
+    type BannerZone,
+    type BannerPlacement,
 } from './banner-model';
 import type { useBannerContentManager } from './useBannerContentManager';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -32,7 +37,9 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
     const mediaInputRef = React.useRef<HTMLInputElement>(null);
     const {
             banners,
+            groups,
             saving,
+            savingGroups,
             bannerForm,
             setBannerForm,
             editingBannerId,
@@ -46,12 +53,67 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             onMoveBanner,
             onEditBanner,
             resetBannerForm,
+            onAddGroup,
+            onUpdateGroup,
+            onDeleteGroup,
+            onMoveGroup,
           } = state;
+    const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
     return (
         <TabsContent value="banners" className="space-y-4 mt-4">
             <p className="text-sm text-muted-foreground">
-                {l("Баннеры отображаются на главной странице в разделе акций. Выберите формат, заполните поля и сохраните. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. Все опубликованные баннеры показываются в порядке списка.", "Banners appear in the homepage sale section. Choose a format, fill in the fields and save. Status Yes publishes the banner; No saves it hidden. All published banners appear in list order.", "Baneri tiek rādīti sākumlapas akciju sadaļā. Izvēlieties formātu un saglabājiet. Jā publicē baneri; Nē saglabā paslēptu. Baneri tiek rādīti saraksta secībā.")}
+                {l("Сначала объедините баннеры в группы: у каждой группы своё место на главной и свой формат показа — список или карусель. Затем в каждом баннере просто выберите группу. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. В группе, размещённой в блоке акций, первый баннер типа «с текстом» всегда остаётся большой карточкой сверху.", "First combine banners into groups: each group has its own homepage location and its own display format — list or carousel. Then just pick a group for each banner. Status Yes publishes the banner; No saves it hidden. In a group placed in the sale block, the first text-style banner always stays as the large card on top.", "Vispirms apvienojiet banerus grupās: katrai grupai ir sava vieta sākumlapā un savs attēlošanas formāts — saraksts vai karuselis. Tad katram banerim vienkārši izvēlieties grupu. Jā publicē baneri; Nē saglabā paslēptu. Grupā, kas izvietota akciju blokā, pirmais teksta banera veids vienmēr paliek kā liela karte augšā.")}
             </p>
+
+            {/* Group management */}
+            <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-foreground">
+                        {l('Группы баннеров', 'Banner groups', 'Baneru grupas')}
+                    </h2>
+                    <Button type="button" size="sm" variant="outline" disabled={savingGroups} onClick={() => void onAddGroup()}>
+                        + {l('Добавить группу', 'Add group', 'Pievienot grupu')}
+                    </Button>
+                </div>
+                <div className="space-y-2">
+                    {sortedGroups.map((group, idx) => (
+                        <div key={group.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
+                            <Input
+                                defaultValue={group.name}
+                                disabled={savingGroups}
+                                className="w-40 flex-1 min-w-[10rem]"
+                                onBlur={(e) => {
+                                    const name = e.target.value.trim();
+                                    if (name && name !== group.name) void onUpdateGroup(group.id, { name });
+                                }}
+                            />
+                            <Select value={group.zone} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { zone: v as BannerZone })}>
+                                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {BANNER_ZONES.map((zone) => (
+                                        <SelectItem key={zone} value={zone}>{l(...BANNER_ZONE_LABELS[zone])}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={group.displayType} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { displayType: v as BannerPlacement })}>
+                                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="list">{l('Список', 'List', 'Saraksts')}</SelectItem>
+                                    <SelectItem value="carousel">{l('Карусель', 'Carousel', 'Karuselis')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <div className="flex items-center gap-1">
+                                <Button type="button" variant="outline" size="sm" disabled={idx === 0 || savingGroups} onClick={() => void onMoveGroup(group.id, 'up')} aria-label={l('Переместить выше', 'Move up', 'Pārvietot augšup')}>▲</Button>
+                                <Button type="button" variant="outline" size="sm" disabled={idx === sortedGroups.length - 1 || savingGroups} onClick={() => void onMoveGroup(group.id, 'down')} aria-label={l('Переместить ниже', 'Move down', 'Pārvietot lejup')}>▼</Button>
+                                <Button type="button" variant="destructive" size="sm" disabled={savingGroups || group.id === DEFAULT_GROUP_ID} onClick={() => void onDeleteGroup(group.id)}>
+                                    {l('Удалить', 'Delete', 'Dzēst')}
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             <div className="flex justify-end">
                 <Button
                     onClick={() => {
@@ -67,7 +129,8 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             {/* Banner form */}
             {showBannerForm && (
                 <div
-                    className={`space-y-4 rounded-lg p-5 shadow-sm ${
+                    id="banner-edit-form"
+                    className={`scroll-mt-[var(--header-offset)] space-y-4 rounded-lg p-5 shadow-sm ${
                         editingBannerId
                             ? 'bg-rose-50/80 ring-1 ring-rose-200/70 dark:bg-rose-950/20 dark:ring-rose-800/50'
                             : 'border border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/20'
@@ -302,6 +365,35 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        <div className="space-y-1">
+                            <label
+                                htmlFor="admin-banner-field-9"
+                                className="text-xs text-muted-foreground"
+                            >
+                                {l('Группа', 'Group', 'Grupa')}
+                            </label>
+                            <Select
+                                value={bannerForm.groupId}
+                                onValueChange={(v) =>
+                                    setBannerForm((f) => ({ ...f, groupId: v }))
+                                }
+                            >
+                                <SelectTrigger
+                                    id="admin-banner-field-9"
+                                    className="w-full rounded-md border border-border bg-card text-foreground px-3 py-2 text-sm"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sortedGroups.map((group) => (
+                                        <SelectItem key={group.id} value={group.id}>
+                                            {group.name} — {l(...BANNER_ZONE_LABELS[group.zone])}, {group.displayType === 'carousel' ? l('карусель', 'carousel', 'karuselis') : l('список', 'list', 'saraksts')}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <section className="space-y-2" aria-labelledby="admin-banner-preview-title">
@@ -358,6 +450,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     {banners.map((banner, idx) => {
                         const previewTitle = resolveLocaleText(banner.title, language);
                         const previewSubtitle = resolveLocaleText(banner.subtitle, language);
+                        const bannerGroup = groups.find((g) => g.id === banner.groupId);
                         return (
                             <div
                                 key={banner.id}
@@ -398,6 +491,14 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                         <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
                                             {banner.type === 'video' ? l('Видеобаннер', 'Video banner', 'Video baneris') : banner.type === 'image' ? l('Готовое изображение', 'Ready-made image', 'Gatavs attēls') : l('Баннер с текстом', 'Text banner', 'Teksta baneris')}
                                         </span>
+                                        <span className="text-xs rounded-full px-2 py-0.5 bg-muted text-muted-foreground">
+                                            {bannerGroup ? bannerGroup.name : l(...BANNER_ZONE_LABELS[banner.zone])}
+                                        </span>
+                                        {banner.placement === 'carousel' && (
+                                            <span className="text-xs rounded-full px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                                {l('Карусель', 'Carousel', 'Karuselis')}
+                                            </span>
+                                        )}
                                         <span
                                             className={`text-xs rounded-full px-2 py-0.5 font-medium ${
                                                 banner.active

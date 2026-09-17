@@ -5,16 +5,20 @@ import { useAdminLocale } from '@/lib/use-admin-locale'
 import { BANNER_IMAGE_MAX_BYTES, BANNER_VIDEO_MAX_BYTES } from '@/lib/banner-media'
 import {
   EMPTY_BANNER,
+  DEFAULT_GROUP_ID,
   type Banner,
   type BannerForm,
+  type BannerGroup,
 } from './banner-model'
 
 function useBannerContentManagerState() {
   const confirmAction = useAdminConfirm()
   const { l } = useAdminLocale()
   const [banners, setBanners] = React.useState<Banner[]>([])
+  const [groups, setGroups] = React.useState<BannerGroup[]>([])
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
+  const [savingGroups, setSavingGroups] = React.useState(false)
   const [message, setMessage] = React.useState<{ text: string; error?: boolean } | null>(null)
 
   // Banner form state
@@ -34,10 +38,15 @@ function useBannerContentManagerState() {
 
   const loadData = React.useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/banners', { cache: 'no-store' })
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { banners: Banner[] }
+      const [bannersRes, groupsRes] = await Promise.all([
+        fetch('/api/admin/banners', { cache: 'no-store' }),
+        fetch('/api/admin/banner-groups', { cache: 'no-store' }),
+      ])
+      if (!bannersRes.ok || !groupsRes.ok) throw new Error()
+      const data = (await bannersRes.json()) as { banners: Banner[] }
+      const groupsData = (await groupsRes.json()) as { groups: BannerGroup[] }
       setBanners(data.banners.sort((a, b) => a.order - b.order))
+      setGroups(groupsData.groups.sort((a, b) => a.order - b.order))
     } catch {
       showMsg(l('Не удалось загрузить данные.', 'Failed to load data.', 'Neizdevās ielādēt datus.'), true)
     } finally {
@@ -196,9 +205,13 @@ function useBannerContentManagerState() {
       ctaStyle: banner.ctaStyle,
       bgColor: banner.bgColor,
       textColor: banner.textColor,
-      active: banner.active
+      active: banner.active,
+      groupId: banner.groupId
     })
     setShowBannerForm(true)
+    requestAnimationFrame(() => {
+      document.getElementById('banner-edit-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   const resetBannerForm = () => {
@@ -207,11 +220,66 @@ function useBannerContentManagerState() {
     setShowBannerForm(false)
   }
 
+  // ── Group CRUD ────────────────────────────────────────────────────────────────
+
+  const saveGroups = async (next: BannerGroup[]) => {
+    setSavingGroups(true)
+    try {
+      const res = await fetch('/api/admin/banner-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groups: next })
+      })
+      if (!res.ok) throw new Error()
+      const data = (await res.json()) as { groups: BannerGroup[] }
+      setGroups(data.groups.sort((a, b) => a.order - b.order))
+      await loadData()
+    } catch {
+      showMsg(l('Не удалось сохранить группы.', 'Failed to save groups.', 'Neizdevās saglabāt grupas.'), true)
+    } finally {
+      setSavingGroups(false)
+    }
+  }
+
+  const onAddGroup = async () => {
+    const maxOrder = groups.reduce((m, g) => Math.max(m, g.order), 0)
+    const newGroup: BannerGroup = {
+      id: `group-${Date.now()}`,
+      name: l('Новая группа', 'New group', 'Jauna grupa'),
+      zone: 'sale',
+      displayType: 'list',
+      order: maxOrder + 1,
+    }
+    await saveGroups([...groups, newGroup])
+  }
+
+  const onUpdateGroup = async (id: string, patch: Partial<Pick<BannerGroup, 'name' | 'zone' | 'displayType'>>) => {
+    await saveGroups(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)))
+  }
+
+  const onDeleteGroup = async (id: string) => {
+    if (id === DEFAULT_GROUP_ID) return
+    const decision = await confirmAction({ title: l('Удалить группу?', 'Delete group?', 'Dzēst grupu?'), description: l('Баннеры из этой группы перейдут в группу по умолчанию.', 'Banners in this group will move to the default group.', 'Baneri no šīs grupas pāries uz noklusējuma grupu.'), affected: [id], requireReason: true, destructive: true })
+    if (!decision.confirmed) return
+    await saveGroups(groups.filter((g) => g.id !== id))
+  }
+
+  const onMoveGroup = async (id: string, dir: 'up' | 'down') => {
+    const sorted = [...groups].sort((a, b) => a.order - b.order)
+    const idx = sorted.findIndex((g) => g.id === id)
+    const swapIdx = dir === 'up' ? idx - 1 : idx + 1
+    if (idx === -1 || swapIdx < 0 || swapIdx >= sorted.length) return
+    const reordered = sorted.map((g, i) => ({ ...g, order: i }))
+    ;[reordered[idx].order, reordered[swapIdx].order] = [reordered[swapIdx].order, reordered[idx].order]
+    await saveGroups(reordered)
+  }
+
   return {
-    banners, loading, saving, message,
+    banners, groups, loading, saving, savingGroups, message,
     bannerForm, setBannerForm, editingBannerId, showBannerForm, setShowBannerForm,
     uploadingBannerMedia, onBannerMediaUpload,
     onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm,
+    onAddGroup, onUpdateGroup, onDeleteGroup, onMoveGroup,
   }
 }
 

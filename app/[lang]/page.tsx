@@ -13,7 +13,9 @@ import { resolveLanguage } from '@/lib/i18n-routing';
 import { buildPublicPageMetadata } from '@/lib/page-metadata';
 import HomeRetailBanner from '@/components/HomeRetailBanner';
 import AboutSection from '@/components/AboutSection';
+import BannerZoneBlock from '@/components/BannerZoneBlock';
 import Reveal from '@/components/ui/Reveal';
+import type { BannerZone } from '@/lib/banners-server-store';
 import { getServerContent } from '@/lib/server-translation';
 import { serializeJsonLd } from '@/lib/json-ld';
 import {
@@ -51,6 +53,7 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
     ]);
     const visibleBestsellers = user ? bestsellers : redactProductPrices(bestsellers);
     const visibleSaleProducts = user ? saleProducts : redactProductPrices(saleProducts);
+    const bannersInZone = (zone: BannerZone) => saleBanners.filter((item) => item.zone === zone);
     const faqIds = [1, 2, 4, 5, 6, 7, 8, 10, 11, 12];
     const faqSchema = {
         '@context': 'https://schema.org',
@@ -70,19 +73,29 @@ export default async function Home({ params }: PageProps): Promise<JSX.Element> 
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
             />
+            {bannersInZone('top').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('top')} /></Reveal>}
             <Hero language={language} />
+            {bannersInZone('hero').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('hero')} /></Reveal>}
             <Reveal><Benefits language={language} /></Reveal>
+            {bannersInZone('benefits').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('benefits')} /></Reveal>}
+            <SaleSection products={visibleSaleProducts} banners={bannersInZone('sale')} />
             <BestsellersSection products={visibleBestsellers} />
+            {bannersInZone('bestsellers').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('bestsellers')} /></Reveal>}
             <Reveal><Categories initialCategories={categories} /></Reveal>
+            {bannersInZone('categories').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('categories')} /></Reveal>}
             <Reveal><Brands initialBrands={brands} /></Reveal>
-            <SaleSection products={visibleSaleProducts} banners={saleBanners} />
+            {bannersInZone('brands').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('brands')} /></Reveal>}
             {user && <Reveal><ProductRequestSection /></Reveal>}
+            {user && bannersInZone('productRequest').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('productRequest')} /></Reveal>}
             <main className="w-full">
                 <Reveal><HomeRetailBanner /></Reveal>
                 <Reveal><AboutSection language={language} /></Reveal>
             </main>
+            {bannersInZone('retail').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('retail')} /></Reveal>}
             <Reveal><BonusSection /></Reveal>
+            {bannersInZone('bonus').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('bonus')} /></Reveal>}
             <Reveal><FAQSection language={language} /></Reveal>
+            {bannersInZone('faq').length > 0 && <Reveal><BannerZoneBlock banners={bannersInZone('faq')} /></Reveal>}
         </div>
     );
 }

@@ -16,6 +16,7 @@ import {
 import { encodeLocaleText, resolveLocaleText } from '@/lib/locale-text';
 import SaleBanner from '@/components/SaleBanner';
 import { LocaleTextField } from './LocaleTextField';
+import { LinkPicker } from './LinkPicker';
 import {
     toLocaleForm,
     BANNER_ZONES,
@@ -54,6 +55,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
             onMoveBanner,
             onEditBanner,
             resetBannerForm,
+            onDiscardBannerChanges,
             onAddGroup,
             onUpdateGroup,
             onDeleteGroup,
@@ -235,22 +237,25 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                             </div>
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 sm:col-span-2">
                             <label
                                 htmlFor="admin-banner-field-4"
                                 className="text-xs text-muted-foreground"
                             >
-                                {l('Ссылка (href)', 'Link (href)', 'Saite (href)')}
+                                {l('Куда ведёт баннер при клике (ссылка)', 'Where the banner links to when clicked', 'Kurp baneris ved, ja uzklikšķina')}
                             </label>
-                            <Input
-                                id="admin-banner-field-4"
-                                className="max-w-md"
-                                value={bannerForm.link}
-                                onChange={(e) =>
-                                    setBannerForm((f) => ({ ...f, link: e.target.value }))
-                                }
-                                placeholder={l('/catalog или https://...', '/catalog or https://...', '/catalog vai https://...')}
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    id="admin-banner-field-4"
+                                    className="max-w-md"
+                                    value={bannerForm.link}
+                                    onChange={(e) =>
+                                        setBannerForm((f) => ({ ...f, link: e.target.value }))
+                                    }
+                                    placeholder={l('/catalog или https://...', '/catalog or https://...', '/catalog vai https://...')}
+                                />
+                                <LinkPicker value={bannerForm.link} onChange={(link) => setBannerForm((f) => ({ ...f, link }))} />
+                            </div>
                         </div>
 
                         {bannerForm.type === 'video' && <LocaleTextField
@@ -444,6 +449,9 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                     <div className="flex items-center gap-2 pt-1">
                         <Button onClick={onSaveBanner} disabled={saving || uploadingBannerMedia}>
                             {editingBannerId ? l('Сохранить изменения', 'Save changes', 'Saglabāt izmaiņas') : l('Создать баннер', 'Create banner', 'Izveidot baneri')}
+                        </Button>
+                        <Button variant="outline" onClick={onDiscardBannerChanges} disabled={saving || uploadingBannerMedia}>
+                            {l('Сбросить изменения', 'Discard changes', 'Atmest izmaiņas')}
                         </Button>
                         <Button variant="outline" onClick={resetBannerForm} disabled={saving || uploadingBannerMedia}>
                             {l('Отмена', 'Cancel', 'Atcelt')}

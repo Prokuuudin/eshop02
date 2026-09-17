@@ -23,6 +23,7 @@ function useBannerContentManagerState() {
 
   // Banner form state
   const [bannerForm, setBannerForm] = React.useState<BannerForm>(EMPTY_BANNER)
+  const [initialBannerForm, setInitialBannerForm] = React.useState<BannerForm>(EMPTY_BANNER)
   const [editingBannerId, setEditingBannerId] = React.useState<string | null>(null)
   const [showBannerForm, setShowBannerForm] = React.useState(false)
 
@@ -210,7 +211,7 @@ function useBannerContentManagerState() {
 
   const onEditBanner = (banner: Banner) => {
     setEditingBannerId(banner.id)
-    setBannerForm({
+    const formValues: BannerForm = {
       type: banner.type,
       title: banner.title,
       subtitle: banner.subtitle,
@@ -222,7 +223,9 @@ function useBannerContentManagerState() {
       textColor: banner.textColor,
       active: banner.active,
       groupId: banner.groupId
-    })
+    }
+    setBannerForm(formValues)
+    setInitialBannerForm(formValues)
     setShowBannerForm(true)
     requestAnimationFrame(() => {
       document.getElementById('banner-edit-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -232,7 +235,12 @@ function useBannerContentManagerState() {
   const resetBannerForm = () => {
     setEditingBannerId(null)
     setBannerForm(EMPTY_BANNER)
+    setInitialBannerForm(EMPTY_BANNER)
     setShowBannerForm(false)
+  }
+
+  const onDiscardBannerChanges = () => {
+    setBannerForm(initialBannerForm)
   }
 
   // ── Group CRUD ────────────────────────────────────────────────────────────────
@@ -304,7 +312,7 @@ function useBannerContentManagerState() {
     banners, groups, loading, saving, savingGroups, message,
     bannerForm, setBannerForm, editingBannerId, showBannerForm, setShowBannerForm,
     uploadingBannerMedia, onBannerMediaUpload,
-    onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm,
+    onSaveBanner, onDeleteBanner, onToggleBanner, onMoveBanner, onEditBanner, resetBannerForm, onDiscardBannerChanges,
     onAddGroup, onUpdateGroup, onDeleteGroup, onMoveGroup,
   }
 }

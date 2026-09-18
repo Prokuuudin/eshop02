@@ -85,6 +85,26 @@ export default function AdminProductsPage(): React.ReactElement {
                                 const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: l('Товар будет окончательно удалён из архива без возможности восстановления.', 'The product will be permanently deleted from the archive.', 'Produkts tiks neatgriezeniski dzēsts no arhīva.'), confirmText: id, destructive: true });
                                 if (decision.confirmed) admin.handlePurgeArchivedProduct(id);
                             }}
+                            onBulkRestoreArchive={async (ids) => {
+                                const decision = await confirmAction({
+                                    title: l(`Восстановить выбранные товары (${ids.length})?`, `Restore selected products (${ids.length})?`, `Atjaunot atlasītās preces (${ids.length})?`),
+                                    description: l('Товары вернутся в каталог.', 'Products will return to the catalog.', 'Preces atgriezīsies katalogā.'),
+                                    affected: admin.archiveItems.filter((item) => ids.includes(item.id)).map((item) => `${item.id} — ${item.product.title}`),
+                                    confirmLabel: l(`Восстановить (${ids.length})`, `Restore (${ids.length})`, `Atjaunot (${ids.length})`),
+                                });
+                                if (decision.confirmed) admin.handleBulkRestoreArchivedProducts(ids);
+                            }}
+                            onBulkDeleteArchive={async (ids) => {
+                                const decision = await confirmAction({
+                                    title: l(`Удалить выбранные товары навсегда (${ids.length})?`, `Delete selected products forever (${ids.length})?`, `Dzēst atlasītās preces neatgriezeniski (${ids.length})?`),
+                                    description: l('Товары будут окончательно удалены из архива без возможности восстановления.', 'The products will be permanently deleted from the archive.', 'Preces tiks neatgriezeniski dzēstas no arhīva.'),
+                                    affected: admin.archiveItems.filter((item) => ids.includes(item.id)).map((item) => `${item.id} — ${item.product.title}`),
+                                    destructive: true,
+                                    confirmLabel: l(`Удалить навсегда (${ids.length})`, `Delete forever (${ids.length})`, `Dzēst neatgriezeniski (${ids.length})`),
+                                });
+                                if (decision.confirmed) admin.handleBulkPurgeArchivedProducts(ids);
+                            }}
+                            archiveBulkPending={admin.archiveBulkPending}
                         />
                         {bulkMode && !admin.loading && admin.products.length > 0 && (
                             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">

@@ -24,12 +24,15 @@ type ProductsAdminResult = {
   handleBulkDeleteProducts: (ids: string[]) => Promise<boolean>;
   handleRestoreProduct: (id: string) => Promise<void>;
   handlePurgeArchivedProduct: (id: string) => Promise<void>;
+  handleBulkRestoreArchivedProducts: (ids: string[]) => Promise<boolean>;
+  handleBulkPurgeArchivedProducts: (ids: string[]) => Promise<boolean>;
   handleCreateProduct: () => void;
   loading: boolean;
   creating: boolean;
   savingId: string | null;
   restoringId: string | null;
   purgingArchiveId: string | null;
+  archiveBulkPending: boolean;
   message: string;
   error: string;
   reload: () => Promise<void>;
@@ -56,6 +59,7 @@ export function useProductsAdmin(): ProductsAdminResult {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [purgingArchiveId, setPurgingArchiveId] = useState<string | null>(null);
+  const [archiveBulkPending, setArchiveBulkPending] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialReturn?.searchQuery ?? '');
   const [visibility, setVisibility] = useState<'all' | 'active' | 'hidden'>(initialReturn?.visibility ?? 'all');
   const [viewMode, setViewMode] = usePersistentViewMode(VIEW_MODE_STORAGE_KEY, initialReturn?.viewMode ?? 'cards', PRODUCT_VIEW_MODES);
@@ -230,6 +234,65 @@ export function useProductsAdmin(): ProductsAdminResult {
     }
   };
 
+  const handleBulkRestoreArchivedProducts = async (ids: string[]): Promise<boolean> => {
+    if (ids.length === 0) return false;
+    setArchiveBulkPending(true);
+    setError('');
+    let restoredCount = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch('/api/admin/products/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const json = (await res.json()) as ApiEnvelope<unknown>;
+        if (res.ok && 'success' in json) restoredCount += 1;
+      } catch {
+        // continue with remaining ids
+      }
+    }
+    await loadProducts(1);
+    await loadArchive();
+    setArchiveBulkPending(false);
+    if (restoredCount < ids.length) {
+      setError(t('admin.productsPage.msg.bulkRestoreFailed', 'Restored {restored} of {total} products', { restored: restoredCount, total: ids.length }));
+      return restoredCount > 0;
+    }
+    setMessage(t('admin.productsPage.msg.bulkRestored', '{count} products restored', { count: restoredCount }));
+    return true;
+  };
+
+  const handleBulkPurgeArchivedProducts = async (ids: string[]): Promise<boolean> => {
+    if (ids.length === 0) return false;
+    setArchiveBulkPending(true);
+    setError('');
+    let purgedCount = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch('/api/admin/products/archive', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
+        if (res.ok && 'success' in json) {
+          purgedCount += 1;
+          setArchiveItems(json.data.archive);
+        }
+      } catch {
+        // continue with remaining ids
+      }
+    }
+    setArchiveBulkPending(false);
+    if (purgedCount < ids.length) {
+      setError(t('admin.productsPage.msg.bulkPurgeFailed', 'Deleted {deleted} of {total} products from trash', { deleted: purgedCount, total: ids.length }));
+      return purgedCount > 0;
+    }
+    setMessage(t('admin.productsPage.msg.bulkDeletedForever', '{count} products permanently removed from trash', { count: purgedCount }));
+    return true;
+  };
+
   const handleCreateProduct = () => {};
 
   return {
@@ -247,12 +310,15 @@ export function useProductsAdmin(): ProductsAdminResult {
     handleBulkDeleteProducts,
     handleRestoreProduct,
     handlePurgeArchivedProduct,
+    handleBulkRestoreArchivedProducts,
+    handleBulkPurgeArchivedProducts,
     handleCreateProduct,
     loading,
     creating,
     savingId,
     restoringId,
     purgingArchiveId,
+    archiveBulkPending,
     message,
     error,
     reload: () => loadProducts(1),

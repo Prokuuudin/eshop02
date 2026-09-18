@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+vi.mock('server-only', () => ({}))
 
 const auditLogFindMany = vi.hoisted(() => vi.fn())
 const txProductFindUnique = vi.hoisted(() => vi.fn())

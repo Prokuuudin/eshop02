@@ -13,6 +13,9 @@ import { getProductSubcategory } from '@/lib/product-overrides-mapping'
 import { isProductOnSale, type Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
+import { attachCampaignOffers, isCampaignActive, readPromoCampaigns } from '@/lib/promo-campaigns'
+import productSubcategories from '@/data/product-subcategories.json'
+import type { Prisma } from '@/generated/prisma/client'
 
 export const STOREFRONT_CACHE_TAGS = {
   categories: 'storefront-categories',
@@ -74,13 +77,27 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
     where: { id: { in: ids }, isActive: true, image: { not: null } },
   })
   const byId = new Map(products.map((product) => [product.id, product]))
-  return ids.flatMap((id) => {
+  const mapped = ids.flatMap((id) => {
     const product = byId.get(id)
     return product ? [mapDbToProduct(product)] : []
   }).slice(0, 16)
+  return attachCampaignOffers(mapped, await readPromoCampaigns(prisma))
 }, ['storefront-bestsellers-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
+  const campaigns = await readPromoCampaigns(prisma)
+  const campaignFilters: Prisma.ProductWhereInput[] = campaigns
+    .filter((campaign) => isCampaignActive(campaign) && campaign.type === 'discount' && campaign.discountPercent > 0)
+    .map((campaign) => ({
+      ...(campaign.targetCategories?.length ? { category: { in: campaign.targetCategories } } : {}),
+      ...(campaign.targetBrands?.length ? { OR: campaign.targetBrands.map((brand) => ({ brand: { equals: brand.trim(), mode: 'insensitive' as const } })) } : {}),
+      ...(campaign.targetSubcategories?.length ? { id: { in: Object.entries(productSubcategories)
+        .filter(([, subcategory]) => campaign.targetSubcategories.includes(subcategory)).map(([id]) => id) } } : {}),
+    }))
+  const campaignRows = campaignFilters.length ? await prisma.product.findMany({
+    where: { isActive: true, isDeleted: false, image: { not: null }, OR: campaignFilters },
+    orderBy: { id: 'asc' }, take: 24,
+  }) : []
   const ranked = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT id
     FROM "Product"
@@ -93,16 +110,23 @@ export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]>
     ORDER BY (("oldPrice" - price) / "oldPrice") DESC, id ASC
     LIMIT 24
   `
-  if (!ranked.length) return []
+  if (!ranked.length && !campaignRows.length) return []
   const products = await prisma.product.findMany({
     where: { id: { in: ranked.map((row) => row.id) } },
   })
   const byId = new Map(products.map((product) => [product.id, mapDbToProduct(product)]))
-  return ranked.flatMap(({ id }) => {
+  const saleProducts = ranked.flatMap(({ id }) => {
     const product = byId.get(id)
     return product && isProductOnSale(product) ? [product] : []
   })
-}, ['storefront-sale-products-v1'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
+  const combined = new Map([...saleProducts, ...campaignRows.map(mapDbToProduct)].map((product) => [product.id, product]))
+  return attachCampaignOffers([...combined.values()], campaigns).filter((product) => isProductOnSale(product) || product.campaignOffers?.length)
+    .sort((a, b) => {
+      const discount = (product: Product) => Math.max(product.campaignOffers?.[0]?.discountPercent ?? 0,
+        product.oldPrice && product.oldPrice > product.price ? (product.oldPrice - product.price) / product.oldPrice * 100 : 0)
+      return discount(b) - discount(a)
+    }).slice(0, 24)
+}, ['storefront-sale-products-v2'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
 
 export const getCachedLocaleConfig = unstable_cache(getLocaleConfig, ['storefront-locale-v1'], {
   revalidate: 600,

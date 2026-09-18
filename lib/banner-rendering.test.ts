@@ -10,7 +10,8 @@ vi.mock('@/components/BannerCarousel', () => ({
   default: ({ banners, scrollMode }: { banners: { id: string }[]; scrollMode?: string }) =>
     React.createElement('div', { 'data-testid': 'banner-carousel', 'data-count': banners.length, 'data-scroll-mode': scrollMode ?? 'auto' }),
 }))
-vi.mock('@/components/Newsletter', () => ({ default: () => null }))
+vi.mock('@/components/Newsletter', () => ({ default: ({ registration }: { registration?: boolean }) =>
+  registration ? React.createElement('a', { href: '/ru/register' }, 'Subscribe') : null }))
 vi.mock('@/components/ui/Reveal', () => ({ default: ({ children }: { children: React.ReactNode }) => children }))
 
 import SaleBanner, { type PromoBanner } from '@/components/SaleBanner'
@@ -22,6 +23,21 @@ const image: PromoBanner = {
   link: '/catalog', ctaLabel: 'Old CTA', ctaStyle: 'primary', bgColor: '#ffffff', textColor: 'dark',
 }
 describe('storefront banner rendering', () => {
+  it('keeps the text promotion beside registration when an image precedes it', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, {
+      products: [], banners: [image, { ...image, id: 'sale', type: 'sale', title: 'Up to 70%', image: '' }],
+    }))
+    expect(html).toContain('href="/ru/register"')
+    expect(html.indexOf('Up to 70%')).toBeLessThan(html.indexOf('src="/ready.png"'))
+    expect(html).toContain('/girl1.png')
+  })
+  it('keeps a text banner assigned to a carousel inside that carousel', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, {
+      products: [], banners: [{ ...image, type: 'sale', placement: 'carousel' }],
+    }))
+    expect(html).toContain('data-count="1"')
+    expect(html).not.toContain('/girl1.png')
+  })
   it('renders video with playback controls and a separate link button', () => {
     const html = renderToStaticMarkup(React.createElement(SaleBanner, { banner: { ...image, type: 'video', image: '/banner.mp4' } }))
     expect(html).toContain('<video')
@@ -43,13 +59,13 @@ describe('storefront banner rendering', () => {
     expect(html).not.toContain('Old CTA')
     expect(html).not.toContain('Old subtitle')
   })
-  it('renders every supplied published banner in order even without sale products', () => {
+  it('renders the text feature first and preserves the order of remaining banners without products', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {
       products: [], banners: [image, { ...image, id: 'second', image: '/second.png' }, { ...image, id: 'text', type: 'sale', title: 'Text promotion', image: '' }],
     }))
-    expect(html.indexOf('/ready.png')).toBeLessThan(html.indexOf('/second.png'))
-    expect(html.indexOf('/second.png')).toBeLessThan(html.indexOf('Text promotion'))
-    expect(html).not.toContain('/girl1.png')
+    expect(html.indexOf('Text promotion')).toBeLessThan(html.indexOf('src="/ready.png"'))
+    expect(html.indexOf('src="/ready.png"')).toBeLessThan(html.indexOf('src="/second.png"'))
+    expect(html).toContain('/girl1.png')
   })
   it('renders banners placed in the carousel through BannerCarousel, separately from the stacked list', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {

@@ -33,6 +33,7 @@ export interface Product {
   brand: string
   price: number
   oldPrice?: number
+  campaignOffers?: Array<{ id: string; discountPercent: number; minOrderAmount: number }>
   rating: number // 0-5
   ratingCount?: number
   reviewCount?: number
@@ -100,5 +101,5 @@ export interface Product {
 }
 
 export const isProductOnSale = (product: Product): boolean => {
-  return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
+  return !!product.campaignOffers?.length || !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }

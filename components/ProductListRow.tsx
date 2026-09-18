@@ -14,6 +14,7 @@ import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
 import { localizePath } from '@/lib/i18n-routing';
 import { Bell } from 'lucide-react';
+import ProductCampaignOffers from './ProductCampaignOffers';
 
 type Props = { product: Product };
 
@@ -68,6 +69,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
           <Link href={localizePath(`/product/${product.id}`, language)} className="text-sm font-medium hover:text-primary line-clamp-2">
             {stripBrandPrefix(localizedTitle, product.brand)}
           </Link>
+          <ProductCampaignOffers product={product} />
           {product.sku && (
             <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">SKU: {product.sku}</p>
           )}

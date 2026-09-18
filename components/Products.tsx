@@ -40,7 +40,7 @@ type ProductsProps = {
 }
 
 const isProductOnSale = (product: Product): boolean => {
-  return !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
+  return !!product.campaignOffers?.length || !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
 }
 
 export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets }: ProductsProps): React.ReactElement {

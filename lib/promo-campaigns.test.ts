@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { evaluatePromoCampaigns } from './promo-campaigns'
+import { attachCampaignOffers, evaluatePromoCampaigns, type PromoCampaign } from './promo-campaigns'
+import type { Product } from '@/data/products'
 
 const item = (category: string, price = 100) => ({
   id: `${category}-${price}`, quantity: 1, price, category,
@@ -14,6 +15,34 @@ function db(value: unknown) {
 }
 
 describe('evaluatePromoCampaigns', () => {
+  it('shows BEAUTY IMAGE offers without changing the price used for order calculations', async () => {
+    const campaign: PromoCampaign = {
+      id: 'beauty', name: 'Beauty', description: '', type: 'discount', discountPercent: 20,
+      startDate: '2026-09-01', endDate: '2026-09-30', active: true,
+      targetCategories: [], targetSubcategories: [], targetBrands: [' BEAUTY iMAGE '],
+      minOrderAmount: 0, createdAt: '', updatedAt: '',
+    }
+    const product = { ...item('body'), title: 'Wax', brand: 'BEAUTY IMAGE', stock: 10, rating: 0 } as Product
+    const now = new Date('2026-09-18T12:00:00Z')
+    const [decorated, other] = attachCampaignOffers([product, { ...product, id: 'other', brand: 'Other' }], [campaign], now)
+    expect(decorated.campaignOffers).toEqual([{ id: 'beauty', discountPercent: 20, minOrderAmount: 0 }])
+    expect(other.campaignOffers).toEqual([])
+    expect(decorated.price).toBe(100)
+    expect(product).not.toHaveProperty('campaignOffers')
+    const result = await evaluatePromoCampaigns([{ ...decorated, quantity: 1, bonusRate: 0, fromCatalog: true }], db([campaign]), now)
+    expect(result.discount).toBe(20)
+  })
+
+  it('preserves the order threshold in offers and stops displaying expired campaigns', () => {
+    const campaign = {
+      id: 'beauty', type: 'discount', discountPercent: 20, active: true,
+      startDate: '2026-09-01', endDate: '2026-09-18', targetBrands: ['BEAUTY IMAGE'], minOrderAmount: 200,
+    } as PromoCampaign
+    const product: Product = { id: 'wax', title: 'Wax', price: 100, category: 'body', brand: 'BEAUTY IMAGE', rating: 0, stock: 10 }
+    expect(attachCampaignOffers([product], [campaign], new Date('2026-09-18T23:00:00'))[0].campaignOffers)
+      .toEqual([{ id: 'beauty', discountPercent: 20, minOrderAmount: 200 }])
+    expect(attachCampaignOffers([product], [campaign], new Date('2026-09-19T00:00:00'))[0].campaignOffers).toEqual([])
+  })
   it('applies an active discount only to selected categories', async () => {
     const result = await evaluatePromoCampaigns([item('hair'), item('body', 200)], db([{
       id: 'summer', name: 'Лето', description: '', type: 'discount', discountPercent: 20,

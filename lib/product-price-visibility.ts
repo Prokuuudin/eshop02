@@ -11,6 +11,7 @@ const PRICE_FIELDS = new Set([
   'discountRate',
   'coefficient',
   'multiplier',
+  'campaignOffers',
 ])
 
 function redactValue(value: unknown): unknown {

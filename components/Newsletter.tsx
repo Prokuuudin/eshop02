@@ -5,8 +5,8 @@ import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 
-export default function Newsletter({ compact = false, embedded = false }: { compact?: boolean; embedded?: boolean }): React.ReactElement {
-  const { t } = useTranslation()
+export default function Newsletter({ compact = false, embedded = false, registration = false }: { compact?: boolean; embedded?: boolean; registration?: boolean }): React.ReactElement {
+  const { t, language } = useTranslation()
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
   const [error, setError] = useState('')
@@ -60,6 +60,11 @@ export default function Newsletter({ compact = false, embedded = false }: { comp
       </div>
 
       <div className="newsletter__action md:flex-1">
+        {registration ? (
+          <Button asChild className="w-full">
+            <Link href={`/${language}/register`}>{t('newsletter.subscribe')}</Link>
+          </Button>
+        ) : <>
         <form onSubmit={onSubmit} className={`newsletter__form flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
           <div className="flex flex-col md:flex-row gap-2">
             <input
@@ -87,6 +92,7 @@ export default function Newsletter({ compact = false, embedded = false }: { comp
 
         {error && <div className="newsletter__error text-red-600 text-sm mt-2">{error}</div>}
         {success && <div className="newsletter__success text-green-600 text-sm mt-2">{t('newsletter.subscribed')}</div>}
+        </>}
       </div>
     </div>
   )

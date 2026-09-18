@@ -2,6 +2,7 @@ import 'server-only'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import type { ResolvedLineItem } from '@/lib/server-pricing'
 import { calculateDiscount } from '@/lib/promo-codes'
+import type { Product } from '@/data/products'
 
 export const PROMO_CAMPAIGNS_KEY = 'promo-campaigns'
 
@@ -24,6 +25,42 @@ export type PromoCampaign = {
 
 type CampaignDb = Pick<ExtendedTransactionClient, 'keyValueSetting'>
 
+export function isCampaignActive(campaign: PromoCampaign, now = new Date()): boolean {
+  const start = new Date(campaign.startDate)
+  const end = campaign.endDate ? new Date(`${campaign.endDate.slice(0, 10)}T23:59:59.999`) : null
+  return !!campaign.active && Number.isFinite(start.getTime()) && now >= start
+    && (!end || (Number.isFinite(end.getTime()) && now <= end))
+}
+
+export function campaignMatchesProduct(campaign: PromoCampaign, product: { brand?: string; category?: string; subcategory?: string }): boolean {
+  const categories = Array.isArray(campaign.targetCategories) ? campaign.targetCategories : []
+  const subcategories = Array.isArray(campaign.targetSubcategories) ? campaign.targetSubcategories : []
+  const brands = Array.isArray(campaign.targetBrands) ? campaign.targetBrands : []
+  const normalizeBrand = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
+  return (!categories.length || categories.includes(product.category ?? ''))
+    && (!subcategories.length || subcategories.includes(product.subcategory ?? ''))
+    && (!brands.length || brands.some((brand) => normalizeBrand(brand) === normalizeBrand(product.brand ?? '')))
+}
+
+export async function readPromoCampaigns(db: CampaignDb): Promise<PromoCampaign[]> {
+  const row = await db.keyValueSetting.findUnique({ where: { key: PROMO_CAMPAIGNS_KEY } })
+  return Array.isArray(row?.value) ? row.value as unknown as PromoCampaign[] : []
+}
+
+/** Campaign offers are display metadata; catalog/cart prices stay authoritative. */
+export function attachCampaignOffers(products: Product[], campaigns: PromoCampaign[], now = new Date()): Product[] {
+  const active = campaigns.filter((campaign) => isCampaignActive(campaign, now)
+    && campaign.type === 'discount' && Number.isFinite(campaign.discountPercent) && campaign.discountPercent > 0)
+  return products.map((product) => ({
+    ...product,
+    campaignOffers: active.filter((campaign) => campaignMatchesProduct(campaign, product)).map((campaign) => ({
+      id: campaign.id,
+      discountPercent: Math.min(100, campaign.discountPercent),
+      minOrderAmount: Math.max(0, Number(campaign.minOrderAmount) || 0),
+    })).sort((a, b) => b.discountPercent - a.discountPercent),
+  }))
+}
+
 export type CampaignResult = {
   campaignId?: string
   campaignName?: string
@@ -37,26 +74,17 @@ export async function evaluatePromoCampaigns(
   db: CampaignDb,
   now = new Date(),
 ): Promise<CampaignResult> {
-  const row = await db.keyValueSetting.findUnique({ where: { key: PROMO_CAMPAIGNS_KEY } })
-  const campaigns = Array.isArray(row?.value) ? row.value as unknown as PromoCampaign[] : []
+  const campaigns = await readPromoCampaigns(db)
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   let best: CampaignResult = { discount: 0, eligibleAmount: 0, freeShipping: false }
 
   for (const campaign of campaigns) {
-    if (!campaign?.active || !campaign.startDate || now < new Date(campaign.startDate)) continue
-    if (campaign.endDate && now > new Date(`${campaign.endDate.slice(0, 10)}T23:59:59.999`)) continue
+    if (!campaign || !isCampaignActive(campaign, now)) continue
     if (subtotal < Math.max(0, Number(campaign.minOrderAmount) || 0)) continue
     if (campaign.type !== 'discount' && campaign.type !== 'free_shipping') continue
 
-    const categories = Array.isArray(campaign.targetCategories) ? campaign.targetCategories : []
-    const subcategories = Array.isArray(campaign.targetSubcategories) ? campaign.targetSubcategories : []
-    const brands = Array.isArray(campaign.targetBrands) ? campaign.targetBrands : []
     const eligibleItems = items.filter((item) => {
-      if (!item.fromCatalog) return false
-      if (categories.length > 0 && !categories.includes(item.category ?? '')) return false
-      if (subcategories.length > 0 && !subcategories.includes(item.subcategory ?? '')) return false
-      if (brands.length > 0 && !brands.some((brand) => brand.toLowerCase() === (item.brand ?? '').toLowerCase())) return false
-      return true
+      return item.fromCatalog && campaignMatchesProduct(campaign, item)
     })
     const eligibleAmount = Math.round(eligibleItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
     if (eligibleAmount <= 0) continue

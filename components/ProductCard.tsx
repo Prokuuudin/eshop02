@@ -16,6 +16,7 @@ import { calculatePrice, getDisplayPrice } from '@/lib/customer-segmentation';
 import { useAuthStore } from '@/lib/auth-store';
 import { stripBrandPrefix } from '@/lib/product-title';
 import { localizePath } from '@/lib/i18n-routing';
+import ProductCampaignOffers from './ProductCampaignOffers';
 
 type Props = {
     product: Product;
@@ -103,6 +104,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                     {stripBrandPrefix(localizedTitle, product.brand)}
                 </Link>
 
+                <ProductCampaignOffers product={product} />
                 <div className="product-card__badges mt-1 flex flex-wrap gap-1.5 max-w-full overflow-hidden">
                     {product.badges?.includes('sale') && (
                         <Badge className="bg-red-600 text-white max-w-[90%] truncate">

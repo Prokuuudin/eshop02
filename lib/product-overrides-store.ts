@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
+import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns';
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>;
 
@@ -36,7 +37,7 @@ const getDbProducts = cache(async (): Promise<Product[]> => {
         }),
         getProductOverrides().catch(() => ({})),
     ]);
-    return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides);
+    return attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma));
 });
 
 // Примечание: category-фильтр ниже сравнивается с базовым (пред-override) значением
@@ -67,7 +68,7 @@ export async function getDbProductsPaginated(opts: {
         getProductOverrides().catch(() => ({})),
     ]);
 
-    return { products: mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), total };
+    return { products: attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma)), total };
 }
 
 export const getMergedProducts = cache(async (): Promise<Product[]> => {

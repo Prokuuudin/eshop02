@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 export const runtime = 'nodejs'
 
@@ -36,6 +37,9 @@ async function writeData(data: PromoCampaign[]): Promise<void> {
     create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
     update: { value: data as unknown as Prisma.InputJsonValue },
   })
+  revalidateTag('storefront-sale-products', { expire: 0 })
+  revalidateTag('storefront-bestsellers', { expire: 0 })
+  revalidatePath('/[lang]', 'layout')
 }
 
 type Params = { params: Promise<{ id: string }> }

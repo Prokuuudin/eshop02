@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+vi.mock('server-only', () => ({}))
 
 const settingFindUniqueMock = vi.hoisted(() => vi.fn())
 

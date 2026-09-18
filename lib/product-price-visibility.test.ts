@@ -10,6 +10,7 @@ describe('redactProductPrices', () => {
       oldPrice: 24.99,
       bonusRate: 5,
       discountPercent: 10,
+      campaignOffers: [{ id: 'beauty', discountPercent: 20, minOrderAmount: 100 }],
       bulkPricingTiers: [{ quantity: 10, pricePerUnit: 15 }],
       variantGroups: [{
         name: 'Size',
@@ -23,6 +24,7 @@ describe('redactProductPrices', () => {
     expect(result).not.toHaveProperty('oldPrice')
     expect(result).not.toHaveProperty('bonusRate')
     expect(result).not.toHaveProperty('discountPercent')
+    expect(result).not.toHaveProperty('campaignOffers')
     expect(result).not.toHaveProperty('bulkPricingTiers')
     expect(result).not.toHaveProperty('variantGroups.0.options.0.priceAdjustment')
     expect(result).toHaveProperty('variantGroups.0.options.0.value', 'Large')

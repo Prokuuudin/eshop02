@@ -18,11 +18,11 @@ export default function ProductCampaignOffers({ product }: { product: Product })
   return (
     <div className="product-campaign-offers mt-2 space-y-1 text-xs text-red-700 dark:text-red-400">
       {offers.map((offer) => (
-        <p key={offer.id}>
+        <div key={offer.id}>
           <Badge className="bg-red-600 text-white">−{offer.discountPercent}%</Badge>
           {offer.name && <span className="ml-1">{offer.name}</span>}
           {offer.minOrderAmount > 0 && ` ${text.minimum} ${formatEuro(offer.minOrderAmount, getLocaleFromLanguage(language))}`}
-        </p>
+        </div>
       ))}
     </div>
   );

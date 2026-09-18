@@ -238,20 +238,19 @@ export function useProductsAdmin(): ProductsAdminResult {
     if (ids.length === 0) return false;
     setArchiveBulkPending(true);
     setError('');
-    let restoredCount = 0;
-    for (const id of ids) {
-      try {
-        const res = await fetch('/api/admin/products/restore', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id }),
-        });
-        const json = (await res.json()) as ApiEnvelope<unknown>;
-        if (res.ok && 'success' in json) restoredCount += 1;
-      } catch {
-        // continue with remaining ids
-      }
-    }
+    // Fired concurrently: the server serializes the actual writes behind a single
+    // advisory lock anyway, so awaiting one id at a time here only stacks up
+    // client-to-Neon round-trip latency for no benefit (looked like a hang on 20+ items).
+    const results = await Promise.allSettled(ids.map(async (id) => {
+      const res = await fetch('/api/admin/products/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = (await res.json()) as ApiEnvelope<unknown>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+    }));
+    const restoredCount = results.filter((r) => r.status === 'fulfilled').length;
     await loadProducts(1);
     await loadArchive();
     setArchiveBulkPending(false);
@@ -267,23 +266,17 @@ export function useProductsAdmin(): ProductsAdminResult {
     if (ids.length === 0) return false;
     setArchiveBulkPending(true);
     setError('');
-    let purgedCount = 0;
-    for (const id of ids) {
-      try {
-        const res = await fetch('/api/admin/products/archive', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id }),
-        });
-        const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
-        if (res.ok && 'success' in json) {
-          purgedCount += 1;
-          setArchiveItems(json.data.archive);
-        }
-      } catch {
-        // continue with remaining ids
-      }
-    }
+    const results = await Promise.allSettled(ids.map(async (id) => {
+      const res = await fetch('/api/admin/products/archive', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = (await res.json()) as ApiEnvelope<unknown>;
+      if (!res.ok || 'error' in json) throw new Error('failed');
+    }));
+    const purgedCount = results.filter((r) => r.status === 'fulfilled').length;
+    await loadArchive();
     setArchiveBulkPending(false);
     if (purgedCount < ids.length) {
       setError(t('admin.productsPage.msg.bulkPurgeFailed', 'Deleted {deleted} of {total} products from trash', { deleted: purgedCount, total: ids.length }));

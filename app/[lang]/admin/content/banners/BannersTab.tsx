@@ -619,7 +619,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
 
                                 {/* Controls */}
                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                    <TooltipProvider delayDuration={200}>
+                                    <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <span className={`inline-flex ${idx === 0 || saving ? 'cursor-not-allowed' : 'cursor-pointer'}`}>

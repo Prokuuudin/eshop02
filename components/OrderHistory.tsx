@@ -1,5 +1,6 @@
 'use client'
 
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils'
@@ -61,7 +62,7 @@ export default function OrderHistory({
               })
 
               return (
-                <div key={month.month} className="flex h-full min-w-0 flex-col justify-end" title={tooltip}>
+                <Hint content={tooltip} key={month.month}><div  className="flex h-full min-w-0 flex-col justify-end" >
                   <div className="flex h-[calc(100%-1.75rem)] items-end justify-center">
                     <div
                       className="w-full max-w-8 min-h-1 rounded-t bg-emerald-500 transition-colors hover:bg-emerald-400"
@@ -73,7 +74,7 @@ export default function OrderHistory({
                   <span className="h-7 truncate pt-1 text-center text-[9px] capitalize text-muted-foreground sm:text-[10px]">
                     {month.shortMonth}
                   </span>
-                </div>
+                </div></Hint>
               )
             })}
           </div>

@@ -1,5 +1,6 @@
 ﻿'use client'
 
+import { Hint } from '@/components/ui/tooltip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, ShoppingCart, Package, Users, Tag } from 'lucide-react'
@@ -185,7 +186,7 @@ export default function AdminGlobalSearch(): React.ReactElement {
 
   if (!open) {
     return (
-      <button
+      <Hint content={l('Глобальный поиск (Ctrl+K)', 'Global search (Ctrl+K)', 'Globālā meklēšana (Ctrl+K)')}><button
         type="button"
         onClick={() => {
           setQuery('')
@@ -193,12 +194,11 @@ export default function AdminGlobalSearch(): React.ReactElement {
           setOpen(true)
         }}
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-        title={l('Глобальный поиск (Ctrl+K)', 'Global search (Ctrl+K)', 'Globālā meklēšana (Ctrl+K)')}
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">{l('Поиск', 'Search', 'Meklēt')}</span>
         <kbd className="hidden sm:inline text-xs opacity-50 font-mono">⌘K</kbd>
-      </button>
+      </button></Hint>
     )
   }
 

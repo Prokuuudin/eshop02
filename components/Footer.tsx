@@ -75,7 +75,7 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
 
         <div className="footer__bottom mt-6 flex flex-col items-start gap-2 border-t border-border pt-4 text-sm text-gray-700 dark:text-gray-300 sm:mt-8 sm:gap-3">
           <div className="footer__copyright min-w-0 text-left">© {new Date().getFullYear()} Hairshop-Pro. {t('footer.allRightsReserved')}</div>
-          <TooltipProvider delayDuration={150}>
+          <TooltipProvider>
             <div className="footer__socials flex shrink-0 items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>

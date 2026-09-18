@@ -146,7 +146,7 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
             </div>
           </div>
         ) : (
-          <TooltipProvider delayDuration={150}>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -158,7 +158,7 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
                   {t('productNews.notifyBtn')}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-center">
+              <TooltipContent side="top">
                 {t('productNews.subscribeHint')}
               </TooltipContent>
             </Tooltip>

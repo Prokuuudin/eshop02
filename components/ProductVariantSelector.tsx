@@ -1,5 +1,6 @@
 'use client'
 
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { VariantGroup, VariantOption, SelectedVariant } from '@/data/products'
@@ -38,12 +39,10 @@ function ImageSquaresGroup({
       {group.options.map((option) => {
         const isSelected = option.value === currentValue
         return (
-          <button
-            key={option.value}
+          <Hint content={option.value} key={option.value}><button
             type="button"
             role="radio"
             aria-checked={isSelected}
-            title={option.value}
             onClick={() => onSelect(option)}
             className={`product-variant-selector__square flex flex-col items-center gap-1 p-1.5 rounded-lg border transition-colors ${
               isSelected
@@ -67,7 +66,7 @@ function ImageSquaresGroup({
             )}
             <span className="text-xs font-medium text-foreground max-w-16 truncate">{option.value}</span>
             <PriceAdjustmentLabel adjustment={option.priceAdjustment} locale={locale} />
-          </button>
+          </button></Hint>
         )
       })}
     </div>

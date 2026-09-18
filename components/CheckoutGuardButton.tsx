@@ -40,7 +40,7 @@ export default function CheckoutGuardButton({
   }
 
   return (
-    <TooltipProvider delayDuration={100}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <span

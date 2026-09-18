@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,12 +47,11 @@ function SyncBadge({ synced }: { synced: boolean }) {
     const { l } = useAdminLocale();
     if (synced) return null;
     return (
-        <span
-            title={l('Остаток не подтверждён ERP-синхронизацией — может быть техническим значением-заглушкой из старого импорта (чаще всего унаследованное «10000»), а не актуальным складским остатком', 'Stock is not confirmed by ERP synchronization and may be a legacy placeholder value (often “10000”) rather than the current inventory', 'Atlikums nav apstiprināts ar ERP sinhronizāciju un var būt mantota tehniska viettura vērtība (bieži “10000”), nevis pašreizējais noliktavas atlikums')}
+        <Hint content={l('Остаток не подтверждён ERP-синхронизацией — может быть техническим значением-заглушкой из старого импорта (чаще всего унаследованное «10000»), а не актуальным складским остатком', 'Stock is not confirmed by ERP synchronization and may be a legacy placeholder value (often “10000”) rather than the current inventory', 'Atlikums nav apstiprināts ar ERP sinhronizāciju un var būt mantota tehniska viettura vērtība (bieži “10000”), nevis pašreizējais noliktavas atlikums')}><span
             className="shrink-0 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
         >
             {l('Не подтверждено ERP', 'Not confirmed by ERP', 'ERP nav apstiprinājis')}
-        </span>
+        </span></Hint>
     );
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -133,14 +134,13 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                 </span>
                 <Dialog open={archiveOpen} onOpenChange={(open) => onToggleArchive?.(open)}>
                     <DialogTrigger asChild>
-                        <Button
+                        <Hint content={
+                                translations[language]['admin.productsPage.archiveBtnTitle'] ||
+                                l('Корзина удалённых товаров', 'Deleted products', 'Dzēsto preču atkritne')
+                            }><Button
                             size="sm"
                             variant={archiveOpen ? 'default' : 'outline'}
                             className="ml-2 relative"
-                            title={
-                                translations[language]['admin.productsPage.archiveBtnTitle'] ||
-                                l('Корзина удалённых товаров', 'Deleted products', 'Dzēsto preču atkritne')
-                            }
                         >
                             <IconTrash className="mr-2 fill-red-500 text-red-500" />
                             {translations[language]['admin.productsPage.archiveBtn'] || l('Корзина', 'Trash', 'Atkritne')}
@@ -149,7 +149,7 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                                     {archiveCount}
                                 </Badge>
                             )}
-                        </Button>
+                        </Button></Hint>
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl w-full rounded-2xl p-4 sm:p-8 bg-card shadow-2xl border border-border">
                         <DialogHeader className="mb-4 p-0">

@@ -1,3 +1,4 @@
+import { Hint } from '@/components/ui/tooltip';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnalyticsPagination, Empty, LoadError, type SeoProduct } from './analytics-shared';
@@ -277,14 +278,14 @@ export default function SeoSection(): ReactElement {
                                 </td>
                                 <td className="px-4 py-2.5 text-center">
                                     {p.hasMetaTitle ? (
-                                        <span className={p.validMetaTitleLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaTitleLength ? undefined : l('Длина вне рекомендуемого диапазона 10–60 символов', 'Length is outside the recommended 10–60 characters', 'Garums ir ārpus ieteicamā 10–60 rakstzīmju diapazona')}>{p.validMetaTitleLength ? '✓' : '!'}</span>
+                                        <Hint content={p.validMetaTitleLength ? undefined : l('Длина вне рекомендуемого диапазона 10–60 символов', 'Length is outside the recommended 10–60 characters', 'Garums ir ārpus ieteicamā 10–60 rakstzīmju diapazona')}><span className={p.validMetaTitleLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} >{p.validMetaTitleLength ? '✓' : '!'}</span></Hint>
                                     ) : (
                                         <span className="text-red-500 font-semibold">✗</span>
                                     )}
                                 </td>
                                 <td className="px-4 py-2.5 text-center">
                                     {p.hasMetaDesc ? (
-                                        <span className={p.validMetaDescLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} title={p.validMetaDescLength ? undefined : l('Длина вне рекомендуемого диапазона 50–160 символов', 'Length is outside the recommended 50–160 characters', 'Garums ir ārpus ieteicamā 50–160 rakstzīmju diapazona')}>{p.validMetaDescLength ? '✓' : '!'}</span>
+                                        <Hint content={p.validMetaDescLength ? undefined : l('Длина вне рекомендуемого диапазона 50–160 символов', 'Length is outside the recommended 50–160 characters', 'Garums ir ārpus ieteicamā 50–160 rakstzīmju diapazona')}><span className={p.validMetaDescLength ? 'text-emerald-500' : 'font-semibold text-amber-500'} >{p.validMetaDescLength ? '✓' : '!'}</span></Hint>
                                     ) : (
                                         <span className="text-red-500 font-semibold">✗</span>
                                     )}
@@ -296,15 +297,15 @@ export default function SeoSection(): ReactElement {
                                         <span className="text-red-500 font-semibold">✗</span>
                                     )}
                                 </td>
-                                <td className="px-4 py-2.5 text-center" title={l('Описание изображения для превью ссылки (OG, Alt)', 'Link preview image description (OG, Alt)', 'Saites priekšskatījuma attēla apraksts (OG, Alt)')}>
+                                <Hint content={l('Описание изображения для превью ссылки (OG, Alt)', 'Link preview image description (OG, Alt)', 'Saites priekšskatījuma attēla apraksts (OG, Alt)')}><td className="px-4 py-2.5 text-center" >
                                     {!p.hasImage ? <span className="text-muted-foreground">—</span> : <span className={p.hasImageAlt ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasImageAlt ? '✓' : '✗'}</span>}
-                                </td>
-                                <td className="px-4 py-2.5 text-center" title={l('Переводы EN/LV', 'EN/LV translations', 'EN/LV tulkojumi')}>
+                                </td></Hint>
+                                <Hint content={l('Переводы EN/LV', 'EN/LV translations', 'EN/LV tulkojumi')}><td className="px-4 py-2.5 text-center" >
                                     <span className={p.hasTranslations ? 'text-emerald-500' : 'font-semibold text-red-500'}>{p.hasTranslations ? '✓' : '✗'}</span>
-                                </td>
-                                <td className="px-4 py-2.5 text-center" title={l('Дубликаты метаданных', 'Duplicate metadata', 'Meta dublikāti')}>
+                                </td></Hint>
+                                <Hint content={l('Дубликаты метаданных', 'Duplicate metadata', 'Meta dublikāti')}><td className="px-4 py-2.5 text-center" >
                                     <span className={p.duplicateMeta ? 'font-semibold text-amber-500' : 'text-emerald-500'}>{p.duplicateMeta ? '!' : '✓'}</span>
-                                </td>
+                                </td></Hint>
                                 <td className="px-4 py-2.5 text-center">
                                     {p.issueCount === 0 ? <span className="whitespace-nowrap text-xs font-medium text-amber-600 dark:text-amber-400">{l('совет', 'advisory', 'ieteikums')}</span> : <span
                                         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${

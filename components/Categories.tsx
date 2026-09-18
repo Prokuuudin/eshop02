@@ -52,7 +52,7 @@ export default function Categories({ initialCategories }: { initialCategories?: 
                         {t('cart.goToCatalog', 'Перейти в каталог')}
                     </Link>
                 </div>
-                <TooltipProvider delayDuration={120}>
+                <TooltipProvider>
                     <div className={gridClassName}>
                         {categories.map((c, index) => {
                             const submenuItems = c.subcategories ?? [];

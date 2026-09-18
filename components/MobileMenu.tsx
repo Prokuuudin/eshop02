@@ -238,7 +238,7 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
         </Dialog>
 
         {/* Social media links */}
-        <TooltipProvider delayDuration={150}>
+        <TooltipProvider>
           <div className="header__menu-social mt-6 flex justify-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>

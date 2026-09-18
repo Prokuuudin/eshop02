@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { formatEuro } from '@/lib/utils';
@@ -84,7 +85,6 @@ export default function OrderProductsSection({ state }: { state: State }): React
                     </div>
                 )}
             </div>
-        
             {/* Added items */}
             {items.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
@@ -118,7 +118,7 @@ export default function OrderProductsSection({ state }: { state: State }): React
                             {/* Unit price override */}
                             <div className="flex items-center gap-1 shrink-0">
                                 <span className="text-xs text-muted-foreground">€</span>
-                                <Input
+                                <Hint content={l('Цена за единицу (можно изменить)', 'Unit price (editable)', 'Vienības cena (rediģējama)')}><Input
                                     type="number"
                                     min={0}
                                     step={0.01}
@@ -130,8 +130,7 @@ export default function OrderProductsSection({ state }: { state: State }): React
                                         )
                                     }
                                     className="h-8 w-20 px-2 py-1 text-sm text-center tabular-nums"
-                                    title={l('Цена за единицу (можно изменить)', 'Unit price (editable)', 'Vienības cena (rediģējama)')}
-                                />
+                                /></Hint>
                             </div>
                             {/* Qty */}
                             <div className="flex items-center gap-1 shrink-0">

@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
@@ -140,14 +141,13 @@ export function CheckoutSummary({ state, children }: { state: CheckoutState; chi
                                                 cancelLabel={t('common.cancel')}
                                                 onConfirm={() => removeItem(item.lineKey)}
                                                 trigger={
-                                                    <button
+                                                    <Hint content={t('checkout.items.removeFromOrder')}><button
                                                         type="button"
                                                         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                         aria-label={`${t('checkout.items.removeFromOrder')}: ${localizedTitle}`}
-                                                        title={t('checkout.items.removeFromOrder')}
                                                     >
                                                         <Trash2 className="h-4 w-4" aria-hidden="true" />
-                                                    </button>
+                                                    </button></Hint>
                                                 }
                                             />
                                         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import Link from 'next/link';
 import { ChevronDown, Info } from 'lucide-react';
@@ -253,16 +254,15 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
-                                <Input
+                                <Hint content={l('1–6 цифр', '1–6 digits', '1–6 cipari')}><Input
                                     required
                                     inputMode="numeric"
                                     pattern="\d{1,6}"
-                                    title={l('1–6 цифр', '1–6 digits', '1–6 cipari')}
                                     value={cardNumber}
                                     onChange={(e) => setCardNumber(e.target.value)}
                                     placeholder="1001"
                                     className="font-mono"
-                                />
+                                /></Hint>
                             </label>
                             <label className="text-sm">
                                 <span className="block mb-1 text-muted-foreground">{l('Телефон (для нового клиента — обязательно)', 'Phone (required for a new client)', 'Tālrunis (jaunam klientam — obligāts)')}</span>
@@ -418,12 +418,11 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                                 <td className="py-2 pr-3 text-foreground">
                                                     {h.email}
                                                     {isTechEmail(h.email) && (
-                                                        <span
+                                                        <Hint content={l('Техническая почта — письма на неё не доходят', 'Technical address — emails to it never arrive', 'Tehniska adrese — vēstules uz to nenonāk')}><span
                                                             className="ml-1.5 inline-block rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300 align-middle"
-                                                            title={l('Техническая почта — письма на неё не доходят', 'Technical address — emails to it never arrive', 'Tehniska adrese — vēstules uz to nenonāk')}
                                                         >
                                                             {l('техпочта', 'tech', 'tehn.')}
-                                                        </span>
+                                                        </span></Hint>
                                                     )}
                                                 </td>
                                                 <td className="py-2 pr-3 text-foreground">{h.phone || '—'}</td>
@@ -441,43 +440,40 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                                         </Button>
                                                     )}
                                                     {h.phone && (
-                                                        <Button
+                                                        <Hint content={l('Скопировать текст приглашения для отправки по телефону', 'Copy the invitation text for sending by phone', 'Kopēt ielūguma tekstu nosūtīšanai pa tālruni')}><Button
                                                             size="sm"
                                                             variant="outline"
                                                             className="ml-1"
                                                             disabled={busyIds.has(h.userId)}
                                                             onClick={() => handlePhoneMessage(h)}
-                                                            title={l('Скопировать текст приглашения для отправки по телефону', 'Copy the invitation text for sending by phone', 'Kopēt ielūguma tekstu nosūtīšanai pa tālruni')}
                                                         >
                                                             {l('Сообщение', 'Message', 'Ziņa')}
-                                                        </Button>
+                                                        </Button></Hint>
                                                     )}
                                                     {isTechEmail(h.email) && !h.phone && (
-                                                        <span
-                                                            className="inline-block rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
-                                                            title={l(
+                                                        <Hint content={l(
                                                                 'Нет реальной почты и телефона — связаться не получится',
                                                                 'No real email or phone on file — cannot be reached',
                                                                 'Nav reālas e-pasta adreses ne tālruņa — nav iespējams sazināties'
-                                                            )}
+                                                            )}><span
+                                                            className="inline-block rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
                                                         >
                                                             {l('Нет доступа', 'No contact', 'Nav pieejams')}
-                                                        </span>
+                                                        </span></Hint>
                                                     )}
                                                         </>
                                                     )}
                                                     {h.inviteUrl && (
-                                                        <Button
+                                                        <Hint content={l('Скопировать ссылку', 'Copy link', 'Kopēt saiti')}><Button
                                                             size="sm"
                                                             variant="ghost"
                                                             className="ml-1"
                                                             onClick={() => {
                                                                 void navigator.clipboard.writeText(h.inviteUrl!);
                                                             }}
-                                                            title={l('Скопировать ссылку', 'Copy link', 'Kopēt saiti')}
                                                         >
                                                             ⧉
-                                                        </Button>
+                                                        </Button></Hint>
                                                     )}
                                                 </td>
                                             </tr>

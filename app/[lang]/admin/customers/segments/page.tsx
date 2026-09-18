@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                                             const delta =
                                                 counts[seg] - analytics.previousCounts[seg];
                                             return (
-                                                <span
+                                                <Hint content={l(
+                                                        `Изменение за ${analytics.comparisonDays} дней`,
+                                                        `Change over ${analytics.comparisonDays} days`,
+                                                        `Izmaiņas ${analytics.comparisonDays} dienās`
+                                                    )}><span
                                                     className={`text-xs font-medium ${
                                                         delta > 0
                                                             ? 'text-green-700 dark:text-green-400'
@@ -98,16 +103,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                                                             ? 'text-red-600 dark:text-red-400'
                                                             : 'text-muted-foreground'
                                                     }`}
-                                                    title={l(
-                                                        `Изменение за ${analytics.comparisonDays} дней`,
-                                                        `Change over ${analytics.comparisonDays} days`,
-                                                        `Izmaiņas ${analytics.comparisonDays} dienās`
-                                                    )}
                                                 >
                                                     {delta > 0 ? '+' : ''}
                                                     {delta}{' '}
                                                     {l('за 30 дней', 'in 30 days', '30 dienās')}
-                                                </span>
+                                                </span></Hint>
                                             );
                                         })()}
                                     </div>
@@ -300,12 +300,11 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                                                         {segmentLabel(c.segment)}
                                                     </span>
                                                 </td>
-                                                <td
+                                                <Hint content={segmentReason(c, l)}><td
                                                     className="px-4 py-3 text-xs text-muted-foreground max-w-[240px]"
-                                                    title={segmentReason(c, l)}
                                                 >
                                                     {segmentReason(c, l)}
-                                                </td>
+                                                </td></Hint>
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                                                         <a

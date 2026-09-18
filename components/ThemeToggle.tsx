@@ -44,7 +44,7 @@ export default function ThemeToggle({ compact = false, responsive = false }: { c
   }, [dark, isThemeReady]);
 
   return (
-    <TooltipProvider delayDuration={150}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <button

@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Bell, ShoppingBag, X } from 'lucide-react';
@@ -37,13 +38,12 @@ function ProductNewsCard({
                 <Link href={`/product/${sub.productId}`} className="text-sm font-medium text-foreground hover:text-primary leading-snug">
                     {sub.productTitle}
                 </Link>
-                <button
+                <Hint content={t('productNews.unsubscribeBtn')}><button
                     onClick={onUnsubscribe}
                     className="shrink-0 text-gray-400 hover:text-red-500 transition-colors"
-                    title={t('productNews.unsubscribeBtn')}
                 >
                     <X className="w-4 h-4" />
-                </button>
+                </button></Hint>
             </div>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <label className="flex items-center gap-1.5 cursor-pointer">

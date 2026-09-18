@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import AdminGate from '@/components/admin/AdminGate';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -197,15 +198,13 @@ export default function EmailTemplatesPage(): React.ReactElement {
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {selected.variables.map((v) => (
-                                                        <button
+                                                        <Hint content={l('Добавить переменную в конец письма', 'Append variable to email', 'Pievienot mainīgo e-pasta beigās')} key={v}><button
                                                             type="button"
-                                                            key={v}
                                                             onClick={() => setBody((current) => `${current}${current.endsWith('\n') ? '' : '\n'}{{${v}}}`)}
-                                                            title={l('Добавить переменную в конец письма', 'Append variable to email', 'Pievienot mainīgo e-pasta beigās')}
                                                             className="rounded bg-white px-1.5 py-0.5 text-xs text-emerald-700 shadow-sm hover:bg-emerald-50 dark:bg-gray-700 dark:text-emerald-400"
                                                         >
                                                             {`{{${v}}}`}
-                                                        </button>
+                                                        </button></Hint>
                                                     ))}
                                                 </div>
                                             </div>

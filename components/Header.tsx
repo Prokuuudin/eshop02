@@ -80,7 +80,7 @@ export default function Header(): React.ReactElement {
                 <div className="order-2 min-w-0 basis-full md:order-none md:flex-1 max-w-xl">
                   <HeaderSearch />
                 </div>
-                <TooltipProvider delayDuration={150}>
+                <TooltipProvider>
                   <div className="hidden shrink-0 items-center gap-1 md:ml-auto md:flex">
                     <Tooltip>
                       <TooltipTrigger asChild>

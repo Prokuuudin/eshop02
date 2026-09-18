@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import type { BrandConfigItem, BrandManufacturerInfo } from '@/lib/brands-config';
 import {
     Accordion,
@@ -52,15 +53,14 @@ export default function BrandLegalSection({ brand, state }: Props): React.ReactE
                                 'Ražotājs / Izplatītājs (ES)'
                             )}
                             {hasData && (
-                                <span
-                                    className="inline-block h-2 w-2 rounded-full bg-green-500"
-                                    title={tl(
+                                <Hint content={tl(
                                         'admin.brands.field.hasData',
                                         'Данные заполнены',
                                         'Data filled',
                                         'Dati aizpildīti'
-                                    )}
-                                />
+                                    )}><span
+                                    className="inline-block h-2 w-2 rounded-full bg-green-500"
+                                /></Hint>
                             )}
                         </span>
                     </AccordionTrigger>

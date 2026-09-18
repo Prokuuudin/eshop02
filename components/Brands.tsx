@@ -1,4 +1,5 @@
 ﻿"use client";
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react'
 import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
@@ -88,11 +89,9 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <BrandCardSkeleton key={i} />)
             : DISTRIBUTOR_BRANDS.map((brand) => (
-                <Link
-                  key={brand.id}
+                <Hint content={brand.name} key={brand.id}><Link
                   href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
                   className="brands__item group flex h-full w-full flex-col items-center justify-center border bg-white px-2 py-3 transition-all hover:shadow-lg sm:px-3 sm:py-4"
-                  title={brand.name}
                 >
                   <div className="brands__logo relative flex h-10 w-20 items-center justify-center transition-transform duration-300 group-hover:translate-y-1 sm:h-12 sm:w-24 md:h-14 md:w-28">
                     <Image
@@ -103,7 +102,7 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                       className="object-contain"
                     />
                   </div>
-                </Link>
+                </Link></Hint>
               ))}
         </div>
 
@@ -128,14 +127,12 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                       <h3 className="brands__letter mb-1 text-lg font-bold text-gray-900">{letter}</h3>
                       <div className="flex flex-col">
                         {letterBrands.map((brand) => (
-                          <Link
-                            key={brand.id}
+                          <Hint content={brand.name} key={brand.id}><Link
                             href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
                             className="brands__brand-link block min-w-0 [overflow-wrap:anywhere] rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
-                            title={brand.name}
                           >
                             {brand.id === 'chi' ? brand.name.toUpperCase() : toBrandTitleCase(brand.name)}
-                          </Link>
+                          </Link></Hint>
                         ))}
                       </div>
                     </div>

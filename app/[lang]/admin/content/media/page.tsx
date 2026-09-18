@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import Image from 'next/image';
 import AdminGate from '@/components/admin/AdminGate';
@@ -305,12 +306,11 @@ export default function AdminMediaPage(): React.ReactElement {
                                                         )}
                                                     </div>
                                                     <div className="p-2 text-left">
-                                                        <p
+                                                        <Hint content={file.name}><p
                                                             className="text-xs text-foreground truncate leading-tight"
-                                                            title={file.name}
                                                         >
                                                             {file.name}
-                                                        </p>
+                                                        </p></Hint>
                                                         <p className="text-xs text-muted-foreground mt-0.5">
                                                             {fmtBytes(file.size)}
                                                         </p>

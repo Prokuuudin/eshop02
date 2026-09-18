@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import {
     Bell,
@@ -100,7 +101,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
     };
 
     return (
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider>
         <section className="notifications rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
 
             {/* Header — всегда видим */}
@@ -167,14 +168,13 @@ export default function AccountNotificationsSection(): React.ReactElement {
                         </Button>
                     )}
                     {isExpanded && unread > 0 && (
-                        <button
+                        <Hint content={t('notifications.markAllRead')}><button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); markAllRead(); }}
-                            title={t('notifications.markAllRead')}
                             className="notifications__mark-all rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-primary/80"
                         >
                             <CheckCheck className="h-4 w-4" />
-                        </button>
+                        </button></Hint>
                     )}
 
                     {/* Пилюля-подсказка — клик проходит до хедера и открывает секцию */}

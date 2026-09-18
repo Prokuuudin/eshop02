@@ -1,4 +1,5 @@
 'use client';
+import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
@@ -55,14 +56,13 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 </div>
                 <div className="relative z-10 flex shrink-0 items-center gap-1">
                     {isAdmin && (
-                        <Link
+                        <Hint content={t('admin.quickEdit', 'Редактировать')}><Link
                             href={localizePath(`/admin/products/${product.id}`, language)}
                             className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            title={t('admin.quickEdit', 'Редактировать')}
                             aria-label={t('admin.quickEdit', 'Редактировать')}
                         >
                             <Pencil className="h-3.5 w-3.5" />
-                        </Link>
+                        </Link></Hint>
                     )}
                     <WishlistButton product={product} />
                 </div>
@@ -179,7 +179,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                 <div className="product-card__actions relative z-10 mt-1 w-full space-y-2 transition-opacity lg:absolute lg:top-full lg:-inset-x-px lg:mt-0 lg:w-auto lg:bg-card lg:border lg:border-t-0 lg:border-border lg:rounded-b-xl lg:px-3 lg:pb-3 lg:shadow-xl lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-focus-within:pointer-events-auto">
                     {!isOutOfStock && <AddToCartButton product={product} />}
                     {isAuthenticated && (
-                        <TooltipProvider delayDuration={150}>
+                        <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Link
@@ -190,7 +190,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                                         {t('productNews.catalogCta')}
                                     </Link>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs text-center">
+                                <TooltipContent side="top">
                                     {t('productNews.subscribeHint')}
                                 </TooltipContent>
                             </Tooltip>

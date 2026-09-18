@@ -155,7 +155,7 @@ export default function UserMenu(): React.ReactElement {
     return (
         <div className="user-menu relative" ref={menuRef}>
             {dialogs}
-            <TooltipProvider delayDuration={150}>
+            <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button

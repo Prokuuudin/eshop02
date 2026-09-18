@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -132,14 +133,13 @@ function TemplateCard({
                                 </Tooltip>
                             </div>
                         ) : (
-                            <button
+                            <Hint content={t('templates.clickToRename')}><button
                                 type="button"
                                 className="block w-full truncate text-left text-sm font-semibold text-foreground hover:text-primary dark:hover:text-primary/80 transition-colors"
-                                title={t('templates.clickToRename')}
                                 onClick={startEdit}
                             >
                                 {tpl.name}
-                            </button>
+                            </button></Hint>
                         )}
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{date}</p>
                     </div>
@@ -165,12 +165,11 @@ function TemplateCard({
                                 cancelLabel={t('common.cancel')}
                                 onConfirm={() => onDelete(tpl.id)}
                                 trigger={
-                                    <button
-                                        title={t('common.delete')}
+                                    <Hint content={t('common.delete')}><button
                                         className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    </button></Hint>
                                 }
                             />
                         </div>

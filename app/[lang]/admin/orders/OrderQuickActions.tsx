@@ -89,7 +89,7 @@ export function OrderQuickActions({ order, state, status }: {
         </button>
       )}
       <ShipmentForm order={order} />
-      <TooltipProvider delayDuration={200}>
+      <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -100,7 +100,7 @@ export function OrderQuickActions({ order, state, status }: {
               📄 {l('Счёт', 'Invoice', 'Rēķins')}
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs text-center">
+          <TooltipContent side="top">
             {l(
               'Счёт на LV/EN: просмотр PDF, скачивание и отправка на выбранный email.',
               'Invoice in LV/EN: preview PDF, download and send to a chosen email.',

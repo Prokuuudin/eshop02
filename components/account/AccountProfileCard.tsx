@@ -1,3 +1,4 @@
+import { Hint } from '@/components/ui/tooltip';
 import React, { useLayoutEffect, useRef } from 'react';
 import { UserCircle2, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
@@ -103,9 +104,8 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                         <UserCircle2 className="h-8 w-8" />
                     )}
                     {isEditing && (
-                        <label
+                        <Hint content={t('account.avatarHint')}><label
                             className="absolute bottom-0 right-0 bg-white bg-opacity-80 rounded-full p-1 cursor-pointer border border-gray-300"
-                            title={t('account.avatarHint')}
                         >
                             <ImagePlus className="w-4 h-4 text-primary" />
                             <input
@@ -121,7 +121,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                     e.target.value = '';
                                 }}
                             />
-                        </label>
+                        </label></Hint>
                     )}
                 </div>
                 <div className="account-profile__info min-w-0">

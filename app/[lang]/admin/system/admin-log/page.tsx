@@ -1,5 +1,6 @@
 ﻿'use client'
 
+import { Hint } from '@/components/ui/tooltip';
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
@@ -174,14 +175,13 @@ export default function AdminLogPage(): React.ReactElement {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={downloadCSV}>{l('Экспорт CSV', 'Export CSV', 'Eksportēt CSV')}</Button>
-            <Button
+            <Hint content={l('Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется', 'Hides entries in this view only; the audit log is immutable and is not deleted', 'Paslēpj ierakstus tikai šajā skatā; audita žurnāls ir nemainīgs un netiek dzēsts')}><Button
               variant="outline"
               size="sm"
               onClick={() => { setHideOlderThan90((v) => !v); setPage(0) }}
-              title={l('Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется', 'Hides entries in this view only; the audit log is immutable and is not deleted', 'Paslēpj ierakstus tikai šajā skatā; audita žurnāls ir nemainīgs un netiek dzēsts')}
             >
               {hideOlderThan90 ? l('Показать все записи', 'Show all entries', 'Rādīt visus ierakstus') : l('Скрыть старше 90 дней', 'Hide entries older than 90 days', 'Slēpt ierakstus, kas vecāki par 90 dienām')}
-            </Button>
+            </Button></Hint>
           </div>
         </div>
 

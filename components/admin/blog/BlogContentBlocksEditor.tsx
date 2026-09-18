@@ -126,14 +126,14 @@ export default function BlogContentBlocksEditor({
                     {control}
                 </span>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs text-center">
+            <TooltipContent side="top">
                 {label}
             </TooltipContent>
         </Tooltip>
     );
 
     return (
-        <TooltipProvider delayDuration={200}>
+        <TooltipProvider>
             <div className="md:col-span-2 space-y-3">
                 <span className="block text-sm font-medium text-foreground">
                     {l('Содержимое статьи', 'Article content', 'Raksta saturs')}
@@ -229,7 +229,7 @@ export default function BlogContentBlocksEditor({
                                                 </Select>
                                             </div>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" className="max-w-xs text-center">
+                                        <TooltipContent side="top">
                                             {hints.headingLevel}
                                         </TooltipContent>
                                     </Tooltip>
@@ -281,7 +281,7 @@ export default function BlogContentBlocksEditor({
                                                 {l('Нумерованный', 'Ordered', 'Numurēts')}
                                             </label>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" className="max-w-xs text-center">
+                                        <TooltipContent side="top">
                                             {hints.orderedList}
                                         </TooltipContent>
                                     </Tooltip>

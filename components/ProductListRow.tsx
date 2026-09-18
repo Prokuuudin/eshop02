@@ -128,7 +128,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
           <WishlistButton product={product} className="shrink-0" />
         </div>
         {isAuthenticated && (
-          <TooltipProvider delayDuration={150}>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
@@ -139,7 +139,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
                   {t('productNews.catalogCta')}
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-center">
+              <TooltipContent side="top">
                 {t('productNews.subscribeHint')}
               </TooltipContent>
             </Tooltip>

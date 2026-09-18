@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Hint } from '@/components/ui/tooltip';
 import React, { useState } from 'react';
 import Image from 'next/image';
 import type { Product } from '@/data/products';
@@ -137,14 +138,13 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             className={cellCls}
                                         />
                                     ) : (
-                                        <button
+                                        <Hint content={onQuickSave ? l('Кликните для редактирования', 'Click to edit', 'Klikšķiniet, lai rediģētu') : undefined}><button
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'price')}
-                                            title={onQuickSave ? l('Кликните для редактирования', 'Click to edit', 'Klikšķiniet, lai rediģētu') : undefined}
                                             className={`text-sm font-medium text-foreground tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary/90 cursor-pointer' : 'cursor-default'}`}
                                         >
                                             €{product.price.toFixed(2)}
-                                        </button>
+                                        </button></Hint>
                                     )}
                                 </td>
                                 <td className="p-3 align-middle">
@@ -161,14 +161,13 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             className={cellCls}
                                         />
                                     ) : (
-                                        <button
+                                        <Hint content={onQuickSave ? l('Кликните для редактирования', 'Click to edit', 'Klikšķiniet, lai rediģētu') : undefined}><button
                                             type="button"
                                             onClick={() => onQuickSave && startEdit(product, 'stock')}
-                                            title={onQuickSave ? l('Кликните для редактирования', 'Click to edit', 'Klikšķiniet, lai rediģētu') : undefined}
                                             className={`text-sm tabular-nums ${onQuickSave ? 'rounded px-1.5 py-0.5 hover:bg-primary/5 dark:hover:bg-primary/10 cursor-pointer' : 'cursor-default'} ${product.stock === 0 ? 'text-red-600 dark:text-red-400 font-semibold' : product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-foreground'}`}
                                         >
                                             {product.stock}
-                                        </button>
+                                        </button></Hint>
                                     )}
                                 </td>
                                 <td className="p-3 align-middle">

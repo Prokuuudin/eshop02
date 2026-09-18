@@ -1,5 +1,6 @@
 'use client';
 
+import { Hint } from '@/components/ui/tooltip';
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from './ui/button';
 import { Product } from '@/data/products';
@@ -69,12 +70,11 @@ export default function WishlistButton({
     if (asButton) {
         return (
             <>
-                <Button
+                <Hint content={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}><Button
                     onClick={handleClick}
                     variant="default"
                     className={`flex items-center justify-center gap-2 w-full add-to-cart__button bg-pink-600 hover:bg-pink-700 ${className}`}
                     aria-label={t(isInWishlist ? 'wishlist.removeAria' : 'wishlist.addAria')}
-                    title={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}
                 >
                     <svg
                         className={`h-5 w-5 mr-2${popping ? ' animate-wishlist-pop' : ''}`}
@@ -85,18 +85,17 @@ export default function WishlistButton({
                         <path d={heartPath} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     {t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}
-                </Button>
+                </Button></Hint>
                 <AuthGateDialog open={authGateOpen} onOpenChange={setAuthGateOpen} />
             </>
         );
     }
     return (
         <>
-            <button
+            <Hint content={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}><button
                 type="button"
                 onClick={handleClick}
                 aria-label={t(isInWishlist ? 'wishlist.removeAria' : 'wishlist.addAria')}
-                title={t(isInWishlist ? 'wishlist.remove' : 'wishlist.add')}
                 className={`inline-flex items-center justify-center rounded-full border p-2 shadow-sm transition bg-white/95 dark:bg-gray-900/95 ${
                     isInWishlist
                         ? 'border-pink-300 text-pink-600 hover:border-gray-400 hover:text-gray-500 dark:border-pink-500 dark:text-pink-400 dark:hover:border-gray-500 dark:hover:text-gray-400'
@@ -111,7 +110,7 @@ export default function WishlistButton({
                 >
                     <path d={heartPath} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-            </button>
+            </button></Hint>
             <AuthGateDialog open={authGateOpen} onOpenChange={setAuthGateOpen} />
         </>
     );

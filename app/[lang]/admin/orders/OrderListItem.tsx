@@ -1,4 +1,5 @@
 'use client';
+import { Hint } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
 import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
@@ -283,8 +284,9 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {availableOrderStatuses(status).map((s) => (
-                                                        <Button
-                                                            key={s}
+                                                        <Hint content={s === 'cancelled' && payStatus === 'paid'
+                                                                ? l('Сначала оформите возврат платежа', 'Refund the payment before cancelling', 'Pirms atcelšanas atmaksājiet maksājumu')
+                                                                : undefined} key={s}><Button
                                                             size="sm"
                                                             variant={status === s ? 'default' : 'outline'}
                                                             className={
@@ -320,12 +322,9 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                             }}
                                                             disabled={status === s || isStatusSaving || (s === 'cancelled' && payStatus === 'paid')}
                                                             aria-busy={isStatusSaving}
-                                                            title={s === 'cancelled' && payStatus === 'paid'
-                                                                ? l('Сначала оформите возврат платежа', 'Refund the payment before cancelling', 'Pirms atcelšanas atmaksājiet maksājumu')
-                                                                : undefined}
                                                         >
                                                             {STATUS_LABELS[s]}
-                                                        </Button>
+                                                        </Button></Hint>
                                                     ))}
                                                 </div>
                                                 {isStatusSaving && (

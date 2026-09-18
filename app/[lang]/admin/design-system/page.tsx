@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,11 +37,6 @@ export default function DesignSystemPage(): React.ReactElement {
                             )}
                         </p>
                     </div>
-                    <Link href="/admin">
-                        <Button variant="outline" size="sm">
-                            ← {l('Админка', 'Admin', 'Administrēšana')}
-                        </Button>
-                    </Link>
                 </div>
 
                 <Separator />

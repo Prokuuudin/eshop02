@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -128,9 +127,6 @@ export default function AdminBackupPage(): React.ReactElement {
 
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">{l('Резервное копирование', 'Backup and restore', 'Rezerves kopēšana un atjaunošana')}</h1>
-          <Button variant="outline" asChild>
-            <Link href="/admin">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
-          </Button>
         </div>
 
         <details className="group rounded-lg border border-blue-200 bg-blue-50 text-sm text-blue-950">

@@ -66,12 +66,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Link href={registeredOnly ? '/admin/client-database' : '/admin/client-barcodes'}>
-                            <Button variant="outline">{registeredOnly ? l('База клиентов', 'Customer database', 'Klientu datubāze') : l('Зарегистрированные клиенты', 'Registered customers', 'Reģistrētie klienti')}</Button>
-                        </Link>
-                        <Link href="/admin">
-                            <Button variant="outline">{tl('admin.clientBarcodes.backToAdmin', 'Назад в админку', 'Back to admin', 'Atpakaļ uz administrēšanu')}</Button>
-                        </Link>
+                        <Button asChild variant="outline"><Link href={registeredOnly ? '/admin/client-database' : '/admin/client-barcodes'}>{registeredOnly ? l('База клиентов', 'Customer database', 'Klientu datubāze') : l('Зарегистрированные клиенты', 'Registered customers', 'Reģistrētie klienti')}</Link></Button>
                     </div>
                 </div>
 

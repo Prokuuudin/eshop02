@@ -146,9 +146,6 @@ export default function CustomerProfilePage(): React.ReactElement {
       <AdminGate>
         <main className="w-full py-4 text-center">
           <p className="text-muted-foreground">{l('Email клиента не указан.', 'Customer email is not specified.', 'Klienta e-pasts nav norādīts.')}</p>
-          <Link href="/admin/customers/segments" className="text-primary hover:underline text-sm mt-2 inline-block">
-            ← {l('К сегментам', 'To segments', 'Uz segmentiem')}
-          </Link>
         </main>
       </AdminGate>
     )
@@ -157,11 +154,6 @@ export default function CustomerProfilePage(): React.ReactElement {
   return (
     <AdminGate>
       <main className="w-full py-4 space-y-6">
-
-        {/* Back */}
-        <Link href="/admin/customers/segments" className="text-sm text-primary hover:underline">
-          ← {l('Клиенты', 'Customers', 'Klienti')}
-        </Link>
 
         {/* Header */}
         <div className="flex flex-wrap items-start gap-5">

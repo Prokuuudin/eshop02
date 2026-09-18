@@ -83,11 +83,6 @@ export default function AdminOnboardingPage(): React.ReactElement {
                             )}
                         </p>
                     </div>
-                    <Link href="/admin">
-                        <Button variant="outline">
-                            {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrēšanu')}
-                        </Button>
-                    </Link>
                 </div>
 
                 {/* Progress */}

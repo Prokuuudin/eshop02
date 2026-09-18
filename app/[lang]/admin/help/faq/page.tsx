@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,7 @@ const FAQ_ITEMS_RU: FaqItem[] = [
     id: 4,
     question: 'Как создать промокод со сроком действия?',
     answer:
-      'Перейдите в Продвижение → Промокоды → нажмите «Добавить промокод». Заполните поля: код, размер скидки в %. В поле «Действует до» выберите дату окончания. После этой даты промокод перестанет применяться автоматически. Система предупредит, если вы попытаетесь создать промокод с уже существующим кодом.',
+      'Перейдите в Маркетинг → Промокоды → нажмите «Добавить промокод». Заполните поля: код, размер скидки в %. В поле «Действует до» выберите дату окончания. После этой даты промокод перестанет применяться автоматически. Система предупредит, если вы попытаетесь создать промокод с уже существующим кодом.',
   },
   {
     id: 5,
@@ -168,9 +168,6 @@ export default function AdminFaqPage(): React.ReactElement {
               {l('Ответы на типовые вопросы по работе с системой', 'Answers to common questions about using the system', 'Atbildes uz biežākajiem jautājumiem par sistēmas lietošanu')}
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/admin">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
-          </Button>
         </div>
 
         <div className="relative">

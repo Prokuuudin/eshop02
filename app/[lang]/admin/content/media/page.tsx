@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
@@ -79,9 +78,6 @@ export default function AdminMediaPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/admin/content">
-                            <Button variant="outline">← {l('Контент', 'Content', 'Saturs')}</Button>
-                        </Link>
                         <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                             {uploading ? l('Загрузка...', 'Uploading...', 'Augšupielāde...') : `+ ${l('Загрузить', 'Upload', 'Augšupielādēt')}`}
                         </Button>

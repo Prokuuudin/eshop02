@@ -46,11 +46,6 @@ export default function AdminCustomerSegmentsPage(): React.ReactElement {
                             'Klientu segmenti un statusi'
                         )}
                     </h1>
-                    <Button variant="outline" asChild>
-                        <Link href="/admin">
-                            ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
-                        </Link>
-                    </Button>
                 </div>
 
                 {/* Loading / error states */}

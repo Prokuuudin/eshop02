@@ -1,9 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
-import { Button } from '@/components/ui/button';
 import type { RowAction } from '@/app/api/admin/import/preview/route';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
@@ -60,11 +58,6 @@ export default function AdminImportPage(): React.ReactElement {
                             )}
                         </p>
                     </div>
-                    <Link href="/admin">
-                        <Button variant="outline">
-                            {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrēšanu')}
-                        </Button>
-                    </Link>
                 </div>
 
                 <ImportExportSection l={l} />

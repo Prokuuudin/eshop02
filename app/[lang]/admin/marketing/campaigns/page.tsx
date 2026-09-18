@@ -1,6 +1,5 @@
 ﻿'use client'
 import React, { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -189,9 +188,6 @@ export default function AdminCampaignsPage(): React.ReactElement {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
-              ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
-            </Link>
             <h1 className="text-2xl font-bold text-foreground">{l('Промо-кампании', 'Promo campaigns', 'Promo kampaņas')}</h1>
           </div>
           <Button onClick={openCreate} disabled={showForm && !editId}>+ {l('Новая кампания', 'New campaign', 'Jauna kampaņa')}</Button>

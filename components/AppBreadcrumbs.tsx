@@ -206,6 +206,7 @@ export default function AppBreadcrumbs(): React.ReactElement {
         if (!pathname || pathname === '/') return [];
 
         const segments = pathname.split('/').filter(Boolean);
+        // Marketing has child routes but no index page to link to.
         const pathCrumbs = segments.map((segment, index) => {
             const href = `/${segments.slice(0, index + 1).join('/')}`;
             const key = segmentLabelKeys[segment];
@@ -235,7 +236,7 @@ export default function AppBreadcrumbs(): React.ReactElement {
                 (key ? t(key, normalizeSegment(segment)) : normalizeSegment(segment));
 
             return { href, label };
-        });
+        }).filter(crumb => crumb.href !== '/admin/marketing');
 
         if (segments[0] === 'category') {
             pathCrumbs[0] = { href: '/catalog', label: t('nav.catalog', 'Catalog') };

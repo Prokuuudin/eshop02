@@ -52,11 +52,6 @@ export default function AdminKnowledgePage(): React.ReactElement {
                             <IconList className="mr-2" />
                             {l('Список', 'List', 'Saraksts')}
                         </Button>
-                        <Link href="/admin">
-                            <Button variant="outline">
-                                {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrēšanu')}
-                            </Button>
-                        </Link>
                     </div>
                 </div>
 

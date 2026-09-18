@@ -119,12 +119,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Link href="/admin/client-barcodes">
-                            <Button variant="outline">{l('Зарегистрированные', 'Registered customers', 'Reģistrētie klienti')}</Button>
-                        </Link>
-                        <Link href="/admin">
-                            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz admin')}</Button>
-                        </Link>
+                        <Button asChild variant="outline"><Link href="/admin/client-barcodes">{l('Зарегистрированные', 'Registered customers', 'Reģistrētie klienti')}</Link></Button>
                     </div>
                 </div>
 

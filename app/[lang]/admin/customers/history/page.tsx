@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -138,9 +137,6 @@ export default function AdminCustomerHistoryPage(): React.ReactElement {
                 {l('Очистить старые записи (> 90 дней)', 'Clear old records (> 90 days)', 'Notīrīt vecos ierakstus (> 90 dienām)')}
               </Button>
             )}
-            <Button variant="outline" asChild>
-              <Link href="/admin">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link>
-            </Button>
           </div>
         </div>
 

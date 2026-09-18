@@ -51,7 +51,7 @@ export default function AdminMarketingAnalyticsPage(): React.ReactElement {
 
   return <AdminGate><main className="w-full space-y-6 py-4">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><Link href="/admin" className="mb-1 inline-block text-sm text-primary hover:underline">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Link><h1 className="text-2xl font-bold text-foreground">{l('Аналитика продвижения', 'Marketing analytics', 'Mārketinga analītika')}</h1><p className="mt-1 text-sm text-muted-foreground">{l('Эффективность промокодов по неотменённым заказам', 'Promo code performance for non-cancelled orders', 'Promokodu efektivitāte neatceltajiem pasūtījumiem')}</p></div>
+      <div><h1 className="text-2xl font-bold text-foreground">{l('Аналитика маркетинга', 'Marketing analytics', 'Mārketinga analītika')}</h1><p className="mt-1 text-sm text-muted-foreground">{l('Эффективность промокодов по неотменённым заказам', 'Promo code performance for non-cancelled orders', 'Promokodu efektivitāte neatceltajiem pasūtījumiem')}</p></div>
       <div className="flex rounded-lg border border-border bg-card p-1" aria-label={l('Период отчёта', 'Report period', 'Pārskata periods')}>
         {periods.map((item) => <button key={item.value} type="button" onClick={() => { if (item.value !== period) { setLoading(true); setError(false); setPeriod(item.value) } }} aria-pressed={period === item.value} className={`rounded-md px-3 py-1.5 text-sm transition-colors ${period === item.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>{item.label}</button>)}
       </div>

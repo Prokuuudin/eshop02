@@ -1,9 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBannerContentManager } from './useBannerContentManager';
 import BannersTab from './BannersTab';
@@ -30,14 +28,6 @@ export default function AdminBannersPage(): React.ReactElement {
                         <p className="text-sm text-muted-foreground mt-1">
                             {l('Управление промо-баннерами главной страницы.', 'Manage homepage promotional banners.', 'Sākumlapas reklāmas baneru pārvaldība.')}
                         </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Link href="/admin/content">
-                            <Button variant="outline">← {l('Контент', 'Content', 'Saturs')}</Button>
-                        </Link>
-                        <Link href="/admin">
-                            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-                        </Link>
                     </div>
                 </div>
 

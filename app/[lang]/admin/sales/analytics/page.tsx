@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import { formatEuro } from '@/lib/utils';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -151,12 +153,11 @@ export default function SalesAnalyticsPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                    <Link
+                    <Button asChild variant="outline"><Link
                         href="/admin/sales/breakdown"
-                        className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 dark:border-primary/40 dark:bg-primary/10 dark:text-primary"
                     >
-                        {l('Товары и категории', 'Products and categories', 'Produkti un kategorijas')} →
-                    </Link>
+                        {l('Товары и категории', 'Products and categories', 'Produkti un kategorijas')} <ArrowRight aria-hidden="true" />
+                    </Link></Button>
                     <div className="flex rounded-lg border border-border bg-card p-1">
                         {PERIOD_OPTIONS.map((opt) => (
                             <button

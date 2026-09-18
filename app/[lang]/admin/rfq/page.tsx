@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { type Product } from '@/data/products'
 import { useRFQStore, mapServerRfq, type RFQStatus, type RFQTimelineEvent } from '@/lib/rfq-store'
 import { formatDate, formatEuro } from '@/lib/utils'
@@ -196,7 +195,6 @@ export default function AdminRFQPage(): React.ReactElement {
             {l('Запросы на котировку от B2B-клиентов', 'Quote requests from B2B customers', 'B2B klientu cenu piedāvājumu pieprasījumi')}
           </p>
         </div>
-        <Link href="/admin"><Button variant="outline">← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button></Link>
       </div>
 
       {/* Status filter tabs */}

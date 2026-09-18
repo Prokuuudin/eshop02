@@ -5,7 +5,6 @@ import CohortSection from './CohortSection';
 import SeoSection from './SeoSection';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
@@ -54,12 +53,6 @@ export default function AdminAnalyticsPage(): React.ReactElement {
                         <h1 className="text-2xl font-bold text-foreground">{l('Аналитика каталога', 'Catalog analytics', 'Kataloga analītika')}</h1>
                         <p className="mt-1 text-sm text-muted-foreground">{active.desc}</p>
                     </div>
-                    <Link
-                        href="/admin"
-                        className="text-sm text-primary hover:underline dark:text-primary"
-                    >
-                        ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
-                    </Link>
                 </div>
 
                 {/* Tabs */}

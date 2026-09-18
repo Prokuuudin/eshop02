@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
-import { Button } from '@/components/ui/button'
 import { formatEuro } from '@/lib/utils'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -125,9 +124,6 @@ export default function DuplicatesPage(): React.ReactElement {
             <p className="text-sm text-muted-foreground mt-1">
               {l('Товары с одинаковым названием или SKU — возможные дубликаты после импорта.', 'Products with the same title or SKU may be duplicates created during import.', 'Produkti ar vienādu nosaukumu vai SKU var būt importa laikā izveidoti dublikāti.')}
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/admin/products"><Button variant="outline">← {l('Товары', 'Products', 'Produkti')}</Button></Link>
           </div>
         </div>
 

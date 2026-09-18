@@ -1,6 +1,5 @@
 'use client'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -194,9 +193,6 @@ export default function AdminDiscountsPage(): React.ReactElement {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm text-primary hover:underline mb-1 inline-block">
-              ← {l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}
-            </Link>
             <h1 className="text-2xl font-bold text-foreground">{l('Промокоды', 'Promo codes', 'Promokodi')}</h1>
           </div>
           <Button onClick={() => void handleOpenCreate()} disabled={showForm && !editId}>+ {l('Добавить промокод', 'Add promo code', 'Pievienot promokodu')}</Button>

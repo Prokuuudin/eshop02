@@ -161,7 +161,7 @@ const NAV_LABELS = {
         'customers.history': 'История взаимодействий',
         'customers.notifications': 'Рассылка уведомлений',
         'customers.requests': 'Обращения клиентов',
-        marketing: 'Продвижение',
+        marketing: 'Маркетинг',
         'marketing.campaigns': 'Промо-кампании',
         'marketing.discounts': 'Промокоды',
         'marketing.analytics': 'Аналитика промо',

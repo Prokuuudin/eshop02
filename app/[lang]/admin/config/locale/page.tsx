@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -100,9 +99,6 @@ export default function AdminLocalePage(): React.ReactElement {
               {l('Настройте язык по умолчанию, формат даты, часовой пояс и формат цены.', 'Configure the default language, date format, time zone and price format.', 'Iestatiet noklusējuma valodu, datuma formātu, laika joslu un cenas formātu.')}
             </p>
           </div>
-          <Link href="/admin">
-            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-          </Link>
         </div>
 
         {message && (

@@ -66,12 +66,7 @@ export default function AdminContentPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/admin/content/banners">
-                            <Button variant="outline">{l('Баннеры', 'Banners', 'Baneri')}</Button>
-                        </Link>
-                        <Link href="/admin">
-                            <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-                        </Link>
+                        <Button asChild variant="outline"><Link href="/admin/content/banners">{l('Баннеры', 'Banners', 'Baneri')}</Link></Button>
                         <Button
                             variant="destructive"
                             disabled={saving}

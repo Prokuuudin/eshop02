@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,9 +91,6 @@ export default function NewOrderPage(): React.ReactElement {
                             {l('Заказ создаётся со статусом «Подтверждён» и оплатой', 'The order will be created as “Confirmed” with payment status', 'Pasūtījums tiks izveidots ar statusu “Apstiprināts” un maksājuma statusu')} «{paymentStatus === 'paid' ? l('Оплачен', 'Paid', 'Apmaksāts') : l('Не оплачен', 'Unpaid', 'Nav apmaksāts')}»
                         </p>
                     </div>
-                    <Link href="/admin/orders">
-                        <Button variant="outline">← {l('Заказы', 'Orders', 'Pasūtījumi')}</Button>
-                    </Link>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

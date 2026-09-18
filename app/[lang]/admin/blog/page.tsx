@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Info } from 'lucide-react';
 import {
     Accordion,
@@ -87,16 +86,6 @@ export default function AdminBlogPage(): React.ReactElement {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/admin">
-                            <Button variant="outline">
-                                {tl(
-                                    'admin.blog.backToAdmin',
-                                    'Назад в админ-панель',
-                                    'Back to admin panel',
-                                    'Atpakaļ uz administrēšanas paneli'
-                                )}
-                            </Button>
-                        </Link>
                         <Button
                             variant="outline"
                             onClick={() => {

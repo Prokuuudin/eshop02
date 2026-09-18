@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { formatEuro } from '@/lib/utils'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -287,9 +286,6 @@ export default function SalesBreakdownPage(): React.ReactElement {
                 </button>
               ))}
             </div>
-            <Link href="/admin/sales/analytics" className="text-sm text-primary hover:underline dark:text-primary">
-              ← {l('Продажи', 'Sales', 'Pārdošana')}
-            </Link>
           </div>
         </div>
 

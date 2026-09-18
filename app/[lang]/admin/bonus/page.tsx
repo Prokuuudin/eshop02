@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,7 +71,7 @@ export default function AdminBonusPage(): React.ReactElement {
   ], [l, locale, stats])
 
   return <AdminGate><main className="admin-bonus-page w-full py-4 space-y-6 text-foreground">
-    <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{l('Настройка, статистика и управление балансами', 'Settings, statistics, and balance management', 'Iestatījumi, statistika un bilanču pārvaldība')}</p></div><Link href="/admin"><Button variant="outline">← {l('Назад', 'Back', 'Atpakaļ')}</Button></Link></header>
+    <header className="flex items-start justify-between gap-4"><div><h1 className="text-3xl font-bold">{t('admin.bonus.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{l('Настройка, статистика и управление балансами', 'Settings, statistics, and balance management', 'Iestatījumi, statistika un bilanču pārvaldība')}</p></div></header>
     {statsError && <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{statsError} <Button size="sm" variant="outline" onClick={() => void loadStats()}>{l('Повторить', 'Retry', 'Atkārtot')}</Button></div>}
     <div aria-busy={statsLoading} className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">{cards.map(([label, value, bg]) => <div key={String(label)} className={`${bg} rounded-xl border border-border p-4 shadow-sm`}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-bold">{statsLoading ? '…' : value}</p></div>)}</div>
 

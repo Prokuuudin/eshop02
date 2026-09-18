@@ -1,7 +1,6 @@
 ﻿'use client'
 
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import AdminGate from '@/components/admin/AdminGate'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -182,9 +181,6 @@ export default function AdminLogPage(): React.ReactElement {
               title={l('Скрывает записи только в этом просмотре — журнал аудита неизменяем и не удаляется', 'Hides entries in this view only; the audit log is immutable and is not deleted', 'Paslēpj ierakstus tikai šajā skatā; audita žurnāls ir nemainīgs un netiek dzēsts')}
             >
               {hideOlderThan90 ? l('Показать все записи', 'Show all entries', 'Rādīt visus ierakstus') : l('Скрыть старше 90 дней', 'Hide entries older than 90 days', 'Slēpt ierakstus, kas vecāki par 90 dienām')}
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/system/logs">← {l('Системные логи', 'System logs', 'Sistēmas žurnāli')}</Link>
             </Button>
           </div>
         </div>

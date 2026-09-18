@@ -87,9 +87,6 @@ export default function AdminReturnsPage(): React.ReactElement {
                     <Button variant="outline" onClick={() => setShowCreate((v) => !v)}>
                         {showCreate ? l('Отмена', 'Cancel', 'Atcelt') : `+ ${l('Новый возврат', 'New return', 'Jauna atgriešana')}`}
                     </Button>
-                    <Link href="/admin">
-                        <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-                    </Link>
                 </div>
             </div>
 

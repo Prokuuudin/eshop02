@@ -59,9 +59,6 @@ export default function OrdersHeader({ state }: { state: OrdersState }): React.R
                         <Download className="h-3.5 w-3.5" />
                         {exportingCustomers ? l('Экспорт…', 'Exporting…', 'Eksportē…') : l('Клиенты (CSV)', 'Customers (CSV)', 'Klienti (CSV)')}
                     </Button>
-                    <Link href="/admin" className="hidden sm:block">
-                        <Button variant="outline">{l('Назад в админку', 'Back to admin', 'Atpakaļ uz administrāciju')}</Button>
-                    </Link>
                 </div>
             </div>
         </>

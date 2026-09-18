@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Search } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
@@ -65,16 +64,6 @@ export default function AdminBrandsPage(): React.ReactElement {
                                 )}
                             </p>
                         </div>
-                        <Link href="/admin">
-                            <Button variant="outline">
-                                {tl(
-                                    'admin.brands.backToAdmin',
-                                    'Назад в админку',
-                                    'Back to admin',
-                                    'Atpakaļ uz administrēšanu'
-                                )}
-                            </Button>
-                        </Link>
                     </div>
                     <div className="mt-3 flex items-center gap-2">
                         <Input

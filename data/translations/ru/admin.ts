@@ -289,7 +289,7 @@ const ruAdmin: Record<string, string> = {
   'admin.notifications.error.noRecipients': 'Выберите хотя бы одного получателя',
   'admin.notifications.error.noTitle': 'Укажите заголовок',
   'admin.notifications.error.noMessage': 'Укажите сообщение',
-  'admin.sidebar.marketing': 'Продвижение',
+  'admin.sidebar.marketing': 'Маркетинг',
   'admin.sidebar.marketing.campaigns': 'Промо-кампании',
   'admin.sidebar.marketing.discounts': 'Промокоды',
   'admin.sidebar.marketing.analytics': 'Аналитика промо',

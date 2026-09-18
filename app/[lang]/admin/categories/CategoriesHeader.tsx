@@ -1,8 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 import type { useAdminCategoriesPage } from './useAdminCategoriesPage';
 
@@ -36,16 +34,6 @@ export default function CategoriesHeader({
                             )}
                         </p>
                     </div>
-                    <Link href="/admin">
-                        <Button variant="outline">
-                            {tl(
-                                'admin.categories.backToAdmin',
-                                'Назад в админку',
-                                'Back to admin',
-                                'Atpakaļ uz administrēšanu'
-                            )}
-                        </Button>
-                    </Link>
                 </div>
             </div>
         </>

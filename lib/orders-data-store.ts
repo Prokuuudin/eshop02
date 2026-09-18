@@ -1,3 +1,5 @@
+import { Prisma } from '@/generated/prisma/client'
+import { requiresDeliveryLocation, resolveDeliveryLocation } from './delivery-locations'
 import { isDeliveryAvailable, calcDeliveryFee } from './delivery'
 import { getShippingSettings } from './shipping-settings-server'
 import { prisma } from '@/lib/prisma'
@@ -364,6 +366,8 @@ export async function updateServerOrderByAdmin(
     const discountRate = current.promoCode && oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
     const discount = Math.round(subtotal * discountRate * 100) / 100
     const country = input.country ?? (current.country as import('./delivery').DeliveryCountry | undefined) ?? 'LV'
+    const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, country, input.deliveryLocationId)
+    if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) throw new AdminOrderUpdateError('Invalid delivery location', 'invalid_item')
     const shippingSettings = await getShippingSettings(tx)
     if (!isDeliveryAvailable(input.deliveryMethod, country, shippingSettings)) throw new AdminOrderUpdateError('Delivery unavailable', 'invalid_item')
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, country, shippingSettings)
@@ -394,7 +398,8 @@ export async function updateServerOrderByAdmin(
         deliveryMethod: input.deliveryMethod,
         address: input.address,
         city: input.city,
-        country: input.country ?? current.country,
+        country,
+        deliveryLocation: deliveryLocation ?? Prisma.DbNull,
         postalCode: input.postalCode ?? null,
       },
     })

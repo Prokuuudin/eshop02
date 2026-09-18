@@ -1,5 +1,7 @@
 'use client';
-import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { useTranslation } from '@/lib/use-translation';
+import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
 
 
 import AdminGate from '@/components/admin/AdminGate';
@@ -55,6 +57,8 @@ export default function NewOrderPage(): React.ReactElement {
             setManualDiscountPct,
             deliveryMethod,
             setDeliveryMethod,
+            deliveryLocationId,
+            setDeliveryLocationId,
             country,
             setCountry,
             shippingSettings,
@@ -78,12 +82,8 @@ export default function NewOrderPage(): React.ReactElement {
             discountFromManual,
             selectCls,
           } = pageState;
-    const deliveryOptions: DeliveryOption[] = ([
-        { value: 'pickup', label: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'), cost: 0 },
-        { value: 'courier', label: l('Курьер', 'Courier', 'Kurjers'), cost: 10 },
-        { value: 'post', label: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), cost: 4 },
-        { value: 'venipak', label: 'Venipak', cost: 3 },
-    ] satisfies DeliveryOption[]).filter(option => isDeliveryAvailable(option.value, country, shippingSettings)).map(option => ({ ...option, cost: calcDeliveryFee(option.value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
+    const { t } = useTranslation();
+    const deliveryOptions: DeliveryOption[] = checkoutDeliveryMethodIds.filter(id => isDeliveryAvailable(id, country, shippingSettings)).map(value => ({ value, label: t(DELIVERY_METHOD_LABEL_KEYS[value]), cost: calcDeliveryFee(value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
     return (
         <AdminGate access="partial">
             <main className="w-full py-4">
@@ -277,13 +277,13 @@ export default function NewOrderPage(): React.ReactElement {
 
                         {/* Delivery */}
                         <Section title={l('Доставка', 'Delivery', 'Piegāde')}>
-                            <label className="mb-3 block">{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={country} onChange={e => setCountry(e.target.value as typeof country)}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
+                            <label className="mb-3 block">{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={country} onChange={e => { setCountry(e.target.value as typeof country); setDeliveryLocationId(''); }}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                             <div className="flex flex-wrap gap-2">
                                 {deliveryOptions.map((opt) => (
                                     <button
                                         key={opt.value}
                                         type="button"
-                                        onClick={() => setDeliveryMethod(opt.value)}
+                                        onClick={() => { setDeliveryMethod(opt.value); setDeliveryLocationId(''); }}
                                         className={[
                                             'rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors',
                                             deliveryMethod === opt.value
@@ -299,6 +299,7 @@ export default function NewOrderPage(): React.ReactElement {
                                 ))}
                             </div>
 
+                            {requiresDeliveryLocation(deliveryMethod) && <DeliveryLocationPicker key={deliveryMethod + ':' + (country)} method={deliveryMethod} country={country} value={deliveryLocationId} onChange={setDeliveryLocationId} />}
                             {deliveryMethod !== 'pickup' && (
                                 <div className="space-y-3 pt-1">
                                     <Field label={l('Адрес', 'Address', 'Adrese')} required>

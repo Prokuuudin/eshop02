@@ -7,6 +7,19 @@ import {
 } from './commerce-settings'
 
 describe('commerce settings', () => {
+  it('adds new carriers to old v2 settings without losing saved delivery rules', () => {
+    const saved = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    saved.delivery.omniva.enabled = false
+    saved.delivery.omniva.freeFrom = 350
+    const oldDelivery = saved.delivery as Partial<typeof saved.delivery>
+    for (const id of ['unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier', 'venipak_courier'] as const) delete oldDelivery[id]
+    const upgraded = normalizeCommerceSettings(saved)
+    expect(upgraded.delivery.omniva.enabled).toBe(false)
+    expect(upgraded.delivery.omniva.freeFrom).toBe(350)
+    expect(upgraded.delivery.unisend.enabled).toBe(true)
+    expect(upgraded.delivery.expresspasts.enabled).toBe(false)
+    expect(commerceSettingsSchema.safeParse(upgraded).success).toBe(true)
+  })
   it('ships with a valid, conservative draft configuration', () => {
     expect(commerceSettingsSchema.safeParse(DEFAULT_COMMERCE_SETTINGS).success).toBe(true)
     expect(DEFAULT_COMMERCE_SETTINGS.payment.card_online.enabled).toBe(false)

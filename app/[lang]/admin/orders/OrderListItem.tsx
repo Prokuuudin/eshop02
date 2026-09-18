@@ -1,4 +1,6 @@
 'use client';
+import { useTranslation } from '@/lib/use-translation';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
 import React from 'react';
 import Image from 'next/image';
@@ -21,6 +23,7 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
 
 export function OrderListItem({ order, state }: { order: Order; state: OrdersState }): React.ReactElement {
+    const { t } = useTranslation();
     const { l } = useAdminLocale();
     const { showToast } = useToast();
     const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -33,10 +36,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
         paid: l('Оплачен', 'Paid', 'Apmaksāts'), refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
         failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
     };
-    const DELIVERY_LABELS: Record<string, string> = {
-        courier: l('Курьер', 'Courier', 'Kurjers'), pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
-        post: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), venipak: 'Venipak',
-    };
+    const DELIVERY_LABELS = Object.fromEntries(checkoutDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
     const PAYMENT_METHOD_LABELS: Record<string, string> = {
         bank: l('Банковский перевод', 'Bank transfer', 'Bankas pārskaitījums'),
         cash: l('Оплата при получении', 'Cash on delivery', 'Skaidra nauda saņemot'),

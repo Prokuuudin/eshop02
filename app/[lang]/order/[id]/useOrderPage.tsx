@@ -1,4 +1,5 @@
 ﻿'use client';
+import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/delivery';
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -59,7 +60,7 @@ function useOrderPageState({ params }: PageProps) {
                         subtotal: number;
                         tax: number;
                         delivery: number;
-                        deliveryMethod: 'courier' | 'pickup' | 'post' | 'venipak';
+                        deliveryMethod: import('@/lib/delivery').CheckoutDeliveryMethod;
                         paymentMethod: string;
                         promoCode?: string;
                         discount: number;
@@ -116,10 +117,8 @@ function useOrderPageState({ params }: PageProps) {
     }, [id, serverOrderResolved, upsertOrder]);
 
     const getDeliveryLabel = (deliveryMethod: string): string => {
-        if (deliveryMethod === 'courier') return t('order.delivery.courier');
-        if (deliveryMethod === 'pickup') return t('order.delivery.pickup');
-        if (deliveryMethod === 'venipak') return t('order.delivery.venipak');
-        return t('order.delivery.post');
+        const key = DELIVERY_METHOD_LABEL_KEYS[deliveryMethod as CheckoutDeliveryMethod];
+        return key ? t(key) : deliveryMethod;
     };
 
     const getPaymentLabel = (paymentMethod: string): string => {

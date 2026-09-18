@@ -26,6 +26,9 @@ tsconfig.tsbuildinfo
 
 # Мёртвые JSON-стораджи (реальные данные теперь в Postgres keyValueSetting) — не коммитить
 data/*.json
+# Актуальные тарифы и публичные справочники доставки нужны при сборке приложения.
+!data/delivery-tariffs.json
+!data/delivery-locations.json
 
 # Превью dry-run кропа фото товаров (scripts/crop-product-image.ts)
 /scratch-crop-preview/

@@ -8,8 +8,12 @@ function normalizeLatvianPlaceName(value: string): string {
 /** Known company/store addresses are always rendered from their Latvian source.
  * Customer-entered street names are preserved, with known Riga spellings fixed. */
 export function formatOrderAddressLatvian(
-  order: Pick<Order, 'deliveryMethod' | 'pickupStoreId' | 'address' | 'city' | 'postalCode'>
+  order: Pick<Order, 'deliveryMethod' | 'pickupStoreId' | 'address' | 'city' | 'postalCode' | 'deliveryLocation'>
 ): string {
+  if (order.deliveryLocation) {
+    const location = order.deliveryLocation
+    return [location.name, location.address, location.city, location.postalCode].filter(Boolean).join(', ')
+  }
   if (order.deliveryMethod === 'pickup') {
     const store = order.pickupStoreId
       ? stores.find((candidate) => candidate.id === order.pickupStoreId)

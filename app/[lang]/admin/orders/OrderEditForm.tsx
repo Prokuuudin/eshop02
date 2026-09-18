@@ -1,9 +1,11 @@
 'use client';
 
 import Image from 'next/image';
+import { useTranslation } from '@/lib/use-translation';
+import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { Input } from '@/components/ui/input';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
-import { calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -13,18 +15,14 @@ type Order = OrdersState['pageItems'][number];
 
 export function OrderEditForm({ order, state }: { order: Order; state: OrdersState }): React.ReactElement | null {
     const { l } = useAdminLocale();
+    const { t } = useTranslation();
     const shippingSettings = useShippingSettings();
     const {
         editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity,
-        editCountry, setEditCountry, editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch,
+        editDeliveryLocationId, setEditDeliveryLocationId, editCountry, setEditCountry, editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch,
         setEditProductSearch, editSaving, editProductResults, cancelEdit, saveEdit, editUpdateQty,
         editAddProduct,
     } = state;
-    const DELIVERY_LABELS: Record<string, string> = {
-        courier: l('Курьер', 'Courier', 'Kurjers'), pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
-        post: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), venipak: 'Venipak',
-    };
-
     if (editingOrderId !== order.id) return null;
 
     return (
@@ -34,7 +32,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                 {l('Редактирование заказа', 'Edit order', 'Pasūtījuma rediģēšana')}
                                             </p>
 
-                                            <label>{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={editCountry} onChange={e => setEditCountry(e.target.value as typeof editCountry)}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
+                                            <label>{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={editCountry} onChange={e => { setEditCountry(e.target.value as typeof editCountry); setEditDeliveryLocationId(''); }}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                                             {/* Address */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -68,25 +66,26 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                 </div>
                                             </div>
 
+                                            {requiresDeliveryLocation(editDelivery) && <DeliveryLocationPicker key={editDelivery + ':' + (editCountry)} method={editDelivery} country={editCountry} value={editDeliveryLocationId} onChange={setEditDeliveryLocationId} />}
                                             {/* Delivery method */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                                     {l('Способ доставки', 'Delivery method', 'Piegādes veids')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {(['pickup', 'courier', 'post', 'venipak'] as const).map(
+                                                    {checkoutDeliveryMethodIds.filter(dm => isDeliveryAvailable(dm, editCountry, shippingSettings)).map(
                                                         (dm) => (
                                                             <button
                                                                 key={dm}
                                                                 type="button"
-                                                                onClick={() => setEditDelivery(dm)}
+                                                                onClick={() => { setEditDelivery(dm); setEditDeliveryLocationId(''); }}
                                                                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                                                                     editDelivery === dm
                                                                         ? 'border-primary/70 bg-primary/10 text-primary dark:border-primary dark:bg-primary/40 dark:text-primary/60'
                                                                         : 'border-border text-muted-foreground hover:border-gray-400'
                                                                 }`}
                                                             >
-                                                                {DELIVERY_LABELS[dm]}{' '}
+                                                                {t(DELIVERY_METHOD_LABEL_KEYS[dm])}{' '}
                                                                 {calcDeliveryFee(dm, order.subtotal - order.discount, editCountry, shippingSettings) === 0
                                                                     ? l('(бесплатно)', '(free)', '(bez maksas)')
                                                                     : `(€${calcDeliveryFee(dm, order.subtotal - order.discount, editCountry, shippingSettings)})`}

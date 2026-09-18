@@ -440,6 +440,7 @@ model Order {
   labelUrl         String?
   shipmentCarrier  String?
   country          String   @default("LV")
+  deliveryLocation Json?
   deliveryMethod   String
   paymentMethod    String
   promoCode        String?

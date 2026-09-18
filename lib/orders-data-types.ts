@@ -58,6 +58,8 @@ export type ServerOrder = {
   trackingUrl?: string
   labelUrl?: string
   shipmentCarrier?: string
+  deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation
+  deliveryLocationId?: string
   postalCode?: string
   bonusSpent?: number
   bonusEarned?: number
@@ -121,8 +123,10 @@ export type AdminOrderUpdateInput = {
   address: string
   city: string
   country?: import('./delivery').DeliveryCountry
+  deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation
+  deliveryLocationId?: string
   postalCode?: string
-  deliveryMethod: 'courier' | 'pickup' | 'post' | 'venipak'
+  deliveryMethod: import('@/lib/delivery').CheckoutDeliveryMethod
 }
 
 export type PrepareOrder = (

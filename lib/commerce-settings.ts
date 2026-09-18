@@ -9,6 +9,11 @@ export const deliveryMethodIds = [
   'omniva',
   'dpd',
   'venipak',
+  'venipak_courier',
+  'unisend',
+  'unisend_courier',
+  'expresspasts',
+  'expresspasts_courier',
 ] as const
 
 export const paymentMethodIds = [
@@ -105,6 +110,11 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
     operationsContact: 'office@miksplus.eu',
   },
   delivery: {
+    venipak_courier: delivery('Venipak courier', ['LV', 'LT', 'EE'], 10, null, { enabled: true, notes: 'Manual shipment registration; customer confirmation 2026-09-18.' }),
+    unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, null, { enabled: true, requiresLocation: true, notes: 'Terminal lists provided. API registration pending access credentials.' }),
+    unisend_courier: delivery('Unisend courier', ['LV', 'LT', 'EE'], 5, null, { enabled: true, notes: 'Manual registration until API access is available.' }),
+    expresspasts: delivery('Expresspasts lockers', ['LV', 'LT', 'EE'], 2.5, null, { requiresLocation: true, notes: 'Tariffs provided; locker directory pending.' }),
+    expresspasts_courier: delivery('Expresspasts courier', ['LV', 'LT', 'EE'], 10, null, { enabled: true, notes: 'Tariffs provided; automatic shipment registration pending.' }),
     pickup: delivery('Самовывоз', ['LV'], 0, 0, {
       enabled: true,
       status: 'ready',
@@ -152,6 +162,10 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
 
 /** Converts the old three-method admin payload to the new editable draft. */
 export function normalizeCommerceSettings(value: unknown): CommerceSettings {
+  if (value && typeof value === 'object' && 'version' in value && value.version === 2 && 'delivery' in value) {
+    const upgraded = commerceSettingsSchema.safeParse({ ...value, delivery: { ...DEFAULT_COMMERCE_SETTINGS.delivery, ...(value.delivery as object) } })
+    if (upgraded.success) return upgraded.data
+  }
   const parsed = commerceSettingsSchema.safeParse(value)
   if (parsed.success) return parsed.data
   if (!value || typeof value !== 'object') return DEFAULT_COMMERCE_SETTINGS

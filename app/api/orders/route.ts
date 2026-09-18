@@ -1,3 +1,5 @@
+import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
+import { checkoutDeliveryMethodIds } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { isDeliveryAvailable } from '@/lib/delivery'
 import { NextRequest, NextResponse } from 'next/server'
@@ -52,6 +54,12 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
     }
     html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">${bodies[lang]}</div>`
   }
+  if (order.deliveryLocation) {
+    const location = order.deliveryLocation
+    const titles = { ru: 'Пакомат доставки', en: 'Delivery parcel locker', lv: 'Piegādes pakomāts' }
+    const details = `<p><strong>${titles[lang]}:</strong> ${escHtml(location.name)}, ${escHtml(location.address)}, ${escHtml(location.city)}, ${escHtml(location.country)} (ID: ${escHtml(location.id)})</p>`
+    html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${details}</body>`) : html + details
+  }
   await sendEmail(order.email, subjects[lang], html)
 }
 
@@ -59,6 +67,11 @@ const DELIVERY_LABELS_RU: Record<string, string> = {
   courier: 'Курьер',
   pickup: 'Самовывоз',
   post: 'Пакоматы Omniva',
+  unisend: 'Unisend',
+  unisend_courier: 'Unisend courier',
+  venipak_courier: 'Venipak courier',
+  expresspasts: 'Expresspasts',
+  expresspasts_courier: 'Expresspasts courier',
   venipak: 'Пакоматы Venipak',
 }
 
@@ -108,6 +121,7 @@ async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLa
     <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${escHtml(order.phone ?? '—')}</td></tr>
     <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${escHtml(order.address ?? '')}, ${escHtml(order.city ?? '')}${order.postalCode ? ', ' + escHtml(order.postalCode) : ''}</td></tr>
     <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${escHtml(DELIVERY_LABELS_RU[order.deliveryMethod] ?? order.deliveryMethod ?? '—')}</td></tr>
+    ${order.deliveryLocation ? `<tr><td style="padding:4px 8px">Pakomāts</td><td style="padding:4px 8px">${escHtml(order.deliveryLocation.name)}, ${escHtml(order.deliveryLocation.address)}, ${escHtml(order.deliveryLocation.city)} (ID: ${escHtml(order.deliveryLocation.id)})</td></tr>` : ''}
     ${pickupStoreLabel ? `<tr><td style="padding:4px 8px;color:#6b7280">Магазин</td><td style="padding:4px 8px">${escHtml(pickupStoreLabel)}</td></tr>` : ''}
     <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${escHtml(order.paymentMethod ?? '—')}</td></tr>
   </table>
@@ -241,7 +255,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000)) {
       return NextResponse.json({ error: 'invalid_items' }, { status: 400 })
     }
-    if (!['courier', 'pickup', 'post', 'venipak'].includes(order.deliveryMethod)) {
+    if (!(checkoutDeliveryMethodIds as readonly string[]).includes(order.deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
     if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country)) {
@@ -251,6 +265,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!isDeliveryAvailable(order.deliveryMethod, order.country, await getShippingSettings())) {
       return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
     }
+    const deliveryLocation = resolveDeliveryLocation(order.deliveryMethod, order.country, order.deliveryLocationId)
+    if (requiresDeliveryLocation(order.deliveryMethod) && !deliveryLocation) {
+      return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
+    }
+    order.deliveryLocation = deliveryLocation ?? undefined
     // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
     // 'paysera' is the online gateway (Paysera Checkout Modern, sandbox as of 2026-09-07).
     if (!['bank', 'cash', 'paysera'].includes(order.paymentMethod)) {
@@ -308,6 +327,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const orderBase: Omit<ServerOrder, 'id'> = {
       ...orderFields,
       ...pickupAddressPatch,
+      deliveryLocation: deliveryLocation ?? undefined,
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.
       userId: caller?.id,
       companyId: caller?.companyId,
@@ -394,7 +414,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (Math.random() < 0.01) void gcRateLimitStore()
 
-    return NextResponse.json({ success: true, orderId: created.id, ...(paymentUrl ? { paymentUrl } : {}) })
+    return NextResponse.json({ success: true, orderId: created.id, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
     if (error instanceof ExistingCheckoutOrderError) {
       const existing = error.order
@@ -405,7 +425,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         try {
           const payment = await createPayseraPaymentForOrder(existing)
           await updateServerOrderPayment(existing.id, { paymentSessionId: payment.payseraOrderId })
-          return NextResponse.json({ success: true, orderId: existing.id, idempotent: true, paymentUrl: payment.paymentUrl })
+          return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
         } catch (payseraError) {
           logOperationalEvent({
             event: 'paysera_create_payment_failed', level: 'error', alert: true, correlationId, orderId: existing.id,
@@ -414,7 +434,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           // can retry payment from the order page instead of getting a hard failure here.
         }
       }
-      return NextResponse.json({ success: true, orderId: existing.id, idempotent: true })
+      return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true })
     }
     logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { CartItem } from './cart-store'
 
-export type DeliveryMethod = 'courier' | 'pickup' | 'post' | 'venipak'
+export type DeliveryMethod = import('@/lib/delivery').CheckoutDeliveryMethod
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'refunded' | 'failed'
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
@@ -45,6 +45,8 @@ export interface Order {
   trackingUrl?: string
   labelUrl?: string
   shipmentCarrier?: string
+  deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation
+  deliveryLocationId?: string
   postalCode?: string
   bonusSpent?: number
   bonusEarned?: number

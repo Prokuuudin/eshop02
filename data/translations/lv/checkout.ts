@@ -1,4 +1,18 @@
 const lvCheckout: Record<string, string> = {
+  "checkout.delivery.omnivaCourier": "Omniva kurjers",
+  "checkout.delivery.venipakCourier": "Venipak kurjers",
+  "checkout.delivery.unisend": "Unisend pakomāts",
+  "checkout.delivery.unisendCourier": "Unisend kurjers",
+  "checkout.delivery.expresspasts": "Expresspasts pakomāts",
+  "checkout.delivery.expresspastsCourier": "Expresspasts kurjers",
+  "checkout.locationSearch": "Meklēt pēc pilsētas vai adreses",
+  "checkout.locationLabel": "Pakomāts",
+  "checkout.locationPlaceholder": "Izvēlieties pakomātu",
+  "checkout.locationsLoading": "Ielādē pakomātus…",
+  "checkout.locationsFailed": "Neizdevās ielādēt pakomātus. Pārlādējiet lapu.",
+  "checkout.locationsEmpty": "Pakomāti nav atrasti",
+  "checkout.errors.deliveryLocation": "Izvēlieties piegādes pakomātu",
+
     'checkout.country': 'Valsts',
     'checkout.deliveryUnavailable': 'Piegāde nav pieejama. Izvēlieties citu veidu.',
     'checkout.shippingLoadFailed': 'Neizdevās ielādēt piegādes iestatījumus. Pārlādējiet lapu.',

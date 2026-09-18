@@ -81,3 +81,12 @@ it('honours an explicitly disabled free-delivery threshold', () => {
   settings.delivery.omniva.freeFrom = null
   expect(calcDeliveryFee('post', 1000, 'LV', settings)).toBe(4)
 })
+
+it('uses new carrier prices from the updated workbook with no inferred free thresholds', () => {
+  for (const [method, prices] of Object.entries({ unisend: [2, 2.5, 2.5], unisend_courier: [5, 5, 5], expresspasts: [2.5, 4, 4], expresspasts_courier: [10, 10, 25], venipak_courier: [10, 15, 15] })) {
+    for (const [index, country] of (['LV', 'LT', 'EE'] as const).entries()) {
+      expect(calcDeliveryFee(method, 1000, country)).toBe(prices[index])
+      expect(calcDeliveryFee(method, 1000, country, DEFAULT_COMMERCE_SETTINGS)).toBe(prices[index])
+    }
+  }
+})

@@ -1,17 +1,32 @@
+import importedTariffs from '@/data/delivery-tariffs.json'
 import type { CommerceSettings } from './commerce-settings'
 
 export type DeliveryCountry = 'LV' | 'LT' | 'EE'
 /** Source: перевозка.xlsx, Sheet1. All tariffs include VAT. */
+export const checkoutDeliveryMethodIds = ['courier', 'pickup', 'post', 'venipak', 'venipak_courier', 'unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier'] as const
+export type CheckoutDeliveryMethod = (typeof checkoutDeliveryMethodIds)[number]
 export const SPREADSHEET_DELIVERY_TARIFFS = {
-  courier: { LV: 10, LT: 15, EE: 15 },
-  post: { LV: 4, LT: 8, EE: 8 },
-  venipak: { LV: 3, LT: 8, EE: 8 },
+  courier: importedTariffs.tariffs.omniva.courier,
+  post: importedTariffs.tariffs.omniva.locker,
+  venipak: importedTariffs.tariffs.venipak.locker,
+  venipak_courier: importedTariffs.tariffs.venipak.courier,
+  unisend: importedTariffs.tariffs.unisend.locker,
+  unisend_courier: importedTariffs.tariffs.unisend.courier,
+  expresspasts: importedTariffs.tariffs.expresspasts.locker,
+  expresspasts_courier: importedTariffs.tariffs.expresspasts.courier,
   pickup: { LV: 0, LT: 0, EE: 0 },
 } as const
-export const DELIVERY_FEES_EUR: Record<string, number> = { courier: 10, pickup: 0, post: 4, venipak: 3 }
+export const DELIVERY_FEES_EUR: Record<string, number> = Object.fromEntries(Object.entries(SPREADSHEET_DELIVERY_TARIFFS).map(([method, prices]) => [method, prices.LV]))
+export const DELIVERY_METHOD_LABEL_KEYS: Record<CheckoutDeliveryMethod, string> = {
+  courier: 'checkout.delivery.omnivaCourier', pickup: 'checkout.delivery.pickup', post: 'checkout.delivery.omniva', venipak: 'checkout.delivery.venipak',
+  venipak_courier: 'checkout.delivery.venipakCourier', unisend: 'checkout.delivery.unisend', unisend_courier: 'checkout.delivery.unisendCourier', expresspasts: 'checkout.delivery.expresspasts', expresspasts_courier: 'checkout.delivery.expresspastsCourier',
+}
+export const DELIVERY_METHOD_NAMES_LV: Record<CheckoutDeliveryMethod, string> = {
+  courier: 'Omniva kurjers', pickup: 'Saņemšana veikalā', post: 'Omniva pakomāts', venipak: 'Venipak pakomāts', venipak_courier: 'Venipak kurjers', unisend: 'Unisend pakomāts', unisend_courier: 'Unisend kurjers', expresspasts: 'Expresspasts pakomāts', expresspasts_courier: 'Expresspasts kurjers',
+}
 export const DEFAULT_DELIVERY_FEE_EUR = DELIVERY_FEES_EUR.courier
 export const FREE_DELIVERY_FROM_EUR = 100
-const settingsIds = { courier: 'courier_latvia', pickup: 'pickup', post: 'omniva', venipak: 'venipak' } as const
+const settingsIds = { courier: 'courier_latvia', pickup: 'pickup', post: 'omniva', venipak: 'venipak', venipak_courier: 'venipak_courier', unisend: 'unisend', unisend_courier: 'unisend_courier', expresspasts: 'expresspasts', expresspasts_courier: 'expresspasts_courier' } as const
 
 /** Spreadsheet tariffs include VAT. Unconfirmed foreign free-delivery thresholds are not applied. */
 export function calcDeliveryFee(method: string | null | undefined, subtotalAfterDiscount: number, country: DeliveryCountry = 'LV', settings?: CommerceSettings): number {
@@ -20,7 +35,7 @@ export function calcDeliveryFee(method: string | null | undefined, subtotalAfter
   const zone = configured?.countryPrices?.[country]
   const tariff = SPREADSHEET_DELIVERY_TARIFFS[method as keyof typeof SPREADSHEET_DELIVERY_TARIFFS] ?? SPREADSHEET_DELIVERY_TARIFFS.courier
   const fee = tariff[country]
-  const freeFrom = zone ? zone.freeFrom : country === 'LV' ? (configured ? configured.freeFrom : FREE_DELIVERY_FROM_EUR) : null
+  const freeFrom = zone ? zone.freeFrom : country === 'LV' ? (configured ? configured.freeFrom : ['unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier', 'venipak_courier'].includes(method ?? '') ? null : FREE_DELIVERY_FROM_EUR) : null
   return fee === 0 || (freeFrom !== null && subtotalAfterDiscount >= freeFrom) ? 0 : fee
 }
 
@@ -47,4 +62,8 @@ export function applySpreadsheetDeliveryTariffs(settings: CommerceSettings): Com
   }
   next.delivery.courier_riga.price = SPREADSHEET_DELIVERY_TARIFFS.courier.LV
   return next
+}
+
+export function requiresDeliveryLocation(method: string): boolean {
+  return method === 'venipak' || method === 'unisend'
 }

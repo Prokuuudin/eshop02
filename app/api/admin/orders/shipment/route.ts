@@ -6,7 +6,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 const url = z.union([z.literal(''), z.string().max(2000).url().refine(value => new URL(value).protocol === 'https:')])
 const schema = z.object({
   orderId: z.string().min(1).max(100),
-  shipmentCarrier: z.enum(['omniva', 'venipak', 'dpd', 'other']),
+  shipmentCarrier: z.enum(['omniva', 'venipak', 'unisend', 'expresspasts', 'dpd', 'other']),
   trackingNumber: z.string().trim().min(1).max(200),
   trackingUrl: url,
   labelUrl: url,

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { type Order } from '@/lib/orders-store';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 import { useTranslation } from '@/lib/use-translation';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
@@ -38,6 +39,7 @@ function useAdminOrdersPageState() {
     const [editAddress, setEditAddress] = useState('');
     const [editCity, setEditCity] = useState('');
     const [editCountry, setEditCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
+    const [editDeliveryLocationId, setEditDeliveryLocationId] = useState('');
     const [editPostalCode, setEditPostalCode] = useState('');
     const [editDelivery, setEditDelivery] = useState<string>('pickup');
     const [editProductSearch, setEditProductSearch] = useState('');
@@ -154,7 +156,7 @@ function useAdminOrdersPageState() {
             return false;
         }
     };
-    const { language } = useTranslation();
+    const { t, language } = useTranslation();
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
     const l = React.useCallback((ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en), [language]);
     const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -171,12 +173,7 @@ function useAdminOrdersPageState() {
         refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
         failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
     };
-    const DELIVERY_LABELS: Record<string, string> = {
-        courier: l('Курьер', 'Courier', 'Kurjers'),
-        pickup: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'),
-        post: l('Почта (Omniva)', 'Post (Omniva)', 'Pasts (Omniva)'),
-        venipak: 'Venipak',
-    };
+    const DELIVERY_LABELS = Object.fromEntries(checkoutDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
 
     const searchParams = useSearchParams();
     const [search, setSearch] = useState('');
@@ -412,6 +409,7 @@ function useAdminOrdersPageState() {
         setEditAddress(order.address);
         setEditCity(order.city);
         setEditCountry(order.country ?? 'LV');
+        setEditDeliveryLocationId(order.deliveryLocation?.id ?? '');
         setEditPostalCode(order.postalCode ?? '');
         setEditDelivery(order.deliveryMethod);
         setEditProductSearch('');
@@ -439,6 +437,7 @@ function useAdminOrdersPageState() {
                     })),
                     address: editAddress.trim() || order.address,
                     city: editCity.trim() || order.city,
+                    deliveryLocationId: editDeliveryLocationId || undefined,
                     country: editCountry,
                     postalCode: editPostalCode.trim() || undefined,
                     deliveryMethod: editDelivery,
@@ -504,6 +503,8 @@ function useAdminOrdersPageState() {
         setEditAddress,
         editCity,
         setEditCity,
+        editDeliveryLocationId,
+        setEditDeliveryLocationId,
         editCountry,
         setEditCountry,
         editPostalCode,

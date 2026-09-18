@@ -1,4 +1,18 @@
 const enCheckout: Record<string, string> = {
+  "checkout.delivery.omnivaCourier": "Omniva courier",
+  "checkout.delivery.venipakCourier": "Venipak courier",
+  "checkout.delivery.unisend": "Unisend parcel locker",
+  "checkout.delivery.unisendCourier": "Unisend courier",
+  "checkout.delivery.expresspasts": "Expresspasts parcel locker",
+  "checkout.delivery.expresspastsCourier": "Expresspasts courier",
+  "checkout.locationSearch": "Search by city or address",
+  "checkout.locationLabel": "Parcel locker",
+  "checkout.locationPlaceholder": "Select a parcel locker",
+  "checkout.locationsLoading": "Loading parcel lockers…",
+  "checkout.locationsFailed": "Could not load parcel lockers. Reload the page.",
+  "checkout.locationsEmpty": "No parcel lockers found",
+  "checkout.errors.deliveryLocation": "Select a delivery parcel locker",
+
     'checkout.country': 'Country',
     'checkout.deliveryUnavailable': 'Delivery is unavailable. Select another method.',
     'checkout.shippingLoadFailed': 'Could not load delivery settings. Reload the page.',

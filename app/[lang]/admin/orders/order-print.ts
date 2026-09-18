@@ -1,3 +1,4 @@
+import { formatOrderAddressLatvian } from '@/lib/order-address';
 import type { Order } from '@/lib/orders-store';
 import type { OrderStatus } from '@/lib/admin-store';
 import { formatEuro } from '@/lib/utils';
@@ -38,9 +39,7 @@ function buildOrderCard(
         </div>
         <p style="margin:2px 0;font-size:14px;font-weight:600">${escapeHtml(order.firstName)} ${escapeHtml(order.lastName)}</p>
         <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.email)} · ${escapeHtml(order.phone)}</p>
-        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(order.address)}, ${escapeHtml(order.city)}${
-            order.postalCode ? ', ' + escapeHtml(order.postalCode) : ''
-        }</p>
+        <p style="margin:2px 0;font-size:12px;color:#374151">${escapeHtml(formatOrderAddressLatvian(order))}${order.country ? ', ' + escapeHtml(order.country) : ''}</p>
         <p style="margin:2px 0 8px;font-size:11px;color:#9ca3af">${new Date(order.createdAt).toLocaleDateString(options.locale)}</p>
         <hr style="margin:8px 0;border:none;border-top:1px solid #e5e7eb"/>
         ${items}

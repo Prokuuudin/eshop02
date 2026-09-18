@@ -1,3 +1,4 @@
+import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
 import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -138,6 +139,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
     const discount = Math.min(input.discount, subtotal)
+    const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, input.country ?? 'LV', input.deliveryLocationId)
+    if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
     const shippingSettings = await getShippingSettings()
     if (!isDeliveryAvailable(input.deliveryMethod, input.country ?? 'LV', shippingSettings)) return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, shippingSettings)
@@ -166,6 +169,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       address: input.address || 'Самовывоз',
       city: input.city || '—',
       country: input.country,
+      deliveryLocation: deliveryLocation ?? undefined,
       postalCode: input.postalCode,
       paymentStatus: input.paymentStatus,
       paymentProvider: 'manual',

@@ -1,3 +1,4 @@
+import { checkoutDeliveryMethodIds } from './delivery'
 import { z } from 'zod'
 
 export const adminOrderCreateSchema = z.object({
@@ -13,9 +14,10 @@ export const adminOrderCreateSchema = z.object({
     // price from the DB.
     unitPrice: z.number().finite().min(0).max(1_000_000),
   })).min(1).max(200),
-  deliveryMethod: z.enum(['courier', 'pickup', 'post', 'venipak']),
+  deliveryMethod: z.enum(checkoutDeliveryMethodIds),
   address: z.string().trim().max(500).optional().default(''),
   city: z.string().trim().max(200).optional().default(''),
+  deliveryLocationId: z.string().trim().max(100).optional(),
   country: z.enum(['LV', 'LT', 'EE']).optional(),
   postalCode: z.string().trim().max(50).optional(),
   paymentMethod: z.string().trim().min(1).max(100),
@@ -35,13 +37,14 @@ export const adminOrderUpdateSchema = z.object({
   })).min(1).max(500),
   address: z.string().trim().min(1).max(500),
   city: z.string().trim().min(1).max(200),
+  deliveryLocationId: z.string().trim().max(100).optional(),
   country: z.enum(['LV', 'LT', 'EE']).optional(),
   postalCode: z.string().trim().max(50).optional(),
-  deliveryMethod: z.enum(['courier', 'pickup', 'post', 'venipak']),
+  deliveryMethod: z.enum(checkoutDeliveryMethodIds),
 }).strict()
 
 export const paymentMethodSchema = z.enum(['bank', 'cash'])
-export const deliveryMethodSchema = z.enum(['courier', 'pickup', 'post', 'venipak'])
+export const deliveryMethodSchema = z.enum(checkoutDeliveryMethodIds)
 
 export const returnRequestSchema = z.object({
   orderId: z.string().trim().min(1).max(100),

@@ -1,3 +1,4 @@
+import { DELIVERY_METHOD_NAMES_LV, type CheckoutDeliveryMethod } from './delivery'
 import { Order } from '@/lib/orders-store'
 import { translations } from '@/data/translations'
 import { displayOrderTax } from '@/lib/tax'
@@ -150,8 +151,9 @@ function paymentLabel(method: string, lang: InvoiceLang): string {
 function deliveryLabel(order: Order, address: string, city: string): string {
   const destination = [city, address, order.deliveryMethod === 'pickup' ? '' : order.postalCode].filter(Boolean).join(', ')
   if (order.deliveryMethod === 'pickup') return `Saņemšana veikalā, ${destination}`
-  if (order.deliveryMethod === 'post') return `Omniva pakomāts, ${destination}`
-  return `Kurjers, ${destination}`
+  const label = DELIVERY_METHOD_NAMES_LV[order.deliveryMethod as CheckoutDeliveryMethod] ?? 'Kurjers'
+  const location = order.deliveryLocation
+  return `${label}, ${location ? [location.name, location.address, location.city, location.postalCode].filter(Boolean).join(', ') : destination}`
 }
 
 function normalizeInvoiceLocation(value: string, lang: InvoiceLang): string {

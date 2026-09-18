@@ -1,4 +1,18 @@
 const ruCheckout: Record<string, string> = {
+  "checkout.delivery.omnivaCourier": "Omniva курьер",
+  "checkout.delivery.venipakCourier": "Venipak курьер",
+  "checkout.delivery.unisend": "Unisend пакомат",
+  "checkout.delivery.unisendCourier": "Unisend курьер",
+  "checkout.delivery.expresspasts": "Expresspasts пакомат",
+  "checkout.delivery.expresspastsCourier": "Expresspasts курьер",
+  "checkout.locationSearch": "Поиск по городу или адресу",
+  "checkout.locationLabel": "Пакомат",
+  "checkout.locationPlaceholder": "Выберите пакомат",
+  "checkout.locationsLoading": "Загрузка пакоматов…",
+  "checkout.locationsFailed": "Не удалось загрузить пакоматы. Обновите страницу.",
+  "checkout.locationsEmpty": "Пакоматы не найдены",
+  "checkout.errors.deliveryLocation": "Выберите пакомат доставки",
+
     'checkout.country': 'Страна',
     'checkout.deliveryUnavailable': 'Доставка недоступна. Выберите другой способ.',
     'checkout.shippingLoadFailed': 'Не удалось загрузить условия доставки. Обновите страницу.',

@@ -23,6 +23,13 @@ const validForm: CheckoutFormData = {
 const t = (key: string) => key;
 
 describe('validateCheckoutForm', () => {
+    it('requires a selected locker for Venipak and Unisend but not their couriers', () => {
+        for (const method of ['venipak', 'unisend'] as const) {
+            expect(validateCheckoutForm({ formData: validForm, deliveryMethod: method, pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBe('checkout.errors.deliveryLocation');
+            expect(validateCheckoutForm({ formData: validForm, deliveryMethod: method, deliveryLocationId: '8144', pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBeUndefined();
+        }
+        expect(validateCheckoutForm({ formData: validForm, deliveryMethod: 'unisend_courier', pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBeUndefined();
+    });
     it('accepts a complete individual delivery order', () => {
         expect(validateCheckoutForm({ formData: validForm, deliveryMethod: 'courier', pickupStoreId: '', termsAccepted: true }, t)).toEqual({});
     });

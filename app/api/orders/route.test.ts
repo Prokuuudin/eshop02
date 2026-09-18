@@ -45,6 +45,7 @@ import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { DEFAULT_COMMERCE_SETTINGS } from '@/lib/commerce-settings'
+import { getDeliveryLocations } from '@/lib/delivery-locations'
 import { POST } from './route'
 
 const VALID_ORDER = {
@@ -130,6 +131,24 @@ describe('POST /api/orders — admin notification', () => {
   it('passes the selected country to authoritative pricing', async () => {
     expect((await POST(makeRequest({ ...VALID_ORDER, country: 'LT' }))).status).toBe(200)
     expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ country: 'LT' }), expect.anything())
+  })
+
+  it('requires a locker from the correct carrier and country', async () => {
+    const venipak = getDeliveryLocations('venipak', 'LV')[0]
+    for (const order of [
+      { ...VALID_ORDER, deliveryMethod: 'unisend' },
+      { ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: venipak.id },
+      { ...VALID_ORDER, deliveryMethod: 'unisend', country: 'LV', deliveryLocationId: '0023' },
+    ]) expect((await POST(makeRequest(order))).status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+  it('stores an authoritative terminal snapshot instead of client-supplied address metadata', async () => {
+    const terminal = getDeliveryLocations('unisend', 'LV')[0]
+    const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: terminal.id, deliveryLocation: { id: terminal.id, address: 'FORGED ADDRESS' } }))
+    expect(response.status).toBe(200)
+    expect((await response.json()).deliveryLocation).toEqual(terminal)
+    expect(createServerOrder).toHaveBeenCalledWith(expect.objectContaining({ deliveryLocation: terminal }), expect.any(Function))
+    await vi.waitFor(() => expect(sendEmail).toHaveBeenCalledWith(VALID_ORDER.email, expect.any(String), expect.stringContaining(`ID: ${terminal.id}`)))
   })
 
   it('sends email to CONTACT_TO with order id in subject', async () => {

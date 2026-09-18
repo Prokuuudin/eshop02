@@ -1,5 +1,5 @@
 'use client';
-import { isDeliveryAvailable } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, isDeliveryAvailable } from '@/lib/delivery';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
 
 import React, { useRef, useState } from 'react';
@@ -105,12 +105,17 @@ function useCheckoutPageState() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id, currentUser?.email]);
-    const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(() => {
+    const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
-        return method === 'courier' || method === 'pickup' || method === 'post' || method === 'venipak'
-            ? method
+        return (checkoutDeliveryMethodIds as readonly (string | null)[]).includes(method)
+            ? method as DeliveryMethod
             : 'courier';
     });
+    const [deliveryLocationId, setDeliveryLocationId] = useState('');
+    const setDeliveryMethod = (method: DeliveryMethod): void => {
+        setDeliveryMethodState(method);
+        setDeliveryLocationId('');
+    };
     const [pickupStoreId, setPickupStoreId] = useState('');
     const [cashLockAlert, setCashLockAlert] = useState(false);
     const [promoCode, setPromoCode] = useState('');
@@ -181,6 +186,7 @@ function useCheckoutPageState() {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+        if (e.target.name === 'country') setDeliveryLocationId('');
         setFormData((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,
@@ -243,7 +249,7 @@ function useCheckoutPageState() {
         }
 
         const newErrors = validateCheckoutForm(
-            { formData, deliveryMethod, pickupStoreId, termsAccepted },
+            { formData, deliveryMethod, deliveryLocationId, pickupStoreId, termsAccepted },
             t
         );
         // Страховка от рассинхрона UI: наличные только при самовывозе из офиса.
@@ -296,6 +302,7 @@ function useCheckoutPageState() {
             tax: taxAmount,
             delivery: deliveryFee,
             deliveryMethod,
+            deliveryLocationId: deliveryLocationId || undefined,
             pickupStoreId: deliveryMethod === 'pickup' ? pickupStoreId : undefined,
             promoCode: appliedPromo,
             discount,
@@ -326,7 +333,7 @@ function useCheckoutPageState() {
         }
         const { orderId, paymentUrl } = createResult;
 
-        const order = { id: orderId, ...orderData };
+        const order = { id: orderId, ...orderData, deliveryLocation: createResult.deliveryLocation };
         addOrder(order);
 
         // Silently keep the address book in sync so next checkout prefills from it.
@@ -462,6 +469,8 @@ function useCheckoutPageState() {
         setInvoicePersonalCode,
         deliveryMethod,
         setDeliveryMethod,
+        deliveryLocationId,
+        setDeliveryLocationId,
         pickupStoreId,
         setPickupStoreId,
         cashLockAlert,

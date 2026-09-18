@@ -1,0 +1,61 @@
+{
+  "source": "Customer materials, 2026-09-18",
+  "hashes": {
+    "перевозка.xlsx": "03e834b8c44421e59daa70672dd91e0a4e7eeb946a5f4e594aa274c51302d7af",
+    "Venipak/venipak_locations.json": "dc60ef72326ea2540b9c8e47ad54289fa56f7119aff6f3fd794b938e1cfab2d6",
+    "Unisend/terminals-lv.csv": "f6ac814f1daa09df2947342d19540f0f7d98b9fad0c07da491a123fccf1e2781",
+    "Unisend/terminals_lt.csv": "f6ac814f1daa09df2947342d19540f0f7d98b9fad0c07da491a123fccf1e2781",
+    "Unisend/terminals_ee.csv": "f6ac814f1daa09df2947342d19540f0f7d98b9fad0c07da491a123fccf1e2781"
+  },
+  "pricesIncludeVat": true,
+  "tariffs": {
+    "omniva": {
+      "locker": {
+        "LV": 4,
+        "EE": 8,
+        "LT": 8
+      },
+      "courier": {
+        "LV": 10,
+        "EE": 15,
+        "LT": 15
+      }
+    },
+    "venipak": {
+      "locker": {
+        "LV": 3,
+        "EE": 8,
+        "LT": 8
+      },
+      "courier": {
+        "LV": 10,
+        "EE": 15,
+        "LT": 15
+      }
+    },
+    "expresspasts": {
+      "locker": {
+        "LV": 2.5,
+        "EE": 4,
+        "LT": 4
+      },
+      "courier": {
+        "LV": 10,
+        "EE": 25,
+        "LT": 10
+      }
+    },
+    "unisend": {
+      "locker": {
+        "LV": 2,
+        "EE": 2.5,
+        "LT": 2.5
+      },
+      "courier": {
+        "LV": 5,
+        "EE": 5,
+        "LT": 5
+      }
+    }
+  }
+}

@@ -1,4 +1,6 @@
 'use client';
+import { useTranslation } from '@/lib/use-translation';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
 import React from 'react';
 import { type OrderStatus } from '@/lib/admin-store';
@@ -20,6 +22,7 @@ import type { useAdminOrdersPage } from './useAdminOrdersPage';
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 
 export default function OrdersFilters({ state }: { state: OrdersState }): React.ReactElement {
+    const { t } = useTranslation();
     const { l } = useAdminLocale();
     const statusLabels: Record<OrderStatus, string> = {
         pending: l('Новый', 'New', 'Jauns'), confirmed: l('Подтверждён', 'Confirmed', 'Apstiprināts'),
@@ -93,10 +96,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{l('Все доставки', 'All deliveries', 'Visas piegādes')}</SelectItem>
-                                <SelectItem value="courier">{l('Курьер', 'Courier', 'Kurjers')}</SelectItem>
-                                <SelectItem value="pickup">{l('Самовывоз', 'Pickup', 'Saņemšana veikalā')}</SelectItem>
-                                <SelectItem value="post">{l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)')}</SelectItem>
-                                <SelectItem value="venipak">Venipak</SelectItem>
+                                {checkoutDeliveryMethodIds.map(id => <SelectItem key={id} value={id}>{t(DELIVERY_METHOD_LABEL_KEYS[id])}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>

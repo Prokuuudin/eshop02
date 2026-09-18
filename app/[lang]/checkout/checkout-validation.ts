@@ -1,3 +1,4 @@
+import { requiresDeliveryLocation } from '@/lib/delivery';
 import type { DeliveryMethod } from '@/lib/orders-store';
 import type { CheckoutFormData } from './CheckoutFormSections';
 
@@ -6,15 +7,17 @@ type Translate = (key: string) => string;
 export type CheckoutValidationInput = {
     formData: CheckoutFormData;
     deliveryMethod: DeliveryMethod;
+    deliveryLocationId?: string;
     pickupStoreId: string;
     termsAccepted: boolean;
 };
 
 export function validateCheckoutForm(
-    { formData, deliveryMethod, pickupStoreId, termsAccepted }: CheckoutValidationInput,
+    { formData, deliveryMethod, deliveryLocationId, pickupStoreId, termsAccepted }: CheckoutValidationInput,
     t: Translate
 ): Record<string, string> {
     const errors: Record<string, string> = {};
+    if (requiresDeliveryLocation(deliveryMethod) && !deliveryLocationId) errors.deliveryLocationId = t('checkout.errors.deliveryLocation');
 
     if (formData.customerType === 'individual') {
         if (!formData.phone.trim()) errors.phone = t('checkout.errors.phone');

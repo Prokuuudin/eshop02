@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import Script from 'next/script';
 import Link from 'next/link';
 import { ClipboardCheck, Info } from 'lucide-react';
@@ -16,16 +17,11 @@ import {
 } from '@/components/ui/select';
 import { stores } from '@/data/stores';
 import { DeliveryMethod } from '@/lib/orders-store';
-import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
 import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
 import { CustomerDetailsSection } from './CheckoutFormSections';
 
-const DELIVERY_OPTIONS: Array<{ id: DeliveryMethod; labelKey: string }> = [
-    { id: 'courier', labelKey: 'checkout.delivery.courier' },
-    { id: 'pickup', labelKey: 'checkout.delivery.pickup' },
-    { id: 'post', labelKey: 'checkout.delivery.omniva' },
-    { id: 'venipak', labelKey: 'checkout.delivery.venipak' },
-];
+const DELIVERY_OPTIONS = checkoutDeliveryMethodIds.map(id => ({ id, labelKey: DELIVERY_METHOD_LABEL_KEYS[id] }));
 
 import { useCheckoutPage } from './useCheckoutPage';
 import { CheckoutSummary } from './CheckoutSummary';
@@ -47,6 +43,8 @@ export default function CheckoutPage(): React.ReactElement {
             setInvoicePersonalCode,
             deliveryMethod,
             setDeliveryMethod,
+            deliveryLocationId,
+            setDeliveryLocationId,
             pickupStoreId,
             setPickupStoreId,
             cashLockAlert,
@@ -164,6 +162,8 @@ export default function CheckoutPage(): React.ReactElement {
                                     </label>
                                 ))}
                             </div>
+                            {requiresDeliveryLocation(deliveryMethod) && <DeliveryLocationPicker key={deliveryMethod + ':' + (formData.country ?? 'LV')} method={deliveryMethod} country={formData.country ?? 'LV'} value={deliveryLocationId} onChange={setDeliveryLocationId} />}
+                            {errors.deliveryLocationId && <p role="alert" className="text-sm text-red-600">{errors.deliveryLocationId}</p>}
                             {deliveryMethod === 'pickup' && (
                                 <div className="checkout__pickup-store">
                                     <label

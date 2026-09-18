@@ -82,7 +82,7 @@ export default function AdminProductsPage(): React.ReactElement {
                             archiveItems={admin.archiveItems}
                             onRestoreArchive={admin.handleRestoreProduct}
                             onDeleteArchive={async (id) => {
-                                const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: l('Товар будет окончательно удалён из архива без возможности восстановления.', 'The product will be permanently deleted from the archive.', 'Produkts tiks neatgriezeniski dzēsts no arhīva.'), confirmText: id, destructive: true });
+                                const decision = await confirmAction({ title: t('admin.productsPage.confirm.deleteForever').replace('{id}', id), description: l('Товар будет окончательно удалён из архива без возможности восстановления.', 'The product will be permanently deleted from the archive.', 'Produkts tiks neatgriezeniski dzēsts no arhīva.'), destructive: true });
                                 if (decision.confirmed) admin.handlePurgeArchivedProduct(id);
                             }}
                             onBulkRestoreArchive={async (ids) => {
@@ -105,6 +105,8 @@ export default function AdminProductsPage(): React.ReactElement {
                                 if (decision.confirmed) admin.handleBulkPurgeArchivedProducts(ids);
                             }}
                             archiveBulkPending={admin.archiveBulkPending}
+                            archiveRestoringId={admin.restoringId}
+                            archivePurgingId={admin.purgingArchiveId}
                         />
                         {bulkMode && !admin.loading && admin.products.length > 0 && (
                             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">

@@ -37,6 +37,8 @@ interface ProductsToolbarProps {
     onBulkRestoreArchive?: (ids: string[]) => void;
     onBulkDeleteArchive?: (ids: string[]) => void;
     archiveBulkPending?: boolean;
+    archiveRestoringId?: string | null;
+    archivePurgingId?: string | null;
 }
 
 const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
@@ -56,6 +58,8 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
     onBulkRestoreArchive,
     onBulkDeleteArchive,
     archiveBulkPending = false,
+    archiveRestoringId = null,
+    archivePurgingId = null,
 }) => {
     const { l } = useAdminLocale();
     const placeholder = translations[language]['admin.products.searchPlaceholder'] || '';
@@ -162,6 +166,8 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                                 onBulkRestore={onBulkRestoreArchive}
                                 onBulkDelete={onBulkDeleteArchive}
                                 bulkPending={archiveBulkPending}
+                                restoringId={archiveRestoringId}
+                                purgingId={archivePurgingId}
                             />
                         </div>
                     </DialogContent>

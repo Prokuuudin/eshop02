@@ -24,7 +24,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     const archive = await getDeletedProductsArchive()
-    return successResponse({ products: result.products, archive })
+    return successResponse({ archive })
   } catch (error) {
     logApiError("Admin products restore POST error:", error)
     return errorResponse('Internal server error', 500)

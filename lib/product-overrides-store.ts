@@ -364,7 +364,7 @@ export const deleteProductsAny = async (
 
 export const restoreDeletedProduct = async (
     productId: string
-): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
+): Promise<{ success: true } | { success: false; error: string }> => {
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
 
@@ -404,7 +404,7 @@ export const restoreDeletedProduct = async (
         await upsertProductOverride(nextId, result.overridePatch);
     }
 
-    return { success: true, products: await getAdminProducts() };
+    return { success: true };
 };
 
 export const purgeDeletedProductArchive = async (

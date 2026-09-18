@@ -204,7 +204,7 @@ export function useProductsAdmin(): ProductsAdminResult {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-      const json = (await res.json()) as ApiEnvelope<{ products: Product[]; archive: ArchivedProductRecord[] }>;
+      const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
       if (!res.ok || 'error' in json) throw new Error('failed');
       await loadProducts(1);
       setArchiveItems(json.data.archive);

@@ -14,9 +14,11 @@ interface ArchivePanelProps {
     onBulkRestore?: (ids: string[]) => void;
     onBulkDelete?: (ids: string[]) => void;
     bulkPending?: boolean;
+    restoringId?: string | null;
+    purgingId?: string | null;
 }
 
-const ArchivePanel: React.FC<ArchivePanelProps> = ({ archiveItems, onRestore, onDelete, onBulkRestore, onBulkDelete, bulkPending = false }) => {
+const ArchivePanel: React.FC<ArchivePanelProps> = ({ archiveItems, onRestore, onDelete, onBulkRestore, onBulkDelete, bulkPending = false, restoringId = null, purgingId = null }) => {
     const { locale, l } = useAdminLocale();
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
     const toggleSelected = (id: string, selected: boolean) => {
@@ -126,11 +128,25 @@ const ArchivePanel: React.FC<ArchivePanelProps> = ({ archiveItems, onRestore, on
                                     </div>
                                 </div>
                                 <div className="mt-3 flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:justify-end">
-                                    <Button size="sm" variant="outline" onClick={() => onRestore(item.id)}>
-                                        {l('Восстановить', 'Restore', 'Atjaunot')}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={restoringId === item.id || purgingId === item.id}
+                                        onClick={() => onRestore(item.id)}
+                                    >
+                                        {restoringId === item.id
+                                            ? l('Восстановление…', 'Restoring…', 'Atjaunošana…')
+                                            : l('Восстановить', 'Restore', 'Atjaunot')}
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => onDelete(item.id)}>
-                                        {l('Удалить навсегда', 'Delete permanently', 'Dzēst neatgriezeniski')}
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled={restoringId === item.id || purgingId === item.id}
+                                        onClick={() => onDelete(item.id)}
+                                    >
+                                        {purgingId === item.id
+                                            ? l('Удаление…', 'Deleting…', 'Dzēšana…')
+                                            : l('Удалить навсегда', 'Delete permanently', 'Dzēst neatgriezeniski')}
                                     </Button>
                                 </div>
                             </article>

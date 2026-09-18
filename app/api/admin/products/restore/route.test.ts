@@ -25,8 +25,8 @@ describe('POST /api/admin/products/restore', () => {
     expect((await post({ id: 'p1' })).status).toBe(400)
     expect(getDeletedProductsArchive).not.toHaveBeenCalled()
   })
-  it('returns products and the post-restore archive', async () => {
-    vi.mocked(restoreDeletedProduct).mockResolvedValue({ success: true, products: [{ id: 'p1' }] as never })
+  it('returns the post-restore archive', async () => {
+    vi.mocked(restoreDeletedProduct).mockResolvedValue({ success: true })
     vi.mocked(getDeletedProductsArchive).mockResolvedValue([])
     const response = await post({ id: ' p1 ' })
     expect(response.status).toBe(200)

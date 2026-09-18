@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { Section, Token, TypeRow } from './DesignSystemPrimitives';
+import DesignSystemPatterns from './DesignSystemPatterns';
+import { ProductBadges } from '@/components/ProductBadges';
 
 // ─── page ──────────────────────────────────────────────────────────────────
 
@@ -31,9 +33,9 @@ export default function DesignSystemPage(): React.ReactElement {
                         </h1>
                         <p className="mt-2 text-sm text-muted-foreground max-w-xl">
                             {l(
-                                'Визуальный справочник токенов, компонентов и паттернов проекта. Все элементы рендерятся из реального кода.',
-                                'A visual reference for the project’s tokens, components, and patterns. All elements are rendered from production code.',
-                                'Projekta marķieru, komponentu un šablonu vizuālā rokasgrāmata. Visi elementi tiek renderēti no reālā koda.'
+                                'Визуальный справочник токенов, компонентов и паттернов проекта. Базовые компоненты импортированы из проекта; составные примеры отмечены отдельно.',
+                                'A visual reference for the project’s tokens, components, and patterns. Base components are imported from the project; composed examples are identified separately.',
+                                'Projekta marķieru, komponentu un šablonu vizuālā rokasgrāmata. Pamata komponenti ir importēti no projekta; saliktie piemēri ir norādīti atsevišķi.'
                             )}
                         </p>
                     </div>
@@ -184,7 +186,7 @@ export default function DesignSystemPage(): React.ReactElement {
 
                     <Card>
                         <CardContent className="pt-4 px-5 pb-5">
-                            <div className="mb-3 flex gap-8">
+                            <div className="mb-3 hidden sm:flex gap-8">
                                 <span className="text-[11px] font-mono text-muted-foreground w-24">
                                     class
                                 </span>
@@ -417,6 +419,7 @@ export default function DesignSystemPage(): React.ReactElement {
                             <Button size="sm">Small</Button>
                             <Button size="default">Default</Button>
                             <Button size="lg">Large</Button>
+                            <Button size="cta">CTA · 44px</Button>
                             <Button size="icon" aria-label="icon">
                                 ✦
                             </Button>
@@ -450,19 +453,7 @@ export default function DesignSystemPage(): React.ReactElement {
                         <Badge variant="secondary">Secondary</Badge>
                         <Badge variant="destructive">Destructive</Badge>
                         <Badge variant="outline">Outline</Badge>
-                        {/* Custom project badges */}
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                            Bonus
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary dark:bg-primary/40 dark:text-primary">
-                            {l('Новинка', 'New', 'Jaunums')}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                            {l('В наличии', 'In stock', 'Ir noliktavā')}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                            {l('Нет в наличии', 'Out of stock', 'Nav noliktavā')}
-                        </span>
+                        <ProductBadges badges={['sale', 'new', 'bestseller']} />
                     </div>
                 </Section>
 
@@ -476,7 +467,9 @@ export default function DesignSystemPage(): React.ReactElement {
                                 {l('Состояния поля', 'Input states', 'Ievades lauka stāvokļi')}
                             </p>
                             <div className="space-y-2">
+                                <label htmlFor="ds-input-default" className="block text-sm font-medium">{l('Обычное поле', 'Default field', 'Parasts lauks')}</label>
                                 <Input
+                                    id="ds-input-default"
                                     placeholder={l(
                                         'Подсказка по умолчанию',
                                         'Default placeholder',
@@ -484,6 +477,7 @@ export default function DesignSystemPage(): React.ReactElement {
                                     )}
                                 />
                                 <Input
+                                    aria-label={l('Заполненное поле', 'Filled field', 'Aizpildīts lauks')}
                                     defaultValue={l(
                                         'Заполненное значение',
                                         'Filled value',
@@ -491,6 +485,7 @@ export default function DesignSystemPage(): React.ReactElement {
                                     )}
                                 />
                                 <Input
+                                    aria-label={l('Отключённое поле', 'Disabled field', 'Atspējots lauks')}
                                     disabled
                                     placeholder={l('Отключено', 'Disabled', 'Atspējots')}
                                 />
@@ -501,9 +496,11 @@ export default function DesignSystemPage(): React.ReactElement {
                                         'Error state',
                                         'Kļūdas stāvoklis'
                                     )}
+                                    aria-label={l('Поле с ошибкой', 'Field with error', 'Lauks ar kļūdu')}
+                                    aria-describedby="ds-input-error"
                                     aria-invalid
                                 />
-                                <p className="text-xs text-destructive">
+                                <p id="ds-input-error" className="text-xs text-destructive">
                                     {l(
                                         'Поле обязательно для заполнения',
                                         'This field is required',
@@ -514,8 +511,9 @@ export default function DesignSystemPage(): React.ReactElement {
                         </div>
 
                         <div className="space-y-3">
-                            <p className="text-xs text-muted-foreground font-medium">Textarea</p>
+                            <label htmlFor="ds-textarea" className="block text-sm font-medium">Textarea</label>
                             <Textarea
+                                id="ds-textarea"
                                 placeholder={l(
                                     'Введите текст...',
                                     'Enter text...',
@@ -524,6 +522,7 @@ export default function DesignSystemPage(): React.ReactElement {
                                 className="min-h-[120px]"
                             />
                             <Textarea
+                                aria-label={l('Отключённое текстовое поле', 'Disabled textarea', 'Atspējots teksta lauks')}
                                 disabled
                                 placeholder={l(
                                     'Отключённое текстовое поле',
@@ -639,22 +638,6 @@ export default function DesignSystemPage(): React.ReactElement {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-                            <CardHeader>
-                                <CardTitle>Amber · Bonus</CardTitle>
-                                <CardDescription>
-                                    {l(
-                                        'Используется в BonusSection',
-                                        'Used in BonusSection',
-                                        'Izmanto BonusSection'
-                                    )}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <span className="text-2xl">⭐</span>
-                            </CardContent>
-                        </Card>
-
                         <Card className="border-destructive/30 bg-destructive/5">
                             <CardHeader>
                                 <CardTitle>Destructive</CardTitle>
@@ -707,6 +690,7 @@ export default function DesignSystemPage(): React.ReactElement {
                         '8 · Atgriezeniskā saite un paziņojumi'
                     )}
                 >
+                    <p className="text-sm text-muted-foreground">{l('Составные примеры сообщений на странице. Рабочие toast доступны ниже в разделе диалогов и уведомлений.', 'Composed inline message examples. Production toasts are available below in the dialogs and notifications section.', 'Salikti lapas ziņojumu piemēri. Projekta toast ir pieejami zemāk dialogu un paziņojumu sadaļā.')}</p>
                     <div className="space-y-2">
                         <div className="rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
                             ✓{' '}
@@ -775,14 +759,16 @@ export default function DesignSystemPage(): React.ReactElement {
 
                 <Separator />
 
+                <DesignSystemPatterns />
+
                 {/* ── Footer ────────────────────────────────────────────────── */}
                 <div className="text-xs text-muted-foreground pb-6">
                     HairShop-Pro · {l('Дизайн-система', 'Design system', 'Dizaina sistēma')} ·
                     Tailwind CSS + Shadcn/ui · Instrument Sans ·{' '}
                     {l(
-                        'сформировано из рабочих компонентов',
-                        'generated from live components',
-                        'izveidots no reāliem komponentiem'
+                        'рабочие компоненты и составные примеры',
+                        'production components and composed examples',
+                        'projekta komponenti un salikti piemēri'
                     )}
                 </div>
             </main>

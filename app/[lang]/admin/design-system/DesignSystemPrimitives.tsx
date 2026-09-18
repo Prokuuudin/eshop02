@@ -49,17 +49,17 @@ export function TypeRow({
 }: {
     size: string;
     tailwind: string;
-    weight: string;
+    weight: 'regular' | 'medium' | 'semibold' | 'bold' | 'extrabold';
     sample: string;
 }): React.ReactElement {
     return (
-        <div className="flex items-baseline gap-6 py-2 border-b border-border last:border-0">
+        <div className="flex flex-wrap items-baseline gap-3 sm:gap-6 py-2 border-b border-border last:border-0">
             <div className="w-24 shrink-0">
                 <span className="text-[11px] font-mono text-muted-foreground">{tailwind}</span>
             </div>
             <div className="w-16 shrink-0 text-[11px] text-muted-foreground">{size}</div>
             <div className="w-24 shrink-0 text-[11px] text-muted-foreground">{weight}</div>
-            <p className={`${tailwind} text-foreground leading-tight`}>{sample}</p>
+            <p className={`${tailwind} ${{ regular: 'font-normal', medium: 'font-medium', semibold: 'font-semibold', bold: 'font-bold', extrabold: 'font-extrabold' }[weight]} min-w-0 break-words text-foreground leading-tight`}>{sample}</p>
         </div>
     );
 }

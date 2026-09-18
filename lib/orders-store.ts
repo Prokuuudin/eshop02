@@ -40,6 +40,11 @@ export interface Order {
   phone: string
   address: string
   city: string
+  country?: import('./delivery').DeliveryCountry
+  trackingNumber?: string
+  trackingUrl?: string
+  labelUrl?: string
+  shipmentCarrier?: string
   postalCode?: string
   bonusSpent?: number
   bonusEarned?: number

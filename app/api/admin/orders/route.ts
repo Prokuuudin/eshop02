@@ -1,3 +1,5 @@
+import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
+import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
@@ -15,11 +17,6 @@ import { adminOrderCreateSchema, adminOrderUpdateSchema } from '@/lib/api-schema
 import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
-
-// Mirrors the delivery cost table shown in the admin "new order" form
-// (app/[lang]/admin/orders/new) - computed here too so a tampered client
-// request can't set an arbitrary delivery cost.
-const DELIVERY_COSTS: Record<string, number> = { pickup: 0, courier: 5, post: 3 }
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -141,7 +138,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
     const discount = Math.min(input.discount, subtotal)
-    const delivery = DELIVERY_COSTS[input.deliveryMethod] ?? 0
+    const shippingSettings = await getShippingSettings()
+    if (!isDeliveryAvailable(input.deliveryMethod, input.country ?? 'LV', shippingSettings)) return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
+    const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, shippingSettings)
     const total = Math.max(0, Math.round((subtotal - discount + delivery) * 100) / 100)
 
     const existingCustomer = await prisma.user.findFirst({
@@ -166,6 +165,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       phone: input.phone ?? '',
       address: input.address || 'Самовывоз',
       city: input.city || '—',
+      country: input.country,
       postalCode: input.postalCode,
       paymentStatus: input.paymentStatus,
       paymentProvider: 'manual',

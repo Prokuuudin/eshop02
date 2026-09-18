@@ -28,6 +28,11 @@ const deliveryMethodSchema = z.object({
   countries: z.array(z.enum(['LV', 'LT', 'EE'])).min(1),
   price: z.number().finite().min(0).max(10_000).nullable(),
   freeFrom: z.number().finite().min(0).max(1_000_000).nullable(),
+  countryPrices: z.object({
+    LV: z.object({ price: z.number().finite().min(0).max(10_000), freeFrom: z.number().finite().min(0).max(1_000_000).nullable() }).optional(),
+    LT: z.object({ price: z.number().finite().min(0).max(10_000), freeFrom: z.number().finite().min(0).max(1_000_000).nullable() }).optional(),
+    EE: z.object({ price: z.number().finite().min(0).max(10_000), freeFrom: z.number().finite().min(0).max(1_000_000).nullable() }).optional(),
+  }).optional(),
   maxWeightKg: z.number().finite().positive().max(10_000).nullable(),
   maxDimensionsCm: z.string().trim().max(100),
   eta: z.string().trim().max(100),
@@ -106,13 +111,14 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       notes: 'Только офис Hairshop Pro (Rencēnu iela 10A) — не вся сеть из 7 магазинов.',
     }),
     courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100, { enabled: true }),
-    courier_latvia: delivery('Курьер по Латвии', ['LV'], 10, 200, { enabled: true }),
-    omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 200, {
+    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: true, countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
+    omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 100, {
       enabled: true,
       maxWeightKg: 30,
       maxDimensionsCm: '38 × 64 × 19',
+      countryPrices: { LT: { price: 8, freeFrom: null }, EE: { price: 8, freeFrom: null } },
       requiresLocation: true,
-      notes: 'Тариф (с НДС): пакомат LV 4 € / EE,LT 8 €; курьер Omniva LV 10 € / EE,LT 15 €. Бесплатно от 200 € — только по Латвии, на EE/LT порог не действует (схема хранит один freeFrom на метод — уточнить перед подключением реального чекаута). Курьерская услуга самого Omniva как отдельный способ оплаты пока не смоделирована. Пакомат выбирает клиент при оформлении, список — с сайта перевозчика. Договор/API-доступ — тот же аккаунт перевозчика, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
+      notes: 'Тариф (с НДС): пакомат LV 4 € / EE,LT 8 €; курьер Omniva LV 10 € / EE,LT 15 €. Порог бесплатной доставки по Латвии нужно подтвердить, на EE/LT порог не действует (freeFrom настраивается по странам). Курьерская услуга самого Omniva как отдельный способ оплаты пока не смоделирована. Пакомат выбирает клиент при оформлении, список — с сайта перевозчика. Договор/API-доступ — тот же аккаунт перевозчика, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
     }),
     dpd: delivery('DPD', ['LV', 'LT', 'EE'], null, null, {
       requiresLocation: true,
@@ -120,12 +126,13 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       maxDimensionsCm: '30 × 30 × 20',
       notes: 'Габариты/вес подтверждены. Договор/API-доступ — тот же аккаунт DPD, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен. Тарифы по странам/зонам и список пакоматов ещё нет — заказчик даст данные или посмотреть в админке hairshop.lv.',
     }),
-    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, 200, {
+    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, 100, {
       enabled: true,
+      countryPrices: { LT: { price: 8, freeFrom: null }, EE: { price: 8, freeFrom: null } },
       requiresLocation: true,
       maxWeightKg: 30,
       maxDimensionsCm: '30 × 30 × 20',
-      notes: 'Тариф (с НДС): пакомат LV 3 € / EE,LT 8 €; курьер Venipak LV 10 € / EE,LT 15 €. Бесплатно от 200 € — только по Латвии (см. ту же оговорку про freeFrom, что и у Omniva). Договор/API-доступ — тот же аккаунт Venipak, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
+      notes: 'Тариф (с НДС): пакомат LV 3 € / EE,LT 8 €; курьер Venipak LV 10 € / EE,LT 15 €. Порог бесплатной доставки по Латвии нужно подтвердить (см. ту же оговорку про freeFrom, что и у Omniva). Договор/API-доступ — тот же аккаунт Venipak, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен.',
     }),
   },
   payment: {

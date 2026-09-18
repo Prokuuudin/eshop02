@@ -120,8 +120,8 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: null,
     })
 
-    expect(r.delivery).toBe(5) // €5, not €500
-    expect(r.total).toBe(11) // €6 order costs €11, not €506
+    expect(r.delivery).toBe(10) // EUR 10, VAT included
+    expect(r.total).toBe(16) // EUR 6 goods + EUR 10 courier
   })
 
   it('applies free delivery from €100 of subtotal', async () => {

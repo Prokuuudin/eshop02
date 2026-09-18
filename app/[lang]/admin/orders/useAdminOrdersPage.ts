@@ -37,6 +37,7 @@ function useAdminOrdersPageState() {
     const [editItems, setEditItems] = useState<EditItem[]>([]);
     const [editAddress, setEditAddress] = useState('');
     const [editCity, setEditCity] = useState('');
+    const [editCountry, setEditCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
     const [editPostalCode, setEditPostalCode] = useState('');
     const [editDelivery, setEditDelivery] = useState<string>('pickup');
     const [editProductSearch, setEditProductSearch] = useState('');
@@ -410,6 +411,7 @@ function useAdminOrdersPageState() {
         setEditItems(orderToEditItems(order));
         setEditAddress(order.address);
         setEditCity(order.city);
+        setEditCountry(order.country ?? 'LV');
         setEditPostalCode(order.postalCode ?? '');
         setEditDelivery(order.deliveryMethod);
         setEditProductSearch('');
@@ -437,6 +439,7 @@ function useAdminOrdersPageState() {
                     })),
                     address: editAddress.trim() || order.address,
                     city: editCity.trim() || order.city,
+                    country: editCountry,
                     postalCode: editPostalCode.trim() || undefined,
                     deliveryMethod: editDelivery,
                 }),
@@ -501,6 +504,8 @@ function useAdminOrdersPageState() {
         setEditAddress,
         editCity,
         setEditCity,
+        editCountry,
+        setEditCountry,
         editPostalCode,
         setEditPostalCode,
         editDelivery,

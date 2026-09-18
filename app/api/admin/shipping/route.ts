@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { applySpreadsheetDeliveryTariffs } from '@/lib/delivery'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
@@ -13,7 +14,7 @@ export async function GET(): Promise<Response> {
 
   try {
     const row = await prisma.keyValueSetting.findUnique({ where: { key: COMMERCE_SETTINGS_KEY } })
-    return NextResponse.json(normalizeCommerceSettings(row?.value))
+    return NextResponse.json(applySpreadsheetDeliveryTariffs(normalizeCommerceSettings(row?.value)))
   } catch {
     return NextResponse.json({ error: 'failed_to_read_settings' }, { status: 500 })
   }
@@ -27,7 +28,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
   if (!parsed.success) {
     return NextResponse.json({ error: 'invalid_shipping_settings', issues: parsed.error.issues }, { status: 400 })
   }
-  const body = parsed.data
+  const body = applySpreadsheetDeliveryTariffs(parsed.data)
 
   try {
     await prisma.$transaction(async (tx) => {

@@ -1,4 +1,7 @@
 'use client';
+import { isDeliveryAvailable } from '@/lib/delivery';
+import { useShippingSettings } from '@/lib/use-shipping-settings';
+
 import React, { useRef, useState } from 'react';
 import {
     EmptyCartView,
@@ -38,6 +41,7 @@ import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
+    const shippingSettings = useShippingSettings();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const { items, removeItem, updateQuantity, replaceWithItems } = useCart();
@@ -70,6 +74,7 @@ function useCheckoutPageState() {
         phone: searchParams.get('phone') ?? '',
         address: searchParams.get('address') ?? '',
         city: searchParams.get('city') ?? '',
+        country: 'LV',
         postalCode: searchParams.get('postalCode') ?? '',
         paymentMethod: 'bank',
     }));
@@ -222,6 +227,10 @@ function useCheckoutPageState() {
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
+        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings)) {
+            showToast(t('checkout.deliveryUnavailable', 'Delivery is unavailable. Select another method.'), 'error');
+            return;
+        }
         setIsSubmitting(true);
 
         if (!isCheckoutAllowedForRole) {
@@ -419,6 +428,8 @@ function useCheckoutPageState() {
         campaignDiscount: campaignOffer.discount,
         freeShipping: campaignOffer.freeShipping,
         deliveryMethod,
+        country: formData.country,
+        shippingSettings,
         bonusApplicable,
         bonusApplied,
         bonusBalance: userBonusBalance,
@@ -427,6 +438,7 @@ function useCheckoutPageState() {
     });
 
     return {
+        shippingSettings,
         t,
         language,
         showToast,

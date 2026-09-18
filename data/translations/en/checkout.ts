@@ -1,4 +1,8 @@
 const enCheckout: Record<string, string> = {
+    'checkout.country': 'Country',
+    'checkout.deliveryUnavailable': 'Delivery is unavailable. Select another method.',
+    'checkout.shippingLoadFailed': 'Could not load delivery settings. Reload the page.',
+    'order.trackShipment': 'Track shipment',
   'checkout.errors.paymentGateway': 'Unable to connect to Paysera. Choose bank transfer or try again later.',
   'cart.title': 'Cart',
   'cart.openFullCart': 'Open full screen',

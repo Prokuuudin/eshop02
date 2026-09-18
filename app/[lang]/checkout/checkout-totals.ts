@@ -9,6 +9,8 @@ type CheckoutTotalsInput = {
     appliedPromoDiscountPct: number | null;
     campaignDiscount: number;
     freeShipping: boolean;
+    country?: import('@/lib/delivery').DeliveryCountry;
+    shippingSettings?: import('@/lib/commerce-settings').CommerceSettings;
     deliveryMethod: DeliveryMethod;
     bonusApplicable: boolean;
     bonusApplied: boolean;
@@ -37,7 +39,7 @@ export function calculateCheckoutTotals(input: CheckoutTotalsInput): {
     const subtotalAfterDiscount = input.subtotal - discount;
     const deliveryFee = input.freeShipping
         ? 0
-        : calcDeliveryFee(input.deliveryMethod, subtotalAfterDiscount);
+        : calcDeliveryFee(input.deliveryMethod, subtotalAfterDiscount, input.country, input.shippingSettings);
     const taxAmount = extractVat(subtotalAfterDiscount);
     const grandTotal = subtotalAfterDiscount + deliveryFee;
     const maxBonusSpendPoints = input.bonusApplicable

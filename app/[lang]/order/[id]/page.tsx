@@ -46,6 +46,10 @@ return (
                     </p>
                 </div>
 
+                {order.trackingNumber && <div className="mb-4 rounded border p-4">
+                  <p>{order.shipmentCarrier}: {order.trackingNumber}</p>
+                  {order.trackingUrl && <a className="text-primary underline" href={order.trackingUrl} target="_blank" rel="noopener noreferrer">{t('order.trackShipment', 'Track shipment')}</a>}
+                </div>}
                 {/* Order details */}
                 <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
                     {/* Main info */}
@@ -130,7 +134,7 @@ return (
                                 </p>
                                 <p>
                                     <span className="font-medium">{t('order.address')}:</span>{' '}
-                                    {displayAddress}
+                                    {displayAddress}{order.country && order.country !== 'LV' ? `, ${order.country}` : ''}
                                 </p>
                                 <p>
                                     <span className="font-medium">{t('order.phone')}:</span>{' '}

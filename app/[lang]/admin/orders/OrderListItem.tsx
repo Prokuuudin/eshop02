@@ -175,7 +175,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                     order.deliveryMethod}
                                             </p>
                                             <div className="text-sm text-foreground space-y-0.5">
-                                                <p>{formatOrderAddressLatvian(order)}</p>
+                                                <p>{formatOrderAddressLatvian(order)}{order.country && order.country !== 'LV' ? `, ${order.country}` : ''}</p>
                                             </div>
                                         </div>
 

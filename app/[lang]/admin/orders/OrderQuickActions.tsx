@@ -1,5 +1,6 @@
 'use client'
 
+import { ShipmentForm } from './ShipmentForm'
 import { useState } from 'react'
 import type { OrderStatus } from '@/lib/admin-store'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -87,6 +88,7 @@ export function OrderQuickActions({ order, state, status }: {
           {deletingOrderIds.has(order.id) ? l('Удаление…', 'Deleting…', 'Dzēš…') : l('Удалить заказ', 'Delete order', 'Dzēst pasūtījumu')}
         </button>
       )}
+      <ShipmentForm order={order} />
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>

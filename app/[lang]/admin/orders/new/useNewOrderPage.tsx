@@ -1,4 +1,7 @@
 'use client';
+import { useShippingSettings } from '@/lib/use-shipping-settings'
+import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
+
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -41,7 +44,7 @@ type CustomerSuggestion = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DELIVERY_COSTS: Record<DeliveryMethod, number> = { pickup: 0, courier: 5, post: 4, venipak: 3 };
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -81,6 +84,7 @@ function useNewOrderPageState() {
     const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup');
     const [address, setAddress] = useState('');
     const [city, setCity] = useState('');
+    const [country, setCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
     const [postalCode, setPostalCode] = useState('');
 
     // ── Payment
@@ -243,7 +247,8 @@ function useNewOrderPageState() {
 
     const discount = Math.max(discountFromPromo, discountFromManual);
 
-    const deliveryCost = DELIVERY_COSTS[deliveryMethod] ?? 0;
+    const shippingSettings = useShippingSettings();
+    const deliveryCost = calcDeliveryFee(deliveryMethod, subtotal - discount, country, shippingSettings);
 
     const total = Math.max(0, subtotal - discount + deliveryCost);
 
@@ -251,6 +256,7 @@ function useNewOrderPageState() {
 
     const validate = (): string[] => {
         const errs: string[] = [];
+        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, country, shippingSettings)) errs.push(l('\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430', 'Delivery unavailable', 'Pieg\u0101de nav pieejama'));
         if (!email.trim()) errs.push(l('Email покупателя обязателен', 'Customer email is required', 'Klienta e-pasts ir obligāts'));
         if (!firstName.trim()) errs.push(l('Имя покупателя обязательно', 'Customer first name is required', 'Klienta vārds ir obligāts'));
         if (items.length === 0) errs.push(l('Добавьте хотя бы один товар', 'Add at least one product', 'Pievienojiet vismaz vienu preci'));
@@ -284,6 +290,7 @@ function useNewOrderPageState() {
                         quantity: i.quantity,
                         unitPrice: i.unitPrice,
                     })),
+                    country,
                     deliveryMethod,
                     address: address.trim(),
                     city: city.trim(),
@@ -372,6 +379,9 @@ function useNewOrderPageState() {
         setManualDiscountPct,
         deliveryMethod,
         setDeliveryMethod,
+        country,
+        setCountry,
+        shippingSettings,
         address,
         setAddress,
         city,

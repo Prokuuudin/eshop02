@@ -1,3 +1,5 @@
+import { getShippingSettings } from '@/lib/shipping-settings-server'
+import { isDeliveryAvailable } from '@/lib/delivery'
 import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
@@ -242,6 +244,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!['courier', 'pickup', 'post', 'venipak'].includes(order.deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
+    if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country)) {
+      return NextResponse.json({ error: 'invalid_delivery_country' }, { status: 400 })
+    }
+    order.country = order.country ?? 'LV'
+    if (!isDeliveryAvailable(order.deliveryMethod, order.country, await getShippingSettings())) {
+      return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
+    }
     // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
     // 'paysera' is the online gateway (Paysera Checkout Modern, sandbox as of 2026-09-07).
     if (!['bank', 'cash', 'paysera'].includes(order.paymentMethod)) {
@@ -320,6 +329,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const pricing = await recomputeOrderPricing({
         items: items.map((item) => ({ id: item.id, quantity: item.quantity, price: item.price })),
         promoCode: order.promoCode,
+        country: order.country,
         deliveryMethod: order.deliveryMethod,
         bonusSpent: order.bonusSpent,
         userBonusBalance: currentBonusBalance,

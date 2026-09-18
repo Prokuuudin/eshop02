@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
-import { EDIT_DELIVERY_COSTS } from './order-config';
+import { useShippingSettings } from '@/lib/use-shipping-settings';
+import { calcDeliveryFee } from '@/lib/delivery';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -12,9 +13,10 @@ type Order = OrdersState['pageItems'][number];
 
 export function OrderEditForm({ order, state }: { order: Order; state: OrdersState }): React.ReactElement | null {
     const { l } = useAdminLocale();
+    const shippingSettings = useShippingSettings();
     const {
         editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity,
-        editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch,
+        editCountry, setEditCountry, editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch,
         setEditProductSearch, editSaving, editProductResults, cancelEdit, saveEdit, editUpdateQty,
         editAddProduct,
     } = state;
@@ -32,6 +34,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                 {l('Редактирование заказа', 'Edit order', 'Pasūtījuma rediģēšana')}
                                             </p>
 
+                                            <label>{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={editCountry} onChange={e => setEditCountry(e.target.value as typeof editCountry)}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                                             {/* Address */}
                                             <div className="space-y-2">
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -84,9 +87,9 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                                 }`}
                                                             >
                                                                 {DELIVERY_LABELS[dm]}{' '}
-                                                                {EDIT_DELIVERY_COSTS[dm] === 0
+                                                                {calcDeliveryFee(dm, order.subtotal - order.discount, editCountry, shippingSettings) === 0
                                                                     ? l('(бесплатно)', '(free)', '(bez maksas)')
-                                                                    : `(€${EDIT_DELIVERY_COSTS[dm]})`}
+                                                                    : `(€${calcDeliveryFee(dm, order.subtotal - order.discount, editCountry, shippingSettings)})`}
                                                             </button>
                                                         )
                                                     )}
@@ -231,7 +234,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                             {editItems.length > 0 &&
                                                 (() => {
                                                     const { subtotal: newSub, delivery: newDel, discount: newDisc, total: newTotal } =
-                                                        calculateOrderEditSummary(order, editItems, editDelivery);
+                                                        calculateOrderEditSummary({ ...order, country: editCountry }, editItems, editDelivery, shippingSettings);
                                                     return (
                                                         <div className="flex justify-end">
                                                             <div className="text-sm space-y-1 min-w-[220px]">

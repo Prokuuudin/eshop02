@@ -62,5 +62,5 @@ export const PAYMENT_COLORS: Record<string, string> = {
   failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
 }
 
-export const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 5, pickup: 0, post: 4, venipak: 3 }
+export const EDIT_DELIVERY_COSTS: Record<string, number> = { courier: 10, pickup: 0, post: 4, venipak: 3 }
 export const ORDERS_PAGE_SIZE = 25

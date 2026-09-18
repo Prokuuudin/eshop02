@@ -1,4 +1,8 @@
 const ruCheckout: Record<string, string> = {
+    'checkout.country': 'Страна',
+    'checkout.deliveryUnavailable': 'Доставка недоступна. Выберите другой способ.',
+    'checkout.shippingLoadFailed': 'Не удалось загрузить условия доставки. Обновите страницу.',
+    'order.trackShipment': 'Отследить посылку',
   'checkout.errors.paymentGateway': 'Не удалось подключить оплату Paysera. Выберите банковский перевод или попробуйте позже.',
   'cart.title': 'Корзина',
   'cart.openFullCart': 'Открыть на весь экран',

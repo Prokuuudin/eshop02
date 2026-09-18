@@ -1,4 +1,6 @@
 'use client';
+import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+
 
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,9 @@ export default function NewOrderPage(): React.ReactElement {
             setManualDiscountPct,
             deliveryMethod,
             setDeliveryMethod,
+            country,
+            setCountry,
+            shippingSettings,
             address,
             setAddress,
             city,
@@ -73,12 +78,12 @@ export default function NewOrderPage(): React.ReactElement {
             discountFromManual,
             selectCls,
           } = pageState;
-    const deliveryOptions: DeliveryOption[] = [
+    const deliveryOptions: DeliveryOption[] = ([
         { value: 'pickup', label: l('Самовывоз', 'Pickup', 'Saņemšana veikalā'), cost: 0 },
-        { value: 'courier', label: l('Курьер', 'Courier', 'Kurjers'), cost: 5 },
+        { value: 'courier', label: l('Курьер', 'Courier', 'Kurjers'), cost: 10 },
         { value: 'post', label: l('Почта (Omniva)', 'Parcel terminal (Omniva)', 'Pakomāts (Omniva)'), cost: 4 },
         { value: 'venipak', label: 'Venipak', cost: 3 },
-    ];
+    ] satisfies DeliveryOption[]).filter(option => isDeliveryAvailable(option.value, country, shippingSettings)).map(option => ({ ...option, cost: calcDeliveryFee(option.value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
     return (
         <AdminGate access="partial">
             <main className="w-full py-4">
@@ -272,6 +277,7 @@ export default function NewOrderPage(): React.ReactElement {
 
                         {/* Delivery */}
                         <Section title={l('Доставка', 'Delivery', 'Piegāde')}>
+                            <label className="mb-3 block">{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={country} onChange={e => setCountry(e.target.value as typeof country)}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                             <div className="flex flex-wrap gap-2">
                                 {deliveryOptions.map((opt) => (
                                     <button

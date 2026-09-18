@@ -1,3 +1,4 @@
+import { getShippingSettings } from './shipping-settings-server'
 import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
@@ -189,6 +190,7 @@ export async function evaluatePromoCode(
 export type RecomputeInput = {
   items: LineItemInput[]
   promoCode?: string | null
+  country?: import('./delivery').DeliveryCountry
   deliveryMethod?: string | null
   bonusSpent?: number | null
   /** Authenticated user's real bonus balance; null/undefined for guests (no bonus allowed). */
@@ -221,7 +223,7 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
   const usePromo = promo.valid && promo.discount >= campaign.discount
   const discount = usePromo ? promo.discount : campaign.discount
 
-  const delivery = campaign.freeShipping ? 0 : calcDeliveryFee(input.deliveryMethod, subtotal - discount)
+  const delivery = campaign.freeShipping ? 0 : calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, await getShippingSettings(db))
   // Catalog prices already include VAT — tax here is informational only, not added to the total.
   const tax = extractVat(subtotal - discount)
   const grandTotal = subtotal - discount + delivery

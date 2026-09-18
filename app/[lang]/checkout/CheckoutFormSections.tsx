@@ -22,6 +22,7 @@ export type CheckoutFormData = {
   phone: string
   address: string
   city: string
+  country?: import('@/lib/delivery').DeliveryCountry
   postalCode: string
   paymentMethod: string
 }
@@ -137,6 +138,11 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
           <FieldError id="checkout-phone-error" message={errors.phone} />
         </div>
       </div>
+      <label className="mt-4 block text-sm">{t('checkout.country', 'Country')}
+        <select className="ml-3 rounded border border-border bg-card p-2" name="country" value={formData.country ?? 'LV'} onChange={onChange}>
+          <option value="LV">Latvija</option><option value="LT">Lietuva</option><option value="EE">Eesti</option>
+        </select>
+      </label>
       <div className="checkout__field-grid mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[2fr_1fr_1fr]">
         <div className="checkout__field">
           <label htmlFor="checkout-address" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.address')} <span className="text-red-600">*</span></label>

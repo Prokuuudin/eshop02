@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { stores } from '@/data/stores';
 import { DeliveryMethod } from '@/lib/orders-store';
-import { calcDeliveryFee } from '@/lib/delivery';
+import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
 import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
 import { CustomerDetailsSection } from './CheckoutFormSections';
 
@@ -38,6 +38,7 @@ export default function CheckoutPage(): React.ReactElement {
     >;
     const {
             t,
+            shippingSettings,
             currentUser,
             formatCurrency,
             formData,
@@ -118,6 +119,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 {t('checkout.delivery.moreInfo')}
                             </Link>
                         </div>
+                        {shippingSettings.shippingError && <p role="alert">{t('checkout.shippingLoadFailed', 'Could not load delivery settings. Reload the page.')}</p>}
                         <RadioGroup
                             value={deliveryMethod}
                             onValueChange={(value) => {
@@ -132,7 +134,7 @@ export default function CheckoutPage(): React.ReactElement {
                             className="space-y-3"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {DELIVERY_OPTIONS.map((option) => (
+                                {DELIVERY_OPTIONS.filter(option => isDeliveryAvailable(option.id, formData.country ?? 'LV', shippingSettings)).map((option) => (
                                     <label
                                         key={option.id}
                                         className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
@@ -148,13 +150,13 @@ export default function CheckoutPage(): React.ReactElement {
                                             <div className="text-sm text-muted-foreground">
                                                 {calcDeliveryFee(
                                                     option.id,
-                                                    subtotalAfterDiscount
+                                                    subtotalAfterDiscount, formData.country, shippingSettings
                                                 ) === 0
                                                     ? t('checkout.delivery.free')
                                                     : formatCurrency(
                                                           calcDeliveryFee(
                                                               option.id,
-                                                              subtotalAfterDiscount
+                                                              subtotalAfterDiscount, formData.country, shippingSettings
                                                           )
                                                       )}
                                             </div>
@@ -327,6 +329,7 @@ export default function CheckoutPage(): React.ReactElement {
                             form="checkout-form"
                             className="flex-1"
                             disabled={
+                                !shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings) ||
                                 !wholesaleGuard.isMinimumReached ||
                                 isSubmitting ||
                                 (turnstileEnabled && !turnstileToken)

@@ -53,6 +53,11 @@ export type ServerOrder = {
   phone: string
   address: string
   city: string
+  country?: import('./delivery').DeliveryCountry
+  trackingNumber?: string
+  trackingUrl?: string
+  labelUrl?: string
+  shipmentCarrier?: string
   postalCode?: string
   bonusSpent?: number
   bonusEarned?: number
@@ -115,6 +120,7 @@ export type AdminOrderUpdateInput = {
   items: Array<{ id: string; quantity: number; lineKey?: string; variantLabel?: string }>
   address: string
   city: string
+  country?: import('./delivery').DeliveryCountry
   postalCode?: string
   deliveryMethod: 'courier' | 'pickup' | 'post' | 'venipak'
 }

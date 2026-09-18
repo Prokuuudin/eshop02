@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+vi.mock('@/lib/shipping-settings-server', async () => {
+  const { DEFAULT_COMMERCE_SETTINGS } = await import('@/lib/commerce-settings')
+  return { getShippingSettings: vi.fn(async () => structuredClone(DEFAULT_COMMERCE_SETTINGS)) }
+})
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
@@ -39,6 +43,8 @@ import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } fro
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
+import { getShippingSettings } from '@/lib/shipping-settings-server'
+import { DEFAULT_COMMERCE_SETTINGS } from '@/lib/commerce-settings'
 import { POST } from './route'
 
 const VALID_ORDER = {
@@ -77,6 +83,7 @@ function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKe
 describe('POST /api/orders — admin notification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getShippingSettings).mockResolvedValue(structuredClone(DEFAULT_COMMERCE_SETTINGS))
     vi.mocked(getServerUser).mockResolvedValue(null)
     // Server assigns the canonical id — echo the payload back under a generated id
     vi.mocked(createServerOrder).mockImplementation(async (order, prepare) => ({
@@ -107,6 +114,22 @@ describe('POST /api/orders — admin notification', () => {
       priceFormat: 'symbol_before',
     })
     process.env.CONTACT_TO = 'admin@shop.com'
+  })
+
+  it('rejects unsupported countries before creating an order', async () => {
+    expect((await POST(makeRequest({ ...VALID_ORDER, country: 'DE' }))).status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+  it('rejects disabled delivery methods', async () => {
+    const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    settings.delivery.omniva.enabled = false
+    vi.mocked(getShippingSettings).mockResolvedValue(settings)
+    expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'post' }))).status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+  it('passes the selected country to authoritative pricing', async () => {
+    expect((await POST(makeRequest({ ...VALID_ORDER, country: 'LT' }))).status).toBe(200)
+    expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ country: 'LT' }), expect.anything())
   })
 
   it('sends email to CONTACT_TO with order id in subject', async () => {

@@ -16,6 +16,7 @@ export const adminOrderCreateSchema = z.object({
   deliveryMethod: z.enum(['courier', 'pickup', 'post', 'venipak']),
   address: z.string().trim().max(500).optional().default(''),
   city: z.string().trim().max(200).optional().default(''),
+  country: z.enum(['LV', 'LT', 'EE']).optional(),
   postalCode: z.string().trim().max(50).optional(),
   paymentMethod: z.string().trim().min(1).max(100),
   paymentStatus: z.enum(['unpaid', 'paid']).optional().default('unpaid'),
@@ -34,6 +35,7 @@ export const adminOrderUpdateSchema = z.object({
   })).min(1).max(500),
   address: z.string().trim().min(1).max(500),
   city: z.string().trim().min(1).max(200),
+  country: z.enum(['LV', 'LT', 'EE']).optional(),
   postalCode: z.string().trim().max(50).optional(),
   deliveryMethod: z.enum(['courier', 'pickup', 'post', 'venipak']),
 }).strict()

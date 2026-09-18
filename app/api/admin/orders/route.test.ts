@@ -27,6 +27,7 @@ vi.mock('@/lib/orders-data-store', () => ({
 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    keyValueSetting: { findUnique: vi.fn(async () => null) },
     order: { findMany: vi.fn(), count: vi.fn() },
     orderStatusRecord: { findMany: vi.fn() },
     orderNote: { findMany: vi.fn() },
@@ -203,8 +204,8 @@ describe('POST /api/admin/orders', () => {
     // doesn't even include one - proving they're computed server-side from the items.
     expect(orderArg.subtotal).toBe(50)
     expect(orderArg.discount).toBe(5)
-    expect(orderArg.delivery).toBe(5)
-    expect(orderArg.total).toBe(50)
+    expect(orderArg.delivery).toBe(10)
+    expect(orderArg.total).toBe(55)
     expect(orderArg.paymentProvider).toBe('manual')
     expect(orderArg.userId).toBeUndefined()
 
@@ -223,7 +224,7 @@ describe('POST /api/admin/orders', () => {
 
     const orderArg = vi.mocked(createServerOrder).mock.calls[0][0]
     expect(orderArg.discount).toBe(50) // clamped to subtotal, not 9999
-    expect(orderArg.total).toBe(5) // 50 - 50 + 5 delivery
+    expect(orderArg.total).toBe(10) // 50 - 50 + 5 delivery
   })
 
   it('attaches the existing customer account by email instead of creating an orphan order', async () => {

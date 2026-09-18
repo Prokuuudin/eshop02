@@ -1,3 +1,5 @@
+import { isDeliveryAvailable, calcDeliveryFee } from './delivery'
+import { getShippingSettings } from './shipping-settings-server'
 import { prisma } from '@/lib/prisma'
 import type { NextRequest } from 'next/server'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
@@ -279,13 +281,6 @@ export const updateServerOrderPayment = async (
   return row ? mapDbToServerOrder(row) : null
 }
 
-const ADMIN_DELIVERY_COSTS: Record<AdminOrderUpdateInput['deliveryMethod'], number> = {
-  courier: 5,
-  pickup: 0,
-  post: 4,
-  venipak: 3,
-}
-
 function quantitiesByProduct(items: Array<{ id: string; quantity: number }>): Map<string, number> {
   const result = new Map<string, number>()
   for (const item of items) result.set(item.id, (result.get(item.id) ?? 0) + item.quantity)
@@ -368,7 +363,10 @@ export async function updateServerOrderByAdmin(
     const oldDiscount = toNum(current.discount)
     const discountRate = current.promoCode && oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
     const discount = Math.round(subtotal * discountRate * 100) / 100
-    const delivery = ADMIN_DELIVERY_COSTS[input.deliveryMethod]
+    const country = input.country ?? (current.country as import('./delivery').DeliveryCountry | undefined) ?? 'LV'
+    const shippingSettings = await getShippingSettings(tx)
+    if (!isDeliveryAvailable(input.deliveryMethod, country, shippingSettings)) throw new AdminOrderUpdateError('Delivery unavailable', 'invalid_item')
+    const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, country, shippingSettings)
     const currentTotals = {
       subtotal: oldSubtotal,
       discount: oldDiscount,
@@ -396,6 +394,7 @@ export async function updateServerOrderByAdmin(
         deliveryMethod: input.deliveryMethod,
         address: input.address,
         city: input.city,
+        country: input.country ?? current.country,
         postalCode: input.postalCode ?? null,
       },
     })

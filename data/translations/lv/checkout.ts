@@ -1,4 +1,8 @@
 const lvCheckout: Record<string, string> = {
+    'checkout.country': 'Valsts',
+    'checkout.deliveryUnavailable': 'Piegāde nav pieejama. Izvēlieties citu veidu.',
+    'checkout.shippingLoadFailed': 'Neizdevās ielādēt piegādes iestatījumus. Pārlādējiet lapu.',
+    'order.trackShipment': 'Izsekot sūtījumu',
   'checkout.errors.paymentGateway': 'Neizdevās izveidot savienojumu ar Paysera. Izvēlieties bankas pārskaitījumu vai mēģiniet vēlāk.',
   'cart.title': 'Grozs',
   'cart.openFullCart': 'Atvērt pilnā ekrānā',

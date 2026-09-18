@@ -3,6 +3,7 @@ import type { Product } from '@/data/products';
 import type { ArchivedProductRecord } from '@/lib/product-overrides-store';
 import type { NewProductDraft } from '@/types/product-admin';
 import { useTranslation } from '@/lib/use-translation';
+import { useToast } from '@/lib/toast-context';
 import { CATEGORY_OPTIONS } from '@/lib/admin/products/constants';
 import { consumeProductsListReturnState } from '@/lib/admin/products/list-return-state';
 import { usePersistentViewMode } from '@/hooks/usePersistentViewMode';
@@ -48,6 +49,7 @@ const PRODUCT_VIEW_MODES = ['cards', 'list'] as const;
 
 export function useProductsAdmin(): ProductsAdminResult {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [initialReturn] = useState(() => consumeProductsListReturnState());
   const didInitialLoadRef = useRef(false);
   const [baseProducts, setBaseProducts] = useState<Product[]>([]);
@@ -206,9 +208,13 @@ export function useProductsAdmin(): ProductsAdminResult {
       if (!res.ok || 'error' in json) throw new Error('failed');
       await loadProducts(1);
       setArchiveItems(json.data.archive);
-      setMessage(t('admin.productsPage.msg.restored', 'Product {id} restored', { id }));
+      const restoredMsg = t('admin.productsPage.msg.restored', 'Product {id} restored', { id });
+      setMessage(restoredMsg);
+      showToast(restoredMsg, 'success');
     } catch {
-      setError(t('admin.productsPage.msg.restoreByIdFailed', 'Failed to restore product {id}', { id }));
+      const failedMsg = t('admin.productsPage.msg.restoreByIdFailed', 'Failed to restore product {id}', { id });
+      setError(failedMsg);
+      showToast(failedMsg, 'error');
     } finally {
       setRestoringId(null);
     }
@@ -226,9 +232,13 @@ export function useProductsAdmin(): ProductsAdminResult {
       const json = (await res.json()) as ApiEnvelope<{ archive: ArchivedProductRecord[] }>;
       if (!res.ok || 'error' in json) throw new Error('failed');
       setArchiveItems(json.data.archive);
-      setMessage(t('admin.productsPage.msg.deletedForever', 'Product {id} removed from trash permanently', { id }));
+      const purgedMsg = t('admin.productsPage.msg.deletedForever', 'Product {id} removed from trash permanently', { id });
+      setMessage(purgedMsg);
+      showToast(purgedMsg, 'success');
     } catch {
-      setError(t('admin.productsPage.msg.deleteTrashByIdFailed', 'Failed to delete product {id} from trash', { id }));
+      const failedMsg = t('admin.productsPage.msg.deleteTrashByIdFailed', 'Failed to delete product {id} from trash', { id });
+      setError(failedMsg);
+      showToast(failedMsg, 'error');
     } finally {
       setPurgingArchiveId(null);
     }
@@ -255,10 +265,14 @@ export function useProductsAdmin(): ProductsAdminResult {
     await loadArchive();
     setArchiveBulkPending(false);
     if (restoredCount < ids.length) {
-      setError(t('admin.productsPage.msg.bulkRestoreFailed', 'Restored {restored} of {total} products', { restored: restoredCount, total: ids.length }));
+      const failedMsg = t('admin.productsPage.msg.bulkRestoreFailed', 'Restored {restored} of {total} products', { restored: restoredCount, total: ids.length });
+      setError(failedMsg);
+      showToast(failedMsg, restoredCount > 0 ? 'info' : 'error');
       return restoredCount > 0;
     }
-    setMessage(t('admin.productsPage.msg.bulkRestored', '{count} products restored', { count: restoredCount }));
+    const restoredMsg = t('admin.productsPage.msg.bulkRestored', '{count} products restored', { count: restoredCount });
+    setMessage(restoredMsg);
+    showToast(restoredMsg, 'success');
     return true;
   };
 
@@ -279,10 +293,14 @@ export function useProductsAdmin(): ProductsAdminResult {
     await loadArchive();
     setArchiveBulkPending(false);
     if (purgedCount < ids.length) {
-      setError(t('admin.productsPage.msg.bulkPurgeFailed', 'Deleted {deleted} of {total} products from trash', { deleted: purgedCount, total: ids.length }));
+      const failedMsg = t('admin.productsPage.msg.bulkPurgeFailed', 'Deleted {deleted} of {total} products from trash', { deleted: purgedCount, total: ids.length });
+      setError(failedMsg);
+      showToast(failedMsg, purgedCount > 0 ? 'info' : 'error');
       return purgedCount > 0;
     }
-    setMessage(t('admin.productsPage.msg.bulkDeletedForever', '{count} products permanently removed from trash', { count: purgedCount }));
+    const purgedMsg = t('admin.productsPage.msg.bulkDeletedForever', '{count} products permanently removed from trash', { count: purgedCount });
+    setMessage(purgedMsg);
+    showToast(purgedMsg, 'success');
     return true;
   };
 

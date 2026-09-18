@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import type { AdminProductSearchItem } from '@/app/api/admin/products/search/route';
 import type { CategoriesConfigPayload } from '@/lib/categories-config';
+import type { BrandsConfigPayload } from '@/lib/brands-config';
 
 type LinkPickerProps = {
     value: string;
@@ -22,15 +25,54 @@ export function LinkPicker({ value, onChange }: LinkPickerProps): React.ReactEle
     const [products, setProducts] = React.useState<AdminProductSearchItem[]>([]);
     const [searching, setSearching] = React.useState(false);
     const [categories, setCategories] = React.useState<CategoriesConfigPayload['categories'] | null>(null);
+    const [brands, setBrands] = React.useState<BrandsConfigPayload['brands'] | null>(null);
+    const [filterCategoryId, setFilterCategoryId] = React.useState('');
+    const [selectedSubcats, setSelectedSubcats] = React.useState<Set<string>>(new Set());
+    const [selectedBrandIds, setSelectedBrandIds] = React.useState<Set<string>>(new Set());
+    const [subcatQuery, setSubcatQuery] = React.useState('');
+    const [brandQuery, setBrandQuery] = React.useState('');
     const debounceRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     React.useEffect(() => {
-        if (!open || categories !== null) return;
-        fetch('/api/admin/categories', { cache: 'no-store' })
-            .then((res) => (res.ok ? res.json() : null))
-            .then((json: CategoriesConfigPayload | null) => setCategories(json?.categories ?? []))
-            .catch(() => setCategories([]));
-    }, [open, categories]);
+        if (!open) return;
+        if (categories === null) {
+            fetch('/api/admin/categories', { cache: 'no-store' })
+                .then((res) => (res.ok ? res.json() : null))
+                .then((json: CategoriesConfigPayload | null) => setCategories(json?.categories ?? []))
+                .catch(() => setCategories([]));
+        }
+        if (brands === null) {
+            fetch('/api/admin/brands', { cache: 'no-store' })
+                .then((res) => (res.ok ? res.json() : null))
+                .then((json: BrandsConfigPayload | null) => setBrands(json?.brands ?? []))
+                .catch(() => setBrands([]));
+        }
+    }, [open, categories, brands]);
+
+    const allSubcategories = (categories ?? []).flatMap((category) =>
+        category.subcategories.map((sub) => ({ ...sub, categoryLabel: category.labels[language] }))
+    );
+    const filteredSubcats = allSubcategories.filter((sub) => {
+        const q = subcatQuery.trim().toLowerCase();
+        if (!q) return true;
+        return sub.labels[language].toLowerCase().includes(q) || sub.categoryLabel.toLowerCase().includes(q);
+    });
+    const filteredBrands = (brands ?? []).filter((b) => b.name.toLowerCase().includes(brandQuery.trim().toLowerCase()));
+
+    const toggleSubcat = (slug: string) => {
+        setSelectedSubcats((prev) => {
+            const next = new Set(prev);
+            if (next.has(slug)) next.delete(slug); else next.add(slug);
+            return next;
+        });
+    };
+    const toggleBrand = (id: string) => {
+        setSelectedBrandIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
 
     React.useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -77,6 +119,7 @@ export function LinkPicker({ value, onChange }: LinkPickerProps): React.ReactEle
                         <TabsList>
                             <TabsTrigger value="product">{l('Товар', 'Product', 'Prece')}</TabsTrigger>
                             <TabsTrigger value="category">{l('Категория', 'Category', 'Kategorija')}</TabsTrigger>
+                            <TabsTrigger value="filters">{l('Каталог с фильтрами', 'Catalog with filters', 'Katalogs ar filtriem')}</TabsTrigger>
                         </TabsList>
                         <TabsContent value="product" className="mt-3 space-y-2">
                             <Input
@@ -149,6 +192,85 @@ export function LinkPicker({ value, onChange }: LinkPickerProps): React.ReactEle
                                     </li>
                                 ))}
                             </ul>
+                        </TabsContent>
+                        <TabsContent value="filters" className="mt-3 space-y-3">
+                            <p className="text-xs text-muted-foreground">
+                                {l('Можно выбрать несколько подкатегорий и несколько брендов сразу — например, «шампуни» + «расчёски», или один бренд, или бренд + подкатегория вместе.', 'You can pick several subcategories and several brands at once — e.g. "shampoos" + "combs", or one brand, or a brand together with a subcategory.', 'Var izvēlēties vairākas apakškategorijas un vairākus zīmolus vienlaikus — piemēram, "šampūni" + "ķemmes", vai vienu zīmolu, vai zīmolu kopā ar apakškategoriju.')}
+                            </p>
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{l('Категория (необязательно)', 'Category (optional)', 'Kategorija (nav obligāta)')}</label>
+                                <Select value={filterCategoryId || 'any'} onValueChange={(v) => setFilterCategoryId(v === 'any' ? '' : v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="any">{l('Любая', 'Any', 'Jebkura')}</SelectItem>
+                                        {categories?.map((category) => (
+                                            <SelectItem key={category.id} value={category.id}>{category.labels[language]}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    {l('Не выбирайте категорию, если подкатегории относятся к разным категориям.', "Don't set a category if the subcategories you picked belong to different categories.", 'Nenorādiet kategoriju, ja izvēlētās apakškategorijas pieder dažādām kategorijām.')}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{l('Подкатегории', 'Subcategories', 'Apakškategorijas')}</label>
+                                <Input
+                                    value={subcatQuery}
+                                    onChange={(e) => setSubcatQuery(e.target.value)}
+                                    placeholder={l('Поиск подкатегории…', 'Search subcategory…', 'Meklēt apakškategoriju…')}
+                                />
+                                <ul className="max-h-48 space-y-0.5 overflow-y-auto rounded-md border border-border p-1">
+                                    {filteredSubcats.length === 0 && (
+                                        <li className="px-2 py-2 text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</li>
+                                    )}
+                                    {filteredSubcats.map((sub) => (
+                                        <li key={sub.slug}>
+                                            <Checkbox
+                                                className="w-full rounded-md px-2 py-1.5 hover:bg-accent"
+                                                checked={selectedSubcats.has(sub.slug)}
+                                                onCheckedChange={() => toggleSubcat(sub.slug)}
+                                                label={`${sub.categoryLabel} — ${sub.labels[language]}`}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{l('Бренды', 'Brands', 'Zīmoli')}</label>
+                                <Input
+                                    value={brandQuery}
+                                    onChange={(e) => setBrandQuery(e.target.value)}
+                                    placeholder={l('Поиск бренда…', 'Search brand…', 'Meklēt zīmolu…')}
+                                />
+                                <ul className="max-h-48 space-y-0.5 overflow-y-auto rounded-md border border-border p-1">
+                                    {filteredBrands.length === 0 && (
+                                        <li className="px-2 py-2 text-sm text-muted-foreground">{l('Ничего не найдено', 'Nothing found', 'Nekas nav atrasts')}</li>
+                                    )}
+                                    {filteredBrands.map((brand) => (
+                                        <li key={brand.id}>
+                                            <Checkbox
+                                                className="w-full rounded-md px-2 py-1.5 hover:bg-accent"
+                                                checked={selectedBrandIds.has(brand.id)}
+                                                onCheckedChange={() => toggleBrand(brand.id)}
+                                                label={brand.name}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <Button
+                                type="button"
+                                disabled={!filterCategoryId && selectedSubcats.size === 0 && selectedBrandIds.size === 0}
+                                onClick={() => {
+                                    const params = new URLSearchParams();
+                                    if (filterCategoryId) params.set('cat', filterCategoryId);
+                                    if (selectedSubcats.size > 0) params.set('subcat', Array.from(selectedSubcats).join(','));
+                                    if (selectedBrandIds.size > 0) params.set('brand', Array.from(selectedBrandIds).join(','));
+                                    pick(`/catalog?${params.toString()}`);
+                                }}
+                            >
+                                {l('Применить', 'Apply', 'Piemērot')}
+                            </Button>
                         </TabsContent>
                     </Tabs>
                 </DialogContent>

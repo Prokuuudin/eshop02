@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ChevronDown, Info } from 'lucide-react';
 import { encodeLocaleText, resolveLocaleText } from '@/lib/locale-text';
 import SaleBanner from '@/components/SaleBanner';
 import { LocaleTextField } from './LocaleTextField';
@@ -64,9 +65,61 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
     const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
     return (
         <TabsContent value="banners" className="space-y-4 mt-4">
-            <p className="text-sm text-muted-foreground">
-                {l("Сначала объедините баннеры в группы: у каждой группы своё место на главной и свой формат показа — список или карусель. Для карусели дополнительно выберите прокрутку — вручную (стрелками и точками) или автоматически. Затем в каждом баннере просто выберите группу. Статус «Да» публикует баннер, «Нет» сохраняет скрытым. В группе, размещённой в блоке акций, первый баннер типа «с текстом» всегда остаётся большой карточкой сверху.", "First combine banners into groups: each group has its own homepage location and its own display format — list or carousel. For a carousel, also pick the scroll mode — manual (arrows and dots) or automatic. Then just pick a group for each banner. Status Yes publishes the banner; No saves it hidden. In a group placed in the sale block, the first text-style banner always stays as the large card on top.", "Vispirms apvienojiet banerus grupās: katrai grupai ir sava vieta sākumlapā un savs attēlošanas formāts — saraksts vai karuselis. Karuselim papildus izvēlieties ritināšanu — manuālu (bultiņas un punkti) vai automātisku. Tad katram banerim vienkārši izvēlieties grupu. Jā publicē baneri; Nē saglabā paslēptu. Grupā, kas izvietota akciju blokā, pirmais teksta banera veids vienmēr paliek kā liela karte augšā.")}
-            </p>
+            <aside className="rounded-lg border border-blue-200 bg-blue-50/70 p-5 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+                <details className="group">
+                <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+                    <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-blue-700 dark:text-blue-300" />
+                    <h2 className="text-base font-semibold leading-6">
+                        {l('Как устроена эта страница', 'How this page works', 'Kā darbojas šī lapa')}
+                    </h2>
+                    <span className="relative top-px shrink-0 text-xs font-medium leading-6 text-blue-700 group-open:hidden dark:text-blue-300">
+                        {l('Развернуть', 'Expand', 'Izvērst')}
+                    </span>
+                    <span className="relative top-px hidden shrink-0 text-xs font-medium leading-6 text-blue-700 group-open:inline dark:text-blue-300">
+                        {l('Свернуть', 'Collapse', 'Sakļaut')}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-blue-700 transition-transform duration-200 group-open:rotate-180 dark:text-blue-300" />
+                </summary>
+                <div className="mt-3 space-y-4">
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Группы и размещение', 'Groups and placement', 'Grupas un izvietojums')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l("Любые баннеры должны быть объединены в группы со своим местом на главной странице и форматом показа — список или карусель. Сначала создайте группу, затем в каждом нужном баннере выберите её. В группе, размещённой в «Блок акций», первый баннер формата «с текстом» всегда остаётся большой карточкой сверху.", 'Every banner must belong to a group with its own homepage location and display format — list or carousel. First create a group, then pick it for each banner that needs it. In a group placed in the "Sale block", the first text-format banner always stays as the large card on top.', 'Katram banerim jāpieder grupai ar savu vietu sākumlapā un attēlošanas formātu — sarakstu vai karuseli. Vispirms izveidojiet grupu, tad izvēlieties to katram vajadzīgajam banerim. Grupā, kas izvietota sadaļā "Akciju bloks", pirmais teksta formāta baneris vienmēr paliek kā liela karte augšā.')}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Прокрутка карусели', 'Carousel scroll', 'Karuseļa ritināšana')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l('Для групп с показом «Карусель» выберите прокрутку: вручную (стрелками и точками) или автоматически (сама листает баннеры).', 'For groups with Carousel display, pick the scroll mode: manual (arrows and dots) or automatic (it flips banners on its own).', 'Grupām ar attēlošanu "Karuselis" izvēlieties ritināšanu: manuāli (ar bultiņām un punktiem) vai automātiski (pati pārslēdz banerus).')}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Формат баннера', 'Banner format', 'Banera formāts')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l("Рекомендуемый размер готового баннера: 1440 × 480 px (3:1). Другие размеры допустимы: изображение показывается целиком без обрезки. JPG, PNG, WebP, GIF или AVIF, до 10 МБ. Загрузите файл, дождитесь предпросмотра и сохраните баннер. В режиме с текстом картинка служит фоном и может обрезаться.", "For ready-made banners we recommend 1440 × 480 px (3:1). Other sizes are accepted and shown in full without cropping. JPG, PNG, WebP, GIF or AVIF, up to 10 MB. Upload, wait for the preview and click Save. In text mode the image is a background and may be cropped.", "Ieteicamais izmērs: 1440 × 480 px (3:1). Citi izmēri ir atļauti, attēls tiek rādīts pilnībā. JPG, PNG, WebP, GIF vai AVIF, līdz 10 MB. Augšupielādējiet, sagaidiet priekšskatījumu un saglabājiet. Teksta režīmā fona attēls var tikt apgriezts.")}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Видео', 'Video', 'Video')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l('MP4 или WebM до 50 МБ, рекомендуем горизонтальное. Загруженное видео автоматически включает формат «Видеобаннер». На сайте видео показывается целиком с управлением воспроизведением; ссылка открывается отдельной кнопкой.', 'MP4 or WebM up to 50 MB; landscape recommended. Uploading video automatically selects Video banner. The site shows the complete video with playback controls; the link uses a separate button.', 'MP4 vai WebM līdz 50 MB; iesakām horizontālu. Video augšupielāde automātiski izvēlas video baneri. Vietnē video tiek rādīts pilnībā ar atskaņošanas vadību; saite ir atsevišķā pogā.')}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Ссылка баннера', 'Banner link', 'Banera saite')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l('Кнопка «Выбрать страницу» открывает поиск по товарам, список категорий и подкатегорий, а также конструктор ссылки на каталог с фильтрами (по нескольким подкатегориям и брендам сразу). Ссылку также можно ввести вручную: внутренний путь через «/» или полный адрес другого сайта через http(s)://.', 'The "Choose a page" button opens product search, the category/subcategory list, and a catalog-with-filters link builder (several subcategories and brands at once). You can also type the link by hand: an internal path starting with "/" or a full external address starting with http(s)://.', '"Izvēlēties lapu" atver preču meklēšanu, kategoriju/apakškategoriju sarakstu un kataloga ar filtriem saites veidotāju (vairākas apakškategorijas un zīmoli reizē). Saiti var arī ierakstīt pašrocīgi: iekšēju ceļu, kas sākas ar "/", vai pilnu ārējas vietnes adresi, kas sākas ar http(s)://.')}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-semibold">{l('Статус', 'Status', 'Statuss')}</h3>
+                        <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                            {l('«Активен: Да» публикует баннер на сайте, «Нет» сохраняет его скрытым — можно готовить баннеры заранее и включать их позже.', 'Active "Yes" publishes the banner on the site; "No" keeps it saved but hidden — useful for preparing banners ahead of time.', 'Aktīvs "Jā" publicē baneri vietnē; "Nē" saglabā to paslēptu — noderīgi, lai gatavotu banerus iepriekš.')}
+                        </p>
+                    </div>
+                </div>
+                </details>
+            </aside>
 
             {/* Group management */}
             <div className="space-y-3 rounded-lg border border-border bg-card p-4">
@@ -78,51 +131,76 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                         + {l('Добавить группу', 'Add group', 'Pievienot grupu')}
                     </Button>
                 </div>
-                <div className="space-y-2">
-                    {sortedGroups.map((group, idx) => (
-                        <div key={group.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
-                            <Input
-                                defaultValue={group.name}
-                                disabled={savingGroups}
-                                className="w-40 flex-1 min-w-[10rem]"
-                                onBlur={(e) => {
-                                    const name = e.target.value.trim();
-                                    if (name && name !== group.name) void onUpdateGroup(group.id, { name });
-                                }}
-                            />
-                            <Select value={group.zone} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { zone: v as BannerZone })}>
-                                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {BANNER_ZONES.map((zone) => (
-                                        <SelectItem key={zone} value={zone}>{l(...BANNER_ZONE_LABELS[zone])}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={group.displayType} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { displayType: v as BannerPlacement })}>
-                                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="list">{l('Список', 'List', 'Saraksts')}</SelectItem>
-                                    <SelectItem value="carousel">{l('Карусель', 'Carousel', 'Karuselis')}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {group.displayType === 'carousel' && (
-                                <Select value={group.scrollMode} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { scrollMode: v as BannerScrollMode })}>
-                                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="manual">{l('Прокрутка вручную', 'Manual scroll', 'Manuāla ritināšana')}</SelectItem>
-                                        <SelectItem value="auto">{l('Автопрокрутка', 'Auto scroll', 'Automātiska ritināšana')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            <div className="flex items-center gap-1">
-                                <Button type="button" variant="outline" size="sm" disabled={idx === 0 || savingGroups} onClick={() => void onMoveGroup(group.id, 'up')} aria-label={l('Переместить выше', 'Move up', 'Pārvietot augšup')}>▲</Button>
-                                <Button type="button" variant="outline" size="sm" disabled={idx === sortedGroups.length - 1 || savingGroups} onClick={() => void onMoveGroup(group.id, 'down')} aria-label={l('Переместить ниже', 'Move down', 'Pārvietot lejup')}>▼</Button>
-                                <Button type="button" variant="destructive" size="sm" disabled={savingGroups || group.id === DEFAULT_GROUP_ID} onClick={() => void onDeleteGroup(group.id)}>
-                                    {l('Удалить', 'Delete', 'Dzēst')}
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
+                <div className="overflow-x-auto rounded-lg border border-border">
+                    <table className="min-w-full text-sm">
+                        <thead className="border-b border-border bg-muted">
+                            <tr>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{l('Название', 'Name', 'Nosaukums')}</th>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{l('Место на главной', 'Homepage location', 'Vieta sākumlapā')}</th>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{l('Показ', 'Display', 'Rādīšana')}</th>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">{l('Прокрутка', 'Scroll', 'Ritināšana')}</th>
+                                <th className="px-3 py-2 text-right font-medium text-muted-foreground">{l('Действия', 'Actions', 'Darbības')}</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {sortedGroups.map((group, idx) => (
+                                <tr key={group.id}>
+                                    <td className="px-3 py-2">
+                                        <Input
+                                            defaultValue={group.name}
+                                            disabled={savingGroups}
+                                            className="min-w-[10rem]"
+                                            onBlur={(e) => {
+                                                const name = e.target.value.trim();
+                                                if (name && name !== group.name) void onUpdateGroup(group.id, { name });
+                                            }}
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <Select value={group.zone} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { zone: v as BannerZone })}>
+                                            <SelectTrigger className="min-w-[13rem]"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {BANNER_ZONES.map((zone) => (
+                                                    <SelectItem key={zone} value={zone}>{l(...BANNER_ZONE_LABELS[zone])}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <Select value={group.displayType} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { displayType: v as BannerPlacement })}>
+                                            <SelectTrigger className="min-w-[9rem]"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="list">{l('Список', 'List', 'Saraksts')}</SelectItem>
+                                                <SelectItem value="carousel">{l('Карусель', 'Carousel', 'Karuselis')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        {group.displayType === 'carousel' ? (
+                                            <Select value={group.scrollMode} disabled={savingGroups} onValueChange={(v) => void onUpdateGroup(group.id, { scrollMode: v as BannerScrollMode })}>
+                                                <SelectTrigger className="min-w-[11rem]"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="manual">{l('Вручную', 'Manual', 'Manuāli')}</SelectItem>
+                                                    <SelectItem value="auto">{l('Автоматически', 'Automatic', 'Automātiski')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <Button type="button" variant="outline" size="sm" disabled={idx === 0 || savingGroups} onClick={() => void onMoveGroup(group.id, 'up')} aria-label={l('Переместить выше', 'Move up', 'Pārvietot augšup')}>▲</Button>
+                                            <Button type="button" variant="outline" size="sm" disabled={idx === sortedGroups.length - 1 || savingGroups} onClick={() => void onMoveGroup(group.id, 'down')} aria-label={l('Переместить ниже', 'Move down', 'Pārvietot lejup')}>▼</Button>
+                                            <Button type="button" variant="destructive" size="sm" disabled={savingGroups || group.id === DEFAULT_GROUP_ID} onClick={() => void onDeleteGroup(group.id)}>
+                                                {l('Удалить', 'Delete', 'Dzēst')}
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -162,9 +240,7 @@ export default function BannersTab({ state }: { state: BannerContentState }): Re
                                 <SelectItem value="video">{l('Видеобаннер', 'Video banner', 'Video baneris')}</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground">{l("Рекомендуемый размер готового баннера: 1440 × 480 px (3:1). Другие размеры допустимы: изображение показывается целиком без обрезки. JPG, PNG, WebP, GIF или AVIF, до 10 МБ. Загрузите файл, дождитесь предпросмотра и сохраните баннер. В режиме с текстом картинка служит фоном и может обрезаться.", "For ready-made banners we recommend 1440 × 480 px (3:1). Other sizes are accepted and shown in full without cropping. JPG, PNG, WebP, GIF or AVIF, up to 10 MB. Upload, wait for the preview and click Save. In text mode the image is a background and may be cropped.", "Ieteicamais izmērs: 1440 × 480 px (3:1). Citi izmēri ir atļauti, attēls tiek rādīts pilnībā. JPG, PNG, WebP, GIF vai AVIF, līdz 10 MB. Augšupielādējiet, sagaidiet priekšskatījumu un saglabājiet. Teksta režīmā fona attēls var tikt apgriezts.")}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{l('Видео: MP4 или WebM до 50 МБ, рекомендуем горизонтальное. Загруженное видео автоматически включает формат «Видеобаннер». На сайте видео показывается целиком с управлением воспроизведением; ссылка открывается отдельной кнопкой.', 'Video: MP4 or WebM up to 50 MB; landscape recommended. Uploading video automatically selects Video banner. The site shows the complete video with playback controls; the link uses a separate button.', 'Video: MP4 vai WebM līdz 50 MB; iesakām horizontālu. Video augšupielāde automātiski izvēlas video baneri. Vietnē video tiek rādīts pilnībā ar atskaņošanas vadību; saite ir atsevišķā pogā.')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {bannerForm.type === 'sale' && <>
                         <LocaleTextField

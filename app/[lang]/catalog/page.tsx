@@ -61,6 +61,10 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
+  const subcategories = (params.subcat ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
   const rawSearch = params.search?.trim() || '';
 
   const minPriceValue = params.minPrice ? Number(params.minPrice) : NaN;
@@ -79,7 +83,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
   const catalogQuery = {
     language,
     category: category || undefined,
-    subcategory: params.subcat?.trim() || undefined,
+    subcategories,
     brands,
     search: rawSearch,
     minPrice: Number.isFinite(minPriceValue) ? minPriceValue : undefined,

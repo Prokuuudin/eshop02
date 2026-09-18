@@ -13,7 +13,7 @@ export const CATALOG_PAGE_SIZE = 24
 type InitialCatalogFilters = {
   language: Language
   category?: string
-  subcategory?: string
+  subcategories?: string[]
   brands?: string[]
   search?: string
   minPrice?: number
@@ -21,6 +21,10 @@ type InitialCatalogFilters = {
   onSale?: boolean
   order?: string
   page?: number
+}
+
+function matchesSubcategories(product: Product, subcategories: string[]): boolean {
+  return subcategories.length === 0 || (product.subcategory !== undefined && subcategories.includes(product.subcategory))
 }
 
 function sortProducts(products: Product[], order: string | undefined, language: Language, hasBrandFilter: boolean): Product[] {
@@ -53,7 +57,7 @@ function localizedTitle(product: Product, language: Language): string {
 export async function getInitialCatalogProducts({
   language,
   category,
-  subcategory,
+  subcategories = [],
   brands = [],
   search = '',
   minPrice,
@@ -67,7 +71,7 @@ export async function getInitialCatalogProducts({
 
   const filtered = products.filter((product) => {
     if (category && product.category !== category) return false
-    if (subcategory && product.subcategory !== subcategory) return false
+    if (!matchesSubcategories(product, subcategories)) return false
     if (brands.length > 0 && !brands.includes(brandSlug(product.brand))) return false
     if (minPrice !== undefined && product.price < minPrice) return false
     if (maxPrice !== undefined && product.price > maxPrice) return false
@@ -119,7 +123,7 @@ type CatalogFacetFilters = Omit<InitialCatalogFilters, 'order' | 'page'>
 export async function getCatalogFacets({
   language,
   category,
-  subcategory,
+  subcategories = [],
   brands = [],
   search = '',
   minPrice,
@@ -165,7 +169,7 @@ export async function getCatalogFacets({
       matchesPrice(p) &&
       matchesBrandsList(p, brands) &&
       (!category || p.category === category) &&
-      (!subcategory || p.subcategory === subcategory)
+      matchesSubcategories(p, subcategories)
   )
   const onSaleCount = onSaleBase.filter(isProductOnSale).length
 
@@ -176,7 +180,7 @@ export async function getCatalogFacets({
       matchesPrice(p) &&
       (!onSale || isProductOnSale(p)) &&
       (!category || p.category === category) &&
-      (!subcategory || p.subcategory === subcategory)
+      matchesSubcategories(p, subcategories)
   )
   const availableBrands = Array.from(new Set(brandBase.map((p) => brandSlug(p.brand))))
   const brandCounts: Record<string, number> = {}

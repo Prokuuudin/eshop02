@@ -66,7 +66,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps):
   const initialCatalog = await getInitialCatalogProducts({
     language,
     category: slug,
-    subcategory: validSubcategory || undefined,
+    subcategories: validSubcategory ? [validSubcategory] : [],
   })
   const [title, description] = copy[language][slug]
   const siteUrl = getSiteUrl()

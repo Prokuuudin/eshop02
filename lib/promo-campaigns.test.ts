@@ -25,7 +25,7 @@ describe('evaluatePromoCampaigns', () => {
     const product = { ...item('body'), title: 'Wax', brand: 'BEAUTY IMAGE', stock: 10, rating: 0 } as Product
     const now = new Date('2026-09-18T12:00:00Z')
     const [decorated, other] = attachCampaignOffers([product, { ...product, id: 'other', brand: 'Other' }], [campaign], now)
-    expect(decorated.campaignOffers).toEqual([{ id: 'beauty', discountPercent: 20, minOrderAmount: 0 }])
+    expect(decorated.campaignOffers).toEqual([{ id: 'beauty', name: 'Beauty', discountPercent: 20, minOrderAmount: 0 }])
     expect(other.campaignOffers).toEqual([])
     expect(decorated.price).toBe(100)
     expect(product).not.toHaveProperty('campaignOffers')

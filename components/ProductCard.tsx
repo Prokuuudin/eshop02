@@ -17,6 +17,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { stripBrandPrefix } from '@/lib/product-title';
 import { localizePath } from '@/lib/i18n-routing';
 import ProductCampaignOffers from './ProductCampaignOffers';
+import { getProductCampaignPrice } from '@/lib/product-campaign-price';
 
 type Props = {
     product: Product;
@@ -31,8 +32,9 @@ export default function ProductCard({ product }: Props): React.ReactElement {
             : language === 'lv' && product.titleLv
             ? product.titleLv
             : t(product.titleKey ?? `products.${product.id}.title`, product.title);
-    const displayPrice = getDisplayPrice(product.price);
-    const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined;
+    const campaignPrice = getProductCampaignPrice(product);
+    const displayPrice = getDisplayPrice(campaignPrice.price);
+    const displayOldPrice = campaignPrice.oldPrice ? getDisplayPrice(campaignPrice.oldPrice) : undefined;
     const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0];
     const firstTierPrice = firstTier ? calculatePrice(product, firstTier.quantity) : null;
 

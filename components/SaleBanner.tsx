@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/use-translation';
 import { resolveLocaleText } from '@/lib/locale-text';
+import { resolveBannerLink } from '@/lib/banner-link';
 
 export type PromoBanner = {
     id: string;
@@ -29,6 +30,7 @@ const CTA_VARIANT = {
 
 export default function SaleBanner({ banner, contentClassName = '' }: { banner: PromoBanner; contentClassName?: string }): React.ReactElement {
     const { language } = useTranslation();
+    banner = { ...banner, link: resolveBannerLink(banner.link, language) };
     const isLight = banner.textColor === 'light';
     const title = resolveLocaleText(banner.title, language);
     const subtitle = resolveLocaleText(banner.subtitle, language);

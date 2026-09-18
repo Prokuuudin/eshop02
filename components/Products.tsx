@@ -16,6 +16,7 @@ import type { CatalogFacets } from '@/lib/initial-catalog-products'
 import { fetchAllProducts } from '@/lib/client-products'
 import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 import { usePersistentViewMode } from '@/hooks/usePersistentViewMode'
+import { useAuthStore } from '@/lib/auth-store'
 
 const CATALOG_VIEW_MODES = ['grid', 'list'] as const
 
@@ -45,6 +46,7 @@ const isProductOnSale = (product: Product): boolean => {
 
 export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets }: ProductsProps): React.ReactElement {
   const { t, language } = useTranslation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [products, setProducts] = React.useState<Product[]>(initialProducts ?? [])
   const [productsLoading, setProductsLoading] = React.useState(initialProducts === undefined)
   const [productsWarning, setProductsWarning] = React.useState('')
@@ -96,21 +98,30 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   }, [initialFilters?.group, initialSubcat, initialFilters?.brands, initialFilters?.minPrice, initialFilters?.maxPrice, initialFilters?.onSale, initialFilters?.order]);
 
   React.useEffect(() => {
-    if (serverPagination) return
+    if (serverPagination) {
+      queueMicrotask(() => setProducts(initialProducts ?? []))
+      return
+    }
+
+    let cancelled = false
 
     const loadProducts = async () => {
       try {
-        setProducts(await fetchAllProducts())
+        const nextProducts = await fetchAllProducts()
+        if (cancelled) return
+        setProducts(nextProducts)
       } catch {
+        if (cancelled) return
         setProducts([])
         setProductsWarning('Не удалось загрузить товары из API')
       } finally {
-        setProductsLoading(false)
+        if (!cancelled) setProductsLoading(false)
       }
     }
 
     void loadProducts()
-  }, [initialProducts, serverPagination])
+    return () => { cancelled = true }
+  }, [initialProducts, serverPagination, isAuthenticated])
 
   React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())

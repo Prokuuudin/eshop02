@@ -33,7 +33,7 @@ export interface Product {
   brand: string
   price: number
   oldPrice?: number
-  campaignOffers?: Array<{ id: string; discountPercent: number; minOrderAmount: number }>
+  campaignOffers?: Array<{ id: string; discountPercent: number; minOrderAmount: number; name?: string; showOldPrice?: boolean }>
   rating: number // 0-5
   ratingCount?: number
   reviewCount?: number

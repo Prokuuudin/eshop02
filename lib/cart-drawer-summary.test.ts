@@ -13,6 +13,20 @@ const item = (lineKey: string, price: number, quantity = 1): CartItem => ({
 })
 
 describe('getCartDrawerSummary', () => {
+  it('deducts the campaign discount and calculates VAT from the discounted total', () => {
+    const summary = getCartDrawerSummary([item('one', 10, 2), item('two', 50)], ['two'], 4)
+    expect(summary.subtotal).toBe(20)
+    expect(summary.discount).toBe(4)
+    expect(summary.finalTotal).toBe(16)
+    expect(summary.tax).toBeCloseTo(16 - 16 / 1.21)
+    expect(summary.netSubtotal + summary.tax).toBeCloseTo(16)
+  })
+
+  it('caps the discount at the selected subtotal and ignores invalid discounts', () => {
+    expect(getCartDrawerSummary([item('one', 10)], [], 20).finalTotal).toBe(0)
+    expect(getCartDrawerSummary([item('one', 10)], [], Number.NaN).finalTotal).toBe(10)
+  })
+
   it('calculates totals only for selected cart lines', () => {
     const summary = getCartDrawerSummary([item('one', 12, 2), item('two', 50)], ['two'])
 

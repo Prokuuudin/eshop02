@@ -37,6 +37,7 @@ export default function LoginForm({
     }, [mfaChallengeToken]);
 
     const finishLogin = () => {
+        router.refresh();
         if (onSuccess) { onSuccess(); return; }
         const redirect = searchParams.get('redirect');
         if (redirect) return router.push(redirect);

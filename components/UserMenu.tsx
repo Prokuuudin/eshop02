@@ -40,7 +40,6 @@ export default function UserMenu(): React.ReactElement {
         setLoginOpen(false);
         setForgotOpen(false);
         setIsOpen(false);
-        router.push('/account');
     };
 
     const handleOpenForgotPassword = (): void => {

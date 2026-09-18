@@ -12,6 +12,7 @@ export type PromoCampaign = {
   description: string
   type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
   discountPercent: number
+  showOldPrice?: boolean
   startDate: string
   endDate: string
   active: boolean
@@ -57,6 +58,8 @@ export function attachCampaignOffers(products: Product[], campaigns: PromoCampai
       id: campaign.id,
       discountPercent: Math.min(100, campaign.discountPercent),
       minOrderAmount: Math.max(0, Number(campaign.minOrderAmount) || 0),
+      ...(campaign.name ? { name: campaign.name } : {}),
+      ...(campaign.showOldPrice !== undefined ? { showOldPrice: campaign.showOldPrice } : {}),
     })).sort((a, b) => b.discountPercent - a.discountPercent),
   }))
 }

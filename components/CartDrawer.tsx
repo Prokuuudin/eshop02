@@ -29,6 +29,7 @@ import {
 import { pointsToEuros } from '@/lib/bonus-program';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { getCartDrawerSummary } from '@/lib/cart-drawer-summary';
+import { useCartCampaignOffer } from '@/hooks/useCartCampaignOffer';
 
 type CartDrawerProps = {
     isOpen: boolean;
@@ -53,10 +54,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
 
+    const selectedItems = getCartDrawerSummary(items, deselectedLineKeys).selectedItems;
+    const campaignOffer = useCartCampaignOffer(selectedItems, isOpen);
     const {
         selectedItemIds, bonusToEarn, tax, netSubtotal,
-        finalTotal, wholesaleGuard, checkoutHref,
-    } = getCartDrawerSummary(items, deselectedLineKeys);
+        finalTotal, discount, wholesaleGuard, checkoutHref,
+    } = getCartDrawerSummary(items, deselectedLineKeys, campaignOffer.discount);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
 
     React.useEffect(() => {
@@ -313,6 +316,12 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
 
                         {/* Разбивка */}
                         <div className="space-y-1 text-sm text-foreground">
+                            {discount > 0 && (
+                                <div className="flex items-center justify-between text-green-600">
+                                    <span>{t('checkout.summary.discount')} {campaignOffer.campaignName && `(${campaignOffer.campaignName})`}</span>
+                                    <span>−{formatCurrency(discount)}</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between">
                                 <span>{t('cart.subtotalExclVat')}</span>
                                 <span className="text-sm font-medium text-foreground tabular-nums">

@@ -10,7 +10,6 @@ import LoginForm from './auth/LoginForm'
 import RegisterSwitcher from './auth/RegisterSwitcher'
 import ForgotPasswordForm from './auth/ForgotPasswordForm'
 import { X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
 
 type Props = {
@@ -19,7 +18,6 @@ type Props = {
 }
 
 export default function MobileMenu({ isOpen, onClose }: Props): React.ReactElement | null {
-  const router = useRouter();
   const { t, language } = useTranslation();
   const { categories } = useCategoriesConfig();
   const [expandCategories, setExpandCategories] = useState(false);
@@ -33,7 +31,6 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
     setLoginOpen(false);
     setForgotOpen(false);
     onClose();
-    router.push('/account');
   };
   const handleOpenRegisterFromLogin = () => {
     setLoginOpen(false);

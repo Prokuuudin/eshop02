@@ -19,6 +19,7 @@ type PromoCampaign = {
   description: string
   type: CampaignType
   discountPercent: number
+  showOldPrice?: boolean
   startDate: string
   endDate: string
   active: boolean
@@ -35,6 +36,7 @@ const emptyForm = (): Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'> => (
   description: '',
   type: 'discount',
   discountPercent: 10,
+  showOldPrice: true,
   startDate: new Date().toISOString().split('T')[0],
   endDate: '',
   active: true,
@@ -110,6 +112,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
       description: item.description,
       type: item.type,
       discountPercent: item.discountPercent,
+      showOldPrice: item.showOldPrice !== false,
       startDate: item.startDate ? item.startDate.split('T')[0] : '',
       endDate: item.endDate ? item.endDate.split('T')[0] : '',
       active: item.active,
@@ -262,6 +265,12 @@ export default function AdminCampaignsPage(): React.ReactElement {
                   onChange={(e) => setForm((f) => ({ ...f, discountPercent: Number(e.target.value) }))}
                 />
               </label>}
+                {form.type === 'discount' && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={form.showOldPrice !== false} onChange={(e) => setForm((f) => ({ ...f, showOldPrice: e.target.checked }))} />
+                    {l('Показывать зачёркнутую старую цену', 'Show crossed-out original price', 'Rādīt pārsvītrotu sākotnējo cenu')}
+                  </label>
+                )}
               <label htmlFor="admin-campaign-field-5" className="space-y-1">
                 <span className="text-sm text-muted-foreground">{l('Дата начала', 'Start date', 'Sākuma datums')}</span>
                 <Input id="admin-campaign-field-5"

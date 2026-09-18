@@ -20,7 +20,7 @@ export const ProductPrice: React.FC<ProductPriceProps> = ({
     const isHydrated = useAuthStore((s) => s.isHydrated);
 
     // Neutral placeholder until auth resolves — avoids the login/price flash for logged-in users.
-    if (!isHydrated) {
+    if (!isHydrated || (isAuthenticated && !Number.isFinite(price))) {
         return <div className="h-10 w-28 rounded bg-muted animate-pulse" />;
     }
     if (!isAuthenticated) {

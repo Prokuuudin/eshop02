@@ -12,6 +12,7 @@ type PromoCampaign = {
   description: string
   type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
   discountPercent: number
+  showOldPrice?: boolean
   startDate: string
   endDate: string
   active: boolean
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       id: `campaign-${Date.now()}`,
       name,
       description: String(body.description ?? '').trim(),
+      showOldPrice: body.showOldPrice !== false,
       type,
       discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(body.discountPercent) || 0)) : 0,
       startDate,

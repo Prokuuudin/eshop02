@@ -11,6 +11,7 @@ import { Product, SelectedVariant } from '@/data/products';
 import { getVariantGroups, getPreselectedVariants, sumPriceAdjustment } from '@/lib/product-variants';
 import { stripBrandPrefix } from '@/lib/product-title';
 import ProductCampaignOffers from './ProductCampaignOffers';
+import { getProductCampaignPrice } from '@/lib/product-campaign-price';
 
 interface ProductInfoProps {
     product: Product;
@@ -38,6 +39,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     const priceAdjustment = useMemo(() => sumPriceAdjustment(selectedVariants), [selectedVariants]);
     const adjustedPrice = displayPrice + priceAdjustment;
     const adjustedOldPrice = displayOldPrice !== undefined ? displayOldPrice + priceAdjustment : undefined;
+    const campaignPrice = getProductCampaignPrice({ ...product, price: adjustedPrice, oldPrice: adjustedOldPrice });
 
     return (
         <div className="product-detail__info">
@@ -55,8 +57,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 />
             )}
             <ProductPrices
-                price={adjustedPrice}
-                oldPrice={adjustedOldPrice}
+                price={campaignPrice.price}
+                oldPrice={campaignPrice.oldPrice}
                 priceLocale={priceLocale}
                 stock={product.stock}
                 productId={product.id}

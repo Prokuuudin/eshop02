@@ -12,6 +12,7 @@ type PromoCampaign = {
   description: string
   type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
   discountPercent: number
+  showOldPrice?: boolean
   startDate: string
   endDate: string
   active: boolean
@@ -66,6 +67,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     data[idx] = {
       ...data[idx], ...body, id, name, type, startDate, endDate,
       description: String(merged.description ?? '').trim(),
+      showOldPrice: merged.showOldPrice !== false,
       discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(merged.discountPercent) || 0)) : 0,
       minOrderAmount: Math.max(0, Number(merged.minOrderAmount) || 0),
       targetCategories: Array.isArray(merged.targetCategories) ? [...new Set(merged.targetCategories.map(String).filter(Boolean))] : [],

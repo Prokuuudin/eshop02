@@ -15,6 +15,7 @@ import WishlistButton from './WishlistButton';
 import { localizePath } from '@/lib/i18n-routing';
 import { Bell } from 'lucide-react';
 import ProductCampaignOffers from './ProductCampaignOffers';
+import { getProductCampaignPrice } from '@/lib/product-campaign-price';
 
 type Props = { product: Product };
 
@@ -30,8 +31,9 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
       ? product.titleLv
       : t(product.titleKey ?? `products.${product.id}.title`, product.title);
 
-  const displayPrice = getDisplayPrice(product.price);
-  const displayOldPrice = product.oldPrice ? getDisplayPrice(product.oldPrice) : undefined;
+  const campaignPrice = getProductCampaignPrice(product);
+  const displayPrice = getDisplayPrice(campaignPrice.price);
+  const displayOldPrice = campaignPrice.oldPrice ? getDisplayPrice(campaignPrice.oldPrice) : undefined;
   const firstTier = product.bulkPricingTiers?.slice().sort((a, b) => a.quantity - b.quantity)[0];
   const firstTierPrice = firstTier ? calculatePrice(product, firstTier.quantity) : null;
 
@@ -99,7 +101,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
 
       {/* Price + Action */}
       <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:flex-shrink-0 sm:min-w-[140px]">
-        {!isHydrated ? (
+        {!isHydrated || (isAuthenticated && !Number.isFinite(displayPrice)) ? (
           <div className="h-6 w-20 rounded bg-muted animate-pulse" />
         ) : isAuthenticated ? (
           <div className="sm:text-right">

@@ -33,6 +33,7 @@ import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
 import AnimatedPrice from '@/components/AnimatedPrice';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
+import { useCartCampaignOffer } from '@/hooks/useCartCampaignOffer';
 
 export default function CartPage(): React.ReactElement {
     const { t, language } = useTranslation();
@@ -52,6 +53,8 @@ export default function CartPage(): React.ReactElement {
         queueMicrotask(() => setCurrentUser(getCurrentUser()));
     }, []);
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
+    const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
+    const campaignOffer = useCartCampaignOffer(selectedItems);
 
     const handleDecrease = (lineKey: string, quantity: number, minQuantity: number): void => {
         if (quantity <= minQuantity) {
@@ -88,16 +91,17 @@ export default function CartPage(): React.ReactElement {
         );
     }
 
-    const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
     const selectedItemIds = selectedItems.map((item) => item.lineKey);
     const subtotal = selectedItems.reduce(
         (sum, item) => sum + calculatePrice(item, item.quantity) * item.quantity,
         0
     );
     // Catalog prices already include VAT — taxAmount is informational, not added to the total.
-    const taxAmount = extractVat(subtotal);
-    const deliveryFee = subtotal > 0 ? calcDeliveryFee('courier', subtotal) : 0;
-    const grandTotal = subtotal + deliveryFee;
+    const discount = Math.min(subtotal, campaignOffer.discount);
+    const subtotalAfterDiscount = subtotal - discount;
+    const taxAmount = extractVat(subtotalAfterDiscount);
+    const deliveryFee = subtotal > 0 && !campaignOffer.freeShipping ? calcDeliveryFee('courier', subtotalAfterDiscount) : 0;
+    const grandTotal = subtotalAfterDiscount + deliveryFee;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const bonusToEarn = calcOrderBonus(
         selectedItems.map((item) => ({
@@ -314,6 +318,12 @@ export default function CartPage(): React.ReactElement {
                         )}
 
                         <div className="cart__summary-breakdown space-y-3 text-sm border-b border-border pb-4 text-gray-700 dark:text-gray-300">
+                            {discount > 0 && (
+                                <div className="cart__summary-row flex justify-between text-green-600">
+                                    <span>{t('checkout.summary.discount')} {campaignOffer.campaignName && `(${campaignOffer.campaignName})`}</span>
+                                    <span>−{formatCurrency(discount)}</span>
+                                </div>
+                            )}
                             <div className="cart__summary-row flex justify-between">
                                 <span>{t('checkout.summary.items')}</span>
                                 <span className="cart__summary-value font-medium text-foreground">

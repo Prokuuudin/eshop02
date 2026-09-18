@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
+import { localizePath } from '@/lib/i18n-routing'
 
 export default function Newsletter({ compact = false, embedded = false, registration = false }: { compact?: boolean; embedded?: boolean; registration?: boolean }): React.ReactElement {
   const { t, language } = useTranslation()
@@ -62,7 +63,7 @@ export default function Newsletter({ compact = false, embedded = false, registra
       <div className="newsletter__action md:flex-1">
         {registration ? (
           <Button asChild className="w-full">
-            <Link href={`/${language}/register`}>{t('newsletter.subscribe')}</Link>
+            <Link href={localizePath('/auth/register', language)}>{t('newsletter.subscribe')}</Link>
           </Button>
         ) : <>
         <form onSubmit={onSubmit} className={`newsletter__form flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>

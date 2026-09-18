@@ -11,7 +11,7 @@ vi.mock('@/components/BannerCarousel', () => ({
     React.createElement('div', { 'data-testid': 'banner-carousel', 'data-count': banners.length, 'data-scroll-mode': scrollMode ?? 'auto' }),
 }))
 vi.mock('@/components/Newsletter', () => ({ default: ({ registration }: { registration?: boolean }) =>
-  registration ? React.createElement('a', { href: '/ru/register' }, 'Subscribe') : null }))
+  registration ? React.createElement('a', { href: '/auth/register' }, 'Subscribe') : null }))
 vi.mock('@/components/ui/Reveal', () => ({ default: ({ children }: { children: React.ReactNode }) => children }))
 
 import SaleBanner, { type PromoBanner } from '@/components/SaleBanner'
@@ -27,7 +27,7 @@ describe('storefront banner rendering', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {
       products: [], banners: [image, { ...image, id: 'sale', type: 'sale', title: 'Up to 70%', image: '' }],
     }))
-    expect(html).toContain('href="/ru/register"')
+    expect(html).toContain('href="/auth/register"')
     expect(html.indexOf('Up to 70%')).toBeLessThan(html.indexOf('src="/ready.png"'))
     expect(html).toContain('/girl1.png')
   })

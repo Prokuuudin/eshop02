@@ -13,7 +13,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogClose,
     DialogTrigger,
 } from '@/components/ui/dialog';
 
@@ -149,32 +148,11 @@ const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl w-full rounded-2xl p-4 sm:p-8 bg-card shadow-2xl border border-border">
-                        <DialogHeader className="flex flex-row items-center justify-between mb-4 p-0">
+                        <DialogHeader className="mb-4 p-0">
                             <DialogTitle className="text-2xl font-bold text-foreground">
                                 {translations[language]['admin.productsPage.archiveTitle'] ||
                                     l('Корзина удалённых товаров', 'Deleted products', 'Dzēsto preču atkritne')}
                             </DialogTitle>
-                            <DialogClose asChild>
-                                <button
-                                    aria-label={l('Закрыть', 'Close', 'Aizvērt')}
-                                    className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
-                                >
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 20 20"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            d="M5 5L15 15M15 5L5 15"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                        />
-                                    </svg>
-                                </button>
-                            </DialogClose>
                         </DialogHeader>
                         <div className="py-2 px-1 max-h-[60vh] overflow-y-auto">
                             <ArchivePanel

@@ -15,6 +15,10 @@ const nextConfig = {
         // a failed page's export (with jittered backoff) avoids the race instead of
         // failing the whole build. Default is effectively 1 (no retry).
         staticGenerationRetryCount: 3,
+        // DIAGNOSTIC: force fully sequential static generation (default is 8 pages/worker
+        // in parallel) to test whether the workStore invariant above is concurrency-related.
+        // Remove once the hypothesis is confirmed or ruled out on Plesk.
+        staticGenerationMaxConcurrency: 1,
     },
     images: {
         qualities: [75, 90],

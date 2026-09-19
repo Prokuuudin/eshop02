@@ -9,16 +9,6 @@ const nextConfig = {
     experimental: {
         // Allow 50 MB video uploads plus the multipart form overhead through proxy.
         proxyClientMaxBodySize: '51mb',
-        // Workaround for a Next.js static-worker race ("Invariant: Expected workStore
-        // to be initialized") that fails ~600-page builds nondeterministically on some
-        // hosts (observed on Plesk/IIS) but not others; not reproducible locally. Retrying
-        // a failed page's export (with jittered backoff) avoids the race instead of
-        // failing the whole build. Default is effectively 1 (no retry).
-        staticGenerationRetryCount: 3,
-        // DIAGNOSTIC: force fully sequential static generation (default is 8 pages/worker
-        // in parallel) to test whether the workStore invariant above is concurrency-related.
-        // Remove once the hypothesis is confirmed or ruled out on Plesk.
-        staticGenerationMaxConcurrency: 1,
     },
     images: {
         qualities: [75, 90],

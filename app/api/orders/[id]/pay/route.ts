@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -28,7 +29,7 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    if (order.paymentMethod !== 'paysera') {
+    if (order.paymentMethod !== 'paysera' && order.paymentMethod !== 'paypal') {
       return NextResponse.json({ error: 'not_online_payment' }, { status: 400 })
     }
     if (order.paymentStatus === 'paid') {
@@ -43,8 +44,11 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
       })
     }
 
-    const payment = await createPayseraPaymentForOrder(order)
-    await updateServerOrderPayment(order.id, { paymentSessionId: payment.payseraOrderId })
+    const payment = order.paymentMethod === 'paysera'
+      ? await createPayseraPaymentForOrder(order)
+      : await createPaypalPaymentForOrder(order)
+    const sessionId = 'payseraOrderId' in payment ? payment.payseraOrderId : payment.paypalOrderId
+    await updateServerOrderPayment(order.id, { paymentSessionId: sessionId })
 
     return NextResponse.json({ paymentUrl: payment.paymentUrl })
   } catch (error) {

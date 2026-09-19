@@ -125,6 +125,7 @@ function useOrderPageState({ params }: PageProps) {
         if (paymentMethod === 'card') return t('order.payment.card');
         if (paymentMethod === 'bank') return t('order.payment.bank');
         if (paymentMethod === 'paysera') return t('order.payment.paysera');
+        if (paymentMethod === 'paypal') return t('order.payment.paypal');
         return t('order.payment.cash');
     };
 

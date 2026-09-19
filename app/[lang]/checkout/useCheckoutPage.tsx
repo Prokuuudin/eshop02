@@ -390,8 +390,8 @@ function useCheckoutPageState() {
         replaceWithItems(remainingItems);
         setSubmitted(true);
 
-        // Redirect to Paysera's hosted payment page when paying online; otherwise to the
-        // order confirmation page (bank transfer / cash-at-pickup stay unpaid until staff confirm).
+        // Redirect to the gateway's hosted payment page (Paysera/PayPal) when paying online;
+        // otherwise to the order confirmation page (bank/cash stay unpaid until staff confirm).
         setTimeout(() => {
             setIsSubmitting(false);
             window.location.href = paymentUrl ?? `/order/${orderId}`;

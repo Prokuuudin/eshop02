@@ -19,6 +19,7 @@ vi.mock('@/lib/orders-data-store', () => ({
   },
 }))
 vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
+vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 vi.mock('@/lib/turnstile-server', () => ({
   verifyTurnstile: vi.fn(),
@@ -38,6 +39,7 @@ import { getServerUser } from '@/lib/server-auth'
 import { createServerOrder, ExistingCheckoutOrderError, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -234,6 +236,54 @@ describe('POST /api/orders — admin notification', () => {
     expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
   })
 
+  it('creates a PayPal order and returns its approval link for a fresh checkout', async () => {
+    vi.mocked(createPaypalPaymentForOrder).mockResolvedValue({ paypalOrderId: 'pp-1', paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-1' })
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paypal' }))
+
+    expect(res.status).toBe(200)
+    const json = (await res.json()) as { paymentUrl?: string }
+    expect(json.paymentUrl).toBe('https://www.paypal.com/checkoutnow?token=pp-1')
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pp-1' })
+  })
+
+  it('fails the order (releasing the stock hold) when PayPal order creation fails', async () => {
+    vi.mocked(createPaypalPaymentForOrder).mockRejectedValue(new Error('gateway down'))
+    vi.mocked(updateServerOrderPayment).mockResolvedValue(undefined as never)
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paypal' }))
+
+    expect(res.status).toBe(502)
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
+  })
+
+  it('mints a fresh PayPal payment link on a duplicate resubmit of an unpaid paypal order', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paypal', paymentStatus: 'unpaid', total: 64, language: 'ru',
+    } as never))
+    vi.mocked(createPaypalPaymentForOrder).mockResolvedValue({ paypalOrderId: 'pp-2', paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-2' })
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paypal' }, 'checkout-ORD-001'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      success: true, orderId: '1001', idempotent: true, paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-2',
+    })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pp-2' })
+  })
+
+  it('does not mint a new payment link for a duplicate resubmit of an already-paid paypal order', async () => {
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paypal', paymentStatus: 'paid', total: 64, language: 'ru',
+    } as never))
+
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paypal' }, 'checkout-ORD-001'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(createPaypalPaymentForOrder).not.toHaveBeenCalled()
+  })
+
   it('does not send admin email when CONTACT_TO is not set', async () => {
     delete process.env.CONTACT_TO
     await POST(makeRequest())
@@ -261,6 +311,14 @@ describe('POST /api/orders — admin notification', () => {
 
   it('accepts the bank-transfer option offered by checkout', async () => {
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank' }))
+
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledOnce()
+  })
+
+  it('accepts the PayPal option offered by checkout', async () => {
+    vi.mocked(createPaypalPaymentForOrder).mockResolvedValue({ paypalOrderId: 'pp-1', paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-1' })
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paypal' }))
 
     expect(res.status).toBe(200)
     expect(createServerOrder).toHaveBeenCalledOnce()

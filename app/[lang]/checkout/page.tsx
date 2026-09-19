@@ -258,8 +258,8 @@ export default function CheckoutPage(): React.ReactElement {
                             }}
                             className="space-y-3"
                         >
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {(['bank', 'cash', 'paysera'] as const).map((method) => (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                {(['bank', 'cash', 'paysera', 'paypal'] as const).map((method) => (
                                     <label
                                         key={method}
                                         className="flex items-center p-3 border rounded border-border cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"

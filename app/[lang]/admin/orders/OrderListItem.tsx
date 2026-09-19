@@ -43,10 +43,12 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
         cash: l('Оплата при получении', 'Cash on delivery', 'Skaidra nauda saņemot'),
         card: l('Банковская карта', 'Bank card', 'Bankas karte'),
         paysera: l('Онлайн-оплата (Paysera)', 'Online payment (Paysera)', 'Tiešsaistes apmaksa (Paysera)'),
+        paypal: l('Онлайн-оплата (PayPal)', 'Online payment (PayPal)', 'Tiešsaistes apmaksa (PayPal)'),
     };
     const PROVIDER_LABELS: Record<string, string> = {
         manual: l('Вручную', 'Manual', 'Manuāli'),
         paysera: 'Paysera',
+        paypal: 'PayPal',
     };
     const {
       getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,

@@ -9,11 +9,13 @@ vi.mock('@/lib/orders-data-store', () => ({
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
+vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
 
 import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
 
@@ -50,7 +52,7 @@ describe('POST /api/orders/[id]/pay', () => {
     expect(res.status).toBe(404)
   })
 
-  it('rejects orders that are not paid via paysera', async () => {
+  it('rejects orders that are not paid via an online gateway', async () => {
     vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentMethod: 'bank' } as never)
     vi.mocked(canAccessOrder).mockReturnValue(true)
 
@@ -58,6 +60,7 @@ describe('POST /api/orders/[id]/pay', () => {
 
     expect(res.status).toBe(400)
     expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+    expect(createPaypalPaymentForOrder).not.toHaveBeenCalled()
   })
 
   it('rejects an order that is already paid', async () => {
@@ -83,6 +86,20 @@ describe('POST /api/orders/[id]/pay', () => {
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-9' })
   })
 
+  it('mints a fresh PayPal payment link and persists the new session id for an owner-accessible unpaid order', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentMethod: 'paypal' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    vi.mocked(createPaypalPaymentForOrder).mockResolvedValue({ paypalOrderId: 'pp-9', paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-9' })
+
+    const res = await POST(makeRequest(), context)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-9' })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pp-9' })
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
   it('is rate-limited per order id', async () => {
     vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
     vi.mocked(canAccessOrder).mockReturnValue(true)
@@ -98,6 +115,16 @@ describe('POST /api/orders/[id]/pay', () => {
     vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
     vi.mocked(canAccessOrder).mockReturnValue(true)
     vi.mocked(createPayseraPaymentForOrder).mockRejectedValue(new Error('gateway down'))
+
+    const res = await POST(makeRequest(), context)
+
+    expect(res.status).toBe(502)
+  })
+
+  it('returns 502 when the PayPal gateway call fails', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentMethod: 'paypal' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    vi.mocked(createPaypalPaymentForOrder).mockRejectedValue(new Error('gateway down'))
 
     const res = await POST(makeRequest(), context)
 

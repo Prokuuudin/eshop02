@@ -47,25 +47,20 @@ const PRIVACY_NOTICE_VERSION = '2026-07-03'
 /**
  * Registers/activates a cardholder against a real card number נthe only
  * server-authoritative path for "register with client card" (RegisterForm).
- * Two cardholder shapes exist and are checked in order:
- *
- *  1. An individual already has a User row with this cardNumber נeither a
- *     dormant ERP import (Klienti.xlsx, see scripts/import-client-cards.ts)
- *     or a company member created by this route before. Verified against
- *     the last 4 digits of `phone` and/or `email` on file for that
- *     cardholder נsourced from the client database, matched independently:
- *     either one matching (or both) is sufficient. `mustChangePassword`
- *     tells us whether they've already picked their own password (then this
- *     card is "taken"); no usable contact on file at all (no phone, and
- *     email is missing or only the synthetic `card.<n>@client.local`
- *     placeholder) routes to the manual no-card request flow client-side.
- *     Note: activation itself sets `mustChangePassword: true` (the phone/email
- *     used to get in is a one-time credential, not fit to stand as the account's
- *     permanent password) — so this gate only closes once the cardholder picks
- *     their own password via /api/user/password, not at the moment of activation.
- *  2. Otherwise, the card may belong to a Company with no User yet (new B2B
- *     team member claiming a shared company card) נcreate one, gated by
- *     the shared FIRST_LOGIN_PASSWORD mailed to the company contact.
+ * Requires an existing User row with this cardNumber נeither a dormant ERP
+ * import (Klienti.xlsx, see scripts/import-client-cards.ts) or a cardholder
+ * created by this route before. Verified against the last 4 digits of
+ * `phone` and/or `email` on file for that cardholder נsourced from the
+ * client database, matched independently: either one matching (or both) is
+ * sufficient. `mustChangePassword` tells us whether they've already picked
+ * their own password (then this card is "taken"); no usable contact on file
+ * at all (no phone, and email is missing or only the synthetic
+ * `card.<n>@client.local` placeholder) routes to the manual no-card request
+ * flow client-side.
+ * Note: activation itself sets `mustChangePassword: true` (the phone/email
+ * used to get in is a one-time credential, not fit to stand as the account's
+ * permanent password) — so this gate only closes once the cardholder picks
+ * their own password via /api/user/password, not at the moment of activation.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {

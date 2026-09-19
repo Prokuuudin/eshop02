@@ -58,7 +58,6 @@ Vercel-конфигурация в репозитории пока не удал
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_API_BASE` | PayPal Orders v2 REST |
 | `PAYPAL_WEBHOOK_ID` | верификация подписи `/api/webhooks/paypal` |
 | `NEWSLETTER_UNSUB_SECRET` | подпись ссылок отписки от рассылки |
-| `FIRST_LOGIN_PASSWORD` | стартовый пароль для новых B2B-аккаунтов (в dev есть дефолт, в production обязателен) |
 | `GRINS_FTPS_HOST`, `GRINS_FTPS_USER`, `GRINS_FTPS_PASSWORD`, `GRINS_FTPS_REMOTE_PATH` | ERP-синк (сейчас выключен — см. раздел 9) |
 
 ### Optional (есть безопасный дефолт/деградацию)

@@ -46,7 +46,6 @@ vi.mock('@/lib/mailer', () => ({
 
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/mailer'
-import { FIRST_LOGIN_PASSWORD } from '@/lib/auth-constants'
 import { POST } from './route'
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
@@ -133,7 +132,7 @@ describe('POST /api/auth/register-card', () => {
     userFindFirstMock.mockResolvedValue(null)
     companyFindFirstMock.mockResolvedValue(null)
 
-    const res = await POST(makeRequest({ cardNumber: '9999', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '9999' }))
 
     expect(res.status).toBe(404)
     expect(await res.json()).toMatchObject({ error: 'card_not_found' })
@@ -142,7 +141,7 @@ describe('POST /api/auth/register-card', () => {
   it('rejects when the card belongs to an already-activated individual cardholder', async () => {
     userFindFirstMock.mockResolvedValue(ACTIVATED_USER)
 
-    const res = await POST(makeRequest({ cardNumber: '9012', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '9012' }))
 
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
@@ -153,7 +152,7 @@ describe('POST /api/auth/register-card', () => {
     userFindFirstMock.mockResolvedValue({ id: 'existing-user' })
     companyFindFirstMock.mockResolvedValue(COMPANY)
 
-    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '1234' }))
 
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
@@ -330,7 +329,7 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rejects when the card number is blank', async () => {
-    const res = await POST(makeRequest({ cardNumber: '   ', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '   ' }))
 
     expect(res.status).toBe(400)
     expect(prisma.user.findFirst).not.toHaveBeenCalled()
@@ -341,7 +340,7 @@ describe('POST /api/auth/register-card', () => {
     userFindFirstMock.mockResolvedValue(null)
     companyFindFirstMock.mockResolvedValue(null)
 
-    await POST(makeRequest({ cardNumber: '0001', password: FIRST_LOGIN_PASSWORD }))
+    await POST(makeRequest({ cardNumber: '0001' }))
 
     expect(userFindFirstMock).toHaveBeenCalledWith({
       where: { cardNumber: { equals: '1', mode: 'insensitive' } },
@@ -350,7 +349,7 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rejects a new card identifier longer than six digits', async () => {
-    const res = await POST(makeRequest({ cardNumber: '1234567', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '1234567' }))
 
     expect(res.status).toBe(400)
     expect(await res.json()).toMatchObject({ error: 'invalid_card' })
@@ -358,9 +357,9 @@ describe('POST /api/auth/register-card', () => {
   })
 
   it('rate-limits repeated attempts against the same card number regardless of IP', async () => {
-    // The shared welcome password means a single known card number is the only
-    // thing standing between an attacker and someone else's account — cap
-    // attempts per card, not just per IP, to slow that down.
+    // Phone-last-4 is low entropy (10,000 combinations), so a known card
+    // number is most of what stands between an attacker and someone else's
+    // account — cap attempts per card, not just per IP, to slow that down.
     checkRateLimitMock.mockImplementation(async (key: string) =>
       key.startsWith('register-card:card:')
         ? { limited: true, resetAt: Date.now() + 60_000 }
@@ -369,7 +368,7 @@ describe('POST /api/auth/register-card', () => {
     userFindFirstMock.mockResolvedValue(null)
     companyFindFirstMock.mockResolvedValue(null)
 
-    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '1234' }))
 
     expect(res.status).toBe(429)
     expect(prisma.user.findFirst).not.toHaveBeenCalled()
@@ -378,7 +377,7 @@ describe('POST /api/auth/register-card', () => {
   it('rate-limits repeated attempts from the same IP', async () => {
     checkRateLimitMock.mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
 
-    const res = await POST(makeRequest({ cardNumber: '1234', password: FIRST_LOGIN_PASSWORD }))
+    const res = await POST(makeRequest({ cardNumber: '1234' }))
 
     expect(res.status).toBe(429)
   })

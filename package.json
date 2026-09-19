@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:encoding": "node scripts/check-public-text-encoding.mjs",
+    "diagnose:path": "node scripts/diagnose-path.mjs",
     "check:admin-i18n": "node scripts/check-admin-i18n.mjs",
     "check:admin-i18n:strict": "node scripts/check-admin-i18n.mjs --strict",
     "check:prisma": "prisma validate",

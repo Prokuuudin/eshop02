@@ -125,17 +125,19 @@ export default function UserMenu(): React.ReactElement {
 
     if (!user) {
         return (
-            <div className="user-menu flex items-center gap-2">
+            <div className="user-menu flex items-center gap-1">
                 {dialogs}
                 <Button
                     variant="outline"
                     size="sm"
+                    className="px-2"
                     onClick={() => setLoginOpen(true)}
                 >
                     {t('auth.login')}
                 </Button>
                 <Button
                     size="sm"
+                    className="px-2"
                     onClick={() => setRegisterOpen(true)}
                 >
                     {t('auth.registerButton', t('auth.register'))}

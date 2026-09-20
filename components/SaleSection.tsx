@@ -20,7 +20,7 @@ export default function SaleSection({ products, banners }: { products: Product[]
 
     if (!products.length && !banners.length) {
         return (
-            <section id="sale" className="sale-section pt-6">
+            <section id="sale" className="sale-section pt-[18px]">
                 <div className="mx-auto w-full max-w-[1440px] px-4">
                     <Newsletter compact registration />
                 </div>
@@ -29,11 +29,11 @@ export default function SaleSection({ products, banners }: { products: Product[]
     }
 
     return (
-        <section id="sale" className="sale-section pt-6">
+        <section id="sale" className="sale-section pt-[18px]">
             <div className="mx-auto w-full max-w-[1440px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div>
-                        <h2 className="text-2xl font-semibold text-foreground">
+                        <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
                             {t('sale.title')}
                         </h2>
                         <p className="text-sm text-muted-foreground">{t('sale.subtitle')}</p>

@@ -32,7 +32,7 @@ export default async function Benefits({ language }: { language: Language }): Pr
         },
     ];
     return (
-        <section className="benefits pt-6">
+        <section className="benefits pt-[18px]">
             <div className="max-w-[1440px] mx-auto px-4">
                 <div className="benefits__grid grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 items-stretch">
                     {BENEFITS.map((item, idx) => (

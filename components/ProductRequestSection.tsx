@@ -113,7 +113,7 @@ export default function ProductRequestSection({ embedded = false }: { embedded?:
   }
 
   return (
-    <section className={embedded ? 'product-request mb-12' : 'product-request pt-8 md:pt-10'} id="product-request">
+    <section className={embedded ? 'product-request mb-12' : 'product-request pt-6 md:pt-10'} id="product-request">
       {turnstileEnabled && (
         <Script src={TURNSTILE_SCRIPT_SRC} strategy="afterInteractive" onLoad={renderTurnstile} />
       )}

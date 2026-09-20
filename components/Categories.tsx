@@ -22,7 +22,7 @@ export default function Categories({ initialCategories }: { initialCategories?: 
     const isHydrated = useAuthStore((s) => s.isHydrated);
 
     if (!isHydrated || !isAuthenticated) return null;
-    const sectionClassName = 'categories pt-6 relative z-30 overflow-visible';
+    const sectionClassName = 'categories pt-[18px] relative z-30 overflow-visible';
     const gridClassName =
         'categories__grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 overflow-visible';
     const itemWithDropdownClassName =
@@ -41,7 +41,7 @@ export default function Categories({ initialCategories }: { initialCategories?: 
         <section className={sectionClassName}>
             <div className="mx-auto w-full max-w-[1440px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
-                    <h2 className="categories__title text-2xl font-semibold text-foreground">
+                    <h2 className="categories__title text-xl font-semibold text-foreground sm:text-2xl">
                         {t('categories.title')}
                     </h2>
                     <Link

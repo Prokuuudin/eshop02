@@ -9,16 +9,16 @@ export default async function AboutSection({ language }: { language: Language })
   const { t } = await getServerContent(language);
 
   return (
-    <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-12 md:pt-16">
+    <section id="about" className="mx-auto w-full max-w-[1200px] px-4 pt-6 md:pt-16">
       <h1 className="mb-4 text-center text-xl font-semibold text-foreground sm:mb-5 sm:text-2xl">
         {t('about.welcome.title')}
       </h1>
       <div className="grid grid-cols-1 items-stretch gap-5 sm:gap-8 md:grid-cols-[minmax(0,1fr)_minmax(220px,300px)_minmax(0,1fr)]">
         <div>
-          <h2 className="mb-3 text-2xl font-bold text-foreground">{t('about.title')}</h2>
-          <p className="mb-4 text-gray-700 dark:text-gray-300">{t('about.welcome.p1')}</p>
-          <p className="mb-4 text-gray-700 dark:text-gray-300">{t('about.welcome.p2')}</p>
-          <p className="text-gray-700 dark:text-gray-300">{t('about.welcome.p3')}</p>
+          <h2 className="mb-2 text-center text-xl font-bold text-foreground sm:text-2xl">{t('about.title')}</h2>
+          <p className="mb-2 leading-snug text-gray-700 dark:text-gray-300">{t('about.welcome.p1')}</p>
+          <p className="mb-2 leading-snug text-gray-700 dark:text-gray-300">{t('about.welcome.p2')}</p>
+          <p className="leading-snug text-gray-700 dark:text-gray-300">{t('about.welcome.p3')}</p>
         </div>
 
         <div className="relative mx-auto min-h-[240px] w-full max-w-[240px] self-stretch sm:min-h-[320px] sm:max-w-[300px]">
@@ -32,8 +32,8 @@ export default async function AboutSection({ language }: { language: Language })
         </div>
 
         <div className="md:self-start">
-          <h2 className="mb-3 text-2xl font-bold text-foreground">{t('about.why.title')}</h2>
-          <ul className="space-y-4 text-sm leading-snug text-gray-700 dark:text-gray-300 sm:text-base">
+          <h2 className="mb-2 text-center text-xl font-bold text-foreground sm:text-2xl">{t('about.why.title')}</h2>
+          <ul className="space-y-2 text-sm leading-snug text-gray-700 dark:text-gray-300 sm:text-base">
             {['about.why.item1', 'about.why.item2', 'about.why.item3', 'about.why.item4', 'about.why.item5'].map((key) => (
               <li key={key} className="flex gap-1.5">
                 <span aria-hidden="true" className="shrink-0 font-black text-brand">&#10003;</span>

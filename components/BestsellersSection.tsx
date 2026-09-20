@@ -15,10 +15,10 @@ export default function BestsellersSection({ products }: { products: Product[] }
     if (!products.length) return null;
 
     return (
-        <section className="bestsellers pt-12 md:pt-16">
+        <section className="bestsellers pt-6 md:pt-16">
             <div className="mx-auto w-full max-w-[1440px] px-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                    <h2 className="text-2xl font-semibold text-foreground">
+                    <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
                         {t('products.bestSellers')}
                     </h2>
                 </div>

@@ -79,7 +79,7 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
   }, []);
 
   return (
-    <section className="brands pt-12 md:pt-16" id="brands">
+    <section className="brands pt-6 md:pt-16" id="brands">
       <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
 
         <div className="mb-4 text-center sm:mb-5">
@@ -125,11 +125,11 @@ export default function Brands({ initialBrands }: { initialBrands?: BrandConfigI
                   {GROUP_ENTRIES.map(([letter, letterBrands]) => (
                     <div key={letter} className="brands__letter-group min-w-0 border-b border-gray-100 py-3 first:pt-0 last:border-b-0 last:pb-0">
                       <h3 className="brands__letter mb-1 text-lg font-bold text-gray-900">{letter}</h3>
-                      <div className="flex flex-col">
+                      <div className="flex flex-wrap gap-x-1 gap-y-0.5 sm:flex-col sm:flex-nowrap sm:gap-x-0 sm:gap-y-0">
                         {letterBrands.map((brand) => (
                           <Hint content={brand.name} key={brand.id}><Link
                             href={`/catalog?brand=${encodeURIComponent(brand.id)}`}
-                            className="brands__brand-link block min-w-0 [overflow-wrap:anywhere] rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 sm:text-base"
+                            className="brands__brand-link inline-block min-w-0 [overflow-wrap:anywhere] rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 sm:block sm:text-base"
                           >
                             {brand.id === 'chi' ? brand.name.toUpperCase() : toBrandTitleCase(brand.name)}
                           </Link></Hint>

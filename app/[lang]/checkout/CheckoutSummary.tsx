@@ -158,15 +158,15 @@ export function CheckoutSummary({ state, children }: { state: CheckoutState; chi
 
                         <div className="checkout__summary-totals mb-4 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 text-sm text-gray-700 shadow-sm dark:bg-primary/10 dark:text-gray-300">
                             <div className="grid grid-cols-3 items-stretch gap-2">
-                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                <div className="flex min-w-0 flex-col items-center justify-center gap-y-0.5 rounded-lg border border-primary/15 bg-card px-1 py-2.5 text-center">
                                     <span>{t('checkout.summary.items')}</span>
                                     <span className="font-bold text-foreground">{formatCurrency(subtotal)}</span>
                                 </div>
-                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                <div className="flex min-w-0 flex-col items-center justify-center gap-y-0.5 rounded-lg border border-primary/15 bg-card px-1 py-2.5 text-center">
                                     <span>{t('checkout.summary.tax')}</span>
                                     <span className="font-bold text-foreground">{formatCurrency(taxAmount)}</span>
                                 </div>
-                                <div className="flex items-baseline justify-center gap-x-1 whitespace-nowrap rounded-lg border border-primary/15 bg-card px-2 py-2.5">
+                                <div className="flex min-w-0 flex-col items-center justify-center gap-y-0.5 rounded-lg border border-primary/15 bg-card px-1 py-2.5 text-center">
                                     <span>{t('checkout.summary.delivery')}</span>
                                     <span className="font-bold text-foreground">
                                         {deliveryFee === 0 ? t('checkout.delivery.free') : formatCurrency(deliveryFee)}

@@ -1,5 +1,5 @@
 const lvCheckout: Record<string, string> = {
-  "checkout.delivery.omnivaCourier": "Omniva kurjers",
+  "checkout.delivery.omnivaCourier": "Kurjers",
   "checkout.delivery.venipakCourier": "Venipak kurjers",
   "checkout.delivery.unisend": "Unisend pakomāts",
   "checkout.delivery.unisendCourier": "Unisend kurjers",

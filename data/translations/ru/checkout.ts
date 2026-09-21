@@ -1,5 +1,5 @@
 const ruCheckout: Record<string, string> = {
-  "checkout.delivery.omnivaCourier": "Omniva курьер",
+  "checkout.delivery.omnivaCourier": "Курьер",
   "checkout.delivery.venipakCourier": "Venipak курьер",
   "checkout.delivery.unisend": "Unisend пакомат",
   "checkout.delivery.unisendCourier": "Unisend курьер",

@@ -1,5 +1,5 @@
 const enCheckout: Record<string, string> = {
-  "checkout.delivery.omnivaCourier": "Omniva courier",
+  "checkout.delivery.omnivaCourier": "Courier",
   "checkout.delivery.venipakCourier": "Venipak courier",
   "checkout.delivery.unisend": "Unisend parcel locker",
   "checkout.delivery.unisendCourier": "Unisend courier",

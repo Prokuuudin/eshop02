@@ -110,11 +110,11 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
     operationsContact: 'office@miksplus.eu',
   },
   delivery: {
-    venipak_courier: delivery('Venipak courier', ['LV', 'LT', 'EE'], 10, null, { enabled: true, notes: 'Manual shipment registration; customer confirmation 2026-09-18.' }),
+    venipak_courier: delivery('Venipak courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
     unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, null, { enabled: true, requiresLocation: true, notes: 'Terminal lists provided. API registration pending access credentials.' }),
-    unisend_courier: delivery('Unisend courier', ['LV', 'LT', 'EE'], 5, null, { enabled: true, notes: 'Manual registration until API access is available.' }),
+    unisend_courier: delivery('Unisend courier', ['LV', 'LT', 'EE'], 5, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
     expresspasts: delivery('Expresspasts lockers', ['LV', 'LT', 'EE'], 2.5, null, { requiresLocation: true, notes: 'Tariffs provided; locker directory pending.' }),
-    expresspasts_courier: delivery('Expresspasts courier', ['LV', 'LT', 'EE'], 10, null, { enabled: true, notes: 'Tariffs provided; automatic shipment registration pending.' }),
+    expresspasts_courier: delivery('Expresspasts courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
     pickup: delivery('Самовывоз', ['LV'], 0, 0, {
       enabled: true,
       status: 'ready',

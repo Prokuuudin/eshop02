@@ -24,6 +24,7 @@ export default function BannerCarousel({ banners, scrollMode = 'auto' }: { banne
                 pagination={{ clickable: true }}
                 spaceBetween={16}
                 slidesPerView={1}
+                autoHeight
                 loop={banners.length > 1}
                 autoplay={scrollMode === 'auto' ? { delay: 6000, disableOnInteraction: false } : false}
             >

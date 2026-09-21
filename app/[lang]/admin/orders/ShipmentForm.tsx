@@ -13,7 +13,7 @@ export function ShipmentForm({ order }: { order: Order }): React.ReactElement {
   const [labelUrl, setLabelUrl] = useState(order.labelUrl ?? '')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-  return <div className="w-full">
+  return <div className={open ? 'w-full' : ''}>
     <Button type="button" variant="outline" size="sm" onClick={() => setOpen(!open)}>{l('Отправление', 'Shipment', 'Sūtījums')}</Button>
     {open && <div className="mt-3 grid gap-3 rounded border p-3 sm:grid-cols-2">
       <label>{l('Перевозчик', 'Carrier', 'Pārvadātājs')}<select className="block rounded border bg-card p-2" value={carrier} onChange={e => setCarrier(e.target.value)}><option value="omniva">Omniva</option><option value="venipak">Venipak</option><option value="unisend">Unisend</option><option value="expresspasts">Expresspasts</option><option value="dpd">DPD</option><option value="other">{l('Другой', 'Other', 'Cits')}</option></select></label>

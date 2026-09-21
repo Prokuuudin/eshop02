@@ -12,6 +12,31 @@ function originOf(url: string): string | null {
 }
 
 /**
+ * The origin Next.js itself would compute from the request (Host header + the protocol
+ * of the raw connection it received). Behind a TLS-terminating reverse proxy that doesn't
+ * get forwarded-proto handling (e.g. IIS/iisnode in front of the plain node:http server in
+ * server.js), Next sees an unencrypted connection and reports `http:` even though the
+ * browser connected over `https:` — so this can legitimately disagree with the browser's
+ * Origin header on an otherwise same-origin request.
+ */
+function requestDerivedOrigin(req: NextRequest): string {
+  return req.nextUrl.origin
+}
+
+/**
+ * The operator-configured canonical origin, when one is set. Unlike requestDerivedOrigin,
+ * this doesn't depend on how a reverse proxy forwarded the connection, so it's the
+ * authoritative value in production (see lib/site-url.ts — same env var, same requirement).
+ * Never derived from client-supplied headers (Origin, Referer, X-Forwarded-Host), so an
+ * attacker cannot influence it.
+ */
+function configuredSiteOrigin(): string | null {
+  if (process.env.NODE_ENV !== 'production') return null
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  return configured ? originOf(configured) : null
+}
+
+/**
  * CSRF/Origin guard for cookie-session-authenticated mutating requests.
  *
  * The session cookie is SameSite=lax, which already blocks it being sent on cross-site
@@ -21,10 +46,13 @@ function originOf(url: string): string | null {
  * exempt: they aren't CSRF-able and authenticate with a bearer secret instead of ambient
  * cookies.
  *
- * Compares Origin/Referer against req.nextUrl.origin (the host this request actually arrived
- * on, per Next's own Host/x-forwarded-host parsing) rather than a fixed config value — that
- * makes it work unmodified across localhost on any port, Vercel preview URLs, and the
- * production domain, without needing NEXT_PUBLIC_SITE_URL to be right in every environment.
+ * The Origin/Referer header must match req.nextUrl.origin (the host this request arrived
+ * on) OR the configured NEXT_PUBLIC_SITE_URL origin in production (see configuredSiteOrigin
+ * above) — never anything client-supplied. Checking both, rather than only nextUrl.origin,
+ * keeps this working unmodified on localhost/Vercel while also being correct behind a
+ * reverse proxy that doesn't preserve the original protocol. This does not widen what an
+ * attacker can pass: both values are server-derived (Host header the browser actually
+ * targeted, or an env var), not read from the request's Origin/Referer/X-Forwarded-* headers.
  *
  * A real browser-issued fetch/XHR/form POST always sends Origin (same-origin or cross-site) —
  * so a mutating request with neither Origin nor Referer is treated as untrusted and rejected,
@@ -41,10 +69,13 @@ export function guardOrigin(
   if (!MUTATING_METHODS.has(req.method)) return null
   if (options.allowApiKey && req.headers.get('x-api-key')) return null
 
-  const allowedOrigin = req.nextUrl.origin
+  const allowedOrigins = new Set([requestDerivedOrigin(req)])
+  const siteOrigin = configuredSiteOrigin()
+  if (siteOrigin) allowedOrigins.add(siteOrigin)
+
   const requestOrigin = req.headers.get('origin') ?? originOf(req.headers.get('referer') ?? '')
 
-  if (!requestOrigin || requestOrigin !== allowedOrigin) {
+  if (!requestOrigin || !allowedOrigins.has(requestOrigin)) {
     return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 })
   }
 

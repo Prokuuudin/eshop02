@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
@@ -66,6 +66,50 @@ describe('guardOrigin', () => {
     const res = guardOrigin(req)
     expect(res).not.toBeNull()
     expect(res!.status).toBe(403)
+  })
+
+  describe('behind a reverse proxy in production (Plesk/iisnode)', () => {
+    afterEach(() => vi.unstubAllEnvs())
+
+    it('allows a same-origin POST when the TLS-terminating proxy makes Next see plain http', () => {
+      vi.stubEnv('NODE_ENV', 'production')
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://hairshoppro.lv')
+      // server.js is a plain node:http server behind IIS/iisnode: IIS terminates TLS and
+      // forwards over a named pipe, so Next builds nextUrl from an unencrypted connection
+      // even though the browser actually connected over https.
+      const req = makeRequest({
+        method: 'POST',
+        origin: 'https://hairshoppro.lv',
+        url: 'http://hairshoppro.lv/api/user/password',
+      })
+      expect(guardOrigin(req)).toBeNull()
+    })
+
+    it('still rejects a cross-site Origin even with NEXT_PUBLIC_SITE_URL configured', () => {
+      vi.stubEnv('NODE_ENV', 'production')
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://hairshoppro.lv')
+      const req = makeRequest({
+        method: 'POST',
+        origin: 'https://evil.test',
+        url: 'http://hairshoppro.lv/api/user/password',
+      })
+      const res = guardOrigin(req)
+      expect(res).not.toBeNull()
+      expect(res!.status).toBe(403)
+    })
+
+    it('ignores NEXT_PUBLIC_SITE_URL outside production, so a stale value cannot widen dev/test', () => {
+      vi.stubEnv('NODE_ENV', 'test')
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://hairshoppro.lv')
+      const req = makeRequest({
+        method: 'POST',
+        origin: 'https://hairshoppro.lv',
+        url: 'http://shop.test/api/user/password',
+      })
+      const res = guardOrigin(req)
+      expect(res).not.toBeNull()
+      expect(res!.status).toBe(403)
+    })
   })
 })
 

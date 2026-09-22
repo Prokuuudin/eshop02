@@ -28,7 +28,7 @@ const CTA_VARIANT = {
     outline: 'outline'
 } as const;
 
-export default function SaleBanner({ banner, contentClassName = '' }: { banner: PromoBanner; contentClassName?: string }): React.ReactElement {
+export default function SaleBanner({ banner, contentClassName = '', fixedMediaFrame = false }: { banner: PromoBanner; contentClassName?: string; fixedMediaFrame?: boolean }): React.ReactElement {
     const { language } = useTranslation();
     banner = { ...banner, link: resolveBannerLink(banner.link, language) };
     const isLight = banner.textColor === 'light';
@@ -38,9 +38,9 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
 
     if (banner.type === 'video' && banner.image) {
         return (
-            <div className="sale-banner overflow-hidden rounded-2xl border border-border bg-black">
+            <div className={`sale-banner overflow-hidden rounded-2xl border border-border bg-black ${fixedMediaFrame ? 'flex h-full flex-col' : ''}`}>
                 <video key={banner.image} src={banner.image} controls muted playsInline preload="metadata"
-                    aria-label={title || undefined} className="block h-auto w-full">
+                    aria-label={title || undefined} className={fixedMediaFrame ? 'block min-h-0 w-full flex-1 object-contain' : 'block h-auto w-full'}>
                     <track kind="captions" />
                 </video>
                 {banner.link && <div className="bg-card p-3">
@@ -54,9 +54,9 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
 
     if (banner.type === 'image' && banner.image) {
         const image = (
-            <div className="sale-banner overflow-hidden rounded-2xl border border-border">
-                <Image src={banner.image} alt={title} width={1440} height={480} unoptimized
-                    className="block h-auto w-full" style={{ width: '100%', height: 'auto' }} />
+            <div className="sale-banner relative aspect-[24/5] w-full overflow-hidden rounded-2xl border border-border bg-card">
+                <Image src={banner.image} alt={title} fill sizes="(max-width: 1440px) 100vw, 1408px" unoptimized
+                    className="object-contain" />
             </div>
         );
         return banner.link ? <Link href={banner.link} aria-label={title || undefined} className="sale-banner-link block">{image}</Link> : image;
@@ -64,7 +64,7 @@ export default function SaleBanner({ banner, contentClassName = '' }: { banner: 
 
     const card = (
         <div
-            className={`sale-banner sale-banner--${banner.textColor} relative overflow-hidden rounded-2xl border border-border shadow-sm`}
+            className={`sale-banner sale-banner--${banner.textColor} relative overflow-hidden rounded-2xl border border-border shadow-sm ${fixedMediaFrame ? 'h-full' : ''}`}
             style={{ backgroundColor: banner.bgColor }}
         >
             {banner.image && (

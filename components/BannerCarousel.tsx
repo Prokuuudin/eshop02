@@ -10,7 +10,7 @@ import SaleBanner, { type PromoBanner } from './SaleBanner';
 
 export default function BannerCarousel({ banners, scrollMode = 'auto' }: { banners: PromoBanner[]; scrollMode?: 'manual' | 'auto' }): React.ReactElement {
     return (
-        <div className="banner-carousel relative">
+        <div className="banner-carousel relative aspect-[24/5]">
             <button type="button" className="banner-carousel__button-prev" aria-label="Previous slide">
                 <ChevronLeft aria-hidden="true" />
             </button>
@@ -18,19 +18,18 @@ export default function BannerCarousel({ banners, scrollMode = 'auto' }: { banne
                 <ChevronRight aria-hidden="true" />
             </button>
             <Swiper
-                className="banner-carousel__swiper"
+                className="banner-carousel__swiper !h-full"
                 modules={[Navigation, Pagination, Autoplay]}
                 navigation={{ prevEl: '.banner-carousel__button-prev', nextEl: '.banner-carousel__button-next' }}
                 pagination={{ clickable: true }}
                 spaceBetween={16}
                 slidesPerView={1}
-                autoHeight
                 loop={banners.length > 1}
                 autoplay={scrollMode === 'auto' ? { delay: 6000, disableOnInteraction: false } : false}
             >
                 {banners.map((item) => (
-                    <SwiperSlide key={item.id}>
-                        <SaleBanner banner={item} />
+                    <SwiperSlide key={item.id} className="!h-full">
+                        <SaleBanner banner={item} fixedMediaFrame />
                     </SwiperSlide>
                 ))}
             </Swiper>

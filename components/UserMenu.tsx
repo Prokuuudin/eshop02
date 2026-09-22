@@ -142,14 +142,16 @@ export default function UserMenu(): React.ReactElement {
                 >
                     {t('auth.registerButton', t('auth.register'))}
                 </Button>
-                {setupRequired && (
+                <span className="inline-flex min-w-[74px] justify-start">
                     <Link
                         href="/auth/admin-setup"
-                        className="text-xs text-amber-700 dark:text-amber-400 hover:underline"
+                        aria-hidden={!setupRequired}
+                        tabIndex={setupRequired ? undefined : -1}
+                        className={`text-xs text-amber-700 dark:text-amber-400 hover:underline ${setupRequired ? '' : 'invisible'}`}
                     >
                         Настройка admin
                     </Link>
-                )}
+                </span>
             </div>
         );
     }

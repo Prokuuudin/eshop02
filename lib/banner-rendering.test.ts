@@ -52,7 +52,8 @@ describe('storefront banner rendering', () => {
   it('renders a ready-made image in full without overlay, heading or old CTA', () => {
     const html = renderToStaticMarkup(React.createElement(SaleBanner, { banner: image }))
     expect(html).toContain('/ready.png')
-    expect(html).toContain('height:auto')
+    expect(html).toContain('aspect-[24/5]')
+    expect(html).toContain('sizes="(max-width: 1440px) 100vw, 1408px"')
     expect(html).toContain('href="/catalog"')
     expect(html).not.toContain('sale-banner__overlay')
     expect(html).not.toContain('<h3')

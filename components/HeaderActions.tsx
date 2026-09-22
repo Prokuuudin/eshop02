@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import UserMenu from './UserMenu';
@@ -47,9 +47,7 @@ export default function HeaderActions({
   if (onlyLangSwitcher) {
     return (
       <div className="header__right flex items-center gap-3">
-        <Suspense fallback={null}>
-          <LanguageSwitcher />
-        </Suspense>
+        <LanguageSwitcher />
       </div>
     );
   }
@@ -57,9 +55,7 @@ export default function HeaderActions({
     <TooltipProvider>
       <div className="header__right flex items-center gap-0.5">
       {!hideLangSwitcher && (
-        <Suspense fallback={null}>
-          <LanguageSwitcher />
-        </Suspense>
+        <LanguageSwitcher />
       )}
       {!hideUserMenu && <UserMenu />}
       <Tooltip>

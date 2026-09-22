@@ -1,5 +1,8 @@
-const { createServer } = require('node:http')
+const { createServer, request } = require('node:http')
 const next = require('next')
+
+const IMAGE_WARMUP_PATH = '/_next/image?url=%2Fhero.jpg&w=3840&q=90'
+const IMAGE_WARMUP_TIMEOUT_MS = 60_000
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = process.env.HOST || '0.0.0.0'
@@ -17,6 +20,54 @@ if (!isNamedPipe && (!Number.isInteger(port) || port < 1 || port > 65535)) {
 
 const app = next(isNamedPipe ? { dev } : { dev, hostname, port })
 const handle = app.getRequestHandler()
+
+function warmImageOptimizer(server) {
+    const startedAt = performance.now()
+    const address = server.address()
+
+    if (address === null) {
+        console.warn('Image optimizer warm-up skipped: server address is unavailable')
+        return
+    }
+
+    const requestOptions = typeof address === 'string'
+        ? { socketPath: address }
+        : {
+            hostname: address.family === 'IPv6' ? '::1' : '127.0.0.1',
+            port: address.port,
+        }
+
+    const warmupRequest = request({
+        ...requestOptions,
+        path: IMAGE_WARMUP_PATH,
+        method: 'GET',
+        headers: {
+            Accept: 'image/webp',
+        },
+    }, (response) => {
+        response.resume()
+        response.on('end', () => {
+            const durationMs = Math.round(performance.now() - startedAt)
+            const cacheStatus = response.headers['x-nextjs-cache'] || 'unknown'
+            const message = `Image optimizer warm-up: status=${response.statusCode} cache=${cacheStatus} duration=${durationMs}ms`
+
+            if (response.statusCode === 200) {
+                console.log(message)
+            } else {
+                console.warn(message)
+            }
+        })
+    })
+
+    warmupRequest.setTimeout(IMAGE_WARMUP_TIMEOUT_MS, () => {
+        warmupRequest.destroy(new Error(`timed out after ${IMAGE_WARMUP_TIMEOUT_MS}ms`))
+    })
+    warmupRequest.on('error', (error) => {
+        const durationMs = Math.round(performance.now() - startedAt)
+        console.warn(`Image optimizer warm-up failed after ${durationMs}ms: ${error.message}`)
+    })
+    warmupRequest.end()
+}
 
 app.prepare()
     .then(() => {
@@ -50,6 +101,11 @@ app.prepare()
         const listenArgs = isNamedPipe ? [port] : [port, hostname]
         server.listen(...listenArgs, () => {
             console.log(`Next.js is listening on ${isNamedPipe ? port : `http://${hostname}:${port}`}`)
+
+            if (!dev) {
+                // Do not await: the listener is already ready and warm-up failures are non-fatal.
+                warmImageOptimizer(server)
+            }
         })
     })
     .catch((error) => {

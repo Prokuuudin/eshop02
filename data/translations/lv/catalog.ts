@@ -3,6 +3,7 @@ const lvCatalog: Record<string, string> = {
   'product.barcodeLabel': 'EAN kods',
   'product.imageDisclaimer': 'Prece var atšķirties no attēla, attēlā var būt detaļas, kas nav iekļautas komplektācijā.',
   'product.moreFromCategory': 'Citi šīs kategorijas produkti',
+  'product.moreFromSubcategory': 'Citi šīs apakškategorijas produkti',
   'product.moreFromBrand': 'Citi šī zīmola produkti',
   'product.changeQuantity': 'Mainīt daudzumu',
   'product.decreaseQuantityAria': 'Samazināt daudzumu',

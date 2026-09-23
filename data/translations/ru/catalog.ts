@@ -9,6 +9,7 @@ const ruCatalog: Record<string, string> = {
   'product.barcodeLabel': 'EAN код',
   'product.imageDisclaimer': 'Товар может отличаться от его изображения, на изображении могут быть детали, которые не входят в комплектацию товара.',
   'product.moreFromCategory': 'Другие товары этой категории',
+  'product.moreFromSubcategory': 'Другие товары этой подкатегории',
   'product.moreFromBrand': 'Другие товары этого бренда',
   'product.changeQuantity': 'Изменить количество',
   'product.decreaseQuantityAria': 'Уменьшить количество',

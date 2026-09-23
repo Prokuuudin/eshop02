@@ -62,7 +62,9 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
 
     // Формируем ссылки для категории и бренда
     const categoryUrl = product.category
-        ? `/category/${encodeURIComponent(product.category)}`
+        ? product.subcategory
+            ? `/category/${encodeURIComponent(product.category)}?subcat=${encodeURIComponent(product.subcategory)}`
+            : `/category/${encodeURIComponent(product.category)}`
         : '/catalog';
     const brandUrl = product.brand
         ? `/catalog?brand=${encodeURIComponent(brandSlug(product.brand))}`
@@ -79,7 +81,11 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
 
     return (
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 text-foreground">
-            <ProductNavigationLinks categoryUrl={categoryUrl} brandUrl={brandUrl} />
+            <ProductNavigationLinks
+                categoryUrl={categoryUrl}
+                brandUrl={brandUrl}
+                hasSubcategory={Boolean(product.subcategory)}
+            />
 
             <div className="product-detail">
                 <div className="product-detail__grid grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">

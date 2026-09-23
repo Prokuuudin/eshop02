@@ -3,6 +3,7 @@ const enCatalog: Record<string, string> = {
   'product.barcodeLabel': 'EAN code',
   'product.imageDisclaimer': 'The product may differ from its image; the image may show details not included in the product package.',
   'product.moreFromCategory': 'More products from this category',
+  'product.moreFromSubcategory': 'More products from this subcategory',
   'product.moreFromBrand': 'More products from this brand',
   'product.changeQuantity': 'Change quantity',
   'product.decreaseQuantityAria': 'Decrease quantity',

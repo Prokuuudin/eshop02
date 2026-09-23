@@ -5,11 +5,13 @@ import { useTranslation } from '@/lib/use-translation';
 interface ProductNavigationLinksProps {
     categoryUrl: string;
     brandUrl: string;
+    hasSubcategory?: boolean;
 }
 
 export const ProductNavigationLinks: React.FC<ProductNavigationLinksProps> = ({
     categoryUrl,
     brandUrl,
+    hasSubcategory,
 }) => {
     const { t } = useTranslation();
     return (
@@ -21,7 +23,9 @@ export const ProductNavigationLinks: React.FC<ProductNavigationLinksProps> = ({
                 href={categoryUrl}
                 className="inline-block rounded bg-primary/5 text-primary px-3 py-1 text-sm font-medium hover:bg-primary/10 transition"
             >
-                {t('product.moreFromCategory', 'Другие товары этой категории')}
+                {hasSubcategory
+                    ? t('product.moreFromSubcategory', 'Другие товары этой подкатегории')
+                    : t('product.moreFromCategory', 'Другие товары этой категории')}
             </Link>
             <Link
                 href={brandUrl}

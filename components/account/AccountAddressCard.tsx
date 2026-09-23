@@ -114,19 +114,17 @@ export default function AccountAddressCard({
         </div>
       </div>
 
-      {isEditing && draft && (
-        <AddressFormDialog
-          open={isEditing}
-          onOpenChange={(open) => { if (!open) onCancel() }}
-          title={labels.editAddress}
-          draft={draft}
-          errors={errors}
-          onDraftChange={(field, value) => onDraftChange(field as AddressField, value)}
-          onSave={onSave}
-          onCancel={onCancel}
-          labels={labels}
-        />
-      )}
+      <AddressFormDialog
+        open={isEditing}
+        onOpenChange={(open) => { if (!open) onCancel() }}
+        title={labels.editAddress}
+        draft={draft}
+        errors={errors}
+        onDraftChange={(field, value) => onDraftChange(field as AddressField, value)}
+        onSave={onSave}
+        onCancel={onCancel}
+        labels={labels}
+      />
     </>
   )
 }

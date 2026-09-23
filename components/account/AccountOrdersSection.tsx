@@ -7,6 +7,7 @@ import type { Order } from '@/lib/orders-store';
 interface AccountOrdersSectionProps {
     userOrders: Order[];
     filteredOrders: Order[];
+    orderFilter: string;
     setOrderFilter: (filter: string) => void;
     getOrderFilterButtonClasses: (filter: string) => string;
     getStatusLabel: (status: string) => string;
@@ -24,6 +25,7 @@ interface AccountOrdersSectionProps {
 const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
     userOrders,
     filteredOrders,
+    orderFilter,
     setOrderFilter,
     getOrderFilterButtonClasses,
     getStatusLabel,
@@ -89,7 +91,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
         </div>
         {userOrders.length > 0 ? (
             filteredOrders.length > 0 ? (
-                <div className="space-y-4 p-4 sm:p-6">
+                <div key={orderFilter} className="ui-disclosure-in space-y-4 p-4 sm:p-6">
                     {filteredOrders.map((order) => (
                         <AccountOrderCard
                             key={order.id}
@@ -110,7 +112,7 @@ const AccountOrdersSection: React.FC<AccountOrdersSectionProps> = ({
                     ))}
                 </div>
             ) : (
-                <div className="m-4 rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700 sm:m-6">
+                <div key={orderFilter} className="ui-disclosure-in m-4 rounded-2xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700 sm:m-6">
                     <p className="text-sm text-muted-foreground">
                         {tl(
                             'account.page.noOrdersForFilter',

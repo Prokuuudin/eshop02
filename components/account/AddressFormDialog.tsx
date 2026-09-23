@@ -15,7 +15,8 @@ interface AddressFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
-  draft: SavedAddress
+  /** null while closed; the last non-null draft is kept so the close animation can play. */
+  draft: SavedAddress | null
   errors: Record<string, string>
   onDraftChange: (field: string, value: string) => void
   onSave: () => void
@@ -67,13 +68,17 @@ export function AddressFormDialog({
   open,
   onOpenChange,
   title,
-  draft,
+  draft: currentDraft,
   errors,
   onDraftChange,
   onSave,
   onCancel,
   labels,
-}: AddressFormDialogProps): React.ReactElement {
+}: AddressFormDialogProps): React.ReactElement | null {
+  const [lastDraft, setLastDraft] = React.useState(currentDraft)
+  if (currentDraft && currentDraft !== lastDraft) setLastDraft(currentDraft)
+  const draft = currentDraft ?? lastDraft
+
   const handleCancel = () => {
     onCancel()
     onOpenChange(false)
@@ -83,8 +88,10 @@ export function AddressFormDialog({
     onSave()
   }
 
+  if (!draft) return null
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleCancel(); else onOpenChange(v) }}>
+    <Dialog open={open && !!currentDraft} onOpenChange={(v) => { if (!v) handleCancel(); else onOpenChange(v) }}>
       <DialogContent className="address-form-dialog sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

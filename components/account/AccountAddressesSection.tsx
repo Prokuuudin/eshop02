@@ -114,19 +114,17 @@ const AccountAddressesSection: React.FC<AccountAddressesSectionProps> = ({
             </div>
         )}
 
-        {isAddingAddress && newAddressDraft && (
-            <AddressFormDialog
-                open={isAddingAddress}
-                onOpenChange={(open) => { if (!open) onCancelAdd(); }}
-                title={t('account.addAddress')}
-                draft={newAddressDraft}
-                errors={newAddressErrors}
-                onDraftChange={onNewDraftChange}
-                onSave={onSaveAdd}
-                onCancel={onCancelAdd}
-                labels={labels}
-            />
-        )}
+        <AddressFormDialog
+              open={isAddingAddress}
+              onOpenChange={(open) => { if (!open) onCancelAdd(); }}
+              title={t('account.addAddress')}
+              draft={newAddressDraft}
+              errors={newAddressErrors}
+              onDraftChange={onNewDraftChange}
+              onSave={onSaveAdd}
+              onCancel={onCancelAdd}
+              labels={labels}
+          />
     </section>
 );
 

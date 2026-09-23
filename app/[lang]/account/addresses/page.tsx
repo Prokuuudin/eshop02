@@ -142,22 +142,20 @@ export default function AccountAddressesPage(): React.ReactElement | null {
             )}
 
             {/* Диалог добавления */}
-            {addresses.isAddingAddress && addresses.newAddressDraft && (
-                <AddressFormDialog
-                    open={addresses.isAddingAddress}
-                    onOpenChange={(open) => { if (!open) addresses.cancelAddingAddress(); }}
-                    title={t('account.addAddress')}
-                    draft={addresses.newAddressDraft}
-                    errors={addresses.newAddressErrors}
-                    onDraftChange={(field, value) => {
-                        if (!addresses.newAddressDraft?.id) return;
-                        addresses.setNewAddressDraft({ ...addresses.newAddressDraft, [field]: value });
-                    }}
-                    onSave={addresses.saveNewAddress}
-                    onCancel={addresses.cancelAddingAddress}
-                    labels={labels}
-                />
-            )}
+            <AddressFormDialog
+                  open={addresses.isAddingAddress}
+                  onOpenChange={(open) => { if (!open) addresses.cancelAddingAddress(); }}
+                  title={t('account.addAddress')}
+                  draft={addresses.newAddressDraft}
+                  errors={addresses.newAddressErrors}
+                  onDraftChange={(field, value) => {
+                      if (!addresses.newAddressDraft?.id) return;
+                      addresses.setNewAddressDraft({ ...addresses.newAddressDraft, [field]: value });
+                  }}
+                  onSave={addresses.saveNewAddress}
+                  onCancel={addresses.cancelAddingAddress}
+                  labels={labels}
+              />
         </main>
     );
 }

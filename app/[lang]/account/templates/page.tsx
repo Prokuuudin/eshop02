@@ -88,7 +88,12 @@ function TemplateCard({
         setEditing(false);
     };
 
-    const visibleItems = expanded ? tpl.items : tpl.items.slice(0, 3);
+    const renderItem = (item: OrderTemplate['items'][number]) => (
+        <div key={item.id} className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-gray-700 dark:text-gray-300 truncate">{item.title}</span>
+            <span className="shrink-0 text-gray-400 font-medium tabular-nums">× {item.quantity}</span>
+        </div>
+    );
     const hasMore = tpl.items.length > 3;
 
     return (
@@ -179,12 +184,12 @@ function TemplateCard({
 
                 {/* Товары */}
                 <div className="flex-1 border-t border-gray-100 dark:border-gray-800 px-4 pt-3 pb-2 space-y-1.5">
-                    {visibleItems.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between gap-2 text-xs">
-                            <span className="text-gray-700 dark:text-gray-300 truncate">{item.title}</span>
-                            <span className="shrink-0 text-gray-400 font-medium tabular-nums">× {item.quantity}</span>
+                    {tpl.items.slice(0, 3).map(renderItem)}
+                    {expanded && hasMore && (
+                        <div className="ui-disclosure-in space-y-1.5">
+                            {tpl.items.slice(3).map(renderItem)}
                         </div>
-                    ))}
+                    )}
                     {hasMore && (
                         <button
                             onClick={() => setExpanded((v) => !v)}

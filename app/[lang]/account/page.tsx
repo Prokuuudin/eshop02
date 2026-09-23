@@ -200,6 +200,7 @@ export default function AccountPage(): React.ReactElement {
                             <AccountOrdersSection
                                 userOrders={userOrders}
                                 filteredOrders={orders.filteredOrders}
+                                orderFilter={orderFilter}
                                 setOrderFilter={(filter: string) =>
                                     setOrderFilter(filter as 'all' | 'active' | 'completed')
                                 }

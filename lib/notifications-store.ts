@@ -21,8 +21,8 @@ interface NotificationsStore {
   channel: NotificationChannel
   setChannel: (channel: NotificationChannel) => Promise<void>
   fetchChannel: () => Promise<void>
-  subscribe: () => void
-  unsubscribe: () => void
+  subscribe: () => Promise<void>
+  unsubscribe: () => Promise<void>
   markRead: (id: string) => void
   markAllRead: () => void
   deleteNotification: (id: string) => void
@@ -62,14 +62,29 @@ export const useNotificationsStore = create<NotificationsStore>()(
         try {
           const res = await fetch('/api/notifications/preferences')
           if (!res.ok) return
-          const data = await res.json() as { channel?: NotificationChannel }
+          const data = await res.json() as { channel?: NotificationChannel; subscribed?: boolean }
           if (data.channel && ['app', 'email', 'both'].includes(data.channel)) {
             set({ channel: data.channel })
           }
+          if (typeof data.subscribed === 'boolean') set({ isSubscribed: data.subscribed })
         } catch {}
       },
-      subscribe: () => set({ isSubscribed: true }),
-      unsubscribe: () => set({ isSubscribed: false }),
+      subscribe: async () => {
+        const previous = get().isSubscribed
+        set({ isSubscribed: true })
+        try {
+          const res = await fetch('/api/notifications/preferences', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscribed: true }) })
+          if (!res.ok) set({ isSubscribed: previous })
+        } catch { set({ isSubscribed: previous }) }
+      },
+      unsubscribe: async () => {
+        const previous = get().isSubscribed
+        set({ isSubscribed: false })
+        try {
+          const res = await fetch('/api/notifications/preferences', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscribed: false }) })
+          if (!res.ok) set({ isSubscribed: previous })
+        } catch { set({ isSubscribed: previous }) }
+      },
 
       markRead: (id) =>
         set((state) => ({

@@ -36,7 +36,10 @@ function makeRequest(body: unknown): NextRequest {
 }
 
 describe('POST /api/admin/notifications/send', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    userFindManyMock.mockImplementation(({ where }: { where: { id: { in: string[] } } }) => Promise.resolve(where.id.in.map((id) => ({ id, email: `${id}@example.com`, notificationsSubscribed: true, marketingConsent: true }))))
+  })
 
   it('returns 403 when not authenticated', async () => {
     getServerUserMock.mockResolvedValue(null)
@@ -90,7 +93,7 @@ describe('POST /api/admin/notifications/send', () => {
     }))
     const json = await res.json()
     expect(res.status).toBe(200)
-    expect(json.created).toBe(2)
+    expect(json.appDelivered).toBe(2)
     expect(json.emailsSent).toBe(0)
     expect(sendEmailMock).not.toHaveBeenCalled()
     expect(notificationCreateManyMock).toHaveBeenCalledWith({
@@ -104,8 +107,8 @@ describe('POST /api/admin/notifications/send', () => {
   it('sends emails for channel=email', async () => {
     getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
     userFindManyMock.mockResolvedValue([
-      { id: 'u1', email: 'alice@example.com' },
-      { id: 'u2', email: 'bob@example.com' },
+      { id: 'u1', email: 'alice@example.com', notificationsSubscribed: true, marketingConsent: true },
+      { id: 'u2', email: 'bob@example.com', notificationsSubscribed: true, marketingConsent: true },
     ])
     notificationCreateManyMock.mockResolvedValue({ count: 2 })
     sendEmailMock.mockResolvedValue(undefined)
@@ -125,7 +128,7 @@ describe('POST /api/admin/notifications/send', () => {
 
   it('counts failed emails separately, still returns 200', async () => {
     getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
-    userFindManyMock.mockResolvedValue([{ id: 'u1', email: 'bad@bad.bad' }])
+    userFindManyMock.mockResolvedValue([{ id: 'u1', email: 'bad@bad.bad', notificationsSubscribed: true, marketingConsent: true }])
     notificationCreateManyMock.mockResolvedValue({ count: 1 })
     sendEmailMock.mockRejectedValue(new Error('smtp error'))
     const res = await POST(makeRequest({
@@ -139,7 +142,7 @@ describe('POST /api/admin/notifications/send', () => {
     expect(res.status).toBe(200)
     expect(json.emailsSent).toBe(0)
     expect(json.emailsFailed).toBe(1)
-    expect(json.created).toBe(1)
+    expect(json.selected).toBe(1)
   })
 
   it('rejects javascript: links', async () => {
@@ -153,16 +156,14 @@ describe('POST /api/admin/notifications/send', () => {
       channel: 'app',
       link: 'javascript:alert(1)',
     }))
-    expect(res.status).toBe(200)
-    expect(notificationCreateManyMock).toHaveBeenCalledWith({
-      data: expect.arrayContaining([expect.objectContaining({ link: null })]),
-    })
+    expect(res.status).toBe(400)
+    expect(notificationCreateManyMock).not.toHaveBeenCalled()
   })
 
   it('creates notifications and sends emails for channel=both', async () => {
     getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
     userFindManyMock.mockResolvedValue([
-      { id: 'u1', email: 'alice@example.com' },
+      { id: 'u1', email: 'alice@example.com', notificationsSubscribed: true, marketingConsent: true },
     ])
     notificationCreateManyMock.mockResolvedValue({ count: 1 })
     sendEmailMock.mockResolvedValue(undefined)
@@ -175,7 +176,7 @@ describe('POST /api/admin/notifications/send', () => {
     }))
     const json = await res.json()
     expect(res.status).toBe(200)
-    expect(json.created).toBe(1)
+    expect(json.appDelivered).toBe(1)
     expect(json.emailsSent).toBe(1)
     expect(sendEmailMock).toHaveBeenCalledTimes(1)
     expect(notificationCreateManyMock).toHaveBeenCalledWith({
@@ -195,12 +196,39 @@ describe('POST /api/admin/notifications/send', () => {
     }))
     const json = await res.json()
     expect(res.status).toBe(200)
-    expect(json.created).toBe(2)
+    expect(json.appDelivered).toBe(2)
     expect(notificationCreateManyMock).toHaveBeenCalledWith({
       data: expect.arrayContaining([
         expect.objectContaining({ userId: 'u1' }),
         expect.objectContaining({ userId: 'u2' }),
       ]),
     })
+  })
+
+  it('honours unsubscribe on the server', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    userFindManyMock.mockResolvedValue([{ id: 'u1', email: 'u1@example.com', notificationsSubscribed: false, marketingConsent: true }])
+    const res = await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'M', type: 'info', channel: 'both' }))
+    expect(await res.json()).toMatchObject({ preferencesSkipped: 1, appDelivered: 0, emailsSent: 0 })
+    expect(notificationCreateManyMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('does not deliver promo without marketing consent', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    userFindManyMock.mockResolvedValue([{ id: 'u1', email: 'u1@example.com', notificationsSubscribed: true, marketingConsent: false }])
+    const res = await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'M', type: 'promo', channel: 'both' }))
+    expect(await res.json()).toMatchObject({ marketingConsentSkipped: 1, appDelivered: 0, emailsSent: 0 })
+  })
+
+  it.each(['https://evil.test', '//evil.test', 'javascript:alert(1)'])('rejects unsafe link %s', async (link) => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    expect((await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'M', type: 'info', channel: 'app', link }))).status).toBe(400)
+  })
+
+  it('rejects title and message above their limits', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    expect((await POST(makeRequest({ userIds: ['u1'], title: 'x'.repeat(151), message: 'M' }))).status).toBe(400)
+    expect((await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'x'.repeat(5001) }))).status).toBe(400)
   })
 })

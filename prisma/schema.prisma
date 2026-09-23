@@ -38,6 +38,7 @@ model User {
   marketingConsent    Boolean   @default(false)
   marketingConsentAt  DateTime?
   notificationChannel String    @default("app")
+  notificationsSubscribed Boolean @default(false)
   mfaSecret           String?
   mfaEnabled          Boolean   @default(false)
   mfaBackupCodes      String[]  @default([])

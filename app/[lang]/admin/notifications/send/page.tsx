@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,15 +14,22 @@ type DbUser = {
   id: string
   email: string
   name: string | null
+  phone: string | null
+  cardNumber: string | null
 }
 
 type NotificationType = 'info' | 'success' | 'warning' | 'promo'
 type Channel = 'app' | 'email' | 'both'
 
 type SendResult = {
-  created?: number
+  selected?: number
+  appDelivered?: number
   emailsSent?: number
   emailsFailed?: number
+  preferencesSkipped?: number
+  marketingConsentSkipped?: number
+  invalidEmailSkipped?: number
+  ineligibleSkipped?: number
 }
 
 export default function AdminNotificationsSendPage(): React.ReactElement {
@@ -33,6 +40,8 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
   const [users, setUsers] = useState<DbUser[]>([])
   const [usersLoading, setUsersLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // Form state
@@ -48,9 +57,13 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
   const [errors, setErrors] = useState<string[]>([])
   const [sendError, setSendError] = useState('')
 
-  // Load users on mount
   useEffect(() => {
-    fetch('/api/admin/users?take=200')
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+    setUsersLoading(true)
+    const params = new URLSearchParams({ take: '50', skip: String(page * 50) })
+    if (search.trim()) params.set('search', search.trim())
+    fetch(`/api/admin/notifications/recipients?${params}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load users')
         return res.json()
@@ -58,28 +71,23 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
       .then((data) => {
         if (Array.isArray(data.users)) {
           setUsers(data.users)
+          setTotal(typeof data.total === 'number' ? data.total : data.users.length)
         }
       })
-      .catch((error) => reportAdminError(error, l('Получатели рассылки', 'Broadcast recipients', 'Izsūtnes saņēmēji')))
+      .catch((error) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          reportAdminError(error, l('Получатели рассылки', 'Broadcast recipients', 'Izsūtnes saņēmēji'))
+        }
+      })
       .finally(() => {
         setUsersLoading(false)
       })
-  }, [l])
-
-  // Filtered users
-  const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return users
-    return users.filter(
-      (u) =>
-        u.email.toLowerCase().includes(q) ||
-        (u.name ?? '').toLowerCase().includes(q)
-    )
-  }, [users, search])
+    }, 300)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [l, page, search])
 
   const allFilteredSelected =
-    filteredUsers.length > 0 &&
-    filteredUsers.every((u) => selectedIds.has(u.id))
+    users.length > 0 && users.every((u) => selectedIds.has(u.id))
 
   const toggleUser = (id: string) => {
     setSelectedIds((prev) => {
@@ -87,7 +95,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
       if (next.has(id)) {
         next.delete(id)
       } else {
-        next.add(id)
+        if (next.size < 500) next.add(id)
       }
       return next
     })
@@ -96,7 +104,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
   const selectAll = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      filteredUsers.forEach((u) => next.add(u.id))
+      users.forEach((u) => { if (next.size < 500) next.add(u.id) })
       return next
     })
   }
@@ -104,7 +112,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
   const deselectAll = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      filteredUsers.forEach((u) => next.delete(u.id))
+      users.forEach((u) => next.delete(u.id))
       return next
     })
   }
@@ -118,6 +126,9 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
     if (selectedIds.size === 0) errs.push(t('admin.notifications.error.noRecipients'))
     if (!title.trim()) errs.push(t('admin.notifications.error.noTitle'))
     if (!message.trim()) errs.push(t('admin.notifications.error.noMessage'))
+    if (title.trim().length > 150) errs.push('Title: maximum 150 characters')
+    if (message.trim().length > 5000) errs.push('Message: maximum 5000 characters')
+    if (link.trim() && !/^\/(?!\/)/u.test(link.trim())) errs.push('Only an internal path beginning with / is allowed')
     return errs
   }
 
@@ -179,7 +190,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
               <Input
                 placeholder={t('admin.notifications.form.searchPlaceholder')}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(0) }}
               />
             </div>
 
@@ -195,7 +206,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
               {selectedIds.size > 0 && (
                 <>
                   <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                    {t('admin.notifications.form.selectedCount', undefined, { count: selectedIds.size })}
+                    {t('admin.notifications.form.selectedCount', undefined, { count: selectedIds.size })} / 500
                   </span>
                   <button
                     type="button"
@@ -214,12 +225,12 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
                 <p className="px-4 py-3 text-sm text-muted-foreground">
                   {t('common.loading')}
                 </p>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
                   {t('admin.notifications.form.noUsers')}
                 </p>
               ) : (
-                filteredUsers.map((u) => (
+                users.map((u) => (
                   <label
                     key={u.id}
                     className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
@@ -233,10 +244,16 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
                       {u.name && (
                         <p className="text-xs text-muted-foreground truncate">{u.name}</p>
                       )}
+                      {(u.phone || u.cardNumber) && <p className="text-xs text-muted-foreground truncate">{[u.phone, u.cardNumber].filter(Boolean).join(' · ')}</p>}
                     </div>
                   </label>
                 ))
               )}
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <Button variant="outline" size="sm" disabled={page === 0 || usersLoading} onClick={() => setPage((p) => p - 1)}>←</Button>
+              <span>{page + 1} / {Math.max(1, Math.ceil(total / 50))} · {total}</span>
+              <Button variant="outline" size="sm" disabled={(page + 1) * 50 >= total || usersLoading} onClick={() => setPage((p) => p + 1)}>→</Button>
             </div>
           </section>
 
@@ -252,7 +269,9 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
                 placeholder={t('admin.notifications.form.titlePlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={150}
               />
+              <p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / 150</p>
             </div>
 
             {/* Message */}
@@ -266,7 +285,9 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
+                maxLength={5000}
               />
+              <p className="mt-1 text-right text-xs text-muted-foreground">{message.length} / 5000</p>
             </div>
 
             {/* Type */}
@@ -346,11 +367,12 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             {/* Result */}
             {result && (
               <div className="rounded-md border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/30 px-4 py-3 space-y-1">
-                {result.created !== undefined && (
+                {result.selected !== undefined && (
                   <p className="text-sm text-green-800 dark:text-green-200">
-                    {t('admin.notifications.resultCreated', undefined, { count: result.created })}
+                    Selected: {result.selected}; app delivered: {result.appDelivered ?? 0}
                   </p>
                 )}
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">Skipped by preferences: {result.preferencesSkipped ?? 0}; promo consent: {result.marketingConsentSkipped ?? 0}; invalid email: {result.invalidEmailSkipped ?? 0}; ineligible: {result.ineligibleSkipped ?? 0}</p>
                 {result.emailsSent !== undefined && (
                   <p className="text-sm text-green-800 dark:text-green-200">
                     {t('admin.notifications.resultEmailsSent', undefined, { count: result.emailsSent })}
@@ -367,7 +389,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             {/* Send button */}
             <Button
               onClick={handleSend}
-              disabled={sending}
+              disabled={sending || selectedIds.size === 0 || selectedIds.size > 500}
               className="w-full"
             >
               {sending

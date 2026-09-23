@@ -41,7 +41,6 @@ export default function AccountNotificationsSection(): React.ReactElement {
         markAllRead,
         deleteNotification,
         deleteSelected,
-        addNotification,
         fetchInbox,
         unreadCount,
     } = useNotificationsStore();
@@ -101,10 +100,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
     }, [])
 
     const handleSubscribe = () => {
-        subscribe();
-        addNotification({ type: 'info',  title: t('notifications.demo3Title'), message: t('notifications.demo3Message') });
-        addNotification({ type: 'promo', title: t('notifications.demo2Title'), message: t('notifications.demo2Message') });
-        addNotification({ type: 'info',  title: t('notifications.demoTitle'),  message: t('notifications.demoMessage') });
+        void subscribe();
     };
 
     return (
@@ -159,7 +155,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
                             size="sm"
                             variant="outline"
                             className="notifications__unsubscribe-btn h-7 gap-1.5 text-xs"
-                            onClick={(e) => { e.stopPropagation(); unsubscribe(); }}
+                            onClick={(e) => { e.stopPropagation(); void unsubscribe(); }}
                         >
                             <BellOff className="h-3.5 w-3.5" />
                             {t('notifications.unsubscribe')}

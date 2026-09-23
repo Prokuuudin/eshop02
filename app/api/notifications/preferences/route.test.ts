@@ -19,18 +19,19 @@ describe('/api/notifications/preferences', () => {
   })
 
   it('reads the server-side channel', async () => {
-    findUniqueMock.mockResolvedValue({ notificationChannel: 'both' })
+    findUniqueMock.mockResolvedValue({ notificationChannel: 'both', notificationsSubscribed: true })
     const response = await GET()
-    expect(await response.json()).toEqual({ channel: 'both' })
+    expect(await response.json()).toEqual({ channel: 'both', subscribed: true })
   })
 
   it('defaults an invalid legacy value to app', async () => {
     findUniqueMock.mockResolvedValue({ notificationChannel: 'legacy' })
     const response = await GET()
-    expect(await response.json()).toEqual({ channel: 'app' })
+    expect(await response.json()).toEqual({ channel: 'app', subscribed: false })
   })
 
   it('persists a valid channel for the authenticated user', async () => {
+    updateMock.mockResolvedValue({ notificationChannel: 'email', notificationsSubscribed: false })
     const request = new NextRequest('http://localhost/api/notifications/preferences', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -41,7 +42,17 @@ describe('/api/notifications/preferences', () => {
     expect(response.status).toBe(200)
     expect(updateMock).toHaveBeenCalledWith({
       where: { id: 'u1' }, data: { notificationChannel: 'email' },
+      select: { notificationChannel: true, notificationsSubscribed: true },
     })
+  })
+
+  it('persists subscription independently of the channel', async () => {
+    updateMock.mockResolvedValue({ notificationChannel: 'app', notificationsSubscribed: true })
+    const response = await PATCH(new NextRequest('http://localhost/api/notifications/preferences', {
+      method: 'PATCH', body: JSON.stringify({ subscribed: true }),
+    }))
+    expect(response.status).toBe(200)
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ data: { notificationsSubscribed: true } }))
   })
 
   it('rejects an invalid channel', async () => {

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { AlertTriangle, Check, CheckCircle, Info, Tag, X } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Notification, NotificationType } from '@/lib/notifications-store'
@@ -48,6 +49,11 @@ export default function NotificationItem({ notification, language, isSelected, o
           <span className="notifications__item-time shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{formatNotificationRelativeTime(notification.createdAt, language)}</span>
         </div>
         <p className="notifications__item-message mt-1 text-xs leading-relaxed text-muted-foreground">{notification.message}</p>
+        {notification.link && /^\/(?!\/)/u.test(notification.link) && (
+          <Link href={notification.link} className="mt-2 inline-flex text-xs font-medium text-primary hover:underline">
+            {language === 'lv' ? 'Atvērt →' : language === 'en' ? 'Open →' : 'Перейти →'}
+          </Link>
+        )}
         <div className="notifications__item-actions mt-2 flex items-center gap-3">
           {!notification.isRead && <button type="button" onClick={onMarkRead} className="notifications__item-mark-read flex items-center gap-1 text-[11px] text-primary hover:text-primary dark:text-primary dark:hover:text-primary/70"><Check className="h-3 w-3" />{t('notifications.markRead')}</button>}
           <button type="button" onClick={onDelete} className="notifications__item-delete flex items-center gap-1 text-[11px] text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"><X className="h-3 w-3" />{t('notifications.delete')}</button>

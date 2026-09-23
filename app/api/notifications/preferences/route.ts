@@ -19,9 +19,9 @@ export async function GET(): Promise<Response> {
 
     const settings = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { notificationChannel: true },
+      select: { notificationChannel: true, notificationsSubscribed: true },
     })
-    return NextResponse.json({ channel: isChannel(settings?.notificationChannel) ? settings.notificationChannel : 'app' })
+    return NextResponse.json({ channel: isChannel(settings?.notificationChannel) ? settings.notificationChannel : 'app', subscribed: settings?.notificationsSubscribed === true })
   } catch (error) {
     logApiError('[notifications/preferences GET]', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
@@ -33,16 +33,22 @@ export async function PATCH(request: NextRequest): Promise<Response> {
     const user = await getServerUser()
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-    const body = await request.json().catch(() => null) as { channel?: unknown } | null
-    if (!isChannel(body?.channel)) {
-      return NextResponse.json({ error: 'invalid_channel' }, { status: 400 })
+    const body = await request.json().catch(() => null) as { channel?: unknown; subscribed?: unknown } | null
+    const hasChannel = body?.channel !== undefined
+    const hasSubscribed = body?.subscribed !== undefined
+    if ((!hasChannel && !hasSubscribed) || (hasChannel && !isChannel(body?.channel)) || (hasSubscribed && typeof body?.subscribed !== 'boolean')) {
+      return NextResponse.json({ error: 'invalid_preferences' }, { status: 400 })
     }
 
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { notificationChannel: body.channel },
+      data: {
+        ...(hasChannel ? { notificationChannel: body?.channel as NotificationChannel } : {}),
+        ...(hasSubscribed ? { notificationsSubscribed: body?.subscribed as boolean } : {}),
+      },
+      select: { notificationChannel: true, notificationsSubscribed: true },
     })
-    return NextResponse.json({ channel: body.channel })
+    return NextResponse.json({ channel: updated.notificationChannel, subscribed: updated.notificationsSubscribed })
   } catch (error) {
     logApiError('[notifications/preferences PATCH]', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

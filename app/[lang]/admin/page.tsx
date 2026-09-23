@@ -318,7 +318,7 @@ export default function AdminPage(): React.ReactElement {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{favoriteCards.map(renderCard)}</div>
                         {restCards.length > 0 && (
                             <div className="mt-4">
-                                <div className="mb-3 flex items-center justify-between gap-2">
+                                <div className="mb-3 flex items-center gap-3">
                                     <h2 className="text-lg font-semibold text-foreground">
                                         {l('Остальное', 'Rest', 'Parejais')} ({restCards.length})
                                     </h2>

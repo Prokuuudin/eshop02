@@ -144,7 +144,7 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                                         {formatEuro(displayPrice, 'en-US')}
                                     </div>
                                     {displayOldPrice && (
-                                        <div className="product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
+                                        <div className="product-card__price product-card__price--old text-sm line-through text-gray-400 dark:text-gray-500">
                                             {formatEuro(displayOldPrice, 'en-US')}
                                         </div>
                                     )}

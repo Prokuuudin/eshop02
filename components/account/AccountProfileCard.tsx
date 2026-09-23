@@ -210,7 +210,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             </label>
                             <div ref={phoneWrapperRef}>
                             <PhoneInput
-                                className={`[&_.PhoneInputCountry]:bg-muted/50 [&_input]:bg-muted/50 ${profileErrors.phone ? 'account-profile__input--error' : ''}`}
+                                className={`account-profile__input [&_.PhoneInputCountry]:bg-muted/50 [&_input]:bg-muted/50 ${profileErrors.phone ? 'account-profile__input--error' : ''}`}
                                 value={activeDraft.phone}
                                 onChange={(val) => onChange('phone', val)}
                             />

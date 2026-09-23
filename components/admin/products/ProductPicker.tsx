@@ -120,7 +120,7 @@ const ProductPicker: React.FC<ProductPickerProps> = ({ name, title, hint }) => {
     };
 
     return (
-        <div className={`add-product__section add-product__section--${name}`} ref={rootRef}>
+        <div className={`product-picker add-product__section add-product__section--${name}`} ref={rootRef}>
             <h2 className="add-product__section-title">{title}</h2>
             {hint && <p className="text-sm text-muted-foreground mb-2">{hint}</p>}
 

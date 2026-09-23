@@ -75,22 +75,22 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                     {t(section === 'delivery' ? 'deliveryPayment.deliveryTitle' : 'deliveryPayment.paymentTitle')}
                 </h1>
 
-                <div className="delivery-payment bem-delivery-payment grid grid-cols-1 gap-8 py-8">
+                <div className="delivery-payment grid grid-cols-1 gap-8 py-8">
                     {/* Левая колонка: Доставка */}
                     {section === 'delivery' && (
-                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
+                    <section id="delivery" className="delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
                         <Accordion
                             type="multiple"
-                            className="delivery-payment__accordion bem-delivery-payment__accordion"
+                            className="delivery-payment__accordion"
                         >
                             <AccordionItem
                                 value="methods"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.methods.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content leading-6">
+                                <AccordionContent className="delivery-payment__content leading-6">
                                     <ul className="list-disc space-y-5 pl-5">
                                         <li>
                                             <b>{t('deliveryPayment.methods.courierLatvia.label')}</b>
@@ -128,7 +128,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         </li>
                                         <li>
                                             <b>{t('deliveryPayment.methods.pickup.label')}</b>
-                                            <div className="delivery-info__shops mt-2 text-sm">
+                                            <div className="delivery-payment__shops mt-2 text-sm">
                                                 {t('deliveryPayment.methods.pickup.intro')}
                                                 <ul className="mt-2 list-disc space-y-1 pl-5">
                                                     {stores.map((store) => (
@@ -142,13 +142,13 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="rules"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.rules.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ul className="delivery-info__list list-disc space-y-3 pl-5 leading-6">
+                                <AccordionContent className="delivery-payment__content">
+                                    <ul className="delivery-payment__list list-disc space-y-3 pl-5 leading-6">
                                         <li>{t('deliveryPayment.rules.item1')}</li>
                                         <li>{t('deliveryPayment.rules.item2')}</li>
                                         <li>{t('deliveryPayment.rules.item3')}</li>
@@ -164,12 +164,12 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="return"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.return.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
+                                <AccordionContent className="delivery-payment__content">
                                     <p className="mb-4 leading-6">{t('deliveryPayment.return.intro')}</p>
                                     <div className="mb-2 font-medium">{t('deliveryPayment.return.conditionsTitle')}</div>
                                     <ul className="mb-4 list-disc space-y-2 pl-5">
@@ -186,12 +186,12 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="contacts"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.contacts.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
+                                <AccordionContent className="delivery-payment__content">
                                     <div className="mb-3">{t('deliveryPayment.contacts.intro')}</div>
                                     <ul className="list-disc space-y-2 pl-5">
                                         <li>
@@ -220,20 +220,20 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                     )}
                     {/* Правая колонка: Оплата */}
                     {section === 'payment' && (
-                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
+                    <section id="payment" className="delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
                         <Accordion
                             type="multiple"
-                            className="delivery-payment__accordion bem-delivery-payment__accordion"
+                            className="delivery-payment__accordion"
                         >
                             <AccordionItem
                                 value="methods"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.payment.methods.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
-                                    <ul className="payment-info__list list-disc space-y-5 pl-5 leading-6">
+                                <AccordionContent className="delivery-payment__content">
+                                    <ul className="delivery-payment__list list-disc space-y-5 pl-5 leading-6">
                                         <li>
                                             <b>{t('deliveryPayment.payment.paysera.label')}</b>
                                             <div className="mt-2 text-sm">{t('deliveryPayment.payment.paysera.note')}</div>
@@ -265,7 +265,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                                 <br />
                                                 {t('deliveryPayment.payment.transfer.note2')}
                                             </div>
-                                            <div className="payment-info__bank mt-3 space-y-1 rounded bg-muted p-4">
+                                            <div className="delivery-payment__bank mt-3 space-y-1 rounded bg-muted p-4">
                                                 <div className="font-bold">
                                                     {t('deliveryPayment.payment.transfer.requisitesTitle')}
                                                 </div>
@@ -291,12 +291,12 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="how"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.payment.how.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
+                                <AccordionContent className="delivery-payment__content">
                                     <ol className="list-decimal space-y-2 pl-5 leading-6">
                                         <li>{t('deliveryPayment.payment.how.step1')}</li>
                                         <li>{t('deliveryPayment.payment.how.step2')}</li>
@@ -307,12 +307,12 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="security"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.payment.security.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
+                                <AccordionContent className="delivery-payment__content">
                                     <div className="mb-4 leading-6">{t('deliveryPayment.payment.security.intro')}</div>
                                     <ul className="mb-3 list-disc space-y-2 pl-5 leading-6">
                                         <li>{t('deliveryPayment.payment.security.item1')}</li>
@@ -326,12 +326,12 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                             </AccordionItem>
                             <AccordionItem
                                 value="support"
-                                className="delivery-payment__item bem-delivery-payment__item"
+                                className="delivery-payment__item"
                             >
-                                <AccordionTrigger className="delivery-payment__trigger bem-delivery-payment__trigger">
+                                <AccordionTrigger className="delivery-payment__trigger">
                                     {t('deliveryPayment.support.title')}
                                 </AccordionTrigger>
-                                <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
+                                <AccordionContent className="delivery-payment__content">
                                     <div className="mb-3 leading-6">{t('deliveryPayment.support.intro')}</div>
                                     <ul className="list-disc space-y-2 pl-5">
                                         <li>

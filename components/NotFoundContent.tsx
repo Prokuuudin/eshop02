@@ -20,22 +20,22 @@ export default function NotFoundContent(): React.ReactElement {
     }, []);
 
     return (
-        <main className="w-full px-4 py-20">
+        <main className="not-found w-full px-4 py-20">
             <div className="max-w-2xl mx-auto text-center mb-16">
                 {/* 404 Graphic */}
-                <div className="not-found__code bem-not-found__code text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-600 mb-4">
+                <div className="not-found__code text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-pink-600 mb-4">
                     {t('notFound.code', '404')}
                 </div>
-                <h1 className="not-found__title bem-not-found__title text-4xl font-bold mb-4">
+                <h1 className="not-found__title text-4xl font-bold mb-4">
                     {t('notFound.title', 'Страница не найдена')}
                 </h1>
-                <p className="not-found__desc bem-not-found__desc text-xl text-gray-600 mb-8">
+                <p className="not-found__desc text-xl text-gray-600 mb-8">
                     {t(
                         'notFound.description',
                         'Похоже, вы попали на несуществующую страницу. Возможно, она была удалена или адрес введён неправильно.'
                     )}
                 </p>
-                <div className="not-found__actions bem-not-found__actions flex flex-col sm:flex-row gap-3 justify-center mb-12">
+                <div className="not-found__actions flex flex-col sm:flex-row gap-3 justify-center mb-12">
                     <Link href="/">
                         <Button size="lg">
                             {t('notFound.icon.home', '🏠')} {t('notFound.home', 'На главную')}
@@ -55,8 +55,8 @@ export default function NotFoundContent(): React.ReactElement {
             </div>
             {/* Suggested Products */}
             {suggestedProducts.length > 0 && (
-                <div className="not-found__suggested bem-not-found__suggested mb-16">
-                    <h2 className="not-found__suggested-title bem-not-found__suggested-title text-2xl font-bold mb-8 text-center">
+                <div className="not-found__suggested mb-16">
+                    <h2 className="not-found__suggested-title text-2xl font-bold mb-8 text-center">
                         {t('notFound.suggested', 'Может, вас заинтересует?')}
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -21,7 +21,7 @@ const enAccount: Record<string, string> = {
   'notifications.demo2Title': 'Bonus program is active',
   'notifications.demo2Message': 'Earn points on every purchase and spend them when placing your next order.',
   'notifications.demo3Title': 'Free delivery',
-  'notifications.demo3Message': 'Free delivery on orders over 100 EUR. Try it right now!',
+  'notifications.demo3Message': 'Free delivery on orders over 200 EUR. Try it right now!',
   'account.avatarHint': 'Upload a profile photo',
   'account.analyticsTitle': 'Analytics',
   'account.analytics.totalOrders': 'Total orders',

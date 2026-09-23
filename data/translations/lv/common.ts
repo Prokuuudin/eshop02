@@ -1,6 +1,6 @@
 const lvCommon: Record<string, string> = {
   'benefits.consultationMain': 'Profesionālas konsultācijas',
-  'benefits.deliveryFree': 'Bezmaksas piegāde no 100 €',
+  'benefits.deliveryFree': 'Bezmaksas piegāde pasūtījumiem virs 200 €',
   'benefits.consultation': 'Profesionālas konsultācijas 7 dienas nedēļā — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Pasūtījumu apstrāde 24 stundu laikā',
   'benefits.inStock': 'Vairāk nekā 10 000 preču noliktavā',

@@ -1,6 +1,6 @@
 const ruCommon: Record<string, string> = {
   'benefits.consultationMain': 'Профессиональные консультации',
-  'benefits.deliveryFree': 'Бесплатная доставка от 100 €',
+  'benefits.deliveryFree': 'Бесплатная доставка при заказе свыше 200 €',
   'benefits.consultation': 'Профессиональная консультация 7 дней в неделю — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Быстрая обработка заказов',
   'benefits.inStock': 'Более 10 000 товаров на складе',

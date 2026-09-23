@@ -21,7 +21,7 @@ const ruAccount: Record<string, string> = {
   'notifications.demo2Title': 'Бонусная программа активна',
   'notifications.demo2Message': 'Начисляйте баллы за каждую покупку и тратьте их при оформлении следующего заказа.',
   'notifications.demo3Title': 'Бесплатная доставка',
-  'notifications.demo3Message': 'Доставка бесплатна при заказе от 100 EUR. Попробуйте прямо сейчас!',
+  'notifications.demo3Message': 'Доставка бесплатна при заказе свыше 200 EUR. Попробуйте прямо сейчас!',
   'account.avatarHint': 'Загрузите фото профиля',
   'account.analyticsTitle': 'Аналитика',
   'account.analytics.totalOrders': 'Всего заказов',

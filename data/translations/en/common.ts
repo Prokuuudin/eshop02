@@ -1,6 +1,6 @@
 const enCommon: Record<string, string> = {
   'benefits.consultationMain': 'Professional consultations',
-  'benefits.deliveryFree': 'Free delivery from €100',
+  'benefits.deliveryFree': 'Free delivery on orders over €200',
   'benefits.consultation': 'Professional consultation 7 days a week — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Order processing within 24 hours',
   'benefits.inStock': 'Over 10,000 items in stock',

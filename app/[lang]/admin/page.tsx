@@ -318,18 +318,21 @@ export default function AdminPage(): React.ReactElement {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{favoriteCards.map(renderCard)}</div>
                         {restCards.length > 0 && (
                             <div className="mt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setRestCollapsed((v) => !v)}
-                                    aria-expanded={!restCollapsed}
-                                    className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-foreground shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-                                >
-                                    <span>
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                    <h2 className="text-lg font-semibold text-foreground">
                                         {l('Остальное', 'Rest', 'Parejais')} ({restCards.length})
-                                    </span>
-                                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${restCollapsed ? '' : 'rotate-180'}`} />
-                                </button>
-                                {!restCollapsed && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">{restCards.map(renderCard)}</div>}
+                                    </h2>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRestCollapsed((v) => !v)}
+                                        aria-expanded={!restCollapsed}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                    >
+                                        {restCollapsed ? l('Развернуть', 'Expand', 'Atvert') : l('Скрыть', 'Hide', 'Paslept')}
+                                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${restCollapsed ? '' : 'rotate-180'}`} />
+                                    </button>
+                                </div>
+                                {!restCollapsed && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{restCards.map(renderCard)}</div>}
                             </div>
                         )}
                     </div>

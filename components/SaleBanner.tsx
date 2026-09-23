@@ -64,7 +64,7 @@ export default function SaleBanner({ banner, contentClassName = '', fixedMediaFr
 
     const card = (
         <div
-            className={`sale-banner sale-banner--${banner.textColor} relative overflow-hidden rounded-2xl border border-border shadow-sm ${fixedMediaFrame ? 'h-full' : ''}`}
+            className={`sale-banner sale-banner--${banner.textColor} relative flex flex-col justify-center overflow-hidden rounded-2xl border border-border shadow-sm ${fixedMediaFrame ? 'h-full' : ''}`}
             style={{ backgroundColor: banner.bgColor }}
         >
             {banner.image && (

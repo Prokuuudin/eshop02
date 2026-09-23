@@ -57,7 +57,7 @@ export default function Newsletter({ compact = false, embedded = false, registra
     <div
       className={
         compact
-          ? `newsletter__inner newsletter__inner--compact bg-white p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${embedded ? '' : 'rounded-lg border'}`
+          ? `newsletter__inner newsletter__inner--compact h-full bg-white p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${embedded ? '' : 'rounded-lg border'}`
           : 'newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6'
       }
     >
@@ -121,7 +121,7 @@ export default function Newsletter({ compact = false, embedded = false, registra
   )
 
   if (compact) {
-    return <div className="newsletter newsletter--compact">{inner}</div>
+    return <div className="newsletter newsletter--compact h-full">{inner}</div>
   }
 
   return (

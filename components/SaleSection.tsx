@@ -56,7 +56,7 @@ export default function SaleSection({ products, banners }: { products: Product[]
                                 <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40" />
                             </div>
                         )}
-                        <div className={`sale-section__newsletter h-full [&_.newsletter__inner]:h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
+                        <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
                             <Newsletter compact embedded registration />
                         </div>
                     </div>

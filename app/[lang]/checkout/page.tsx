@@ -110,7 +110,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 {t('checkout.delivery.method')}
                             </h2>
                             <Link
-                                href="/delivery-payment"
+                                href="/delivery"
                                 target="_blank"
                                 className="checkout__section-info text-sm text-primary underline hover:no-underline"
                             >
@@ -239,7 +239,7 @@ export default function CheckoutPage(): React.ReactElement {
                                 {t('checkout.payment.title')}
                             </h2>
                             <Link
-                                href="/delivery-payment"
+                                href="/payment"
                                 target="_blank"
                                 className="checkout__section-info text-sm text-primary underline hover:no-underline"
                             >

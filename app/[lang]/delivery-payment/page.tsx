@@ -35,9 +35,9 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                 acceptedAnswer: {
                     '@type': 'Answer',
                     text: [
-                        t('deliveryPayment.courier'),
-                        t('deliveryPayment.pickup'),
-                        t('deliveryPayment.regions'),
+                        t('deliveryPayment.methods.courierLatvia.label'),
+                        t('deliveryPayment.methods.omniva.label'),
+                        t('deliveryPayment.methods.pickup.label'),
                     ].join('. '),
                 },
             },
@@ -47,9 +47,11 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                 acceptedAnswer: {
                     '@type': 'Answer',
                     text: [
-                        t('deliveryPayment.card'),
-                        t('deliveryPayment.cash'),
-                        t('deliveryPayment.online'),
+                        t('deliveryPayment.payment.paysera.label'),
+                        t('deliveryPayment.payment.paypal.label'),
+                        t('deliveryPayment.payment.transfer.label'),
+                        t('deliveryPayment.payment.card.label'),
+                        t('deliveryPayment.payment.cash.label'),
                     ].join('. '),
                 },
             },
@@ -74,7 +76,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                 <div className="delivery-payment bem-delivery-payment grid grid-cols-1 gap-8 py-8">
                     {/* Левая колонка: Доставка */}
                     {section === 'delivery' && (
-                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
+                    <section id="delivery" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
                         <Accordion
                             type="multiple"
                             className="delivery-payment__accordion bem-delivery-payment__accordion"
@@ -157,7 +159,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         <li>{t('deliveryPayment.return.condition3')}</li>
                                     </ul>
                                     <p className="mb-3 leading-6">{t('deliveryPayment.return.refundNote')}</p>
-                                    <div className="text-xs leading-5 text-gray-500">
+                                    <div className="text-xs leading-5 text-muted-foreground">
                                         {t('deliveryPayment.return.exceptionIntro')}
                                         <br />• {t('deliveryPayment.return.exceptionItem1')}
                                     </div>
@@ -176,19 +178,19 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         <li>
                                             {t('contact.phoneLabel')}:{' '}
                                             <a
-                                                href="tel:+37127067730"
-                                                className="text-blue-600 hover:underline"
+                                                href={`tel:${COMPANY.phone}`}
+                                                className="text-primary hover:underline"
                                             >
-                                                +371 27067730
+                                                {COMPANY.phone}
                                             </a>
                                         </li>
                                         <li>
                                             {t('contact.emailLabel')}:{' '}
                                             <a
-                                                href="mailto:info@hairshop.lv"
-                                                className="text-blue-600 hover:underline"
+                                                href={`mailto:${COMPANY.email}`}
+                                                className="text-primary hover:underline"
                                             >
-                                                info@hairshop.lv
+                                                {COMPANY.email}
                                             </a>
                                         </li>
                                     </ul>
@@ -199,7 +201,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                     )}
                     {/* Правая колонка: Оплата */}
                     {section === 'payment' && (
-                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
+                    <section id="payment" className="delivery-payment__section bem-delivery-payment__section flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow transition-colors">
                         <Accordion
                             type="multiple"
                             className="delivery-payment__accordion bem-delivery-payment__accordion"
@@ -213,6 +215,14 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                 </AccordionTrigger>
                                 <AccordionContent className="delivery-payment__content bem-delivery-payment__content">
                                     <ul className="payment-info__list list-disc space-y-5 pl-5 leading-6">
+                                        <li>
+                                            <b>{t('deliveryPayment.payment.paysera.label')}</b>
+                                            <div className="mt-2 text-sm">{t('deliveryPayment.payment.paysera.note')}</div>
+                                        </li>
+                                        <li>
+                                            <b>{t('deliveryPayment.payment.paypal.label')}</b>
+                                            <div className="mt-2 text-sm">{t('deliveryPayment.payment.paypal.note')}</div>
+                                        </li>
                                         <li>
                                             <b>{t('deliveryPayment.payment.card.label')}</b>
                                             <div className="mt-2 text-sm">
@@ -236,7 +246,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                                 <br />
                                                 {t('deliveryPayment.payment.transfer.note2')}
                                             </div>
-                                            <div className="payment-info__bank mt-3 space-y-1 rounded bg-slate-100 p-4 dark:bg-gray-700">
+                                            <div className="payment-info__bank mt-3 space-y-1 rounded bg-muted p-4">
                                                 <div className="font-bold">
                                                     {t('deliveryPayment.payment.transfer.requisitesTitle')}
                                                 </div>
@@ -290,7 +300,7 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         <li>{t('deliveryPayment.payment.security.item2')}</li>
                                         <li>{t('deliveryPayment.payment.security.item3')}</li>
                                     </ul>
-                                    <div className="text-xs leading-5 text-gray-500">
+                                    <div className="text-xs leading-5 text-muted-foreground">
                                         {t('deliveryPayment.payment.security.note')}
                                     </div>
                                 </AccordionContent>
@@ -308,19 +318,19 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         <li>
                                             {t('contact.phoneLabel')}:{' '}
                                             <a
-                                                href="tel:+37127067730"
-                                                className="text-blue-600 hover:underline"
+                                                href={`tel:${COMPANY.phone}`}
+                                                className="text-primary hover:underline"
                                             >
-                                                +371 27067730
+                                                {COMPANY.phone}
                                             </a>
                                         </li>
                                         <li>
                                             {t('contact.emailLabel')}:{' '}
                                             <a
-                                                href="mailto:info@hairshop.lv"
-                                                className="text-blue-600 hover:underline"
+                                                href={`mailto:${COMPANY.email}`}
+                                                className="text-primary hover:underline"
                                             >
-                                                info@hairshop.lv
+                                                {COMPANY.email}
                                             </a>
                                         </li>
                                     </ul>

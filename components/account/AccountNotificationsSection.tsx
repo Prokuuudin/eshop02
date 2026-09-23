@@ -34,6 +34,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
         isSubscribed,
         channel,
         setChannel,
+        fetchChannel,
         subscribe,
         unsubscribe,
         markRead,
@@ -95,6 +96,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
 
     React.useEffect(() => {
         fetchInbox()
+        fetchChannel()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -212,12 +214,9 @@ export default function AccountNotificationsSection(): React.ReactElement {
                             {t('notifications.channelHint')}
                         </p>
                     )}
-                    <p className="notifications__channels-label mb-3 text-xs font-medium text-muted-foreground">
-                        {t('notifications.channelLabel')}
-                    </p>
                     <RadioGroup
                         value={channel}
-                        onValueChange={(val) => { setChannel(val as NotificationChannel); setShowChannelHint(false); }}
+                        onValueChange={(val) => { void setChannel(val as NotificationChannel); setShowChannelHint(false); }}
                         className="flex flex-wrap gap-2"
                     >
                         {CHANNELS.map(({ value, labelKey, icon: Icon }) => {

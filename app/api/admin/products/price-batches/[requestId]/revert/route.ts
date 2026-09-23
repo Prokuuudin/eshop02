@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: Params): Promise<Respon
           })
           return { oldPrice: before.price, newPrice: toNum(next.price), title: next.title }
         })
-        notifyPriceChange(target.id, result.title, result.oldPrice, result.newPrice)
+        await notifyPriceChange(target.id, result.title, result.oldPrice, result.newPrice)
           .catch((e) => logApiError('[price-batches revert notifyPriceChange]', e))
         items.push({ id: target.id, title: target.title, oldPrice: target.after.price, newPrice: target.before.price, status: 'ok' })
       } catch (error) {

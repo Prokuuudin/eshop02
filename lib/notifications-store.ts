@@ -19,7 +19,8 @@ interface NotificationsStore {
   notificationOwnerId?: string | null
   isSubscribed: boolean
   channel: NotificationChannel
-  setChannel: (channel: NotificationChannel) => void
+  setChannel: (channel: NotificationChannel) => Promise<void>
+  fetchChannel: () => Promise<void>
   subscribe: () => void
   unsubscribe: () => void
   markRead: (id: string) => void
@@ -41,7 +42,32 @@ export const useNotificationsStore = create<NotificationsStore>()(
       isSubscribed: false,
       channel: 'app',
 
-      setChannel: (channel) => set({ channel }),
+      setChannel: async (channel) => {
+        const previous = get().channel
+        set({ channel })
+        if (typeof window === 'undefined') return
+        try {
+          const res = await fetch('/api/notifications/preferences', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel }),
+          })
+          if (!res.ok) set({ channel: previous })
+        } catch {
+          set({ channel: previous })
+        }
+      },
+      fetchChannel: async () => {
+        if (typeof window === 'undefined') return
+        try {
+          const res = await fetch('/api/notifications/preferences')
+          if (!res.ok) return
+          const data = await res.json() as { channel?: NotificationChannel }
+          if (data.channel && ['app', 'email', 'both'].includes(data.channel)) {
+            set({ channel: data.channel })
+          }
+        } catch {}
+      },
       subscribe: () => set({ isSubscribed: true }),
       unsubscribe: () => set({ isSubscribed: false }),
 
@@ -87,14 +113,6 @@ export const useNotificationsStore = create<NotificationsStore>()(
           ].slice(0, 100),
         }))
 
-        const { channel, isSubscribed } = get()
-        if (isSubscribed && (channel === 'email' || channel === 'both') && typeof window !== 'undefined') {
-          fetch('/api/notifications/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: n.title, message: n.message, type: n.type, link: n.link }),
-          }).catch(() => {})
-        }
       },
 
       fetchInbox: async () => {

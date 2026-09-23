@@ -68,11 +68,11 @@ export async function PUT(req: NextRequest): Promise<Response> {
       // reassignment (control-flow analysis doesn't see across function boundaries) —
       // assert back to the declared type; runtime `if (priceChange)` check is unaffected.
       const change = priceChange as { oldPrice: number; newPrice: number }
-      notifyPriceChange(id, updated.title, change.oldPrice, change.newPrice)
+      await notifyPriceChange(id, updated.title, change.oldPrice, change.newPrice)
         .catch((e) => logApiError('[admin/products PUT notifyPriceChange]', e))
     }
     if (restocked) {
-      notifyRestock(id, updated.title).catch((e) => logApiError('[admin/products PUT notifyRestock]', e))
+      await notifyRestock(id, updated.title).catch((e) => logApiError('[admin/products PUT notifyRestock]', e))
     }
     return successResponse({ product: mapDbToProduct(updated) })
   } catch (error) {

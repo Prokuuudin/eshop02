@@ -62,6 +62,9 @@ describe('GET /api/notifications/inbox', () => {
       data: { appDelivered: true },
     })
     expect(notificationFindManyMock).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }))
+    expect(notificationFindManyMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ channel: { in: ['app', 'both'] } }),
+    }))
   })
 
   it('does not call updateMany when no rows returned', async () => {

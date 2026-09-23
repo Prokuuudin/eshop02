@@ -4,6 +4,8 @@ vi.mock('server-only', () => ({}))
 
 const findManyMock = vi.hoisted(() => vi.fn())
 const createManyMock = vi.hoisted(() => vi.fn())
+const sendEmailMock = vi.hoisted(() => vi.fn())
+const logOperationalEventMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -11,67 +13,82 @@ vi.mock('@/lib/prisma', () => ({
     userNotification: { createMany: createManyMock },
   },
 }))
+vi.mock('@/lib/mailer', () => ({ sendEmail: sendEmailMock }))
+vi.mock('@/lib/observability', () => ({ logOperationalEvent: logOperationalEventMock }))
 
-import { notifyPriceChange, notifyRestock, notifyPromo } from './product-news-notify'
+import { notifyPriceChange, notifyPromo, notifyRestock } from './product-news-notify'
+
+const subscriber = (channel?: string, email = 'user@example.com') => ({
+  userId: `user-${channel ?? 'default'}`,
+  user: { email, notificationChannel: channel },
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
+  createManyMock.mockResolvedValue({ count: 1 })
+  sendEmailMock.mockResolvedValue(undefined)
 })
 
-describe('notifyPriceChange', () => {
-  it('notifies only price-flag subscribers with old/new price in the message', async () => {
-    findManyMock.mockResolvedValue([{ userId: 'u1' }, { userId: 'u2' }])
-
+describe('product-news channel delivery', () => {
+  it('app creates an inbox notification and does not send email', async () => {
+    findManyMock.mockResolvedValue([subscriber('app')])
     await notifyPriceChange('p1', 'Shampoo', 10, 8)
 
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(createManyMock).toHaveBeenCalledWith({ data: [expect.objectContaining({
+      userId: 'user-app', type: 'info', channel: 'app', emailSent: false, link: '/product/p1',
+    })] })
     expect(findManyMock).toHaveBeenCalledWith({
       where: { productId: 'p1', notifyPrice: true },
-      select: { userId: true },
+      select: { userId: true, user: { select: { email: true, notificationChannel: true } } },
     })
-    expect(createManyMock).toHaveBeenCalledWith({
-      data: [
-        expect.objectContaining({ userId: 'u1', type: 'info', channel: 'app', link: '/product/p1' }),
-        expect.objectContaining({ userId: 'u2', type: 'info', channel: 'app', link: '/product/p1' }),
-      ],
-    })
-    const [{ data }] = createManyMock.mock.calls[0]
-    expect(data[0].message).toContain('8.00')
-    expect(data[0].message).toContain('10.00')
+  })
+
+  it('email sends immediately without creating an inbox notification', async () => {
+    findManyMock.mockResolvedValue([subscriber('email')])
+    await notifyRestock('p1', 'Shampoo')
+
+    expect(sendEmailMock).toHaveBeenCalledWith('user@example.com', 'Товар снова в наличии', expect.stringContaining('Shampoo'))
+    expect(createManyMock).not.toHaveBeenCalled()
+  })
+
+  it('both sends email and creates an inbox notification marked emailSent', async () => {
+    findManyMock.mockResolvedValue([subscriber('both')])
+    await notifyPromo('p1', 'Shampoo', 'Скидка 20% сегодня')
+
+    expect(sendEmailMock).toHaveBeenCalledOnce()
+    expect(createManyMock).toHaveBeenCalledWith({ data: [expect.objectContaining({
+      userId: 'user-both', type: 'promo', channel: 'both', emailSent: true,
+      message: 'Скидка 20% сегодня',
+    })] })
+  })
+
+  it('defaults a missing or unknown server setting to app', async () => {
+    findManyMock.mockResolvedValue([subscriber(undefined), subscriber('invalid')])
+    await notifyRestock('p1', 'Shampoo')
+
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    const data = createManyMock.mock.calls[0][0].data
+    expect(data).toHaveLength(2)
+    expect(data.every((row: { channel: string }) => row.channel === 'app')).toBe(true)
+  })
+
+  it.each(['email', 'both'])('does not fail for %s when email is absent', async (channel) => {
+    findManyMock.mockResolvedValue([subscriber(channel, '')])
+    await expect(notifyRestock('p1', 'Shampoo')).resolves.toBeUndefined()
+
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(logOperationalEventMock).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'product_news_email_skipped', reason: 'missing_or_invalid_email',
+    }))
+    if (channel === 'both') expect(createManyMock).toHaveBeenCalledOnce()
+    else expect(createManyMock).not.toHaveBeenCalled()
   })
 
   it('does nothing when there are no subscribers', async () => {
     findManyMock.mockResolvedValue([])
     await notifyPriceChange('p1', 'Shampoo', 10, 8)
     expect(createManyMock).not.toHaveBeenCalled()
-  })
-})
-
-describe('notifyRestock', () => {
-  it('notifies stock-flag subscribers with a success-type message', async () => {
-    findManyMock.mockResolvedValue([{ userId: 'u1' }])
-    await notifyRestock('p1', 'Shampoo')
-    expect(findManyMock).toHaveBeenCalledWith({
-      where: { productId: 'p1', notifyStock: true },
-      select: { userId: true },
-    })
-    expect(createManyMock).toHaveBeenCalledWith({
-      data: [expect.objectContaining({ userId: 'u1', type: 'success', channel: 'app' })],
-    })
-  })
-})
-
-describe('notifyPromo', () => {
-  it('uses the given message when provided', async () => {
-    findManyMock.mockResolvedValue([{ userId: 'u1' }])
-    await notifyPromo('p1', 'Shampoo', 'Скидка 20% сегодня')
-    const [{ data }] = createManyMock.mock.calls[0]
-    expect(data[0]).toMatchObject({ userId: 'u1', type: 'promo', message: 'Скидка 20% сегодня' })
-  })
-
-  it('falls back to a generic message when none is given', async () => {
-    findManyMock.mockResolvedValue([{ userId: 'u1' }])
-    await notifyPromo('p1', 'Shampoo', undefined)
-    const [{ data }] = createManyMock.mock.calls[0]
-    expect(data[0].message).toContain('Shampoo')
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 })

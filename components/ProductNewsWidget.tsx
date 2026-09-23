@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -16,6 +17,7 @@ import { useProductNewsStore } from '@/lib/product-news-store'
 import { getCurrentUser } from '@/lib/auth'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTranslation } from '@/lib/use-translation'
+import { localizePath } from '@/lib/i18n-routing'
 import { useToast } from '@/lib/toast-context'
 import { Product } from '@/data/products'
 
@@ -24,7 +26,8 @@ interface ProductNewsWidgetProps {
 }
 
 export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product }) => {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
+  const router = useRouter()
   const { showToast } = useToast()
   const { subscribe, update, unsubscribe, hydrateFromServer } = useProductNewsStore()
   const subscriptions = useProductNewsStore((s) => s.subscriptions)
@@ -103,6 +106,7 @@ export const ProductNewsWidget: React.FC<ProductNewsWidgetProps> = ({ product })
     }
     setOpen(false)
     showToast(t('productNews.successToast'), 'success')
+    router.push(`${localizePath('/account', language)}#store-notifications`)
   }
 
   const handleUnsubscribe = (): void => {

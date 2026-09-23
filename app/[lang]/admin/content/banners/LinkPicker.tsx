@@ -106,14 +106,14 @@ export function LinkPicker({ value, onChange }: LinkPickerProps): React.ReactEle
 
     return (
         <>
-            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+            <Button type="button" variant="outline" size="sm" className="h-10" onClick={() => setOpen(true)}>
                 <Search className="mr-1.5 h-3.5 w-3.5" />
-                {l('Выбрать страницу', 'Choose a page', 'Izvēlēties lapu')}
+                {l('Выбрать объекты для ссылки', 'Choose link targets', 'Izvēlēties saites objektus')}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{l('Выбрать страницу для ссылки', 'Choose a page to link to', 'Izvēlēties lapu, uz kuru vest')}</DialogTitle>
+                        <DialogTitle>{l('Выбрать объекты для ссылки', 'Choose link targets', 'Izvēlēties saites objektus')}</DialogTitle>
                     </DialogHeader>
                     <Tabs defaultValue="product">
                         <TabsList>

@@ -127,7 +127,7 @@ export const AccountPasswordSection: React.FC<{ defaultOpen?: boolean }> = ({ de
             </div>
 
             {open && (
-                <div className="border-t border-gray-100 px-4 pb-4 pt-4 dark:border-gray-800 sm:px-5 sm:pb-5">
+                <div className="ui-disclosure-in border-t border-gray-100 px-4 pb-4 pt-4 dark:border-gray-800 sm:px-5 sm:pb-5">
                     {success ? (
                         <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
                             <CheckCircle className="h-4 w-4" />

@@ -255,7 +255,6 @@ export default function Products({ initialProducts, initialFilters, initialSearc
 
   // Infinite scroll state
   const [visibleCount, setVisibleCount] = React.useState(serverPagination ? initialProducts?.length ?? 0 : 12);
-  const [loading, setLoading] = React.useState(false);
   const loaderRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -266,13 +265,9 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     if (serverPagination || !loaderRef.current) return;
     const observer = new window.IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && visibleCount < filtered.length) {
-        setLoading(true);
-        setTimeout(() => {
-          setVisibleCount((prev) => Math.min(prev + 8, filtered.length));
-          setLoading(false);
-        }, 600);
+        setVisibleCount((prev) => Math.min(prev + 8, filtered.length));
       }
-    }, { threshold: 1 });
+    }, { rootMargin: '0px 0px 600px 0px' });
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
   }, [serverPagination, visibleCount, filtered.length]);
@@ -358,9 +353,6 @@ export default function Products({ initialProducts, initialFilters, initialSearc
                           <ProductListRow product={p} />
                         </Reveal>
                       ))}
-                      {loading && Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
-                      ))}
                     </div>
                   ) : (
                     <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -369,7 +361,6 @@ export default function Products({ initialProducts, initialFilters, initialSearc
                           <ProductCard product={p} />
                         </Reveal>
                       ))}
-                      {loading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
                     </div>
                   )}
                   <div ref={loaderRef} style={{ height: 1 }} />

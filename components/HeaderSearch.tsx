@@ -135,7 +135,7 @@ export default function HeaderSearch(): React.ReactElement {
         />
 
         {focused && query.trim() && suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-card border border-border rounded-md shadow-lg overflow-hidden">
+          <div className="ui-disclosure-in absolute left-0 right-0 top-full mt-1 z-20 bg-card border border-border rounded-md shadow-lg overflow-hidden">
             <ul id={listboxId} role="listbox" className="max-h-72 overflow-y-auto">
               {suggestions.map((suggestion, index) => (
                 <li key={suggestion.id}>

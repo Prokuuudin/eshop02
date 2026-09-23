@@ -55,8 +55,8 @@ export default function WelcomeModal({ user }: { user: User }): React.ReactEleme
     };
 
     return (
-        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-            <div className="w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 animate-in fade-in-0 duration-[260ms]">
+            <div className="animate-in fade-in-0 zoom-in-95 duration-[260ms] ease-out w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden">
                 {/* Шапка */}
                 <div className="bg-primary px-6 py-5 text-primary-foreground">
                     <div className="flex items-center gap-3 mb-1">

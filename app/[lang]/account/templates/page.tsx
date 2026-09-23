@@ -19,6 +19,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
 import { useToast } from '@/lib/toast-context';
 import { formatEuro } from '@/lib/utils';
+import { localizePath } from '@/lib/i18n-routing';
 
 // ── Инструкция ──────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ function HowItWorks({ t }: { t: (k: string) => string }) {
                 }
             </button>
             {open && (
-                <ol className="mt-3 space-y-2 text-sm text-primary dark:text-primary list-none pl-0">
+                <ol className="ui-disclosure-in mt-3 space-y-2 text-sm text-primary dark:text-primary list-none pl-0">
                     <li className="flex items-start gap-2">
                         <ShoppingBag className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>{t('templates.howStep1')}</span>
@@ -227,7 +228,7 @@ function TemplateCard({
 // ── Страница ─────────────────────────────────────────────────────────────────
 
 export default function AccountTemplatesPage(): React.ReactElement | null {
-    const { t } = useLocaleHelpers();
+    const { t, language } = useLocaleHelpers();
     const router = useRouter();
     const { showToast } = useToast();
     const allTemplates = useOrderTemplatesStore((s) => s.templates);
@@ -317,7 +318,7 @@ export default function AccountTemplatesPage(): React.ReactElement | null {
                             <ShoppingBag className="w-4 h-4" />
                             {t('templates.emptyCta1')}
                         </Link>
-                        <Link href="/account#orders-history" className="inline-flex items-center gap-2 text-primary hover:text-primary dark:text-primary font-medium">
+                        <Link href={`${localizePath('/account', language)}#orders-history`} className="inline-flex items-center gap-2 text-primary hover:text-primary dark:text-primary font-medium">
                             <ClipboardList className="w-4 h-4" />
                             {t('templates.emptyCta2')}
                         </Link>

@@ -51,8 +51,8 @@ export default function InvoiceViewer({ invoice, onClose, onRecordPayment }: Inv
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card rounded-lg max-w-2xl w-full my-8 shadow-lg">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in-0 duration-[260ms]">
+      <div className="animate-in fade-in-0 zoom-in-95 duration-[260ms] ease-out bg-card rounded-lg max-w-2xl w-full my-8 shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border p-6">
           <div>

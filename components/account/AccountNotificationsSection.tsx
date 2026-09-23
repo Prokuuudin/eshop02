@@ -204,7 +204,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
             </div>
 
             {/* Expandable body */}
-            {isExpanded && <>
+            {isExpanded && <div className="ui-disclosure-in">
 
             {/* Channel selector */}
             {isSubscribed && (
@@ -311,7 +311,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
             </div>
 
             {/* end isExpanded */}
-            </>}
+            </div>}
         </section>
         </TooltipProvider>
     );

@@ -153,7 +153,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
         {initialCatalog.totalPages > 1 && (
           <nav className="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 pb-10" aria-label="Pagination">
             {pageNumber > 1 && (
-              <Link className="rounded-md border border-border px-4 py-2 hover:bg-muted" href={pageHref(pageNumber - 1)}>
+              <Link className="rounded-md border border-border px-4 py-2 transition-colors hover:bg-muted" href={pageHref(pageNumber - 1)}>
                 {language === 'ru' ? 'Назад' : language === 'lv' ? 'Iepriekšējā' : 'Previous'}
               </Link>
             )}
@@ -161,7 +161,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
               {language === 'ru' ? 'Страница' : language === 'lv' ? 'Lapa' : 'Page'} {pageNumber} / {initialCatalog.totalPages}
             </span>
             {pageNumber < initialCatalog.totalPages && (
-              <Link className="rounded-md border border-border px-4 py-2 hover:bg-muted" href={pageHref(pageNumber + 1)}>
+              <Link className="rounded-md border border-border px-4 py-2 transition-colors hover:bg-muted" href={pageHref(pageNumber + 1)}>
                 {language === 'ru' ? 'Далее' : language === 'lv' ? 'Nākamā' : 'Next'}
               </Link>
             )}

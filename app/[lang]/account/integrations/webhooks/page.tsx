@@ -247,7 +247,7 @@ export default function WebhooksPage(): React.ReactElement {
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
         />
         {revealedKey && (
-          <div className="rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30 p-3 space-y-2">
+          <div className="ui-disclosure-in rounded border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30 p-3 space-y-2">
             <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
               Ключ показывается один раз — сохраните его сейчас, повторно увидеть будет нельзя.
             </p>

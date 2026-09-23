@@ -30,6 +30,7 @@ import { pointsToEuros } from '@/lib/bonus-program';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { getCartDrawerSummary } from '@/lib/cart-drawer-summary';
 import { useCartCampaignOffer } from '@/hooks/useCartCampaignOffer';
+import { usePresence } from '@/hooks/usePresence';
 
 type CartDrawerProps = {
     isOpen: boolean;
@@ -50,6 +51,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
         () => true,
         () => false
     );
+    const { rendered, closing } = usePresence(isOpen, 280);
     const [templateOpen, setTemplateOpen] = React.useState(false);
     const currentUser = getCurrentUser();
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
@@ -82,7 +84,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
         updateQuantity(lineKey, quantity - 1);
     };
 
-    if (!mounted || !isOpen) {
+    if (!mounted || !rendered) {
         return null;
     }
 
@@ -93,7 +95,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 type="button"
                 aria-label={t('common.close')}
                 data-testid="cart-drawer-backdrop"
-                className="fixed inset-0 z-drawer bg-black/50 opacity-100"
+                className={`fixed inset-0 z-drawer bg-black/50 duration-[280ms] ${closing ? 'animate-out fade-out-0 fill-mode-forwards pointer-events-none' : 'animate-in fade-in-0'}`}
                 onClick={onClose}
             />
 
@@ -103,7 +105,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps): React.
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="cart-drawer-title"
-                className="cart-drawer fixed right-0 top-0 h-screen h-[100dvh] w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col"
+                className={`cart-drawer fixed right-0 top-0 h-screen h-[100dvh] w-full max-w-[100vw] min-w-0 overflow-x-hidden sm:max-w-md z-drawer bg-card shadow-lg flex flex-col duration-[280ms] ${closing ? 'animate-out slide-out-to-right ease-in fill-mode-forwards pointer-events-none' : 'animate-in slide-in-from-right ease-out'}`}
             >
                 {/* Header */}
                 <div className="cart-drawer__header border-b border-border p-4 flex items-center justify-between bg-card">

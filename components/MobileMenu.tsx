@@ -11,6 +11,7 @@ import RegisterSwitcher from './auth/RegisterSwitcher'
 import ForgotPasswordForm from './auth/ForgotPasswordForm'
 import { X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import { usePresence } from '@/hooks/usePresence'
 
 type Props = {
   isOpen: boolean
@@ -20,6 +21,7 @@ type Props = {
 export default function MobileMenu({ isOpen, onClose }: Props): React.ReactElement | null {
   const { t, language } = useTranslation();
   const { categories } = useCategoriesConfig();
+  const { rendered, closing } = usePresence(isOpen, 240);
   const [expandCategories, setExpandCategories] = useState(false);
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const user = useAuthStore((s) => s.user);
@@ -39,13 +41,13 @@ export default function MobileMenu({ isOpen, onClose }: Props): React.ReactEleme
   const menuLinkClass =
     'inline-flex w-full items-center rounded-md px-2 py-2 text-base font-medium transition-colors duration-200 hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/80/15 dark:hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60';
 
-  if (!isOpen) return null;
+  if (!rendered) return null;
 
   return (
-    <div className="header__menu-overlay fixed inset-0 z-drawer">
-      <button type="button" aria-label="Закрыть меню" className="header__menu-backdrop absolute inset-0 bg-black/40" onClick={onClose} />
+    <div className={`header__menu-overlay fixed inset-0 z-drawer ${closing ? 'pointer-events-none' : ''}`}>
+      <button type="button" aria-label="Закрыть меню" className={`header__menu-backdrop absolute inset-0 bg-black/40 duration-[240ms] ${closing ? 'animate-out fade-out-0 fill-mode-forwards' : 'animate-in fade-in-0'}`} onClick={onClose} />
 
-      <nav className="header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-card text-foreground shadow-md p-4 z-drawer border-b border-border">
+      <nav className={`header__menu absolute top-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-card text-foreground shadow-md p-4 z-drawer border-b border-border duration-[240ms] ${closing ? 'animate-out fade-out-0 slide-out-to-top-4 ease-in fill-mode-forwards' : 'animate-in fade-in-0 slide-in-from-top-4 ease-out'}`}>
         <div className="header__menu-top flex items-center justify-between mb-4">
           <div className="header__brand flex items-center gap-3">
             <Link href="/" className="header__brand-link text-lg font-semibold" onClick={onClose}>

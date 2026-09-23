@@ -122,9 +122,9 @@ export default function SmoothScrollHandler(): null {
     return () => document.removeEventListener('click', handleClick, true);
   }, [normalizeHash, router, scheduleScrollToHash, language]);
 
+  // After any client-side navigation that lands on a URL with a hash, wait for the
+  // (often client-rendered) target to appear and scroll to it below the sticky header.
   useEffect(() => {
-    if (pathname !== '/') return;
-
     const hashToScroll = pendingHashRef.current ?? window.location.hash;
     if (!hashToScroll) return;
 

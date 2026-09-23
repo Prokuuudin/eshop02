@@ -6,8 +6,8 @@ import ChangePasswordFields from '@/components/account/ChangePasswordFields';
 export default function ForceChangePasswordModal(): React.ReactElement {
     return (
         // Блокирующий оверлей — не пропускает клики вниз
-        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-            <div className="w-full max-w-sm rounded-2xl bg-card shadow-2xl p-6 space-y-5">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in-0 duration-[260ms]">
+            <div className="animate-in fade-in-0 zoom-in-95 duration-[260ms] ease-out w-full max-w-sm rounded-2xl bg-card shadow-2xl p-6 space-y-5">
                 {/* Заголовок */}
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">

@@ -102,7 +102,7 @@ export default function B2BChat(): React.ReactElement | null {
   return (
     <div className="fixed right-4 bottom-4 z-50">
       {open ? (
-        <div className="w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-xl overflow-hidden">
+        <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-out w-[340px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-emerald-50 dark:bg-emerald-900/30">
             <div className="flex items-start justify-between gap-3">
               <div>

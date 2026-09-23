@@ -16,41 +16,19 @@ import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboa
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
 import RevenueBarChart from './RevenueBarChart';
 
-const FAVORITE_CARDS_STORAGE_KEY = 'admin-dashboard-favorite-cards';
-
 export default function AdminPage(): React.ReactElement {
     const { t, language } = useTranslation();
     const [dashboardTimestamp] = useState(Date.now);
-    const { getOrderStatus, setOrderStatus, loadOrderMeta, cardOrder, setCardOrder, resetCardOrder } = useAdminStore();
+    const { getOrderStatus, setOrderStatus, loadOrderMeta, cardOrder, setCardOrder, resetCardOrder, favoriteCardIds, toggleFavoriteCard, loadDashboardPrefs } = useAdminStore();
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [editMode, setEditMode] = useState(false);
     const dragId = useRef<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
-    const [favoriteCardIds, setFavoriteCardIds] = useState<string[]>([]);
     const [restCollapsed, setRestCollapsed] = useState(true);
 
     useEffect(() => {
-        queueMicrotask(() => {
-            try {
-                const raw = window.localStorage.getItem(FAVORITE_CARDS_STORAGE_KEY);
-                if (raw) setFavoriteCardIds(JSON.parse(raw));
-            } catch {
-                /* private mode / storage unavailable - favorites just start empty */
-            }
-        });
-    }, []);
-
-    const toggleFavoriteCard = (id: string) => {
-        setFavoriteCardIds((current) => {
-            const next = current.includes(id) ? current.filter((c) => c !== id) : [...current, id];
-            try {
-                window.localStorage.setItem(FAVORITE_CARDS_STORAGE_KEY, JSON.stringify(next));
-            } catch {
-                /* private mode / storage unavailable - favorites just won't persist */
-            }
-            return next;
-        });
-    };
+        void loadDashboardPrefs();
+    }, [loadDashboardPrefs]);
 
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
     const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en);

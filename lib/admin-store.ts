@@ -12,14 +12,18 @@ type AdminStore = {
   orderNotes: Record<string, string>
   bonusProgram: BonusProgramConfig
   cardOrder: string[] | null
+  favoriteCardIds: string[]
+  dashboardPrefsLoaded: boolean
   setOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>
   getOrderStatus: (orderId: string) => OrderStatus
   setOrderNote: (orderId: string, note: string) => Promise<void>
   getOrderNote: (orderId: string) => string
   updateBonusProgram: (nextConfig: Partial<BonusProgramConfig>) => Promise<BonusProgramConfig>
   setBonusProgram: (config: BonusProgramConfig) => void
+  loadDashboardPrefs: () => Promise<void>
   setCardOrder: (order: string[]) => void
   resetCardOrder: () => void
+  toggleFavoriteCard: (id: string) => void
   loadOrderMeta: (orderIds: string[]) => Promise<void>
   clearOrderMeta: () => void
 }
@@ -41,6 +45,8 @@ export const useAdminStore = create<AdminStore>()(
       orderNotes: {},
       bonusProgram: DEFAULT_BONUS_PROGRAM_CONFIG,
       cardOrder: null,
+      favoriteCardIds: [],
+      dashboardPrefsLoaded: false,
       clearOrderMeta: () => set({ orderStatuses: {}, orderNotes: {} }),
 
       setOrderStatus: async (orderId: string, status: OrderStatus) => {
@@ -71,8 +77,47 @@ export const useAdminStore = create<AdminStore>()(
         return get().orderNotes[orderId] ?? ''
       },
 
-      setCardOrder: (order: string[]) => set({ cardOrder: order }),
-      resetCardOrder: () => set({ cardOrder: null }),
+      loadDashboardPrefs: async () => {
+        try {
+          const res = await fetch('/api/admin/dashboard-prefs')
+          if (res.ok) {
+            const prefs = (await res.json()) as { cardOrder: string[] | null; favoriteCardIds: string[] }
+            set({ cardOrder: prefs.cardOrder, favoriteCardIds: prefs.favoriteCardIds, dashboardPrefsLoaded: true })
+            return
+          }
+        } catch {
+          /* offline - dashboard just keeps the default (unordered, no favorites) layout */
+        }
+        set({ dashboardPrefsLoaded: true })
+      },
+
+      setCardOrder: (order: string[]) => {
+        set({ cardOrder: order })
+        void fetch('/api/admin/dashboard-prefs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardOrder: order }),
+        }).catch(() => {})
+      },
+
+      resetCardOrder: () => {
+        set({ cardOrder: null })
+        void fetch('/api/admin/dashboard-prefs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardOrder: null }),
+        }).catch(() => {})
+      },
+
+      toggleFavoriteCard: (id: string) => {
+        const next = get().favoriteCardIds.includes(id) ? get().favoriteCardIds.filter((c) => c !== id) : [...get().favoriteCardIds, id]
+        set({ favoriteCardIds: next })
+        void fetch('/api/admin/dashboard-prefs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ favoriteCardIds: next }),
+        }).catch(() => {})
+      },
 
       loadOrderMeta: async (orderIds: string[]) => {
         if (!orderIds.length) return

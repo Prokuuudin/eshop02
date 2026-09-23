@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 import { reportAdminError } from '@/lib/admin-ui-errors'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { Info, ShieldCheck } from 'lucide-react'
 
 type DbUser = {
   id: string
@@ -211,6 +212,52 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             {t('admin.notifications.subtitle')}
           </p>
         </div>
+
+        <section className="overflow-hidden rounded-xl border border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/25" aria-labelledby="notification-help-title">
+          <div className="flex items-start gap-3 border-b border-sky-200 px-4 py-3 dark:border-sky-900">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-sky-700 dark:text-sky-300" />
+            <div>
+              <h2 id="notification-help-title" className="font-semibold text-sky-950 dark:text-sky-100">
+                {l('Как отправить уведомление', 'How to send a notification', 'Kā nosūtīt paziņojumu')}
+              </h2>
+              <p className="mt-0.5 text-xs text-sky-800/80 dark:text-sky-200/80">
+                {l('Проверьте получателей и содержимое перед отправкой — отменить уже отправленное сообщение нельзя.', 'Review recipients and content before sending — a sent message cannot be recalled.', 'Pirms nosūtīšanas pārbaudiet saņēmējus un saturu — nosūtītu ziņu atsaukt nevar.')}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 px-4 py-4 text-sm text-sky-950 dark:text-sky-100 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <p className="font-semibold">1. {l('Выберите клиентов', 'Select clients', 'Izvēlieties klientus')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-sky-800/80 dark:text-sky-200/75">
+                {l('Используйте поиск и страницы. Выбор сохраняется; максимум 500 получателей.', 'Use search and pagination. Selection is preserved; maximum 500 recipients.', 'Izmantojiet meklēšanu un lapas. Izvēle saglabājas; ne vairāk kā 500 saņēmēju.')}
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">2. {l('Подготовьте сообщение', 'Prepare the message', 'Sagatavojiet ziņu')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-sky-800/80 dark:text-sky-200/75">
+                {l('Заголовок — до 150, текст — до 5000 символов. Ссылка должна начинаться с /.', 'Title: up to 150; message: up to 5,000 characters. Links must start with /.', 'Virsraksts līdz 150, teksts līdz 5000 rakstzīmēm. Saitei jāsākas ar /.')}
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">3. {l('Добавьте оформление', 'Add media', 'Pievienojiet noformējumu')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-sky-800/80 dark:text-sky-200/75">
+                {l('Можно загрузить 1 изображение до 5 MB и до 3 вложений по 10 MB (всего до 20 MB).', 'Upload 1 image up to 5 MB and up to 3 attachments of 10 MB each (20 MB total).', 'Var augšupielādēt 1 attēlu līdz 5 MB un līdz 3 pielikumiem pa 10 MB (kopā 20 MB).')}
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold">4. {l('Выберите доставку', 'Choose delivery', 'Izvēlieties piegādi')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-sky-800/80 dark:text-sky-200/75">
+                {l('App — кабинет, Email — письмо, Both — оба канала. После отправки проверьте отчёт.', 'App — account, Email — email, Both — both channels. Review the report after sending.', 'App — konts, Email — e-pasts, Both — abi kanāli. Pēc nosūtīšanas pārbaudiet pārskatu.')}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 bg-sky-100/70 px-4 py-2.5 text-xs text-sky-900 dark:bg-sky-900/30 dark:text-sky-100">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              {l('Важно: для типа promo система автоматически проверяет marketing consent. Отписанные клиенты, администраторы и служебные аккаунты будут пропущены.', 'Important: promo automatically requires marketing consent. Unsubscribed clients, administrators and service accounts are skipped.', 'Svarīgi: promo tipam sistēma automātiski pārbauda mārketinga piekrišanu. Atrakstījušies klienti, administratori un dienesta konti tiek izlaisti.')}
+            </p>
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Left: User selection */}

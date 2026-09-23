@@ -37,6 +37,8 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                     text: [
                         t('deliveryPayment.methods.courierLatvia.label'),
                         t('deliveryPayment.methods.omniva.label'),
+                        t('deliveryPayment.methods.venipak.label'),
+                        t('deliveryPayment.methods.unisend.label'),
                         t('deliveryPayment.methods.pickup.label'),
                     ].join('. '),
                 },
@@ -103,6 +105,23 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                             <b>{t('deliveryPayment.methods.omniva.label')}</b>
                                             <ul className="mt-2 list-disc space-y-1 pl-5">
                                                 <li>{t('deliveryPayment.methods.omniva.price')}</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <b>{t('deliveryPayment.methods.venipak.label')}</b>
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                                <li>{t('deliveryPayment.methods.venipak.price')}</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <b>{t('deliveryPayment.methods.unisend.label')}</b>
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                                <li>{t('deliveryPayment.methods.unisend.price')}</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <b>{t('deliveryPayment.methods.lockers.limitsTitle')}</b>
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
                                                 <li>{t('deliveryPayment.methods.omniva.maxSize')}</li>
                                                 <li>{t('deliveryPayment.methods.omniva.weight')}</li>
                                             </ul>

@@ -11,6 +11,7 @@ const enAccount: Record<string, string> = {
   'notifications.delete': 'Delete',
   'notifications.markAllRead': 'Mark all as read',
   'notifications.deleteAll': 'Delete all',
+  'notifications.channelHint': 'Choose where to receive notifications',
   'notifications.channelLabel': 'Where to send notifications',
   'notifications.channelApp': 'To account',
   'notifications.channelEmail': 'To email',

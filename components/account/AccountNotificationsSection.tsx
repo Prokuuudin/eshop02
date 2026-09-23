@@ -45,7 +45,12 @@ export default function AccountNotificationsSection(): React.ReactElement {
         unreadCount,
     } = useNotificationsStore();
 
-    const [isExpanded, setIsExpanded] = React.useState(false);
+    const cameFromChannelPrompt = React.useMemo(
+        () => typeof window !== 'undefined' && window.location.hash === '#store-notifications',
+        []
+    );
+    const [isExpanded, setIsExpanded] = React.useState(cameFromChannelPrompt);
+    const [showChannelHint, setShowChannelHint] = React.useState(cameFromChannelPrompt);
     const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
 
     const CHANNELS: { value: NotificationChannel; labelKey: string; icon: React.ElementType }[] = [
@@ -102,7 +107,7 @@ export default function AccountNotificationsSection(): React.ReactElement {
 
     return (
         <TooltipProvider>
-        <section className="notifications rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <section id="store-notifications" className="notifications rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
 
             {/* Header — всегда видим */}
             <div
@@ -202,10 +207,19 @@ export default function AccountNotificationsSection(): React.ReactElement {
             {/* Channel selector */}
             {isSubscribed && (
                 <div className="notifications__channels border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                    {showChannelHint && (
+                        <p className="notifications__channel-hint mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                            {t('notifications.channelHint')}
+                        </p>
+                    )}
                     <p className="notifications__channels-label mb-3 text-xs font-medium text-muted-foreground">
                         {t('notifications.channelLabel')}
                     </p>
-                    <RadioGroup value={channel} onValueChange={(val) => setChannel(val as NotificationChannel)} className="flex flex-wrap gap-2">
+                    <RadioGroup
+                        value={channel}
+                        onValueChange={(val) => { setChannel(val as NotificationChannel); setShowChannelHint(false); }}
+                        className="flex flex-wrap gap-2"
+                    >
                         {CHANNELS.map(({ value, labelKey, icon: Icon }) => {
                             const isActive = channel === value;
                             return (

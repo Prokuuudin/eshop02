@@ -12,6 +12,7 @@ const lvAccount: Record<string, string> = {
   'notifications.delete': 'Dzēst',
   'notifications.markAllRead': 'Atzīmēt visus kā lasītus',
   'notifications.deleteAll': 'Dzēst visus',
+  'notifications.channelHint': 'Izvēlieties, kur saņemt paziņojumus',
   'notifications.channelLabel': 'Kur sūtīt paziņojumus',
   'notifications.channelApp': 'Uz kontu',
   'notifications.channelEmail': 'Uz e-pastu',

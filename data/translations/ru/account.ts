@@ -11,6 +11,7 @@ const ruAccount: Record<string, string> = {
   'notifications.delete': 'Удалить',
   'notifications.markAllRead': 'Пометить все как прочитанные',
   'notifications.deleteAll': 'Удалить все',
+  'notifications.channelHint': 'Выберите, куда присылать оповещения',
   'notifications.channelLabel': 'Куда отправлять уведомления',
   'notifications.channelApp': 'В кабинет',
   'notifications.channelEmail': 'На почту',

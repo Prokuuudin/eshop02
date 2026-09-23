@@ -5,9 +5,15 @@ import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'
 import { localizePath } from '@/lib/i18n-routing'
+import { useAuthStore } from '@/lib/auth-store'
+import { useNotificationsStore } from '@/lib/notifications-store'
 
 export default function Newsletter({ compact = false, embedded = false, registration = false }: { compact?: boolean; embedded?: boolean; registration?: boolean }): React.ReactElement {
   const { t, language } = useTranslation()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isSubscribedToStoreNotifications = useNotificationsStore((state) => state.isSubscribed)
+  const subscribeToStoreNotifications = useNotificationsStore((state) => state.subscribe)
+  const addStoreNotification = useNotificationsStore((state) => state.addNotification)
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +69,23 @@ export default function Newsletter({ compact = false, embedded = false, registra
       <div className="newsletter__action md:flex-1">
         {registration ? (
           <Button asChild className="w-full">
-            <Link href={localizePath('/auth/register', language)}>{t('newsletter.subscribe')}</Link>
+            {isAuthenticated ? (
+              <Link
+                href={`${localizePath('/account', language)}#store-notifications`}
+                onClick={() => {
+                  if (!isSubscribedToStoreNotifications) {
+                    subscribeToStoreNotifications()
+                    addStoreNotification({ type: 'info', title: t('notifications.demo3Title'), message: t('notifications.demo3Message') })
+                    addStoreNotification({ type: 'promo', title: t('notifications.demo2Title'), message: t('notifications.demo2Message') })
+                    addStoreNotification({ type: 'info', title: t('notifications.demoTitle'), message: t('notifications.demoMessage') })
+                  }
+                }}
+              >
+                {t('newsletter.subscribe')}
+              </Link>
+            ) : (
+              <Link href={localizePath('/auth/register', language)}>{t('newsletter.subscribe')}</Link>
+            )}
           </Button>
         ) : <>
         <form onSubmit={onSubmit} className={`newsletter__form flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>

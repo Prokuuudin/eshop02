@@ -6,11 +6,13 @@ const {
   getServerUserMock,
   sendEmailMock,
   userFindManyMock,
+  mediaFindManyMock,
   notificationCreateManyMock,
 } = vi.hoisted(() => ({
   getServerUserMock: vi.fn(),
   sendEmailMock: vi.fn(),
   userFindManyMock: vi.fn(),
+  mediaFindManyMock: vi.fn(),
   notificationCreateManyMock: vi.fn(),
 }))
 
@@ -20,6 +22,7 @@ vi.mock('@/lib/mailer', () => ({ sendEmail: sendEmailMock }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findMany: userFindManyMock },
+    mediaAsset: { findMany: mediaFindManyMock },
     userNotification: { createMany: notificationCreateManyMock },
     $transaction: vi.fn((callback: (client: unknown) => unknown) => callback({
       userNotification: { createMany: notificationCreateManyMock },
@@ -230,5 +233,18 @@ describe('POST /api/admin/notifications/send', () => {
     getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
     expect((await POST(makeRequest({ userIds: ['u1'], title: 'x'.repeat(151), message: 'M' }))).status).toBe(400)
     expect((await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'x'.repeat(5001) }))).status).toBe(400)
+  })
+
+  it('adds a verified image to app delivery and files to email attachments', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    mediaFindManyMock.mockResolvedValue([
+      { name: 'greeting.png', mimeType: 'image/png', size: 8, data: new Uint8Array([1]) },
+      { name: 'offer.pdf', mimeType: 'application/pdf', size: 10, data: new Uint8Array([2]) },
+    ])
+    sendEmailMock.mockResolvedValue(undefined)
+    const response = await POST(makeRequest({ userIds: ['u1'], title: 'Happy New Year', message: 'Best wishes', channel: 'both', imageUrl: '/api/media/greeting.png', attachments: [{ path: '/api/media/offer.pdf', name: 'Offer.pdf' }] }))
+    expect(response.status).toBe(200)
+    expect(notificationCreateManyMock).toHaveBeenCalledWith({ data: expect.arrayContaining([expect.objectContaining({ imageUrl: '/api/media/greeting.png', attachments: [{ path: '/api/media/offer.pdf', name: 'Offer.pdf' }] })]) })
+    expect(sendEmailMock).toHaveBeenCalledWith(expect.any(String), 'Happy New Year', expect.stringContaining('/api/media/greeting.png'), { attachments: [expect.objectContaining({ filename: 'Offer.pdf', contentType: 'application/pdf' })] })
   })
 })

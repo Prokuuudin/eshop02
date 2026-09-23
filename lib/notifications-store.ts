@@ -12,6 +12,8 @@ export interface Notification {
   createdAt: string // ISO string for serialization
   isRead: boolean
   link?: string
+  imageUrl?: string
+  attachments?: Array<{ path: string; name: string }>
 }
 
 interface NotificationsStore {

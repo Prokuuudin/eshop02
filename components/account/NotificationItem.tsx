@@ -49,6 +49,17 @@ export default function NotificationItem({ notification, language, isSelected, o
           <span className="notifications__item-time shrink-0 text-[11px] text-gray-400 dark:text-gray-500">{formatNotificationRelativeTime(notification.createdAt, language)}</span>
         </div>
         <p className="notifications__item-message mt-1 text-xs leading-relaxed text-muted-foreground">{notification.message}</p>
+        {notification.imageUrl && /^\/api\/media\//u.test(notification.imageUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element -- notification media is dynamically uploaded and dimensions are unknown
+          <img src={notification.imageUrl} alt="" className="mt-3 max-h-64 w-full rounded-lg object-cover" />
+        )}
+        {notification.attachments && notification.attachments.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {notification.attachments.filter((file) => /^\/api\/media\//u.test(file.path)).map((file) => (
+              <a key={file.path} href={file.path} download={file.name} className="rounded-md border border-border px-2 py-1 text-[11px] text-primary hover:bg-muted">📎 {file.name}</a>
+            ))}
+          </div>
+        )}
         {notification.link && /^\/(?!\/)/u.test(notification.link) && (
           <Link href={notification.link} className="mt-2 inline-flex text-xs font-medium text-primary hover:underline">
             {language === 'lv' ? 'Atvērt →' : language === 'en' ? 'Open →' : 'Перейти →'}

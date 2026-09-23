@@ -692,6 +692,8 @@ model UserNotification {
   title        String
   message      String
   link         String?
+  imageUrl     String?
+  attachments  Json?
   channel      String   @default("app")
   emailSent    Boolean  @default(false)
   appDelivered Boolean  @default(false)

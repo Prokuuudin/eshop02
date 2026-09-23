@@ -48,6 +48,7 @@ type SendEmailOptions = {
    *  so mail clients can surface a native "Unsubscribe" control for marketing mail. */
   listUnsubscribeUrl?: string
   correlationId?: string
+  attachments?: Array<{ filename: string; content: Buffer; contentType: string }>
 }
 
 export async function sendEmail(
@@ -80,6 +81,7 @@ export async function sendEmail(
     html,
     text: htmlToText(html),
     headers: Object.keys(headers).length ? headers : undefined,
+    attachments: options.attachments?.length ? options.attachments : undefined,
   }
   let lastError: unknown
   for (let attempt = 1; attempt <= 3; attempt += 1) {

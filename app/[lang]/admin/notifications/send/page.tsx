@@ -20,6 +20,7 @@ type DbUser = {
 
 type NotificationType = 'info' | 'success' | 'warning' | 'promo'
 type Channel = 'app' | 'email' | 'both'
+type UploadedAsset = { path: string; name: string; size: number; mimeType: string }
 
 type SendResult = {
   selected?: number
@@ -50,6 +51,9 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
   const [type, setType] = useState<NotificationType>('info')
   const [link, setLink] = useState('')
   const [channel, setChannel] = useState<Channel>('app')
+  const [image, setImage] = useState<UploadedAsset | null>(null)
+  const [attachments, setAttachments] = useState<UploadedAsset[]>([])
+  const [uploading, setUploading] = useState(false)
 
   // Send state
   const [sending, setSending] = useState(false)
@@ -153,6 +157,8 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
           type,
           link: link.trim() || undefined,
           channel,
+          imageUrl: image?.path,
+          attachments: attachments.map(({ path, name }) => ({ path, name })),
         }),
       })
       let data: Record<string, unknown> = {}
@@ -167,6 +173,33 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
     } finally {
       setSending(false)
     }
+  }
+
+  const uploadAsset = async (file: File, kind: 'image' | 'attachment'): Promise<UploadedAsset> => {
+    const form = new FormData()
+    form.set('file', file)
+    form.set('kind', kind)
+    const response = await fetch('/api/admin/notifications/assets', { method: 'POST', body: form })
+    const data = await response.json() as UploadedAsset & { error?: string }
+    if (!response.ok) throw new Error(data.error ?? 'upload_failed')
+    return data
+  }
+
+  const handleImageUpload = async (file: File | undefined) => {
+    if (!file) return
+    setUploading(true); setSendError('')
+    try { setImage(await uploadAsset(file, 'image')) } catch (error) { setSendError(error instanceof Error ? error.message : 'upload_failed') } finally { setUploading(false) }
+  }
+
+  const handleAttachmentUpload = async (files: FileList | null) => {
+    if (!files?.length) return
+    if (attachments.length + files.length > 3) { setSendError('Maximum 3 attachments'); return }
+    setUploading(true); setSendError('')
+    try {
+      const uploaded: UploadedAsset[] = []
+      for (const file of Array.from(files)) uploaded.push(await uploadAsset(file, 'attachment'))
+      setAttachments((current) => [...current, ...uploaded])
+    } catch (error) { setSendError(error instanceof Error ? error.message : 'upload_failed') } finally { setUploading(false) }
   }
 
   return (
@@ -321,6 +354,26 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             </div>
 
             {/* Channel */}
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <div>
+                <p className="text-sm font-medium">{l('Праздничное изображение', 'Greeting image', 'Apsveikuma attēls')}</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG, WebP, GIF или AVIF · до 5 MB</p>
+              </div>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" disabled={uploading} onChange={(event) => void handleImageUpload(event.target.files?.[0])} className="block w-full text-xs" />
+              {image && <div className="relative overflow-hidden rounded-lg border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element -- admin preview of dynamically uploaded media */}
+                <img src={image.path} alt="" className="max-h-52 w-full object-cover" />
+                <button type="button" onClick={() => setImage(null)} className="absolute right-2 top-2 rounded bg-black/70 px-2 py-1 text-xs text-white">×</button>
+              </div>}
+              <div>
+                <p className="text-sm font-medium">{l('Вложения', 'Attachments', 'Pielikumi')} ({attachments.length}/3)</p>
+                <p className="text-xs text-muted-foreground">PDF или изображения · до 10 MB каждый, до 20 MB суммарно</p>
+              </div>
+              <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,image/avif" disabled={uploading || attachments.length >= 3} onChange={(event) => void handleAttachmentUpload(event.target.files)} className="block w-full text-xs" />
+              {attachments.map((file) => <div key={file.path} className="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 text-xs"><span className="truncate">📎 {file.name}</span><button type="button" onClick={() => setAttachments((items) => items.filter((item) => item.path !== file.path))}>×</button></div>)}
+            </div>
+
+            {/* Channel */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 {t('admin.notifications.form.channel')}
@@ -389,7 +442,7 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             {/* Send button */}
             <Button
               onClick={handleSend}
-              disabled={sending || selectedIds.size === 0 || selectedIds.size > 500}
+              disabled={sending || uploading || selectedIds.size === 0 || selectedIds.size > 500}
               className="w-full"
             >
               {sending

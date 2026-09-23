@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest): Promise<Response> {
       },
       orderBy: { createdAt: 'asc' },
       take: 100,
-      select: { id: true, type: true, title: true, message: true, link: true },
+      select: { id: true, type: true, title: true, message: true, link: true, imageUrl: true, attachments: true },
     })
 
     if (rows.length > 0) {
@@ -33,6 +33,8 @@ export async function GET(_req: NextRequest): Promise<Response> {
       title: r.title,
       message: r.message,
       link: r.link ?? undefined,
+      imageUrl: r.imageUrl ?? undefined,
+      attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
     }))
 
     return NextResponse.json({ notifications })
@@ -41,4 +43,3 @@ export async function GET(_req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-

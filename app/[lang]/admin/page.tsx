@@ -10,10 +10,13 @@ import { getAdminAccessLevel } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { hasAdminPermission } from '@/lib/admin-permissions';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, ChevronDown, Info, Star } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboard-cards';
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
 import RevenueBarChart from './RevenueBarChart';
+
+const FAVORITE_CARDS_STORAGE_KEY = 'admin-dashboard-favorite-cards';
 
 export default function AdminPage(): React.ReactElement {
     const { t, language } = useTranslation();
@@ -23,6 +26,31 @@ export default function AdminPage(): React.ReactElement {
     const [editMode, setEditMode] = useState(false);
     const dragId = useRef<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [favoriteCardIds, setFavoriteCardIds] = useState<string[]>([]);
+    const [restCollapsed, setRestCollapsed] = useState(true);
+
+    useEffect(() => {
+        queueMicrotask(() => {
+            try {
+                const raw = window.localStorage.getItem(FAVORITE_CARDS_STORAGE_KEY);
+                if (raw) setFavoriteCardIds(JSON.parse(raw));
+            } catch {
+                /* private mode / storage unavailable - favorites just start empty */
+            }
+        });
+    }, []);
+
+    const toggleFavoriteCard = (id: string) => {
+        setFavoriteCardIds((current) => {
+            const next = current.includes(id) ? current.filter((c) => c !== id) : [...current, id];
+            try {
+                window.localStorage.setItem(FAVORITE_CARDS_STORAGE_KEY, JSON.stringify(next));
+            } catch {
+                /* private mode / storage unavailable - favorites just won't persist */
+            }
+            return next;
+        });
+    };
 
     const locale = language === 'ru' ? 'ru-RU' : language === 'lv' ? 'lv-LV' : 'en-US';
     const l = (ru: string, en: string, lv: string) => (language === 'ru' ? ru : language === 'lv' ? lv : en);
@@ -232,9 +260,14 @@ export default function AdminPage(): React.ReactElement {
                 </p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {sortedCards.map((card) => {
+            {(() => {
+                const isFavorite = (id: string) => favoriteCardIds.includes(id);
+                const favoriteCards = sortedCards.filter((c) => isFavorite(c.id));
+                const restCards = sortedCards.filter((c) => !isFavorite(c.id));
+
+                const renderCard = (card: AdminDashboardCard) => {
                     const isOver = dragOverId === card.id;
+                    const favorite = isFavorite(card.id);
                     const cardClassName = [
                         'group flex flex-col rounded-xl border border-border border-l-4 p-5 shadow-sm transition-all',
                         card.bg,
@@ -246,7 +279,36 @@ export default function AdminPage(): React.ReactElement {
                         <>
                             <div className="flex items-start justify-between gap-2 mb-1">
                                 <p className="text-base font-semibold text-foreground">{card.title}</p>
-                                {editMode && <span className="text-muted-foreground mt-0.5 shrink-0 text-lg leading-none">⠿</span>}
+                                <TooltipProvider>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleFavoriteCard(card.id);
+                                                    }}
+                                                    aria-pressed={favorite}
+                                                    aria-label={favorite ? l('Убрать из избранного', 'Remove from favorites', 'Nonemt no izlases') : l('Добавить в избранное', 'Add to favorites', 'Pievienot izlasei')}
+                                                    className="text-muted-foreground hover:text-amber-500 transition-colors"
+                                                >
+                                                    <Star className={favorite ? 'h-4 w-4 fill-amber-400 text-amber-400' : 'h-4 w-4'} />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">{favorite ? l('Убрать из избранного', 'Remove from favorites', 'Nonemt no izlases') : l('Добавить в избранное', 'Add to favorites', 'Pievienot izlasei')}</TooltipContent>
+                                        </Tooltip>
+                                        {editMode && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span className="text-muted-foreground mt-0.5 text-lg leading-none cursor-grab">⠿</span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">{l('Перетащите, чтобы изменить порядок', 'Drag to reorder', 'Velciet, lai mainitu secibu')}</TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </div>
+                                </TooltipProvider>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4 leading-snug">{card.description}</p>
                             {!editMode && <span className="mt-auto text-sm font-medium text-primary group-hover:underline">{card.linkText} →</span>}
@@ -266,8 +328,35 @@ export default function AdminPage(): React.ReactElement {
                             {cardContent}
                         </Link>
                     );
-                })}
-            </div>
+                };
+
+                if (editMode || favoriteCards.length === 0) {
+                    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">{sortedCards.map(renderCard)}</div>;
+                }
+
+                return (
+                    <div className="mb-8">
+                        <h2 className="mb-3 text-lg font-semibold text-foreground">{l('Избранные', 'Favorites', 'Izlase')}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{favoriteCards.map(renderCard)}</div>
+                        {restCards.length > 0 && (
+                            <div className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setRestCollapsed((v) => !v)}
+                                    aria-expanded={!restCollapsed}
+                                    className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-5 py-3 text-sm font-medium text-foreground shadow-sm hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                                >
+                                    <span>
+                                        {l('Остальное', 'Rest', 'Parejais')} ({restCards.length})
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${restCollapsed ? '' : 'rotate-180'}`} />
+                                </button>
+                                {!restCollapsed && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">{restCards.map(renderCard)}</div>}
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {!hasFullAccess && (
                 <div className="mb-8 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">

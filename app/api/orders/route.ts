@@ -271,10 +271,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
     }
     order.deliveryLocation = deliveryLocation ?? undefined
+    const pickupStore = order.deliveryMethod === 'pickup'
+      ? stores.find((store) => store.id === order.pickupStoreId)
+      : undefined
+    if (order.deliveryMethod === 'pickup' && !pickupStore) {
+      return NextResponse.json({ error: 'invalid_pickup_store' }, { status: 400 })
+    }
     // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
     // 'paysera' (Checkout Modern, sandbox as of 2026-09-07) and 'paypal' are the online gateways.
     if (!['bank', 'cash', 'paysera', 'paypal'].includes(order.paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
+    }
+    if (order.paymentMethod === 'cash' && (order.deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
+      return NextResponse.json({ error: 'cash_payment_unavailable' }, { status: 400 })
     }
 
     // Recompute all money fields from the authoritative DB catalog — never trust client prices/totals.
@@ -317,10 +326,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
     // становится адрес выбранного магазина (клиентский адрес для pickup не нужен).
-    const pickupStore =
-      order.deliveryMethod === 'pickup'
-        ? stores.find((s) => s.id === order.pickupStoreId)
-        : undefined
     const pickupAddressPatch = pickupStore
       ? { address: `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
       : {}

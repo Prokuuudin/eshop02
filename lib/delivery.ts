@@ -25,7 +25,7 @@ export const DELIVERY_METHOD_NAMES_LV: Record<CheckoutDeliveryMethod, string> = 
   courier: 'Omniva kurjers', pickup: 'Saņemšana veikalā', post: 'Omniva pakomāts', venipak: 'Venipak pakomāts', venipak_courier: 'Venipak kurjers', unisend: 'Unisend pakomāts', unisend_courier: 'Unisend kurjers', expresspasts: 'Expresspasts pakomāts', expresspasts_courier: 'Expresspasts kurjers',
 }
 export const DEFAULT_DELIVERY_FEE_EUR = DELIVERY_FEES_EUR.courier
-export const FREE_DELIVERY_FROM_EUR = 100
+export const FREE_DELIVERY_FROM_EUR = 200
 const settingsIds = { courier: 'courier_latvia', pickup: 'pickup', post: 'omniva', venipak: 'venipak', venipak_courier: 'venipak_courier', unisend: 'unisend', unisend_courier: 'unisend_courier', expresspasts: 'expresspasts', expresspasts_courier: 'expresspasts_courier' } as const
 
 /** Spreadsheet tariffs include VAT. Unconfirmed foreign free-delivery thresholds are not applied. */
@@ -35,8 +35,12 @@ export function calcDeliveryFee(method: string | null | undefined, subtotalAfter
   const zone = configured?.countryPrices?.[country]
   const tariff = SPREADSHEET_DELIVERY_TARIFFS[method as keyof typeof SPREADSHEET_DELIVERY_TARIFFS] ?? SPREADSHEET_DELIVERY_TARIFFS.courier
   const fee = tariff[country]
-  const freeFrom = zone ? zone.freeFrom : country === 'LV' ? (configured ? configured.freeFrom : ['unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier', 'venipak_courier'].includes(method ?? '') ? null : FREE_DELIVERY_FROM_EUR) : null
-  return fee === 0 || (freeFrom !== null && subtotalAfterDiscount >= freeFrom) ? 0 : fee
+  const freeFrom = zone
+    ? zone.freeFrom
+    : country === 'LV'
+      ? (configured ? configured.freeFrom : method === 'courier' ? FREE_DELIVERY_FROM_EUR : null)
+      : null
+  return fee === 0 || (freeFrom !== null && subtotalAfterDiscount > freeFrom) ? 0 : fee
 }
 
 export function isDeliveryAvailable(method: string, country: DeliveryCountry, settings: CommerceSettings): boolean {
@@ -61,6 +65,17 @@ export function applySpreadsheetDeliveryTariffs(settings: CommerceSettings): Com
     }
   }
   next.delivery.courier_riga.price = SPREADSHEET_DELIVERY_TARIFFS.courier.LV
+  // Owner policy: courier delivery in Latvia is free only for orders over €200.
+  // Parcel-locker methods have no free-delivery threshold in the approved copy.
+  next.delivery.courier_riga.freeFrom = FREE_DELIVERY_FROM_EUR
+  next.delivery.courier_latvia.freeFrom = FREE_DELIVERY_FROM_EUR
+  const courierLvZone = next.delivery.courier_latvia.countryPrices?.LV
+  if (courierLvZone) courierLvZone.freeFrom = FREE_DELIVERY_FROM_EUR
+  for (const id of ['omniva', 'venipak', 'unisend', 'expresspasts'] as const) {
+    next.delivery[id].freeFrom = null
+    const lvZone = next.delivery[id].countryPrices?.LV
+    if (lvZone) lvZone.freeFrom = null
+  }
   return next
 }
 

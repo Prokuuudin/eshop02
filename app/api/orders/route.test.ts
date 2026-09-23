@@ -144,6 +144,31 @@ describe('POST /api/orders — admin notification', () => {
     ]) expect((await POST(makeRequest(order))).status).toBe(400)
     expect(createServerOrder).not.toHaveBeenCalled()
   })
+  it('requires a valid store for pickup orders', async () => {
+    for (const pickupStoreId of [undefined, 'unknown-store']) {
+      const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId }))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({ error: 'invalid_pickup_store' })
+    }
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+  it('allows cash only for pickup from the Rencēnu office', async () => {
+    for (const order of [
+      { ...VALID_ORDER, paymentMethod: 'cash' },
+      { ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId: 'imanta', paymentMethod: 'cash' },
+    ]) {
+      const response = await POST(makeRequest(order))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({ error: 'cash_payment_unavailable' })
+    }
+    const response = await POST(makeRequest({
+      ...VALID_ORDER,
+      deliveryMethod: 'pickup',
+      pickupStoreId: 'riga-office',
+      paymentMethod: 'cash',
+    }))
+    expect(response.status).toBe(200)
+  })
   it('stores an authoritative terminal snapshot instead of client-supplied address metadata', async () => {
     const terminal = getDeliveryLocations('unisend', 'LV')[0]
     const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: terminal.id, deliveryLocation: { id: terminal.id, address: 'FORGED ADDRESS' } }))

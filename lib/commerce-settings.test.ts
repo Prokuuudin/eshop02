@@ -20,13 +20,17 @@ describe('commerce settings', () => {
     expect(upgraded.delivery.expresspasts.enabled).toBe(false)
     expect(commerceSettingsSchema.safeParse(upgraded).success).toBe(true)
   })
-  it('ships with a valid, conservative draft configuration', () => {
+  it('ships with only the approved production delivery methods enabled', () => {
     expect(commerceSettingsSchema.safeParse(DEFAULT_COMMERCE_SETTINGS).success).toBe(true)
     expect(DEFAULT_COMMERCE_SETTINGS.payment.card_online.enabled).toBe(false)
     expect(DEFAULT_COMMERCE_SETTINGS.delivery.dpd.enabled).toBe(false)
-    expect(getCommerceSettingsIssues(DEFAULT_COMMERCE_SETTINGS)).toContain(
-      'Доставка «Курьер по Риге»: не подтверждена готовность'
-    )
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.courier_riga.enabled).toBe(false)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.expresspasts.enabled).toBe(false)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.venipak_courier.enabled).toBe(false)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.unisend_courier.enabled).toBe(false)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.omniva.enabled).toBe(true)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.venipak.enabled).toBe(true)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.unisend.enabled).toBe(true)
   })
 
   it('migrates the legacy courier, pickup and post values without enabling new integrations', () => {

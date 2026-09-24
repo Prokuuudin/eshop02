@@ -10,6 +10,7 @@ import { Check, LoaderCircle } from 'lucide-react';
 import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { localizePath } from '@/lib/i18n-routing';
+import { getOrderDeliveryDestination } from '@/lib/order-delivery-destination';
 
 type PageProps = {
     params: Promise<{
@@ -26,6 +27,7 @@ export default function OrderPage({ params }: PageProps): React.ReactElement {
   const { t, language, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
+  const destination = getOrderDeliveryDestination(order)
   // Company invoices carry a registration number, not a personal code — and a
   // guest with no session can never pass the server's canAccessOrder check anyway.
 return (
@@ -132,10 +134,10 @@ return (
                                     <span className="font-medium">{t('order.recipient')}:</span>{' '}
                                     {order.firstName} {order.lastName}
                                 </p>
-                                <p>
+                                {!order.deliveryLocation && <p>
                                     <span className="font-medium">{t('order.address')}:</span>{' '}
                                     {displayAddress}{order.country && order.country !== 'LV' ? `, ${order.country}` : ''}
-                                </p>
+                                </p>}
                                 <p>
                                     <span className="font-medium">{t('order.phone')}:</span>{' '}
                                     {order.phone}
@@ -154,6 +156,10 @@ return (
                                 <p className="text-gray-700 dark:text-gray-300">
                                     {getDeliveryLabel(order.deliveryMethod)}
                                 </p>
+                                {destination && <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <p className="font-medium">{destination.carrier ? `${destination.carrier.toUpperCase()} — ${destination.name}` : t(`stores.${destination.name}.name`)}</p>
+                                    <p>{destination.address}, {destination.city}{destination.postalCode ? `, ${destination.postalCode}` : ''}</p>
+                                </div>}
                             </div>
                             <div className="min-w-0 border-l border-border pl-4">
                                 <h3 className="font-bold mb-2 text-foreground">

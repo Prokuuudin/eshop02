@@ -54,6 +54,7 @@ const VALID_BODY = {
   deliveryMethod: 'courier' as const,
   address: 'Riga st 1',
   city: 'Riga',
+  postalCode: 'LV-1001',
   paymentMethod: 'Наличные',
   paymentStatus: 'unpaid' as const,
 }

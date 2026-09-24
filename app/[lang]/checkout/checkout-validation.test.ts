@@ -23,12 +23,21 @@ const validForm: CheckoutFormData = {
 const t = (key: string) => key;
 
 describe('validateCheckoutForm', () => {
-    it('requires a selected locker for Venipak and Unisend but not their couriers', () => {
-        for (const method of ['venipak', 'unisend'] as const) {
+    it('requires a selected locker for Omniva, Venipak and Unisend but not their couriers', () => {
+        for (const method of ['post', 'venipak', 'unisend'] as const) {
             expect(validateCheckoutForm({ formData: validForm, deliveryMethod: method, pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBe('checkout.errors.deliveryLocation');
             expect(validateCheckoutForm({ formData: validForm, deliveryMethod: method, deliveryLocationId: '8144', pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBeUndefined();
         }
         expect(validateCheckoutForm({ formData: validForm, deliveryMethod: 'unisend_courier', pickupStoreId: '', termsAccepted: true }, t).deliveryLocationId).toBeUndefined();
+    });
+    it('does not require a home address for lockers or pickup', () => {
+        const noAddress = { ...validForm, address: '', city: '', postalCode: '' };
+        expect(validateCheckoutForm({ formData: noAddress, deliveryMethod: 'post', deliveryLocationId: '9192', pickupStoreId: '', termsAccepted: true }, t)).toEqual({});
+        expect(validateCheckoutForm({ formData: noAddress, deliveryMethod: 'pickup', pickupStoreId: 'imanta', termsAccepted: true }, t)).toEqual({});
+    });
+    it('requires address, city and postal code for courier', () => {
+        const errors = validateCheckoutForm({ formData: { ...validForm, address: '', city: '', postalCode: '' }, deliveryMethod: 'courier', pickupStoreId: '', termsAccepted: true }, t);
+        expect(Object.keys(errors)).toEqual(expect.arrayContaining(['address', 'city', 'postalCode']));
     });
     it('accepts a complete individual delivery order', () => {
         expect(validateCheckoutForm({ formData: validForm, deliveryMethod: 'courier', pickupStoreId: '', termsAccepted: true }, t)).toEqual({});

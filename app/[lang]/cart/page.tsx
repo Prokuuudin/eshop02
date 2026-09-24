@@ -30,7 +30,6 @@ import {
     getWholesaleOrderGuard,
 } from '@/lib/customer-segmentation';
 import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
-import { calcDeliveryFee } from '@/lib/delivery';
 import AnimatedPrice from '@/components/AnimatedPrice';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { useCartCampaignOffer } from '@/hooks/useCartCampaignOffer';
@@ -100,8 +99,7 @@ export default function CartPage(): React.ReactElement {
     const discount = Math.min(subtotal, campaignOffer.discount);
     const subtotalAfterDiscount = subtotal - discount;
     const taxAmount = extractVat(subtotalAfterDiscount);
-    const deliveryFee = subtotal > 0 && !campaignOffer.freeShipping ? calcDeliveryFee('courier', subtotalAfterDiscount) : 0;
-    const grandTotal = subtotalAfterDiscount + deliveryFee;
+    const grandTotal = subtotalAfterDiscount;
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const bonusToEarn = calcOrderBonus(
         selectedItems.map((item) => ({
@@ -339,7 +337,7 @@ export default function CartPage(): React.ReactElement {
                             <div className="cart__summary-row flex justify-between">
                                 <span>{t('cart.shipping')}</span>
                                 <span className="cart__summary-value font-medium text-foreground">
-                                    {formatCurrency(deliveryFee)}
+                                    {t('cart.deliveryAtCheckout')}
                                 </span>
                             </div>
                         </div>

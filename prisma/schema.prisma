@@ -444,6 +444,7 @@ model Order {
   country          String   @default("LV")
   deliveryLocation Json?
   deliveryMethod   String
+  pickupStoreId    String?
   paymentMethod    String
   promoCode        String?
   discount         Decimal  @default(0) @db.Decimal(12, 2)

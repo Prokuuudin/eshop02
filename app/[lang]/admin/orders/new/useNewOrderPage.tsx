@@ -262,8 +262,9 @@ function useNewOrderPageState() {
         if (!email.trim()) errs.push(l('Email покупателя обязателен', 'Customer email is required', 'Klienta e-pasts ir obligāts'));
         if (!firstName.trim()) errs.push(l('Имя покупателя обязательно', 'Customer first name is required', 'Klienta vārds ir obligāts'));
         if (items.length === 0) errs.push(l('Добавьте хотя бы один товар', 'Add at least one product', 'Pievienojiet vismaz vienu preci'));
-        if (deliveryMethod !== 'pickup' && !address.trim()) errs.push(l('Укажите адрес доставки', 'Enter a delivery address', 'Norādiet piegādes adresi'));
-        if (deliveryMethod !== 'pickup' && !city.trim()) errs.push(l('Укажите город', 'Enter a city', 'Norādiet pilsētu'));
+        if (deliveryMethod === 'courier' && !address.trim()) errs.push(l('Укажите адрес доставки', 'Enter a delivery address', 'Norādiet piegādes adresi'));
+        if (deliveryMethod === 'courier' && !city.trim()) errs.push(l('Укажите город', 'Enter a city', 'Norādiet pilsētu'));
+        if (deliveryMethod === 'courier' && !postalCode.trim()) errs.push(l('Укажите почтовый индекс', 'Enter a postal code', 'Norādiet pasta indeksu'));
         return errs;
     };
 

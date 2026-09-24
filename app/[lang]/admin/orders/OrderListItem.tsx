@@ -15,6 +15,7 @@ import { PAYMENT_COLORS, STATUS_COLORS, STATUS_SURFACES, availableOrderStatuses 
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { OrderEditForm } from './OrderEditForm';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
+import { getOrderDeliveryDestination } from '@/lib/order-delivery-destination';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
@@ -60,6 +61,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                     const isExpanded = expandedOrders.has(order.id);
                     const payStatus = order.paymentStatus ?? 'unpaid';
                     const isStatusSaving = statusSavingIds.has(order.id);
+                    const destination = getOrderDeliveryDestination(order);
                     const rowRef = React.useRef<HTMLDivElement>(null);
 
                     React.useEffect(() => {
@@ -179,6 +181,10 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                             </p>
                                             <div className="text-sm text-foreground space-y-0.5">
                                                 <p>{formatOrderAddressLatvian(order)}{order.country && order.country !== 'LV' ? `, ${order.country}` : ''}</p>
+                                                {destination && <>
+                                                    <p className="font-medium">{destination.carrier ? `${destination.carrier.toUpperCase()} — ${destination.name}` : t(`stores.${destination.name}.name`)}</p>
+                                                    <p>{destination.address}, {destination.city}{destination.postalCode ? `, ${destination.postalCode}` : ''}</p>
+                                                </>}
                                             </div>
                                         </div>
 

@@ -4,6 +4,7 @@ import type { CommerceSettings } from './commerce-settings'
 export type DeliveryCountry = 'LV' | 'LT' | 'EE'
 /** Source: перевозка.xlsx, Sheet1. All tariffs include VAT. */
 export const checkoutDeliveryMethodIds = ['courier', 'pickup', 'post', 'venipak', 'venipak_courier', 'unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier'] as const
+export const productionDeliveryMethodIds = ['pickup', 'courier', 'post', 'venipak', 'unisend'] as const
 export type CheckoutDeliveryMethod = (typeof checkoutDeliveryMethodIds)[number]
 export const SPREADSHEET_DELIVERY_TARIFFS = {
   courier: importedTariffs.tariffs.omniva.courier,
@@ -35,11 +36,12 @@ export function calcDeliveryFee(method: string | null | undefined, subtotalAfter
   const zone = configured?.countryPrices?.[country]
   const tariff = SPREADSHEET_DELIVERY_TARIFFS[method as keyof typeof SPREADSHEET_DELIVERY_TARIFFS] ?? SPREADSHEET_DELIVERY_TARIFFS.courier
   const fee = tariff[country]
-  const freeFrom = zone ? zone.freeFrom : country === 'LV' ? (configured ? configured.freeFrom : ['unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier', 'venipak_courier'].includes(method ?? '') ? null : FREE_DELIVERY_FROM_EUR) : null
+  const freeFrom = zone ? zone.freeFrom : country === 'LV' ? (configured ? configured.freeFrom : ['unisend_courier', 'expresspasts', 'expresspasts_courier', 'venipak_courier'].includes(method ?? '') ? null : FREE_DELIVERY_FROM_EUR) : null
   return fee === 0 || (freeFrom !== null && subtotalAfterDiscount >= freeFrom) ? 0 : fee
 }
 
 export function isDeliveryAvailable(method: string, country: DeliveryCountry, settings: CommerceSettings): boolean {
+  if (!(productionDeliveryMethodIds as readonly string[]).includes(method)) return false
   const id = settingsIds[method as keyof typeof settingsIds]
   return !!id && settings.delivery[id].enabled && settings.delivery[id].countries.includes(country)
 }
@@ -51,12 +53,14 @@ export function applySpreadsheetDeliveryTariffs(settings: CommerceSettings): Com
     const tariff = SPREADSHEET_DELIVERY_TARIFFS[method as keyof typeof SPREADSHEET_DELIVERY_TARIFFS]
     const configured = next.delivery[id]
     configured.price = tariff.LV
+    if (['courier_latvia', 'omniva', 'venipak', 'unisend'].includes(id)) configured.freeFrom = 100
+    if (id === 'pickup') configured.freeFrom = 0
     for (const country of ['LV', 'LT', 'EE'] as const) {
       const existing = configured.countryPrices?.[country]
       if (country === 'LV' && !existing) continue
       configured.countryPrices = {
         ...configured.countryPrices,
-        [country]: { price: tariff[country], freeFrom: existing ? existing.freeFrom : null },
+        [country]: { price: tariff[country], freeFrom: country === 'LV' && ['courier_latvia', 'omniva', 'venipak', 'unisend'].includes(id) ? 100 : existing ? existing.freeFrom : null },
       }
     }
   }
@@ -65,5 +69,5 @@ export function applySpreadsheetDeliveryTariffs(settings: CommerceSettings): Com
 }
 
 export function requiresDeliveryLocation(method: string): boolean {
-  return method === 'venipak' || method === 'unisend'
+  return method === 'post' || method === 'venipak' || method === 'unisend'
 }

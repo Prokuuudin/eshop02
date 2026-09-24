@@ -34,8 +34,11 @@ export function validateCheckoutForm(
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         errors.email = t('checkout.errors.emailInvalid');
     }
-    if (!formData.address.trim()) errors.address = t('checkout.errors.address');
-    if (!formData.city.trim()) errors.city = t('checkout.errors.city');
+    if (deliveryMethod === 'courier') {
+        if (!formData.address.trim()) errors.address = t('checkout.errors.address');
+        if (!formData.city.trim()) errors.city = t('checkout.errors.city');
+        if (!formData.postalCode.trim()) errors.postalCode = t('checkout.errors.postalCode');
+    }
     if (deliveryMethod === 'pickup' && !pickupStoreId) {
         errors.pickupStore = t('checkout.errors.pickupStore');
     }

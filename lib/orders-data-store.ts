@@ -365,7 +365,10 @@ export async function updateServerOrderByAdmin(
     const oldDiscount = toNum(current.discount)
     const discountRate = current.promoCode && oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
     const discount = Math.round(subtotal * discountRate * 100) / 100
-    const country = input.country ?? (current.country as import('./delivery').DeliveryCountry | undefined) ?? 'LV'
+      const country = input.country ?? (current.country as import('./delivery').DeliveryCountry | undefined) ?? 'LV'
+      if (input.deliveryMethod === 'courier' && (!input.address || !input.city || !input.postalCode)) {
+        throw new AdminOrderUpdateError('Courier address, city and postal code are required', 'invalid_item')
+      }
     const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, country, input.deliveryLocationId)
     if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) throw new AdminOrderUpdateError('Invalid delivery location', 'invalid_item')
     const shippingSettings = await getShippingSettings(tx)

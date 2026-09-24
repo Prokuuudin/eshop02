@@ -23,10 +23,15 @@ describe('calcDeliveryFee', () => {
     expect(calcDeliveryFee('courier', 250)).toBe(0)
     expect(calcDeliveryFee('post', 100)).toBe(0)
     expect(calcDeliveryFee('venipak', 100)).toBe(0)
+    expect(calcDeliveryFee('unisend', 100)).toBe(0)
+    expect(calcDeliveryFee('courier', 100.01)).toBe(0)
   })
 
   it('charges just below the threshold', () => {
     expect(calcDeliveryFee('courier', 99.99)).toBe(10)
+    expect(calcDeliveryFee('post', 99.99)).toBe(4)
+    expect(calcDeliveryFee('venipak', 99.99)).toBe(3)
+    expect(calcDeliveryFee('unisend', 99.99)).toBe(2)
   })
 
   it('falls back to the courier fee for unknown or missing method', () => {
@@ -63,27 +68,27 @@ it('prioritises spreadsheet prices while keeping country-specific thresholds', (
   expect(calcDeliveryFee('post', 500, 'LT', settings)).toBe(0)
 })
 
-it('overrides saved tariffs without changing availability or explicit null thresholds', () => {
+it('overrides saved tariffs and applies the approved Latvian threshold', () => {
   const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
   settings.delivery.venipak.enabled = false
   settings.delivery.omniva.price = 99
   settings.delivery.omniva.countryPrices = { LV: { price: 99, freeFrom: null }, EE: { price: 99, freeFrom: 500 } }
   const result = applySpreadsheetDeliveryTariffs(settings)
   expect(result.delivery.omniva.price).toBe(4)
-  expect(result.delivery.omniva.countryPrices?.LV).toEqual({ price: 4, freeFrom: null })
+  expect(result.delivery.omniva.countryPrices?.LV).toEqual({ price: 4, freeFrom: 100 })
   expect(result.delivery.omniva.countryPrices?.EE).toEqual({ price: 8, freeFrom: 500 })
   expect(result.delivery.venipak.enabled).toBe(false)
   expect(settings.delivery.omniva.price).toBe(99)
 })
 
-it('honours an explicitly disabled free-delivery threshold', () => {
+it('enforces the approved Latvian free-delivery threshold', () => {
   const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
   settings.delivery.omniva.freeFrom = null
-  expect(calcDeliveryFee('post', 1000, 'LV', settings)).toBe(4)
+  expect(calcDeliveryFee('post', 1000, 'LV', applySpreadsheetDeliveryTariffs(settings))).toBe(0)
 })
 
-it('uses new carrier prices from the updated workbook with no inferred free thresholds', () => {
-  for (const [method, prices] of Object.entries({ unisend: [2, 2.5, 2.5], unisend_courier: [5, 5, 5], expresspasts: [2.5, 4, 4], expresspasts_courier: [10, 10, 25], venipak_courier: [10, 15, 15] })) {
+it('uses new carrier prices with no inferred thresholds for unapproved methods or foreign countries', () => {
+  for (const [method, prices] of Object.entries({ unisend_courier: [5, 5, 5], expresspasts: [2.5, 4, 4], expresspasts_courier: [10, 10, 25], venipak_courier: [10, 15, 15] })) {
     for (const [index, country] of (['LV', 'LT', 'EE'] as const).entries()) {
       expect(calcDeliveryFee(method, 1000, country)).toBe(prices[index])
       expect(calcDeliveryFee(method, 1000, country, DEFAULT_COMMERCE_SETTINGS)).toBe(prices[index])

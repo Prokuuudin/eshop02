@@ -94,6 +94,7 @@ export default function CheckoutPage(): React.ReactElement {
                         onChange={handleChange}
                         t={t}
                         showPrefillHint={!!currentUser}
+                        deliveryMethod={deliveryMethod}
                     />
                     {formData.customerType === 'individual' && (
                         <section className="checkout__section rounded-lg border-2 border-primary/30 bg-primary/5 p-6 dark:border-primary/40 dark:bg-primary/10">

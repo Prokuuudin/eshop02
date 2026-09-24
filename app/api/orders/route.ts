@@ -201,9 +201,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Phone is only required for private customers — the real Hairshop.lv company
     // form doesn't mark it mandatory (companies are reached via the contact email).
+    const requiresHomeAddress = order.deliveryMethod === 'courier'
     const requiredContactFields = isCompanyOrder
-      ? [order.firstName, order.lastName, order.address, order.city]
-      : [order.firstName, order.lastName, order.phone, order.address, order.city]
+      ? [order.firstName, order.lastName, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
+      : [order.firstName, order.lastName, order.phone, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
     if (requiredContactFields.some((value) => typeof value !== 'string' || !value.trim())) {
       return NextResponse.json({ error: 'missing_contact_fields' }, { status: 400 })
     }
@@ -337,6 +338,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const orderBase: Omit<ServerOrder, 'id'> = {
       ...orderFields,
       ...pickupAddressPatch,
+      pickupStoreId: pickupStore?.id,
       deliveryLocation: deliveryLocation ?? undefined,
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.
       userId: caller?.id,

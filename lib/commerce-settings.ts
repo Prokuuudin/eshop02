@@ -111,7 +111,7 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
   },
   delivery: {
     venipak_courier: delivery('Venipak courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
-    unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, null, { enabled: true, requiresLocation: true, notes: 'Terminal lists provided. API registration pending access credentials.' }),
+    unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, 100, { enabled: true, status: 'ready', requiresLocation: true, notes: 'Terminal lists provided. API registration pending access credentials.' }),
     unisend_courier: delivery('Unisend courier', ['LV', 'LT', 'EE'], 5, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
     expresspasts: delivery('Expresspasts lockers', ['LV', 'LT', 'EE'], 2.5, null, { requiresLocation: true, notes: 'Tariffs provided; locker directory pending.' }),
     expresspasts_courier: delivery('Expresspasts courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
@@ -120,10 +120,11 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       status: 'ready',
       notes: 'Бесплатный самовывоз из любого из 8 магазинов. Наличные принимаются только в офисе Rencēnu iela 10A.',
     }),
-    courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100, { enabled: true }),
-    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: true, countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
+    courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100),
+    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: true, status: 'ready', countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
     omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 100, {
       enabled: true,
+      status: 'ready',
       maxWeightKg: 30,
       maxDimensionsCm: '38 × 64 × 19',
       countryPrices: { LT: { price: 8, freeFrom: null }, EE: { price: 8, freeFrom: null } },
@@ -138,6 +139,7 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
     }),
     venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, 100, {
       enabled: true,
+      status: 'ready',
       countryPrices: { LT: { price: 8, freeFrom: null }, EE: { price: 8, freeFrom: null } },
       requiresLocation: true,
       maxWeightKg: 30,

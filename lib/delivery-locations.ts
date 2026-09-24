@@ -3,7 +3,7 @@ import { requiresDeliveryLocation, type DeliveryCountry } from './delivery'
 
 export type DeliveryLocation = {
   id: string
-  provider: 'venipak' | 'unisend'
+  provider: 'omniva' | 'venipak' | 'unisend'
   type: 'locker' | 'pickup'
   country: DeliveryCountry
   name: string
@@ -20,8 +20,9 @@ export { requiresDeliveryLocation } from './delivery'
 
 export function getDeliveryLocations(method: string, country: DeliveryCountry): DeliveryLocation[] {
   if (!requiresDeliveryLocation(method)) return []
+  const provider = method === 'post' ? 'omniva' : method
   // Pickup outlets have no separate confirmed tariff; retain them in the directory for future use.
-  return locations.filter(location => location.provider === method && location.country === country && location.type === 'locker')
+  return locations.filter(location => location.provider === provider && location.country === country && location.type === 'locker')
 }
 
 export function resolveDeliveryLocation(method: string, country: DeliveryCountry, id?: string): DeliveryLocation | null {

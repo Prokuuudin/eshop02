@@ -144,6 +144,15 @@ describe('POST /api/orders — admin notification', () => {
     ]) expect((await POST(makeRequest(order))).status).toBe(400)
     expect(createServerOrder).not.toHaveBeenCalled()
   })
+  it('validates Omniva locations server-side and rejects forged or foreign ids', async () => {
+    const lv = getDeliveryLocations('post', 'LV')[0]
+    const ee = getDeliveryLocations('post', 'EE')[0]
+    expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'post' }))).status).toBe(400)
+    expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'post', country: 'LV', deliveryLocationId: ee.id }))).status).toBe(400)
+    const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'post', country: 'LV', deliveryLocationId: lv.id, deliveryLocation: { id: lv.id, address: 'forged' } }))
+    expect(response.status).toBe(200)
+    expect((await response.json()).deliveryLocation).toEqual(lv)
+  })
   it('requires a valid store for pickup orders', async () => {
     for (const pickupStoreId of [undefined, 'unknown-store']) {
       const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId }))
@@ -151,6 +160,15 @@ describe('POST /api/orders — admin notification', () => {
       expect(await response.json()).toEqual({ error: 'invalid_pickup_store' })
     }
     expect(createServerOrder).not.toHaveBeenCalled()
+  })
+  it('stores pickup id and allows pickup and lockers without a home address', async () => {
+    expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId: 'imanta', address: '', city: '', postalCode: '' }))).status).toBe(200)
+    expect(createServerOrder).toHaveBeenLastCalledWith(expect.objectContaining({ pickupStoreId: 'imanta' }), expect.any(Function))
+    const terminal = getDeliveryLocations('unisend', 'LV')[0]
+    expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: terminal.id, address: '', city: '', postalCode: '' }))).status).toBe(200)
+  })
+  it('rejects courier without address, city or postal code', async () => {
+    expect((await POST(makeRequest({ ...VALID_ORDER, address: '', city: '', postalCode: '' }))).status).toBe(400)
   })
   it('allows cash only for pickup from the Rencēnu office', async () => {
     for (const order of [

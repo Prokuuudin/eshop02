@@ -1,6 +1,6 @@
 const enCommon: Record<string, string> = {
   'benefits.consultationMain': 'Professional consultations',
-  'benefits.deliveryFree': 'Free delivery on orders over €200',
+  'benefits.deliveryFree': 'Free delivery from €100',
   'benefits.consultation': 'Professional consultation 7 days a week — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Order processing within 24 hours',
   'benefits.inStock': 'Over 10,000 items in stock',
@@ -70,7 +70,7 @@ const enCommon: Record<string, string> = {
   'deliveryPayment.methods.title': 'Delivery methods',
   'deliveryPayment.methods.courierLatvia.label': 'Courier delivery in Latvia',
   'deliveryPayment.methods.courierLatvia.price': 'Cost — from €10',
-  'deliveryPayment.methods.courierLatvia.freeNote': 'For orders over €200, delivery within Latvia is free.',
+  'deliveryPayment.methods.courierLatvia.freeNote': 'For orders of €100 or more, delivery within Latvia is free.',
   'deliveryPayment.methods.omniva.label': 'Delivery to OMNIVA parcel lockers',
   'deliveryPayment.methods.omniva.price': 'Cost — from €4',
   'deliveryPayment.methods.venipak.label': 'Delivery to Venipak parcel lockers',

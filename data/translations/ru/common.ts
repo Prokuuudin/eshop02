@@ -1,6 +1,6 @@
 const ruCommon: Record<string, string> = {
   'benefits.consultationMain': 'Профессиональные консультации',
-  'benefits.deliveryFree': 'Бесплатная доставка при заказе свыше 200 €',
+  'benefits.deliveryFree': 'Бесплатная доставка от 100 €',
   'benefits.consultation': 'Профессиональная консультация 7 дней в неделю — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Быстрая обработка заказов',
   'benefits.inStock': 'Более 10 000 товаров на складе',
@@ -70,7 +70,7 @@ const ruCommon: Record<string, string> = {
   'deliveryPayment.methods.title': 'Способы доставки',
   'deliveryPayment.methods.courierLatvia.label': 'Доставка курьером по Латвии',
   'deliveryPayment.methods.courierLatvia.price': 'Стоимость — от 10 €',
-  'deliveryPayment.methods.courierLatvia.freeNote': 'При заказе на сумму свыше 200 € доставка по Латвии осуществляется бесплатно.',
+  'deliveryPayment.methods.courierLatvia.freeNote': 'При заказе на сумму от 100 € доставка по Латвии осуществляется бесплатно.',
   'deliveryPayment.methods.omniva.label': 'Доставка в пакоматы OMNIVA',
   'deliveryPayment.methods.omniva.price': 'Стоимость — от 4 €',
   'deliveryPayment.methods.venipak.label': 'Доставка в пакоматы Venipak',

@@ -8,7 +8,7 @@ export default async function Benefits({ language }: { language: Language }): Pr
     const BENEFITS = [
         {
             icon: '/icons/delivery.svg',
-            text: t('benefits.deliveryFree', 'Бесплатная доставка при заказе свыше 200 €'),
+            text: t('benefits.deliveryFree', 'Бесплатная доставка от 100 €'),
         },
         {
             icon: '/icons/consulting.svg',

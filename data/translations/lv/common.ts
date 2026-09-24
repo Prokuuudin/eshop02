@@ -1,6 +1,6 @@
 const lvCommon: Record<string, string> = {
   'benefits.consultationMain': 'Profesionālas konsultācijas',
-  'benefits.deliveryFree': 'Bezmaksas piegāde pasūtījumiem virs 200 €',
+  'benefits.deliveryFree': 'Bezmaksas piegāde no 100 €',
   'benefits.consultation': 'Profesionālas konsultācijas 7 dienas nedēļā — <a href="tel:+37127067730" class="underline">+371 27067730</a>',
   'benefits.processingFast': 'Pasūtījumu apstrāde 24 stundu laikā',
   'benefits.inStock': 'Vairāk nekā 10 000 preču noliktavā',
@@ -82,7 +82,7 @@ const lvCommon: Record<string, string> = {
   'deliveryPayment.methods.title': 'Piegādes veidi',
   'deliveryPayment.methods.courierLatvia.label': 'Kurjera piegāde Latvijā',
   'deliveryPayment.methods.courierLatvia.price': 'Cena — no 10 €',
-  'deliveryPayment.methods.courierLatvia.freeNote': 'Pasūtījumiem virs 200 €, piegāde Latvijā ir bez maksas.',
+  'deliveryPayment.methods.courierLatvia.freeNote': 'Pasūtījumiem no 100 € piegāde Latvijā ir bez maksas.',
   'deliveryPayment.methods.omniva.label': 'Piegāde uz OMNIVA pakomātiem',
   'deliveryPayment.methods.omniva.price': 'Cena — no 4 €',
   'deliveryPayment.methods.venipak.label': 'Piegāde uz Venipak pakomātiem',

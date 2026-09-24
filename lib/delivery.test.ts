@@ -18,17 +18,15 @@ describe('calcDeliveryFee', () => {
     expect(calcDeliveryFee('pickup', 10)).toBe(0)
   })
 
-  it('is free only over €200 for Latvian courier delivery', () => {
-    expect(calcDeliveryFee('courier', 100)).toBe(10)
-    expect(calcDeliveryFee('courier', 200)).toBe(10)
-    expect(calcDeliveryFee('courier', 200.01)).toBe(0)
+  it('is free from €100 (threshold inclusive)', () => {
+    expect(calcDeliveryFee('courier', 100)).toBe(0)
     expect(calcDeliveryFee('courier', 250)).toBe(0)
-    expect(calcDeliveryFee('post', 250)).toBe(4)
-    expect(calcDeliveryFee('venipak', 250)).toBe(3)
+    expect(calcDeliveryFee('post', 100)).toBe(0)
+    expect(calcDeliveryFee('venipak', 100)).toBe(0)
   })
 
   it('charges just below the threshold', () => {
-    expect(calcDeliveryFee('courier', 199.99)).toBe(10)
+    expect(calcDeliveryFee('courier', 99.99)).toBe(10)
   })
 
   it('falls back to the courier fee for unknown or missing method', () => {
@@ -42,7 +40,7 @@ describe('calcDeliveryFee', () => {
     expect(DELIVERY_FEES_EUR.post).toBe(4)
     expect(DELIVERY_FEES_EUR.venipak).toBe(3)
     expect(DELIVERY_FEES_EUR.pickup).toBe(0)
-    expect(FREE_DELIVERY_FROM_EUR).toBe(200)
+    expect(FREE_DELIVERY_FROM_EUR).toBe(100)
   })
 })
 
@@ -60,11 +58,9 @@ it('prioritises spreadsheet prices while keeping country-specific thresholds', (
   settings.delivery.omniva.freeFrom = 200
   settings.delivery.omniva.countryPrices = { LT: { price: 9, freeFrom: 500 } }
   expect(calcDeliveryFee('post', 100, 'LV', settings)).toBe(4)
-  expect(calcDeliveryFee('post', 200, 'LV', settings)).toBe(4)
-  expect(calcDeliveryFee('post', 200.01, 'LV', settings)).toBe(0)
+  expect(calcDeliveryFee('post', 200, 'LV', settings)).toBe(0)
   expect(calcDeliveryFee('post', 499, 'LT', settings)).toBe(8)
-  expect(calcDeliveryFee('post', 500, 'LT', settings)).toBe(8)
-  expect(calcDeliveryFee('post', 500.01, 'LT', settings)).toBe(0)
+  expect(calcDeliveryFee('post', 500, 'LT', settings)).toBe(0)
 })
 
 it('overrides saved tariffs without changing availability or explicit null thresholds', () => {

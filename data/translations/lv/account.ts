@@ -22,7 +22,7 @@ const lvAccount: Record<string, string> = {
   'notifications.demo2Title': 'Bonusu programma ir aktīva',
   'notifications.demo2Message': 'Uzkrājiet punktus par katru pirkumu un izmantojiet tos nākamajam pasūtījumam.',
   'notifications.demo3Title': 'Bezmaksas piegāde',
-  'notifications.demo3Message': 'Bezmaksas piegāde pasūtījumiem virs 200 EUR. Izmēģiniet jau tagad!',
+  'notifications.demo3Message': 'Bezmaksas piegāde pasūtījumiem no 100 EUR. Izmēģiniet jau tagad!',
   'account.analyticsTitle': 'Analitika',
   'account.analytics.totalOrders': 'Kopā pasūtījumu',
   'account.analytics.totalSpent': 'Kopējie izdevumi',

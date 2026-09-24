@@ -120,9 +120,9 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       status: 'ready',
       notes: 'Бесплатный самовывоз из любого из 8 магазинов. Наличные принимаются только в офисе Rencēnu iela 10A.',
     }),
-    courier_riga: delivery('Курьер по Риге', ['LV'], 10, 200, { enabled: true }),
-    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 200, { enabled: true, countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
-    omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, null, {
+    courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100, { enabled: true }),
+    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: true, countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
+    omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 100, {
       enabled: true,
       maxWeightKg: 30,
       maxDimensionsCm: '38 × 64 × 19',
@@ -136,7 +136,7 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       maxDimensionsCm: '30 × 30 × 20',
       notes: 'Габариты/вес подтверждены. Договор/API-доступ — тот же аккаунт DPD, что у hairshop.lv (юрлицо MIKS PLUS SIA), новый не нужен. Тарифы по странам/зонам и список пакоматов ещё нет — заказчик даст данные или посмотреть в админке hairshop.lv.',
     }),
-    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, null, {
+    venipak: delivery('Venipak', ['LV', 'LT', 'EE'], 3, 100, {
       enabled: true,
       countryPrices: { LT: { price: 8, freeFrom: null }, EE: { price: 8, freeFrom: null } },
       requiresLocation: true,

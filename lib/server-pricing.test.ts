@@ -103,7 +103,7 @@ describe('recomputeOrderPricing', () => {
     })
 
     expect(r.subtotal).toBe(2000) // 1000 * 2, not 2
-    expect(r.delivery).toBe(0) // free courier delivery over €200
+    expect(r.delivery).toBe(0) // free delivery from €100
     expect(r.tax).toBe(347.11) // VAT already included in price, extracted for display: 2000 - 2000/1.21
     expect(r.total).toBe(2000) // tax not added — it's already inside subtotal
   })
@@ -124,9 +124,9 @@ describe('recomputeOrderPricing', () => {
     expect(r.total).toBe(16) // EUR 6 goods + EUR 10 courier
   })
 
-  it('charges courier delivery at exactly €200 and makes it free only above €200', async () => {
+  it('applies free delivery from €100 of subtotal', async () => {
     productFindManyMock.mockResolvedValue([
-      { id: 'p1', price: 200, bulkPricingTiers: null },
+      { id: 'p1', price: 100, bulkPricingTiers: null },
     ])
     promoCodeFindFirstMock.mockResolvedValue(null)
 
@@ -136,19 +136,8 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: null,
     })
 
-    expect(r.delivery).toBe(10)
-    expect(r.total).toBe(210)
-
-    productFindManyMock.mockResolvedValue([
-      { id: 'p1', price: 200.01, bulkPricingTiers: null },
-    ])
-    const aboveThreshold = await recomputeOrderPricing({
-      items: [{ id: 'p1', quantity: 1 }],
-      deliveryMethod: 'courier',
-      userBonusBalance: null,
-    })
-    expect(aboveThreshold.delivery).toBe(0)
-    expect(aboveThreshold.total).toBe(200.01)
+    expect(r.delivery).toBe(0)
+    expect(r.total).toBe(100)
   })
 
   it('forbids bonus spend for guests (no balance)', async () => {
@@ -177,7 +166,7 @@ describe('recomputeOrderPricing', () => {
       userBonusBalance: 300,
     })
     expect(r.bonusSpent).toBe(300) // points
-    expect(r.total).toBe(1000 - 3) // 300 points = €3.00; fallback courier is free because the order is over €200
+    expect(r.total).toBe(1000 - 3) // 300 points = €3.00; delivery free from €100
   })
 
   it('caps bonus spend at the order total converted to points', async () => {

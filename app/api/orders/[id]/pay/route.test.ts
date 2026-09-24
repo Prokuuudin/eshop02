@@ -86,17 +86,16 @@ describe('POST /api/orders/[id]/pay', () => {
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-9' })
   })
 
-  it('mints a fresh PayPal payment link and persists the new session id for an owner-accessible unpaid order', async () => {
+  it('rejects a new PayPal payment attempt while PayPal is unavailable to customers', async () => {
     vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentMethod: 'paypal' } as never)
     vi.mocked(canAccessOrder).mockReturnValue(true)
-    vi.mocked(createPaypalPaymentForOrder).mockResolvedValue({ paypalOrderId: 'pp-9', paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-9' })
-
     const res = await POST(makeRequest(), context)
     const body = await res.json()
 
-    expect(res.status).toBe(200)
-    expect(body).toEqual({ paymentUrl: 'https://www.paypal.com/checkoutnow?token=pp-9' })
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pp-9' })
+    expect(res.status).toBe(400)
+    expect(body).toEqual({ error: 'payment_method_unavailable' })
+    expect(createPaypalPaymentForOrder).not.toHaveBeenCalled()
+    expect(updateServerOrderPayment).not.toHaveBeenCalled()
     expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
   })
 
@@ -121,13 +120,4 @@ describe('POST /api/orders/[id]/pay', () => {
     expect(res.status).toBe(502)
   })
 
-  it('returns 502 when the PayPal gateway call fails', async () => {
-    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentMethod: 'paypal' } as never)
-    vi.mocked(canAccessOrder).mockReturnValue(true)
-    vi.mocked(createPaypalPaymentForOrder).mockRejectedValue(new Error('gateway down'))
-
-    const res = await POST(makeRequest(), context)
-
-    expect(res.status).toBe(502)
-  })
 })

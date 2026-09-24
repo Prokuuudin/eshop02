@@ -3,7 +3,6 @@ import { logApiError } from '@/lib/observability'
 import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
-import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -29,7 +28,12 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    if (order.paymentMethod !== 'paysera' && order.paymentMethod !== 'paypal') {
+    // Keep the PayPal integration intact, but do not let customers mint new PayPal links
+    // while that payment method is disabled.
+    if (order.paymentMethod === 'paypal') {
+      return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
+    }
+    if (order.paymentMethod !== 'paysera') {
       return NextResponse.json({ error: 'not_online_payment' }, { status: 400 })
     }
     if (order.paymentStatus === 'paid') {
@@ -44,11 +48,8 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
       })
     }
 
-    const payment = order.paymentMethod === 'paysera'
-      ? await createPayseraPaymentForOrder(order)
-      : await createPaypalPaymentForOrder(order)
-    const sessionId = 'payseraOrderId' in payment ? payment.payseraOrderId : payment.paypalOrderId
-    await updateServerOrderPayment(order.id, { paymentSessionId: sessionId })
+    const payment = await createPayseraPaymentForOrder(order)
+    await updateServerOrderPayment(order.id, { paymentSessionId: payment.payseraOrderId })
 
     return NextResponse.json({ paymentUrl: payment.paymentUrl })
   } catch (error) {

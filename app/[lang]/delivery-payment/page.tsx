@@ -50,7 +50,6 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                     '@type': 'Answer',
                     text: [
                         t('deliveryPayment.payment.paysera.label'),
-                        t('deliveryPayment.payment.paypal.label'),
                         t('deliveryPayment.payment.transfer.label'),
                         t('deliveryPayment.payment.card.label'),
                         t('deliveryPayment.payment.cash.label'),
@@ -237,10 +236,6 @@ export default async function DeliveryPaymentContent({ params }: DeliveryPayment
                                         <li>
                                             <b>{t('deliveryPayment.payment.paysera.label')}</b>
                                             <div className="mt-2 text-sm">{t('deliveryPayment.payment.paysera.note')}</div>
-                                        </li>
-                                        <li>
-                                            <b>{t('deliveryPayment.payment.paypal.label')}</b>
-                                            <div className="mt-2 text-sm">{t('deliveryPayment.payment.paypal.note')}</div>
                                         </li>
                                         <li>
                                             <b>{t('deliveryPayment.payment.card.label')}</b>

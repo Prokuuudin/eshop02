@@ -6,7 +6,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
-import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -277,9 +276,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (order.deliveryMethod === 'pickup' && !pickupStore) {
       return NextResponse.json({ error: 'invalid_pickup_store' }, { status: 400 })
     }
+    // PayPal remains integrated for possible future re-enablement, but customer-initiated
+    // payments are temporarily disabled at the public API boundary as well as in the UI.
+    if (order.paymentMethod === 'paypal') {
+      return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
+    }
     // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
-    // 'paysera' (Checkout Modern, sandbox as of 2026-09-07) and 'paypal' are the online gateways.
-    if (!['bank', 'cash', 'paysera', 'paypal'].includes(order.paymentMethod)) {
+    // Paysera (Checkout Modern, sandbox as of 2026-09-07) is the active online gateway.
+    if (!['bank', 'cash', 'paysera'].includes(order.paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
     if (order.paymentMethod === 'cash' && (order.deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
@@ -342,13 +346,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         : undefined,
       email,
       createdAt: new Date().toISOString(),
-      // Online payment pending confirmation ('card' is legacy/unused, 'paysera'/'paypal' are
-      // live) holds stock for 35 min instead of committing it immediately, same as a guest.
-      stockReservationStatus: (!caller || ['card', 'paysera', 'paypal'].includes(order.paymentMethod)) ? 'reserved' : 'committed',
-      stockReservedUntil: (!caller || ['card', 'paysera', 'paypal'].includes(order.paymentMethod))
+      // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
+      // holds stock for 35 min instead of committing it immediately, same as a guest.
+      stockReservationStatus: (!caller || ['card', 'paysera'].includes(order.paymentMethod)) ? 'reserved' : 'committed',
+      stockReservedUntil: (!caller || ['card', 'paysera'].includes(order.paymentMethod))
         ? new Date(Date.now() + 35 * 60 * 1000).toISOString()
         : undefined,
-      paymentProvider: order.paymentMethod === 'paysera' || order.paymentMethod === 'paypal' ? order.paymentMethod : orderFields.paymentProvider,
+      paymentProvider: order.paymentMethod === 'paysera' ? order.paymentMethod : orderFields.paymentProvider,
     }
 
     const created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
@@ -394,13 +398,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // "success" — if the gateway call fails, fail the local order (releases the stock hold)
     // rather than showing a confirmation screen with no way to actually pay.
     let paymentUrl: string | undefined
-    if (order.paymentMethod === 'paysera' || order.paymentMethod === 'paypal') {
+    if (order.paymentMethod === 'paysera') {
       try {
-        const payment = order.paymentMethod === 'paysera'
-          ? await createPayseraPaymentForOrder(created)
-          : await createPaypalPaymentForOrder(created)
-        const sessionId = 'payseraOrderId' in payment ? payment.payseraOrderId : payment.paypalOrderId
-        await updateServerOrderPayment(created.id, { paymentSessionId: sessionId })
+        const payment = await createPayseraPaymentForOrder(created)
+        await updateServerOrderPayment(created.id, { paymentSessionId: payment.payseraOrderId })
         paymentUrl = payment.paymentUrl
       } catch (error) {
         logOperationalEvent({
@@ -430,13 +431,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // A resubmit (double-click / network retry before the client got the first response)
       // hits the same checkoutKey. The original payment link is gone with that response —
       // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
-      if ((existing.paymentMethod === 'paysera' || existing.paymentMethod === 'paypal') && existing.paymentStatus !== 'paid') {
+      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid') {
         try {
-          const payment = existing.paymentMethod === 'paysera'
-            ? await createPayseraPaymentForOrder(existing)
-            : await createPaypalPaymentForOrder(existing)
-          const sessionId = 'payseraOrderId' in payment ? payment.payseraOrderId : payment.paypalOrderId
-          await updateServerOrderPayment(existing.id, { paymentSessionId: sessionId })
+          const payment = await createPayseraPaymentForOrder(existing)
+          await updateServerOrderPayment(existing.id, { paymentSessionId: payment.payseraOrderId })
           return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
         } catch (gatewayError) {
           logOperationalEvent({

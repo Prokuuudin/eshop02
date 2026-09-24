@@ -171,7 +171,7 @@ return (
                                         {getPaymentStatusLabel(order.paymentStatus)}
                                     </span>
                                 </div>
-                                {(order.paymentMethod === 'paysera' || order.paymentMethod === 'paypal') && order.paymentStatus !== 'paid' && (
+                                {order.paymentMethod === 'paysera' && order.paymentStatus !== 'paid' && (
                                     <Button
                                         className="mt-3 w-full sm:w-auto"
                                         onClick={handlePayNow}

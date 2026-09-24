@@ -259,7 +259,7 @@ export default function CheckoutPage(): React.ReactElement {
                             }}
                             className="space-y-3"
                         >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {(['bank', 'cash', 'paysera'] as const).map((method) => (
                                     <label
                                         key={method}
@@ -271,9 +271,14 @@ export default function CheckoutPage(): React.ReactElement {
                                             value={method}
                                             className="mr-3"
                                         />
-                                        <span className="font-medium flex-1">
-                                            {t(`checkout.payment.${method}`)}
-                                        </span>
+                                        <div className="flex-1">
+                                            <div className="font-medium">
+                                                {t(`checkout.payment.${method}`)}
+                                            </div>
+                                            <div className="checkout__payment-hint text-sm text-muted-foreground">
+                                                {t(`checkout.payment.${method}Hint`)}
+                                            </div>
+                                        </div>
                                     </label>
                                 ))}
                             </div>

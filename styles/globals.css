@@ -394,6 +394,44 @@ input[type='number']::-webkit-outer-spin-button {
     background-color: #ffffff !important;
 }
 
+/* Product loading cards keep the final card geometry to avoid layout shifts.
+   A single soft highlight reads as loading without making every placeholder pulse. */
+.product-card-skeleton__shape {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted));
+}
+
+.product-card-skeleton__media {
+    background: hsl(var(--muted) / 0.55);
+}
+
+.product-card-skeleton__shape::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-110%);
+    background: linear-gradient(
+        100deg,
+        transparent 20%,
+        hsl(var(--background) / 0.65) 48%,
+        transparent 76%
+    );
+    animation: product-card-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes product-card-shimmer {
+    to {
+        transform: translateX(110%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .product-card-skeleton__shape::after {
+        animation: none;
+    }
+}
+
 /* Neutralize react-remove-scroll's padding/margin compensation so Radix dialogs/dropdowns
    don't shift the layout (the html scrollbar is always present, so no compensation is needed). */
 body[data-radix-dialog-open],

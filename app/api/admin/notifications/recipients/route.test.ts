@@ -12,17 +12,44 @@ describe('GET /api/admin/notifications/recipients', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     permissionMock.mockResolvedValue({ id: 'admin', platformRole: 'admin' })
-    findManyMock.mockResolvedValue([{ id: 'customer-150', email: 'found@example.com', name: 'Found', phone: null, cardNumber: null }])
+    findManyMock.mockResolvedValue([{ id: 'customer-150', email: 'found@example.com', name: 'Found', phone: null, cardNumber: null, notificationChannel: 'email', notificationsSubscribed: true }])
     countMock.mockResolvedValue(151)
   })
 
-  it('uses server search and pagination while excluding admins and unsubscribed users', async () => {
+  it('searches only registered customers and excludes technical addresses', async () => {
     const response = await GET(new NextRequest('http://localhost/api/admin/notifications/recipients?search=found&skip=100&take=50'))
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({ total: 151, skip: 100, take: 50 })
     expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({
       skip: 100, take: 50,
-      where: expect.objectContaining({ platformRole: 'customer', notificationsSubscribed: true, OR: expect.any(Array) }),
+      where: expect.objectContaining({
+        platformRole: 'customer',
+        mustChangePassword: false,
+        NOT: [
+          { email: { endsWith: '@client.local', mode: 'insensitive' } },
+          { email: { endsWith: '@deleted.invalid', mode: 'insensitive' } },
+        ],
+        OR: expect.any(Array),
+      }),
     }))
+    expect(findManyMock.mock.calls[0]?.[0]?.select).toMatchObject({ notificationChannel: true, notificationsSubscribed: true })
+    expect(findManyMock.mock.calls[0]?.[0]?.where).not.toHaveProperty('notificationsSubscribed')
+  })
+
+  it.each([
+    ['email', { notificationsSubscribed: true, notificationChannel: 'email' }],
+    ['app', { notificationsSubscribed: true, notificationChannel: 'app' }],
+    ['both', { notificationsSubscribed: true, notificationChannel: 'both' }],
+    ['disabled', { notificationsSubscribed: false }],
+  ])('filters recipients by %s delivery preference', async (delivery, expected) => {
+    const response = await GET(new NextRequest(`http://localhost/api/admin/notifications/recipients?delivery=${delivery}`))
+    expect(response.status).toBe(200)
+    expect(findManyMock.mock.calls[0]?.[0]?.where).toMatchObject(expected)
+  })
+
+  it('rejects an unknown delivery filter', async () => {
+    const response = await GET(new NextRequest('http://localhost/api/admin/notifications/recipients?delivery=sms'))
+    expect(response.status).toBe(400)
+    expect(findManyMock).not.toHaveBeenCalled()
   })
 })

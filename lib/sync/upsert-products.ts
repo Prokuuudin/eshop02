@@ -31,7 +31,10 @@ export function buildUpsertQuery(rowCount: number): string {
       -- admin review) on the very next run, before any admin ever looked at them. Accepted
       -- tradeoff: products deactivated by deactivateMissing (gone from the feed) no longer
       -- auto-reactivate if they reappear later — an admin must manually re-enable them too.
-      price           = EXCLUDED.price,
+      -- A zero selected-tier price means that this product is not sold through
+      -- that channel. Preserve the existing business price; never fall back to
+      -- another ERP tier and never alter isActive because of price availability.
+      price           = CASE WHEN EXCLUDED.price > 0 THEN EXCLUDED.price ELSE "Product".price END,
       stock           = EXCLUDED.stock,
       sku             = EXCLUDED.sku,
       "lastSyncRunId" = EXCLUDED."lastSyncRunId",

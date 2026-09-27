@@ -38,7 +38,8 @@
     "backup:database": "tsx scripts/backup-database.ts",
     "restore:database": "tsx scripts/restore-database.ts",
     "import:client-types": "tsx scripts/import-client-types.ts",
-    "test:search-plan": "tsx scripts/check-search-plan.ts"
+    "test:search-plan": "tsx scripts/check-search-plan.ts",
+    "sync:products": "tsx scripts/sync-products.ts --dry-run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -44,6 +44,10 @@ describe('buildUpsertQuery', () => {
     const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
     expect(updatePart).not.toMatch(/"isActive"\s*=/)
   })
+
+  it('preserves the current price when the selected ERP tier is zero', () => {
+    expect(buildUpsertQuery(1)).toContain('CASE WHEN EXCLUDED.price > 0 THEN EXCLUDED.price ELSE "Product".price END')
+  })
 })
 
 describe('upsertProducts', () => {

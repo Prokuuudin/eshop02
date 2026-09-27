@@ -8,6 +8,11 @@ export interface FtpsConfig {
   remotePath: string
 }
 
+export interface FtpsDownload {
+  content: string
+  modifiedAt?: string
+}
+
 export function getFtpsConfigFromEnv(): FtpsConfig {
   const host = process.env.GRINS_FTPS_HOST
   const user = process.env.GRINS_FTPS_USER
@@ -25,7 +30,7 @@ export function getFtpsConfigFromEnv(): FtpsConfig {
 
 const FTP_TIMEOUT_MS = 30_000
 
-export async function downloadFtpsFile(config: FtpsConfig): Promise<string> {
+export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<FtpsDownload> {
   // basic-ftp has no timeout by default; a hung socket could otherwise stall a sync run
   // indefinitely (compounding with sync-runner's own retry loop — see xml-snapshot-store.ts).
   const client = new Client(FTP_TIMEOUT_MS)
@@ -45,9 +50,19 @@ export async function downloadFtpsFile(config: FtpsConfig): Promise<string> {
       },
     })
 
+    let modifiedAt: string | undefined
+    try {
+      modifiedAt = (await client.lastMod(config.remotePath)).toISOString()
+    } catch {
+      // Some FTPS servers do not support MDTM. Content download remains valid.
+    }
     await client.downloadTo(sink, config.remotePath)
-    return Buffer.concat(chunks).toString('utf-8')
+    return { content: Buffer.concat(chunks).toString('utf-8'), modifiedAt }
   } finally {
     client.close()
   }
+}
+
+export async function downloadFtpsFile(config: FtpsConfig): Promise<string> {
+  return (await downloadFtpsFileWithMetadata(config)).content
 }

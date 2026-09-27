@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { parseGrinsXml } from './grins-xml-parser'
+import { auditGrinsXml, parseGrinsXml } from './grins-xml-parser'
 
 const sampleXml = readFileSync(join(__dirname, '..', '..', 'export_sample.xml'), 'utf-8')
 
@@ -33,10 +33,19 @@ describe('parseGrinsXml', () => {
     expect(remover?.prices).toEqual({ price1: 9, price2: 7, price3: 2.44, price4: 5 })
   })
 
-  it('sets stock from <quantity> as-is, no buffer applied', () => {
+  it('sets stock from only the four Hairshoppro warehouses', () => {
     const products = parseGrinsXml(sampleXml)
     const remover = products.find(p => p.externalId === '6580075')
-    expect(remover?.stock).toBe(53)
+    expect(remover?.stock).toBe(36)
+  })
+
+  it('does not use excluded warehouses in Product.stock', () => {
+    const xml = '<root><item><sku>X</sku><price1>9</price1><price2>0</price2><price3>3</price3><price4>4</price4><quantity>99</quantity><warehouses><warehouse id="4">8</warehouse><warehouse id="5">7</warehouse><warehouse id="7">6</warehouse><warehouse id="8">5</warehouse><warehouse id="9">4</warehouse></warehouses></item></root>'
+    const [product] = parseGrinsXml(xml)
+    expect(product.price).toBe(0)
+    expect(product.stock).toBe(0)
+    expect(product.prices).toEqual({ price1: 9, price2: 0, price3: 3, price4: 4 })
+    expect(product.warehouseQuantities).toMatchObject({ '10003': 8, '10004': 7, '10006': 6, '10007': 5, '10010': 4 })
   })
 
   it('maps the 9 warehouse slots to real ids and preserves the known quantity-vs-sum discrepancy', () => {
@@ -67,5 +76,21 @@ describe('parseGrinsXml', () => {
     for (const p of products) {
       expect(p).not.toHaveProperty('capacity')
     }
+  })
+})
+
+describe('auditGrinsXml', () => {
+  it('reports duplicate and empty SKUs without normalizing leading zeroes', () => {
+    const xml = '<root><item><sku>00123</sku><price1>1</price1><price2>1</price2><price3>1</price3><price4>1</price4><quantity>1</quantity></item><item><sku>00123</sku><price1>1</price1><price2>1</price2><price3>1</price3><price4>1</price4><quantity>1</quantity></item><item><sku> </sku><price1>x</price1><price2>1</price2><price3>1</price3><price4>1</price4><quantity>-1</quantity></item></root>'
+    const audit = auditGrinsXml(xml)
+    expect(audit.duplicateSkus).toEqual(['00123'])
+    expect(audit.emptySkus).toBe(1)
+    expect(audit.leadingZeroSkus).toEqual(['00123'])
+    expect(audit.invalidPrices).toHaveLength(1)
+    expect(audit.negativeStocks).toHaveLength(1)
+  })
+
+  it('rejects malformed XML', () => {
+    expect(auditGrinsXml('<root><item></root>').validXml).toBe(false)
   })
 })

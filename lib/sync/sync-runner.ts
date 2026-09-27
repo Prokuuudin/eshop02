@@ -2,7 +2,8 @@ import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { deactivateMissing } from './deactivate-missing'
-import { replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
+import { getErpExtraData, mergeEnabledPriceTiers, replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
+import { getSyncRules } from './sync-rules'
 import { withRetry } from './retry'
 import { SyncLogger } from './logger'
 import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
@@ -52,6 +53,8 @@ export async function runSync(
   let consecutiveFetchErrors = 0
   const seenExternalIds = new Set<string>()
   const extraDataByExternalId: Record<string, ErpExtraData> = {}
+  const rules = getSyncRules()
+  const currentExtraData = await getErpExtraData(db)
 
   try {
     let cursor: string | number | undefined = undefined
@@ -109,7 +112,7 @@ export async function runSync(
           seenExternalIds.add(p.externalId)
           valid.push(p)
           if (p.prices || p.warehouseQuantities) {
-            extraDataByExternalId[p.externalId] = {
+            const incoming = {
               prices: {
                 price1: p.prices?.price1 ?? 0,
                 price2: p.prices?.price2 ?? 0,
@@ -118,6 +121,9 @@ export async function runSync(
               },
               warehouseQuantities: p.warehouseQuantities ?? {},
             }
+            extraDataByExternalId[p.externalId] = mergeEnabledPriceTiers(
+              currentExtraData[p.externalId], incoming, rules.enabledPriceTiers,
+            )
           }
         }
         if (duplicateIds.length > 0) {

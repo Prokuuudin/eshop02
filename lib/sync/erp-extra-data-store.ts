@@ -1,5 +1,6 @@
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
+import { PRICE_TIERS, type PriceTier } from './sync-rules'
 
 export interface ErpExtraData {
   prices: { price1: number; price2: number; price3: number; price4: number }
@@ -42,4 +43,14 @@ export async function replaceErpExtraData(
     create: { key: ERP_EXTRA_DATA_KEY, value: data as unknown as Prisma.InputJsonValue },
     update: { value: data as unknown as Prisma.InputJsonValue },
   })
+}
+
+export function mergeEnabledPriceTiers(
+  current: ErpExtraData | undefined,
+  incoming: ErpExtraData,
+  enabled: ReadonlySet<PriceTier>,
+): ErpExtraData {
+  const prices = { ...(current?.prices ?? { price1: 0, price2: 0, price3: 0, price4: 0 }) }
+  for (const tier of PRICE_TIERS) if (enabled.has(tier)) prices[tier] = incoming.prices[tier]
+  return { prices, warehouseQuantities: incoming.warehouseQuantities }
 }

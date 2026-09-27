@@ -42,12 +42,14 @@ function parseArgs(argv: string[]): Args {
   }
 }
 
-async function loadFeedXml(file?: string): Promise<string> {
+async function loadFeedXml(file: string | undefined, saveToDatabase: boolean): Promise<string> {
   if (file) return readFileSync(file, 'utf-8')
-  const { saveSnapshot } = await import('@/lib/sync/xml-snapshot-store')
   const ftpsConfig = getFtpsConfigFromEnv()
   const xml = await downloadFtpsFile(ftpsConfig)
-  await saveSnapshot(xml)
+  if (saveToDatabase) {
+    const { saveSnapshot } = await import('@/lib/sync/xml-snapshot-store')
+    await saveSnapshot(xml)
+  }
   return xml
 }
 
@@ -69,7 +71,7 @@ async function main() {
 async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   const { file, apply } = parseArgs(process.argv.slice(2))
 
-  const xml = await loadFeedXml(file)
+  const xml = await loadFeedXml(file, apply)
   const feedProducts = parseGrinsXml(xml)
 
   // sku === externalId in this feed (see lib/sync/grins-xml-parser.ts), so matching
@@ -90,7 +92,13 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   })
 
   const dbBySku = new Map<string, string[]>()
+  const externalIdOwners = new Map<string, string[]>()
   for (const p of dbProducts) {
+    if (p.externalId) {
+      const owners = externalIdOwners.get(p.externalId) ?? []
+      owners.push(p.id)
+      externalIdOwners.set(p.externalId, owners)
+    }
     const sku = p.sku?.trim()
     if (!sku) continue
     const ids = dbBySku.get(sku) ?? []
@@ -105,12 +113,18 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   const unmatchedDbSkus: string[] = []
   const ambiguousDbDuplicateSkus: string[] = []
   const ambiguousFeedDuplicateSkus: string[] = []
+  const conflictingExternalIds: Array<{ productId: string; sku: string; ownerIds: string[] }> = []
+  const linkedSkuMismatches: Array<{ productId: string; sku: string | null; externalId: string }> = []
+  const linkedExternalIdsMissingFromFeed: Array<{ productId: string; externalId: string }> = []
   let alreadyLinked = 0
   let dbNoSku = 0
 
   for (const p of dbProducts) {
     if (p.externalId !== null) {
       alreadyLinked++
+      const sku = p.sku?.trim() || null
+      if (sku !== p.externalId) linkedSkuMismatches.push({ productId: p.id, sku, externalId: p.externalId })
+      if (!feedBySku.has(p.externalId)) linkedExternalIdsMissingFromFeed.push({ productId: p.id, externalId: p.externalId })
       continue
     }
     const sku = p.sku?.trim()
@@ -130,6 +144,11 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
       unmatchedDbSkus.push(sku)
       continue
     }
+    const owners = externalIdOwners.get(sku) ?? []
+    if (owners.some(id => id !== p.id)) {
+      conflictingExternalIds.push({ productId: p.id, sku, ownerIds: owners })
+      continue
+    }
     matched.push({ productId: p.id, sku })
   }
 
@@ -137,6 +156,14 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   for (const sku of feedBySku.keys()) {
     if (!dbBySku.has(sku)) newFromFeedSkus.push(sku)
   }
+
+  const dbRawSkus = dbProducts.map(product => product.sku).filter((sku): sku is string => sku !== null)
+  const feedSkus = [...feedBySku.keys()]
+  const dbTrimmed = new Set(dbRawSkus.map(sku => sku.trim()))
+  const feedTrimmed = new Set(feedSkus.map(sku => sku.trim()))
+  const caseOnlyMatches = dbRawSkus.filter(sku => !feedTrimmed.has(sku.trim()) && feedSkus.some(feedSku => feedSku.toLocaleLowerCase('en-US') === sku.trim().toLocaleLowerCase('en-US')))
+  const whitespaceSkus = dbRawSkus.filter(sku => sku !== sku.trim())
+  const leadingZeroSkus = [...new Set([...dbTrimmed, ...feedTrimmed].filter(sku => /^0\d/u.test(sku)))]
 
   const report = {
     event: 'backfill_report',
@@ -157,21 +184,39 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
       unmatchedDb: unmatchedDbSkus.length,
       ambiguousDbDuplicateSku: ambiguousDbDuplicateSkus.length,
       ambiguousFeedDuplicateSku: ambiguousFeedDuplicateSkus.length,
+      conflictingExternalIds: conflictingExternalIds.length,
+      linkedSkuMismatches: linkedSkuMismatches.length,
+      linkedExternalIdsMissingFromFeed: linkedExternalIdsMissingFromFeed.length,
       newProductsFromFeed: newFromFeedSkus.length,
+      onlyInDb: unmatchedDbSkus.length,
+      onlyInXml: newFromFeedSkus.length,
+      caseOnlyMatches: caseOnlyMatches.length,
+      whitespaceSkus: whitespaceSkus.length,
+      leadingZeroSkus: leadingZeroSkus.length,
     },
     samples: {
       unmatchedDb: unmatchedDbSkus.slice(0, SAMPLE_LIMIT),
       ambiguousDbDuplicateSku: [...new Set(ambiguousDbDuplicateSkus)].slice(0, SAMPLE_LIMIT),
       ambiguousFeedDuplicateSku: [...new Set(ambiguousFeedDuplicateSkus)].slice(0, SAMPLE_LIMIT),
+      conflictingExternalIds: conflictingExternalIds.slice(0, SAMPLE_LIMIT),
+      linkedSkuMismatches: linkedSkuMismatches.slice(0, SAMPLE_LIMIT),
+      linkedExternalIdsMissingFromFeed: linkedExternalIdsMissingFromFeed.slice(0, SAMPLE_LIMIT),
       newProductsFromFeed: newFromFeedSkus.slice(0, SAMPLE_LIMIT),
+      caseOnlyMatches: caseOnlyMatches.slice(0, SAMPLE_LIMIT),
+      whitespaceSkus: whitespaceSkus.slice(0, SAMPLE_LIMIT),
+      leadingZeroSkus: leadingZeroSkus.slice(0, SAMPLE_LIMIT),
     },
   }
 
   console.log(JSON.stringify(report, null, 2))
 
   if (!apply) {
-    console.log(JSON.stringify({ event: 'backfill_dry_run_only', note: 'pass --apply to write externalId' }))
+    console.log(JSON.stringify({ event: 'backfill_dry_run_only', databaseWrites: 0, note: 'pass --apply to write externalId' }))
     return
+  }
+
+  if (feedDuplicateSkus.size || dbDuplicateSkus.size || conflictingExternalIds.length || linkedSkuMismatches.length) {
+    throw new Error('Refusing to apply backfill while SKU/externalId conflicts exist')
   }
 
   if (matched.length === 0) {

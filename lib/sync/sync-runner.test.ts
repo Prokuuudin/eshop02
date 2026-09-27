@@ -13,6 +13,8 @@ vi.mock('./deactivate-missing', () => ({
 }))
 
 vi.mock('./erp-extra-data-store', () => ({
+  getErpExtraData: vi.fn().mockResolvedValue({}),
+  mergeEnabledPriceTiers: vi.fn((_current, incoming) => incoming),
   replaceErpExtraData: vi.fn().mockResolvedValue(undefined),
 }))
 
